@@ -232,13 +232,13 @@ jobs:
           if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                   mvn_ext=" -Dplatform.classifier=linux-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
           elif [ "${{ matrix.helper }}" != '' ]; then
-                  mvn_ext="-Dplatform.classifier=macosx-x86_64-${{ matrix.helper }}"
+                  mvn_ext="-Dplatform.classifier=linux-x86_64-${{ matrix.helper }}"
           elif [ "${{ matrix.extension }}" != '' ]; then
                  mvn_ext=" -Dplatform.classifier=linux-x86_64-${{matrix.extension}}"
           else
                   mvn_ext=" -Dlibnd4j.classifier=linux-x86_64"
           fi
-          cd ${GITHUB_WORKSPACE}/platform-tests && mvn ${mvn_ext} clean test 
+          cd ${GITHUB_WORKSPACE}/platform-tests && mvn ${mvn_ext} -Djavacpp.platform=linux-x86_64 clean test 
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
@@ -392,7 +392,7 @@ jobs:
              $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64"
           }
           cd "%GITHUB_WORKSPACE%\platform-tests"
-          mvn "%mvn_ext%" clean test
+          mvn "%mvn_ext%"  -Djavacpp.platform=windows-x86_64 clean test
 
         env:
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
@@ -533,7 +533,7 @@ jobs:
            else
                   mvn_ext=" -Dlibnd4j.classifier=macosx-x86_64"
             fi
-            cd ${GITHUB_WORKSPACE}/platform-tests && mvn ${mvn_ext} clean test 
+            cd ${GITHUB_WORKSPACE}/platform-tests && mvn  -Djavacpp.platform=macosx-x86_64 ${mvn_ext} clean test 
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
