@@ -45,7 +45,7 @@
             <groupId>org.nd4j</groupId>
             <artifactId>${backend.artifactId}</artifactId>
             <version>${dl4j.version}</version>
-            <classifier>${backend.classifier}</classifier>
+            <classifier>${platform.classifier}</classifier>
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
