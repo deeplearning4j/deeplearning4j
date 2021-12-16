@@ -48,6 +48,7 @@
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <platform.classifier>{os.name}-${os.arch}</platform.classifier>
         <backend.artifactId>nd4j-native</backend.artifactId>
+        <lombok.version>1.18.16</lombok.version>
 
 
         <kotlin.version>1.4.30</kotlin.version>
@@ -66,6 +67,14 @@
     </properties>
 
     <dependencies>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-common-tests</artifactId>
