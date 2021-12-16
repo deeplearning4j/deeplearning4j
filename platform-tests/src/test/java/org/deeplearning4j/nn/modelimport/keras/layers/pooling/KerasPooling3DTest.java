@@ -84,7 +84,7 @@ class KerasPooling3DTest extends BaseDL4JTest {
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_MAX_POOLING_3D());
         Map<String, Object> config = new HashMap<>();
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
-        config.put(conf.getLAYER_FIELD_DIM_ORDERING(),order2ing);
+        config.put(conf.getLAYER_FIELD_DIM_ORDERING(),ordering);
         List<Integer> kernelSizeList = new ArrayList<>();
         kernelSizeList.add(KERNEL_SIZE[0]);
         kernelSizeList.add(KERNEL_SIZE[1]);
