@@ -488,6 +488,8 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         return new NDArray(null, (LongBuffer) shape.getFirst(), shape.getSecond());
     }
 
+
+
     @Override
     public INDArray create(float[][] floats) {
         return new NDArray(floats);

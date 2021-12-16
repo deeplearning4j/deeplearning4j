@@ -123,8 +123,8 @@ public class KerasConvolution3D extends KerasConvolution {
      *
      * @return ConvolutionLayer
      */
-    public ConvolutionLayer getConvolution3DLayer() {
-        return (ConvolutionLayer) this.layer;
+    public Convolution3D getConvolution3DLayer() {
+        return (Convolution3D) this.layer;
     }
 
     /**
