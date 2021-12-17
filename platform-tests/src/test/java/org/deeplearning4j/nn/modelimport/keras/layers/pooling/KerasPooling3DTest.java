@@ -20,9 +20,11 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.pooling;
 
 import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.conf.layers.Subsampling3DLayer;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -71,15 +73,18 @@ class KerasPooling3DTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Pooling 3 D Layer")
     void testPooling3DLayer() throws Exception {
-        buildPooling3DLayer(conf1, keras1);
-        buildPooling3DLayer(conf2, keras2);
+        for(KerasLayer.DimOrder dimOrder : KerasLayer.DimOrder.values()) {
+            buildPooling3DLayer(conf1, keras1,dimOrder != KerasLayer.DimOrder.THEANO ? "channels_last" : "channels_first");
+            buildPooling3DLayer(conf2, keras2,dimOrder != KerasLayer.DimOrder.THEANO ? "channels_last" : "channels_first");
+        }
     }
 
-    private void buildPooling3DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    private void buildPooling3DLayer(KerasLayerConfiguration conf, Integer kerasVersion,String ordering) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_MAX_POOLING_3D());
         Map<String, Object> config = new HashMap<>();
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        config.put(conf.getLAYER_FIELD_DIM_ORDERING(),ordering);
         List<Integer> kernelSizeList = new ArrayList<>();
         kernelSizeList.add(KERNEL_SIZE[0]);
         kernelSizeList.add(KERNEL_SIZE[1]);
@@ -100,5 +105,11 @@ class KerasPooling3DTest extends BaseDL4JTest {
         assertEquals(POOLING_TYPE, layer.getPoolingType());
         assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
         assertArrayEquals(VALID_PADDING, layer.getPadding());
+        if(ordering.equals("channels_last")) {
+            assertEquals(Convolution3D.DataFormat.NDHWC,layer.getDataFormat());
+        } else if(ordering.equals("channels_first")) {
+            assertEquals(Convolution3D.DataFormat.NCDHW,layer.getDataFormat());
+
+        }
     }
 }

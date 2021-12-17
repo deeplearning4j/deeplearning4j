@@ -107,27 +107,6 @@ jobs:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/set-linux-distro-version
-      - name: Set mvn build command based on matrix
-        shell: bash
-        run: |
-          command="mvn  ${{ matrix.mvn_ext }} -Pcpu -Dlibnd4j.buildThreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
-          if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-                 mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
-          elif [ "${{ matrix.helper }}" != '' ]; then
-                 mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}"
-          elif [ "${{ matrix.extension }}" != '' ]; then
-                 mvn_ext=" -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.extension }}"
-           else
-               mvn_ext=""
-          fi
-          if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
-             echo "Adding libnd4j download"
-             echo "LIBND4J_FILE_NAME=${libnd4j_download_file_url}" >> $GITHUB_ENV
-          fi
-          command="${command} ${mvn_ext}"
-          echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
-          echo "COMMAND=${command}" >> $GITHUB_ENV
-
       - uses: ./.github/actions/update-deps-linux
       - name: Cache cmake install
         uses: actions/cache@v2
@@ -179,7 +158,8 @@ jobs:
           echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64" >> "$GITHUB_ENV"
           cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
-
+      - name: Download dl4j-test-resources
+        uses: ./.github/actions/download-dl4j-test-resources-linux
       - name: Build on  linux-x86_64
         shell: bash
         env:
@@ -232,13 +212,13 @@ jobs:
           if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                   mvn_ext=" -Dplatform.classifier=linux-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
           elif [ "${{ matrix.helper }}" != '' ]; then
-                  mvn_ext="-Dplatform.classifier=macosx-x86_64-${{ matrix.helper }}"
+                  mvn_ext="-Dplatform.classifier=linux-x86_64-${{ matrix.helper }}"
           elif [ "${{ matrix.extension }}" != '' ]; then
                  mvn_ext=" -Dplatform.classifier=linux-x86_64-${{matrix.extension}}"
           else
-                  mvn_ext=" -Dlibnd4j.classifier=linux-x86_64"
+                  mvn_ext=" -Dplatform.classifier=linux-x86_64"
           fi
-          cd ${GITHUB_WORKSPACE}/platform-tests && mvn ${mvn_ext} clean test 
+          cd ${GITHUB_WORKSPACE}/platform-tests && mvn ${mvn_ext} -Djavacpp.platform=linux-x86_64 clean test 
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
@@ -304,32 +284,6 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
-      - name: Set mvn build command based on matrix
-        shell: powershell
-        run: |
-          $command="mvn  ${{ matrix.mvn_ext }} -Pcpu -Dlibnd4j.buildThreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64 deploy -DskipTests"
-          if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
-             $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
-          } elseif ( "${{ matrix.helper }}" -ne "" ) {
-              $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64   deploy -DskipTests"
-          }  elseif ( "${{ matrix.extension }}" -ne "" ) {
-               $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
-          } else {
-             $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64"
-          }
-          
-          if  (  "${{ matrix.libnd4j_file_download }}" -ne  "")  {
-                 echo "Adding libnd4j download"
-                 $libnd4j_url_to_write = -join("LIBND4J_FILE_NAME=","$($libnd4j_download_file_url)");
-                 echo $libnd4j_url_to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
-          }
-          
-          $command2 = -join("$($command)","$($mvn_ext)");
-          $to_write = -join("COMMAND=","$($command2)");
-          echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command2)"
-          echo $command2  | Out-File -FilePath   "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8 -Append
-          echo $to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
-
       - name: Cache Maven packages
         uses: actions/cache@v2
         with:
@@ -368,7 +322,8 @@ jobs:
           cd ..
           echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/windows-x86_64/" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
         if: ${{ matrix.libnd4j_file_download != '' }}
-
+      - name: Download dl4j-test-resources
+        uses: ./.github/actions/download-dl4j-test-resources-windows
       - name: Run windows cpu build
         shell: cmd
         run: |
@@ -389,10 +344,10 @@ jobs:
           }  elseif ( "${{ matrix.extension }}" -ne "" ) {
                $mvn_ext=" -Dplatform.classifier=windows-x86_64-${{matrix.extension}} "
           } else {
-             $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64"
+             $mvn_ext=" -Dplatform.classifier=windows-x86_64"
           }
           cd "%GITHUB_WORKSPACE%\platform-tests"
-          mvn "%mvn_ext%" clean test
+          mvn "%mvn_ext%"  -Djavacpp.platform=windows-x86_64 clean test
 
         env:
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
@@ -493,7 +448,8 @@ jobs:
         run: |
           brew install gpg1 gnu-sed unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
           echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
-
+      - name: Download dl4j-test-resources
+        uses: ./.github/actions/download-dl4j-test-resources-linux
       - name: Build and install
         shell: bash
         env:
@@ -533,7 +489,7 @@ jobs:
            else
                   mvn_ext=" -Dlibnd4j.classifier=macosx-x86_64"
             fi
-            cd ${GITHUB_WORKSPACE}/platform-tests && mvn ${mvn_ext} clean test 
+            cd ${GITHUB_WORKSPACE}/platform-tests && mvn  -Djavacpp.platform=macosx-x86_64 ${mvn_ext} clean test 
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3

@@ -145,7 +145,7 @@ public class Upsampling3D extends BaseUpsamplingLayer {
         /**
          * Sets the DataFormat. See {@link Convolution3D.DataFormat} for more details
          */
-        public Builder dataFormat(@NonNull Convolution3D.DataFormat dataFormat){
+        public Builder dataFormat(@NonNull Convolution3D.DataFormat dataFormat) {
             this.dataFormat = dataFormat;
             return this;
         }

@@ -23,8 +23,10 @@ import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
+import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.KerasTestUtils;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
@@ -101,16 +103,20 @@ class KerasConvolution3DTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Convolution 3 D Layer")
     void testConvolution3DLayer() throws Exception {
-        buildConvolution3DLayer(conf1, keras1);
-        buildConvolution3DLayer(conf2, keras2);
+      for(KerasLayer.DimOrder dimOrder : KerasLayer.DimOrder.values()) {
+          buildConvolution3DLayer(conf1, keras1, dimOrder != KerasLayer.DimOrder.THEANO ? "channels_last" : "channels_first");
+          buildConvolution3DLayer(conf2, keras2,dimOrder != KerasLayer.DimOrder.THEANO ? "channels_last" : "channels_first");
+      }
+
     }
 
-    private void buildConvolution3DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    private void buildConvolution3DLayer(KerasLayerConfiguration conf, Integer kerasVersion,String ordering) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_CONVOLUTION_3D());
         Map<String, Object> config = new HashMap<>();
         config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS);
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        config.put(conf.getLAYER_FIELD_DIM_ORDERING(),ordering);
         if (kerasVersion == 1) {
             config.put(conf.getLAYER_FIELD_INIT(), INIT_KERAS);
         } else {
@@ -128,7 +134,7 @@ class KerasConvolution3DTest extends BaseDL4JTest {
             config.put(conf.getLAYER_FIELD_3D_KERNEL_2(), KERNEL_SIZE[1]);
             config.put(conf.getLAYER_FIELD_3D_KERNEL_3(), KERNEL_SIZE[2]);
         } else {
-            ArrayList kernel = new ArrayList<Integer>() {
+            List kernel = new ArrayList<Integer>() {
 
                 {
                     for (int i : KERNEL_SIZE) add(i);
@@ -145,7 +151,7 @@ class KerasConvolution3DTest extends BaseDL4JTest {
         config.put(conf.getLAYER_FIELD_BORDER_MODE(), BORDER_MODE_VALID);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-        ConvolutionLayer layer = new KerasConvolution3D(layerConfig).getConvolution3DLayer();
+        Convolution3D layer = new KerasConvolution3D(layerConfig).getConvolution3DLayer();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInitFn());
@@ -157,6 +163,12 @@ class KerasConvolution3DTest extends BaseDL4JTest {
         assertEquals(N_OUT, layer.getNOut());
         assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
         assertArrayEquals(VALID_PADDING, layer.getPadding());
+        if(ordering.equals("channels_last")) {
+            assertEquals(Convolution3D.DataFormat.NDHWC,layer.getDataFormat());
+        } else if(ordering.equals("channels_first")) {
+            assertEquals(Convolution3D.DataFormat.NCDHW,layer.getDataFormat());
+
+        }
     }
 
     @Test

@@ -447,7 +447,7 @@ public class KerasModel {
                 KerasInput kerasInput = (KerasInput) layer;
                 Layer layer1 = layersOrdered.get(kerasLayerIdx + 1).layer;
                 //no dim order, try to pull it from the next layer if there is one
-                if(ConvolutionUtils.layerHasConvolutionLayout(layer1) && inputShape.length < 4) {
+                if(layer1 != null && ConvolutionUtils.layerHasConvolutionLayout(layer1) && inputShape.length < 4) {
                     CNN2DFormat formatForLayer = ConvolutionUtils.getFormatForLayer(layer1);
                     if(formatForLayer == CNN2DFormat.NCHW) {
                         dimOrder = KerasLayer.DimOrder.THEANO;
@@ -456,7 +456,7 @@ public class KerasModel {
                     } else {
                         dimOrder = KerasLayer.DimOrder.NONE;
                     }
-                } else if(Convolution3DUtils.layerHasConvolution3DLayout(layer1)) {
+                } else if(layer1 != null && Convolution3DUtils.layerHasConvolution3DLayout(layer1)) {
                     Convolution3D.DataFormat dataFormat = Convolution3DUtils.getFormatForLayer(layer1);
                     if(dataFormat == Convolution3D.DataFormat.NCDHW) {
                         dimOrder = KerasLayer.DimOrder.THEANO;

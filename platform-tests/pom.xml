@@ -11,13 +11,44 @@
 
     <name>platform-tests</name>
 
+
+    <repositories>
+        <!-- Mainly for dokka/kotlinx. Not used outside of releases for kotlin related modules-->
+        <repository>
+            <id>jetbrains-kotlinx</id>
+            <url>https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven</url>
+            <name>Kotlinx repo</name>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
+
+
+        <repository>
+            <id>ossrh</id>
+            <name>Sonatype Nexus Snapshots</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>daily</updatePolicy>  <!-- Optional, update daily -->
+            </snapshots>
+        </repository>
+    </repositories>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
-        <platform.classifier>{os.name}-${os.arch}</platform.classifier>
+        <platform.classifier>${os.name}-${os.arch}</platform.classifier>
         <backend.artifactId>nd4j-native</backend.artifactId>
+        <lombok.version>1.18.16</lombok.version>
 
 
         <kotlin.version>1.4.30</kotlin.version>
@@ -32,10 +63,43 @@
         <test.heap.size>2g</test.heap.size>
         <test.offheap.size>2g</test.offheap.size>
         <dokka.version>1.4.30</dokka.version>
-
+        <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
+        <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
+        <test.heap.size>1g</test.heap.size>
+        <test.offheap.size>3g</test.offheap.size>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-datavec-iterators</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-datasets</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-api</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-common-tests</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>${backend.artifactId}</artifactId>
@@ -45,7 +109,7 @@
             <groupId>org.nd4j</groupId>
             <artifactId>${backend.artifactId}</artifactId>
             <version>${dl4j.version}</version>
-            <classifier>${backend.classifier}</classifier>
+            <classifier>${platform.classifier}</classifier>
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -60,6 +124,11 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>samediff-import-tensorflow</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>dl4j-test-resources</artifactId>
             <version>${dl4j.version}</version>
         </dependency>
     </dependencies>
@@ -78,7 +147,6 @@
     </profiles>
 
     <build>
-        <pluginManagement>
             <plugins>
                 <plugin>
                     <groupId>org.projectlombok</groupId>
@@ -167,8 +235,43 @@
                         <target>${java.version}</target>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-plugin.version}</version>
+                    <inherited>true</inherited>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.maven.surefire</groupId>
+                            <artifactId>surefire-junit-platform</artifactId>
+                            <version>${maven-surefire-plugin.version}</version>
+                        </dependency>
+                    </dependencies>
+                    <configuration>
+                        <trimStackTrace>false</trimStackTrace>
+                        <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
+                        <forkCount>1</forkCount>
+                        <reuseForks>false</reuseForks>
+                        <environmentVariables>
+                            <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
+                        </environmentVariables>
+                        <classpathDependencyExcludes>
+                            <classpathDependencyExclude>org.junit:junit</classpathDependencyExclude>
+                            <classpathDependencyExclude>com.google.android:android
+                            </classpathDependencyExclude>
+                        </classpathDependencyExcludes>
+                        <useSystemClassLoader>true</useSystemClassLoader>
+                        <useManifestOnlyJar>false</useManifestOnlyJar>
+                        <argLine>-Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                        <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
+                        <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
+                        <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
+                        <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
+                        <forkCount>1</forkCount>
+                        <threadCount>1</threadCount>
+                        <perCoreThreadCount>false</perCoreThreadCount>
+                    </configuration>
+                </plugin>
             </plugins>
-        </pluginManagement>
     </build>
 
 </project>
