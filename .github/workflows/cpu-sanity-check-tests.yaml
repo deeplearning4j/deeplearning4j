@@ -179,7 +179,8 @@ jobs:
           echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64" >> "$GITHUB_ENV"
           cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
-
+      - name: Download dl4j-test-resources
+        uses: ./github/actions/download-dl4j-test-resources-linux
       - name: Build on  linux-x86_64
         shell: bash
         env:
@@ -368,7 +369,8 @@ jobs:
           cd ..
           echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/windows-x86_64/" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
         if: ${{ matrix.libnd4j_file_download != '' }}
-
+      - name: Download dl4j-test-resources
+        uses: ./github/actions/download-dl4j-test-resources-windows
       - name: Run windows cpu build
         shell: cmd
         run: |
@@ -493,7 +495,8 @@ jobs:
         run: |
           brew install gpg1 gnu-sed unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
           echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
-
+      - name: Download dl4j-test-resources
+        uses: ./github/actions/download-dl4j-test-resources-linux
       - name: Build and install
         shell: bash
         env:
