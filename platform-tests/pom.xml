@@ -46,7 +46,7 @@
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
-        <platform.classifier>{os.name}-${os.arch}</platform.classifier>
+        <platform.classifier>${os.name}-${os.arch}</platform.classifier>
         <backend.artifactId>nd4j-native</backend.artifactId>
         <lombok.version>1.18.16</lombok.version>
 
