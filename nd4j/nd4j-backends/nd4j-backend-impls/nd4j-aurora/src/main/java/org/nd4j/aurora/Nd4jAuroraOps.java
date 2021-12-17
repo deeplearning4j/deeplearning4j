@@ -40,7 +40,7 @@ import static org.nd4j.aurora.Aurora.*;
 public class Nd4jAuroraOps implements NativeOps {
     private static Logger log = LoggerFactory.getLogger(Nd4jAuroraOps.class);
     public static final boolean LOAD_SHARED_LIBRARY = true;
-
+    private boolean timeAuroraCalls = false;
     /* Load "Nd4jAuroraOps" on VE node 0 */
     @Getter int deviceId = 0;
     @Getter String veobin = null;
@@ -74,6 +74,10 @@ public class Nd4jAuroraOps implements NativeOps {
             setDevice(deviceId);
             pointerArrayField = PointerPointer.class.getDeclaredField("pointerArray");
             pointerArrayField.setAccessible(true);
+
+            timeAuroraCalls = Boolean.parseBoolean(System.getenv().getOrDefault("TIME_AURORA_CALLS","false"));
+
+
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -148,7 +152,7 @@ public class Nd4jAuroraOps implements NativeOps {
 
     public synchronized Object call(String symname, Object... args) {
         log.debug("call(" + symname + ", " + Arrays.deepToString(args) + ")");
-
+        long begin = System.nanoTime();
         long sym = veo_get_sym(proc, handle, symname);
         if (sym == 0) {
             throw new RuntimeException("veo_get_sym(): failed to find symbol " + symname);
@@ -314,6 +318,10 @@ public class Nd4jAuroraOps implements NativeOps {
         veo_args_free(argp);
 
         log.debug("return " + retval[0]);
+        long end = System.nanoTime();
+        if(timeAuroraCalls) {
+            log.info("Total call time for symbol " + symname + " was " + (end - begin));
+        }
         return retval[0];
     }
 

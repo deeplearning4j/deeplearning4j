@@ -268,6 +268,8 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                 config = ProfilerConfig.builder().build();
                 break;
         }
+
+        System.nanoTime();
         OpProfiler.getInstance().setConfig(config);
     }
 

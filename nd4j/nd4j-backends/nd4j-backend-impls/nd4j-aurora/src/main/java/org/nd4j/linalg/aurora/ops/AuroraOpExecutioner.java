@@ -2030,6 +2030,8 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
                 .build();
 */
 
+
+
         return INDArrayStatistics.builder()
                 .minValue(0)
                 .maxValue(0)
