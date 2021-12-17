@@ -1995,7 +1995,6 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
             throw e;
         } finally {
             profilingConfigurableHookOut(op, context, st);
-            log.debug("return " + retval[0]);
             DifferentialFunction func = (DifferentialFunction) op;
             long end = System.nanoTime();
             if(timeAuroraCalls) {
