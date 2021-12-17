@@ -63,7 +63,10 @@
         <test.heap.size>2g</test.heap.size>
         <test.offheap.size>2g</test.offheap.size>
         <dokka.version>1.4.30</dokka.version>
-
+        <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
+        <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
+        <test.heap.size>1g</test.heap.size>
+        <test.offheap.size>3g</test.offheap.size>
     </properties>
 
     <dependencies>
@@ -144,7 +147,6 @@
     </profiles>
 
     <build>
-        <pluginManagement>
             <plugins>
                 <plugin>
                     <groupId>org.projectlombok</groupId>
@@ -233,8 +235,43 @@
                         <target>${java.version}</target>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-plugin.version}</version>
+                    <inherited>true</inherited>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.maven.surefire</groupId>
+                            <artifactId>surefire-junit-platform</artifactId>
+                            <version>${maven-surefire-plugin.version}</version>
+                        </dependency>
+                    </dependencies>
+                    <configuration>
+                        <trimStackTrace>false</trimStackTrace>
+                        <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
+                        <forkCount>1</forkCount>
+                        <reuseForks>false</reuseForks>
+                        <environmentVariables>
+                            <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
+                        </environmentVariables>
+                        <classpathDependencyExcludes>
+                            <classpathDependencyExclude>org.junit:junit</classpathDependencyExclude>
+                            <classpathDependencyExclude>com.google.android:android
+                            </classpathDependencyExclude>
+                        </classpathDependencyExcludes>
+                        <useSystemClassLoader>true</useSystemClassLoader>
+                        <useManifestOnlyJar>false</useManifestOnlyJar>
+                        <argLine>-Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                        <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
+                        <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
+                        <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
+                        <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
+                        <forkCount>1</forkCount>
+                        <threadCount>1</threadCount>
+                        <perCoreThreadCount>false</perCoreThreadCount>
+                    </configuration>
+                </plugin>
             </plugins>
-        </pluginManagement>
     </build>
 
 </project>
