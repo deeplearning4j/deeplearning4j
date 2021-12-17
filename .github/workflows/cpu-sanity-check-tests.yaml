@@ -1,64 +1,498 @@
 on:
   workflow_dispatch:
+    inputs:
+      buildThreads:
+        description: 'Build threads for libnd4j. Used to control memory usage of builds.'
+        required: true
+        default: 1
+
+      deployToReleaseStaging:
+        description: 'Whether to deploy to release staging or not.'
+        required: false
+        default: 0
+
+      releaseVersion:
+        description: 'Release version target'
+        required: false
+        default: 1.0.0-M2
+
+      snapshotVersion:
+        description: 'Snapshot version target'
+        required: false
+        default: 1.0.0-SNAPSHOT
+
+      releaseRepoId:
+        description: 'Release repository id'
+        required: false
+        default:
+
+      serverId:
+        description: 'Server id to publish to'
+        required: false
+        default: ossrh
+
+      mvnFlags:
+        description: "Extra maven flags (must escape input yourself if used)"
+        required: false
+        default:
+
+      libnd4jUrl:
+        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
+        required: false
+        default:
+
+
+      debug_enabled:
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
 jobs:
-  # Wait for up to a minute for previous run to complete, abort if not done by then
-  pre-ci:
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    steps:
-      - name: 'Block Concurrent Executions'
-        uses: softprops/turnstyle@v1
-        with:
-          poll-interval-seconds: 10
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
   linux-x86_64:
-    needs: pre-ci
-    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        helper: [onednn,""]
+        extension: [avx2,avx512,""]
+        include:
+          - mvn_ext: ${{ github.event.inputs.mvnFlags }}
+            experimental: true
+            name: Extra maven flags
+          - debug_enabled: ${{ github.event.inputs.debug_enabled }}
+            experimental: true
+            name: Debug enabled
+
+          - runs_on: ubuntu-18.04
+            experimental: true
+            name: OS to run on
+
+          - libnd4j_file_download: ${{ github.event.inputs.libnd4jDownload }}
+            experimental: true
+            name: OS to run on
+
+          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
+            experimental: true
+            name: Whether to deploy to release staging or not
+
+          - release_version: ${{ github.event.inputs.releaseVersion }}
+            experimental: true
+            name: Release version
+
+          - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
+            experimental: true
+            name: Snapshot version
+
+          - server_id: ${{ github.event.inputs.serverId }}
+            experimental: true
+            name: Server id
+
+          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
+            experimental: true
+            name: The release repository to run on
+
+          - mvn_flags: ${{ github.event.inputs.mvnFlags }}
+            experimental: true
+            name: Extra maven flags to use as part of the build
+
+          - build_threads: ${{ github.event.inputs.buildThreads }}
+            experimental: true
+            name: The number of threads to build libnd4j with
+
+
+    runs-on: ${{ matrix.runs_on }}
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
+      - uses: ./.github/actions/set-linux-distro-version
+      - uses: ./.github/actions/update-deps-linux
+      - name: Cache cmake install
+        uses: actions/cache@v2
+        id: cache-cmake
+        with:
+          path: /opt/cmake
+          key: ${{ runner.os }}-cmake
+          restore-keys: ${{ runner.os }}-cmake
+      - name: Cache protobuf install
+        uses: actions/cache@v2
+        id: cache-protobuf
+        with:
+          path: /opt/protobuf
+          key: ${{ runner.os }}-protobuf
+          restore-keys: ${{ runner.os }}-protobuf
       - uses: ./.github/actions/install-protobuf-linux
-      - uses: ./.github/actions/download-dl4j-test-resources-linux
-      - name: Run tests on linux-x86_64
+        if: steps.cache-protobuf.outputs.cache-hit != 'true'
+      - uses: ./.github/actions/install-cmake-linux
+        if: steps.cache-cmake.outputs.cache-hit != 'true'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Set up Java for publishing to GitHub Packages
+        uses: actions/setup-java@v2
+        with:
+          java-version: 8
+          distribution: 'zulu'
+          server-id:  ${{ github.event.inputs.serverId }}
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          cache: 'maven'
+
+      - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |
-              mvn --version
-              cmake --version
-              protoc --version
-              cd dl4j-test-resources-master && mvn clean install -DskipTests && cd ..
-              export OMP_NUM_THREADS=1
-              mvn -Ptestresources -pl ":deeplearning4j-modelimport,:deeplearning4j-core,:nd4j-native,:samediff-import,:libnd4j"  -DexcludedGroups="long-running-tests,large-resources" -Dlibnd4j.buildthreads=1 -Pnd4j-tests-cpu -Dlibnd4j.chip=cpu clean test --fail-never
-
-  windows-x86_64:
-    runs-on: windows-2019
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./.github/actions/msys2-base-setup
-      - uses: ./.github/actions/download-dl4j-test-resources-windows
-      - name: Run tests
-        shell: cmd
-        run: |
-              set "PATH=C:\msys64\usr\bin;%PATH%"
-              export OMP_NUM_THREADS=1
-              mvn -pl ":deeplearning4j-modelimport,:deeplearning4j-core,:nd4j-native,:samediff-import,:libnd4j"  -DexcludedGroups="long-running-tests,large-resources" -DskipTestResourceEnforcement=true -Ptestresources -Dlibnd4j.buildthreads=1 -Dlibnd4j.build="Debug" -Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Pnd4j-tests-cpu -Dlibnd4j.chip=cpu clean test --fail-never
-
-
-
-  mac-x86_64:
-    runs-on: macos-10.15
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./.github/actions/download-dl4j-test-resources-linux
-      - name: Install and run tests
+          echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
+          mkdir "${GITHUB_WORKSPACE}/openblas_home"
+          cd "${GITHUB_WORKSPACE}/openblas_home"
+          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-linux-x86_64.jar
+          unzip openblas-0.3.13-1.5.5-linux-x86_64.jar
+          cd ..
+          echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64" >> "$GITHUB_ENV"
+          cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so
+        if: ${{ github.event.inputs.libnd4jUrl != '' }}
+      - name: Download dl4j-test-resources
+        uses: ./.github/actions/download-dl4j-test-resources-linux
+      - name: Build on  linux-x86_64
         shell: bash
         env:
-          VERBOSE: 1
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+          DEBIAN_FRONTEND: noninteractive
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_TO: ossrh
+          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
+          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
+          RELEASE_VERSION: ${{ matrix.release_version }}
+          SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
+          RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
+          MODULES: ${{ matrix.mvn_flags }}
+          HELPER: ${{ matrix.helper }}
+          EXTENSION: ${{ matrix.extension }}
+          MAVEN_OPTS: -Xmx2g
+
+
         run: |
-            brew install unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg1 bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
-            export OMP_NUM_THREADS=1
-            mvn -pl ":deeplearning4j-modelimport,:deeplearning4j-core,:nd4j-native,:samediff-import,:libnd4j" -Dlibnd4j.build="Debug" -Dlibnd4j.buildthreads=1 -Ptestresources -Djavacpp.platform=macosx-x86_64 -libnd4j.platform=macosx-x86_64 -Pnd4j-tests-cpu -Dlibnd4j.chip=cpu clean test
+          echo "libnd4j build threads ${{ matrix.build_threads }}"
+          echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
+          echo "release version ${{ matrix.release_version }}"
+          echo "snapshot version ${{ matrix.snapshot_version }}"
+          echo "debug enabled ${{ matrix.debug_enabled }}"
+          echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
+          echo "maven flags ${{ matrix.mvn_flags }}"
+          echo "snapshot version ${{ matrix.snapshot_version }}"
+          echo "server id ${{ matrix.server_id }}"
+          echo "release repo id ${{ matrix.release_repo_id }}"
+
+          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+          mvn --version
+          cmake --version
+          protoc --version
+          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+          export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/5.5.0/libgomp.so
+          if [ -z "${EXTENSION}" ] || [ -n "${EXTENSION}" ]; then
+              export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/7.5.0/libgomp.so
+              echo "Extensions specified. This needs a newer version of gcc."
+              sudo apt-get install gcc-7 g++-7
+              echo "Using newer version of libgomp."
+              ls /usr/bin | grep gcc
+              ls /usr/bin | grep g++
+              sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 90
+              sudo update-alternatives --install  /usr/bin/g++ g++ /usr/bin/g++-7  90
+              gcc --version
+          fi
+          if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
+                  mvn_ext=" -Dplatform.classifier=linux-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
+          elif [ "${{ matrix.helper }}" != '' ]; then
+                  mvn_ext="-Dplatform.classifier=linux-x86_64-${{ matrix.helper }}"
+          elif [ "${{ matrix.extension }}" != '' ]; then
+                 mvn_ext=" -Dplatform.classifier=linux-x86_64-${{matrix.extension}}"
+          else
+                  mvn_ext=" -Dplatform.classifier=linux-x86_64"
+          fi
+          cd ${GITHUB_WORKSPACE}/platform-tests && mvn ${mvn_ext} -Djavacpp.platform=linux-x86_64 clean test 
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && matrix.debug_enabled}}
+
+
+  windows-x86_64:
+    strategy:
+      fail-fast: false
+      matrix:
+        helper: [ onednn,"" ]
+        extension: [ avx2,avx512,"" ]
+        include:
+          - mvn_ext: ${{ github.event.inputs.mvnFlags }}
+            experimental: true
+            name: Extra maven flags
+          - debug_enabled: ${{ github.event.inputs.debug_enabled }}
+            experimental: true
+            name: Debug enabled
+
+          - runs_on: ${{ github.event.inputs.runsOn }}
+            experimental: true
+            name: OS to run on
+
+          - libnd4j_file_download: ${{ github.event.inputs.libnd4jDownload }}
+            experimental: true
+            name: OS to run on
+
+          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
+            experimental: true
+            name: Whether to deploy to release staging or not
+
+          - release_version: ${{ github.event.inputs.releaseVersion }}
+            experimental: true
+            name: Release version
+
+          - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
+            experimental: true
+            name: Snapshot version
+
+          - server_id: ${{ github.event.inputs.serverId }}
+            experimental: true
+            name: Server id
+
+          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
+            experimental: true
+            name: The release repository to run on
+
+          - mvn_flags: ${{ github.event.inputs.mvnFlags }}
+            experimental: true
+            name: Extra maven flags to use as part of the build
+
+          - build_threads: ${{ github.event.inputs.buildThreads }}
+            experimental: true
+            name: The number of threads to build libnd4j with
+
+
+
+    runs-on: windows-2019
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - name: Set up Java for publishing to GitHub Packages
+        uses: konduitai/setup-java@main
+        with:
+          java-version: 8
+          distribution: 'zulu'
+          server-id:   ${{ github.event.inputs.serverId }}
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          cache: 'maven'
+
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: base-devel  git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch mingw-w64-x86_64-gnupg  mingw-w64-x86_64-make --noconfirm mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc  mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
+      - name: Setup windows path
+        shell: powershell
+        run: echo "C:\msys64\mingw64\bin;C:\msys64\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Setup libnd4j home if a download url is specified
+        shell: powershell
+        run: |
+          echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
+          mkdir "%GITHUB_WORKSPACE%/openblas_home"
+          cd "%GITHUB_WORKSPACE%/openblas_home"
+          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-windows-x86_64.jar
+          unzip openblas-0.3.13-1.5.5-windows-x86_64.jar
+          cd ..
+          echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/windows-x86_64/" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
+        if: ${{ matrix.libnd4j_file_download != '' }}
+      - name: Download dl4j-test-resources
+        uses: ./.github/actions/download-dl4j-test-resources-windows
+      - name: Run windows cpu build
+        shell: cmd
+        run: |
+          echo "libnd4j build threads ${{ matrix.build_threads }}"
+          echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
+          echo "release version ${{ matrix.release_version }}"
+          echo "snapshot version ${{ matrix.snapshot_version }}"
+          echo "debug enabled ${{ matrix.debug_enabled }}"
+          echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
+          echo "maven flags ${{ matrix.mvn_flags }}"
+          echo "snapshot version ${{ matrix.snapshot_version }}"
+          echo "server id ${{ matrix.server_id }}"
+          echo "release repo id ${{ matrix.release_repo_id }}"
+          if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
+             $mvn_ext=" -platform.classifier=windows-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
+          } elseif ( "${{ matrix.helper }}" -ne "" ) {
+              $mvn_ext=" -Dplatform.classifier=windows-x86_64-${{ matrix.helper }}"
+          }  elseif ( "${{ matrix.extension }}" -ne "" ) {
+               $mvn_ext=" -Dplatform.classifier=windows-x86_64-${{matrix.extension}} "
+          } else {
+             $mvn_ext=" -Dplatform.classifier=windows-x86_64"
+          }
+          cd "%GITHUB_WORKSPACE%\platform-tests"
+          mvn "%mvn_ext%"  -Djavacpp.platform=windows-x86_64 clean test
+
+        env:
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_TO: ossrh
+          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
+          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
+          RELEASE_VERSION: ${{ matrix.release_version }}
+          SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
+          RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
+          GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+          GPG_SIGNING_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+          MODULES: ${{ matrix.mvn_flags }}
+          HELPER: ${{ matrix.helper }}
+          EXTENSION: ${{ matrix.extension }}
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && matrix.debug_enabled  }}
+
+  mac-x86_64:
+    strategy:
+      fail-fast: false
+      matrix:
+        helper: [ onednn,"" ]
+        extension: [ avx2,avx512,"" ]
+        include:
+          - mvn_ext: ${{ github.event.inputs.mvnFlags }}
+            experimental: true
+            name: Extra maven flags
+          - debug_enabled:  ${{ github.event.inputs.debug_enabled }}
+            experimental: true
+            name: Debug enabled
+
+          - runs_on: ${{ github.event.inputs.runsOn }}
+            experimental: true
+            name: OS to run on
+
+          - libnd4j_file_download: ${{ github.event.inputs.libnd4jDownload }}
+            experimental: true
+            name: OS to run on
+
+          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
+            experimental: true
+            name: Whether to deploy to release staging or not
+
+          - release_version: ${{ github.event.inputs.releaseVersion }}
+            experimental: true
+            name: Release version
+
+          - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
+            experimental: true
+            name: Snapshot version
+
+          - server_id: ${{ github.event.inputs.serverId }}
+            experimental: true
+            name: Server id
+
+          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
+            experimental: true
+            name: The release repository to run on
+
+          - mvn_flags: ${{ github.event.inputs.mvnFlags }}
+            experimental: true
+            name: Extra maven flags to use as part of the build
+
+          - build_threads: ${{ github.event.inputs.buildThreads }}
+            experimental: true
+            name: The number of threads to build libnd4j with
+
+
+
+    runs-on: macos-10.15
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+
+      - name: Set up Java for publishing to OSSRH
+        uses: actions/setup-java@v2
+        with:
+          java-version: 8
+          distribution: 'zulu'
+          server-id: ${{ github.event.inputs.serverId }}
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          cache: 'maven'
+
+
+      - name: Update path for gnu sed
+        shell: bash
+        run: |
+          brew install gpg1 gnu-sed unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
+          echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
+      - name: Download dl4j-test-resources
+        uses: ./.github/actions/download-dl4j-test-resources-linux
+      - name: Build and install
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_TO: ossrh
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
+          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
+          RELEASE_VERSION: ${{ matrix.release_version }}
+          SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
+          RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
+          MODULES: ${{ matrix.mvn_flags }}
+          MAVEN_OPTS: "-Xmx2g"
+          HELPER: ${{ matrix.helper }}
+          EXTENSION: ${{ matrix.extension }}
+
+
+        run: |
+          echo "libnd4j build threads ${{ matrix.build_threads }}"
+          echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
+          echo "release version ${{ matrix.release_version }}"
+          echo "snapshot version ${{ matrix.snapshot_version }}"
+          echo "debug enabled ${{ matrix.debug_enabled }}"
+          echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
+          echo "maven flags ${{ matrix.mvn_flags }}"
+          echo "snapshot version ${{ matrix.snapshot_version }}"
+          echo "server id ${{ matrix.server_id }}"
+          echo "release repo id ${{ matrix.release_repo_id }}"
+           if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
+                  mvn_ext=" -Dplatform.classifier=macosx-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
+           elif [ "${{ matrix.helper }}" != '' ]; then
+                  mvn_ext="-Dplatform.classifier=macosx-x86_64-${{ matrix.helper }}"
+           elif [ "${{ matrix.extension }}" != '' ]; then
+                 mvn_ext=" -Dplatform.classifier=macosx-x86_64-${{matrix.extension}}"
+           else
+                  mvn_ext=" -Dlibnd4j.classifier=macosx-x86_64"
+            fi
+            cd ${GITHUB_WORKSPACE}/platform-tests && mvn  -Djavacpp.platform=macosx-x86_64 ${mvn_ext} clean test 
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && matrix.debug_enabled }}
+
 

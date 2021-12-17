@@ -71,11 +71,6 @@
       <groupId>org.junit.vintage</groupId>
       <artifactId>junit-vintage-engine</artifactId>
     </dependency>
-    <!-- Test Dependencies -->
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
