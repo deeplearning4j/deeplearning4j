@@ -1998,7 +1998,7 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
             DifferentialFunction func = (DifferentialFunction) op;
             long end = System.nanoTime();
             if(timeAuroraCalls) {
-                log.info("Total call time for op " + func.getOwnName() + " was " + (end - begin));
+                log.info("Total call time for op " + func.getOwnName() + " of type " + func.getClas().getName() +  " was " + (end - begin));
             }
         }
     }
