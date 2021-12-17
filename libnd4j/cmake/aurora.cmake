@@ -1,5 +1,6 @@
 # takes NMPI_ROOT and NLC_ROOT from environment
 SET(CMAKE_SYSTEM_NAME Aurora-VE)
+set(CMAKE_SYSTEM_PROCESSOR aurora)
 
 SET(CMAKE_Fortran_COMPILER /opt/nec/ve/bin/nfort CACHE FILEPATH "Aurora Fortran compiler")
 SET(CMAKE_CXX_COMPILER /opt/nec/ve/bin/nc++ CACHE FILEPATH "Aurora C++ compiler")
