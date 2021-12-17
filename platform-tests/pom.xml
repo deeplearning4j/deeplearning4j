@@ -46,7 +46,7 @@
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
-        <platform.classifier>${os.name}-${os.arch}</platform.classifier>
+        <platform.classifier>windows-x86_64</platform.classifier>
         <backend.artifactId>nd4j-native</backend.artifactId>
         <lombok.version>1.18.16</lombok.version>
 
@@ -131,6 +131,18 @@
             <artifactId>dl4j-test-resources</artifactId>
             <version>${dl4j.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib-jdk8</artifactId>
+            <version>${kotlin.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-test</artifactId>
+            <version>${kotlin.version}</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
     <profiles>
         <profile>
@@ -147,131 +159,190 @@
     </profiles>
 
     <build>
-            <plugins>
-                <plugin>
-                    <groupId>org.projectlombok</groupId>
-                    <artifactId>lombok-maven-plugin</artifactId>
-                    <version>1.18.12.0</version>
-                    <executions>
-                        <execution>
-                            <id>delombok</id>
-                            <phase>generate-sources</phase>
-                            <goals>
-                                <goal>delombok</goal>
-                            </goals>
-                            <configuration>
-                                <formatPreferences>
-                                    <javaLangAsFQN>skip</javaLangAsFQN>
-                                </formatPreferences>
-                                <verbose>true</verbose>
-                            </configuration>
-                        </execution>
-                        <execution>
-                            <id>test-delombok</id>
-                            <phase>generate-test-sources</phase>
-                            <goals>
-                                <goal>testDelombok</goal>
-                            </goals>
-                            <configuration>
-                                <verbose>true</verbose>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
+        <plugins>
 
 
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>3.0.0</version>
-                    <executions>
-                        <execution>
-                            <id>add-source</id>
-                            <phase>generate-sources</phase>
-                            <goals><goal>add-source</goal></goals>
-                            <configuration>
-                                <sources>
-                                    <source>src/main/stubs</source>
-                                </sources>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
+            <!-- https://kotlinlang.org/docs/reference/using-maven.html -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <!-- Replacing default-compile as it is treated specially by maven -->
+                    <execution>
+                        <id>default-compile</id>
+                        <phase>none</phase>
+                    </execution>
+                    <!-- Replacing default-testCompile as it is treated specially by maven -->
+                    <execution>
+                        <id>default-testCompile</id>
+                        <phase>none</phase>
+                    </execution>
+                    <execution>
+                        <id>java-compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>java-test-compile</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
 
 
-                <plugin>
-                    <groupId>org.jetbrains.kotlin</groupId>
-                    <artifactId>kotlin-maven-plugin</artifactId>
-                </plugin>
+            <plugin>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok-maven-plugin</artifactId>
+                <version>1.18.12.0</version>
+                <executions>
+                    <execution>
+                        <id>delombok</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>delombok</goal>
+                        </goals>
+                        <configuration>
+                            <formatPreferences>
+                                <javaLangAsFQN>skip</javaLangAsFQN>
+                            </formatPreferences>
+                            <verbose>true</verbose>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>test-delombok</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>testDelombok</goal>
+                        </goals>
+                        <configuration>
+                            <verbose>true</verbose>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
-                <!-- https://kotlinlang.org/docs/reference/using-maven.html -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <executions>
-                        <!-- Replacing default-compile as it is treated specially by maven -->
-                        <execution>
-                            <id>default-compile</id>
-                            <phase>none</phase>
-                        </execution>
-                        <!-- Replacing default-testCompile as it is treated specially by maven -->
-                        <execution>
-                            <id>default-testCompile</id>
-                            <phase>none</phase>
-                        </execution>
-                        <execution>
-                            <id>java-compile</id>
-                            <phase>compile</phase>
-                            <goals> <goal>compile</goal> </goals>
-                        </execution>
-                        <execution>
-                            <id>java-test-compile</id>
-                            <phase>test-compile</phase>
-                            <goals> <goal>testCompile</goal> </goals>
-                        </execution>
-                    </executions>
-                    <configuration>
-                        <source>${java.version}</source>
-                        <target>${java.version}</target>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${maven-surefire-plugin.version}</version>
-                    <inherited>true</inherited>
-                    <dependencies>
-                        <dependency>
-                            <groupId>org.apache.maven.surefire</groupId>
-                            <artifactId>surefire-junit-platform</artifactId>
-                            <version>${maven-surefire-plugin.version}</version>
-                        </dependency>
-                    </dependencies>
-                    <configuration>
-                        <trimStackTrace>false</trimStackTrace>
-                        <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
-                        <forkCount>1</forkCount>
-                        <reuseForks>false</reuseForks>
-                        <environmentVariables>
-                            <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
-                        </environmentVariables>
-                        <classpathDependencyExcludes>
-                            <classpathDependencyExclude>org.junit:junit</classpathDependencyExclude>
-                            <classpathDependencyExclude>com.google.android:android
-                            </classpathDependencyExclude>
-                        </classpathDependencyExcludes>
-                        <useSystemClassLoader>true</useSystemClassLoader>
-                        <useManifestOnlyJar>false</useManifestOnlyJar>
-                        <argLine>-Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
-                        <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
-                        <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
-                        <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
-                        <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
-                        <forkCount>1</forkCount>
-                        <threadCount>1</threadCount>
-                        <perCoreThreadCount>false</perCoreThreadCount>
-                    </configuration>
-                </plugin>
-            </plugins>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>src/main/stubs</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+
+            <plugin>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-maven-plugin</artifactId>
+                <version>${kotlin.version}</version>
+                <configuration>
+                    <args>
+                        <arg>-Xjsr305=strict</arg>
+                    </args>
+                    <compilerPlugins>
+                        <plugin>spring</plugin>
+                        <plugin>jpa</plugin>
+                    </compilerPlugins>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.jetbrains.kotlin</groupId>
+                        <artifactId>kotlin-maven-allopen</artifactId>
+                        <version>${kotlin.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.jetbrains.kotlin</groupId>
+                        <artifactId>kotlin-maven-noarg</artifactId>
+                        <version>${kotlin.version}</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>compile</id>
+                        <goals> <goal>compile</goal> </goals>
+                        <configuration>
+                            <sourceDirs>
+                                <sourceDir>${project.basedir}/src/main/stubs</sourceDir>
+                                <sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
+                                <sourceDir>${project.basedir}/src/main/java</sourceDir>
+                                <sourceDir>${project.basedir}/src/main/ops</sourceDir>
+                            </sourceDirs>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>test-compile</id>
+                        <goals> <goal>test-compile</goal> </goals>
+                        <configuration>
+                            <sourceDirs>
+                                <sourceDir>${project.basedir}/src/test/stubs</sourceDir>
+                                <sourceDir>${project.basedir}/src/test/kotlin</sourceDir>
+                                <sourceDir>${project.basedir}/src/test/java</sourceDir>
+                                <sourceDir>${project.basedir}/src/test/ops</sourceDir>
+                            </sourceDirs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+
+
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-junit-platform</artifactId>
+                        <version>${maven-surefire-plugin.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <trimStackTrace>false</trimStackTrace>
+                    <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
+                    <forkCount>1</forkCount>
+                    <reuseForks>false</reuseForks>
+                    <environmentVariables>
+                        <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
+                    </environmentVariables>
+                    <classpathDependencyExcludes>
+                        <classpathDependencyExclude>org.junit:junit</classpathDependencyExclude>
+                        <classpathDependencyExclude>com.google.android:android
+                        </classpathDependencyExclude>
+                    </classpathDependencyExcludes>
+                    <useSystemClassLoader>true</useSystemClassLoader>
+                    <useManifestOnlyJar>false</useManifestOnlyJar>
+                    <argLine>-Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                    <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
+                    <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
+                    <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
+                    <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
+                    <forkCount>1</forkCount>
+                    <threadCount>1</threadCount>
+                    <perCoreThreadCount>false</perCoreThreadCount>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
 </project>

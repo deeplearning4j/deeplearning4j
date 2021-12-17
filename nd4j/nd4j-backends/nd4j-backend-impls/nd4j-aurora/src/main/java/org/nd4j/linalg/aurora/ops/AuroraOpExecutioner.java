@@ -2009,7 +2009,6 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArrayStatistics inspectArray(INDArray array) {
-        throw new UnsupportedOperationException("Not supported yet.");
 /*
         val debugInfo = new Nd4jCpu.DebugInfo();
 
@@ -2030,6 +2029,19 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
                 .countZero(debugInfo._zeroCount())
                 .build();
 */
+
+        return INDArrayStatistics.builder()
+                .minValue(0)
+                .maxValue(0)
+                .meanValue(0)
+                .stdDevValue(0)
+                .countInf(0)
+                .countNaN(0)
+                .countNegative(0)
+                .countPositive(0)
+                .countZero(0)
+                .build();
+
 
     }
 
