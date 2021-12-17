@@ -24,6 +24,8 @@ const char *buildInfo() {
          "Clang: " STRINGIZE(__clang_version__)
 #elif defined(_MSC_VER)
          "MSVC: " STRINGIZE(_MSC_FULL_VER)
+#elif defined(__NEC__)
+         "Nec CC: " STRINGIZE(__VERSION__)
 #else
          "GCC: " STRINGIZE(__VERSION__)
 #endif
