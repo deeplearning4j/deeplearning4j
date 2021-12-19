@@ -21,6 +21,10 @@ option(SD_USE_LTO "Use link time optimization" OFF)
 option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OFF)
 set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
 
+if(SD_SANITIZE)
+    message("Compiling with sanitize")
+endif()
+
 if(SD_AURORA)
     set(SD_CUDA false)
     set(CMAKE_CXX_STANDARD 14)

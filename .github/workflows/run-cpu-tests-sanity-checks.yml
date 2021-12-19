@@ -30,6 +30,5 @@ jobs:
           mvn --version
           cmake --version
           protoc --version
-          export OMP_NUM_THREADS=1
-          mvn   -DskipTestResourceEnforcement=true -Ptestresources -pl ":deeplearning4j-modelimport,:deeplearning4j-core,:nd4j-native,:samediff-import,:libnd4j"   -DexcludedGroups="long-running-tests,large-resources" -Pnd4j-tests-cpu --also-make  clean test --fail-never
-
+          export OMP_NUM_THREADS=2
+          mvn   -DskipTestResourceEnforcement=true -Dlibnd4j.sanitize=ON clean test
