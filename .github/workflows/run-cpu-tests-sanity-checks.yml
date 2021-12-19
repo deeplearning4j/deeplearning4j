@@ -29,6 +29,5 @@ jobs:
         run: |
           mvn --version
           cmake --version
-          protoc --version
           export OMP_NUM_THREADS=2
           mvn   -DskipTestResourceEnforcement=true -Dlibnd4j.sanitize=ON clean test
