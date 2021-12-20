@@ -23,9 +23,19 @@
  #if DNNL_X64
      return _mm_cvtss_si32(_mm_load_ss(&f));
  #elif defined(__ve)
---- CMakeLists.txt	2021-12-16 08:28:02.383484437 +0900
-+++ CMakeLists_new.txt	2021-12-16 08:31:00.640180814 +0900
-@@ -200,5 +200,5 @@
+--- CMakeLists.txt	2021-12-19 07:11:36.895577046 +0900
++++ CmakeList_new.txt	2021-12-19 07:13:33.562851404 +0900
+@@ -110,6 +110,9 @@
+     # -O4 fails a few benchdnn accuracy tests
+     # nc++-3.0.27 -O4 -g -DNDEBUG --> ccom SEGV for benchdnn/nnorm/ref_lnorm.cpp
+     #    but -O3 -DNDEBUG is OK ... -O4 -mno-check-vector-intrinsics seems OK
++    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -include stdint.h -DCBLAS_LAYOUT=CBLAS_ORDER  -pthread")
++    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -minit-stack=zero -Wunknown-pragma  -O3 -finline -finline-functions -DDNNL_ARCH_VE")
++    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -finline-max-function-size=300 -finline-max-depth=10 -finline-max-times=20")
+     #set(NECVE_FULLOPT "") # -O4 or such is better to set early in command line (in build.sh)
+     #set(CMAKE_C_FLAGS_RELEASE_INIT "${NECVE_FULL_OPT} -DNDEBUG")
+     #set(CMAKE_CXX_FLAGS_RELEASE_INIT "${NECVE_FULL_OPT} -DNDEBUG")
+@@ -200,5 +203,5 @@
      # -O2 is default.  -O3 and -O4 add dangerous optimizations
      #set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O4 -g -DNDEBUG")
      #set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O4 -g -DNDEBUG")
