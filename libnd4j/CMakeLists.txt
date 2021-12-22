@@ -359,10 +359,25 @@ if(${HELPERS_armcompute})
 
 endif()
 
-# ve-dnn entry
 if (${HELPERS_vednn})
-    message("Going to pull & build vednn")
-    set(HAVE_VEDNN 1)
+find_package(VEDNN REQUIRED)
+
+if(VEDNN_FOUND)
+   message("Found VEDNN: ${VEDNN_LIBRARIES}")
+   set(HAVE_VEDNN 1)
+   include_directories(${VEDNN_INCLUDE})
+   message("----${VEDNN_INCLUDE}-${VEDNN_LIBRARIES}--")
+else()
+message( FATAL_ERROR "")
+endif()
+
+list(APPEND EXTERNAL_DEPENDENCY_LIBS  ${VEDNN_LIBRARIES} )
+endif()
+
+# ve-dnn entry
+if (${HELPERS_veonednn})
+    message("Going to pull & build VEONEDNN")
+    set(HAVE_VEONEDNN 1)
     if(SD_AURORA)
         set(NECVE 1 CACHE BOOL "" FORCE )
     endif()
@@ -376,28 +391,28 @@ if (${HELPERS_vednn})
     set(DNNL_CPU_RUNTIME  "OMP" CACHE STRING "" FORCE)
 
 
-    configure_file(./CMakeLists.txt.vednn.in vednn-download/CMakeLists.txt)
+    configure_file(./CMakeLists.txt.veonednn.in veonednn-download/CMakeLists.txt)
     execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
             RESULT_VARIABLE result
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vednn-download )
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/veonednn-download )
     if(result)
-        message(FATAL_ERROR "CMake step for vednn failed: ${result}")
+        message(FATAL_ERROR "CMake step for veonednn failed: ${result}")
     endif()
     execute_process(COMMAND ${CMAKE_COMMAND} --build .
             RESULT_VARIABLE result
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vednn-download )
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/veonednn-download )
     if(result)
-        message(FATAL_ERROR "Build step for vednn failed: ${result}")
+        message(FATAL_ERROR "Build step for veonednn failed: ${result}")
     endif()
 
-    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/vednn-src
-            ${CMAKE_CURRENT_BINARY_DIR}/vednn-build
+    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/veonednn-src
+            ${CMAKE_CURRENT_BINARY_DIR}/veonednn-build
             EXCLUDE_FROM_ALL)
 
-    set(vednn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/vednn-build)
-    set(vednn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/vednn-src)
-    set(VEDNN_PATH "${vednn_SOURCE_DIR}")
-    include_directories(${vednn_SOURCE_DIR}/include ${vednn_EXT_DIR}/include ${vednn_SOURCE_DIR})
+    set(veonednn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/veonednn-build)
+    set(veonednn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/veonednn-src)
+    set(veonednn_PATH "${veonednn_SOURCE_DIR}")
+    include_directories(${veonednn_SOURCE_DIR}/include ${veonednn_EXT_DIR}/include ${veonednn_SOURCE_DIR})
     list(APPEND EXTERNAL_DEPENDENCY_LIBS dnnl )
 
 # one-dnn entry

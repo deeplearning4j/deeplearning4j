@@ -3,6 +3,8 @@
 
 #cmakedefine HAVE_ONEDNN
 
+#cmakedefine HAVE_VEONEDNN
+
 #cmakedefine HAVE_VEDNN
 
 #cmakedefine HAVE_ARMCOMPUTE

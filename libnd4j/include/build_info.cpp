@@ -48,6 +48,9 @@ const char *buildInfo() {
 #if defined(HAVE_ONEDNN)
                          "\nHAVE_ONEDNN"
 #endif
+#if defined(HAVE_VEONEDNN)
+                         "\nHAVE_VEONEDNN"
+#endif
 #if defined(HAVE_VEDNN)
                          "\nHAVE_VEDNN"
 #endif
