@@ -89,11 +89,6 @@ jobs:
         with:
           java-version: 8
           distribution: 'zulu'
-          server-id:  ${{ github.event.inputs.serverId }}
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
       - name: Setup libnd4j home if a download url is specified
@@ -168,10 +163,6 @@ jobs:
             experimental: true
             name: Extra maven flags to use as part of the build
 
-          - build_threads: ${{ github.event.inputs.buildThreads }}
-            experimental: true
-            name: The number of threads to build libnd4j with
-
 
 
     runs-on: windows-2019
@@ -232,14 +223,6 @@ jobs:
           mvn "%mvn_ext%"  -Djavacpp.platform=windows-x86_64 clean test
 
         env:
-          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_TO: ossrh
-          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
-          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
-
           MODULES: ${{ matrix.mvn_flags }}
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
@@ -267,9 +250,6 @@ jobs:
             experimental: true
             name: Extra maven flags to use as part of the build
 
-
-
-
     runs-on: macos-10.15
     steps:
       - name: Cancel Previous Runs
@@ -296,13 +276,6 @@ jobs:
       - name: Build and install
         shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_TO: ossrh
-          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
-          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
           MODULES: ${{ matrix.mvn_flags }}
           MAVEN_OPTS: "-Xmx2g"
           HELPER: ${{ matrix.helper }}
