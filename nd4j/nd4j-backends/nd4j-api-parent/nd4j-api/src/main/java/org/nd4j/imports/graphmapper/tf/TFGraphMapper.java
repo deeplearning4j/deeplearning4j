@@ -263,7 +263,7 @@ public class TFGraphMapper {
                         }
 
 
-                        org.tensorflow.framework.DataType  tfDtype = attrMap.get("dtype").getType();
+                        DataType  tfDtype = attrMap.get("dtype").getType();
                         org.nd4j.linalg.api.buffer.DataType dt = convertType(tfDtype);
                         sd.placeHolder(name, dt, shape);
                     } else {
@@ -557,7 +557,7 @@ public class TFGraphMapper {
      * @param tfType TF datatype
      * @return ND4J datatype
      */
-    public static org.nd4j.linalg.api.buffer.DataType convertType(org.tensorflow.framework.DataType tfType) {
+    public static org.nd4j.linalg.api.buffer.DataType convertType(DataType tfType) {
         switch (tfType) {
             case DT_DOUBLE:
                 return org.nd4j.linalg.api.buffer.DataType.DOUBLE;

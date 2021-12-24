@@ -134,6 +134,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Op op, OpContext opContext) {
+        DifferentialFunction differentialFunction = (DifferentialFunction) op;
+        String oldName = differentialFunction.getOwnName();
         checkForCompression(op);
 
         if (op instanceof ScalarOp) {

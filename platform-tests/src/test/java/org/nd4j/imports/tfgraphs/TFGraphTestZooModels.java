@@ -178,7 +178,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
                         } else {
                             //Multiple files... try to find "frozen_inference_graph.pb"
                             for(String str : pbFiles){
-                                if(str.endsWith("frozen_inference_graph.pb")) {
+                                if(str.endsWith("_frozen.pb")) {
                                     toExtract = str;
                                 }
                             }

@@ -305,8 +305,8 @@ public class Nd4jValidator {
 
 
     /**
-     * Validate whether the file represents a valid SameDiff FlatBuffers file, previously saved with {@link org.nd4j.autodiff.samediff.SameDiff#asFlatFile(File)} )
-     * to be read with {@link org.nd4j.autodiff.samediff.SameDiff#fromFlatFile(File)} }
+     * Validate whether the file represents a valid SameDiff FlatBuffers file, previously saved with {@link SameDiff#asFlatFile(File)} )
+     * to be read with {@link SameDiff#fromFlatFile(File)} }
      *
      * @param f File that should represent a SameDiff FlatBuffers file
      * @return Result of validation

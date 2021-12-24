@@ -390,32 +390,54 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                 if (importOverride == null || !importOverride.containsKey(name)) {
                     //Standard case
                     //note, ordering matters here for onnx
-                    if (irGraph.nodeIsPlaceHolder(nd.nodeName()) && !sd.hasVariable(nd.nodeName())) {
+                    if (irGraph.nodeIsPlaceHolder(nd.nodeName())) {
                         println("Adding placeholder ${nd.nodeName()}")
-                        var shape = irGraph.shapeOfInput(nd.nodeName())
-                        val dt = irGraph.dataTypeForVariable(nd.nodeName()).nd4jDataType()
-                        if(shape != null)
-                            sd.placeHolder(name, dt, *shape)
-                        else
-                            sd.placeHolder(name, dt)
-                    }
-                    else if (irGraph.isConstant(opName) && !sd.hasVariable(name)) {
-                        println("Adding constant ${nd.nodeName()}")
-                        //Get array, create a constant
-                        val arr = irGraph.getConstantArrayForName(name)
-                        sd.constant(name, arr)
-                        println("Added constant for node name ${nd.nodeName()} with shape ${arr.shapeInfoToString()}")
-                        val inputCount = nd.numInputs()
-                        if (inputCount > 0) {
-                            //Very likely control dependency. i.e., "we must execute op X before the constant is really available to be used"
-                            val l: MutableList<String> = ArrayList(inputCount)
-                            for (i in 0 until inputCount) {
-                                val n = nd.inputAt(i)
-                                check(isControlDep(n)) { "Found non-control dependency input \"$n\" for constant \"$name\"" }
-                                val n2 = stripControl(n)
-                                l.add(n2)
+                        if(!sd.hasVariable(nd.nodeName())) {
+                            var shape = irGraph.shapeOfInput(nd.nodeName())
+                            val dt = irGraph.dataTypeForVariable(nd.nodeName()).nd4jDataType()
+                            if(shape != null)
+                                sd.placeHolder(name, dt, *shape)
+                            else
+                                sd.placeHolder(name, dt)
+                        } else {
+                            val sdVar = sd.getVariable(nd.nodeName())
+                            sdVar.variableType = VariableType.PLACEHOLDER
+                            sdVar.creator = df
+                            if(sdVar.arr == null && dynamicVariables.containsKey(nd.nodeName())) {
+                                sdVar.setArray(irGraph.convertToNDArray(dynamicVariables[nd.nodeName()]!!))
                             }
-                            constControlDeps[name] = l
+                        }
+
+                    }
+                    else if (irGraph.isConstant(opName)) {
+                        if(!sd.hasVariable(nd.nodeName())) {
+                            println("Adding constant ${nd.nodeName()}")
+                            //Get array, create a constant
+                            val arr = irGraph.getConstantArrayForName(name)
+                            sd.constant(name, arr)
+                            println("Added constant for node name ${nd.nodeName()} with shape ${arr.shapeInfoToString()}")
+                            val inputCount = nd.numInputs()
+                            if (inputCount > 0) {
+                                //Very likely control dependency. i.e., "we must execute op X before the constant is really available to be used"
+                                val l: MutableList<String> = ArrayList(inputCount)
+                                for (i in 0 until inputCount) {
+                                    val n = nd.inputAt(i)
+                                    check(isControlDep(n)) { "Found non-control dependency input \"$n\" for constant \"$name\"" }
+                                    val n2 = stripControl(n)
+                                    l.add(n2)
+                                }
+                                constControlDeps[name] = l
+                            }
+                        } else {
+                            val varToGet = sd.getVariable(nd.nodeName())
+                            varToGet.variableType = VariableType.CONSTANT
+                            varToGet.creator = df
+                            if(sd.getVariable(nd.nodeName()).arr == null) {
+                                val arr = irGraph.getConstantArrayForName(name)
+                                varToGet.setArray(arr)
+                                varToGet.setShape(*arr.shape())
+                            }
+
                         }
                     }  else if(irGraph.isVariable(nd.nodeName()) && !sd.hasVariable(nd.nodeName())) {
                         var shape = irGraph.shapeOfInput(nd.nodeName())

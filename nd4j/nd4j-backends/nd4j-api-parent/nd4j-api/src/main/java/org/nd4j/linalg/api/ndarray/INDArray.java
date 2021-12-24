@@ -2821,7 +2821,7 @@ public interface INDArray extends Serializable, AutoCloseable {
 
     /**
      * ToString with unlimited elements and precision
-     * @see org.nd4j.linalg.api.ndarray.BaseNDArray#toString(long, boolean, int)
+     * @see BaseNDArray#toString(long, boolean, int)
      */
     String toStringFull();
 

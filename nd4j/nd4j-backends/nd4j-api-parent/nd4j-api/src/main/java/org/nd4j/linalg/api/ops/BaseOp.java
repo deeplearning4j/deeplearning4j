@@ -106,19 +106,19 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             if (op.y() == null) {
                 type = Type.TRANSFORM_FLOAT;
             } else {
-                type = Op.Type.PAIRWISE;
+                type = Type.PAIRWISE;
             }
         } else if (op instanceof ReduceOp) {
             if (op.y() == null)
                 type = ((ReduceOp) op).getOpType();
             else
-                type = Op.Type.REDUCE3;
+                type = Type.REDUCE3;
         } else if (op instanceof ScalarOp) {
-            type = Op.Type.SCALAR;
+            type = Type.SCALAR;
         } else if (op instanceof BroadcastOp) {
-            type = Op.Type.BROADCAST;
+            type = Type.BROADCAST;
         } else if (op instanceof IndexAccumulation) {
-            type = Op.Type.INDEXREDUCE;
+            type = Type.INDEXREDUCE;
         } else if (op instanceof MetaOp) {
             type = Type.META;
         } else if (op instanceof GridOp) {

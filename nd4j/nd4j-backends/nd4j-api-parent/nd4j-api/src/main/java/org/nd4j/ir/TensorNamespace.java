@@ -272,7 +272,7 @@ public final class TensorNamespace {
 
     public final int getNumber() {
       if (this == UNRECOGNIZED) {
-        throw new java.lang.IllegalArgumentException(
+        throw new IllegalArgumentException(
             "Can't get the number of an unknown enum value.");
       }
       return value;
@@ -281,7 +281,7 @@ public final class TensorNamespace {
     /**
      * @deprecated Use {@link #forNumber(int)} instead.
      */
-    @java.lang.Deprecated
+    @Deprecated
     public static DataType valueOf(int value) {
       return forNumber(value);
     }
@@ -331,7 +331,7 @@ public final class TensorNamespace {
     }
     public static final org.nd4j.shade.protobuf.Descriptors.EnumDescriptor
         getDescriptor() {
-      return org.nd4j.ir.TensorNamespace.getDescriptor().getEnumTypes().get(0);
+      return TensorNamespace.getDescriptor().getEnumTypes().get(0);
     }
 
     private static final DataType[] VALUES = values();
@@ -339,7 +339,7 @@ public final class TensorNamespace {
     public static DataType valueOf(
         org.nd4j.shade.protobuf.Descriptors.EnumValueDescriptor desc) {
       if (desc.getType() != getDescriptor()) {
-        throw new java.lang.IllegalArgumentException(
+        throw new IllegalArgumentException(
           "EnumValueDescriptor is not for this type.");
       }
       if (desc.getIndex() == -1) {
@@ -364,7 +364,7 @@ public final class TensorNamespace {
     /**
      * <code>string key = 1;</code>
      */
-    java.lang.String getKey();
+    String getKey();
     /**
      * <code>string key = 1;</code>
      */
@@ -374,7 +374,7 @@ public final class TensorNamespace {
     /**
      * <code>string value = 2;</code>
      */
-    java.lang.String getValue();
+    String getValue();
     /**
      * <code>string value = 2;</code>
      */
@@ -403,14 +403,14 @@ public final class TensorNamespace {
       value_ = "";
     }
 
-    @java.lang.Override
+    @Override
     @SuppressWarnings({"unused"})
-    protected java.lang.Object newInstance(
+    protected Object newInstance(
         UnusedPrivateParameter unused) {
       return new StringStringEntryProto();
     }
 
-    @java.lang.Override
+    @Override
     public final org.nd4j.shade.protobuf.UnknownFieldSet
     getUnknownFields() {
       return this.unknownFields;
@@ -421,7 +421,7 @@ public final class TensorNamespace {
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       this();
       if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
+        throw new NullPointerException();
       }
       org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
           org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
@@ -434,13 +434,13 @@ public final class TensorNamespace {
               done = true;
               break;
             case 10: {
-              java.lang.String s = input.readStringRequireUtf8();
+              String s = input.readStringRequireUtf8();
 
               key_ = s;
               break;
             }
             case 18: {
-              java.lang.String s = input.readStringRequireUtf8();
+              String s = input.readStringRequireUtf8();
 
               value_ = s;
               break;
@@ -466,30 +466,30 @@ public final class TensorNamespace {
     }
     public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_StringStringEntryProto_descriptor;
+      return TensorNamespace.internal_static_org_nd4j_ir_StringStringEntryProto_descriptor;
     }
 
-    @java.lang.Override
-    protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
+    @Override
+    protected FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_StringStringEntryProto_fieldAccessorTable
+      return TensorNamespace.internal_static_org_nd4j_ir_StringStringEntryProto_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              org.nd4j.ir.TensorNamespace.StringStringEntryProto.class, org.nd4j.ir.TensorNamespace.StringStringEntryProto.Builder.class);
+              StringStringEntryProto.class, Builder.class);
     }
 
     public static final int KEY_FIELD_NUMBER = 1;
-    private volatile java.lang.Object key_;
+    private volatile Object key_;
     /**
      * <code>string key = 1;</code>
      */
-    public java.lang.String getKey() {
-      java.lang.Object ref = key_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
+    public String getKey() {
+      Object ref = key_;
+      if (ref instanceof String) {
+        return (String) ref;
       } else {
         org.nd4j.shade.protobuf.ByteString bs = 
             (org.nd4j.shade.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
+        String s = bs.toStringUtf8();
         key_ = s;
         return s;
       }
@@ -499,11 +499,11 @@ public final class TensorNamespace {
      */
     public org.nd4j.shade.protobuf.ByteString
         getKeyBytes() {
-      java.lang.Object ref = key_;
-      if (ref instanceof java.lang.String) {
+      Object ref = key_;
+      if (ref instanceof String) {
         org.nd4j.shade.protobuf.ByteString b = 
             org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+                (String) ref);
         key_ = b;
         return b;
       } else {
@@ -512,18 +512,18 @@ public final class TensorNamespace {
     }
 
     public static final int VALUE_FIELD_NUMBER = 2;
-    private volatile java.lang.Object value_;
+    private volatile Object value_;
     /**
      * <code>string value = 2;</code>
      */
-    public java.lang.String getValue() {
-      java.lang.Object ref = value_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
+    public String getValue() {
+      Object ref = value_;
+      if (ref instanceof String) {
+        return (String) ref;
       } else {
         org.nd4j.shade.protobuf.ByteString bs = 
             (org.nd4j.shade.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
+        String s = bs.toStringUtf8();
         value_ = s;
         return s;
       }
@@ -533,11 +533,11 @@ public final class TensorNamespace {
      */
     public org.nd4j.shade.protobuf.ByteString
         getValueBytes() {
-      java.lang.Object ref = value_;
-      if (ref instanceof java.lang.String) {
+      Object ref = value_;
+      if (ref instanceof String) {
         org.nd4j.shade.protobuf.ByteString b = 
             org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+                (String) ref);
         value_ = b;
         return b;
       } else {
@@ -546,7 +546,7 @@ public final class TensorNamespace {
     }
 
     private byte memoizedIsInitialized = -1;
-    @java.lang.Override
+    @Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized == 1) return true;
@@ -556,7 +556,7 @@ public final class TensorNamespace {
       return true;
     }
 
-    @java.lang.Override
+    @Override
     public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       if (!getKeyBytes().isEmpty()) {
@@ -568,7 +568,7 @@ public final class TensorNamespace {
       unknownFields.writeTo(output);
     }
 
-    @java.lang.Override
+    @Override
     public int getSerializedSize() {
       int size = memoizedSize;
       if (size != -1) return size;
@@ -585,15 +585,15 @@ public final class TensorNamespace {
       return size;
     }
 
-    @java.lang.Override
-    public boolean equals(final java.lang.Object obj) {
+    @Override
+    public boolean equals(final Object obj) {
       if (obj == this) {
        return true;
       }
-      if (!(obj instanceof org.nd4j.ir.TensorNamespace.StringStringEntryProto)) {
+      if (!(obj instanceof StringStringEntryProto)) {
         return super.equals(obj);
       }
-      org.nd4j.ir.TensorNamespace.StringStringEntryProto other = (org.nd4j.ir.TensorNamespace.StringStringEntryProto) obj;
+      StringStringEntryProto other = (StringStringEntryProto) obj;
 
       if (!getKey()
           .equals(other.getKey())) return false;
@@ -603,7 +603,7 @@ public final class TensorNamespace {
       return true;
     }
 
-    @java.lang.Override
+    @Override
     public int hashCode() {
       if (memoizedHashCode != 0) {
         return memoizedHashCode;
@@ -619,69 +619,69 @@ public final class TensorNamespace {
       return hash;
     }
 
-    public static org.nd4j.ir.TensorNamespace.StringStringEntryProto parseFrom(
+    public static StringStringEntryProto parseFrom(
         java.nio.ByteBuffer data)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static org.nd4j.ir.TensorNamespace.StringStringEntryProto parseFrom(
+    public static StringStringEntryProto parseFrom(
         java.nio.ByteBuffer data,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.StringStringEntryProto parseFrom(
+    public static StringStringEntryProto parseFrom(
         org.nd4j.shade.protobuf.ByteString data)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static org.nd4j.ir.TensorNamespace.StringStringEntryProto parseFrom(
+    public static StringStringEntryProto parseFrom(
         org.nd4j.shade.protobuf.ByteString data,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.StringStringEntryProto parseFrom(byte[] data)
+    public static StringStringEntryProto parseFrom(byte[] data)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static org.nd4j.ir.TensorNamespace.StringStringEntryProto parseFrom(
+    public static StringStringEntryProto parseFrom(
         byte[] data,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.StringStringEntryProto parseFrom(java.io.InputStream input)
+    public static StringStringEntryProto parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
-    public static org.nd4j.ir.TensorNamespace.StringStringEntryProto parseFrom(
+    public static StringStringEntryProto parseFrom(
         java.io.InputStream input,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.StringStringEntryProto parseDelimitedFrom(java.io.InputStream input)
+    public static StringStringEntryProto parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
-    public static org.nd4j.ir.TensorNamespace.StringStringEntryProto parseDelimitedFrom(
+    public static StringStringEntryProto parseDelimitedFrom(
         java.io.InputStream input,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.StringStringEntryProto parseFrom(
+    public static StringStringEntryProto parseFrom(
         org.nd4j.shade.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
-    public static org.nd4j.ir.TensorNamespace.StringStringEntryProto parseFrom(
+    public static StringStringEntryProto parseFrom(
         org.nd4j.shade.protobuf.CodedInputStream input,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
@@ -689,23 +689,23 @@ public final class TensorNamespace {
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    @java.lang.Override
+    @Override
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-    public static Builder newBuilder(org.nd4j.ir.TensorNamespace.StringStringEntryProto prototype) {
+    public static Builder newBuilder(StringStringEntryProto prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
-    @java.lang.Override
+    @Override
     public Builder toBuilder() {
       return this == DEFAULT_INSTANCE
           ? new Builder() : new Builder().mergeFrom(this);
     }
 
-    @java.lang.Override
+    @Override
     protected Builder newBuilderForType(
-        org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -720,18 +720,18 @@ public final class TensorNamespace {
     public static final class Builder extends
         org.nd4j.shade.protobuf.GeneratedMessageV3.Builder<Builder> implements
         // @@protoc_insertion_point(builder_implements:org.nd4j.ir.StringStringEntryProto)
-        org.nd4j.ir.TensorNamespace.StringStringEntryProtoOrBuilder {
+        StringStringEntryProtoOrBuilder {
       public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_StringStringEntryProto_descriptor;
+        return TensorNamespace.internal_static_org_nd4j_ir_StringStringEntryProto_descriptor;
       }
 
-      @java.lang.Override
-      protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
+      @Override
+      protected FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_StringStringEntryProto_fieldAccessorTable
+        return TensorNamespace.internal_static_org_nd4j_ir_StringStringEntryProto_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                org.nd4j.ir.TensorNamespace.StringStringEntryProto.class, org.nd4j.ir.TensorNamespace.StringStringEntryProto.Builder.class);
+                StringStringEntryProto.class, Builder.class);
       }
 
       // Construct using org.nd4j.ir.TensorNamespace.StringStringEntryProto.newBuilder()
@@ -740,7 +740,7 @@ public final class TensorNamespace {
       }
 
       private Builder(
-          org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -749,7 +749,7 @@ public final class TensorNamespace {
                 .alwaysUseFieldBuilders) {
         }
       }
-      @java.lang.Override
+      @Override
       public Builder clear() {
         super.clear();
         key_ = "";
@@ -759,79 +759,79 @@ public final class TensorNamespace {
         return this;
       }
 
-      @java.lang.Override
+      @Override
       public org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_StringStringEntryProto_descriptor;
+        return TensorNamespace.internal_static_org_nd4j_ir_StringStringEntryProto_descriptor;
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.StringStringEntryProto getDefaultInstanceForType() {
-        return org.nd4j.ir.TensorNamespace.StringStringEntryProto.getDefaultInstance();
+      @Override
+      public StringStringEntryProto getDefaultInstanceForType() {
+        return StringStringEntryProto.getDefaultInstance();
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.StringStringEntryProto build() {
-        org.nd4j.ir.TensorNamespace.StringStringEntryProto result = buildPartial();
+      @Override
+      public StringStringEntryProto build() {
+        StringStringEntryProto result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
         return result;
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.StringStringEntryProto buildPartial() {
-        org.nd4j.ir.TensorNamespace.StringStringEntryProto result = new org.nd4j.ir.TensorNamespace.StringStringEntryProto(this);
+      @Override
+      public StringStringEntryProto buildPartial() {
+        StringStringEntryProto result = new StringStringEntryProto(this);
         result.key_ = key_;
         result.value_ = value_;
         onBuilt();
         return result;
       }
 
-      @java.lang.Override
+      @Override
       public Builder clone() {
         return super.clone();
       }
-      @java.lang.Override
+      @Override
       public Builder setField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          Object value) {
         return super.setField(field, value);
       }
-      @java.lang.Override
+      @Override
       public Builder clearField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
-      @java.lang.Override
+      @Override
       public Builder clearOneof(
           org.nd4j.shade.protobuf.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
-      @java.lang.Override
+      @Override
       public Builder setRepeatedField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-          int index, java.lang.Object value) {
+          int index, Object value) {
         return super.setRepeatedField(field, index, value);
       }
-      @java.lang.Override
+      @Override
       public Builder addRepeatedField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          Object value) {
         return super.addRepeatedField(field, value);
       }
-      @java.lang.Override
+      @Override
       public Builder mergeFrom(org.nd4j.shade.protobuf.Message other) {
-        if (other instanceof org.nd4j.ir.TensorNamespace.StringStringEntryProto) {
-          return mergeFrom((org.nd4j.ir.TensorNamespace.StringStringEntryProto)other);
+        if (other instanceof StringStringEntryProto) {
+          return mergeFrom((StringStringEntryProto)other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(org.nd4j.ir.TensorNamespace.StringStringEntryProto other) {
-        if (other == org.nd4j.ir.TensorNamespace.StringStringEntryProto.getDefaultInstance()) return this;
+      public Builder mergeFrom(StringStringEntryProto other) {
+        if (other == StringStringEntryProto.getDefaultInstance()) return this;
         if (!other.getKey().isEmpty()) {
           key_ = other.key_;
           onChanged();
@@ -845,21 +845,21 @@ public final class TensorNamespace {
         return this;
       }
 
-      @java.lang.Override
+      @Override
       public final boolean isInitialized() {
         return true;
       }
 
-      @java.lang.Override
+      @Override
       public Builder mergeFrom(
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        org.nd4j.ir.TensorNamespace.StringStringEntryProto parsedMessage = null;
+        StringStringEntryProto parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.nd4j.ir.TensorNamespace.StringStringEntryProto) e.getUnfinishedMessage();
+          parsedMessage = (StringStringEntryProto) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
@@ -869,20 +869,20 @@ public final class TensorNamespace {
         return this;
       }
 
-      private java.lang.Object key_ = "";
+      private Object key_ = "";
       /**
        * <code>string key = 1;</code>
        */
-      public java.lang.String getKey() {
-        java.lang.Object ref = key_;
-        if (!(ref instanceof java.lang.String)) {
+      public String getKey() {
+        Object ref = key_;
+        if (!(ref instanceof String)) {
           org.nd4j.shade.protobuf.ByteString bs =
               (org.nd4j.shade.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
+          String s = bs.toStringUtf8();
           key_ = s;
           return s;
         } else {
-          return (java.lang.String) ref;
+          return (String) ref;
         }
       }
       /**
@@ -890,11 +890,11 @@ public final class TensorNamespace {
        */
       public org.nd4j.shade.protobuf.ByteString
           getKeyBytes() {
-        java.lang.Object ref = key_;
+        Object ref = key_;
         if (ref instanceof String) {
           org.nd4j.shade.protobuf.ByteString b = 
               org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+                  (String) ref);
           key_ = b;
           return b;
         } else {
@@ -905,7 +905,7 @@ public final class TensorNamespace {
        * <code>string key = 1;</code>
        */
       public Builder setKey(
-          java.lang.String value) {
+          String value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -938,20 +938,20 @@ public final class TensorNamespace {
         return this;
       }
 
-      private java.lang.Object value_ = "";
+      private Object value_ = "";
       /**
        * <code>string value = 2;</code>
        */
-      public java.lang.String getValue() {
-        java.lang.Object ref = value_;
-        if (!(ref instanceof java.lang.String)) {
+      public String getValue() {
+        Object ref = value_;
+        if (!(ref instanceof String)) {
           org.nd4j.shade.protobuf.ByteString bs =
               (org.nd4j.shade.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
+          String s = bs.toStringUtf8();
           value_ = s;
           return s;
         } else {
-          return (java.lang.String) ref;
+          return (String) ref;
         }
       }
       /**
@@ -959,11 +959,11 @@ public final class TensorNamespace {
        */
       public org.nd4j.shade.protobuf.ByteString
           getValueBytes() {
-        java.lang.Object ref = value_;
+        Object ref = value_;
         if (ref instanceof String) {
           org.nd4j.shade.protobuf.ByteString b = 
               org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+                  (String) ref);
           value_ = b;
           return b;
         } else {
@@ -974,7 +974,7 @@ public final class TensorNamespace {
        * <code>string value = 2;</code>
        */
       public Builder setValue(
-          java.lang.String value) {
+          String value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -1006,13 +1006,13 @@ public final class TensorNamespace {
         onChanged();
         return this;
       }
-      @java.lang.Override
+      @Override
       public final Builder setUnknownFields(
           final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
         return super.setUnknownFields(unknownFields);
       }
 
-      @java.lang.Override
+      @Override
       public final Builder mergeUnknownFields(
           final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
         return super.mergeUnknownFields(unknownFields);
@@ -1023,18 +1023,18 @@ public final class TensorNamespace {
     }
 
     // @@protoc_insertion_point(class_scope:org.nd4j.ir.StringStringEntryProto)
-    private static final org.nd4j.ir.TensorNamespace.StringStringEntryProto DEFAULT_INSTANCE;
+    private static final StringStringEntryProto DEFAULT_INSTANCE;
     static {
-      DEFAULT_INSTANCE = new org.nd4j.ir.TensorNamespace.StringStringEntryProto();
+      DEFAULT_INSTANCE = new StringStringEntryProto();
     }
 
-    public static org.nd4j.ir.TensorNamespace.StringStringEntryProto getDefaultInstance() {
+    public static StringStringEntryProto getDefaultInstance() {
       return DEFAULT_INSTANCE;
     }
 
     private static final org.nd4j.shade.protobuf.Parser<StringStringEntryProto>
         PARSER = new org.nd4j.shade.protobuf.AbstractParser<StringStringEntryProto>() {
-      @java.lang.Override
+      @Override
       public StringStringEntryProto parsePartialFrom(
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -1047,13 +1047,13 @@ public final class TensorNamespace {
       return PARSER;
     }
 
-    @java.lang.Override
+    @Override
     public org.nd4j.shade.protobuf.Parser<StringStringEntryProto> getParserForType() {
       return PARSER;
     }
 
-    @java.lang.Override
-    public org.nd4j.ir.TensorNamespace.StringStringEntryProto getDefaultInstanceForType() {
+    @Override
+    public StringStringEntryProto getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
 
@@ -1078,7 +1078,7 @@ public final class TensorNamespace {
      *
      * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
      */
-    org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor getTensorType();
+    TypeProto.TensorDescriptor getTensorType();
     /**
      * <pre>
      * The type of a tensor.
@@ -1086,9 +1086,9 @@ public final class TensorNamespace {
      *
      * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
      */
-    org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptorOrBuilder getTensorTypeOrBuilder();
+    TypeProto.TensorDescriptorOrBuilder getTensorTypeOrBuilder();
 
-    public org.nd4j.ir.TensorNamespace.TypeProto.ValueCase getValueCase();
+    public TypeProto.ValueCase getValueCase();
   }
   /**
    * <pre>
@@ -1109,14 +1109,14 @@ public final class TensorNamespace {
     private TypeProto() {
     }
 
-    @java.lang.Override
+    @Override
     @SuppressWarnings({"unused"})
-    protected java.lang.Object newInstance(
+    protected Object newInstance(
         UnusedPrivateParameter unused) {
       return new TypeProto();
     }
 
-    @java.lang.Override
+    @Override
     public final org.nd4j.shade.protobuf.UnknownFieldSet
     getUnknownFields() {
       return this.unknownFields;
@@ -1127,7 +1127,7 @@ public final class TensorNamespace {
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       this();
       if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
+        throw new NullPointerException();
       }
       org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
           org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
@@ -1140,14 +1140,14 @@ public final class TensorNamespace {
               done = true;
               break;
             case 10: {
-              org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.Builder subBuilder = null;
+              TensorDescriptor.Builder subBuilder = null;
               if (valueCase_ == 1) {
-                subBuilder = ((org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) value_).toBuilder();
+                subBuilder = ((TensorDescriptor) value_).toBuilder();
               }
               value_ =
-                  input.readMessage(org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.parser(), extensionRegistry);
+                  input.readMessage(TensorDescriptor.parser(), extensionRegistry);
               if (subBuilder != null) {
-                subBuilder.mergeFrom((org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) value_);
+                subBuilder.mergeFrom((TensorDescriptor) value_);
                 value_ = subBuilder.buildPartial();
               }
               valueCase_ = 1;
@@ -1174,15 +1174,15 @@ public final class TensorNamespace {
     }
     public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TypeProto_descriptor;
+      return TensorNamespace.internal_static_org_nd4j_ir_TypeProto_descriptor;
     }
 
-    @java.lang.Override
-    protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
+    @Override
+    protected FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TypeProto_fieldAccessorTable
+      return TensorNamespace.internal_static_org_nd4j_ir_TypeProto_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              org.nd4j.ir.TensorNamespace.TypeProto.class, org.nd4j.ir.TensorNamespace.TypeProto.Builder.class);
+              TypeProto.class, Builder.class);
     }
 
     public interface TensorDescriptorOrBuilder extends
@@ -1206,7 +1206,7 @@ public final class TensorNamespace {
        *
        * <code>.org.nd4j.ir.DataType elem_type = 1;</code>
        */
-      org.nd4j.ir.TensorNamespace.DataType getElemType();
+      DataType getElemType();
 
       /**
        * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
@@ -1215,11 +1215,11 @@ public final class TensorNamespace {
       /**
        * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
        */
-      org.nd4j.ir.TensorNamespace.TensorShapeProto getShape();
+      TensorShapeProto getShape();
       /**
        * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
        */
-      org.nd4j.ir.TensorNamespace.TensorShapeProtoOrBuilder getShapeOrBuilder();
+      TensorShapeProtoOrBuilder getShapeOrBuilder();
     }
     /**
      * Protobuf type {@code org.nd4j.ir.TypeProto.TensorDescriptor}
@@ -1237,14 +1237,14 @@ public final class TensorNamespace {
         elemType_ = 0;
       }
 
-      @java.lang.Override
+      @Override
       @SuppressWarnings({"unused"})
-      protected java.lang.Object newInstance(
+      protected Object newInstance(
           UnusedPrivateParameter unused) {
         return new TensorDescriptor();
       }
 
-      @java.lang.Override
+      @Override
       public final org.nd4j.shade.protobuf.UnknownFieldSet
       getUnknownFields() {
         return this.unknownFields;
@@ -1255,7 +1255,7 @@ public final class TensorNamespace {
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         this();
         if (extensionRegistry == null) {
-          throw new java.lang.NullPointerException();
+          throw new NullPointerException();
         }
         org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
             org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
@@ -1274,11 +1274,11 @@ public final class TensorNamespace {
                 break;
               }
               case 18: {
-                org.nd4j.ir.TensorNamespace.TensorShapeProto.Builder subBuilder = null;
+                TensorShapeProto.Builder subBuilder = null;
                 if (shape_ != null) {
                   subBuilder = shape_.toBuilder();
                 }
-                shape_ = input.readMessage(org.nd4j.ir.TensorNamespace.TensorShapeProto.parser(), extensionRegistry);
+                shape_ = input.readMessage(TensorShapeProto.parser(), extensionRegistry);
                 if (subBuilder != null) {
                   subBuilder.mergeFrom(shape_);
                   shape_ = subBuilder.buildPartial();
@@ -1307,15 +1307,15 @@ public final class TensorNamespace {
       }
       public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TypeProto_TensorDescriptor_descriptor;
+        return TensorNamespace.internal_static_org_nd4j_ir_TypeProto_TensorDescriptor_descriptor;
       }
 
-      @java.lang.Override
-      protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
+      @Override
+      protected FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TypeProto_TensorDescriptor_fieldAccessorTable
+        return TensorNamespace.internal_static_org_nd4j_ir_TypeProto_TensorDescriptor_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.class, org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.Builder.class);
+                TensorDescriptor.class, Builder.class);
       }
 
       public static final int ELEM_TYPE_FIELD_NUMBER = 1;
@@ -1339,14 +1339,14 @@ public final class TensorNamespace {
        *
        * <code>.org.nd4j.ir.DataType elem_type = 1;</code>
        */
-      public org.nd4j.ir.TensorNamespace.DataType getElemType() {
+      public DataType getElemType() {
         @SuppressWarnings("deprecation")
-        org.nd4j.ir.TensorNamespace.DataType result = org.nd4j.ir.TensorNamespace.DataType.valueOf(elemType_);
-        return result == null ? org.nd4j.ir.TensorNamespace.DataType.UNRECOGNIZED : result;
+        DataType result = DataType.valueOf(elemType_);
+        return result == null ? DataType.UNRECOGNIZED : result;
       }
 
       public static final int SHAPE_FIELD_NUMBER = 2;
-      private org.nd4j.ir.TensorNamespace.TensorShapeProto shape_;
+      private TensorShapeProto shape_;
       /**
        * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
        */
@@ -1356,18 +1356,18 @@ public final class TensorNamespace {
       /**
        * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
        */
-      public org.nd4j.ir.TensorNamespace.TensorShapeProto getShape() {
-        return shape_ == null ? org.nd4j.ir.TensorNamespace.TensorShapeProto.getDefaultInstance() : shape_;
+      public TensorShapeProto getShape() {
+        return shape_ == null ? TensorShapeProto.getDefaultInstance() : shape_;
       }
       /**
        * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
        */
-      public org.nd4j.ir.TensorNamespace.TensorShapeProtoOrBuilder getShapeOrBuilder() {
+      public TensorShapeProtoOrBuilder getShapeOrBuilder() {
         return getShape();
       }
 
       private byte memoizedIsInitialized = -1;
-      @java.lang.Override
+      @Override
       public final boolean isInitialized() {
         byte isInitialized = memoizedIsInitialized;
         if (isInitialized == 1) return true;
@@ -1377,10 +1377,10 @@ public final class TensorNamespace {
         return true;
       }
 
-      @java.lang.Override
+      @Override
       public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                           throws java.io.IOException {
-        if (elemType_ != org.nd4j.ir.TensorNamespace.DataType.UNDEFINED.getNumber()) {
+        if (elemType_ != DataType.UNDEFINED.getNumber()) {
           output.writeEnum(1, elemType_);
         }
         if (shape_ != null) {
@@ -1389,13 +1389,13 @@ public final class TensorNamespace {
         unknownFields.writeTo(output);
       }
 
-      @java.lang.Override
+      @Override
       public int getSerializedSize() {
         int size = memoizedSize;
         if (size != -1) return size;
 
         size = 0;
-        if (elemType_ != org.nd4j.ir.TensorNamespace.DataType.UNDEFINED.getNumber()) {
+        if (elemType_ != DataType.UNDEFINED.getNumber()) {
           size += org.nd4j.shade.protobuf.CodedOutputStream
             .computeEnumSize(1, elemType_);
         }
@@ -1408,15 +1408,15 @@ public final class TensorNamespace {
         return size;
       }
 
-      @java.lang.Override
-      public boolean equals(final java.lang.Object obj) {
+      @Override
+      public boolean equals(final Object obj) {
         if (obj == this) {
          return true;
         }
-        if (!(obj instanceof org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor)) {
+        if (!(obj instanceof TensorDescriptor)) {
           return super.equals(obj);
         }
-        org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor other = (org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) obj;
+        TensorDescriptor other = (TensorDescriptor) obj;
 
         if (elemType_ != other.elemType_) return false;
         if (hasShape() != other.hasShape()) return false;
@@ -1428,7 +1428,7 @@ public final class TensorNamespace {
         return true;
       }
 
-      @java.lang.Override
+      @Override
       public int hashCode() {
         if (memoizedHashCode != 0) {
           return memoizedHashCode;
@@ -1446,69 +1446,69 @@ public final class TensorNamespace {
         return hash;
       }
 
-      public static org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor parseFrom(
+      public static TensorDescriptor parseFrom(
           java.nio.ByteBuffer data)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor parseFrom(
+      public static TensorDescriptor parseFrom(
           java.nio.ByteBuffer data,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor parseFrom(
+      public static TensorDescriptor parseFrom(
           org.nd4j.shade.protobuf.ByteString data)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor parseFrom(
+      public static TensorDescriptor parseFrom(
           org.nd4j.shade.protobuf.ByteString data,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor parseFrom(byte[] data)
+      public static TensorDescriptor parseFrom(byte[] data)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor parseFrom(
+      public static TensorDescriptor parseFrom(
           byte[] data,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor parseFrom(java.io.InputStream input)
+      public static TensorDescriptor parseFrom(java.io.InputStream input)
           throws java.io.IOException {
         return org.nd4j.shade.protobuf.GeneratedMessageV3
             .parseWithIOException(PARSER, input);
       }
-      public static org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor parseFrom(
+      public static TensorDescriptor parseFrom(
           java.io.InputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return org.nd4j.shade.protobuf.GeneratedMessageV3
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
-      public static org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor parseDelimitedFrom(java.io.InputStream input)
+      public static TensorDescriptor parseDelimitedFrom(java.io.InputStream input)
           throws java.io.IOException {
         return org.nd4j.shade.protobuf.GeneratedMessageV3
             .parseDelimitedWithIOException(PARSER, input);
       }
-      public static org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor parseDelimitedFrom(
+      public static TensorDescriptor parseDelimitedFrom(
           java.io.InputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return org.nd4j.shade.protobuf.GeneratedMessageV3
             .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
       }
-      public static org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor parseFrom(
+      public static TensorDescriptor parseFrom(
           org.nd4j.shade.protobuf.CodedInputStream input)
           throws java.io.IOException {
         return org.nd4j.shade.protobuf.GeneratedMessageV3
             .parseWithIOException(PARSER, input);
       }
-      public static org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor parseFrom(
+      public static TensorDescriptor parseFrom(
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
@@ -1516,23 +1516,23 @@ public final class TensorNamespace {
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
 
-      @java.lang.Override
+      @Override
       public Builder newBuilderForType() { return newBuilder(); }
       public static Builder newBuilder() {
         return DEFAULT_INSTANCE.toBuilder();
       }
-      public static Builder newBuilder(org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor prototype) {
+      public static Builder newBuilder(TensorDescriptor prototype) {
         return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
       }
-      @java.lang.Override
+      @Override
       public Builder toBuilder() {
         return this == DEFAULT_INSTANCE
             ? new Builder() : new Builder().mergeFrom(this);
       }
 
-      @java.lang.Override
+      @Override
       protected Builder newBuilderForType(
-          org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          BuilderParent parent) {
         Builder builder = new Builder(parent);
         return builder;
       }
@@ -1542,18 +1542,18 @@ public final class TensorNamespace {
       public static final class Builder extends
           org.nd4j.shade.protobuf.GeneratedMessageV3.Builder<Builder> implements
           // @@protoc_insertion_point(builder_implements:org.nd4j.ir.TypeProto.TensorDescriptor)
-          org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptorOrBuilder {
+          TensorDescriptorOrBuilder {
         public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
             getDescriptor() {
-          return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TypeProto_TensorDescriptor_descriptor;
+          return TensorNamespace.internal_static_org_nd4j_ir_TypeProto_TensorDescriptor_descriptor;
         }
 
-        @java.lang.Override
-        protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
+        @Override
+        protected FieldAccessorTable
             internalGetFieldAccessorTable() {
-          return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TypeProto_TensorDescriptor_fieldAccessorTable
+          return TensorNamespace.internal_static_org_nd4j_ir_TypeProto_TensorDescriptor_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
-                  org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.class, org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.Builder.class);
+                  TensorDescriptor.class, Builder.class);
         }
 
         // Construct using org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.newBuilder()
@@ -1562,7 +1562,7 @@ public final class TensorNamespace {
         }
 
         private Builder(
-            org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
+            BuilderParent parent) {
           super(parent);
           maybeForceBuilderInitialization();
         }
@@ -1571,7 +1571,7 @@ public final class TensorNamespace {
                   .alwaysUseFieldBuilders) {
           }
         }
-        @java.lang.Override
+        @Override
         public Builder clear() {
           super.clear();
           elemType_ = 0;
@@ -1585,29 +1585,29 @@ public final class TensorNamespace {
           return this;
         }
 
-        @java.lang.Override
+        @Override
         public org.nd4j.shade.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
-          return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TypeProto_TensorDescriptor_descriptor;
+          return TensorNamespace.internal_static_org_nd4j_ir_TypeProto_TensorDescriptor_descriptor;
         }
 
-        @java.lang.Override
-        public org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor getDefaultInstanceForType() {
-          return org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.getDefaultInstance();
+        @Override
+        public TensorDescriptor getDefaultInstanceForType() {
+          return TensorDescriptor.getDefaultInstance();
         }
 
-        @java.lang.Override
-        public org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor build() {
-          org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor result = buildPartial();
+        @Override
+        public TensorDescriptor build() {
+          TensorDescriptor result = buildPartial();
           if (!result.isInitialized()) {
             throw newUninitializedMessageException(result);
           }
           return result;
         }
 
-        @java.lang.Override
-        public org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor buildPartial() {
-          org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor result = new org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor(this);
+        @Override
+        public TensorDescriptor buildPartial() {
+          TensorDescriptor result = new TensorDescriptor(this);
           result.elemType_ = elemType_;
           if (shapeBuilder_ == null) {
             result.shape_ = shape_;
@@ -1618,50 +1618,50 @@ public final class TensorNamespace {
           return result;
         }
 
-        @java.lang.Override
+        @Override
         public Builder clone() {
           return super.clone();
         }
-        @java.lang.Override
+        @Override
         public Builder setField(
             org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-            java.lang.Object value) {
+            Object value) {
           return super.setField(field, value);
         }
-        @java.lang.Override
+        @Override
         public Builder clearField(
             org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field) {
           return super.clearField(field);
         }
-        @java.lang.Override
+        @Override
         public Builder clearOneof(
             org.nd4j.shade.protobuf.Descriptors.OneofDescriptor oneof) {
           return super.clearOneof(oneof);
         }
-        @java.lang.Override
+        @Override
         public Builder setRepeatedField(
             org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-            int index, java.lang.Object value) {
+            int index, Object value) {
           return super.setRepeatedField(field, index, value);
         }
-        @java.lang.Override
+        @Override
         public Builder addRepeatedField(
             org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-            java.lang.Object value) {
+            Object value) {
           return super.addRepeatedField(field, value);
         }
-        @java.lang.Override
+        @Override
         public Builder mergeFrom(org.nd4j.shade.protobuf.Message other) {
-          if (other instanceof org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) {
-            return mergeFrom((org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor)other);
+          if (other instanceof TensorDescriptor) {
+            return mergeFrom((TensorDescriptor)other);
           } else {
             super.mergeFrom(other);
             return this;
           }
         }
 
-        public Builder mergeFrom(org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor other) {
-          if (other == org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.getDefaultInstance()) return this;
+        public Builder mergeFrom(TensorDescriptor other) {
+          if (other == TensorDescriptor.getDefaultInstance()) return this;
           if (other.elemType_ != 0) {
             setElemTypeValue(other.getElemTypeValue());
           }
@@ -1673,21 +1673,21 @@ public final class TensorNamespace {
           return this;
         }
 
-        @java.lang.Override
+        @Override
         public final boolean isInitialized() {
           return true;
         }
 
-        @java.lang.Override
+        @Override
         public Builder mergeFrom(
             org.nd4j.shade.protobuf.CodedInputStream input,
             org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
             throws java.io.IOException {
-          org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor parsedMessage = null;
+          TensorDescriptor parsedMessage = null;
           try {
             parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
           } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-            parsedMessage = (org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) e.getUnfinishedMessage();
+            parsedMessage = (TensorDescriptor) e.getUnfinishedMessage();
             throw e.unwrapIOException();
           } finally {
             if (parsedMessage != null) {
@@ -1730,10 +1730,10 @@ public final class TensorNamespace {
          *
          * <code>.org.nd4j.ir.DataType elem_type = 1;</code>
          */
-        public org.nd4j.ir.TensorNamespace.DataType getElemType() {
+        public DataType getElemType() {
           @SuppressWarnings("deprecation")
-          org.nd4j.ir.TensorNamespace.DataType result = org.nd4j.ir.TensorNamespace.DataType.valueOf(elemType_);
-          return result == null ? org.nd4j.ir.TensorNamespace.DataType.UNRECOGNIZED : result;
+          DataType result = DataType.valueOf(elemType_);
+          return result == null ? DataType.UNRECOGNIZED : result;
         }
         /**
          * <pre>
@@ -1743,7 +1743,7 @@ public final class TensorNamespace {
          *
          * <code>.org.nd4j.ir.DataType elem_type = 1;</code>
          */
-        public Builder setElemType(org.nd4j.ir.TensorNamespace.DataType value) {
+        public Builder setElemType(DataType value) {
           if (value == null) {
             throw new NullPointerException();
           }
@@ -1767,9 +1767,9 @@ public final class TensorNamespace {
           return this;
         }
 
-        private org.nd4j.ir.TensorNamespace.TensorShapeProto shape_;
+        private TensorShapeProto shape_;
         private org.nd4j.shade.protobuf.SingleFieldBuilderV3<
-            org.nd4j.ir.TensorNamespace.TensorShapeProto, org.nd4j.ir.TensorNamespace.TensorShapeProto.Builder, org.nd4j.ir.TensorNamespace.TensorShapeProtoOrBuilder> shapeBuilder_;
+            TensorShapeProto, TensorShapeProto.Builder, TensorShapeProtoOrBuilder> shapeBuilder_;
         /**
          * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
          */
@@ -1779,9 +1779,9 @@ public final class TensorNamespace {
         /**
          * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
          */
-        public org.nd4j.ir.TensorNamespace.TensorShapeProto getShape() {
+        public TensorShapeProto getShape() {
           if (shapeBuilder_ == null) {
-            return shape_ == null ? org.nd4j.ir.TensorNamespace.TensorShapeProto.getDefaultInstance() : shape_;
+            return shape_ == null ? TensorShapeProto.getDefaultInstance() : shape_;
           } else {
             return shapeBuilder_.getMessage();
           }
@@ -1789,7 +1789,7 @@ public final class TensorNamespace {
         /**
          * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
          */
-        public Builder setShape(org.nd4j.ir.TensorNamespace.TensorShapeProto value) {
+        public Builder setShape(TensorShapeProto value) {
           if (shapeBuilder_ == null) {
             if (value == null) {
               throw new NullPointerException();
@@ -1806,7 +1806,7 @@ public final class TensorNamespace {
          * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
          */
         public Builder setShape(
-            org.nd4j.ir.TensorNamespace.TensorShapeProto.Builder builderForValue) {
+            TensorShapeProto.Builder builderForValue) {
           if (shapeBuilder_ == null) {
             shape_ = builderForValue.build();
             onChanged();
@@ -1819,11 +1819,11 @@ public final class TensorNamespace {
         /**
          * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
          */
-        public Builder mergeShape(org.nd4j.ir.TensorNamespace.TensorShapeProto value) {
+        public Builder mergeShape(TensorShapeProto value) {
           if (shapeBuilder_ == null) {
             if (shape_ != null) {
               shape_ =
-                org.nd4j.ir.TensorNamespace.TensorShapeProto.newBuilder(shape_).mergeFrom(value).buildPartial();
+                TensorShapeProto.newBuilder(shape_).mergeFrom(value).buildPartial();
             } else {
               shape_ = value;
             }
@@ -1851,7 +1851,7 @@ public final class TensorNamespace {
         /**
          * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
          */
-        public org.nd4j.ir.TensorNamespace.TensorShapeProto.Builder getShapeBuilder() {
+        public TensorShapeProto.Builder getShapeBuilder() {
           
           onChanged();
           return getShapeFieldBuilder().getBuilder();
@@ -1859,23 +1859,23 @@ public final class TensorNamespace {
         /**
          * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
          */
-        public org.nd4j.ir.TensorNamespace.TensorShapeProtoOrBuilder getShapeOrBuilder() {
+        public TensorShapeProtoOrBuilder getShapeOrBuilder() {
           if (shapeBuilder_ != null) {
             return shapeBuilder_.getMessageOrBuilder();
           } else {
             return shape_ == null ?
-                org.nd4j.ir.TensorNamespace.TensorShapeProto.getDefaultInstance() : shape_;
+                TensorShapeProto.getDefaultInstance() : shape_;
           }
         }
         /**
          * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
          */
         private org.nd4j.shade.protobuf.SingleFieldBuilderV3<
-            org.nd4j.ir.TensorNamespace.TensorShapeProto, org.nd4j.ir.TensorNamespace.TensorShapeProto.Builder, org.nd4j.ir.TensorNamespace.TensorShapeProtoOrBuilder> 
+            TensorShapeProto, TensorShapeProto.Builder, TensorShapeProtoOrBuilder>
             getShapeFieldBuilder() {
           if (shapeBuilder_ == null) {
             shapeBuilder_ = new org.nd4j.shade.protobuf.SingleFieldBuilderV3<
-                org.nd4j.ir.TensorNamespace.TensorShapeProto, org.nd4j.ir.TensorNamespace.TensorShapeProto.Builder, org.nd4j.ir.TensorNamespace.TensorShapeProtoOrBuilder>(
+                TensorShapeProto, TensorShapeProto.Builder, TensorShapeProtoOrBuilder>(
                     getShape(),
                     getParentForChildren(),
                     isClean());
@@ -1883,13 +1883,13 @@ public final class TensorNamespace {
           }
           return shapeBuilder_;
         }
-        @java.lang.Override
+        @Override
         public final Builder setUnknownFields(
             final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
           return super.setUnknownFields(unknownFields);
         }
 
-        @java.lang.Override
+        @Override
         public final Builder mergeUnknownFields(
             final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
           return super.mergeUnknownFields(unknownFields);
@@ -1900,18 +1900,18 @@ public final class TensorNamespace {
       }
 
       // @@protoc_insertion_point(class_scope:org.nd4j.ir.TypeProto.TensorDescriptor)
-      private static final org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor DEFAULT_INSTANCE;
+      private static final TensorDescriptor DEFAULT_INSTANCE;
       static {
-        DEFAULT_INSTANCE = new org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor();
+        DEFAULT_INSTANCE = new TensorDescriptor();
       }
 
-      public static org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor getDefaultInstance() {
+      public static TensorDescriptor getDefaultInstance() {
         return DEFAULT_INSTANCE;
       }
 
       private static final org.nd4j.shade.protobuf.Parser<TensorDescriptor>
           PARSER = new org.nd4j.shade.protobuf.AbstractParser<TensorDescriptor>() {
-        @java.lang.Override
+        @Override
         public TensorDescriptor parsePartialFrom(
             org.nd4j.shade.protobuf.CodedInputStream input,
             org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -1924,20 +1924,20 @@ public final class TensorNamespace {
         return PARSER;
       }
 
-      @java.lang.Override
+      @Override
       public org.nd4j.shade.protobuf.Parser<TensorDescriptor> getParserForType() {
         return PARSER;
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor getDefaultInstanceForType() {
+      @Override
+      public TensorDescriptor getDefaultInstanceForType() {
         return DEFAULT_INSTANCE;
       }
 
     }
 
     private int valueCase_ = 0;
-    private java.lang.Object value_;
+    private Object value_;
     public enum ValueCase
         implements org.nd4j.shade.protobuf.Internal.EnumLite {
       TENSOR_TYPE(1),
@@ -1949,7 +1949,7 @@ public final class TensorNamespace {
       /**
        * @deprecated Use {@link #forNumber(int)} instead.
        */
-      @java.lang.Deprecated
+      @Deprecated
       public static ValueCase valueOf(int value) {
         return forNumber(value);
       }
@@ -1990,11 +1990,11 @@ public final class TensorNamespace {
      *
      * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
      */
-    public org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor getTensorType() {
+    public TensorDescriptor getTensorType() {
       if (valueCase_ == 1) {
-         return (org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) value_;
+         return (TensorDescriptor) value_;
       }
-      return org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.getDefaultInstance();
+      return TensorDescriptor.getDefaultInstance();
     }
     /**
      * <pre>
@@ -2003,15 +2003,15 @@ public final class TensorNamespace {
      *
      * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
      */
-    public org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptorOrBuilder getTensorTypeOrBuilder() {
+    public TensorDescriptorOrBuilder getTensorTypeOrBuilder() {
       if (valueCase_ == 1) {
-         return (org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) value_;
+         return (TensorDescriptor) value_;
       }
-      return org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.getDefaultInstance();
+      return TensorDescriptor.getDefaultInstance();
     }
 
     private byte memoizedIsInitialized = -1;
-    @java.lang.Override
+    @Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized == 1) return true;
@@ -2021,16 +2021,16 @@ public final class TensorNamespace {
       return true;
     }
 
-    @java.lang.Override
+    @Override
     public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       if (valueCase_ == 1) {
-        output.writeMessage(1, (org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) value_);
+        output.writeMessage(1, (TensorDescriptor) value_);
       }
       unknownFields.writeTo(output);
     }
 
-    @java.lang.Override
+    @Override
     public int getSerializedSize() {
       int size = memoizedSize;
       if (size != -1) return size;
@@ -2038,22 +2038,22 @@ public final class TensorNamespace {
       size = 0;
       if (valueCase_ == 1) {
         size += org.nd4j.shade.protobuf.CodedOutputStream
-          .computeMessageSize(1, (org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) value_);
+          .computeMessageSize(1, (TensorDescriptor) value_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
       return size;
     }
 
-    @java.lang.Override
-    public boolean equals(final java.lang.Object obj) {
+    @Override
+    public boolean equals(final Object obj) {
       if (obj == this) {
        return true;
       }
-      if (!(obj instanceof org.nd4j.ir.TensorNamespace.TypeProto)) {
+      if (!(obj instanceof TypeProto)) {
         return super.equals(obj);
       }
-      org.nd4j.ir.TensorNamespace.TypeProto other = (org.nd4j.ir.TensorNamespace.TypeProto) obj;
+      TypeProto other = (TypeProto) obj;
 
       if (!getValueCase().equals(other.getValueCase())) return false;
       switch (valueCase_) {
@@ -2068,7 +2068,7 @@ public final class TensorNamespace {
       return true;
     }
 
-    @java.lang.Override
+    @Override
     public int hashCode() {
       if (memoizedHashCode != 0) {
         return memoizedHashCode;
@@ -2088,69 +2088,69 @@ public final class TensorNamespace {
       return hash;
     }
 
-    public static org.nd4j.ir.TensorNamespace.TypeProto parseFrom(
+    public static TypeProto parseFrom(
         java.nio.ByteBuffer data)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static org.nd4j.ir.TensorNamespace.TypeProto parseFrom(
+    public static TypeProto parseFrom(
         java.nio.ByteBuffer data,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.TypeProto parseFrom(
+    public static TypeProto parseFrom(
         org.nd4j.shade.protobuf.ByteString data)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static org.nd4j.ir.TensorNamespace.TypeProto parseFrom(
+    public static TypeProto parseFrom(
         org.nd4j.shade.protobuf.ByteString data,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.TypeProto parseFrom(byte[] data)
+    public static TypeProto parseFrom(byte[] data)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static org.nd4j.ir.TensorNamespace.TypeProto parseFrom(
+    public static TypeProto parseFrom(
         byte[] data,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.TypeProto parseFrom(java.io.InputStream input)
+    public static TypeProto parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
-    public static org.nd4j.ir.TensorNamespace.TypeProto parseFrom(
+    public static TypeProto parseFrom(
         java.io.InputStream input,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.TypeProto parseDelimitedFrom(java.io.InputStream input)
+    public static TypeProto parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
-    public static org.nd4j.ir.TensorNamespace.TypeProto parseDelimitedFrom(
+    public static TypeProto parseDelimitedFrom(
         java.io.InputStream input,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.TypeProto parseFrom(
+    public static TypeProto parseFrom(
         org.nd4j.shade.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
-    public static org.nd4j.ir.TensorNamespace.TypeProto parseFrom(
+    public static TypeProto parseFrom(
         org.nd4j.shade.protobuf.CodedInputStream input,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
@@ -2158,23 +2158,23 @@ public final class TensorNamespace {
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    @java.lang.Override
+    @Override
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-    public static Builder newBuilder(org.nd4j.ir.TensorNamespace.TypeProto prototype) {
+    public static Builder newBuilder(TypeProto prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
-    @java.lang.Override
+    @Override
     public Builder toBuilder() {
       return this == DEFAULT_INSTANCE
           ? new Builder() : new Builder().mergeFrom(this);
     }
 
-    @java.lang.Override
+    @Override
     protected Builder newBuilderForType(
-        org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -2188,18 +2188,18 @@ public final class TensorNamespace {
     public static final class Builder extends
         org.nd4j.shade.protobuf.GeneratedMessageV3.Builder<Builder> implements
         // @@protoc_insertion_point(builder_implements:org.nd4j.ir.TypeProto)
-        org.nd4j.ir.TensorNamespace.TypeProtoOrBuilder {
+        TypeProtoOrBuilder {
       public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TypeProto_descriptor;
+        return TensorNamespace.internal_static_org_nd4j_ir_TypeProto_descriptor;
       }
 
-      @java.lang.Override
-      protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
+      @Override
+      protected FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TypeProto_fieldAccessorTable
+        return TensorNamespace.internal_static_org_nd4j_ir_TypeProto_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                org.nd4j.ir.TensorNamespace.TypeProto.class, org.nd4j.ir.TensorNamespace.TypeProto.Builder.class);
+                TypeProto.class, Builder.class);
       }
 
       // Construct using org.nd4j.ir.TensorNamespace.TypeProto.newBuilder()
@@ -2208,7 +2208,7 @@ public final class TensorNamespace {
       }
 
       private Builder(
-          org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -2217,7 +2217,7 @@ public final class TensorNamespace {
                 .alwaysUseFieldBuilders) {
         }
       }
-      @java.lang.Override
+      @Override
       public Builder clear() {
         super.clear();
         valueCase_ = 0;
@@ -2225,29 +2225,29 @@ public final class TensorNamespace {
         return this;
       }
 
-      @java.lang.Override
+      @Override
       public org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TypeProto_descriptor;
+        return TensorNamespace.internal_static_org_nd4j_ir_TypeProto_descriptor;
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.TypeProto getDefaultInstanceForType() {
-        return org.nd4j.ir.TensorNamespace.TypeProto.getDefaultInstance();
+      @Override
+      public TypeProto getDefaultInstanceForType() {
+        return TypeProto.getDefaultInstance();
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.TypeProto build() {
-        org.nd4j.ir.TensorNamespace.TypeProto result = buildPartial();
+      @Override
+      public TypeProto build() {
+        TypeProto result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
         return result;
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.TypeProto buildPartial() {
-        org.nd4j.ir.TensorNamespace.TypeProto result = new org.nd4j.ir.TensorNamespace.TypeProto(this);
+      @Override
+      public TypeProto buildPartial() {
+        TypeProto result = new TypeProto(this);
         if (valueCase_ == 1) {
           if (tensorTypeBuilder_ == null) {
             result.value_ = value_;
@@ -2260,50 +2260,50 @@ public final class TensorNamespace {
         return result;
       }
 
-      @java.lang.Override
+      @Override
       public Builder clone() {
         return super.clone();
       }
-      @java.lang.Override
+      @Override
       public Builder setField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          Object value) {
         return super.setField(field, value);
       }
-      @java.lang.Override
+      @Override
       public Builder clearField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
-      @java.lang.Override
+      @Override
       public Builder clearOneof(
           org.nd4j.shade.protobuf.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
-      @java.lang.Override
+      @Override
       public Builder setRepeatedField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-          int index, java.lang.Object value) {
+          int index, Object value) {
         return super.setRepeatedField(field, index, value);
       }
-      @java.lang.Override
+      @Override
       public Builder addRepeatedField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          Object value) {
         return super.addRepeatedField(field, value);
       }
-      @java.lang.Override
+      @Override
       public Builder mergeFrom(org.nd4j.shade.protobuf.Message other) {
-        if (other instanceof org.nd4j.ir.TensorNamespace.TypeProto) {
-          return mergeFrom((org.nd4j.ir.TensorNamespace.TypeProto)other);
+        if (other instanceof TypeProto) {
+          return mergeFrom((TypeProto)other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(org.nd4j.ir.TensorNamespace.TypeProto other) {
-        if (other == org.nd4j.ir.TensorNamespace.TypeProto.getDefaultInstance()) return this;
+      public Builder mergeFrom(TypeProto other) {
+        if (other == TypeProto.getDefaultInstance()) return this;
         switch (other.getValueCase()) {
           case TENSOR_TYPE: {
             mergeTensorType(other.getTensorType());
@@ -2318,21 +2318,21 @@ public final class TensorNamespace {
         return this;
       }
 
-      @java.lang.Override
+      @Override
       public final boolean isInitialized() {
         return true;
       }
 
-      @java.lang.Override
+      @Override
       public Builder mergeFrom(
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        org.nd4j.ir.TensorNamespace.TypeProto parsedMessage = null;
+        TypeProto parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.nd4j.ir.TensorNamespace.TypeProto) e.getUnfinishedMessage();
+          parsedMessage = (TypeProto) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
@@ -2342,7 +2342,7 @@ public final class TensorNamespace {
         return this;
       }
       private int valueCase_ = 0;
-      private java.lang.Object value_;
+      private Object value_;
       public ValueCase
           getValueCase() {
         return ValueCase.forNumber(
@@ -2358,7 +2358,7 @@ public final class TensorNamespace {
 
 
       private org.nd4j.shade.protobuf.SingleFieldBuilderV3<
-          org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor, org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.Builder, org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptorOrBuilder> tensorTypeBuilder_;
+          TensorDescriptor, TensorDescriptor.Builder, TensorDescriptorOrBuilder> tensorTypeBuilder_;
       /**
        * <pre>
        * The type of a tensor.
@@ -2376,17 +2376,17 @@ public final class TensorNamespace {
        *
        * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
        */
-      public org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor getTensorType() {
+      public TensorDescriptor getTensorType() {
         if (tensorTypeBuilder_ == null) {
           if (valueCase_ == 1) {
-            return (org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) value_;
+            return (TensorDescriptor) value_;
           }
-          return org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.getDefaultInstance();
+          return TensorDescriptor.getDefaultInstance();
         } else {
           if (valueCase_ == 1) {
             return tensorTypeBuilder_.getMessage();
           }
-          return org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.getDefaultInstance();
+          return TensorDescriptor.getDefaultInstance();
         }
       }
       /**
@@ -2396,7 +2396,7 @@ public final class TensorNamespace {
        *
        * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
        */
-      public Builder setTensorType(org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor value) {
+      public Builder setTensorType(TensorDescriptor value) {
         if (tensorTypeBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -2417,7 +2417,7 @@ public final class TensorNamespace {
        * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
        */
       public Builder setTensorType(
-          org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.Builder builderForValue) {
+          TensorDescriptor.Builder builderForValue) {
         if (tensorTypeBuilder_ == null) {
           value_ = builderForValue.build();
           onChanged();
@@ -2434,11 +2434,11 @@ public final class TensorNamespace {
        *
        * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
        */
-      public Builder mergeTensorType(org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor value) {
+      public Builder mergeTensorType(TensorDescriptor value) {
         if (tensorTypeBuilder_ == null) {
           if (valueCase_ == 1 &&
-              value_ != org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.getDefaultInstance()) {
-            value_ = org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.newBuilder((org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) value_)
+              value_ != TensorDescriptor.getDefaultInstance()) {
+            value_ = TensorDescriptor.newBuilder((TensorDescriptor) value_)
                 .mergeFrom(value).buildPartial();
           } else {
             value_ = value;
@@ -2483,7 +2483,7 @@ public final class TensorNamespace {
        *
        * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
        */
-      public org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.Builder getTensorTypeBuilder() {
+      public TensorDescriptor.Builder getTensorTypeBuilder() {
         return getTensorTypeFieldBuilder().getBuilder();
       }
       /**
@@ -2493,14 +2493,14 @@ public final class TensorNamespace {
        *
        * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
        */
-      public org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptorOrBuilder getTensorTypeOrBuilder() {
+      public TensorDescriptorOrBuilder getTensorTypeOrBuilder() {
         if ((valueCase_ == 1) && (tensorTypeBuilder_ != null)) {
           return tensorTypeBuilder_.getMessageOrBuilder();
         } else {
           if (valueCase_ == 1) {
-            return (org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) value_;
+            return (TensorDescriptor) value_;
           }
-          return org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.getDefaultInstance();
+          return TensorDescriptor.getDefaultInstance();
         }
       }
       /**
@@ -2511,15 +2511,15 @@ public final class TensorNamespace {
        * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
        */
       private org.nd4j.shade.protobuf.SingleFieldBuilderV3<
-          org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor, org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.Builder, org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptorOrBuilder> 
+          TensorDescriptor, TensorDescriptor.Builder, TensorDescriptorOrBuilder>
           getTensorTypeFieldBuilder() {
         if (tensorTypeBuilder_ == null) {
           if (!(valueCase_ == 1)) {
-            value_ = org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.getDefaultInstance();
+            value_ = TensorDescriptor.getDefaultInstance();
           }
           tensorTypeBuilder_ = new org.nd4j.shade.protobuf.SingleFieldBuilderV3<
-              org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor, org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.Builder, org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptorOrBuilder>(
-                  (org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) value_,
+              TensorDescriptor, TensorDescriptor.Builder, TensorDescriptorOrBuilder>(
+                  (TensorDescriptor) value_,
                   getParentForChildren(),
                   isClean());
           value_ = null;
@@ -2528,13 +2528,13 @@ public final class TensorNamespace {
         onChanged();;
         return tensorTypeBuilder_;
       }
-      @java.lang.Override
+      @Override
       public final Builder setUnknownFields(
           final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
         return super.setUnknownFields(unknownFields);
       }
 
-      @java.lang.Override
+      @Override
       public final Builder mergeUnknownFields(
           final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
         return super.mergeUnknownFields(unknownFields);
@@ -2545,18 +2545,18 @@ public final class TensorNamespace {
     }
 
     // @@protoc_insertion_point(class_scope:org.nd4j.ir.TypeProto)
-    private static final org.nd4j.ir.TensorNamespace.TypeProto DEFAULT_INSTANCE;
+    private static final TypeProto DEFAULT_INSTANCE;
     static {
-      DEFAULT_INSTANCE = new org.nd4j.ir.TensorNamespace.TypeProto();
+      DEFAULT_INSTANCE = new TypeProto();
     }
 
-    public static org.nd4j.ir.TensorNamespace.TypeProto getDefaultInstance() {
+    public static TypeProto getDefaultInstance() {
       return DEFAULT_INSTANCE;
     }
 
     private static final org.nd4j.shade.protobuf.Parser<TypeProto>
         PARSER = new org.nd4j.shade.protobuf.AbstractParser<TypeProto>() {
-      @java.lang.Override
+      @Override
       public TypeProto parsePartialFrom(
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -2569,13 +2569,13 @@ public final class TensorNamespace {
       return PARSER;
     }
 
-    @java.lang.Override
+    @Override
     public org.nd4j.shade.protobuf.Parser<TypeProto> getParserForType() {
       return PARSER;
     }
 
-    @java.lang.Override
-    public org.nd4j.ir.TensorNamespace.TypeProto getDefaultInstanceForType() {
+    @Override
+    public TypeProto getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
 
@@ -2588,12 +2588,12 @@ public final class TensorNamespace {
     /**
      * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
      */
-    java.util.List<org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension> 
+    java.util.List<TensorShapeProto.Dimension>
         getDimList();
     /**
      * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
      */
-    org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension getDim(int index);
+    TensorShapeProto.Dimension getDim(int index);
     /**
      * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
      */
@@ -2601,12 +2601,12 @@ public final class TensorNamespace {
     /**
      * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
      */
-    java.util.List<? extends org.nd4j.ir.TensorNamespace.TensorShapeProto.DimensionOrBuilder> 
+    java.util.List<? extends TensorShapeProto.DimensionOrBuilder>
         getDimOrBuilderList();
     /**
      * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
      */
-    org.nd4j.ir.TensorNamespace.TensorShapeProto.DimensionOrBuilder getDimOrBuilder(
+    TensorShapeProto.DimensionOrBuilder getDimOrBuilder(
         int index);
   }
   /**
@@ -2631,14 +2631,14 @@ public final class TensorNamespace {
       dim_ = java.util.Collections.emptyList();
     }
 
-    @java.lang.Override
+    @Override
     @SuppressWarnings({"unused"})
-    protected java.lang.Object newInstance(
+    protected Object newInstance(
         UnusedPrivateParameter unused) {
       return new TensorShapeProto();
     }
 
-    @java.lang.Override
+    @Override
     public final org.nd4j.shade.protobuf.UnknownFieldSet
     getUnknownFields() {
       return this.unknownFields;
@@ -2649,7 +2649,7 @@ public final class TensorNamespace {
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       this();
       if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
+        throw new NullPointerException();
       }
       int mutable_bitField0_ = 0;
       org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
@@ -2664,11 +2664,11 @@ public final class TensorNamespace {
               break;
             case 10: {
               if (!((mutable_bitField0_ & 0x00000001) != 0)) {
-                dim_ = new java.util.ArrayList<org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension>();
+                dim_ = new java.util.ArrayList<Dimension>();
                 mutable_bitField0_ |= 0x00000001;
               }
               dim_.add(
-                  input.readMessage(org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.parser(), extensionRegistry));
+                  input.readMessage(Dimension.parser(), extensionRegistry));
               break;
             }
             default: {
@@ -2695,15 +2695,15 @@ public final class TensorNamespace {
     }
     public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_descriptor;
+      return TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_descriptor;
     }
 
-    @java.lang.Override
-    protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
+    @Override
+    protected FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_fieldAccessorTable
+      return TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              org.nd4j.ir.TensorNamespace.TensorShapeProto.class, org.nd4j.ir.TensorNamespace.TensorShapeProto.Builder.class);
+              TensorShapeProto.class, Builder.class);
     }
 
     public interface DimensionOrBuilder extends
@@ -2722,7 +2722,7 @@ public final class TensorNamespace {
        *
        * <code>string dim_param = 2;</code>
        */
-      java.lang.String getDimParam();
+      String getDimParam();
       /**
        * <pre>
        * namespace Shape
@@ -2733,7 +2733,7 @@ public final class TensorNamespace {
       org.nd4j.shade.protobuf.ByteString
           getDimParamBytes();
 
-      public org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.ValueCase getValueCase();
+      public Dimension.ValueCase getValueCase();
     }
     /**
      * Protobuf type {@code org.nd4j.ir.TensorShapeProto.Dimension}
@@ -2750,14 +2750,14 @@ public final class TensorNamespace {
       private Dimension() {
       }
 
-      @java.lang.Override
+      @Override
       @SuppressWarnings({"unused"})
-      protected java.lang.Object newInstance(
+      protected Object newInstance(
           UnusedPrivateParameter unused) {
         return new Dimension();
       }
 
-      @java.lang.Override
+      @Override
       public final org.nd4j.shade.protobuf.UnknownFieldSet
       getUnknownFields() {
         return this.unknownFields;
@@ -2768,7 +2768,7 @@ public final class TensorNamespace {
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         this();
         if (extensionRegistry == null) {
-          throw new java.lang.NullPointerException();
+          throw new NullPointerException();
         }
         org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
             org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
@@ -2786,7 +2786,7 @@ public final class TensorNamespace {
                 break;
               }
               case 18: {
-                java.lang.String s = input.readStringRequireUtf8();
+                String s = input.readStringRequireUtf8();
                 valueCase_ = 2;
                 value_ = s;
                 break;
@@ -2812,19 +2812,19 @@ public final class TensorNamespace {
       }
       public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_Dimension_descriptor;
+        return TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_Dimension_descriptor;
       }
 
-      @java.lang.Override
-      protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
+      @Override
+      protected FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_Dimension_fieldAccessorTable
+        return TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_Dimension_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.class, org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.Builder.class);
+                Dimension.class, Builder.class);
       }
 
       private int valueCase_ = 0;
-      private java.lang.Object value_;
+      private Object value_;
       public enum ValueCase
           implements org.nd4j.shade.protobuf.Internal.EnumLite {
         DIM_VALUE(1),
@@ -2837,7 +2837,7 @@ public final class TensorNamespace {
         /**
          * @deprecated Use {@link #forNumber(int)} instead.
          */
-        @java.lang.Deprecated
+        @Deprecated
         public static ValueCase valueOf(int value) {
           return forNumber(value);
         }
@@ -2867,7 +2867,7 @@ public final class TensorNamespace {
        */
       public long getDimValue() {
         if (valueCase_ == 1) {
-          return (java.lang.Long) value_;
+          return (Long) value_;
         }
         return 0L;
       }
@@ -2880,17 +2880,17 @@ public final class TensorNamespace {
        *
        * <code>string dim_param = 2;</code>
        */
-      public java.lang.String getDimParam() {
-        java.lang.Object ref = "";
+      public String getDimParam() {
+        Object ref = "";
         if (valueCase_ == 2) {
           ref = value_;
         }
-        if (ref instanceof java.lang.String) {
-          return (java.lang.String) ref;
+        if (ref instanceof String) {
+          return (String) ref;
         } else {
           org.nd4j.shade.protobuf.ByteString bs = 
               (org.nd4j.shade.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
+          String s = bs.toStringUtf8();
           if (valueCase_ == 2) {
             value_ = s;
           }
@@ -2906,14 +2906,14 @@ public final class TensorNamespace {
        */
       public org.nd4j.shade.protobuf.ByteString
           getDimParamBytes() {
-        java.lang.Object ref = "";
+        Object ref = "";
         if (valueCase_ == 2) {
           ref = value_;
         }
-        if (ref instanceof java.lang.String) {
+        if (ref instanceof String) {
           org.nd4j.shade.protobuf.ByteString b = 
               org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+                  (String) ref);
           if (valueCase_ == 2) {
             value_ = b;
           }
@@ -2924,7 +2924,7 @@ public final class TensorNamespace {
       }
 
       private byte memoizedIsInitialized = -1;
-      @java.lang.Override
+      @Override
       public final boolean isInitialized() {
         byte isInitialized = memoizedIsInitialized;
         if (isInitialized == 1) return true;
@@ -2934,12 +2934,12 @@ public final class TensorNamespace {
         return true;
       }
 
-      @java.lang.Override
+      @Override
       public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                           throws java.io.IOException {
         if (valueCase_ == 1) {
           output.writeInt64(
-              1, (long)((java.lang.Long) value_));
+              1, (long)((Long) value_));
         }
         if (valueCase_ == 2) {
           org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 2, value_);
@@ -2947,7 +2947,7 @@ public final class TensorNamespace {
         unknownFields.writeTo(output);
       }
 
-      @java.lang.Override
+      @Override
       public int getSerializedSize() {
         int size = memoizedSize;
         if (size != -1) return size;
@@ -2956,7 +2956,7 @@ public final class TensorNamespace {
         if (valueCase_ == 1) {
           size += org.nd4j.shade.protobuf.CodedOutputStream
             .computeInt64Size(
-                1, (long)((java.lang.Long) value_));
+                1, (long)((Long) value_));
         }
         if (valueCase_ == 2) {
           size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(2, value_);
@@ -2966,15 +2966,15 @@ public final class TensorNamespace {
         return size;
       }
 
-      @java.lang.Override
-      public boolean equals(final java.lang.Object obj) {
+      @Override
+      public boolean equals(final Object obj) {
         if (obj == this) {
          return true;
         }
-        if (!(obj instanceof org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension)) {
+        if (!(obj instanceof Dimension)) {
           return super.equals(obj);
         }
-        org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension other = (org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension) obj;
+        Dimension other = (Dimension) obj;
 
         if (!getValueCase().equals(other.getValueCase())) return false;
         switch (valueCase_) {
@@ -2993,7 +2993,7 @@ public final class TensorNamespace {
         return true;
       }
 
-      @java.lang.Override
+      @Override
       public int hashCode() {
         if (memoizedHashCode != 0) {
           return memoizedHashCode;
@@ -3018,69 +3018,69 @@ public final class TensorNamespace {
         return hash;
       }
 
-      public static org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension parseFrom(
+      public static Dimension parseFrom(
           java.nio.ByteBuffer data)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension parseFrom(
+      public static Dimension parseFrom(
           java.nio.ByteBuffer data,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension parseFrom(
+      public static Dimension parseFrom(
           org.nd4j.shade.protobuf.ByteString data)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension parseFrom(
+      public static Dimension parseFrom(
           org.nd4j.shade.protobuf.ByteString data,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension parseFrom(byte[] data)
+      public static Dimension parseFrom(byte[] data)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension parseFrom(
+      public static Dimension parseFrom(
           byte[] data,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension parseFrom(java.io.InputStream input)
+      public static Dimension parseFrom(java.io.InputStream input)
           throws java.io.IOException {
         return org.nd4j.shade.protobuf.GeneratedMessageV3
             .parseWithIOException(PARSER, input);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension parseFrom(
+      public static Dimension parseFrom(
           java.io.InputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return org.nd4j.shade.protobuf.GeneratedMessageV3
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension parseDelimitedFrom(java.io.InputStream input)
+      public static Dimension parseDelimitedFrom(java.io.InputStream input)
           throws java.io.IOException {
         return org.nd4j.shade.protobuf.GeneratedMessageV3
             .parseDelimitedWithIOException(PARSER, input);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension parseDelimitedFrom(
+      public static Dimension parseDelimitedFrom(
           java.io.InputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return org.nd4j.shade.protobuf.GeneratedMessageV3
             .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension parseFrom(
+      public static Dimension parseFrom(
           org.nd4j.shade.protobuf.CodedInputStream input)
           throws java.io.IOException {
         return org.nd4j.shade.protobuf.GeneratedMessageV3
             .parseWithIOException(PARSER, input);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension parseFrom(
+      public static Dimension parseFrom(
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
@@ -3088,23 +3088,23 @@ public final class TensorNamespace {
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
 
-      @java.lang.Override
+      @Override
       public Builder newBuilderForType() { return newBuilder(); }
       public static Builder newBuilder() {
         return DEFAULT_INSTANCE.toBuilder();
       }
-      public static Builder newBuilder(org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension prototype) {
+      public static Builder newBuilder(Dimension prototype) {
         return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
       }
-      @java.lang.Override
+      @Override
       public Builder toBuilder() {
         return this == DEFAULT_INSTANCE
             ? new Builder() : new Builder().mergeFrom(this);
       }
 
-      @java.lang.Override
+      @Override
       protected Builder newBuilderForType(
-          org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          BuilderParent parent) {
         Builder builder = new Builder(parent);
         return builder;
       }
@@ -3114,18 +3114,18 @@ public final class TensorNamespace {
       public static final class Builder extends
           org.nd4j.shade.protobuf.GeneratedMessageV3.Builder<Builder> implements
           // @@protoc_insertion_point(builder_implements:org.nd4j.ir.TensorShapeProto.Dimension)
-          org.nd4j.ir.TensorNamespace.TensorShapeProto.DimensionOrBuilder {
+          DimensionOrBuilder {
         public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
             getDescriptor() {
-          return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_Dimension_descriptor;
+          return TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_Dimension_descriptor;
         }
 
-        @java.lang.Override
-        protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
+        @Override
+        protected FieldAccessorTable
             internalGetFieldAccessorTable() {
-          return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_Dimension_fieldAccessorTable
+          return TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_Dimension_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
-                  org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.class, org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.Builder.class);
+                  Dimension.class, Builder.class);
         }
 
         // Construct using org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.newBuilder()
@@ -3134,7 +3134,7 @@ public final class TensorNamespace {
         }
 
         private Builder(
-            org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
+            BuilderParent parent) {
           super(parent);
           maybeForceBuilderInitialization();
         }
@@ -3143,7 +3143,7 @@ public final class TensorNamespace {
                   .alwaysUseFieldBuilders) {
           }
         }
-        @java.lang.Override
+        @Override
         public Builder clear() {
           super.clear();
           valueCase_ = 0;
@@ -3151,29 +3151,29 @@ public final class TensorNamespace {
           return this;
         }
 
-        @java.lang.Override
+        @Override
         public org.nd4j.shade.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
-          return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_Dimension_descriptor;
+          return TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_Dimension_descriptor;
         }
 
-        @java.lang.Override
-        public org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension getDefaultInstanceForType() {
-          return org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.getDefaultInstance();
+        @Override
+        public Dimension getDefaultInstanceForType() {
+          return Dimension.getDefaultInstance();
         }
 
-        @java.lang.Override
-        public org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension build() {
-          org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension result = buildPartial();
+        @Override
+        public Dimension build() {
+          Dimension result = buildPartial();
           if (!result.isInitialized()) {
             throw newUninitializedMessageException(result);
           }
           return result;
         }
 
-        @java.lang.Override
-        public org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension buildPartial() {
-          org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension result = new org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension(this);
+        @Override
+        public Dimension buildPartial() {
+          Dimension result = new Dimension(this);
           if (valueCase_ == 1) {
             result.value_ = value_;
           }
@@ -3185,50 +3185,50 @@ public final class TensorNamespace {
           return result;
         }
 
-        @java.lang.Override
+        @Override
         public Builder clone() {
           return super.clone();
         }
-        @java.lang.Override
+        @Override
         public Builder setField(
             org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-            java.lang.Object value) {
+            Object value) {
           return super.setField(field, value);
         }
-        @java.lang.Override
+        @Override
         public Builder clearField(
             org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field) {
           return super.clearField(field);
         }
-        @java.lang.Override
+        @Override
         public Builder clearOneof(
             org.nd4j.shade.protobuf.Descriptors.OneofDescriptor oneof) {
           return super.clearOneof(oneof);
         }
-        @java.lang.Override
+        @Override
         public Builder setRepeatedField(
             org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-            int index, java.lang.Object value) {
+            int index, Object value) {
           return super.setRepeatedField(field, index, value);
         }
-        @java.lang.Override
+        @Override
         public Builder addRepeatedField(
             org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-            java.lang.Object value) {
+            Object value) {
           return super.addRepeatedField(field, value);
         }
-        @java.lang.Override
+        @Override
         public Builder mergeFrom(org.nd4j.shade.protobuf.Message other) {
-          if (other instanceof org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension) {
-            return mergeFrom((org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension)other);
+          if (other instanceof Dimension) {
+            return mergeFrom((Dimension)other);
           } else {
             super.mergeFrom(other);
             return this;
           }
         }
 
-        public Builder mergeFrom(org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension other) {
-          if (other == org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.getDefaultInstance()) return this;
+        public Builder mergeFrom(Dimension other) {
+          if (other == Dimension.getDefaultInstance()) return this;
           switch (other.getValueCase()) {
             case DIM_VALUE: {
               setDimValue(other.getDimValue());
@@ -3249,21 +3249,21 @@ public final class TensorNamespace {
           return this;
         }
 
-        @java.lang.Override
+        @Override
         public final boolean isInitialized() {
           return true;
         }
 
-        @java.lang.Override
+        @Override
         public Builder mergeFrom(
             org.nd4j.shade.protobuf.CodedInputStream input,
             org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
             throws java.io.IOException {
-          org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension parsedMessage = null;
+          Dimension parsedMessage = null;
           try {
             parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
           } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-            parsedMessage = (org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension) e.getUnfinishedMessage();
+            parsedMessage = (Dimension) e.getUnfinishedMessage();
             throw e.unwrapIOException();
           } finally {
             if (parsedMessage != null) {
@@ -3273,7 +3273,7 @@ public final class TensorNamespace {
           return this;
         }
         private int valueCase_ = 0;
-        private java.lang.Object value_;
+        private Object value_;
         public ValueCase
             getValueCase() {
           return ValueCase.forNumber(
@@ -3293,7 +3293,7 @@ public final class TensorNamespace {
          */
         public long getDimValue() {
           if (valueCase_ == 1) {
-            return (java.lang.Long) value_;
+            return (Long) value_;
           }
           return 0L;
         }
@@ -3325,21 +3325,21 @@ public final class TensorNamespace {
          *
          * <code>string dim_param = 2;</code>
          */
-        public java.lang.String getDimParam() {
-          java.lang.Object ref = "";
+        public String getDimParam() {
+          Object ref = "";
           if (valueCase_ == 2) {
             ref = value_;
           }
-          if (!(ref instanceof java.lang.String)) {
+          if (!(ref instanceof String)) {
             org.nd4j.shade.protobuf.ByteString bs =
                 (org.nd4j.shade.protobuf.ByteString) ref;
-            java.lang.String s = bs.toStringUtf8();
+            String s = bs.toStringUtf8();
             if (valueCase_ == 2) {
               value_ = s;
             }
             return s;
           } else {
-            return (java.lang.String) ref;
+            return (String) ref;
           }
         }
         /**
@@ -3351,14 +3351,14 @@ public final class TensorNamespace {
          */
         public org.nd4j.shade.protobuf.ByteString
             getDimParamBytes() {
-          java.lang.Object ref = "";
+          Object ref = "";
           if (valueCase_ == 2) {
             ref = value_;
           }
           if (ref instanceof String) {
             org.nd4j.shade.protobuf.ByteString b = 
                 org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
-                    (java.lang.String) ref);
+                    (String) ref);
             if (valueCase_ == 2) {
               value_ = b;
             }
@@ -3375,7 +3375,7 @@ public final class TensorNamespace {
          * <code>string dim_param = 2;</code>
          */
         public Builder setDimParam(
-            java.lang.String value) {
+            String value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -3417,13 +3417,13 @@ public final class TensorNamespace {
           onChanged();
           return this;
         }
-        @java.lang.Override
+        @Override
         public final Builder setUnknownFields(
             final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
           return super.setUnknownFields(unknownFields);
         }
 
-        @java.lang.Override
+        @Override
         public final Builder mergeUnknownFields(
             final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
           return super.mergeUnknownFields(unknownFields);
@@ -3434,18 +3434,18 @@ public final class TensorNamespace {
       }
 
       // @@protoc_insertion_point(class_scope:org.nd4j.ir.TensorShapeProto.Dimension)
-      private static final org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension DEFAULT_INSTANCE;
+      private static final Dimension DEFAULT_INSTANCE;
       static {
-        DEFAULT_INSTANCE = new org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension();
+        DEFAULT_INSTANCE = new Dimension();
       }
 
-      public static org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension getDefaultInstance() {
+      public static Dimension getDefaultInstance() {
         return DEFAULT_INSTANCE;
       }
 
       private static final org.nd4j.shade.protobuf.Parser<Dimension>
           PARSER = new org.nd4j.shade.protobuf.AbstractParser<Dimension>() {
-        @java.lang.Override
+        @Override
         public Dimension parsePartialFrom(
             org.nd4j.shade.protobuf.CodedInputStream input,
             org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -3458,30 +3458,30 @@ public final class TensorNamespace {
         return PARSER;
       }
 
-      @java.lang.Override
+      @Override
       public org.nd4j.shade.protobuf.Parser<Dimension> getParserForType() {
         return PARSER;
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension getDefaultInstanceForType() {
+      @Override
+      public Dimension getDefaultInstanceForType() {
         return DEFAULT_INSTANCE;
       }
 
     }
 
     public static final int DIM_FIELD_NUMBER = 1;
-    private java.util.List<org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension> dim_;
+    private java.util.List<Dimension> dim_;
     /**
      * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
      */
-    public java.util.List<org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension> getDimList() {
+    public java.util.List<Dimension> getDimList() {
       return dim_;
     }
     /**
      * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
      */
-    public java.util.List<? extends org.nd4j.ir.TensorNamespace.TensorShapeProto.DimensionOrBuilder> 
+    public java.util.List<? extends DimensionOrBuilder>
         getDimOrBuilderList() {
       return dim_;
     }
@@ -3494,19 +3494,19 @@ public final class TensorNamespace {
     /**
      * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
      */
-    public org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension getDim(int index) {
+    public Dimension getDim(int index) {
       return dim_.get(index);
     }
     /**
      * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
      */
-    public org.nd4j.ir.TensorNamespace.TensorShapeProto.DimensionOrBuilder getDimOrBuilder(
+    public DimensionOrBuilder getDimOrBuilder(
         int index) {
       return dim_.get(index);
     }
 
     private byte memoizedIsInitialized = -1;
-    @java.lang.Override
+    @Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized == 1) return true;
@@ -3516,7 +3516,7 @@ public final class TensorNamespace {
       return true;
     }
 
-    @java.lang.Override
+    @Override
     public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       for (int i = 0; i < dim_.size(); i++) {
@@ -3525,7 +3525,7 @@ public final class TensorNamespace {
       unknownFields.writeTo(output);
     }
 
-    @java.lang.Override
+    @Override
     public int getSerializedSize() {
       int size = memoizedSize;
       if (size != -1) return size;
@@ -3540,15 +3540,15 @@ public final class TensorNamespace {
       return size;
     }
 
-    @java.lang.Override
-    public boolean equals(final java.lang.Object obj) {
+    @Override
+    public boolean equals(final Object obj) {
       if (obj == this) {
        return true;
       }
-      if (!(obj instanceof org.nd4j.ir.TensorNamespace.TensorShapeProto)) {
+      if (!(obj instanceof TensorShapeProto)) {
         return super.equals(obj);
       }
-      org.nd4j.ir.TensorNamespace.TensorShapeProto other = (org.nd4j.ir.TensorNamespace.TensorShapeProto) obj;
+      TensorShapeProto other = (TensorShapeProto) obj;
 
       if (!getDimList()
           .equals(other.getDimList())) return false;
@@ -3556,7 +3556,7 @@ public final class TensorNamespace {
       return true;
     }
 
-    @java.lang.Override
+    @Override
     public int hashCode() {
       if (memoizedHashCode != 0) {
         return memoizedHashCode;
@@ -3572,69 +3572,69 @@ public final class TensorNamespace {
       return hash;
     }
 
-    public static org.nd4j.ir.TensorNamespace.TensorShapeProto parseFrom(
+    public static TensorShapeProto parseFrom(
         java.nio.ByteBuffer data)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorShapeProto parseFrom(
+    public static TensorShapeProto parseFrom(
         java.nio.ByteBuffer data,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorShapeProto parseFrom(
+    public static TensorShapeProto parseFrom(
         org.nd4j.shade.protobuf.ByteString data)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorShapeProto parseFrom(
+    public static TensorShapeProto parseFrom(
         org.nd4j.shade.protobuf.ByteString data,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorShapeProto parseFrom(byte[] data)
+    public static TensorShapeProto parseFrom(byte[] data)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorShapeProto parseFrom(
+    public static TensorShapeProto parseFrom(
         byte[] data,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorShapeProto parseFrom(java.io.InputStream input)
+    public static TensorShapeProto parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorShapeProto parseFrom(
+    public static TensorShapeProto parseFrom(
         java.io.InputStream input,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorShapeProto parseDelimitedFrom(java.io.InputStream input)
+    public static TensorShapeProto parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorShapeProto parseDelimitedFrom(
+    public static TensorShapeProto parseDelimitedFrom(
         java.io.InputStream input,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorShapeProto parseFrom(
+    public static TensorShapeProto parseFrom(
         org.nd4j.shade.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorShapeProto parseFrom(
+    public static TensorShapeProto parseFrom(
         org.nd4j.shade.protobuf.CodedInputStream input,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
@@ -3642,23 +3642,23 @@ public final class TensorNamespace {
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    @java.lang.Override
+    @Override
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-    public static Builder newBuilder(org.nd4j.ir.TensorNamespace.TensorShapeProto prototype) {
+    public static Builder newBuilder(TensorShapeProto prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
-    @java.lang.Override
+    @Override
     public Builder toBuilder() {
       return this == DEFAULT_INSTANCE
           ? new Builder() : new Builder().mergeFrom(this);
     }
 
-    @java.lang.Override
+    @Override
     protected Builder newBuilderForType(
-        org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -3674,18 +3674,18 @@ public final class TensorNamespace {
     public static final class Builder extends
         org.nd4j.shade.protobuf.GeneratedMessageV3.Builder<Builder> implements
         // @@protoc_insertion_point(builder_implements:org.nd4j.ir.TensorShapeProto)
-        org.nd4j.ir.TensorNamespace.TensorShapeProtoOrBuilder {
+        TensorShapeProtoOrBuilder {
       public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_descriptor;
+        return TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_descriptor;
       }
 
-      @java.lang.Override
-      protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
+      @Override
+      protected FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_fieldAccessorTable
+        return TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                org.nd4j.ir.TensorNamespace.TensorShapeProto.class, org.nd4j.ir.TensorNamespace.TensorShapeProto.Builder.class);
+                TensorShapeProto.class, Builder.class);
       }
 
       // Construct using org.nd4j.ir.TensorNamespace.TensorShapeProto.newBuilder()
@@ -3694,7 +3694,7 @@ public final class TensorNamespace {
       }
 
       private Builder(
-          org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -3704,7 +3704,7 @@ public final class TensorNamespace {
           getDimFieldBuilder();
         }
       }
-      @java.lang.Override
+      @Override
       public Builder clear() {
         super.clear();
         if (dimBuilder_ == null) {
@@ -3716,29 +3716,29 @@ public final class TensorNamespace {
         return this;
       }
 
-      @java.lang.Override
+      @Override
       public org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_descriptor;
+        return TensorNamespace.internal_static_org_nd4j_ir_TensorShapeProto_descriptor;
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.TensorShapeProto getDefaultInstanceForType() {
-        return org.nd4j.ir.TensorNamespace.TensorShapeProto.getDefaultInstance();
+      @Override
+      public TensorShapeProto getDefaultInstanceForType() {
+        return TensorShapeProto.getDefaultInstance();
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.TensorShapeProto build() {
-        org.nd4j.ir.TensorNamespace.TensorShapeProto result = buildPartial();
+      @Override
+      public TensorShapeProto build() {
+        TensorShapeProto result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
         return result;
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.TensorShapeProto buildPartial() {
-        org.nd4j.ir.TensorNamespace.TensorShapeProto result = new org.nd4j.ir.TensorNamespace.TensorShapeProto(this);
+      @Override
+      public TensorShapeProto buildPartial() {
+        TensorShapeProto result = new TensorShapeProto(this);
         int from_bitField0_ = bitField0_;
         if (dimBuilder_ == null) {
           if (((bitField0_ & 0x00000001) != 0)) {
@@ -3753,50 +3753,50 @@ public final class TensorNamespace {
         return result;
       }
 
-      @java.lang.Override
+      @Override
       public Builder clone() {
         return super.clone();
       }
-      @java.lang.Override
+      @Override
       public Builder setField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          Object value) {
         return super.setField(field, value);
       }
-      @java.lang.Override
+      @Override
       public Builder clearField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
-      @java.lang.Override
+      @Override
       public Builder clearOneof(
           org.nd4j.shade.protobuf.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
-      @java.lang.Override
+      @Override
       public Builder setRepeatedField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-          int index, java.lang.Object value) {
+          int index, Object value) {
         return super.setRepeatedField(field, index, value);
       }
-      @java.lang.Override
+      @Override
       public Builder addRepeatedField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          Object value) {
         return super.addRepeatedField(field, value);
       }
-      @java.lang.Override
+      @Override
       public Builder mergeFrom(org.nd4j.shade.protobuf.Message other) {
-        if (other instanceof org.nd4j.ir.TensorNamespace.TensorShapeProto) {
-          return mergeFrom((org.nd4j.ir.TensorNamespace.TensorShapeProto)other);
+        if (other instanceof TensorShapeProto) {
+          return mergeFrom((TensorShapeProto)other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(org.nd4j.ir.TensorNamespace.TensorShapeProto other) {
-        if (other == org.nd4j.ir.TensorNamespace.TensorShapeProto.getDefaultInstance()) return this;
+      public Builder mergeFrom(TensorShapeProto other) {
+        if (other == TensorShapeProto.getDefaultInstance()) return this;
         if (dimBuilder_ == null) {
           if (!other.dim_.isEmpty()) {
             if (dim_.isEmpty()) {
@@ -3828,21 +3828,21 @@ public final class TensorNamespace {
         return this;
       }
 
-      @java.lang.Override
+      @Override
       public final boolean isInitialized() {
         return true;
       }
 
-      @java.lang.Override
+      @Override
       public Builder mergeFrom(
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        org.nd4j.ir.TensorNamespace.TensorShapeProto parsedMessage = null;
+        TensorShapeProto parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.nd4j.ir.TensorNamespace.TensorShapeProto) e.getUnfinishedMessage();
+          parsedMessage = (TensorShapeProto) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
@@ -3853,22 +3853,22 @@ public final class TensorNamespace {
       }
       private int bitField0_;
 
-      private java.util.List<org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension> dim_ =
+      private java.util.List<Dimension> dim_ =
         java.util.Collections.emptyList();
       private void ensureDimIsMutable() {
         if (!((bitField0_ & 0x00000001) != 0)) {
-          dim_ = new java.util.ArrayList<org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension>(dim_);
+          dim_ = new java.util.ArrayList<Dimension>(dim_);
           bitField0_ |= 0x00000001;
          }
       }
 
       private org.nd4j.shade.protobuf.RepeatedFieldBuilderV3<
-          org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension, org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.Builder, org.nd4j.ir.TensorNamespace.TensorShapeProto.DimensionOrBuilder> dimBuilder_;
+          Dimension, Dimension.Builder, DimensionOrBuilder> dimBuilder_;
 
       /**
        * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
        */
-      public java.util.List<org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension> getDimList() {
+      public java.util.List<Dimension> getDimList() {
         if (dimBuilder_ == null) {
           return java.util.Collections.unmodifiableList(dim_);
         } else {
@@ -3888,7 +3888,7 @@ public final class TensorNamespace {
       /**
        * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
        */
-      public org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension getDim(int index) {
+      public Dimension getDim(int index) {
         if (dimBuilder_ == null) {
           return dim_.get(index);
         } else {
@@ -3899,7 +3899,7 @@ public final class TensorNamespace {
        * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
        */
       public Builder setDim(
-          int index, org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension value) {
+          int index, Dimension value) {
         if (dimBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -3916,7 +3916,7 @@ public final class TensorNamespace {
        * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
        */
       public Builder setDim(
-          int index, org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.Builder builderForValue) {
+          int index, Dimension.Builder builderForValue) {
         if (dimBuilder_ == null) {
           ensureDimIsMutable();
           dim_.set(index, builderForValue.build());
@@ -3929,7 +3929,7 @@ public final class TensorNamespace {
       /**
        * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
        */
-      public Builder addDim(org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension value) {
+      public Builder addDim(Dimension value) {
         if (dimBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -3946,7 +3946,7 @@ public final class TensorNamespace {
        * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
        */
       public Builder addDim(
-          int index, org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension value) {
+          int index, Dimension value) {
         if (dimBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -3963,7 +3963,7 @@ public final class TensorNamespace {
        * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
        */
       public Builder addDim(
-          org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.Builder builderForValue) {
+          Dimension.Builder builderForValue) {
         if (dimBuilder_ == null) {
           ensureDimIsMutable();
           dim_.add(builderForValue.build());
@@ -3977,7 +3977,7 @@ public final class TensorNamespace {
        * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
        */
       public Builder addDim(
-          int index, org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.Builder builderForValue) {
+          int index, Dimension.Builder builderForValue) {
         if (dimBuilder_ == null) {
           ensureDimIsMutable();
           dim_.add(index, builderForValue.build());
@@ -3991,7 +3991,7 @@ public final class TensorNamespace {
        * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
        */
       public Builder addAllDim(
-          java.lang.Iterable<? extends org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension> values) {
+          Iterable<? extends Dimension> values) {
         if (dimBuilder_ == null) {
           ensureDimIsMutable();
           org.nd4j.shade.protobuf.AbstractMessageLite.Builder.addAll(
@@ -4031,14 +4031,14 @@ public final class TensorNamespace {
       /**
        * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
        */
-      public org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.Builder getDimBuilder(
+      public Dimension.Builder getDimBuilder(
           int index) {
         return getDimFieldBuilder().getBuilder(index);
       }
       /**
        * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
        */
-      public org.nd4j.ir.TensorNamespace.TensorShapeProto.DimensionOrBuilder getDimOrBuilder(
+      public DimensionOrBuilder getDimOrBuilder(
           int index) {
         if (dimBuilder_ == null) {
           return dim_.get(index);  } else {
@@ -4048,7 +4048,7 @@ public final class TensorNamespace {
       /**
        * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
        */
-      public java.util.List<? extends org.nd4j.ir.TensorNamespace.TensorShapeProto.DimensionOrBuilder> 
+      public java.util.List<? extends DimensionOrBuilder>
            getDimOrBuilderList() {
         if (dimBuilder_ != null) {
           return dimBuilder_.getMessageOrBuilderList();
@@ -4059,31 +4059,31 @@ public final class TensorNamespace {
       /**
        * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
        */
-      public org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.Builder addDimBuilder() {
+      public Dimension.Builder addDimBuilder() {
         return getDimFieldBuilder().addBuilder(
-            org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.getDefaultInstance());
+            Dimension.getDefaultInstance());
       }
       /**
        * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
        */
-      public org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.Builder addDimBuilder(
+      public Dimension.Builder addDimBuilder(
           int index) {
         return getDimFieldBuilder().addBuilder(
-            index, org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.getDefaultInstance());
+            index, Dimension.getDefaultInstance());
       }
       /**
        * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
        */
-      public java.util.List<org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.Builder> 
+      public java.util.List<Dimension.Builder>
            getDimBuilderList() {
         return getDimFieldBuilder().getBuilderList();
       }
       private org.nd4j.shade.protobuf.RepeatedFieldBuilderV3<
-          org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension, org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.Builder, org.nd4j.ir.TensorNamespace.TensorShapeProto.DimensionOrBuilder> 
+          Dimension, Dimension.Builder, DimensionOrBuilder>
           getDimFieldBuilder() {
         if (dimBuilder_ == null) {
           dimBuilder_ = new org.nd4j.shade.protobuf.RepeatedFieldBuilderV3<
-              org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension, org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.Builder, org.nd4j.ir.TensorNamespace.TensorShapeProto.DimensionOrBuilder>(
+              Dimension, Dimension.Builder, DimensionOrBuilder>(
                   dim_,
                   ((bitField0_ & 0x00000001) != 0),
                   getParentForChildren(),
@@ -4092,13 +4092,13 @@ public final class TensorNamespace {
         }
         return dimBuilder_;
       }
-      @java.lang.Override
+      @Override
       public final Builder setUnknownFields(
           final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
         return super.setUnknownFields(unknownFields);
       }
 
-      @java.lang.Override
+      @Override
       public final Builder mergeUnknownFields(
           final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
         return super.mergeUnknownFields(unknownFields);
@@ -4109,18 +4109,18 @@ public final class TensorNamespace {
     }
 
     // @@protoc_insertion_point(class_scope:org.nd4j.ir.TensorShapeProto)
-    private static final org.nd4j.ir.TensorNamespace.TensorShapeProto DEFAULT_INSTANCE;
+    private static final TensorShapeProto DEFAULT_INSTANCE;
     static {
-      DEFAULT_INSTANCE = new org.nd4j.ir.TensorNamespace.TensorShapeProto();
+      DEFAULT_INSTANCE = new TensorShapeProto();
     }
 
-    public static org.nd4j.ir.TensorNamespace.TensorShapeProto getDefaultInstance() {
+    public static TensorShapeProto getDefaultInstance() {
       return DEFAULT_INSTANCE;
     }
 
     private static final org.nd4j.shade.protobuf.Parser<TensorShapeProto>
         PARSER = new org.nd4j.shade.protobuf.AbstractParser<TensorShapeProto>() {
-      @java.lang.Override
+      @Override
       public TensorShapeProto parsePartialFrom(
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -4133,13 +4133,13 @@ public final class TensorNamespace {
       return PARSER;
     }
 
-    @java.lang.Override
+    @Override
     public org.nd4j.shade.protobuf.Parser<TensorShapeProto> getParserForType() {
       return PARSER;
     }
 
-    @java.lang.Override
-    public org.nd4j.ir.TensorNamespace.TensorShapeProto getDefaultInstanceForType() {
+    @Override
+    public TensorShapeProto getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
 
@@ -4156,7 +4156,7 @@ public final class TensorNamespace {
      *
      * <code>string name = 1;</code>
      */
-    java.lang.String getName();
+    String getName();
     /**
      * <pre>
      * This field MUST be present in this version of the IR.
@@ -4182,7 +4182,7 @@ public final class TensorNamespace {
      *
      * <code>.org.nd4j.ir.TypeProto type = 2;</code>
      */
-    org.nd4j.ir.TensorNamespace.TypeProto getType();
+    TypeProto getType();
     /**
      * <pre>
      * This field MUST be present in this version of the IR.
@@ -4190,7 +4190,7 @@ public final class TensorNamespace {
      *
      * <code>.org.nd4j.ir.TypeProto type = 2;</code>
      */
-    org.nd4j.ir.TensorNamespace.TypeProtoOrBuilder getTypeOrBuilder();
+    TypeProtoOrBuilder getTypeOrBuilder();
 
     /**
      * <pre>
@@ -4199,7 +4199,7 @@ public final class TensorNamespace {
      *
      * <code>string doc_string = 3;</code>
      */
-    java.lang.String getDocString();
+    String getDocString();
     /**
      * <pre>
      * A human-readable documentation for this value. Markdown is allowed.
@@ -4232,14 +4232,14 @@ public final class TensorNamespace {
       docString_ = "";
     }
 
-    @java.lang.Override
+    @Override
     @SuppressWarnings({"unused"})
-    protected java.lang.Object newInstance(
+    protected Object newInstance(
         UnusedPrivateParameter unused) {
       return new ValueInfoProto();
     }
 
-    @java.lang.Override
+    @Override
     public final org.nd4j.shade.protobuf.UnknownFieldSet
     getUnknownFields() {
       return this.unknownFields;
@@ -4250,7 +4250,7 @@ public final class TensorNamespace {
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       this();
       if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
+        throw new NullPointerException();
       }
       org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
           org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
@@ -4263,17 +4263,17 @@ public final class TensorNamespace {
               done = true;
               break;
             case 10: {
-              java.lang.String s = input.readStringRequireUtf8();
+              String s = input.readStringRequireUtf8();
 
               name_ = s;
               break;
             }
             case 18: {
-              org.nd4j.ir.TensorNamespace.TypeProto.Builder subBuilder = null;
+              TypeProto.Builder subBuilder = null;
               if (type_ != null) {
                 subBuilder = type_.toBuilder();
               }
-              type_ = input.readMessage(org.nd4j.ir.TensorNamespace.TypeProto.parser(), extensionRegistry);
+              type_ = input.readMessage(TypeProto.parser(), extensionRegistry);
               if (subBuilder != null) {
                 subBuilder.mergeFrom(type_);
                 type_ = subBuilder.buildPartial();
@@ -4282,7 +4282,7 @@ public final class TensorNamespace {
               break;
             }
             case 26: {
-              java.lang.String s = input.readStringRequireUtf8();
+              String s = input.readStringRequireUtf8();
 
               docString_ = s;
               break;
@@ -4308,19 +4308,19 @@ public final class TensorNamespace {
     }
     public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_ValueInfoProto_descriptor;
+      return TensorNamespace.internal_static_org_nd4j_ir_ValueInfoProto_descriptor;
     }
 
-    @java.lang.Override
-    protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
+    @Override
+    protected FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_ValueInfoProto_fieldAccessorTable
+      return TensorNamespace.internal_static_org_nd4j_ir_ValueInfoProto_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              org.nd4j.ir.TensorNamespace.ValueInfoProto.class, org.nd4j.ir.TensorNamespace.ValueInfoProto.Builder.class);
+              ValueInfoProto.class, Builder.class);
     }
 
     public static final int NAME_FIELD_NUMBER = 1;
-    private volatile java.lang.Object name_;
+    private volatile Object name_;
     /**
      * <pre>
      * This field MUST be present in this version of the IR.
@@ -4328,14 +4328,14 @@ public final class TensorNamespace {
      *
      * <code>string name = 1;</code>
      */
-    public java.lang.String getName() {
-      java.lang.Object ref = name_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
+    public String getName() {
+      Object ref = name_;
+      if (ref instanceof String) {
+        return (String) ref;
       } else {
         org.nd4j.shade.protobuf.ByteString bs = 
             (org.nd4j.shade.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
+        String s = bs.toStringUtf8();
         name_ = s;
         return s;
       }
@@ -4349,11 +4349,11 @@ public final class TensorNamespace {
      */
     public org.nd4j.shade.protobuf.ByteString
         getNameBytes() {
-      java.lang.Object ref = name_;
-      if (ref instanceof java.lang.String) {
+      Object ref = name_;
+      if (ref instanceof String) {
         org.nd4j.shade.protobuf.ByteString b = 
             org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+                (String) ref);
         name_ = b;
         return b;
       } else {
@@ -4362,7 +4362,7 @@ public final class TensorNamespace {
     }
 
     public static final int TYPE_FIELD_NUMBER = 2;
-    private org.nd4j.ir.TensorNamespace.TypeProto type_;
+    private TypeProto type_;
     /**
      * <pre>
      * This field MUST be present in this version of the IR.
@@ -4380,8 +4380,8 @@ public final class TensorNamespace {
      *
      * <code>.org.nd4j.ir.TypeProto type = 2;</code>
      */
-    public org.nd4j.ir.TensorNamespace.TypeProto getType() {
-      return type_ == null ? org.nd4j.ir.TensorNamespace.TypeProto.getDefaultInstance() : type_;
+    public TypeProto getType() {
+      return type_ == null ? TypeProto.getDefaultInstance() : type_;
     }
     /**
      * <pre>
@@ -4390,12 +4390,12 @@ public final class TensorNamespace {
      *
      * <code>.org.nd4j.ir.TypeProto type = 2;</code>
      */
-    public org.nd4j.ir.TensorNamespace.TypeProtoOrBuilder getTypeOrBuilder() {
+    public TypeProtoOrBuilder getTypeOrBuilder() {
       return getType();
     }
 
     public static final int DOC_STRING_FIELD_NUMBER = 3;
-    private volatile java.lang.Object docString_;
+    private volatile Object docString_;
     /**
      * <pre>
      * A human-readable documentation for this value. Markdown is allowed.
@@ -4403,14 +4403,14 @@ public final class TensorNamespace {
      *
      * <code>string doc_string = 3;</code>
      */
-    public java.lang.String getDocString() {
-      java.lang.Object ref = docString_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
+    public String getDocString() {
+      Object ref = docString_;
+      if (ref instanceof String) {
+        return (String) ref;
       } else {
         org.nd4j.shade.protobuf.ByteString bs = 
             (org.nd4j.shade.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
+        String s = bs.toStringUtf8();
         docString_ = s;
         return s;
       }
@@ -4424,11 +4424,11 @@ public final class TensorNamespace {
      */
     public org.nd4j.shade.protobuf.ByteString
         getDocStringBytes() {
-      java.lang.Object ref = docString_;
-      if (ref instanceof java.lang.String) {
+      Object ref = docString_;
+      if (ref instanceof String) {
         org.nd4j.shade.protobuf.ByteString b = 
             org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+                (String) ref);
         docString_ = b;
         return b;
       } else {
@@ -4437,7 +4437,7 @@ public final class TensorNamespace {
     }
 
     private byte memoizedIsInitialized = -1;
-    @java.lang.Override
+    @Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized == 1) return true;
@@ -4447,7 +4447,7 @@ public final class TensorNamespace {
       return true;
     }
 
-    @java.lang.Override
+    @Override
     public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       if (!getNameBytes().isEmpty()) {
@@ -4462,7 +4462,7 @@ public final class TensorNamespace {
       unknownFields.writeTo(output);
     }
 
-    @java.lang.Override
+    @Override
     public int getSerializedSize() {
       int size = memoizedSize;
       if (size != -1) return size;
@@ -4483,15 +4483,15 @@ public final class TensorNamespace {
       return size;
     }
 
-    @java.lang.Override
-    public boolean equals(final java.lang.Object obj) {
+    @Override
+    public boolean equals(final Object obj) {
       if (obj == this) {
        return true;
       }
-      if (!(obj instanceof org.nd4j.ir.TensorNamespace.ValueInfoProto)) {
+      if (!(obj instanceof ValueInfoProto)) {
         return super.equals(obj);
       }
-      org.nd4j.ir.TensorNamespace.ValueInfoProto other = (org.nd4j.ir.TensorNamespace.ValueInfoProto) obj;
+      ValueInfoProto other = (ValueInfoProto) obj;
 
       if (!getName()
           .equals(other.getName())) return false;
@@ -4506,7 +4506,7 @@ public final class TensorNamespace {
       return true;
     }
 
-    @java.lang.Override
+    @Override
     public int hashCode() {
       if (memoizedHashCode != 0) {
         return memoizedHashCode;
@@ -4526,69 +4526,69 @@ public final class TensorNamespace {
       return hash;
     }
 
-    public static org.nd4j.ir.TensorNamespace.ValueInfoProto parseFrom(
+    public static ValueInfoProto parseFrom(
         java.nio.ByteBuffer data)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static org.nd4j.ir.TensorNamespace.ValueInfoProto parseFrom(
+    public static ValueInfoProto parseFrom(
         java.nio.ByteBuffer data,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.ValueInfoProto parseFrom(
+    public static ValueInfoProto parseFrom(
         org.nd4j.shade.protobuf.ByteString data)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static org.nd4j.ir.TensorNamespace.ValueInfoProto parseFrom(
+    public static ValueInfoProto parseFrom(
         org.nd4j.shade.protobuf.ByteString data,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.ValueInfoProto parseFrom(byte[] data)
+    public static ValueInfoProto parseFrom(byte[] data)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static org.nd4j.ir.TensorNamespace.ValueInfoProto parseFrom(
+    public static ValueInfoProto parseFrom(
         byte[] data,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.ValueInfoProto parseFrom(java.io.InputStream input)
+    public static ValueInfoProto parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
-    public static org.nd4j.ir.TensorNamespace.ValueInfoProto parseFrom(
+    public static ValueInfoProto parseFrom(
         java.io.InputStream input,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.ValueInfoProto parseDelimitedFrom(java.io.InputStream input)
+    public static ValueInfoProto parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
-    public static org.nd4j.ir.TensorNamespace.ValueInfoProto parseDelimitedFrom(
+    public static ValueInfoProto parseDelimitedFrom(
         java.io.InputStream input,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.ValueInfoProto parseFrom(
+    public static ValueInfoProto parseFrom(
         org.nd4j.shade.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
-    public static org.nd4j.ir.TensorNamespace.ValueInfoProto parseFrom(
+    public static ValueInfoProto parseFrom(
         org.nd4j.shade.protobuf.CodedInputStream input,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
@@ -4596,23 +4596,23 @@ public final class TensorNamespace {
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    @java.lang.Override
+    @Override
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-    public static Builder newBuilder(org.nd4j.ir.TensorNamespace.ValueInfoProto prototype) {
+    public static Builder newBuilder(ValueInfoProto prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
-    @java.lang.Override
+    @Override
     public Builder toBuilder() {
       return this == DEFAULT_INSTANCE
           ? new Builder() : new Builder().mergeFrom(this);
     }
 
-    @java.lang.Override
+    @Override
     protected Builder newBuilderForType(
-        org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -4627,18 +4627,18 @@ public final class TensorNamespace {
     public static final class Builder extends
         org.nd4j.shade.protobuf.GeneratedMessageV3.Builder<Builder> implements
         // @@protoc_insertion_point(builder_implements:org.nd4j.ir.ValueInfoProto)
-        org.nd4j.ir.TensorNamespace.ValueInfoProtoOrBuilder {
+        ValueInfoProtoOrBuilder {
       public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_ValueInfoProto_descriptor;
+        return TensorNamespace.internal_static_org_nd4j_ir_ValueInfoProto_descriptor;
       }
 
-      @java.lang.Override
-      protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
+      @Override
+      protected FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_ValueInfoProto_fieldAccessorTable
+        return TensorNamespace.internal_static_org_nd4j_ir_ValueInfoProto_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                org.nd4j.ir.TensorNamespace.ValueInfoProto.class, org.nd4j.ir.TensorNamespace.ValueInfoProto.Builder.class);
+                ValueInfoProto.class, Builder.class);
       }
 
       // Construct using org.nd4j.ir.TensorNamespace.ValueInfoProto.newBuilder()
@@ -4647,7 +4647,7 @@ public final class TensorNamespace {
       }
 
       private Builder(
-          org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -4656,7 +4656,7 @@ public final class TensorNamespace {
                 .alwaysUseFieldBuilders) {
         }
       }
-      @java.lang.Override
+      @Override
       public Builder clear() {
         super.clear();
         name_ = "";
@@ -4672,29 +4672,29 @@ public final class TensorNamespace {
         return this;
       }
 
-      @java.lang.Override
+      @Override
       public org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_ValueInfoProto_descriptor;
+        return TensorNamespace.internal_static_org_nd4j_ir_ValueInfoProto_descriptor;
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.ValueInfoProto getDefaultInstanceForType() {
-        return org.nd4j.ir.TensorNamespace.ValueInfoProto.getDefaultInstance();
+      @Override
+      public ValueInfoProto getDefaultInstanceForType() {
+        return ValueInfoProto.getDefaultInstance();
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.ValueInfoProto build() {
-        org.nd4j.ir.TensorNamespace.ValueInfoProto result = buildPartial();
+      @Override
+      public ValueInfoProto build() {
+        ValueInfoProto result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
         return result;
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.ValueInfoProto buildPartial() {
-        org.nd4j.ir.TensorNamespace.ValueInfoProto result = new org.nd4j.ir.TensorNamespace.ValueInfoProto(this);
+      @Override
+      public ValueInfoProto buildPartial() {
+        ValueInfoProto result = new ValueInfoProto(this);
         result.name_ = name_;
         if (typeBuilder_ == null) {
           result.type_ = type_;
@@ -4706,50 +4706,50 @@ public final class TensorNamespace {
         return result;
       }
 
-      @java.lang.Override
+      @Override
       public Builder clone() {
         return super.clone();
       }
-      @java.lang.Override
+      @Override
       public Builder setField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          Object value) {
         return super.setField(field, value);
       }
-      @java.lang.Override
+      @Override
       public Builder clearField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
-      @java.lang.Override
+      @Override
       public Builder clearOneof(
           org.nd4j.shade.protobuf.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
-      @java.lang.Override
+      @Override
       public Builder setRepeatedField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-          int index, java.lang.Object value) {
+          int index, Object value) {
         return super.setRepeatedField(field, index, value);
       }
-      @java.lang.Override
+      @Override
       public Builder addRepeatedField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          Object value) {
         return super.addRepeatedField(field, value);
       }
-      @java.lang.Override
+      @Override
       public Builder mergeFrom(org.nd4j.shade.protobuf.Message other) {
-        if (other instanceof org.nd4j.ir.TensorNamespace.ValueInfoProto) {
-          return mergeFrom((org.nd4j.ir.TensorNamespace.ValueInfoProto)other);
+        if (other instanceof ValueInfoProto) {
+          return mergeFrom((ValueInfoProto)other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(org.nd4j.ir.TensorNamespace.ValueInfoProto other) {
-        if (other == org.nd4j.ir.TensorNamespace.ValueInfoProto.getDefaultInstance()) return this;
+      public Builder mergeFrom(ValueInfoProto other) {
+        if (other == ValueInfoProto.getDefaultInstance()) return this;
         if (!other.getName().isEmpty()) {
           name_ = other.name_;
           onChanged();
@@ -4766,21 +4766,21 @@ public final class TensorNamespace {
         return this;
       }
 
-      @java.lang.Override
+      @Override
       public final boolean isInitialized() {
         return true;
       }
 
-      @java.lang.Override
+      @Override
       public Builder mergeFrom(
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        org.nd4j.ir.TensorNamespace.ValueInfoProto parsedMessage = null;
+        ValueInfoProto parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.nd4j.ir.TensorNamespace.ValueInfoProto) e.getUnfinishedMessage();
+          parsedMessage = (ValueInfoProto) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
@@ -4790,7 +4790,7 @@ public final class TensorNamespace {
         return this;
       }
 
-      private java.lang.Object name_ = "";
+      private Object name_ = "";
       /**
        * <pre>
        * This field MUST be present in this version of the IR.
@@ -4798,16 +4798,16 @@ public final class TensorNamespace {
        *
        * <code>string name = 1;</code>
        */
-      public java.lang.String getName() {
-        java.lang.Object ref = name_;
-        if (!(ref instanceof java.lang.String)) {
+      public String getName() {
+        Object ref = name_;
+        if (!(ref instanceof String)) {
           org.nd4j.shade.protobuf.ByteString bs =
               (org.nd4j.shade.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
+          String s = bs.toStringUtf8();
           name_ = s;
           return s;
         } else {
-          return (java.lang.String) ref;
+          return (String) ref;
         }
       }
       /**
@@ -4819,11 +4819,11 @@ public final class TensorNamespace {
        */
       public org.nd4j.shade.protobuf.ByteString
           getNameBytes() {
-        java.lang.Object ref = name_;
+        Object ref = name_;
         if (ref instanceof String) {
           org.nd4j.shade.protobuf.ByteString b = 
               org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+                  (String) ref);
           name_ = b;
           return b;
         } else {
@@ -4838,7 +4838,7 @@ public final class TensorNamespace {
        * <code>string name = 1;</code>
        */
       public Builder setName(
-          java.lang.String value) {
+          String value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -4879,9 +4879,9 @@ public final class TensorNamespace {
         return this;
       }
 
-      private org.nd4j.ir.TensorNamespace.TypeProto type_;
+      private TypeProto type_;
       private org.nd4j.shade.protobuf.SingleFieldBuilderV3<
-          org.nd4j.ir.TensorNamespace.TypeProto, org.nd4j.ir.TensorNamespace.TypeProto.Builder, org.nd4j.ir.TensorNamespace.TypeProtoOrBuilder> typeBuilder_;
+          TypeProto, TypeProto.Builder, TypeProtoOrBuilder> typeBuilder_;
       /**
        * <pre>
        * This field MUST be present in this version of the IR.
@@ -4899,9 +4899,9 @@ public final class TensorNamespace {
        *
        * <code>.org.nd4j.ir.TypeProto type = 2;</code>
        */
-      public org.nd4j.ir.TensorNamespace.TypeProto getType() {
+      public TypeProto getType() {
         if (typeBuilder_ == null) {
-          return type_ == null ? org.nd4j.ir.TensorNamespace.TypeProto.getDefaultInstance() : type_;
+          return type_ == null ? TypeProto.getDefaultInstance() : type_;
         } else {
           return typeBuilder_.getMessage();
         }
@@ -4913,7 +4913,7 @@ public final class TensorNamespace {
        *
        * <code>.org.nd4j.ir.TypeProto type = 2;</code>
        */
-      public Builder setType(org.nd4j.ir.TensorNamespace.TypeProto value) {
+      public Builder setType(TypeProto value) {
         if (typeBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -4934,7 +4934,7 @@ public final class TensorNamespace {
        * <code>.org.nd4j.ir.TypeProto type = 2;</code>
        */
       public Builder setType(
-          org.nd4j.ir.TensorNamespace.TypeProto.Builder builderForValue) {
+          TypeProto.Builder builderForValue) {
         if (typeBuilder_ == null) {
           type_ = builderForValue.build();
           onChanged();
@@ -4951,11 +4951,11 @@ public final class TensorNamespace {
        *
        * <code>.org.nd4j.ir.TypeProto type = 2;</code>
        */
-      public Builder mergeType(org.nd4j.ir.TensorNamespace.TypeProto value) {
+      public Builder mergeType(TypeProto value) {
         if (typeBuilder_ == null) {
           if (type_ != null) {
             type_ =
-              org.nd4j.ir.TensorNamespace.TypeProto.newBuilder(type_).mergeFrom(value).buildPartial();
+              TypeProto.newBuilder(type_).mergeFrom(value).buildPartial();
           } else {
             type_ = value;
           }
@@ -4991,7 +4991,7 @@ public final class TensorNamespace {
        *
        * <code>.org.nd4j.ir.TypeProto type = 2;</code>
        */
-      public org.nd4j.ir.TensorNamespace.TypeProto.Builder getTypeBuilder() {
+      public TypeProto.Builder getTypeBuilder() {
         
         onChanged();
         return getTypeFieldBuilder().getBuilder();
@@ -5003,12 +5003,12 @@ public final class TensorNamespace {
        *
        * <code>.org.nd4j.ir.TypeProto type = 2;</code>
        */
-      public org.nd4j.ir.TensorNamespace.TypeProtoOrBuilder getTypeOrBuilder() {
+      public TypeProtoOrBuilder getTypeOrBuilder() {
         if (typeBuilder_ != null) {
           return typeBuilder_.getMessageOrBuilder();
         } else {
           return type_ == null ?
-              org.nd4j.ir.TensorNamespace.TypeProto.getDefaultInstance() : type_;
+              TypeProto.getDefaultInstance() : type_;
         }
       }
       /**
@@ -5019,11 +5019,11 @@ public final class TensorNamespace {
        * <code>.org.nd4j.ir.TypeProto type = 2;</code>
        */
       private org.nd4j.shade.protobuf.SingleFieldBuilderV3<
-          org.nd4j.ir.TensorNamespace.TypeProto, org.nd4j.ir.TensorNamespace.TypeProto.Builder, org.nd4j.ir.TensorNamespace.TypeProtoOrBuilder> 
+          TypeProto, TypeProto.Builder, TypeProtoOrBuilder>
           getTypeFieldBuilder() {
         if (typeBuilder_ == null) {
           typeBuilder_ = new org.nd4j.shade.protobuf.SingleFieldBuilderV3<
-              org.nd4j.ir.TensorNamespace.TypeProto, org.nd4j.ir.TensorNamespace.TypeProto.Builder, org.nd4j.ir.TensorNamespace.TypeProtoOrBuilder>(
+              TypeProto, TypeProto.Builder, TypeProtoOrBuilder>(
                   getType(),
                   getParentForChildren(),
                   isClean());
@@ -5032,7 +5032,7 @@ public final class TensorNamespace {
         return typeBuilder_;
       }
 
-      private java.lang.Object docString_ = "";
+      private Object docString_ = "";
       /**
        * <pre>
        * A human-readable documentation for this value. Markdown is allowed.
@@ -5040,16 +5040,16 @@ public final class TensorNamespace {
        *
        * <code>string doc_string = 3;</code>
        */
-      public java.lang.String getDocString() {
-        java.lang.Object ref = docString_;
-        if (!(ref instanceof java.lang.String)) {
+      public String getDocString() {
+        Object ref = docString_;
+        if (!(ref instanceof String)) {
           org.nd4j.shade.protobuf.ByteString bs =
               (org.nd4j.shade.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
+          String s = bs.toStringUtf8();
           docString_ = s;
           return s;
         } else {
-          return (java.lang.String) ref;
+          return (String) ref;
         }
       }
       /**
@@ -5061,11 +5061,11 @@ public final class TensorNamespace {
        */
       public org.nd4j.shade.protobuf.ByteString
           getDocStringBytes() {
-        java.lang.Object ref = docString_;
+        Object ref = docString_;
         if (ref instanceof String) {
           org.nd4j.shade.protobuf.ByteString b = 
               org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+                  (String) ref);
           docString_ = b;
           return b;
         } else {
@@ -5080,7 +5080,7 @@ public final class TensorNamespace {
        * <code>string doc_string = 3;</code>
        */
       public Builder setDocString(
-          java.lang.String value) {
+          String value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -5120,13 +5120,13 @@ public final class TensorNamespace {
         onChanged();
         return this;
       }
-      @java.lang.Override
+      @Override
       public final Builder setUnknownFields(
           final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
         return super.setUnknownFields(unknownFields);
       }
 
-      @java.lang.Override
+      @Override
       public final Builder mergeUnknownFields(
           final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
         return super.mergeUnknownFields(unknownFields);
@@ -5137,18 +5137,18 @@ public final class TensorNamespace {
     }
 
     // @@protoc_insertion_point(class_scope:org.nd4j.ir.ValueInfoProto)
-    private static final org.nd4j.ir.TensorNamespace.ValueInfoProto DEFAULT_INSTANCE;
+    private static final ValueInfoProto DEFAULT_INSTANCE;
     static {
-      DEFAULT_INSTANCE = new org.nd4j.ir.TensorNamespace.ValueInfoProto();
+      DEFAULT_INSTANCE = new ValueInfoProto();
     }
 
-    public static org.nd4j.ir.TensorNamespace.ValueInfoProto getDefaultInstance() {
+    public static ValueInfoProto getDefaultInstance() {
       return DEFAULT_INSTANCE;
     }
 
     private static final org.nd4j.shade.protobuf.Parser<ValueInfoProto>
         PARSER = new org.nd4j.shade.protobuf.AbstractParser<ValueInfoProto>() {
-      @java.lang.Override
+      @Override
       public ValueInfoProto parsePartialFrom(
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -5161,13 +5161,13 @@ public final class TensorNamespace {
       return PARSER;
     }
 
-    @java.lang.Override
+    @Override
     public org.nd4j.shade.protobuf.Parser<ValueInfoProto> getParserForType() {
       return PARSER;
     }
 
-    @java.lang.Override
-    public org.nd4j.ir.TensorNamespace.ValueInfoProto getDefaultInstanceForType() {
+    @Override
+    public ValueInfoProto getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
 
@@ -5184,7 +5184,7 @@ public final class TensorNamespace {
      *
      * <code>repeated int64 dims = 1;</code>
      */
-    java.util.List<java.lang.Long> getDimsList();
+    java.util.List<Long> getDimsList();
     /**
      * <pre>
      * The shape of the tensor.
@@ -5219,11 +5219,11 @@ public final class TensorNamespace {
     /**
      * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
      */
-    org.nd4j.ir.TensorNamespace.TensorProto.Segment getSegment();
+    TensorProto.Segment getSegment();
     /**
      * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
      */
-    org.nd4j.ir.TensorNamespace.TensorProto.SegmentOrBuilder getSegmentOrBuilder();
+    TensorProto.SegmentOrBuilder getSegmentOrBuilder();
 
     /**
      * <pre>
@@ -5238,7 +5238,7 @@ public final class TensorNamespace {
      *
      * <code>repeated float float_data = 4 [packed = true];</code>
      */
-    java.util.List<java.lang.Float> getFloatDataList();
+    java.util.List<Float> getFloatDataList();
     /**
      * <pre>
      * For float and complex64 values
@@ -5279,7 +5279,7 @@ public final class TensorNamespace {
      *
      * <code>repeated int32 int32_data = 5 [packed = true];</code>
      */
-    java.util.List<java.lang.Integer> getInt32DataList();
+    java.util.List<Integer> getInt32DataList();
     /**
      * <pre>
      * For int32, uint8, int8, uint16, int16, bool, and float16 values
@@ -5350,7 +5350,7 @@ public final class TensorNamespace {
      *
      * <code>repeated int64 int64_data = 7 [packed = true];</code>
      */
-    java.util.List<java.lang.Long> getInt64DataList();
+    java.util.List<Long> getInt64DataList();
     /**
      * <pre>
      * For int64.
@@ -5377,7 +5377,7 @@ public final class TensorNamespace {
      *
      * <code>string name = 8;</code>
      */
-    java.lang.String getName();
+    String getName();
     /**
      * <pre>
      * Optionally, a name for the tensor.
@@ -5395,7 +5395,7 @@ public final class TensorNamespace {
      *
      * <code>string doc_string = 12;</code>
      */
-    java.lang.String getDocString();
+    String getDocString();
     /**
      * <pre>
      * A human-readable documentation for this tensor. Markdown is allowed.
@@ -5442,7 +5442,7 @@ public final class TensorNamespace {
      *
      * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
      */
-    java.util.List<org.nd4j.ir.TensorNamespace.StringStringEntryProto> 
+    java.util.List<StringStringEntryProto>
         getExternalDataList();
     /**
      * <pre>
@@ -5459,7 +5459,7 @@ public final class TensorNamespace {
      *
      * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
      */
-    org.nd4j.ir.TensorNamespace.StringStringEntryProto getExternalData(int index);
+    StringStringEntryProto getExternalData(int index);
     /**
      * <pre>
      * Data can be stored inside the protobuf file using type-specific fields or raw_data.
@@ -5491,7 +5491,7 @@ public final class TensorNamespace {
      *
      * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
      */
-    java.util.List<? extends org.nd4j.ir.TensorNamespace.StringStringEntryProtoOrBuilder> 
+    java.util.List<? extends StringStringEntryProtoOrBuilder>
         getExternalDataOrBuilderList();
     /**
      * <pre>
@@ -5508,7 +5508,7 @@ public final class TensorNamespace {
      *
      * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
      */
-    org.nd4j.ir.TensorNamespace.StringStringEntryProtoOrBuilder getExternalDataOrBuilder(
+    StringStringEntryProtoOrBuilder getExternalDataOrBuilder(
         int index);
 
     /**
@@ -5526,7 +5526,7 @@ public final class TensorNamespace {
      *
      * <code>.org.nd4j.ir.TensorProto.DataLocation data_location = 14;</code>
      */
-    org.nd4j.ir.TensorNamespace.TensorProto.DataLocation getDataLocation();
+    TensorProto.DataLocation getDataLocation();
 
     /**
      * <pre>
@@ -5541,7 +5541,7 @@ public final class TensorNamespace {
      *
      * <code>repeated double double_data = 10 [packed = true];</code>
      */
-    java.util.List<java.lang.Double> getDoubleDataList();
+    java.util.List<Double> getDoubleDataList();
     /**
      * <pre>
      * For double
@@ -5580,7 +5580,7 @@ public final class TensorNamespace {
      *
      * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
      */
-    java.util.List<java.lang.Long> getUint64DataList();
+    java.util.List<Long> getUint64DataList();
     /**
      * <pre>
      * For uint64 and uint32 values
@@ -5609,7 +5609,7 @@ public final class TensorNamespace {
      *
      * <code>repeated int32 half_val = 15 [packed = true];</code>
      */
-    java.util.List<java.lang.Integer> getHalfValList();
+    java.util.List<Integer> getHalfValList();
     /**
      * <pre>
      * For half values (tensorflow compatibility)
@@ -5634,7 +5634,7 @@ public final class TensorNamespace {
      *
      * <code>repeated bool bool_val = 16 [packed = true];</code>
      */
-    java.util.List<java.lang.Boolean> getBoolValList();
+    java.util.List<Boolean> getBoolValList();
     /**
      * <pre>
      *boolean values
@@ -5686,14 +5686,14 @@ public final class TensorNamespace {
       boolVal_ = emptyBooleanList();
     }
 
-    @java.lang.Override
+    @Override
     @SuppressWarnings({"unused"})
-    protected java.lang.Object newInstance(
+    protected Object newInstance(
         UnusedPrivateParameter unused) {
       return new TensorProto();
     }
 
-    @java.lang.Override
+    @Override
     public final org.nd4j.shade.protobuf.UnknownFieldSet
     getUnknownFields() {
       return this.unknownFields;
@@ -5704,7 +5704,7 @@ public final class TensorNamespace {
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       this();
       if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
+        throw new NullPointerException();
       }
       int mutable_bitField0_ = 0;
       org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
@@ -5744,11 +5744,11 @@ public final class TensorNamespace {
               break;
             }
             case 26: {
-              org.nd4j.ir.TensorNamespace.TensorProto.Segment.Builder subBuilder = null;
+              Segment.Builder subBuilder = null;
               if (segment_ != null) {
                 subBuilder = segment_.toBuilder();
               }
-              segment_ = input.readMessage(org.nd4j.ir.TensorNamespace.TensorProto.Segment.parser(), extensionRegistry);
+              segment_ = input.readMessage(Segment.parser(), extensionRegistry);
               if (subBuilder != null) {
                 subBuilder.mergeFrom(segment_);
                 segment_ = subBuilder.buildPartial();
@@ -5828,7 +5828,7 @@ public final class TensorNamespace {
               break;
             }
             case 66: {
-              java.lang.String s = input.readStringRequireUtf8();
+              String s = input.readStringRequireUtf8();
 
               name_ = s;
               break;
@@ -5881,18 +5881,18 @@ public final class TensorNamespace {
               break;
             }
             case 98: {
-              java.lang.String s = input.readStringRequireUtf8();
+              String s = input.readStringRequireUtf8();
 
               docString_ = s;
               break;
             }
             case 106: {
               if (!((mutable_bitField0_ & 0x00000020) != 0)) {
-                externalData_ = new java.util.ArrayList<org.nd4j.ir.TensorNamespace.StringStringEntryProto>();
+                externalData_ = new java.util.ArrayList<StringStringEntryProto>();
                 mutable_bitField0_ |= 0x00000020;
               }
               externalData_.add(
-                  input.readMessage(org.nd4j.ir.TensorNamespace.StringStringEntryProto.parser(), extensionRegistry));
+                  input.readMessage(StringStringEntryProto.parser(), extensionRegistry));
               break;
             }
             case 112: {
@@ -5994,15 +5994,15 @@ public final class TensorNamespace {
     }
     public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorProto_descriptor;
+      return TensorNamespace.internal_static_org_nd4j_ir_TensorProto_descriptor;
     }
 
-    @java.lang.Override
-    protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
+    @Override
+    protected FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorProto_fieldAccessorTable
+      return TensorNamespace.internal_static_org_nd4j_ir_TensorProto_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              org.nd4j.ir.TensorNamespace.TensorProto.class, org.nd4j.ir.TensorNamespace.TensorProto.Builder.class);
+              TensorProto.class, Builder.class);
     }
 
     /**
@@ -6039,7 +6039,7 @@ public final class TensorNamespace {
 
       public final int getNumber() {
         if (this == UNRECOGNIZED) {
-          throw new java.lang.IllegalArgumentException(
+          throw new IllegalArgumentException(
               "Can't get the number of an unknown enum value.");
         }
         return value;
@@ -6048,7 +6048,7 @@ public final class TensorNamespace {
       /**
        * @deprecated Use {@link #forNumber(int)} instead.
        */
-      @java.lang.Deprecated
+      @Deprecated
       public static DataLocation valueOf(int value) {
         return forNumber(value);
       }
@@ -6083,7 +6083,7 @@ public final class TensorNamespace {
       }
       public static final org.nd4j.shade.protobuf.Descriptors.EnumDescriptor
           getDescriptor() {
-        return org.nd4j.ir.TensorNamespace.TensorProto.getDescriptor().getEnumTypes().get(0);
+        return TensorProto.getDescriptor().getEnumTypes().get(0);
       }
 
       private static final DataLocation[] VALUES = values();
@@ -6091,7 +6091,7 @@ public final class TensorNamespace {
       public static DataLocation valueOf(
           org.nd4j.shade.protobuf.Descriptors.EnumValueDescriptor desc) {
         if (desc.getType() != getDescriptor()) {
-          throw new java.lang.IllegalArgumentException(
+          throw new IllegalArgumentException(
             "EnumValueDescriptor is not for this type.");
         }
         if (desc.getIndex() == -1) {
@@ -6144,14 +6144,14 @@ public final class TensorNamespace {
       private Segment() {
       }
 
-      @java.lang.Override
+      @Override
       @SuppressWarnings({"unused"})
-      protected java.lang.Object newInstance(
+      protected Object newInstance(
           UnusedPrivateParameter unused) {
         return new Segment();
       }
 
-      @java.lang.Override
+      @Override
       public final org.nd4j.shade.protobuf.UnknownFieldSet
       getUnknownFields() {
         return this.unknownFields;
@@ -6162,7 +6162,7 @@ public final class TensorNamespace {
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         this();
         if (extensionRegistry == null) {
-          throw new java.lang.NullPointerException();
+          throw new NullPointerException();
         }
         org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
             org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
@@ -6205,15 +6205,15 @@ public final class TensorNamespace {
       }
       public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorProto_Segment_descriptor;
+        return TensorNamespace.internal_static_org_nd4j_ir_TensorProto_Segment_descriptor;
       }
 
-      @java.lang.Override
-      protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
+      @Override
+      protected FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorProto_Segment_fieldAccessorTable
+        return TensorNamespace.internal_static_org_nd4j_ir_TensorProto_Segment_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                org.nd4j.ir.TensorNamespace.TensorProto.Segment.class, org.nd4j.ir.TensorNamespace.TensorProto.Segment.Builder.class);
+                Segment.class, Builder.class);
       }
 
       public static final int BEGIN_FIELD_NUMBER = 1;
@@ -6235,7 +6235,7 @@ public final class TensorNamespace {
       }
 
       private byte memoizedIsInitialized = -1;
-      @java.lang.Override
+      @Override
       public final boolean isInitialized() {
         byte isInitialized = memoizedIsInitialized;
         if (isInitialized == 1) return true;
@@ -6245,7 +6245,7 @@ public final class TensorNamespace {
         return true;
       }
 
-      @java.lang.Override
+      @Override
       public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                           throws java.io.IOException {
         if (begin_ != 0L) {
@@ -6257,7 +6257,7 @@ public final class TensorNamespace {
         unknownFields.writeTo(output);
       }
 
-      @java.lang.Override
+      @Override
       public int getSerializedSize() {
         int size = memoizedSize;
         if (size != -1) return size;
@@ -6276,15 +6276,15 @@ public final class TensorNamespace {
         return size;
       }
 
-      @java.lang.Override
-      public boolean equals(final java.lang.Object obj) {
+      @Override
+      public boolean equals(final Object obj) {
         if (obj == this) {
          return true;
         }
-        if (!(obj instanceof org.nd4j.ir.TensorNamespace.TensorProto.Segment)) {
+        if (!(obj instanceof Segment)) {
           return super.equals(obj);
         }
-        org.nd4j.ir.TensorNamespace.TensorProto.Segment other = (org.nd4j.ir.TensorNamespace.TensorProto.Segment) obj;
+        Segment other = (Segment) obj;
 
         if (getBegin()
             != other.getBegin()) return false;
@@ -6294,7 +6294,7 @@ public final class TensorNamespace {
         return true;
       }
 
-      @java.lang.Override
+      @Override
       public int hashCode() {
         if (memoizedHashCode != 0) {
           return memoizedHashCode;
@@ -6312,69 +6312,69 @@ public final class TensorNamespace {
         return hash;
       }
 
-      public static org.nd4j.ir.TensorNamespace.TensorProto.Segment parseFrom(
+      public static Segment parseFrom(
           java.nio.ByteBuffer data)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorProto.Segment parseFrom(
+      public static Segment parseFrom(
           java.nio.ByteBuffer data,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorProto.Segment parseFrom(
+      public static Segment parseFrom(
           org.nd4j.shade.protobuf.ByteString data)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorProto.Segment parseFrom(
+      public static Segment parseFrom(
           org.nd4j.shade.protobuf.ByteString data,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorProto.Segment parseFrom(byte[] data)
+      public static Segment parseFrom(byte[] data)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorProto.Segment parseFrom(
+      public static Segment parseFrom(
           byte[] data,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorProto.Segment parseFrom(java.io.InputStream input)
+      public static Segment parseFrom(java.io.InputStream input)
           throws java.io.IOException {
         return org.nd4j.shade.protobuf.GeneratedMessageV3
             .parseWithIOException(PARSER, input);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorProto.Segment parseFrom(
+      public static Segment parseFrom(
           java.io.InputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return org.nd4j.shade.protobuf.GeneratedMessageV3
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorProto.Segment parseDelimitedFrom(java.io.InputStream input)
+      public static Segment parseDelimitedFrom(java.io.InputStream input)
           throws java.io.IOException {
         return org.nd4j.shade.protobuf.GeneratedMessageV3
             .parseDelimitedWithIOException(PARSER, input);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorProto.Segment parseDelimitedFrom(
+      public static Segment parseDelimitedFrom(
           java.io.InputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return org.nd4j.shade.protobuf.GeneratedMessageV3
             .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorProto.Segment parseFrom(
+      public static Segment parseFrom(
           org.nd4j.shade.protobuf.CodedInputStream input)
           throws java.io.IOException {
         return org.nd4j.shade.protobuf.GeneratedMessageV3
             .parseWithIOException(PARSER, input);
       }
-      public static org.nd4j.ir.TensorNamespace.TensorProto.Segment parseFrom(
+      public static Segment parseFrom(
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
@@ -6382,23 +6382,23 @@ public final class TensorNamespace {
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
 
-      @java.lang.Override
+      @Override
       public Builder newBuilderForType() { return newBuilder(); }
       public static Builder newBuilder() {
         return DEFAULT_INSTANCE.toBuilder();
       }
-      public static Builder newBuilder(org.nd4j.ir.TensorNamespace.TensorProto.Segment prototype) {
+      public static Builder newBuilder(Segment prototype) {
         return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
       }
-      @java.lang.Override
+      @Override
       public Builder toBuilder() {
         return this == DEFAULT_INSTANCE
             ? new Builder() : new Builder().mergeFrom(this);
       }
 
-      @java.lang.Override
+      @Override
       protected Builder newBuilderForType(
-          org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          BuilderParent parent) {
         Builder builder = new Builder(parent);
         return builder;
       }
@@ -6414,18 +6414,18 @@ public final class TensorNamespace {
       public static final class Builder extends
           org.nd4j.shade.protobuf.GeneratedMessageV3.Builder<Builder> implements
           // @@protoc_insertion_point(builder_implements:org.nd4j.ir.TensorProto.Segment)
-          org.nd4j.ir.TensorNamespace.TensorProto.SegmentOrBuilder {
+          SegmentOrBuilder {
         public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
             getDescriptor() {
-          return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorProto_Segment_descriptor;
+          return TensorNamespace.internal_static_org_nd4j_ir_TensorProto_Segment_descriptor;
         }
 
-        @java.lang.Override
-        protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
+        @Override
+        protected FieldAccessorTable
             internalGetFieldAccessorTable() {
-          return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorProto_Segment_fieldAccessorTable
+          return TensorNamespace.internal_static_org_nd4j_ir_TensorProto_Segment_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
-                  org.nd4j.ir.TensorNamespace.TensorProto.Segment.class, org.nd4j.ir.TensorNamespace.TensorProto.Segment.Builder.class);
+                  Segment.class, Builder.class);
         }
 
         // Construct using org.nd4j.ir.TensorNamespace.TensorProto.Segment.newBuilder()
@@ -6434,7 +6434,7 @@ public final class TensorNamespace {
         }
 
         private Builder(
-            org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
+            BuilderParent parent) {
           super(parent);
           maybeForceBuilderInitialization();
         }
@@ -6443,7 +6443,7 @@ public final class TensorNamespace {
                   .alwaysUseFieldBuilders) {
           }
         }
-        @java.lang.Override
+        @Override
         public Builder clear() {
           super.clear();
           begin_ = 0L;
@@ -6453,79 +6453,79 @@ public final class TensorNamespace {
           return this;
         }
 
-        @java.lang.Override
+        @Override
         public org.nd4j.shade.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
-          return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorProto_Segment_descriptor;
+          return TensorNamespace.internal_static_org_nd4j_ir_TensorProto_Segment_descriptor;
         }
 
-        @java.lang.Override
-        public org.nd4j.ir.TensorNamespace.TensorProto.Segment getDefaultInstanceForType() {
-          return org.nd4j.ir.TensorNamespace.TensorProto.Segment.getDefaultInstance();
+        @Override
+        public Segment getDefaultInstanceForType() {
+          return Segment.getDefaultInstance();
         }
 
-        @java.lang.Override
-        public org.nd4j.ir.TensorNamespace.TensorProto.Segment build() {
-          org.nd4j.ir.TensorNamespace.TensorProto.Segment result = buildPartial();
+        @Override
+        public Segment build() {
+          Segment result = buildPartial();
           if (!result.isInitialized()) {
             throw newUninitializedMessageException(result);
           }
           return result;
         }
 
-        @java.lang.Override
-        public org.nd4j.ir.TensorNamespace.TensorProto.Segment buildPartial() {
-          org.nd4j.ir.TensorNamespace.TensorProto.Segment result = new org.nd4j.ir.TensorNamespace.TensorProto.Segment(this);
+        @Override
+        public Segment buildPartial() {
+          Segment result = new Segment(this);
           result.begin_ = begin_;
           result.end_ = end_;
           onBuilt();
           return result;
         }
 
-        @java.lang.Override
+        @Override
         public Builder clone() {
           return super.clone();
         }
-        @java.lang.Override
+        @Override
         public Builder setField(
             org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-            java.lang.Object value) {
+            Object value) {
           return super.setField(field, value);
         }
-        @java.lang.Override
+        @Override
         public Builder clearField(
             org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field) {
           return super.clearField(field);
         }
-        @java.lang.Override
+        @Override
         public Builder clearOneof(
             org.nd4j.shade.protobuf.Descriptors.OneofDescriptor oneof) {
           return super.clearOneof(oneof);
         }
-        @java.lang.Override
+        @Override
         public Builder setRepeatedField(
             org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-            int index, java.lang.Object value) {
+            int index, Object value) {
           return super.setRepeatedField(field, index, value);
         }
-        @java.lang.Override
+        @Override
         public Builder addRepeatedField(
             org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-            java.lang.Object value) {
+            Object value) {
           return super.addRepeatedField(field, value);
         }
-        @java.lang.Override
+        @Override
         public Builder mergeFrom(org.nd4j.shade.protobuf.Message other) {
-          if (other instanceof org.nd4j.ir.TensorNamespace.TensorProto.Segment) {
-            return mergeFrom((org.nd4j.ir.TensorNamespace.TensorProto.Segment)other);
+          if (other instanceof Segment) {
+            return mergeFrom((Segment)other);
           } else {
             super.mergeFrom(other);
             return this;
           }
         }
 
-        public Builder mergeFrom(org.nd4j.ir.TensorNamespace.TensorProto.Segment other) {
-          if (other == org.nd4j.ir.TensorNamespace.TensorProto.Segment.getDefaultInstance()) return this;
+        public Builder mergeFrom(Segment other) {
+          if (other == Segment.getDefaultInstance()) return this;
           if (other.getBegin() != 0L) {
             setBegin(other.getBegin());
           }
@@ -6537,21 +6537,21 @@ public final class TensorNamespace {
           return this;
         }
 
-        @java.lang.Override
+        @Override
         public final boolean isInitialized() {
           return true;
         }
 
-        @java.lang.Override
+        @Override
         public Builder mergeFrom(
             org.nd4j.shade.protobuf.CodedInputStream input,
             org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
             throws java.io.IOException {
-          org.nd4j.ir.TensorNamespace.TensorProto.Segment parsedMessage = null;
+          Segment parsedMessage = null;
           try {
             parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
           } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-            parsedMessage = (org.nd4j.ir.TensorNamespace.TensorProto.Segment) e.getUnfinishedMessage();
+            parsedMessage = (Segment) e.getUnfinishedMessage();
             throw e.unwrapIOException();
           } finally {
             if (parsedMessage != null) {
@@ -6612,13 +6612,13 @@ public final class TensorNamespace {
           onChanged();
           return this;
         }
-        @java.lang.Override
+        @Override
         public final Builder setUnknownFields(
             final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
           return super.setUnknownFields(unknownFields);
         }
 
-        @java.lang.Override
+        @Override
         public final Builder mergeUnknownFields(
             final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
           return super.mergeUnknownFields(unknownFields);
@@ -6629,18 +6629,18 @@ public final class TensorNamespace {
       }
 
       // @@protoc_insertion_point(class_scope:org.nd4j.ir.TensorProto.Segment)
-      private static final org.nd4j.ir.TensorNamespace.TensorProto.Segment DEFAULT_INSTANCE;
+      private static final Segment DEFAULT_INSTANCE;
       static {
-        DEFAULT_INSTANCE = new org.nd4j.ir.TensorNamespace.TensorProto.Segment();
+        DEFAULT_INSTANCE = new Segment();
       }
 
-      public static org.nd4j.ir.TensorNamespace.TensorProto.Segment getDefaultInstance() {
+      public static Segment getDefaultInstance() {
         return DEFAULT_INSTANCE;
       }
 
       private static final org.nd4j.shade.protobuf.Parser<Segment>
           PARSER = new org.nd4j.shade.protobuf.AbstractParser<Segment>() {
-        @java.lang.Override
+        @Override
         public Segment parsePartialFrom(
             org.nd4j.shade.protobuf.CodedInputStream input,
             org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -6653,13 +6653,13 @@ public final class TensorNamespace {
         return PARSER;
       }
 
-      @java.lang.Override
+      @Override
       public org.nd4j.shade.protobuf.Parser<Segment> getParserForType() {
         return PARSER;
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.TensorProto.Segment getDefaultInstanceForType() {
+      @Override
+      public Segment getDefaultInstanceForType() {
         return DEFAULT_INSTANCE;
       }
 
@@ -6674,7 +6674,7 @@ public final class TensorNamespace {
      *
      * <code>repeated int64 dims = 1;</code>
      */
-    public java.util.List<java.lang.Long>
+    public java.util.List<Long>
         getDimsList() {
       return dims_;
     }
@@ -6715,7 +6715,7 @@ public final class TensorNamespace {
     }
 
     public static final int SEGMENT_FIELD_NUMBER = 3;
-    private org.nd4j.ir.TensorNamespace.TensorProto.Segment segment_;
+    private Segment segment_;
     /**
      * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
      */
@@ -6725,13 +6725,13 @@ public final class TensorNamespace {
     /**
      * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
      */
-    public org.nd4j.ir.TensorNamespace.TensorProto.Segment getSegment() {
-      return segment_ == null ? org.nd4j.ir.TensorNamespace.TensorProto.Segment.getDefaultInstance() : segment_;
+    public Segment getSegment() {
+      return segment_ == null ? Segment.getDefaultInstance() : segment_;
     }
     /**
      * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
      */
-    public org.nd4j.ir.TensorNamespace.TensorProto.SegmentOrBuilder getSegmentOrBuilder() {
+    public SegmentOrBuilder getSegmentOrBuilder() {
       return getSegment();
     }
 
@@ -6750,7 +6750,7 @@ public final class TensorNamespace {
      *
      * <code>repeated float float_data = 4 [packed = true];</code>
      */
-    public java.util.List<java.lang.Float>
+    public java.util.List<Float>
         getFloatDataList() {
       return floatData_;
     }
@@ -6801,7 +6801,7 @@ public final class TensorNamespace {
      *
      * <code>repeated int32 int32_data = 5 [packed = true];</code>
      */
-    public java.util.List<java.lang.Integer>
+    public java.util.List<Integer>
         getInt32DataList() {
       return int32Data_;
     }
@@ -6891,7 +6891,7 @@ public final class TensorNamespace {
      *
      * <code>repeated int64 int64_data = 7 [packed = true];</code>
      */
-    public java.util.List<java.lang.Long>
+    public java.util.List<Long>
         getInt64DataList() {
       return int64Data_;
     }
@@ -6920,7 +6920,7 @@ public final class TensorNamespace {
     private int int64DataMemoizedSerializedSize = -1;
 
     public static final int NAME_FIELD_NUMBER = 8;
-    private volatile java.lang.Object name_;
+    private volatile Object name_;
     /**
      * <pre>
      * Optionally, a name for the tensor.
@@ -6928,14 +6928,14 @@ public final class TensorNamespace {
      *
      * <code>string name = 8;</code>
      */
-    public java.lang.String getName() {
-      java.lang.Object ref = name_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
+    public String getName() {
+      Object ref = name_;
+      if (ref instanceof String) {
+        return (String) ref;
       } else {
         org.nd4j.shade.protobuf.ByteString bs = 
             (org.nd4j.shade.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
+        String s = bs.toStringUtf8();
         name_ = s;
         return s;
       }
@@ -6949,11 +6949,11 @@ public final class TensorNamespace {
      */
     public org.nd4j.shade.protobuf.ByteString
         getNameBytes() {
-      java.lang.Object ref = name_;
-      if (ref instanceof java.lang.String) {
+      Object ref = name_;
+      if (ref instanceof String) {
         org.nd4j.shade.protobuf.ByteString b = 
             org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+                (String) ref);
         name_ = b;
         return b;
       } else {
@@ -6962,7 +6962,7 @@ public final class TensorNamespace {
     }
 
     public static final int DOC_STRING_FIELD_NUMBER = 12;
-    private volatile java.lang.Object docString_;
+    private volatile Object docString_;
     /**
      * <pre>
      * A human-readable documentation for this tensor. Markdown is allowed.
@@ -6970,14 +6970,14 @@ public final class TensorNamespace {
      *
      * <code>string doc_string = 12;</code>
      */
-    public java.lang.String getDocString() {
-      java.lang.Object ref = docString_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
+    public String getDocString() {
+      Object ref = docString_;
+      if (ref instanceof String) {
+        return (String) ref;
       } else {
         org.nd4j.shade.protobuf.ByteString bs = 
             (org.nd4j.shade.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
+        String s = bs.toStringUtf8();
         docString_ = s;
         return s;
       }
@@ -6991,11 +6991,11 @@ public final class TensorNamespace {
      */
     public org.nd4j.shade.protobuf.ByteString
         getDocStringBytes() {
-      java.lang.Object ref = docString_;
-      if (ref instanceof java.lang.String) {
+      Object ref = docString_;
+      if (ref instanceof String) {
         org.nd4j.shade.protobuf.ByteString b = 
             org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+                (String) ref);
         docString_ = b;
         return b;
       } else {
@@ -7029,7 +7029,7 @@ public final class TensorNamespace {
     }
 
     public static final int EXTERNAL_DATA_FIELD_NUMBER = 13;
-    private java.util.List<org.nd4j.ir.TensorNamespace.StringStringEntryProto> externalData_;
+    private java.util.List<StringStringEntryProto> externalData_;
     /**
      * <pre>
      * Data can be stored inside the protobuf file using type-specific fields or raw_data.
@@ -7045,7 +7045,7 @@ public final class TensorNamespace {
      *
      * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
      */
-    public java.util.List<org.nd4j.ir.TensorNamespace.StringStringEntryProto> getExternalDataList() {
+    public java.util.List<StringStringEntryProto> getExternalDataList() {
       return externalData_;
     }
     /**
@@ -7063,7 +7063,7 @@ public final class TensorNamespace {
      *
      * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
      */
-    public java.util.List<? extends org.nd4j.ir.TensorNamespace.StringStringEntryProtoOrBuilder> 
+    public java.util.List<? extends StringStringEntryProtoOrBuilder>
         getExternalDataOrBuilderList() {
       return externalData_;
     }
@@ -7100,7 +7100,7 @@ public final class TensorNamespace {
      *
      * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
      */
-    public org.nd4j.ir.TensorNamespace.StringStringEntryProto getExternalData(int index) {
+    public StringStringEntryProto getExternalData(int index) {
       return externalData_.get(index);
     }
     /**
@@ -7118,7 +7118,7 @@ public final class TensorNamespace {
      *
      * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
      */
-    public org.nd4j.ir.TensorNamespace.StringStringEntryProtoOrBuilder getExternalDataOrBuilder(
+    public StringStringEntryProtoOrBuilder getExternalDataOrBuilder(
         int index) {
       return externalData_.get(index);
     }
@@ -7142,10 +7142,10 @@ public final class TensorNamespace {
      *
      * <code>.org.nd4j.ir.TensorProto.DataLocation data_location = 14;</code>
      */
-    public org.nd4j.ir.TensorNamespace.TensorProto.DataLocation getDataLocation() {
+    public DataLocation getDataLocation() {
       @SuppressWarnings("deprecation")
-      org.nd4j.ir.TensorNamespace.TensorProto.DataLocation result = org.nd4j.ir.TensorNamespace.TensorProto.DataLocation.valueOf(dataLocation_);
-      return result == null ? org.nd4j.ir.TensorNamespace.TensorProto.DataLocation.UNRECOGNIZED : result;
+      DataLocation result = DataLocation.valueOf(dataLocation_);
+      return result == null ? DataLocation.UNRECOGNIZED : result;
     }
 
     public static final int DOUBLE_DATA_FIELD_NUMBER = 10;
@@ -7163,7 +7163,7 @@ public final class TensorNamespace {
      *
      * <code>repeated double double_data = 10 [packed = true];</code>
      */
-    public java.util.List<java.lang.Double>
+    public java.util.List<Double>
         getDoubleDataList() {
       return doubleData_;
     }
@@ -7212,7 +7212,7 @@ public final class TensorNamespace {
      *
      * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
      */
-    public java.util.List<java.lang.Long>
+    public java.util.List<Long>
         getUint64DataList() {
       return uint64Data_;
     }
@@ -7251,7 +7251,7 @@ public final class TensorNamespace {
      *
      * <code>repeated int32 half_val = 15 [packed = true];</code>
      */
-    public java.util.List<java.lang.Integer>
+    public java.util.List<Integer>
         getHalfValList() {
       return halfVal_;
     }
@@ -7286,7 +7286,7 @@ public final class TensorNamespace {
      *
      * <code>repeated bool bool_val = 16 [packed = true];</code>
      */
-    public java.util.List<java.lang.Boolean>
+    public java.util.List<Boolean>
         getBoolValList() {
       return boolVal_;
     }
@@ -7313,7 +7313,7 @@ public final class TensorNamespace {
     private int boolValMemoizedSerializedSize = -1;
 
     private byte memoizedIsInitialized = -1;
-    @java.lang.Override
+    @Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized == 1) return true;
@@ -7323,7 +7323,7 @@ public final class TensorNamespace {
       return true;
     }
 
-    @java.lang.Override
+    @Override
     public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -7390,7 +7390,7 @@ public final class TensorNamespace {
       for (int i = 0; i < externalData_.size(); i++) {
         output.writeMessage(13, externalData_.get(i));
       }
-      if (dataLocation_ != org.nd4j.ir.TensorNamespace.TensorProto.DataLocation.DEFAULT.getNumber()) {
+      if (dataLocation_ != DataLocation.DEFAULT.getNumber()) {
         output.writeEnum(14, dataLocation_);
       }
       if (getHalfValList().size() > 0) {
@@ -7410,7 +7410,7 @@ public final class TensorNamespace {
       unknownFields.writeTo(output);
     }
 
-    @java.lang.Override
+    @Override
     public int getSerializedSize() {
       int size = memoizedSize;
       if (size != -1) return size;
@@ -7525,7 +7525,7 @@ public final class TensorNamespace {
         size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeMessageSize(13, externalData_.get(i));
       }
-      if (dataLocation_ != org.nd4j.ir.TensorNamespace.TensorProto.DataLocation.DEFAULT.getNumber()) {
+      if (dataLocation_ != DataLocation.DEFAULT.getNumber()) {
         size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeEnumSize(14, dataLocation_);
       }
@@ -7559,15 +7559,15 @@ public final class TensorNamespace {
       return size;
     }
 
-    @java.lang.Override
-    public boolean equals(final java.lang.Object obj) {
+    @Override
+    public boolean equals(final Object obj) {
       if (obj == this) {
        return true;
       }
-      if (!(obj instanceof org.nd4j.ir.TensorNamespace.TensorProto)) {
+      if (!(obj instanceof TensorProto)) {
         return super.equals(obj);
       }
-      org.nd4j.ir.TensorNamespace.TensorProto other = (org.nd4j.ir.TensorNamespace.TensorProto) obj;
+      TensorProto other = (TensorProto) obj;
 
       if (!getDimsList()
           .equals(other.getDimsList())) return false;
@@ -7607,7 +7607,7 @@ public final class TensorNamespace {
       return true;
     }
 
-    @java.lang.Override
+    @Override
     public int hashCode() {
       if (memoizedHashCode != 0) {
         return memoizedHashCode;
@@ -7673,69 +7673,69 @@ public final class TensorNamespace {
       return hash;
     }
 
-    public static org.nd4j.ir.TensorNamespace.TensorProto parseFrom(
+    public static TensorProto parseFrom(
         java.nio.ByteBuffer data)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorProto parseFrom(
+    public static TensorProto parseFrom(
         java.nio.ByteBuffer data,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorProto parseFrom(
+    public static TensorProto parseFrom(
         org.nd4j.shade.protobuf.ByteString data)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorProto parseFrom(
+    public static TensorProto parseFrom(
         org.nd4j.shade.protobuf.ByteString data,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorProto parseFrom(byte[] data)
+    public static TensorProto parseFrom(byte[] data)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorProto parseFrom(
+    public static TensorProto parseFrom(
         byte[] data,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorProto parseFrom(java.io.InputStream input)
+    public static TensorProto parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorProto parseFrom(
+    public static TensorProto parseFrom(
         java.io.InputStream input,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorProto parseDelimitedFrom(java.io.InputStream input)
+    public static TensorProto parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorProto parseDelimitedFrom(
+    public static TensorProto parseDelimitedFrom(
         java.io.InputStream input,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorProto parseFrom(
+    public static TensorProto parseFrom(
         org.nd4j.shade.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return org.nd4j.shade.protobuf.GeneratedMessageV3
           .parseWithIOException(PARSER, input);
     }
-    public static org.nd4j.ir.TensorNamespace.TensorProto parseFrom(
+    public static TensorProto parseFrom(
         org.nd4j.shade.protobuf.CodedInputStream input,
         org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
@@ -7743,23 +7743,23 @@ public final class TensorNamespace {
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    @java.lang.Override
+    @Override
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
     }
-    public static Builder newBuilder(org.nd4j.ir.TensorNamespace.TensorProto prototype) {
+    public static Builder newBuilder(TensorProto prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
-    @java.lang.Override
+    @Override
     public Builder toBuilder() {
       return this == DEFAULT_INSTANCE
           ? new Builder() : new Builder().mergeFrom(this);
     }
 
-    @java.lang.Override
+    @Override
     protected Builder newBuilderForType(
-        org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -7774,18 +7774,18 @@ public final class TensorNamespace {
     public static final class Builder extends
         org.nd4j.shade.protobuf.GeneratedMessageV3.Builder<Builder> implements
         // @@protoc_insertion_point(builder_implements:org.nd4j.ir.TensorProto)
-        org.nd4j.ir.TensorNamespace.TensorProtoOrBuilder {
+        TensorProtoOrBuilder {
       public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorProto_descriptor;
+        return TensorNamespace.internal_static_org_nd4j_ir_TensorProto_descriptor;
       }
 
-      @java.lang.Override
-      protected org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable
+      @Override
+      protected FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorProto_fieldAccessorTable
+        return TensorNamespace.internal_static_org_nd4j_ir_TensorProto_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                org.nd4j.ir.TensorNamespace.TensorProto.class, org.nd4j.ir.TensorNamespace.TensorProto.Builder.class);
+                TensorProto.class, Builder.class);
       }
 
       // Construct using org.nd4j.ir.TensorNamespace.TensorProto.newBuilder()
@@ -7794,7 +7794,7 @@ public final class TensorNamespace {
       }
 
       private Builder(
-          org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -7804,7 +7804,7 @@ public final class TensorNamespace {
           getExternalDataFieldBuilder();
         }
       }
-      @java.lang.Override
+      @Override
       public Builder clear() {
         super.clear();
         dims_ = emptyLongList();
@@ -7850,29 +7850,29 @@ public final class TensorNamespace {
         return this;
       }
 
-      @java.lang.Override
+      @Override
       public org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
-        return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorProto_descriptor;
+        return TensorNamespace.internal_static_org_nd4j_ir_TensorProto_descriptor;
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.TensorProto getDefaultInstanceForType() {
-        return org.nd4j.ir.TensorNamespace.TensorProto.getDefaultInstance();
+      @Override
+      public TensorProto getDefaultInstanceForType() {
+        return TensorProto.getDefaultInstance();
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.TensorProto build() {
-        org.nd4j.ir.TensorNamespace.TensorProto result = buildPartial();
+      @Override
+      public TensorProto build() {
+        TensorProto result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
         return result;
       }
 
-      @java.lang.Override
-      public org.nd4j.ir.TensorNamespace.TensorProto buildPartial() {
-        org.nd4j.ir.TensorNamespace.TensorProto result = new org.nd4j.ir.TensorNamespace.TensorProto(this);
+      @Override
+      public TensorProto buildPartial() {
+        TensorProto result = new TensorProto(this);
         int from_bitField0_ = bitField0_;
         if (((bitField0_ & 0x00000001) != 0)) {
           dims_.makeImmutable();
@@ -7942,50 +7942,50 @@ public final class TensorNamespace {
         return result;
       }
 
-      @java.lang.Override
+      @Override
       public Builder clone() {
         return super.clone();
       }
-      @java.lang.Override
+      @Override
       public Builder setField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          Object value) {
         return super.setField(field, value);
       }
-      @java.lang.Override
+      @Override
       public Builder clearField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field) {
         return super.clearField(field);
       }
-      @java.lang.Override
+      @Override
       public Builder clearOneof(
           org.nd4j.shade.protobuf.Descriptors.OneofDescriptor oneof) {
         return super.clearOneof(oneof);
       }
-      @java.lang.Override
+      @Override
       public Builder setRepeatedField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-          int index, java.lang.Object value) {
+          int index, Object value) {
         return super.setRepeatedField(field, index, value);
       }
-      @java.lang.Override
+      @Override
       public Builder addRepeatedField(
           org.nd4j.shade.protobuf.Descriptors.FieldDescriptor field,
-          java.lang.Object value) {
+          Object value) {
         return super.addRepeatedField(field, value);
       }
-      @java.lang.Override
+      @Override
       public Builder mergeFrom(org.nd4j.shade.protobuf.Message other) {
-        if (other instanceof org.nd4j.ir.TensorNamespace.TensorProto) {
-          return mergeFrom((org.nd4j.ir.TensorNamespace.TensorProto)other);
+        if (other instanceof TensorProto) {
+          return mergeFrom((TensorProto)other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
 
-      public Builder mergeFrom(org.nd4j.ir.TensorNamespace.TensorProto other) {
-        if (other == org.nd4j.ir.TensorNamespace.TensorProto.getDefaultInstance()) return this;
+      public Builder mergeFrom(TensorProto other) {
+        if (other == TensorProto.getDefaultInstance()) return this;
         if (!other.dims_.isEmpty()) {
           if (dims_.isEmpty()) {
             dims_ = other.dims_;
@@ -8127,21 +8127,21 @@ public final class TensorNamespace {
         return this;
       }
 
-      @java.lang.Override
+      @Override
       public final boolean isInitialized() {
         return true;
       }
 
-      @java.lang.Override
+      @Override
       public Builder mergeFrom(
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        org.nd4j.ir.TensorNamespace.TensorProto parsedMessage = null;
+        TensorProto parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.nd4j.ir.TensorNamespace.TensorProto) e.getUnfinishedMessage();
+          parsedMessage = (TensorProto) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
           if (parsedMessage != null) {
@@ -8166,7 +8166,7 @@ public final class TensorNamespace {
        *
        * <code>repeated int64 dims = 1;</code>
        */
-      public java.util.List<java.lang.Long>
+      public java.util.List<Long>
           getDimsList() {
         return ((bitField0_ & 0x00000001) != 0) ?
                  java.util.Collections.unmodifiableList(dims_) : dims_;
@@ -8226,7 +8226,7 @@ public final class TensorNamespace {
        * <code>repeated int64 dims = 1;</code>
        */
       public Builder addAllDims(
-          java.lang.Iterable<? extends java.lang.Long> values) {
+          Iterable<? extends Long> values) {
         ensureDimsIsMutable();
         org.nd4j.shade.protobuf.AbstractMessageLite.Builder.addAll(
             values, dims_);
@@ -8288,9 +8288,9 @@ public final class TensorNamespace {
         return this;
       }
 
-      private org.nd4j.ir.TensorNamespace.TensorProto.Segment segment_;
+      private Segment segment_;
       private org.nd4j.shade.protobuf.SingleFieldBuilderV3<
-          org.nd4j.ir.TensorNamespace.TensorProto.Segment, org.nd4j.ir.TensorNamespace.TensorProto.Segment.Builder, org.nd4j.ir.TensorNamespace.TensorProto.SegmentOrBuilder> segmentBuilder_;
+          Segment, Segment.Builder, SegmentOrBuilder> segmentBuilder_;
       /**
        * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
        */
@@ -8300,9 +8300,9 @@ public final class TensorNamespace {
       /**
        * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
        */
-      public org.nd4j.ir.TensorNamespace.TensorProto.Segment getSegment() {
+      public Segment getSegment() {
         if (segmentBuilder_ == null) {
-          return segment_ == null ? org.nd4j.ir.TensorNamespace.TensorProto.Segment.getDefaultInstance() : segment_;
+          return segment_ == null ? Segment.getDefaultInstance() : segment_;
         } else {
           return segmentBuilder_.getMessage();
         }
@@ -8310,7 +8310,7 @@ public final class TensorNamespace {
       /**
        * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
        */
-      public Builder setSegment(org.nd4j.ir.TensorNamespace.TensorProto.Segment value) {
+      public Builder setSegment(Segment value) {
         if (segmentBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -8327,7 +8327,7 @@ public final class TensorNamespace {
        * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
        */
       public Builder setSegment(
-          org.nd4j.ir.TensorNamespace.TensorProto.Segment.Builder builderForValue) {
+          Segment.Builder builderForValue) {
         if (segmentBuilder_ == null) {
           segment_ = builderForValue.build();
           onChanged();
@@ -8340,11 +8340,11 @@ public final class TensorNamespace {
       /**
        * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
        */
-      public Builder mergeSegment(org.nd4j.ir.TensorNamespace.TensorProto.Segment value) {
+      public Builder mergeSegment(Segment value) {
         if (segmentBuilder_ == null) {
           if (segment_ != null) {
             segment_ =
-              org.nd4j.ir.TensorNamespace.TensorProto.Segment.newBuilder(segment_).mergeFrom(value).buildPartial();
+              Segment.newBuilder(segment_).mergeFrom(value).buildPartial();
           } else {
             segment_ = value;
           }
@@ -8372,7 +8372,7 @@ public final class TensorNamespace {
       /**
        * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
        */
-      public org.nd4j.ir.TensorNamespace.TensorProto.Segment.Builder getSegmentBuilder() {
+      public Segment.Builder getSegmentBuilder() {
         
         onChanged();
         return getSegmentFieldBuilder().getBuilder();
@@ -8380,23 +8380,23 @@ public final class TensorNamespace {
       /**
        * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
        */
-      public org.nd4j.ir.TensorNamespace.TensorProto.SegmentOrBuilder getSegmentOrBuilder() {
+      public SegmentOrBuilder getSegmentOrBuilder() {
         if (segmentBuilder_ != null) {
           return segmentBuilder_.getMessageOrBuilder();
         } else {
           return segment_ == null ?
-              org.nd4j.ir.TensorNamespace.TensorProto.Segment.getDefaultInstance() : segment_;
+              Segment.getDefaultInstance() : segment_;
         }
       }
       /**
        * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
        */
       private org.nd4j.shade.protobuf.SingleFieldBuilderV3<
-          org.nd4j.ir.TensorNamespace.TensorProto.Segment, org.nd4j.ir.TensorNamespace.TensorProto.Segment.Builder, org.nd4j.ir.TensorNamespace.TensorProto.SegmentOrBuilder> 
+          Segment, Segment.Builder, SegmentOrBuilder>
           getSegmentFieldBuilder() {
         if (segmentBuilder_ == null) {
           segmentBuilder_ = new org.nd4j.shade.protobuf.SingleFieldBuilderV3<
-              org.nd4j.ir.TensorNamespace.TensorProto.Segment, org.nd4j.ir.TensorNamespace.TensorProto.Segment.Builder, org.nd4j.ir.TensorNamespace.TensorProto.SegmentOrBuilder>(
+              Segment, Segment.Builder, SegmentOrBuilder>(
                   getSegment(),
                   getParentForChildren(),
                   isClean());
@@ -8425,7 +8425,7 @@ public final class TensorNamespace {
        *
        * <code>repeated float float_data = 4 [packed = true];</code>
        */
-      public java.util.List<java.lang.Float>
+      public java.util.List<Float>
           getFloatDataList() {
         return ((bitField0_ & 0x00000002) != 0) ?
                  java.util.Collections.unmodifiableList(floatData_) : floatData_;
@@ -8515,7 +8515,7 @@ public final class TensorNamespace {
        * <code>repeated float float_data = 4 [packed = true];</code>
        */
       public Builder addAllFloatData(
-          java.lang.Iterable<? extends java.lang.Float> values) {
+          Iterable<? extends Float> values) {
         ensureFloatDataIsMutable();
         org.nd4j.shade.protobuf.AbstractMessageLite.Builder.addAll(
             values, floatData_);
@@ -8560,7 +8560,7 @@ public final class TensorNamespace {
        *
        * <code>repeated int32 int32_data = 5 [packed = true];</code>
        */
-      public java.util.List<java.lang.Integer>
+      public java.util.List<Integer>
           getInt32DataList() {
         return ((bitField0_ & 0x00000004) != 0) ?
                  java.util.Collections.unmodifiableList(int32Data_) : int32Data_;
@@ -8640,7 +8640,7 @@ public final class TensorNamespace {
        * <code>repeated int32 int32_data = 5 [packed = true];</code>
        */
       public Builder addAllInt32Data(
-          java.lang.Iterable<? extends java.lang.Integer> values) {
+          Iterable<? extends Integer> values) {
         ensureInt32DataIsMutable();
         org.nd4j.shade.protobuf.AbstractMessageLite.Builder.addAll(
             values, int32Data_);
@@ -8769,7 +8769,7 @@ public final class TensorNamespace {
        * <code>repeated bytes string_data = 6;</code>
        */
       public Builder addAllStringData(
-          java.lang.Iterable<? extends org.nd4j.shade.protobuf.ByteString> values) {
+          Iterable<? extends org.nd4j.shade.protobuf.ByteString> values) {
         ensureStringDataIsMutable();
         org.nd4j.shade.protobuf.AbstractMessageLite.Builder.addAll(
             values, stringData_);
@@ -8809,7 +8809,7 @@ public final class TensorNamespace {
        *
        * <code>repeated int64 int64_data = 7 [packed = true];</code>
        */
-      public java.util.List<java.lang.Long>
+      public java.util.List<Long>
           getInt64DataList() {
         return ((bitField0_ & 0x00000010) != 0) ?
                  java.util.Collections.unmodifiableList(int64Data_) : int64Data_;
@@ -8874,7 +8874,7 @@ public final class TensorNamespace {
        * <code>repeated int64 int64_data = 7 [packed = true];</code>
        */
       public Builder addAllInt64Data(
-          java.lang.Iterable<? extends java.lang.Long> values) {
+          Iterable<? extends Long> values) {
         ensureInt64DataIsMutable();
         org.nd4j.shade.protobuf.AbstractMessageLite.Builder.addAll(
             values, int64Data_);
@@ -8896,7 +8896,7 @@ public final class TensorNamespace {
         return this;
       }
 
-      private java.lang.Object name_ = "";
+      private Object name_ = "";
       /**
        * <pre>
        * Optionally, a name for the tensor.
@@ -8904,16 +8904,16 @@ public final class TensorNamespace {
        *
        * <code>string name = 8;</code>
        */
-      public java.lang.String getName() {
-        java.lang.Object ref = name_;
-        if (!(ref instanceof java.lang.String)) {
+      public String getName() {
+        Object ref = name_;
+        if (!(ref instanceof String)) {
           org.nd4j.shade.protobuf.ByteString bs =
               (org.nd4j.shade.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
+          String s = bs.toStringUtf8();
           name_ = s;
           return s;
         } else {
-          return (java.lang.String) ref;
+          return (String) ref;
         }
       }
       /**
@@ -8925,11 +8925,11 @@ public final class TensorNamespace {
        */
       public org.nd4j.shade.protobuf.ByteString
           getNameBytes() {
-        java.lang.Object ref = name_;
+        Object ref = name_;
         if (ref instanceof String) {
           org.nd4j.shade.protobuf.ByteString b = 
               org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+                  (String) ref);
           name_ = b;
           return b;
         } else {
@@ -8944,7 +8944,7 @@ public final class TensorNamespace {
        * <code>string name = 8;</code>
        */
       public Builder setName(
-          java.lang.String value) {
+          String value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -8985,7 +8985,7 @@ public final class TensorNamespace {
         return this;
       }
 
-      private java.lang.Object docString_ = "";
+      private Object docString_ = "";
       /**
        * <pre>
        * A human-readable documentation for this tensor. Markdown is allowed.
@@ -8993,16 +8993,16 @@ public final class TensorNamespace {
        *
        * <code>string doc_string = 12;</code>
        */
-      public java.lang.String getDocString() {
-        java.lang.Object ref = docString_;
-        if (!(ref instanceof java.lang.String)) {
+      public String getDocString() {
+        Object ref = docString_;
+        if (!(ref instanceof String)) {
           org.nd4j.shade.protobuf.ByteString bs =
               (org.nd4j.shade.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
+          String s = bs.toStringUtf8();
           docString_ = s;
           return s;
         } else {
-          return (java.lang.String) ref;
+          return (String) ref;
         }
       }
       /**
@@ -9014,11 +9014,11 @@ public final class TensorNamespace {
        */
       public org.nd4j.shade.protobuf.ByteString
           getDocStringBytes() {
-        java.lang.Object ref = docString_;
+        Object ref = docString_;
         if (ref instanceof String) {
           org.nd4j.shade.protobuf.ByteString b = 
               org.nd4j.shade.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+                  (String) ref);
           docString_ = b;
           return b;
         } else {
@@ -9033,7 +9033,7 @@ public final class TensorNamespace {
        * <code>string doc_string = 12;</code>
        */
       public Builder setDocString(
-          java.lang.String value) {
+          String value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -9151,17 +9151,17 @@ public final class TensorNamespace {
         return this;
       }
 
-      private java.util.List<org.nd4j.ir.TensorNamespace.StringStringEntryProto> externalData_ =
+      private java.util.List<StringStringEntryProto> externalData_ =
         java.util.Collections.emptyList();
       private void ensureExternalDataIsMutable() {
         if (!((bitField0_ & 0x00000020) != 0)) {
-          externalData_ = new java.util.ArrayList<org.nd4j.ir.TensorNamespace.StringStringEntryProto>(externalData_);
+          externalData_ = new java.util.ArrayList<StringStringEntryProto>(externalData_);
           bitField0_ |= 0x00000020;
          }
       }
 
       private org.nd4j.shade.protobuf.RepeatedFieldBuilderV3<
-          org.nd4j.ir.TensorNamespace.StringStringEntryProto, org.nd4j.ir.TensorNamespace.StringStringEntryProto.Builder, org.nd4j.ir.TensorNamespace.StringStringEntryProtoOrBuilder> externalDataBuilder_;
+          StringStringEntryProto, StringStringEntryProto.Builder, StringStringEntryProtoOrBuilder> externalDataBuilder_;
 
       /**
        * <pre>
@@ -9178,7 +9178,7 @@ public final class TensorNamespace {
        *
        * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
        */
-      public java.util.List<org.nd4j.ir.TensorNamespace.StringStringEntryProto> getExternalDataList() {
+      public java.util.List<StringStringEntryProto> getExternalDataList() {
         if (externalDataBuilder_ == null) {
           return java.util.Collections.unmodifiableList(externalData_);
         } else {
@@ -9222,7 +9222,7 @@ public final class TensorNamespace {
        *
        * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
        */
-      public org.nd4j.ir.TensorNamespace.StringStringEntryProto getExternalData(int index) {
+      public StringStringEntryProto getExternalData(int index) {
         if (externalDataBuilder_ == null) {
           return externalData_.get(index);
         } else {
@@ -9245,7 +9245,7 @@ public final class TensorNamespace {
        * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
        */
       public Builder setExternalData(
-          int index, org.nd4j.ir.TensorNamespace.StringStringEntryProto value) {
+          int index, StringStringEntryProto value) {
         if (externalDataBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -9274,7 +9274,7 @@ public final class TensorNamespace {
        * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
        */
       public Builder setExternalData(
-          int index, org.nd4j.ir.TensorNamespace.StringStringEntryProto.Builder builderForValue) {
+          int index, StringStringEntryProto.Builder builderForValue) {
         if (externalDataBuilder_ == null) {
           ensureExternalDataIsMutable();
           externalData_.set(index, builderForValue.build());
@@ -9299,7 +9299,7 @@ public final class TensorNamespace {
        *
        * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
        */
-      public Builder addExternalData(org.nd4j.ir.TensorNamespace.StringStringEntryProto value) {
+      public Builder addExternalData(StringStringEntryProto value) {
         if (externalDataBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -9328,7 +9328,7 @@ public final class TensorNamespace {
        * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
        */
       public Builder addExternalData(
-          int index, org.nd4j.ir.TensorNamespace.StringStringEntryProto value) {
+          int index, StringStringEntryProto value) {
         if (externalDataBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -9357,7 +9357,7 @@ public final class TensorNamespace {
        * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
        */
       public Builder addExternalData(
-          org.nd4j.ir.TensorNamespace.StringStringEntryProto.Builder builderForValue) {
+          StringStringEntryProto.Builder builderForValue) {
         if (externalDataBuilder_ == null) {
           ensureExternalDataIsMutable();
           externalData_.add(builderForValue.build());
@@ -9383,7 +9383,7 @@ public final class TensorNamespace {
        * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
        */
       public Builder addExternalData(
-          int index, org.nd4j.ir.TensorNamespace.StringStringEntryProto.Builder builderForValue) {
+          int index, StringStringEntryProto.Builder builderForValue) {
         if (externalDataBuilder_ == null) {
           ensureExternalDataIsMutable();
           externalData_.add(index, builderForValue.build());
@@ -9409,7 +9409,7 @@ public final class TensorNamespace {
        * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
        */
       public Builder addAllExternalData(
-          java.lang.Iterable<? extends org.nd4j.ir.TensorNamespace.StringStringEntryProto> values) {
+          Iterable<? extends StringStringEntryProto> values) {
         if (externalDataBuilder_ == null) {
           ensureExternalDataIsMutable();
           org.nd4j.shade.protobuf.AbstractMessageLite.Builder.addAll(
@@ -9485,7 +9485,7 @@ public final class TensorNamespace {
        *
        * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
        */
-      public org.nd4j.ir.TensorNamespace.StringStringEntryProto.Builder getExternalDataBuilder(
+      public StringStringEntryProto.Builder getExternalDataBuilder(
           int index) {
         return getExternalDataFieldBuilder().getBuilder(index);
       }
@@ -9504,7 +9504,7 @@ public final class TensorNamespace {
        *
        * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
        */
-      public org.nd4j.ir.TensorNamespace.StringStringEntryProtoOrBuilder getExternalDataOrBuilder(
+      public StringStringEntryProtoOrBuilder getExternalDataOrBuilder(
           int index) {
         if (externalDataBuilder_ == null) {
           return externalData_.get(index);  } else {
@@ -9526,7 +9526,7 @@ public final class TensorNamespace {
        *
        * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
        */
-      public java.util.List<? extends org.nd4j.ir.TensorNamespace.StringStringEntryProtoOrBuilder> 
+      public java.util.List<? extends StringStringEntryProtoOrBuilder>
            getExternalDataOrBuilderList() {
         if (externalDataBuilder_ != null) {
           return externalDataBuilder_.getMessageOrBuilderList();
@@ -9549,9 +9549,9 @@ public final class TensorNamespace {
        *
        * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
        */
-      public org.nd4j.ir.TensorNamespace.StringStringEntryProto.Builder addExternalDataBuilder() {
+      public StringStringEntryProto.Builder addExternalDataBuilder() {
         return getExternalDataFieldBuilder().addBuilder(
-            org.nd4j.ir.TensorNamespace.StringStringEntryProto.getDefaultInstance());
+            StringStringEntryProto.getDefaultInstance());
       }
       /**
        * <pre>
@@ -9568,10 +9568,10 @@ public final class TensorNamespace {
        *
        * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
        */
-      public org.nd4j.ir.TensorNamespace.StringStringEntryProto.Builder addExternalDataBuilder(
+      public StringStringEntryProto.Builder addExternalDataBuilder(
           int index) {
         return getExternalDataFieldBuilder().addBuilder(
-            index, org.nd4j.ir.TensorNamespace.StringStringEntryProto.getDefaultInstance());
+            index, StringStringEntryProto.getDefaultInstance());
       }
       /**
        * <pre>
@@ -9588,16 +9588,16 @@ public final class TensorNamespace {
        *
        * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
        */
-      public java.util.List<org.nd4j.ir.TensorNamespace.StringStringEntryProto.Builder> 
+      public java.util.List<StringStringEntryProto.Builder>
            getExternalDataBuilderList() {
         return getExternalDataFieldBuilder().getBuilderList();
       }
       private org.nd4j.shade.protobuf.RepeatedFieldBuilderV3<
-          org.nd4j.ir.TensorNamespace.StringStringEntryProto, org.nd4j.ir.TensorNamespace.StringStringEntryProto.Builder, org.nd4j.ir.TensorNamespace.StringStringEntryProtoOrBuilder> 
+          StringStringEntryProto, StringStringEntryProto.Builder, StringStringEntryProtoOrBuilder>
           getExternalDataFieldBuilder() {
         if (externalDataBuilder_ == null) {
           externalDataBuilder_ = new org.nd4j.shade.protobuf.RepeatedFieldBuilderV3<
-              org.nd4j.ir.TensorNamespace.StringStringEntryProto, org.nd4j.ir.TensorNamespace.StringStringEntryProto.Builder, org.nd4j.ir.TensorNamespace.StringStringEntryProtoOrBuilder>(
+              StringStringEntryProto, StringStringEntryProto.Builder, StringStringEntryProtoOrBuilder>(
                   externalData_,
                   ((bitField0_ & 0x00000020) != 0),
                   getParentForChildren(),
@@ -9637,10 +9637,10 @@ public final class TensorNamespace {
        *
        * <code>.org.nd4j.ir.TensorProto.DataLocation data_location = 14;</code>
        */
-      public org.nd4j.ir.TensorNamespace.TensorProto.DataLocation getDataLocation() {
+      public DataLocation getDataLocation() {
         @SuppressWarnings("deprecation")
-        org.nd4j.ir.TensorNamespace.TensorProto.DataLocation result = org.nd4j.ir.TensorNamespace.TensorProto.DataLocation.valueOf(dataLocation_);
-        return result == null ? org.nd4j.ir.TensorNamespace.TensorProto.DataLocation.UNRECOGNIZED : result;
+        DataLocation result = DataLocation.valueOf(dataLocation_);
+        return result == null ? DataLocation.UNRECOGNIZED : result;
       }
       /**
        * <pre>
@@ -9649,7 +9649,7 @@ public final class TensorNamespace {
        *
        * <code>.org.nd4j.ir.TensorProto.DataLocation data_location = 14;</code>
        */
-      public Builder setDataLocation(org.nd4j.ir.TensorNamespace.TensorProto.DataLocation value) {
+      public Builder setDataLocation(DataLocation value) {
         if (value == null) {
           throw new NullPointerException();
         }
@@ -9692,7 +9692,7 @@ public final class TensorNamespace {
        *
        * <code>repeated double double_data = 10 [packed = true];</code>
        */
-      public java.util.List<java.lang.Double>
+      public java.util.List<Double>
           getDoubleDataList() {
         return ((bitField0_ & 0x00000040) != 0) ?
                  java.util.Collections.unmodifiableList(doubleData_) : doubleData_;
@@ -9782,7 +9782,7 @@ public final class TensorNamespace {
        * <code>repeated double double_data = 10 [packed = true];</code>
        */
       public Builder addAllDoubleData(
-          java.lang.Iterable<? extends java.lang.Double> values) {
+          Iterable<? extends Double> values) {
         ensureDoubleDataIsMutable();
         org.nd4j.shade.protobuf.AbstractMessageLite.Builder.addAll(
             values, doubleData_);
@@ -9825,7 +9825,7 @@ public final class TensorNamespace {
        *
        * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
        */
-      public java.util.List<java.lang.Long>
+      public java.util.List<Long>
           getUint64DataList() {
         return ((bitField0_ & 0x00000080) != 0) ?
                  java.util.Collections.unmodifiableList(uint64Data_) : uint64Data_;
@@ -9895,7 +9895,7 @@ public final class TensorNamespace {
        * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
        */
       public Builder addAllUint64Data(
-          java.lang.Iterable<? extends java.lang.Long> values) {
+          Iterable<? extends Long> values) {
         ensureUint64DataIsMutable();
         org.nd4j.shade.protobuf.AbstractMessageLite.Builder.addAll(
             values, uint64Data_);
@@ -9932,7 +9932,7 @@ public final class TensorNamespace {
        *
        * <code>repeated int32 half_val = 15 [packed = true];</code>
        */
-      public java.util.List<java.lang.Integer>
+      public java.util.List<Integer>
           getHalfValList() {
         return ((bitField0_ & 0x00000100) != 0) ?
                  java.util.Collections.unmodifiableList(halfVal_) : halfVal_;
@@ -9992,7 +9992,7 @@ public final class TensorNamespace {
        * <code>repeated int32 half_val = 15 [packed = true];</code>
        */
       public Builder addAllHalfVal(
-          java.lang.Iterable<? extends java.lang.Integer> values) {
+          Iterable<? extends Integer> values) {
         ensureHalfValIsMutable();
         org.nd4j.shade.protobuf.AbstractMessageLite.Builder.addAll(
             values, halfVal_);
@@ -10027,7 +10027,7 @@ public final class TensorNamespace {
        *
        * <code>repeated bool bool_val = 16 [packed = true];</code>
        */
-      public java.util.List<java.lang.Boolean>
+      public java.util.List<Boolean>
           getBoolValList() {
         return ((bitField0_ & 0x00000200) != 0) ?
                  java.util.Collections.unmodifiableList(boolVal_) : boolVal_;
@@ -10087,7 +10087,7 @@ public final class TensorNamespace {
        * <code>repeated bool bool_val = 16 [packed = true];</code>
        */
       public Builder addAllBoolVal(
-          java.lang.Iterable<? extends java.lang.Boolean> values) {
+          Iterable<? extends Boolean> values) {
         ensureBoolValIsMutable();
         org.nd4j.shade.protobuf.AbstractMessageLite.Builder.addAll(
             values, boolVal_);
@@ -10107,13 +10107,13 @@ public final class TensorNamespace {
         onChanged();
         return this;
       }
-      @java.lang.Override
+      @Override
       public final Builder setUnknownFields(
           final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
         return super.setUnknownFields(unknownFields);
       }
 
-      @java.lang.Override
+      @Override
       public final Builder mergeUnknownFields(
           final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
         return super.mergeUnknownFields(unknownFields);
@@ -10124,18 +10124,18 @@ public final class TensorNamespace {
     }
 
     // @@protoc_insertion_point(class_scope:org.nd4j.ir.TensorProto)
-    private static final org.nd4j.ir.TensorNamespace.TensorProto DEFAULT_INSTANCE;
+    private static final TensorProto DEFAULT_INSTANCE;
     static {
-      DEFAULT_INSTANCE = new org.nd4j.ir.TensorNamespace.TensorProto();
+      DEFAULT_INSTANCE = new TensorProto();
     }
 
-    public static org.nd4j.ir.TensorNamespace.TensorProto getDefaultInstance() {
+    public static TensorProto getDefaultInstance() {
       return DEFAULT_INSTANCE;
     }
 
     private static final org.nd4j.shade.protobuf.Parser<TensorProto>
         PARSER = new org.nd4j.shade.protobuf.AbstractParser<TensorProto>() {
-      @java.lang.Override
+      @Override
       public TensorProto parsePartialFrom(
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -10148,13 +10148,13 @@ public final class TensorNamespace {
       return PARSER;
     }
 
-    @java.lang.Override
+    @Override
     public org.nd4j.shade.protobuf.Parser<TensorProto> getParserForType() {
       return PARSER;
     }
 
-    @java.lang.Override
-    public org.nd4j.ir.TensorNamespace.TensorProto getDefaultInstanceForType() {
+    @Override
+    public TensorProto getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
 
@@ -10208,7 +10208,7 @@ public final class TensorNamespace {
   private static  org.nd4j.shade.protobuf.Descriptors.FileDescriptor
       descriptor;
   static {
-    java.lang.String[] descriptorData = {
+    String[] descriptorData = {
       "\n\014tensor.proto\022\013org.nd4j.ir\"4\n\026StringStr" +
       "ingEntryProto\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(" +
       "\t\"\300\001\n\tTypeProto\022>\n\013tensor_type\030\001 \001(\0132\'.o" +
@@ -10252,49 +10252,49 @@ public final class TensorNamespace {
     internal_static_org_nd4j_ir_StringStringEntryProto_fieldAccessorTable = new
       org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_org_nd4j_ir_StringStringEntryProto_descriptor,
-        new java.lang.String[] { "Key", "Value", });
+        new String[] { "Key", "Value", });
     internal_static_org_nd4j_ir_TypeProto_descriptor =
       getDescriptor().getMessageTypes().get(1);
     internal_static_org_nd4j_ir_TypeProto_fieldAccessorTable = new
       org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_org_nd4j_ir_TypeProto_descriptor,
-        new java.lang.String[] { "TensorType", "Value", });
+        new String[] { "TensorType", "Value", });
     internal_static_org_nd4j_ir_TypeProto_TensorDescriptor_descriptor =
       internal_static_org_nd4j_ir_TypeProto_descriptor.getNestedTypes().get(0);
     internal_static_org_nd4j_ir_TypeProto_TensorDescriptor_fieldAccessorTable = new
       org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_org_nd4j_ir_TypeProto_TensorDescriptor_descriptor,
-        new java.lang.String[] { "ElemType", "Shape", });
+        new String[] { "ElemType", "Shape", });
     internal_static_org_nd4j_ir_TensorShapeProto_descriptor =
       getDescriptor().getMessageTypes().get(2);
     internal_static_org_nd4j_ir_TensorShapeProto_fieldAccessorTable = new
       org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_org_nd4j_ir_TensorShapeProto_descriptor,
-        new java.lang.String[] { "Dim", });
+        new String[] { "Dim", });
     internal_static_org_nd4j_ir_TensorShapeProto_Dimension_descriptor =
       internal_static_org_nd4j_ir_TensorShapeProto_descriptor.getNestedTypes().get(0);
     internal_static_org_nd4j_ir_TensorShapeProto_Dimension_fieldAccessorTable = new
       org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_org_nd4j_ir_TensorShapeProto_Dimension_descriptor,
-        new java.lang.String[] { "DimValue", "DimParam", "Value", });
+        new String[] { "DimValue", "DimParam", "Value", });
     internal_static_org_nd4j_ir_ValueInfoProto_descriptor =
       getDescriptor().getMessageTypes().get(3);
     internal_static_org_nd4j_ir_ValueInfoProto_fieldAccessorTable = new
       org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_org_nd4j_ir_ValueInfoProto_descriptor,
-        new java.lang.String[] { "Name", "Type", "DocString", });
+        new String[] { "Name", "Type", "DocString", });
     internal_static_org_nd4j_ir_TensorProto_descriptor =
       getDescriptor().getMessageTypes().get(4);
     internal_static_org_nd4j_ir_TensorProto_fieldAccessorTable = new
       org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_org_nd4j_ir_TensorProto_descriptor,
-        new java.lang.String[] { "Dims", "DataType", "Segment", "FloatData", "Int32Data", "StringData", "Int64Data", "Name", "DocString", "RawData", "ExternalData", "DataLocation", "DoubleData", "Uint64Data", "HalfVal", "BoolVal", });
+        new String[] { "Dims", "DataType", "Segment", "FloatData", "Int32Data", "StringData", "Int64Data", "Name", "DocString", "RawData", "ExternalData", "DataLocation", "DoubleData", "Uint64Data", "HalfVal", "BoolVal", });
     internal_static_org_nd4j_ir_TensorProto_Segment_descriptor =
       internal_static_org_nd4j_ir_TensorProto_descriptor.getNestedTypes().get(0);
     internal_static_org_nd4j_ir_TensorProto_Segment_fieldAccessorTable = new
       org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_org_nd4j_ir_TensorProto_Segment_descriptor,
-        new java.lang.String[] { "Begin", "End", });
+        new String[] { "Begin", "End", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

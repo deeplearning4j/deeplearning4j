@@ -131,12 +131,12 @@ public abstract class BaseTransformSameOp extends BaseTransformOp implements Tra
     }
 
     @Override
-    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         //All same transform ops: always same output type as input type
         Preconditions.checkState(dataTypes != null, "Expected exactly 1 or more input datatype for %s, got input %s", getClass(), dataTypes);
 
-        org.nd4j.linalg.api.buffer.DataType check = null;
-        for(org.nd4j.linalg.api.buffer.DataType dataType : dataTypes) {
+        DataType check = null;
+        for(DataType dataType : dataTypes) {
             if(check != null) {
                 Preconditions.checkState(dataType == check,"Data types must all be the same!");
             } else {

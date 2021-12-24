@@ -130,7 +130,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.underlyingLength = length;
         this.wrappedDataBuffer = this;
 
-        if (length > 0) {
+        if (length > 0 || indexer != null) {
             this.pointer = pointer;
             setIndexer(indexer);
         }
@@ -861,20 +861,27 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case HALF:
                 return (long) ((HalfIndexer) indexer).get( i);
             case UINT64:    //Fall through
+                if(indexer instanceof LongIndexer) {
+                    LongIndexer longIndexer = (LongIndexer) indexer;
+                    return longIndexer.get(i);
+                } else if(indexer instanceof ULongRawIndexer) {
+                    ULongRawIndexer uLongRawIndexer = (ULongRawIndexer) indexer;
+                    return uLongRawIndexer.get(i).longValue();
+                }
             case LONG:
                 return ((LongIndexer) indexer).get(i);
             case UINT32:
-                return (long) ((UIntIndexer) indexer).get(i);
+                return ((UIntIndexer) indexer).get(i);
             case INT:
-                return (long) ((IntIndexer) indexer).get(i);
+                return ((IntIndexer) indexer).get(i);
             case UINT16:
-                return (long) ((UShortIndexer) indexer).get(i);
+                return ((UShortIndexer) indexer).get(i);
             case SHORT:
-                return (long) ((ShortIndexer) indexer).get(i);
+                return ((ShortIndexer) indexer).get(i);
             case BYTE:
-                return (long) ((ByteIndexer) indexer).get(i);
+                return ((ByteIndexer) indexer).get(i);
             case UBYTE:
-                return (long) ((UByteIndexer) indexer).get(i);
+                return ((UByteIndexer) indexer).get(i);
             case BOOL:
                 return  ((BooleanIndexer) indexer).get(i) ? 1L : 0L;
             default:

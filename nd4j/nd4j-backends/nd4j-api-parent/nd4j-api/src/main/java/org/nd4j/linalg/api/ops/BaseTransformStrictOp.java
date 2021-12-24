@@ -122,7 +122,7 @@ public abstract class BaseTransformStrictOp extends BaseTransformOp implements T
     }
 
     @Override
-    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         //All strict transform ops: FP in, FP out
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
         Preconditions.checkState(dataTypes.get(0).isFPType(), "Only floating point types are supported for strict tranform ops - got %s", dataTypes.get(0));

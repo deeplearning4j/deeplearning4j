@@ -197,7 +197,7 @@ public class SDVariable implements Serializable {
         return null;
     }
 
-    public void setShape(long... shape){
+    public void setShape(long... shape) {
         this.shape = shape;
     }
 

@@ -40,7 +40,7 @@ import org.nd4j.linalg.factory.Nd4j;
 public class SameDiffUtils {
 
     /**
-     * Stack batch outputs, like an output from {@link org.nd4j.autodiff.samediff.SameDiff#output(MultiDataSetIterator, String...)}
+     * Stack batch outputs, like an output from {@link SameDiff#output(MultiDataSetIterator, String...)}
      */
     public static Map<String, INDArray> stackOutputs(List<Map<String, INDArray>> outputs){
         Map<String, List<INDArray>> outs = new HashMap<>();

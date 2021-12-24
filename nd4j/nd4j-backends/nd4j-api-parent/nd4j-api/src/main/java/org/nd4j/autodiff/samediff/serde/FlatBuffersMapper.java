@@ -117,7 +117,7 @@ public class FlatBuffersMapper {
     /**
      * This method converts enums for DataType
      */
-    public static byte getDataTypeAsByte(@NonNull org.nd4j.linalg.api.buffer.DataType type) {
+    public static byte getDataTypeAsByte(@NonNull DataType type) {
         switch (type) {
             case FLOAT:
                 return DType.FLOAT;
@@ -155,35 +155,35 @@ public class FlatBuffersMapper {
     /**
      * This method converts enums for DataType
      */
-    public static org.nd4j.linalg.api.buffer.DataType getDataTypeFromByte(byte val) {
+    public static DataType getDataTypeFromByte(byte val) {
         if (val == DType.FLOAT) {
-            return org.nd4j.linalg.api.buffer.DataType.FLOAT;
+            return DataType.FLOAT;
         } else if (val == DType.DOUBLE) {
-            return org.nd4j.linalg.api.buffer.DataType.DOUBLE;
+            return DataType.DOUBLE;
         } else if (val == DType.HALF) {
-            return org.nd4j.linalg.api.buffer.DataType.HALF;
+            return DataType.HALF;
         } else if (val == DType.INT32) {
-            return org.nd4j.linalg.api.buffer.DataType.INT;
+            return DataType.INT;
         } else if (val == DType.INT64) {
-            return org.nd4j.linalg.api.buffer.DataType.LONG;
+            return DataType.LONG;
         } else if (val == DType.INT8) {
-            return org.nd4j.linalg.api.buffer.DataType.BYTE;
+            return DataType.BYTE;
         } else if (val == DType.BOOL) {
-            return org.nd4j.linalg.api.buffer.DataType.BOOL;
+            return DataType.BOOL;
         } else if (val == DType.UINT8) {
-            return org.nd4j.linalg.api.buffer.DataType.UBYTE;
+            return DataType.UBYTE;
         } else if (val == DType.INT16) {
-            return org.nd4j.linalg.api.buffer.DataType.SHORT;
+            return DataType.SHORT;
         } else if (val == DType.UTF8) {
-            return org.nd4j.linalg.api.buffer.DataType.UTF8;
+            return DataType.UTF8;
         } else if (val == DType.UINT16) {
-            return org.nd4j.linalg.api.buffer.DataType.UINT16;
+            return DataType.UINT16;
         } else if (val == DType.UINT32) {
-            return org.nd4j.linalg.api.buffer.DataType.UINT32;
+            return DataType.UINT32;
         } else if (val == DType.UINT64) {
-            return org.nd4j.linalg.api.buffer.DataType.UINT64;
+            return DataType.UINT64;
         } else if (val == DType.BFLOAT16){
-            return org.nd4j.linalg.api.buffer.DataType.BFLOAT16;
+            return DataType.BFLOAT16;
         } else {
             throw new RuntimeException("Unknown datatype: " + val);
         }
@@ -193,14 +193,14 @@ public class FlatBuffersMapper {
     /**
      * This method return operation ID for given op name/type pair.
      */
-    public static long getOpNum(String name, Op.Type type) {
-        if (type == Op.Type.LOOP) {
+    public static long getOpNum(String name, Type type) {
+        if (type == Type.LOOP) {
             return 0;
-        } else if (type == Op.Type.RETURN) {
+        } else if (type == Type.RETURN) {
             return 40;
-        } else if (type == Op.Type.CONDITIONAL) {
+        } else if (type == Type.CONDITIONAL) {
             return 10;
-        } else if (type == Op.Type.LOOP_COND) {
+        } else if (type == Type.LOOP_COND) {
             return 70L;
         } else if (type == Type.LOGIC) {
             switch (name) {
@@ -219,7 +219,7 @@ public class FlatBuffersMapper {
                 default:
                     throw new IllegalStateException("Unknown LOGIC op with name: " + name);
             }
-        } else if (type == Op.Type.CUSTOM) {
+        } else if (type == Type.CUSTOM) {
             val name2 = Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase());
             if (name2 == null) {
                 val name3 = Nd4j.getExecutioner().getCustomOperations().get(name);
@@ -250,50 +250,50 @@ public class FlatBuffersMapper {
      * @param type Byte representing the op type
      * @return Op type
      */
-    public static Op.Type getTypeFromByte(byte type) {
+    public static Type getTypeFromByte(byte type) {
         switch (type) {
             case OpType.SCALAR:
-                return Op.Type.SCALAR;
+                return Type.SCALAR;
             case OpType.SCALAR_BOOL:
-                return Op.Type.SCALAR_BOOL;
+                return Type.SCALAR_BOOL;
             case OpType.BROADCAST:
-                return Op.Type.BROADCAST;
+                return Type.BROADCAST;
             case OpType.BROADCAST_BOOL:
-                return Op.Type.BROADCAST_BOOL;
+                return Type.BROADCAST_BOOL;
             case OpType.TRANSFORM_BOOL:
-                return Op.Type.TRANSFORM_BOOL;
+                return Type.TRANSFORM_BOOL;
             case OpType.TRANSFORM_FLOAT:
-                return Op.Type.TRANSFORM_FLOAT;
+                return Type.TRANSFORM_FLOAT;
             case OpType.TRANSFORM_SAME:
-                return Op.Type.TRANSFORM_SAME;
+                return Type.TRANSFORM_SAME;
             case OpType.TRANSFORM_ANY:
-                return Op.Type.TRANSFORM_ANY;
+                return Type.TRANSFORM_ANY;
             case OpType.TRANSFORM_STRICT:
-                return Op.Type.TRANSFORM_STRICT;
+                return Type.TRANSFORM_STRICT;
             case OpType.REDUCE_BOOL:
-                return Op.Type.REDUCE_BOOL;
+                return Type.REDUCE_BOOL;
             case OpType.REDUCE_LONG:
-                return Op.Type.REDUCE_LONG;
+                return Type.REDUCE_LONG;
             case OpType.REDUCE_FLOAT:
-                return Op.Type.REDUCE_FLOAT;
+                return Type.REDUCE_FLOAT;
             case OpType.REDUCE_SAME:
-                return Op.Type.REDUCE_SAME;
+                return Type.REDUCE_SAME;
             case OpType.REDUCE_3:
-                return Op.Type.REDUCE3;
+                return Type.REDUCE3;
             case OpType.INDEX_REDUCE:
-                return Op.Type.INDEXREDUCE;
+                return Type.INDEXREDUCE;
             case OpType.RANDOM:
-                return Op.Type.RANDOM;
+                return Type.RANDOM;
             case OpType.LOGIC:
                 return Type.LOGIC;
             case OpType.CUSTOM:
-                return Op.Type.CUSTOM;
+                return Type.CUSTOM;
             case OpType.PAIRWISE:
-                return Op.Type.PAIRWISE;
+                return Type.PAIRWISE;
             case OpType.PAIRWISE_BOOL:
-                return Op.Type.PAIRWISE_BOOL;
+                return Type.PAIRWISE_BOOL;
             case OpType.SUMMARYSTATS:
-                return Op.Type.SUMMARYSTATS;
+                return Type.SUMMARYSTATS;
             default:
                 throw new UnsupportedOperationException("Unknown op type passed in: " + type);
         }
@@ -305,7 +305,7 @@ public class FlatBuffersMapper {
      * @param type type to convert
      * @return Byte representing the op type
      */
-    public static byte getFlatOpType(Op.Type type) {
+    public static byte getFlatOpType(Type type) {
         switch (type) {
             case SCALAR:
                 return OpType.SCALAR;
@@ -388,7 +388,7 @@ public class FlatBuffersMapper {
 
         int id = fn.id();               //ID of the node
         String name = fn.name();        //Name of the node, NOT the name of the op
-        Op.Type opType = FlatBuffersMapper.getTypeFromByte(fn.opType());
+        Type opType = FlatBuffersMapper.getTypeFromByte(fn.opType());
         long opNum = fn.opNum();        //Op num: hash for custom, number for legacy
         int[] input = new int[fn.inputLength()];
         for (int i = 0; i < input.length; i++) {
@@ -441,7 +441,7 @@ public class FlatBuffersMapper {
         Map<String, Object> props = FlatBuffersMapper
                 .mapFlatPropertiesToFunctionProperties(Arrays.asList(flatProperties));
 
-        if (opType == Op.Type.CUSTOM || opType == Type.LOGIC) {
+        if (opType == Type.CUSTOM || opType == Type.LOGIC) {
             String opName = fn.opName();
 
             DifferentialFunction op;
@@ -496,20 +496,20 @@ public class FlatBuffersMapper {
                 }
                 op.setExtraArgs(extraParamsObj);
             }
-            if (opType == Op.Type.SCALAR || opType == Op.Type.SCALAR_BOOL) {
+            if (opType == Type.SCALAR || opType == Type.SCALAR_BOOL) {
                 ScalarOp sOp = (ScalarOp) op;
                 sOp.setScalar(scalar);
-            } else if (opType == Op.Type.REDUCE_FLOAT || opType == Op.Type.REDUCE3 || opType == Op.Type.SUMMARYSTATS
-                    || opType == Op.Type.VARIANCE
-                    || opType == Op.Type.REDUCE_BOOL || opType == Op.Type.REDUCE_LONG
-                    || opType == Op.Type.REDUCE_SAME) {
+            } else if (opType == Type.REDUCE_FLOAT || opType == Type.REDUCE3 || opType == Type.SUMMARYSTATS
+                    || opType == Type.VARIANCE
+                    || opType == Type.REDUCE_BOOL || opType == Type.REDUCE_LONG
+                    || opType == Type.REDUCE_SAME) {
                 val ba = (BaseReduceOp) op; //Reduce3 ops are also all BaseAccumulations
                 ba.setDimensions(dimensions);
                 ba.setDimensionz(Shape.ndArrayDimFromInt(dimensions));
                 if(extraBools.length > 0)
                     ba.setKeepDims(extraBools[0]);
 
-            } else if (opType == Op.Type.INDEXREDUCE) {
+            } else if (opType == Type.INDEXREDUCE) {
                 BaseIndexAccumulation bia = (BaseIndexAccumulation) op;
                 bia.setDimensions(dimensions);
                 bia.setDimensionz(Shape.ndArrayDimFromInt(dimensions));
@@ -575,7 +575,7 @@ public class FlatBuffersMapper {
                 String str = (String) v;
                 int strOffset = fbb.createString(str);
                 sIdx = new int[]{strOffset};
-            } else if (v instanceof org.nd4j.linalg.api.buffer.DataType) {
+            } else if (v instanceof DataType) {
                 String str = v.toString();
                 int strOffset = fbb.createString(str);
                 sIdx = new int[]{strOffset};
@@ -798,7 +798,7 @@ public class FlatBuffersMapper {
         //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
 
         double[] extras;
-        if (node.opType() == Op.Type.CUSTOM) {
+        if (node.opType() == Type.CUSTOM) {
             CustomOp op = (CustomOp) node;
             extras = op.tArgs();
         } else {
@@ -814,7 +814,7 @@ public class FlatBuffersMapper {
         long[] extraBits = null;
         int[] extraStringIds = null;
         String[] sArgs = null;
-        if (node.opType() == Op.Type.CUSTOM) {
+        if (node.opType() == Type.CUSTOM) {
             val dynamicCustomOp = (DynamicCustomOp) node;
             extraBits = dynamicCustomOp.iArgs();
             boolArgs = dynamicCustomOp.bArgs();
@@ -852,13 +852,13 @@ public class FlatBuffersMapper {
         }  else
             extraBits = new long[]{};
 
-        if (node.opType() == Op.Type.REDUCE_BOOL || node.opType() == Op.Type.REDUCE_SAME || node.opType() == Op.Type.REDUCE_FLOAT || node.opType() == Op.Type.REDUCE_LONG) {
+        if (node.opType() == Type.REDUCE_BOOL || node.opType() == Type.REDUCE_SAME || node.opType() == Type.REDUCE_FLOAT || node.opType() == Type.REDUCE_LONG) {
             val op = (ReduceOp) node;
 
             boolArgs = new boolean[2];
             boolArgs[0] = op.isKeepDims();
             boolArgs[1] = true; // always new format
-        } else if (node.opType() == Op.Type.INDEXREDUCE) {
+        } else if (node.opType() == Type.INDEXREDUCE) {
             val op = (IndexAccumulation) node;
 
             boolArgs = new boolean[2];
@@ -923,8 +923,8 @@ public class FlatBuffersMapper {
 
         int[] dims;
         Type t = node.opType();
-        if (t == Op.Type.REDUCE_FLOAT || t == Op.Type.REDUCE_SAME || t == Op.Type.REDUCE_BOOL
-                || t == Op.Type.REDUCE_LONG || t == Op.Type.INDEXREDUCE || t == Op.Type.REDUCE3 || t == Type.VARIANCE || t == Type.SUMMARYSTATS) {
+        if (t == Type.REDUCE_FLOAT || t == Type.REDUCE_SAME || t == Type.REDUCE_BOOL
+                || t == Type.REDUCE_LONG || t == Type.INDEXREDUCE || t == Type.REDUCE3 || t == Type.VARIANCE || t == Type.SUMMARYSTATS) {
             dims = node.getDimensions();
             if (dims == null)
                 dims = new int[0];
