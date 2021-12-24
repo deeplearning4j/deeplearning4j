@@ -12,119 +12,6 @@
  endif()
  
  if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
---- build.sh	2021-12-03 13:45:29.576602937 +0900
-+++ build_new.sh	2021-12-03 14:13:59.736201248 +0900
-@@ -41,6 +41,7 @@
- #
- CPU=-1
- ISA="ALL"
-+
- usage() {
-     echo "$0 usage:"
-     #head -n 30 "$0" | grep "^[^#]*.)\ #"
-@@ -225,8 +226,9 @@
- if [ ${DOJUSTDOC} -gt 0 ]; then
-     echo " JUST building doxygen docs"
- fi
-+GENERIC_INSTALLDIR=${VEDNN_INSTALL_DIR:-vednn-install}
- INSTALLDIR=install
--BUILDDIR=build
-+BUILDDIR=${VEDNN_BUILD_DIR:-build}
- #
- # I have not yet tried icc.
- # we MUST avoid the full MKL (omp issues) (mkldnn uses the mkl subset in external/)
-@@ -246,8 +248,14 @@
- #
- if [ "$DOTARGET" == "s" ]; then DODOC="n"; DOTEST=0; INSTALLDIR='install-sx'; BUILDDIR='build-sx';
- elif [ "$DOTARGET" == "a" ]; then
--    if [ "$ISA" == "VANILLA" ]; then BUILDDIR="${BUILDDIR}-ve"; INSTALLDIR="${INSTALLDIR}-ve";
--    else BUILDDIR="${BUILDDIR}-vej"; INSTALLDIR="${INSTALLDIR}-vej";
-+    if [[ -z "$VEDNN_INSTALL_DIR" ]]; then
-+        if [ "$ISA" == "VANILLA" ]; then BUILDDIR="${BUILDDIR}-ve"; INSTALLDIR="${INSTALLDIR}-ve";
-+        else BUILDDIR="${BUILDDIR}-vej"; INSTALLDIR="${INSTALLDIR}-vej";
-+        fi
-+    else
-+        DOTEST=0
-+        DODOC="n"
-+        QUICK=1
-     fi
- else #if [ "$DOTARGET" != "a" ]; then
-     if [ "$DOGCC_VER" == "icc" ]; then
-@@ -305,7 +313,7 @@
-         if [ ! -d build ]; then mkdir build; fi
-         if [ ! -f build/Doxyfile ]; then
-             # doxygen does not much care HOW to build, just WHERE
--            (cd build && cmake -DCMAKE_INSTALL_PREFIX=../${INSTALLDIR} -DFAIL_WITHOUT_MKL=OFF ..)
-+            (cd build && cmake -DCMAKE_INSTALL_PREFIX=${GENERIC_INSTALLDIR}  -DDNNL_LIBRARY_TYPE=STATIC -DDNNL_BUILD_TESTS=0  -DFAIL_WITHOUT_MKL=OFF ..)
-         fi
-         echo "Doxygen (please be patient) logging to doxygen.log"
-         rm -f build/doc*stamp
-@@ -336,7 +344,7 @@
-         if [ ! -d build ]; then mkdir build; fi
-         if [ ! -f build/Doxyfile ]; then
-             # doxygen does not much care HOW to build, just WHERE
--            (cd build && cmake -DCMAKE_INSTALL_PREFIX=../${INSTALLDIR} -DFAIL_WITHOUT_MKL=OFF ..)
-+            (cd build && cmake -DCMAKE_INSTALL_PREFIX=${GENERIC_INSTALLDIR}  -DDNNL_LIBRARY_TYPE=STATIC -DDNNL_BUILD_TESTS=0  -DFAIL_WITHOUT_MKL=OFF ..)
-         fi
-         echo "Doxygen (please be patient) logging to doxygen-full.log"
-         rm -f build/doc*stamp-full
-@@ -499,7 +507,7 @@
-         ccxx_flags "${DOWARNFLAGS}"
-     fi
-     OPT_FLAGS=
--    CMAKEOPT="${CMAKEOPT} -DCMAKE_INSTALL_PREFIX=../${INSTALLDIR}"
-+    CMAKEOPT="${CMAKEOPT} -DCMAKE_INSTALL_PREFIX=${GENERIC_INSTALLDIR}  -DDNNL_LIBRARY_TYPE=STATIC -DDNNL_BUILD_TESTS=0 "
-     if [ $DODEBUG -eq 0 ]; then
-         CMAKEOPT="${CMAKEOPT} -DCMAKE_BUILD_TYPE=Release"
-     elif [ $DODEBUG -eq 1 ]; then
-@@ -518,17 +526,18 @@
-         ccxx_flags -include stdint.h
-         ccxx_flags -minit-stack=zero
-         ccxx_flags -Wunknown-pragma
--        ccxx_flags -fdiag-inline=2
--        ccxx_flags -fdiag-vector=2
--        ccxx_flags -report-all
--        # -O4 early... when -O4 (or -O3) comes later, sometimes inlining does not happen
--        ccxx_flags -O3 -finline -finline-functions
--        # nc++-3.0.30 WILL NOT compile some files when -finline is specified:
--        #ccxx_flags -O3 -finline-functions
--        # nc++-3.0.30 has an ICE ** DO NOT USE IT **
--        ccxx_flags -finline-max-function-size=300
--        ccxx_flags -finline-max-depth=10
--        ccxx_flags -finline-max-times=20
-+        ccxx_flags -O3
-+        ccxx_flags -fdiag-inline=2
-+        ccxx_flags -fdiag-vector=2
-+        ccxx_flags -report-all
-+        # -O4 early... when -O4 (or -O3) comes later, sometimes inlining does not happen
-+        # ccxx_flags -O3 -finline -finline-functions
-+        # # nc++-3.0.30 WILL NOT compile some files when -finline is specified:
-+        # #ccxx_flags -O3 -finline-functions
-+        # # nc++-3.0.30 has an ICE ** DO NOT USE IT **
-+        # ccxx_flags -finline-max-function-size=300
-+        # ccxx_flags -finline-max-depth=10
-+        # ccxx_flags -finline-max-times=20
-         if [ $DODEBUG -gt 0 ]; then
-             # in nc++-3.0.28 manual (but apparently not in nc++-3.0.27!)
-             : #ccxx_flags -traceback=verbose
-@@ -647,7 +656,7 @@
- 
-         # adjust here for VE shared library and Openmp use
-         #CMAKEOPT="${CMAKEOPT} -DUSE_SHAREDLIB=OFF" # deprecated
--        #CMAKEOPT="${CMAKEOPT} -DDNNL_LIBRARY_TYPE=STATIC"
-+        CMAKEOPT="${CMAKEOPT} -DDNNL_LIBRARY_TYPE=STATIC  -DDNNL_LIBRARY_TYPE=STATIC -DDNNL_BUILD_TESTS=0 "
-         #CMAKEOPT="${CMAKEOPT} -DDNNL_LIBRARY_TYPE=SHARED" # default
- 
-         # USE_OPENMP defaults to off, so force it on (VE openmp has improved)
-@@ -802,7 +811,7 @@
-     #        ve_validate_binary -d "${BUILDDIR}/${d}"
-     #    done
-     #fi
--    if [ "$BUILDOK" == "y" -a ! "$DOTARGET" == "s" ]; then
-+    if [ "$BUILDOK" == "y" -a ! "$DOTARGET" == "s" -a ! "$DOTARGET" == "a"]; then
-         echo "DOTARGET  $DOTARGET"
-         echo "ISA       $ISA"
-         echo "DOTEST    $DOTEST"
 --- src/cpu/simple_q10n.hpp	2021-12-06 04:44:23.166824100 +0400
 +++ src/cpu/simple_q10n_new.hpp	2021-12-06 08:07:01.116980900 +0400
 @@ -36,7 +36,7 @@
@@ -136,3 +23,12 @@
  #if DNNL_X64
      return _mm_cvtss_si32(_mm_load_ss(&f));
  #elif defined(__ve)
+--- CMakeLists.txt	2021-12-16 08:28:02.383484437 +0900
++++ CMakeLists_new.txt	2021-12-16 08:31:00.640180814 +0900
+@@ -200,5 +200,5 @@
+     # -O2 is default.  -O3 and -O4 add dangerous optimizations
+     #set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O4 -g -DNDEBUG")
+     #set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O4 -g -DNDEBUG")
+-    show_cmake_stuff("End cmake configuration")
++    #show_cmake_stuff("End cmake configuration")
+ endif()

@@ -21,10 +21,6 @@ option(SD_USE_LTO "Use link time optimization" OFF)
 option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OFF)
 set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
 
-if(SD_SANITIZE)
-    message("Compiling with sanitize")
-endif()
-
 if(SD_AURORA)
     set(SD_CUDA false)
     set(CMAKE_CXX_STANDARD 14)
@@ -33,7 +29,7 @@ else()
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" )
         SET(INFORMATIVE_FLAGS  "-fmax-errors=3")
     endif()
-
+    set(CMAKE_CXX_STANDARD 11)
 endif()
 
 if (SD_CUDA AND NOT SD_AURORA)
@@ -90,9 +86,6 @@ if (SD_CUDA AND NOT SD_AURORA)
     set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
 else()
     set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
-
-
-    set(CMAKE_CXX_STANDARD 11)
 
 endif()
 
@@ -366,45 +359,49 @@ if(${HELPERS_armcompute})
 
 endif()
 
-# new ve-dnn entry
+# ve-dnn entry
 if (${HELPERS_vednn})
-    message("Adds Vednn into dependency projects using ExternalProject_Add")
+    message("Going to pull & build vednn")
     set(HAVE_VEDNN 1)
-    include(ExternalProject)
-    set(VEDNN_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/vednn-install")
-    set(VEDNN_STATIC_LIB
-            "${VEDNN_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}dnnl${CMAKE_STATIC_LIBRARY_SUFFIX}")
-
     if(SD_AURORA)
-        set (BASH_CMD_VE  bash build.sh -aq$<$<CONFIG:Debug>:d>)
-    else()
-        set (BASH_CMD_VE  bash build.sh -vjq$<$<CONFIG:Debug>:dddd>)
+        set(NECVE 1 CACHE BOOL "" FORCE )
     endif()
-    set(VEDNN_BUILD_COMMAND NLC_HOME=$ENV{NLC_ROOT} VEDNN_INSTALL_DIR=${VEDNN_PREFIX} ${BASH_CMD_VE})
-    set(VEDNN_PATCH_COMMAND "patch" "-Np0" < ${CMAKE_SOURCE_DIR}/vednn.patch "||" true)
-    ExternalProject_Add(vednn_project
-            GIT_REPOSITORY    https://github.com/necla-ml/gen-dnn
-            GIT_TAG           ve-v1.4
-            UPDATE_DISCONNECTED 1
-            SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/vednn-src"
-            PATCH_COMMAND     ${VEDNN_PATCH_COMMAND}
-            CONFIGURE_COMMAND ""
-            BUILD_IN_SOURCE   1
-            BUILD_COMMAND     ${VEDNN_BUILD_COMMAND}
-            BUILD_BYPRODUCTS  ${VEDNN_STATIC_LIB}
-            INSTALL_COMMAND cmake -E echo "Skipping install step as its already inside build."
-            )
+    set(ENV{NLC_HOME} $ENV{NLC_ROOT})
+    set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "enforce static mode" FORCE)
+    set(DDNNL_BUILD_TESTS OFF CACHE BOOL "BUILD TESTS" FORCE)
+    set(VE_SEQ  1 CACHE BOOL "" FORCE)
+    set(DNNL_ISA  "ALL" CACHE STRING "" FORCE)
+    set(DNNL_ENABLE_CONCURRENT_EXEC  ON CACHE BOOL "" FORCE)
+    set(DNNL_ENABLE_PRIMITIVE_CACHE  0 CACHE BOOL "" FORCE)
+    set(DNNL_CPU_RUNTIME  "OMP" CACHE STRING "" FORCE)
 
 
-    set(VEDNN_INCLUDE "${VEDNN_PREFIX}/include")
-    include_directories(${VEDNN_INCLUDE})
-    list(APPEND EXTERNAL_DEPENDENCY_PROJECTS vednn_project)
-    list(APPEND EXTERNAL_DEPENDENCY_LIBS ${VEDNN_STATIC_LIB} )
-endif()
+    configure_file(./CMakeLists.txt.vednn.in vednn-download/CMakeLists.txt)
+    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+            RESULT_VARIABLE result
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vednn-download )
+    if(result)
+        message(FATAL_ERROR "CMake step for vednn failed: ${result}")
+    endif()
+    execute_process(COMMAND ${CMAKE_COMMAND} --build .
+            RESULT_VARIABLE result
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vednn-download )
+    if(result)
+        message(FATAL_ERROR "Build step for vednn failed: ${result}")
+    endif()
 
+    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/vednn-src
+            ${CMAKE_CURRENT_BINARY_DIR}/vednn-build
+            EXCLUDE_FROM_ALL)
 
-# new one-dnn entry
-if (${HELPERS_onednn})
+    set(vednn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/vednn-build)
+    set(vednn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/vednn-src)
+    set(VEDNN_PATH "${vednn_SOURCE_DIR}")
+    include_directories(${vednn_SOURCE_DIR}/include ${vednn_EXT_DIR}/include ${vednn_SOURCE_DIR})
+    list(APPEND EXTERNAL_DEPENDENCY_LIBS dnnl )
+
+# one-dnn entry
+elseif (${HELPERS_onednn})
     message("Going to pull & build onednn")
     set(HAVE_ONEDNN 1)
     set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)

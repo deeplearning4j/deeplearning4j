@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 2.8.2)
+
+project(vednn-download NONE)
+
+include(ExternalProject)
+ExternalProject_Add(vednn
+  GIT_REPOSITORY       https://github.com/necla-ml/gen-dnn
+  GIT_TAG              ve-v1.4
+  UPDATE_DISCONNECTED  1
+  SOURCE_DIR           "${CMAKE_CURRENT_BINARY_DIR}/vednn-src"
+  BINARY_DIR           "${CMAKE_CURRENT_BINARY_DIR}/vednn-build"
+  PATCH_COMMAND        "patch" "-Np0" < ${CMAKE_SOURCE_DIR}/vednn.patch "||" true
+  CONFIGURE_COMMAND    ""
+  CMAKE_ARGS           -DDNNL_USE_MKL=ML -DNECVE=@NECVE@ -DDNNL_LIBRARY_TYPE=STATIC -G \"Unix Makefiles\" -DDNNL_BUILD_TESTS=0 -DVE_SEQ=1 -DDNNL_ISA=ALL -DDNNL_ENABLE_CONCURRENT_EXEC=ON -DDNNL_ENABLE_PRIMITIVE_CACHE=0 -DDNNL_CPU_RUNTIME=OMP -DFAIL_WITHOUT_MKL=OFF 
+  BUILD_COMMAND        ""
+  INSTALL_COMMAND      ""
+  TEST_COMMAND         ""
+)
