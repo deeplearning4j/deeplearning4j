@@ -210,17 +210,17 @@ jobs:
       - name: Run windows cpu build
         shell: cmd
         run: |
-          if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
-             $mvn_ext=" -platform.classifier=windows-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
-          } elseif ( "${{ matrix.helper }}" -ne "" ) {
-              $mvn_ext=" -Dplatform.classifier=windows-x86_64-${{ matrix.helper }}"
-          }  elseif ( "${{ matrix.extension }}" -ne "" ) {
-               $mvn_ext=" -Dplatform.classifier=windows-x86_64-${{matrix.extension}} "
-          } else {
-             $mvn_ext=" -Dplatform.classifier=windows-x86_64"
-          }
-          cd "%GITHUB_WORKSPACE%\platform-tests"
-          mvn "%mvn_ext%"  -Djavacpp.platform=windows-x86_64 clean test
+              if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
+                 $mvn_ext=" -platform.classifier=windows-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
+              } elseif ( "${{ matrix.helper }}" -ne "" ) {
+                  $mvn_ext=" -Dplatform.classifier=windows-x86_64-${{ matrix.helper }}"
+              }  elseif ( "${{ matrix.extension }}" -ne "" ) {
+                   $mvn_ext=" -Dplatform.classifier=windows-x86_64-${{matrix.extension}} "
+              } else {
+                 $mvn_ext=" -Dplatform.classifier=windows-x86_64"
+              }
+              cd "%GITHUB_WORKSPACE%\platform-tests"
+              mvn "%mvn_ext%"  -Djavacpp.platform=windows-x86_64 clean test
 
         env:
           MODULES: ${{ matrix.mvn_flags }}
