@@ -1,15 +1,6 @@
 on:
   workflow_dispatch:
     inputs:
-      buildThreads:
-        description: 'Build threads for libnd4j. Used to control memory usage of builds.'
-        required: true
-        default: 1
-
-      deployToReleaseStaging:
-        description: 'Whether to deploy to release staging or not.'
-        required: false
-        default: 0
 
       releaseVersion:
         description: 'Release version target'
@@ -26,26 +17,13 @@ on:
         required: false
         default:
 
-      serverId:
-        description: 'Server id to publish to'
-        required: false
-        default: ossrh
 
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
         default:
 
-      libnd4jUrl:
-        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
-        required: false
-        default:
 
-
-      debug_enabled:
-        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
-        required: false
-        default: false
 jobs:
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
   linux-x86_64:
@@ -58,45 +36,17 @@ jobs:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
             experimental: true
             name: Extra maven flags
-          - debug_enabled: ${{ github.event.inputs.debug_enabled }}
-            experimental: true
-            name: Debug enabled
 
           - runs_on: ubuntu-18.04
             experimental: true
             name: OS to run on
 
-          - libnd4j_file_download: ${{ github.event.inputs.libnd4jDownload }}
-            experimental: true
-            name: OS to run on
-
-          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
-            experimental: true
-            name: Whether to deploy to release staging or not
-
-          - release_version: ${{ github.event.inputs.releaseVersion }}
-            experimental: true
-            name: Release version
-
-          - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
-            experimental: true
-            name: Snapshot version
-
-          - server_id: ${{ github.event.inputs.serverId }}
-            experimental: true
-            name: Server id
-
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
-            experimental: true
-            name: The release repository to run on
 
           - mvn_flags: ${{ github.event.inputs.mvnFlags }}
             experimental: true
             name: Extra maven flags to use as part of the build
 
-          - build_threads: ${{ github.event.inputs.buildThreads }}
-            experimental: true
-            name: The number of threads to build libnd4j with
+
 
 
     runs-on: ${{ matrix.runs_on }}
@@ -163,35 +113,13 @@ jobs:
       - name: Build on  linux-x86_64
         shell: bash
         env:
-          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           DEBIAN_FRONTEND: noninteractive
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_TO: ossrh
-          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
-          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
-          RELEASE_VERSION: ${{ matrix.release_version }}
-          SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
-          RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
           MODULES: ${{ matrix.mvn_flags }}
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
           MAVEN_OPTS: -Xmx2g
-
-
         run: |
-          echo "libnd4j build threads ${{ matrix.build_threads }}"
-          echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
-          echo "release version ${{ matrix.release_version }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
-          echo "debug enabled ${{ matrix.debug_enabled }}"
-          echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
-          echo "maven flags ${{ matrix.mvn_flags }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
-          echo "server id ${{ matrix.server_id }}"
-          echo "release repo id ${{ matrix.release_repo_id }}"
-
+    
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
           cmake --version
@@ -220,10 +148,6 @@ jobs:
           fi
           cd ${GITHUB_WORKSPACE}/platform-tests && mvn ${mvn_ext} -Djavacpp.platform=linux-x86_64 clean test 
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && matrix.debug_enabled}}
-
 
   windows-x86_64:
     strategy:
@@ -235,37 +159,10 @@ jobs:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
             experimental: true
             name: Extra maven flags
-          - debug_enabled: ${{ github.event.inputs.debug_enabled }}
-            experimental: true
-            name: Debug enabled
 
           - runs_on: ${{ github.event.inputs.runsOn }}
             experimental: true
             name: OS to run on
-
-          - libnd4j_file_download: ${{ github.event.inputs.libnd4jDownload }}
-            experimental: true
-            name: OS to run on
-
-          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
-            experimental: true
-            name: Whether to deploy to release staging or not
-
-          - release_version: ${{ github.event.inputs.releaseVersion }}
-            experimental: true
-            name: Release version
-
-          - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
-            experimental: true
-            name: Snapshot version
-
-          - server_id: ${{ github.event.inputs.serverId }}
-            experimental: true
-            name: Server id
-
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
-            experimental: true
-            name: The release repository to run on
 
           - mvn_flags: ${{ github.event.inputs.mvnFlags }}
             experimental: true
@@ -295,11 +192,6 @@ jobs:
         with:
           java-version: 8
           distribution: 'zulu'
-          server-id:   ${{ github.event.inputs.serverId }}
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
 
@@ -327,16 +219,6 @@ jobs:
       - name: Run windows cpu build
         shell: cmd
         run: |
-          echo "libnd4j build threads ${{ matrix.build_threads }}"
-          echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
-          echo "release version ${{ matrix.release_version }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
-          echo "debug enabled ${{ matrix.debug_enabled }}"
-          echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
-          echo "maven flags ${{ matrix.mvn_flags }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
-          echo "server id ${{ matrix.server_id }}"
-          echo "release repo id ${{ matrix.release_repo_id }}"
           if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
              $mvn_ext=" -platform.classifier=windows-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
           } elseif ( "${{ matrix.helper }}" -ne "" ) {
@@ -357,18 +239,11 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
-          RELEASE_VERSION: ${{ matrix.release_version }}
-          SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
-          RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
-          GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-          GPG_SIGNING_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+
           MODULES: ${{ matrix.mvn_flags }}
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && matrix.debug_enabled  }}
 
   mac-x86_64:
     strategy:
@@ -388,37 +263,10 @@ jobs:
             experimental: true
             name: OS to run on
 
-          - libnd4j_file_download: ${{ github.event.inputs.libnd4jDownload }}
-            experimental: true
-            name: OS to run on
-
-          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
-            experimental: true
-            name: Whether to deploy to release staging or not
-
-          - release_version: ${{ github.event.inputs.releaseVersion }}
-            experimental: true
-            name: Release version
-
-          - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
-            experimental: true
-            name: Snapshot version
-
-          - server_id: ${{ github.event.inputs.serverId }}
-            experimental: true
-            name: Server id
-
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
-            experimental: true
-            name: The release repository to run on
-
           - mvn_flags: ${{ github.event.inputs.mvnFlags }}
             experimental: true
             name: Extra maven flags to use as part of the build
 
-          - build_threads: ${{ github.event.inputs.buildThreads }}
-            experimental: true
-            name: The number of threads to build libnd4j with
 
 
 
@@ -435,11 +283,6 @@ jobs:
         with:
           java-version: 8
           distribution: 'zulu'
-          server-id: ${{ github.event.inputs.serverId }}
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
 
@@ -460,9 +303,6 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
-          RELEASE_VERSION: ${{ matrix.release_version }}
-          SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
-          RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
           MODULES: ${{ matrix.mvn_flags }}
           MAVEN_OPTS: "-Xmx2g"
           HELPER: ${{ matrix.helper }}
@@ -470,16 +310,6 @@ jobs:
 
 
         run: |
-          echo "libnd4j build threads ${{ matrix.build_threads }}"
-          echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
-          echo "release version ${{ matrix.release_version }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
-          echo "debug enabled ${{ matrix.debug_enabled }}"
-          echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
-          echo "maven flags ${{ matrix.mvn_flags }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
-          echo "server id ${{ matrix.server_id }}"
-          echo "release repo id ${{ matrix.release_repo_id }}"
            if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                   mvn_ext=" -Dplatform.classifier=macosx-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
            elif [ "${{ matrix.helper }}" != '' ]; then
@@ -491,8 +321,5 @@ jobs:
             fi
             cd ${GITHUB_WORKSPACE}/platform-tests && mvn  -Djavacpp.platform=macosx-x86_64 ${mvn_ext} clean test 
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && matrix.debug_enabled }}
 
 
