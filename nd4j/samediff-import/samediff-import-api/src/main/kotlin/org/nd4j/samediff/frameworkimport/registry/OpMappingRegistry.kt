@@ -125,7 +125,7 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
 
         if(!registeredOps.containsKey(inputFrameworkOpName)) {
             val allRules = cache.preProcessRuleImplementationsByOp
-            val noRules = allRules.filterKeys { input -> input == inputFrameworkOpName }.values.isEmpty()
+            val noRules = allRules.cellSet().filter { input -> input.rowKey == inputFrameworkOpName }.isEmpty()
             if(noRules)
                 throw IllegalArgumentException("No import process defined for $inputFrameworkOpName")
             else {
@@ -147,7 +147,7 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
 
     fun opHasRuleNoProcess(inputFrameworkOpName: String): Boolean {
         val allRules = cache.preProcessRuleImplementationsByOp
-        val noRules = allRules.filterKeys { input -> input == inputFrameworkOpName }.values.isEmpty()
+        val noRules = allRules.cellSet().filter { input -> input.rowKey == inputFrameworkOpName }.isEmpty()
         return noRules && !registeredOps.containsKey(inputFrameworkOpName)
     }
 

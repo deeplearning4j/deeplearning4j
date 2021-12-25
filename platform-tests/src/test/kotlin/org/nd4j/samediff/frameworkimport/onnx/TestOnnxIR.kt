@@ -564,13 +564,6 @@ class TestOnnxIR {
 
     }
 
-    @Test
-    fun testSqueezeImport() {
-        val inputFile = File("C:\\Users\\agibs\\Downloads\\V9\\V9\\yolov4.onnx")
-        val importer = OnnxFrameworkImporter()
-        importer.runImport(inputFile.absolutePath,suggestDynamicVariables = true)
-    }
-
 
     @Test
     fun testNonZero() {

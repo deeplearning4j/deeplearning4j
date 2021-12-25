@@ -22,6 +22,7 @@ package org.nd4j.samediff.frameworkimport.tensorflow.importer
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.nd4j.common.io.ClassPathResource
+import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.factory.Nd4j
 
 class TestTensorflowImporter {
@@ -32,7 +33,7 @@ class TestTensorflowImporter {
         Nd4j.getExecutioner().enableVerboseMode(true)
         val tfFrameworkImport = TensorflowFrameworkImporter()
         val tfFile = ClassPathResource("lenet_frozen.pb").file
-        val graph  = tfFrameworkImport.runImport(tfFile.absolutePath,mapOf("input" to  Nd4j.ones(1,784)))
+        val graph  = tfFrameworkImport.runImport(tfFile.absolutePath,mapOf("input" to  Nd4j.ones(1,784).castTo(DataType.DOUBLE)))
         //note this is just a test to make sure everything runs, we test the underlying import elsewhere
         assertNotNull(graph)
     }

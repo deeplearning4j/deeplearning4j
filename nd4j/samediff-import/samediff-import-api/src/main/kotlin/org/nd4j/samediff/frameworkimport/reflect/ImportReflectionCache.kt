@@ -26,6 +26,8 @@ import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.NodePreProcessor
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PostHookRule
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
+import org.nd4j.shade.guava.collect.Table
+import org.nd4j.shade.guava.collect.TreeBasedTable
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
@@ -35,32 +37,34 @@ object ImportReflectionCache {
         .scan()
 
     //all relevant node names relevant for
-    val preProcessRuleImplementationsByNode = HashMap<String,MutableList<PreImportHook>>()
-    val postProcessRuleImplementationsByNode = HashMap<String,MutableList<PostImportHook>>()
+    val preProcessRuleImplementationsByNode: Table<String,String,MutableList<PreImportHook>> = TreeBasedTable.create()
+    val postProcessRuleImplementationsByNode: Table<String,String,MutableList<PostImportHook>> = TreeBasedTable.create()
     //all relevant op names hook should be useful for
-    val preProcessRuleImplementationsByOp = HashMap<String,MutableList<PreImportHook>>()
-    val postProcessRuleImplementationsByOp = HashMap<String,MutableList<PostImportHook>>()
-    val nodePreProcessorRuleImplementationByOp = HashMap<String,MutableList<NodePreProcessorHook<GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,ProtocolMessageEnum>>>()
+    val preProcessRuleImplementationsByOp:  Table<String,String,MutableList<PreImportHook>> = TreeBasedTable.create()
+    val postProcessRuleImplementationsByOp: Table<String,String,MutableList<PostImportHook>>  = TreeBasedTable.create()
+    val nodePreProcessorRuleImplementationByOp: Table<String,String,MutableList<NodePreProcessorHook<GeneratedMessageV3,
+            GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,ProtocolMessageEnum>>>  = TreeBasedTable.create()
     init {
         scannedClasses.getClassesImplementing(PreImportHook::class.java.name).filter { input -> input.hasAnnotation(PreHookRule::class.java.name) }.forEach {
             val instance = Class.forName(it.name).getDeclaredConstructor().newInstance() as PreImportHook
             val rule = it.annotationInfo.first { input -> input.name == PreHookRule::class.java.name }
             val nodeNames = rule.parameterValues["nodeNames"].value as Array<String>
+            val frameworkName = rule.parameterValues["frameworkName"].value as String
             nodeNames.forEach { nodeName ->
-                if(!preProcessRuleImplementationsByNode.containsKey(nodeName)) {
-                    preProcessRuleImplementationsByNode[nodeName] = ArrayList()
+                if(!preProcessRuleImplementationsByNode.contains(frameworkName,nodeName)) {
+                    preProcessRuleImplementationsByNode.put(frameworkName,nodeName,ArrayList())
                 }
 
-                preProcessRuleImplementationsByNode[nodeName]!!.add(instance)
+                preProcessRuleImplementationsByNode.get(frameworkName,nodeName)!!.add(instance)
 
             }
             val opNames = rule.parameterValues["opNames"].value as Array<String>
             opNames.forEach { opName ->
-                if(!preProcessRuleImplementationsByOp.containsKey(opName)) {
-                    preProcessRuleImplementationsByOp[opName] = ArrayList()
+                if(!preProcessRuleImplementationsByOp.contains(frameworkName,opName)) {
+                    preProcessRuleImplementationsByOp.put(frameworkName,opName,ArrayList())
                 }
 
-                preProcessRuleImplementationsByOp[opName]!!.add(instance)
+                preProcessRuleImplementationsByOp.get(frameworkName,opName)!!.add(instance)
             }
         }
 
@@ -68,21 +72,23 @@ object ImportReflectionCache {
             val instance = Class.forName(it.name).getDeclaredConstructor().newInstance() as PostImportHook
             val rule = it.annotationInfo.first { input -> input.name == PostHookRule::class.java.name }
             val nodeNames = rule.parameterValues["nodeNames"].value as Array<String>
+            val frameworkName = rule.parameterValues["frameworkName"].value as String
+
             nodeNames.forEach { nodeName ->
-                if(!postProcessRuleImplementationsByNode.containsKey(nodeName)) {
-                    postProcessRuleImplementationsByNode[nodeName] = ArrayList()
+                if(!postProcessRuleImplementationsByNode.contains(frameworkName,nodeName)) {
+                    postProcessRuleImplementationsByNode.put(frameworkName,nodeName,ArrayList())
                 }
 
-                postProcessRuleImplementationsByNode[nodeName]!!.add(instance)
+                postProcessRuleImplementationsByNode.get(frameworkName,nodeName)!!.add(instance)
             }
 
             val opNames = rule.parameterValues["opNames"].value as Array<String>
             opNames.forEach { opName ->
-                if(!postProcessRuleImplementationsByOp.containsKey(opName)) {
-                    postProcessRuleImplementationsByOp[opName] = ArrayList()
+                if(!postProcessRuleImplementationsByOp.contains(frameworkName,opName)) {
+                    postProcessRuleImplementationsByOp.put(frameworkName,opName,ArrayList())
                 }
 
-                postProcessRuleImplementationsByOp[opName]!!.add(instance)
+                postProcessRuleImplementationsByOp.get(frameworkName,opName)!!.add(instance)
             }
 
 
@@ -94,12 +100,13 @@ object ImportReflectionCache {
             val instance = Class.forName(it.name).getDeclaredConstructor().newInstance() as NodePreProcessorHook<GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,ProtocolMessageEnum>
             val rule = it.annotationInfo.first { input -> input.name == NodePreProcessor::class.java.name }
             val nodeTypes = rule.parameterValues["nodeTypes"].value as Array<String>
+            val frameworkName = rule.parameterValues["frameworkName"].value as String
             nodeTypes.forEach { nodeType ->
-                if(!nodePreProcessorRuleImplementationByOp.containsKey(nodeType)) {
-                    nodePreProcessorRuleImplementationByOp[nodeType] = ArrayList()
+                if(!nodePreProcessorRuleImplementationByOp.contains(frameworkName,nodeType)) {
+                    nodePreProcessorRuleImplementationByOp.put(frameworkName,nodeType,ArrayList())
                 }
 
-                nodePreProcessorRuleImplementationByOp[nodeType]!!.add(instance)
+                nodePreProcessorRuleImplementationByOp.get(frameworkName,nodeType)!!.add(instance)
             }
 
 
