@@ -29,6 +29,76 @@ namespace sd {
 namespace ops {
 namespace platforms {
 
+std::unique_ptr<NDArray> newWeight_3x3(const NDArray &w, int wFormat){
+    sd::LongType oC, iC, kH, kW, oStride2, iStride2, hStride2, wStride2;
+
+    // [kH, kW, iC, oC] -> [oC, iC, kH, kW]
+    oC = w.sizeAt(3);
+    iC = w.sizeAt(2);
+    kH = w.sizeAt(0);
+    kW = w.sizeAt(1); 
+    assert(kH==3 && kW==3);
+    oStride2 = w.strideAt(3);
+    iStride2 = w.strideAt(2);
+    hStride2 = w.strideAt(0);
+    wStride2 = w.strideAt(1); 
+    auto context =  w.getContext();
+    std::vector<sd::LongType> shape={oC, iC, kH, kW };
+    // DataType type, const char order, const std::vector<sd::LongType> &shape
+    ShapeDescriptor shapeDescriptor(w.dataType(), 'c', shape);
+      sd::LongType allocSize = shapeDescriptor.allocLength() * DataTypeUtils::sizeOfElement(shapeDescriptor.dataType());
+    std::shared_ptr<DataBuffer> buffer =
+      std::make_shared<DataBuffer>(allocSize, shapeDescriptor.dataType(), context->getWorkspace());
+
+    std::unique_ptr<NDArray> arr(new NDArray  (buffer, shapeDescriptor,context)); 
+    auto oStride1 = arr->strideAt(0);
+    auto iStride1 = arr->strideAt(1);
+    auto hStride1 = arr->strideAt(2);
+
+    auto bIn = w.bufferAsT<float>();
+    auto bOut = arr->bufferAsT<float>();
+    auto bIn_0=bIn;
+    auto bIn_1=bIn + wStride2;
+    auto bIn_2=bIn + wStride2 + wStride2;
+    
+    auto bIn1_0=bIn_0 + hStride2;
+    auto bIn1_1=bIn_1 + hStride2;
+    auto bIn1_2=bIn_2 + hStride2;
+
+    auto bIn2_0=bIn1_0 + hStride2;
+    auto bIn2_1=bIn1_1 + hStride2;
+    auto bIn2_2=bIn1_2 + hStride2;
+
+    auto bOut_0=bOut;
+    auto bOut_1=bOut + 1;
+    auto bOut_2=bOut + 2;
+    
+    auto bOut1_0=bOut_0 + hStride1;
+    auto bOut1_1=bOut_1 + hStride1;
+    auto bOut1_2=bOut_2 + hStride1;
+
+    auto bOut2_0=bOut1_0 + hStride1;
+    auto bOut2_1=bOut1_1 + hStride1;
+    auto bOut2_2=bOut1_2 + hStride1;
+    //float
+    #pragma omp parallel for
+    for(int j=0;j<iC;j++){
+        for(int i=0;i<oC;i++){
+        
+            bOut_0[i*oStride1 + j* iStride1] = bIn_0[i + j* iStride2];
+            bOut_1[i*oStride1 + j* iStride1] = bIn_1[i + j* iStride2];
+            bOut_2[i*oStride1 + j* iStride1] = bIn_2[i + j* iStride2];
+            bOut1_0[i*oStride1 + j* iStride1] = bIn1_0[i + j* iStride2];
+            bOut1_1[i*oStride1 + j* iStride1] = bIn1_1[i + j* iStride2];
+            bOut1_2[i*oStride1 + j* iStride1] = bIn1_2[i + j* iStride2];
+            bOut2_0[i*oStride1 + j* iStride1] = bIn2_0[i + j* iStride2];
+            bOut2_1[i*oStride1 + j* iStride1] = bIn2_1[i + j* iStride2];
+            bOut2_2[i*oStride1 + j* iStride1] = bIn2_2[i + j* iStride2];
+        }
+    }
+       
+    return arr;
+}
 //////////////////////////////////////////////////////////////////////
 PLATFORM_IMPL(conv2d, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);                               // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
@@ -84,8 +154,13 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
     NDArray *w, *in = input, *out = output;
     if (0 == wFormat){
         // [kH, kW, iC, oC] -> [oC, iC, kH, kW]
-        wTemp.reset(new NDArray(weights->permute( {3, 2, 0, 1} ).dup('c')));
-        w=wTemp.get();
+        if(weights->ordering()=='c' && weights->ews()==1 && weights->sizeAt(0)==3 && weights->sizeAt(1)==3){
+            wTemp = newWeight_3x3(*weights, wFormat);
+        }else{
+            wTemp.reset(new NDArray(weights->permute( {3, 2, 0, 1} ).dup('c')));
+            
+        }
+        w=wTemp.get(); 
     }
     else if (2 == wFormat){
         // [oC, kH, kW, iC] -> [oC, iC, kH, kW]
@@ -98,7 +173,7 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
     if(!isNCHW){
         inTemp.reset(new NDArray(input->permute( {0, 3, 1, 2} ).dup('c')));
         in=inTemp.get();
-        outTemp.reset(new NDArray(output->permute( {0, 3, 1, 2} ).dup('c')));
+        outTemp.reset(new NDArray(output->permute( {0, 3, 1, 2} ).ulike()));
         out=outTemp.get();
     }
 

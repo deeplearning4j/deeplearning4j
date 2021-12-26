@@ -120,7 +120,7 @@ TEST_F(PlaygroundTests, test_conv2d_bench) {
   // sd::Environment::getInstance().setDebug(true);
   // sd::Environment::getInstance().setVerbose(true);
   auto rr=buildInfo();
-  sd_printf("%s\n",rr);
+  sd_printf("info:\n%s\n",rr);
 // shapeInfo input: [4,  1,27,27,512,  373248,13824,512,1,  8192,1,99]
 // shapeInfo weights: [4,  3,3,512,1024,  1572864,524288,1024,1,  8192,1,99]
 // shapeInfo output: [4,  1,13,13,1024,  173056,13312,1024,1,  8192,1,99]
