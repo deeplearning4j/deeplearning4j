@@ -205,7 +205,6 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             Nd4j.getExecutioner().enableDebugMode(true);
             Nd4j.getExecutioner().enableVerboseMode(true);
             TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, TFGraphTestAllHelper.LOADER, maxRE, minAbs, verboseDebugMode);
-            System.out.println();
         } catch (Throwable t){
             log.error("ERROR Executing test: {} - input keys {}", modelName, (inputs == null ? null : inputs.keySet()), t);
             throw t;
