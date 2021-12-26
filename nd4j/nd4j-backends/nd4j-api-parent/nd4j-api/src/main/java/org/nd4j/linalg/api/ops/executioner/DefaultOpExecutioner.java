@@ -269,7 +269,6 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                 break;
         }
 
-        System.nanoTime();
         OpProfiler.getInstance().setConfig(config);
     }
 
