@@ -89,14 +89,14 @@ public class MinMaxStats implements NormalizerStats {
         /**
          * Add the features of a DataSet to the statistics
          */
-        public MinMaxStats.Builder addFeatures(@NonNull org.nd4j.linalg.dataset.api.DataSet dataSet) {
+        public Builder addFeatures(@NonNull org.nd4j.linalg.dataset.api.DataSet dataSet) {
             return add(dataSet.getFeatures(), dataSet.getFeaturesMaskArray());
         }
 
         /**
          * Add the labels of a DataSet to the statistics
          */
-        public MinMaxStats.Builder addLabels(@NonNull org.nd4j.linalg.dataset.api.DataSet dataSet) {
+        public Builder addLabels(@NonNull org.nd4j.linalg.dataset.api.DataSet dataSet) {
             return add(dataSet.getLabels(), dataSet.getLabelsMaskArray());
         }
 
@@ -106,7 +106,7 @@ public class MinMaxStats implements NormalizerStats {
          * @param data the matrix containing multiple rows of data to include
          * @param mask (optionally) the mask of the data, useful for e.g. time series
          */
-        public MinMaxStats.Builder add(@NonNull INDArray data, INDArray mask) {
+        public Builder add(@NonNull INDArray data, INDArray mask) {
             data = DataSetUtil.tailor2d(data, mask);
             if (data == null) {
                 // Nothing to add. Either data is empty or completely masked. Just skip it, otherwise we will get

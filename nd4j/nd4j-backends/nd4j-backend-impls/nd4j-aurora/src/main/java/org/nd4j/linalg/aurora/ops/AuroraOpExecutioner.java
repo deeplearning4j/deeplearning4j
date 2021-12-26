@@ -68,6 +68,7 @@ import org.nd4j.common.primitives.Optional;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.nativeblas.*;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 
 import java.util.*;
 
@@ -84,7 +85,7 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
     private ConstantHandler constantHandler = Nd4j.getConstantHandler();
     @Getter
     private AuroraTADManager tadManager = new AuroraTADManager();
-
+    private boolean timeAuroraCalls = false;
     //thread locals for custom op inputs and outputs to prevent allocations
     //every time exec(CustomOp) is called
     private ThreadLocal<Map<Integer,PointerPointer>> inputShapes = new ThreadLocal<>();
@@ -113,6 +114,7 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
 
     public AuroraOpExecutioner() {
         tadManager.init(loop, constantHandler);
+        timeAuroraCalls = Boolean.parseBoolean(System.getenv().getOrDefault("TIME_AURORA_CALLS","false"));
 
         experimentalMode.set(loop.isExperimentalEnabled());
 /*
@@ -1920,19 +1922,12 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray[] exec(CustomOp op, @NonNull OpContext context) {
+        long begin = System.nanoTime();
+
+
         long st = profilingConfigurableHookIn(op, context);
         boolean mklOverride = false;
         try {
-/*
-            if (Nd4jCpu.Environment.getInstance().isUseMKLDNN()) {
-                val opName = op.opName();
-                val state = mklOverrides.get(op);
-                if (state != null && state == true) {
-                    mklOverride = true;
-                    Nd4jCpu.Environment.getInstance().setUseMKLDNN(true);
-                }
-            }
-*/
             val status = loop.execCustomOp2(null, op.opHash(), context.contextPointer());
             if (status != 0)
                 throw new RuntimeException("Op [" + op.opName() + "] " +  "execution failed with message " + loop.lastErrorMessage());
@@ -1999,17 +1994,17 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
                     " - Please see above message (printed out from c++) for a possible cause of error.");
             throw e;
         } finally {
-/*
-            if (mklOverride)
-                Nd4jCpu.Environment.getInstance().setUseMKLDNN(true);
-*/
             profilingConfigurableHookOut(op, context, st);
+            DifferentialFunction func = (DifferentialFunction) op;
+            long end = System.nanoTime();
+            if(timeAuroraCalls) {
+                log.info("Total call time for op " + func.getOwnName() + " of type " + func.getClass().getName() +  " was " + (end - begin));
+            }
         }
     }
 
     @Override
     public INDArrayStatistics inspectArray(INDArray array) {
-        throw new UnsupportedOperationException("Not supported yet.");
 /*
         val debugInfo = new Nd4jCpu.DebugInfo();
 
@@ -2030,6 +2025,21 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
                 .countZero(debugInfo._zeroCount())
                 .build();
 */
+
+
+
+        return INDArrayStatistics.builder()
+                .minValue(0)
+                .maxValue(0)
+                .meanValue(0)
+                .stdDevValue(0)
+                .countInf(0)
+                .countNaN(0)
+                .countNegative(0)
+                .countPositive(0)
+                .countZero(0)
+                .build();
+
 
     }
 

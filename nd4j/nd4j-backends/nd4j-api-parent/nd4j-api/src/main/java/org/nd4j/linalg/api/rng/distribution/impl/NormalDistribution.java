@@ -92,7 +92,7 @@ public class NormalDistribution extends BaseDistribution {
      *
      * @param mean Mean for this distribution.
      * @param sd   Standard deviation for this distribution.
-     * @throws org.apache.commons.math3.exception.NotStrictlyPositiveException if {@code sd <= 0}.
+     * @throws NotStrictlyPositiveException if {@code sd <= 0}.
      */
     public NormalDistribution(double mean, double sd) throws NotStrictlyPositiveException {
         this(mean, sd, DEFAULT_INVERSE_ABSOLUTE_ACCURACY);

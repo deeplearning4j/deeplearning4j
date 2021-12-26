@@ -283,6 +283,29 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 for (SDVariable arg : args) {
                     if (arg.getArr() != null)
                         addInputArgument(arg.getArr());
+                    else if(arg.getArr() == null && arg.isPlaceHolder() && arg.getShape() != null) {
+                        if(arg.getShape() != null) {
+                           //if we have a shape, ensure we create a proper 1 mini batch size input of the relevant shape
+                            long[] inputShape = ArrayUtil.copy(arg.getShape());
+                            for(int i = 0; i < inputShape.length; i++) {
+                                if(inputShape[i] < 0) {
+                                    inputShape[i] = 1;
+                                }
+                            }
+
+                            DataType dtype = arg.dataType();
+                            INDArray arr = null;
+                            if(dtype != null) {
+                                arr = Nd4j.ones(dtype,inputShape);
+                            } else {
+                                arr = Nd4j.ones(inputShape);
+                            }
+
+                            sameDiff.setEagerArrForVarName(arg.name(),arr);
+                            addInputArgument(arr);
+                            log.warn("Variable name " + arg.name() + " from  op of type " + opName() + " with unique name of " + getOwnName() + " was not able to resolve an array for eager computation, inserting dummy array. This can happen with control flow ops. Please validate this if in error.");
+                        }
+                    }
                     else {
                         INDArray add = Nd4j.scalar(1.0f);
                         sameDiff.setEagerArrForVarName(arg.name(),add);

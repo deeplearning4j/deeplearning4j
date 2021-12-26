@@ -21,9 +21,7 @@
 package org.nd4j.samediff.frameworkimport.onnx
 
 
-import GraphPreProcessRunner
 import onnx.Onnx
-import org.junit.Ignore
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -36,10 +34,8 @@ import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarations
 import org.nd4j.samediff.frameworkimport.onnx.definitions.registry
-import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraphRunner
-import java.io.File
 import kotlin.test.assertTrue
 
 data class OnnxGraphInput(val graphDef: Onnx.GraphProto, val inputNames: List<String>, val outputNames: List<String>,
@@ -562,13 +558,6 @@ class TestOnnxIR {
         val createdGraph = createSingleNodeGraph(inputs,"Clip",emptyMap(),output,inputs.keys.toList())
         runAssertion(createdGraph,inputs,output)
 
-    }
-
-    @Test
-    fun testSqueezeImport() {
-        val inputFile = File("C:\\Users\\agibs\\Downloads\\V9\\V9\\yolov4.onnx")
-        val importer = OnnxFrameworkImporter()
-        importer.runImport(inputFile.absolutePath,suggestDynamicVariables = true)
     }
 
 

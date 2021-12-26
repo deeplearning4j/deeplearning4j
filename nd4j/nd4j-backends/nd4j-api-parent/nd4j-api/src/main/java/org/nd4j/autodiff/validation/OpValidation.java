@@ -563,7 +563,7 @@ public class OpValidation {
         ImmutableSet<ClassPath.ClassInfo> info;
         try {
             //Dependency note: this ClassPath class was added in Guava 14
-            info = org.nd4j.shade.guava.reflect.ClassPath.from(DifferentialFunctionClassHolder.class.getClassLoader())
+            info = ClassPath.from(DifferentialFunctionClassHolder.class.getClassLoader())
                     .getTopLevelClassesRecursive("org.nd4j.linalg.api.ops");
         } catch (IOException e) {
             //Should never happen
@@ -899,18 +899,18 @@ public class OpValidation {
                 org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative.class,
                 PowDerivative.class,
                 org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinearDerivative.class,
-                org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeBp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.gradient.EluBp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidBp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhBp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUBp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.gradient.RationalTanhBp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.gradient.RectifiedTanhBp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.gradient.SeluBp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftPlusBp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignBp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.gradient.ThresholdReluBp.class,
-                org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.ModBpOp.class,
+                CubeBp.class,
+                EluBp.class,
+                HardSigmoidBp.class,
+                HardTanhBp.class,
+                LeakyReLUBp.class,
+                RationalTanhBp.class,
+                RectifiedTanhBp.class,
+                SeluBp.class,
+                SoftPlusBp.class,
+                SoftSignBp.class,
+                ThresholdReluBp.class,
+                ModBpOp.class,
 
 
                 BiasAddGrad.class,

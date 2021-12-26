@@ -148,7 +148,7 @@ public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLon
     }
 
     @Override
-    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         //All reduce long ops: always long output type
         //Second input is dynamic axis arg
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),

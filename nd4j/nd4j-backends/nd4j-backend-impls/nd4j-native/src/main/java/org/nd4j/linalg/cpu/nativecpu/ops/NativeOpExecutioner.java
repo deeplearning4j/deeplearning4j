@@ -134,6 +134,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Op op, OpContext opContext) {
+        DifferentialFunction differentialFunction = (DifferentialFunction) op;
+        String oldName = differentialFunction.getOwnName();
         checkForCompression(op);
 
         if (op instanceof ScalarOp) {
@@ -1882,6 +1884,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         long st = profilingConfigurableHookIn(op, context);
         boolean mklOverride = false;
         try {
+        String ownName = differentialFunction.getOwnName();
             if (Nd4jCpu.Environment.getInstance().isUseONEDNN()) {
                 val opName = op.opName();
                 val state = mklOverrides.get(op);

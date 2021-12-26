@@ -254,7 +254,7 @@ public class LegacyOpMapper {
             case 2:
                 return LogSoftMax.class;
             case 4:
-                return org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative.class;
+                return TanhDerivative.class;
             case 5:
                 return HardTanhDerivative.class;
             case 6:

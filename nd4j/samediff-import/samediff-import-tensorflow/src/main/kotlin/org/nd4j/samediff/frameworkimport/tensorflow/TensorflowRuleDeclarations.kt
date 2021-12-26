@@ -32,6 +32,40 @@ fun convertNDArrayToTensorflowTensor(arrayToConvert: INDArray): TensorProto {
     if(arrayToConvert.data() == null)
         return TensorProto.getDefaultInstance()
     when(arrayToConvert.dataType()) {
+
+        org.nd4j.linalg.api.buffer.DataType.FLOAT16 -> {
+            return  TensorProto {
+                FloatData(arrayToConvert.data().asFloat().toList())
+                Shape(arrayToConvert.shape().toList())
+                dtype = DataType.DT_HALF
+            }
+        }
+
+
+        org.nd4j.linalg.api.buffer.DataType.UINT64-> {
+            return  TensorProto {
+                Int64Data(arrayToConvert.data().asLong().toList())
+                Shape(arrayToConvert.shape().toList())
+                dtype = DataType.DT_UINT64
+            }
+        }
+
+        org.nd4j.linalg.api.buffer.DataType.UINT8 -> {
+            return  TensorProto {
+                Int32Data(arrayToConvert.data().asInt().toList())
+                Shape(arrayToConvert.shape().toList())
+                dtype = DataType.DT_UINT8
+            }
+        }
+
+        org.nd4j.linalg.api.buffer.DataType.UINT32 -> {
+            return  TensorProto {
+                Int32Data(arrayToConvert.data().asInt().toList())
+                Shape(arrayToConvert.shape().toList())
+                dtype = DataType.DT_UINT32
+            }
+        }
+
         org.nd4j.linalg.api.buffer.DataType.FLOAT -> {
             return TensorProto {
                 FloatData(arrayToConvert.data().asFloat().toList())

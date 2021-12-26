@@ -76,7 +76,7 @@ public class LossMCXENT implements ILossFunction {
      * @param weights Weights array (row vector). May be null.
      */
     public LossMCXENT(@JsonProperty("softmaxClipEps") double softmaxClipEps, @JsonProperty("weights") INDArray weights) {
-        if (weights != null && !weights.isRowVector()) {
+        if (weights != null && !weights.isRowVectorOrScalar()) {
             throw new IllegalArgumentException("Weights array must be a row vector");
         }
         if(softmaxClipEps < 0 || softmaxClipEps > 0.5){

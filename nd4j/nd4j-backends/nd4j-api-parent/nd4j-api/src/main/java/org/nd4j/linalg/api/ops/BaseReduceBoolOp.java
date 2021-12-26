@@ -153,7 +153,7 @@ public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoo
     }
 
     @Override
-    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         //All reduce bool: always bool output type. 2nd input is axis arg
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
                 "Expected 1 or input datatype for %s, got input %s", getClass(), dataTypes);

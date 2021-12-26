@@ -95,8 +95,8 @@ public class LossBinaryXENT implements ILossFunction {
      * @param clipEps Epsilon value for clipping. Probabilities are clipped in range of [eps, 1-eps]. Default eps: 1e-5
      * @param weights Weights array (row vector). May be null.
      */
-    public LossBinaryXENT(@JsonProperty("clipEps") double clipEps, @JsonProperty("weights") INDArray weights){
-        if (weights != null && !weights.isRowVector()) {
+    public LossBinaryXENT(@JsonProperty("clipEps") double clipEps, @JsonProperty("weights") INDArray weights) {
+        if (weights != null && !weights.isRowVectorOrScalar()) {
             throw new IllegalArgumentException("Weights array must be a row vector");
         }
         if(clipEps < 0 || clipEps > 0.5){

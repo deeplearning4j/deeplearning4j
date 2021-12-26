@@ -35,7 +35,7 @@ public class NDArraySupplierInitScheme implements WeightInitScheme {
     private NDArraySupplier supplier;
 
     public NDArraySupplierInitScheme(final INDArray arr){
-        this(new NDArraySupplierInitScheme.NDArraySupplier() {
+        this(new NDArraySupplier() {
             @Override
             public INDArray getArr() {
                 return arr;

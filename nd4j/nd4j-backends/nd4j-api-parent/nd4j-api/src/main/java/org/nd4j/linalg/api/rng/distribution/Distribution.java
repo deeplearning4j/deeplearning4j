@@ -77,7 +77,7 @@ public interface Distribution {
      * @return the probability that a random variable with this distribution
      * takes a value between {@code x0} and {@code x1},
      * excluding the lower and including the upper endpoint
-     * @throws org.apache.commons.math3.exception.NumberIsTooLargeException if {@code x0 > x1}
+     * @throws NumberIsTooLargeException if {@code x0 > x1}
      * @deprecated As of 3.1. In 4.0, this method will be renamed
      * {@code probability(double x0, double x1)}.
      */
@@ -96,7 +96,7 @@ public interface Distribution {
      * @param p the cumulative probability
      * @return the smallest {@code p}-quantile of this distribution
      * (largest 0-quantile for {@code p = 0})
-     * @throws org.apache.commons.math3.exception.OutOfRangeException if {@code p < 0} or {@code p > 1}
+     * @throws OutOfRangeException if {@code p < 0} or {@code p > 1}
      */
     double inverseCumulativeProbability(double p) throws OutOfRangeException;
 

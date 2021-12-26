@@ -649,7 +649,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             //Edge case: -1 means "all"
             List<INDArray> newList = new ArrayList<>();
-            if (idxArrInt.length == 1 && idxArrInt[0] == -1) {
+            if (idxArrInt.length == 1 || idxArrInt[0]  < 1) {
                 newList.addAll(l);
             } else {
                 for (int id : idxArrInt) {

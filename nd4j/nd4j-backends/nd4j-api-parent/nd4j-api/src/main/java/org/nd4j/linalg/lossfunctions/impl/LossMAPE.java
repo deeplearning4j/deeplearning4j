@@ -59,7 +59,7 @@ public class LossMAPE implements ILossFunction {
      * @param weights Weights array (row vector). May be null.
      */
     public LossMAPE(INDArray weights) {
-        if (weights != null && !weights.isRowVector()) {
+        if (weights != null && !weights.isRowVectorOrScalar()) {
             throw new IllegalArgumentException("Weights array must be a row vector");
         }
         this.weights = weights;

@@ -19,8 +19,6 @@
  */
 package org.nd4j.samediff.frameworkimport.onnx.importer
 
-import GraphPreProcessRunner
-import onnx.Onnx
 import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -30,36 +28,14 @@ import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.dataset.DataSet
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.learning.config.Adam
-import org.nd4j.samediff.frameworkimport.onnx.NodeProto
 import org.nd4j.samediff.frameworkimport.onnx.createSingleNodeGraph
-import org.nd4j.samediff.frameworkimport.onnx.definitions.onnxOpRegistry
 import org.nd4j.samediff.frameworkimport.onnx.definitions.registry
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
-import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraphRunner
 import org.nd4j.samediff.frameworkimport.onnx.runAssertion
-import java.io.File
-import java.io.FileInputStream
 import java.util.*
 
 class TestOnnxFrameworkImporter {
 
-
-    @Test
-    fun testUnsqueezeUpgrade() {
-        val importer = OnnxFrameworkImporter()
-        val inputData = Nd4j.linspace(1,15,15).reshape(1,3,1,5)
-        val input = mapOf("x" to inputData)
-
-        val outputs = listOf("y")
-        val attributes = mapOf("axes" to listOf(-2))
-        val inputs = listOf("x")
-        val graph = createSingleNodeGraph(input,"Unsqueeze",attributes,outputs,inputs)
-        val preProcessRunner = GraphPreProcessRunner()
-        val irGraph = OnnxIRGraph(graph, registry())
-        preProcessRunner.preProcessGraph(irGraph)
-        val internalValue = irGraph.internalValue()
-        runAssertion(internalValue,input,outputs)
-    }
 
     @Test
     fun testSuggestedVariables() {
