@@ -45,7 +45,6 @@ class TestOnnxProcessLoader {
         val inputs = Nd4j.ones(1,3,224,224)
         val inputDict = mapOf("input.1" to inputs)
         val runImport = importer.runImport(resource.absolutePath,inputDict)
-        println("Ran import")
         runImport.outputAll(inputDict)
     }
 
