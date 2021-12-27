@@ -124,7 +124,10 @@ public class Shape extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype for %s, got %s", getClass(), dataTypes);
         if(!dArguments.isEmpty())
-            return Collections.singletonList(dataTypes.get(0));
+            return Collections.singletonList(dArguments.get(0));
+        else if(dataType != null && dArguments.isEmpty()) {
+            dArguments.add(dataType);
+        }
         return Collections.singletonList(dataType == null ? DataType.LONG : dataType);
     }
 }

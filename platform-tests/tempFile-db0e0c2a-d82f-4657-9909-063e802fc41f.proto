@@ -1,0 +1,14 @@
+:~
+;
+x
+	roi-empty
+scalesyresize"Resize*
+mode"cubic resizeZ	
+x
+Z
+scales
+Z
+	roi-empty
+b	
+y
+B

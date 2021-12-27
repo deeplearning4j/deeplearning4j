@@ -71,26 +71,32 @@ abstract class AbstractMappingContext<GRAPH_TYPE: GeneratedMessageV3,
 
 
     fun discoverHooks() {
-        ImportReflectionCache.preProcessRuleImplementationsByNode.filterKeys { input -> input == irNode().nodeName() }.values.forEach { hooks ->
-            relevantPreProcessingHooks.addAll(hooks)
-        }
+        ImportReflectionCache.preProcessRuleImplementationsByNode.cellSet().filter {
+                cell -> cell.rowKey!! == this.graph.frameworkName() }.
+        filter { cell ->
+                cell.columnKey == irNode().nodeName()
+        }.forEach { cell ->  relevantPreProcessingHooks.addAll(cell.value!!) }
 
-        ImportReflectionCache.preProcessRuleImplementationsByOp.filterKeys { input -> input == opName() }.values.forEach { hooks ->
-            relevantPreProcessingHooks.addAll(hooks)
-        }
+        ImportReflectionCache.preProcessRuleImplementationsByOp.cellSet().filter {
+                cell -> cell.rowKey!! == this.graph.frameworkName() }.
+        filter { cell ->
+            cell.columnKey == opName()
+        }.forEach { cell ->  relevantPreProcessingHooks.addAll(cell.value!!) }
 
 
-        ImportReflectionCache.postProcessRuleImplementationsByOp.filterKeys { input -> input == opName() }.values.forEach { hooks ->
-            relevantPostProcessingHooks.addAll(hooks)
-        }
+        ImportReflectionCache.postProcessRuleImplementationsByNode.cellSet().filter {
+                cell -> cell.rowKey!! == this.graph.frameworkName() }.
+        filter { cell ->
+            cell.columnKey == irNode().nodeName()
+        }.forEach { cell ->  relevantPostProcessingHooks.addAll(cell.value!!) }
 
-        ImportReflectionCache.postProcessRuleImplementationsByNode.filterKeys { input -> input == irNode().nodeName() }.values.forEach { hooks ->
-            relevantPostProcessingHooks.addAll(hooks)
-        }
 
-        ImportReflectionCache.nodePreProcessorRuleImplementationByOp.filterKeys { input -> input == irNode().opName() }.values.forEach {
-            relevantNodePreProcessingHooks.addAll(it.map{ input -> input as NodePreProcessorHook<NODE_TYPE, TENSOR_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, DATA_TYPE>})
-        }
+        ImportReflectionCache.postProcessRuleImplementationsByOp.cellSet().filter {
+                cell -> cell.rowKey!! == this.graph.frameworkName() }.
+        filter { cell ->
+            cell.columnKey == opName()
+        }.forEach { cell ->  relevantPostProcessingHooks.addAll(cell.value!!) }
+
 
     }
 

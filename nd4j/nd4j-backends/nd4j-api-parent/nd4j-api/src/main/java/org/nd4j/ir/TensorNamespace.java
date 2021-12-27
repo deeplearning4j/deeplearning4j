@@ -279,6 +279,8 @@ public final class TensorNamespace {
     }
 
     /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
      * @deprecated Use {@link #forNumber(int)} instead.
      */
     @java.lang.Deprecated
@@ -286,6 +288,10 @@ public final class TensorNamespace {
       return forNumber(value);
     }
 
+    /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
+     */
     public static DataType forNumber(int value) {
       switch (value) {
         case 0: return UNDEFINED;
@@ -323,6 +329,10 @@ public final class TensorNamespace {
 
     public final org.nd4j.shade.protobuf.Descriptors.EnumValueDescriptor
         getValueDescriptor() {
+      if (this == UNRECOGNIZED) {
+        throw new java.lang.IllegalStateException(
+            "Can't get the descriptor of an unrecognized enum value.");
+      }
       return getDescriptor().getValues().get(ordinal());
     }
     public final org.nd4j.shade.protobuf.Descriptors.EnumDescriptor
@@ -363,20 +373,24 @@ public final class TensorNamespace {
 
     /**
      * <code>string key = 1;</code>
+     * @return The key.
      */
     java.lang.String getKey();
     /**
      * <code>string key = 1;</code>
+     * @return The bytes for key.
      */
     org.nd4j.shade.protobuf.ByteString
         getKeyBytes();
 
     /**
      * <code>string value = 2;</code>
+     * @return The value.
      */
     java.lang.String getValue();
     /**
      * <code>string value = 2;</code>
+     * @return The bytes for value.
      */
     org.nd4j.shade.protobuf.ByteString
         getValueBytes();
@@ -389,7 +403,7 @@ public final class TensorNamespace {
    *
    * Protobuf type {@code org.nd4j.ir.StringStringEntryProto}
    */
-  public  static final class StringStringEntryProto extends
+  public static final class StringStringEntryProto extends
       org.nd4j.shade.protobuf.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:org.nd4j.ir.StringStringEntryProto)
       StringStringEntryProtoOrBuilder {
@@ -481,7 +495,9 @@ public final class TensorNamespace {
     private volatile java.lang.Object key_;
     /**
      * <code>string key = 1;</code>
+     * @return The key.
      */
+    @java.lang.Override
     public java.lang.String getKey() {
       java.lang.Object ref = key_;
       if (ref instanceof java.lang.String) {
@@ -496,7 +512,9 @@ public final class TensorNamespace {
     }
     /**
      * <code>string key = 1;</code>
+     * @return The bytes for key.
      */
+    @java.lang.Override
     public org.nd4j.shade.protobuf.ByteString
         getKeyBytes() {
       java.lang.Object ref = key_;
@@ -515,7 +533,9 @@ public final class TensorNamespace {
     private volatile java.lang.Object value_;
     /**
      * <code>string value = 2;</code>
+     * @return The value.
      */
+    @java.lang.Override
     public java.lang.String getValue() {
       java.lang.Object ref = value_;
       if (ref instanceof java.lang.String) {
@@ -530,7 +550,9 @@ public final class TensorNamespace {
     }
     /**
      * <code>string value = 2;</code>
+     * @return The bytes for value.
      */
+    @java.lang.Override
     public org.nd4j.shade.protobuf.ByteString
         getValueBytes() {
       java.lang.Object ref = value_;
@@ -872,6 +894,7 @@ public final class TensorNamespace {
       private java.lang.Object key_ = "";
       /**
        * <code>string key = 1;</code>
+       * @return The key.
        */
       public java.lang.String getKey() {
         java.lang.Object ref = key_;
@@ -887,6 +910,7 @@ public final class TensorNamespace {
       }
       /**
        * <code>string key = 1;</code>
+       * @return The bytes for key.
        */
       public org.nd4j.shade.protobuf.ByteString
           getKeyBytes() {
@@ -903,6 +927,8 @@ public final class TensorNamespace {
       }
       /**
        * <code>string key = 1;</code>
+       * @param value The key to set.
+       * @return This builder for chaining.
        */
       public Builder setKey(
           java.lang.String value) {
@@ -916,6 +942,7 @@ public final class TensorNamespace {
       }
       /**
        * <code>string key = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearKey() {
         
@@ -925,6 +952,8 @@ public final class TensorNamespace {
       }
       /**
        * <code>string key = 1;</code>
+       * @param value The bytes for key to set.
+       * @return This builder for chaining.
        */
       public Builder setKeyBytes(
           org.nd4j.shade.protobuf.ByteString value) {
@@ -941,6 +970,7 @@ public final class TensorNamespace {
       private java.lang.Object value_ = "";
       /**
        * <code>string value = 2;</code>
+       * @return The value.
        */
       public java.lang.String getValue() {
         java.lang.Object ref = value_;
@@ -956,6 +986,7 @@ public final class TensorNamespace {
       }
       /**
        * <code>string value = 2;</code>
+       * @return The bytes for value.
        */
       public org.nd4j.shade.protobuf.ByteString
           getValueBytes() {
@@ -972,6 +1003,8 @@ public final class TensorNamespace {
       }
       /**
        * <code>string value = 2;</code>
+       * @param value The value to set.
+       * @return This builder for chaining.
        */
       public Builder setValue(
           java.lang.String value) {
@@ -985,6 +1018,7 @@ public final class TensorNamespace {
       }
       /**
        * <code>string value = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearValue() {
         
@@ -994,6 +1028,8 @@ public final class TensorNamespace {
       }
       /**
        * <code>string value = 2;</code>
+       * @param value The bytes for value to set.
+       * @return This builder for chaining.
        */
       public Builder setValueBytes(
           org.nd4j.shade.protobuf.ByteString value) {
@@ -1069,6 +1105,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
+     * @return Whether the tensorType field is set.
      */
     boolean hasTensorType();
     /**
@@ -1077,6 +1114,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
+     * @return The tensorType.
      */
     org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor getTensorType();
     /**
@@ -1097,7 +1135,7 @@ public final class TensorNamespace {
    *
    * Protobuf type {@code org.nd4j.ir.TypeProto}
    */
-  public  static final class TypeProto extends
+  public static final class TypeProto extends
       org.nd4j.shade.protobuf.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:org.nd4j.ir.TypeProto)
       TypeProtoOrBuilder {
@@ -1196,6 +1234,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>.org.nd4j.ir.DataType elem_type = 1;</code>
+       * @return The enum numeric value on the wire for elemType.
        */
       int getElemTypeValue();
       /**
@@ -1205,15 +1244,18 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>.org.nd4j.ir.DataType elem_type = 1;</code>
+       * @return The elemType.
        */
       org.nd4j.ir.TensorNamespace.DataType getElemType();
 
       /**
        * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
+       * @return Whether the shape field is set.
        */
       boolean hasShape();
       /**
        * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
+       * @return The shape.
        */
       org.nd4j.ir.TensorNamespace.TensorShapeProto getShape();
       /**
@@ -1224,7 +1266,7 @@ public final class TensorNamespace {
     /**
      * Protobuf type {@code org.nd4j.ir.TypeProto.TensorDescriptor}
      */
-    public  static final class TensorDescriptor extends
+    public static final class TensorDescriptor extends
         org.nd4j.shade.protobuf.GeneratedMessageV3 implements
         // @@protoc_insertion_point(message_implements:org.nd4j.ir.TypeProto.TensorDescriptor)
         TensorDescriptorOrBuilder {
@@ -1327,8 +1369,9 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>.org.nd4j.ir.DataType elem_type = 1;</code>
+       * @return The enum numeric value on the wire for elemType.
        */
-      public int getElemTypeValue() {
+      @java.lang.Override public int getElemTypeValue() {
         return elemType_;
       }
       /**
@@ -1338,8 +1381,9 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>.org.nd4j.ir.DataType elem_type = 1;</code>
+       * @return The elemType.
        */
-      public org.nd4j.ir.TensorNamespace.DataType getElemType() {
+      @java.lang.Override public org.nd4j.ir.TensorNamespace.DataType getElemType() {
         @SuppressWarnings("deprecation")
         org.nd4j.ir.TensorNamespace.DataType result = org.nd4j.ir.TensorNamespace.DataType.valueOf(elemType_);
         return result == null ? org.nd4j.ir.TensorNamespace.DataType.UNRECOGNIZED : result;
@@ -1349,19 +1393,24 @@ public final class TensorNamespace {
       private org.nd4j.ir.TensorNamespace.TensorShapeProto shape_;
       /**
        * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
+       * @return Whether the shape field is set.
        */
+      @java.lang.Override
       public boolean hasShape() {
         return shape_ != null;
       }
       /**
        * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
+       * @return The shape.
        */
+      @java.lang.Override
       public org.nd4j.ir.TensorNamespace.TensorShapeProto getShape() {
         return shape_ == null ? org.nd4j.ir.TensorNamespace.TensorShapeProto.getDefaultInstance() : shape_;
       }
       /**
        * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
        */
+      @java.lang.Override
       public org.nd4j.ir.TensorNamespace.TensorShapeProtoOrBuilder getShapeOrBuilder() {
         return getShape();
       }
@@ -1705,8 +1754,9 @@ public final class TensorNamespace {
          * </pre>
          *
          * <code>.org.nd4j.ir.DataType elem_type = 1;</code>
+         * @return The enum numeric value on the wire for elemType.
          */
-        public int getElemTypeValue() {
+        @java.lang.Override public int getElemTypeValue() {
           return elemType_;
         }
         /**
@@ -1716,8 +1766,11 @@ public final class TensorNamespace {
          * </pre>
          *
          * <code>.org.nd4j.ir.DataType elem_type = 1;</code>
+         * @param value The enum numeric value on the wire for elemType to set.
+         * @return This builder for chaining.
          */
         public Builder setElemTypeValue(int value) {
+          
           elemType_ = value;
           onChanged();
           return this;
@@ -1729,7 +1782,9 @@ public final class TensorNamespace {
          * </pre>
          *
          * <code>.org.nd4j.ir.DataType elem_type = 1;</code>
+         * @return The elemType.
          */
+        @java.lang.Override
         public org.nd4j.ir.TensorNamespace.DataType getElemType() {
           @SuppressWarnings("deprecation")
           org.nd4j.ir.TensorNamespace.DataType result = org.nd4j.ir.TensorNamespace.DataType.valueOf(elemType_);
@@ -1742,6 +1797,8 @@ public final class TensorNamespace {
          * </pre>
          *
          * <code>.org.nd4j.ir.DataType elem_type = 1;</code>
+         * @param value The elemType to set.
+         * @return This builder for chaining.
          */
         public Builder setElemType(org.nd4j.ir.TensorNamespace.DataType value) {
           if (value == null) {
@@ -1759,6 +1816,7 @@ public final class TensorNamespace {
          * </pre>
          *
          * <code>.org.nd4j.ir.DataType elem_type = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearElemType() {
           
@@ -1772,12 +1830,14 @@ public final class TensorNamespace {
             org.nd4j.ir.TensorNamespace.TensorShapeProto, org.nd4j.ir.TensorNamespace.TensorShapeProto.Builder, org.nd4j.ir.TensorNamespace.TensorShapeProtoOrBuilder> shapeBuilder_;
         /**
          * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
+         * @return Whether the shape field is set.
          */
         public boolean hasShape() {
           return shapeBuilder_ != null || shape_ != null;
         }
         /**
          * <code>.org.nd4j.ir.TensorShapeProto shape = 2;</code>
+         * @return The shape.
          */
         public org.nd4j.ir.TensorNamespace.TensorShapeProto getShape() {
           if (shapeBuilder_ == null) {
@@ -1939,7 +1999,8 @@ public final class TensorNamespace {
     private int valueCase_ = 0;
     private java.lang.Object value_;
     public enum ValueCase
-        implements org.nd4j.shade.protobuf.Internal.EnumLite {
+        implements org.nd4j.shade.protobuf.Internal.EnumLite,
+            org.nd4j.shade.protobuf.AbstractMessage.InternalOneOfEnum {
       TENSOR_TYPE(1),
       VALUE_NOT_SET(0);
       private final int value;
@@ -1947,6 +2008,8 @@ public final class TensorNamespace {
         this.value = value;
       }
       /**
+       * @param value The number of the enum to look for.
+       * @return The enum associated with the given number.
        * @deprecated Use {@link #forNumber(int)} instead.
        */
       @java.lang.Deprecated
@@ -1979,7 +2042,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
+     * @return Whether the tensorType field is set.
      */
+    @java.lang.Override
     public boolean hasTensorType() {
       return valueCase_ == 1;
     }
@@ -1989,7 +2054,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
+     * @return The tensorType.
      */
+    @java.lang.Override
     public org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor getTensorType() {
       if (valueCase_ == 1) {
          return (org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) value_;
@@ -2003,6 +2070,7 @@ public final class TensorNamespace {
      *
      * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
      */
+    @java.lang.Override
     public org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptorOrBuilder getTensorTypeOrBuilder() {
       if (valueCase_ == 1) {
          return (org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) value_;
@@ -2365,7 +2433,9 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
+       * @return Whether the tensorType field is set.
        */
+      @java.lang.Override
       public boolean hasTensorType() {
         return valueCase_ == 1;
       }
@@ -2375,7 +2445,9 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
+       * @return The tensorType.
        */
+      @java.lang.Override
       public org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor getTensorType() {
         if (tensorTypeBuilder_ == null) {
           if (valueCase_ == 1) {
@@ -2493,6 +2565,7 @@ public final class TensorNamespace {
        *
        * <code>.org.nd4j.ir.TypeProto.TensorDescriptor tensor_type = 1;</code>
        */
+      @java.lang.Override
       public org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptorOrBuilder getTensorTypeOrBuilder() {
         if ((valueCase_ == 1) && (tensorTypeBuilder_ != null)) {
           return tensorTypeBuilder_.getMessageOrBuilder();
@@ -2618,7 +2691,7 @@ public final class TensorNamespace {
    *
    * Protobuf type {@code org.nd4j.ir.TensorShapeProto}
    */
-  public  static final class TensorShapeProto extends
+  public static final class TensorShapeProto extends
       org.nd4j.shade.protobuf.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:org.nd4j.ir.TensorShapeProto)
       TensorShapeProtoOrBuilder {
@@ -2712,6 +2785,7 @@ public final class TensorNamespace {
 
       /**
        * <code>int64 dim_value = 1;</code>
+       * @return The dimValue.
        */
       long getDimValue();
 
@@ -2721,6 +2795,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string dim_param = 2;</code>
+       * @return The dimParam.
        */
       java.lang.String getDimParam();
       /**
@@ -2729,6 +2804,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string dim_param = 2;</code>
+       * @return The bytes for dimParam.
        */
       org.nd4j.shade.protobuf.ByteString
           getDimParamBytes();
@@ -2738,7 +2814,7 @@ public final class TensorNamespace {
     /**
      * Protobuf type {@code org.nd4j.ir.TensorShapeProto.Dimension}
      */
-    public  static final class Dimension extends
+    public static final class Dimension extends
         org.nd4j.shade.protobuf.GeneratedMessageV3 implements
         // @@protoc_insertion_point(message_implements:org.nd4j.ir.TensorShapeProto.Dimension)
         DimensionOrBuilder {
@@ -2826,7 +2902,8 @@ public final class TensorNamespace {
       private int valueCase_ = 0;
       private java.lang.Object value_;
       public enum ValueCase
-          implements org.nd4j.shade.protobuf.Internal.EnumLite {
+          implements org.nd4j.shade.protobuf.Internal.EnumLite,
+              org.nd4j.shade.protobuf.AbstractMessage.InternalOneOfEnum {
         DIM_VALUE(1),
         DIM_PARAM(2),
         VALUE_NOT_SET(0);
@@ -2835,6 +2912,8 @@ public final class TensorNamespace {
           this.value = value;
         }
         /**
+         * @param value The number of the enum to look for.
+         * @return The enum associated with the given number.
          * @deprecated Use {@link #forNumber(int)} instead.
          */
         @java.lang.Deprecated
@@ -2864,7 +2943,9 @@ public final class TensorNamespace {
       public static final int DIM_VALUE_FIELD_NUMBER = 1;
       /**
        * <code>int64 dim_value = 1;</code>
+       * @return The dimValue.
        */
+      @java.lang.Override
       public long getDimValue() {
         if (valueCase_ == 1) {
           return (java.lang.Long) value_;
@@ -2879,6 +2960,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string dim_param = 2;</code>
+       * @return The dimParam.
        */
       public java.lang.String getDimParam() {
         java.lang.Object ref = "";
@@ -2903,6 +2985,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string dim_param = 2;</code>
+       * @return The bytes for dimParam.
        */
       public org.nd4j.shade.protobuf.ByteString
           getDimParamBytes() {
@@ -3290,6 +3373,7 @@ public final class TensorNamespace {
 
         /**
          * <code>int64 dim_value = 1;</code>
+         * @return The dimValue.
          */
         public long getDimValue() {
           if (valueCase_ == 1) {
@@ -3299,6 +3383,8 @@ public final class TensorNamespace {
         }
         /**
          * <code>int64 dim_value = 1;</code>
+         * @param value The dimValue to set.
+         * @return This builder for chaining.
          */
         public Builder setDimValue(long value) {
           valueCase_ = 1;
@@ -3308,6 +3394,7 @@ public final class TensorNamespace {
         }
         /**
          * <code>int64 dim_value = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearDimValue() {
           if (valueCase_ == 1) {
@@ -3324,7 +3411,9 @@ public final class TensorNamespace {
          * </pre>
          *
          * <code>string dim_param = 2;</code>
+         * @return The dimParam.
          */
+        @java.lang.Override
         public java.lang.String getDimParam() {
           java.lang.Object ref = "";
           if (valueCase_ == 2) {
@@ -3348,7 +3437,9 @@ public final class TensorNamespace {
          * </pre>
          *
          * <code>string dim_param = 2;</code>
+         * @return The bytes for dimParam.
          */
+        @java.lang.Override
         public org.nd4j.shade.protobuf.ByteString
             getDimParamBytes() {
           java.lang.Object ref = "";
@@ -3373,6 +3464,8 @@ public final class TensorNamespace {
          * </pre>
          *
          * <code>string dim_param = 2;</code>
+         * @param value The dimParam to set.
+         * @return This builder for chaining.
          */
         public Builder setDimParam(
             java.lang.String value) {
@@ -3390,6 +3483,7 @@ public final class TensorNamespace {
          * </pre>
          *
          * <code>string dim_param = 2;</code>
+         * @return This builder for chaining.
          */
         public Builder clearDimParam() {
           if (valueCase_ == 2) {
@@ -3405,6 +3499,8 @@ public final class TensorNamespace {
          * </pre>
          *
          * <code>string dim_param = 2;</code>
+         * @param value The bytes for dimParam to set.
+         * @return This builder for chaining.
          */
         public Builder setDimParamBytes(
             org.nd4j.shade.protobuf.ByteString value) {
@@ -3475,12 +3571,14 @@ public final class TensorNamespace {
     /**
      * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
      */
+    @java.lang.Override
     public java.util.List<org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension> getDimList() {
       return dim_;
     }
     /**
      * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
      */
+    @java.lang.Override
     public java.util.List<? extends org.nd4j.ir.TensorNamespace.TensorShapeProto.DimensionOrBuilder> 
         getDimOrBuilderList() {
       return dim_;
@@ -3488,18 +3586,21 @@ public final class TensorNamespace {
     /**
      * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
      */
+    @java.lang.Override
     public int getDimCount() {
       return dim_.size();
     }
     /**
      * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
      */
+    @java.lang.Override
     public org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension getDim(int index) {
       return dim_.get(index);
     }
     /**
      * <code>repeated .org.nd4j.ir.TensorShapeProto.Dimension dim = 1;</code>
      */
+    @java.lang.Override
     public org.nd4j.ir.TensorNamespace.TensorShapeProto.DimensionOrBuilder getDimOrBuilder(
         int index) {
       return dim_.get(index);
@@ -4155,6 +4256,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>string name = 1;</code>
+     * @return The name.
      */
     java.lang.String getName();
     /**
@@ -4163,6 +4265,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>string name = 1;</code>
+     * @return The bytes for name.
      */
     org.nd4j.shade.protobuf.ByteString
         getNameBytes();
@@ -4173,6 +4276,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>.org.nd4j.ir.TypeProto type = 2;</code>
+     * @return Whether the type field is set.
      */
     boolean hasType();
     /**
@@ -4181,6 +4285,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>.org.nd4j.ir.TypeProto type = 2;</code>
+     * @return The type.
      */
     org.nd4j.ir.TensorNamespace.TypeProto getType();
     /**
@@ -4198,6 +4303,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>string doc_string = 3;</code>
+     * @return The docString.
      */
     java.lang.String getDocString();
     /**
@@ -4206,6 +4312,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>string doc_string = 3;</code>
+     * @return The bytes for docString.
      */
     org.nd4j.shade.protobuf.ByteString
         getDocStringBytes();
@@ -4218,7 +4325,7 @@ public final class TensorNamespace {
    *
    * Protobuf type {@code org.nd4j.ir.ValueInfoProto}
    */
-  public  static final class ValueInfoProto extends
+  public static final class ValueInfoProto extends
       org.nd4j.shade.protobuf.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:org.nd4j.ir.ValueInfoProto)
       ValueInfoProtoOrBuilder {
@@ -4327,7 +4434,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>string name = 1;</code>
+     * @return The name.
      */
+    @java.lang.Override
     public java.lang.String getName() {
       java.lang.Object ref = name_;
       if (ref instanceof java.lang.String) {
@@ -4346,7 +4455,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>string name = 1;</code>
+     * @return The bytes for name.
      */
+    @java.lang.Override
     public org.nd4j.shade.protobuf.ByteString
         getNameBytes() {
       java.lang.Object ref = name_;
@@ -4369,7 +4480,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>.org.nd4j.ir.TypeProto type = 2;</code>
+     * @return Whether the type field is set.
      */
+    @java.lang.Override
     public boolean hasType() {
       return type_ != null;
     }
@@ -4379,7 +4492,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>.org.nd4j.ir.TypeProto type = 2;</code>
+     * @return The type.
      */
+    @java.lang.Override
     public org.nd4j.ir.TensorNamespace.TypeProto getType() {
       return type_ == null ? org.nd4j.ir.TensorNamespace.TypeProto.getDefaultInstance() : type_;
     }
@@ -4390,6 +4505,7 @@ public final class TensorNamespace {
      *
      * <code>.org.nd4j.ir.TypeProto type = 2;</code>
      */
+    @java.lang.Override
     public org.nd4j.ir.TensorNamespace.TypeProtoOrBuilder getTypeOrBuilder() {
       return getType();
     }
@@ -4402,7 +4518,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>string doc_string = 3;</code>
+     * @return The docString.
      */
+    @java.lang.Override
     public java.lang.String getDocString() {
       java.lang.Object ref = docString_;
       if (ref instanceof java.lang.String) {
@@ -4421,7 +4539,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>string doc_string = 3;</code>
+     * @return The bytes for docString.
      */
+    @java.lang.Override
     public org.nd4j.shade.protobuf.ByteString
         getDocStringBytes() {
       java.lang.Object ref = docString_;
@@ -4797,6 +4917,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string name = 1;</code>
+       * @return The name.
        */
       public java.lang.String getName() {
         java.lang.Object ref = name_;
@@ -4816,6 +4937,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string name = 1;</code>
+       * @return The bytes for name.
        */
       public org.nd4j.shade.protobuf.ByteString
           getNameBytes() {
@@ -4836,6 +4958,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string name = 1;</code>
+       * @param value The name to set.
+       * @return This builder for chaining.
        */
       public Builder setName(
           java.lang.String value) {
@@ -4853,6 +4977,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string name = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearName() {
         
@@ -4866,6 +4991,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string name = 1;</code>
+       * @param value The bytes for name to set.
+       * @return This builder for chaining.
        */
       public Builder setNameBytes(
           org.nd4j.shade.protobuf.ByteString value) {
@@ -4888,6 +5015,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>.org.nd4j.ir.TypeProto type = 2;</code>
+       * @return Whether the type field is set.
        */
       public boolean hasType() {
         return typeBuilder_ != null || type_ != null;
@@ -4898,6 +5026,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>.org.nd4j.ir.TypeProto type = 2;</code>
+       * @return The type.
        */
       public org.nd4j.ir.TensorNamespace.TypeProto getType() {
         if (typeBuilder_ == null) {
@@ -5039,6 +5168,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string doc_string = 3;</code>
+       * @return The docString.
        */
       public java.lang.String getDocString() {
         java.lang.Object ref = docString_;
@@ -5058,6 +5188,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string doc_string = 3;</code>
+       * @return The bytes for docString.
        */
       public org.nd4j.shade.protobuf.ByteString
           getDocStringBytes() {
@@ -5078,6 +5209,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string doc_string = 3;</code>
+       * @param value The docString to set.
+       * @return This builder for chaining.
        */
       public Builder setDocString(
           java.lang.String value) {
@@ -5095,6 +5228,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string doc_string = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearDocString() {
         
@@ -5108,6 +5242,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string doc_string = 3;</code>
+       * @param value The bytes for docString to set.
+       * @return This builder for chaining.
        */
       public Builder setDocStringBytes(
           org.nd4j.shade.protobuf.ByteString value) {
@@ -5183,6 +5319,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int64 dims = 1;</code>
+     * @return A list containing the dims.
      */
     java.util.List<java.lang.Long> getDimsList();
     /**
@@ -5191,6 +5328,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int64 dims = 1;</code>
+     * @return The count of dims.
      */
     int getDimsCount();
     /**
@@ -5199,6 +5337,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int64 dims = 1;</code>
+     * @param index The index of the element to return.
+     * @return The dims at the given index.
      */
     long getDims(int index);
 
@@ -5209,15 +5349,18 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>int32 data_type = 2;</code>
+     * @return The dataType.
      */
     int getDataType();
 
     /**
      * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
+     * @return Whether the segment field is set.
      */
     boolean hasSegment();
     /**
      * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
+     * @return The segment.
      */
     org.nd4j.ir.TensorNamespace.TensorProto.Segment getSegment();
     /**
@@ -5237,6 +5380,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated float float_data = 4 [packed = true];</code>
+     * @return A list containing the floatData.
      */
     java.util.List<java.lang.Float> getFloatDataList();
     /**
@@ -5251,6 +5395,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated float float_data = 4 [packed = true];</code>
+     * @return The count of floatData.
      */
     int getFloatDataCount();
     /**
@@ -5265,6 +5410,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated float float_data = 4 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The floatData at the given index.
      */
     float getFloatData(int index);
 
@@ -5278,6 +5425,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int32 int32_data = 5 [packed = true];</code>
+     * @return A list containing the int32Data.
      */
     java.util.List<java.lang.Integer> getInt32DataList();
     /**
@@ -5290,6 +5438,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int32 int32_data = 5 [packed = true];</code>
+     * @return The count of int32Data.
      */
     int getInt32DataCount();
     /**
@@ -5302,6 +5451,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int32 int32_data = 5 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The int32Data at the given index.
      */
     int getInt32Data(int index);
 
@@ -5315,6 +5466,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated bytes string_data = 6;</code>
+     * @return A list containing the stringData.
      */
     java.util.List<org.nd4j.shade.protobuf.ByteString> getStringDataList();
     /**
@@ -5327,6 +5479,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated bytes string_data = 6;</code>
+     * @return The count of stringData.
      */
     int getStringDataCount();
     /**
@@ -5339,6 +5492,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated bytes string_data = 6;</code>
+     * @param index The index of the element to return.
+     * @return The stringData at the given index.
      */
     org.nd4j.shade.protobuf.ByteString getStringData(int index);
 
@@ -5349,6 +5504,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int64 int64_data = 7 [packed = true];</code>
+     * @return A list containing the int64Data.
      */
     java.util.List<java.lang.Long> getInt64DataList();
     /**
@@ -5358,6 +5514,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int64 int64_data = 7 [packed = true];</code>
+     * @return The count of int64Data.
      */
     int getInt64DataCount();
     /**
@@ -5367,6 +5524,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int64 int64_data = 7 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The int64Data at the given index.
      */
     long getInt64Data(int index);
 
@@ -5376,6 +5535,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>string name = 8;</code>
+     * @return The name.
      */
     java.lang.String getName();
     /**
@@ -5384,6 +5544,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>string name = 8;</code>
+     * @return The bytes for name.
      */
     org.nd4j.shade.protobuf.ByteString
         getNameBytes();
@@ -5394,6 +5555,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>string doc_string = 12;</code>
+     * @return The docString.
      */
     java.lang.String getDocString();
     /**
@@ -5402,6 +5564,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>string doc_string = 12;</code>
+     * @return The bytes for docString.
      */
     org.nd4j.shade.protobuf.ByteString
         getDocStringBytes();
@@ -5424,6 +5587,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>bytes raw_data = 9;</code>
+     * @return The rawData.
      */
     org.nd4j.shade.protobuf.ByteString getRawData();
 
@@ -5517,6 +5681,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>.org.nd4j.ir.TensorProto.DataLocation data_location = 14;</code>
+     * @return The enum numeric value on the wire for dataLocation.
      */
     int getDataLocationValue();
     /**
@@ -5525,6 +5690,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>.org.nd4j.ir.TensorProto.DataLocation data_location = 14;</code>
+     * @return The dataLocation.
      */
     org.nd4j.ir.TensorNamespace.TensorProto.DataLocation getDataLocation();
 
@@ -5540,6 +5706,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated double double_data = 10 [packed = true];</code>
+     * @return A list containing the doubleData.
      */
     java.util.List<java.lang.Double> getDoubleDataList();
     /**
@@ -5554,6 +5721,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated double double_data = 10 [packed = true];</code>
+     * @return The count of doubleData.
      */
     int getDoubleDataCount();
     /**
@@ -5568,6 +5736,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated double double_data = 10 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The doubleData at the given index.
      */
     double getDoubleData(int index);
 
@@ -5579,6 +5749,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
+     * @return A list containing the uint64Data.
      */
     java.util.List<java.lang.Long> getUint64DataList();
     /**
@@ -5589,6 +5760,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
+     * @return The count of uint64Data.
      */
     int getUint64DataCount();
     /**
@@ -5599,6 +5771,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The uint64Data at the given index.
      */
     long getUint64Data(int index);
 
@@ -5608,6 +5782,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int32 half_val = 15 [packed = true];</code>
+     * @return A list containing the halfVal.
      */
     java.util.List<java.lang.Integer> getHalfValList();
     /**
@@ -5616,6 +5791,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int32 half_val = 15 [packed = true];</code>
+     * @return The count of halfVal.
      */
     int getHalfValCount();
     /**
@@ -5624,6 +5800,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int32 half_val = 15 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The halfVal at the given index.
      */
     int getHalfVal(int index);
 
@@ -5633,6 +5811,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated bool bool_val = 16 [packed = true];</code>
+     * @return A list containing the boolVal.
      */
     java.util.List<java.lang.Boolean> getBoolValList();
     /**
@@ -5641,6 +5820,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated bool bool_val = 16 [packed = true];</code>
+     * @return The count of boolVal.
      */
     int getBoolValCount();
     /**
@@ -5649,6 +5829,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated bool bool_val = 16 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The boolVal at the given index.
      */
     boolean getBoolVal(int index);
   }
@@ -5660,7 +5842,7 @@ public final class TensorNamespace {
    *
    * Protobuf type {@code org.nd4j.ir.TensorProto}
    */
-  public  static final class TensorProto extends
+  public static final class TensorProto extends
       org.nd4j.shade.protobuf.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:org.nd4j.ir.TensorProto)
       TensorProtoOrBuilder {
@@ -6046,6 +6228,8 @@ public final class TensorNamespace {
       }
 
       /**
+       * @param value The numeric wire value of the corresponding enum entry.
+       * @return The enum associated with the given numeric wire value.
        * @deprecated Use {@link #forNumber(int)} instead.
        */
       @java.lang.Deprecated
@@ -6053,6 +6237,10 @@ public final class TensorNamespace {
         return forNumber(value);
       }
 
+      /**
+       * @param value The numeric wire value of the corresponding enum entry.
+       * @return The enum associated with the given numeric wire value.
+       */
       public static DataLocation forNumber(int value) {
         switch (value) {
           case 0: return DEFAULT;
@@ -6075,6 +6263,10 @@ public final class TensorNamespace {
 
       public final org.nd4j.shade.protobuf.Descriptors.EnumValueDescriptor
           getValueDescriptor() {
+        if (this == UNRECOGNIZED) {
+          throw new java.lang.IllegalStateException(
+              "Can't get the descriptor of an unrecognized enum value.");
+        }
         return getDescriptor().getValues().get(ordinal());
       }
       public final org.nd4j.shade.protobuf.Descriptors.EnumDescriptor
@@ -6115,11 +6307,13 @@ public final class TensorNamespace {
 
       /**
        * <code>int64 begin = 1;</code>
+       * @return The begin.
        */
       long getBegin();
 
       /**
        * <code>int64 end = 2;</code>
+       * @return The end.
        */
       long getEnd();
     }
@@ -6132,7 +6326,7 @@ public final class TensorNamespace {
      *
      * Protobuf type {@code org.nd4j.ir.TensorProto.Segment}
      */
-    public  static final class Segment extends
+    public static final class Segment extends
         org.nd4j.shade.protobuf.GeneratedMessageV3 implements
         // @@protoc_insertion_point(message_implements:org.nd4j.ir.TensorProto.Segment)
         SegmentOrBuilder {
@@ -6220,7 +6414,9 @@ public final class TensorNamespace {
       private long begin_;
       /**
        * <code>int64 begin = 1;</code>
+       * @return The begin.
        */
+      @java.lang.Override
       public long getBegin() {
         return begin_;
       }
@@ -6229,7 +6425,9 @@ public final class TensorNamespace {
       private long end_;
       /**
        * <code>int64 end = 2;</code>
+       * @return The end.
        */
+      @java.lang.Override
       public long getEnd() {
         return end_;
       }
@@ -6564,12 +6762,16 @@ public final class TensorNamespace {
         private long begin_ ;
         /**
          * <code>int64 begin = 1;</code>
+         * @return The begin.
          */
+        @java.lang.Override
         public long getBegin() {
           return begin_;
         }
         /**
          * <code>int64 begin = 1;</code>
+         * @param value The begin to set.
+         * @return This builder for chaining.
          */
         public Builder setBegin(long value) {
           
@@ -6579,6 +6781,7 @@ public final class TensorNamespace {
         }
         /**
          * <code>int64 begin = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearBegin() {
           
@@ -6590,12 +6793,16 @@ public final class TensorNamespace {
         private long end_ ;
         /**
          * <code>int64 end = 2;</code>
+         * @return The end.
          */
+        @java.lang.Override
         public long getEnd() {
           return end_;
         }
         /**
          * <code>int64 end = 2;</code>
+         * @param value The end to set.
+         * @return This builder for chaining.
          */
         public Builder setEnd(long value) {
           
@@ -6605,6 +6812,7 @@ public final class TensorNamespace {
         }
         /**
          * <code>int64 end = 2;</code>
+         * @return This builder for chaining.
          */
         public Builder clearEnd() {
           
@@ -6673,7 +6881,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int64 dims = 1;</code>
+     * @return A list containing the dims.
      */
+    @java.lang.Override
     public java.util.List<java.lang.Long>
         getDimsList() {
       return dims_;
@@ -6684,6 +6894,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int64 dims = 1;</code>
+     * @return The count of dims.
      */
     public int getDimsCount() {
       return dims_.size();
@@ -6694,6 +6905,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int64 dims = 1;</code>
+     * @param index The index of the element to return.
+     * @return The dims at the given index.
      */
     public long getDims(int index) {
       return dims_.getLong(index);
@@ -6709,7 +6922,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>int32 data_type = 2;</code>
+     * @return The dataType.
      */
+    @java.lang.Override
     public int getDataType() {
       return dataType_;
     }
@@ -6718,19 +6933,24 @@ public final class TensorNamespace {
     private org.nd4j.ir.TensorNamespace.TensorProto.Segment segment_;
     /**
      * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
+     * @return Whether the segment field is set.
      */
+    @java.lang.Override
     public boolean hasSegment() {
       return segment_ != null;
     }
     /**
      * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
+     * @return The segment.
      */
+    @java.lang.Override
     public org.nd4j.ir.TensorNamespace.TensorProto.Segment getSegment() {
       return segment_ == null ? org.nd4j.ir.TensorNamespace.TensorProto.Segment.getDefaultInstance() : segment_;
     }
     /**
      * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
      */
+    @java.lang.Override
     public org.nd4j.ir.TensorNamespace.TensorProto.SegmentOrBuilder getSegmentOrBuilder() {
       return getSegment();
     }
@@ -6749,7 +6969,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated float float_data = 4 [packed = true];</code>
+     * @return A list containing the floatData.
      */
+    @java.lang.Override
     public java.util.List<java.lang.Float>
         getFloatDataList() {
       return floatData_;
@@ -6766,6 +6988,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated float float_data = 4 [packed = true];</code>
+     * @return The count of floatData.
      */
     public int getFloatDataCount() {
       return floatData_.size();
@@ -6782,6 +7005,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated float float_data = 4 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The floatData at the given index.
      */
     public float getFloatData(int index) {
       return floatData_.getFloat(index);
@@ -6800,7 +7025,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int32 int32_data = 5 [packed = true];</code>
+     * @return A list containing the int32Data.
      */
+    @java.lang.Override
     public java.util.List<java.lang.Integer>
         getInt32DataList() {
       return int32Data_;
@@ -6815,6 +7042,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int32 int32_data = 5 [packed = true];</code>
+     * @return The count of int32Data.
      */
     public int getInt32DataCount() {
       return int32Data_.size();
@@ -6829,6 +7057,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int32 int32_data = 5 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The int32Data at the given index.
      */
     public int getInt32Data(int index) {
       return int32Data_.getInt(index);
@@ -6847,7 +7077,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated bytes string_data = 6;</code>
+     * @return A list containing the stringData.
      */
+    @java.lang.Override
     public java.util.List<org.nd4j.shade.protobuf.ByteString>
         getStringDataList() {
       return stringData_;
@@ -6862,6 +7094,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated bytes string_data = 6;</code>
+     * @return The count of stringData.
      */
     public int getStringDataCount() {
       return stringData_.size();
@@ -6876,6 +7109,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated bytes string_data = 6;</code>
+     * @param index The index of the element to return.
+     * @return The stringData at the given index.
      */
     public org.nd4j.shade.protobuf.ByteString getStringData(int index) {
       return stringData_.get(index);
@@ -6890,7 +7125,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int64 int64_data = 7 [packed = true];</code>
+     * @return A list containing the int64Data.
      */
+    @java.lang.Override
     public java.util.List<java.lang.Long>
         getInt64DataList() {
       return int64Data_;
@@ -6902,6 +7139,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int64 int64_data = 7 [packed = true];</code>
+     * @return The count of int64Data.
      */
     public int getInt64DataCount() {
       return int64Data_.size();
@@ -6913,6 +7151,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int64 int64_data = 7 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The int64Data at the given index.
      */
     public long getInt64Data(int index) {
       return int64Data_.getLong(index);
@@ -6927,7 +7167,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>string name = 8;</code>
+     * @return The name.
      */
+    @java.lang.Override
     public java.lang.String getName() {
       java.lang.Object ref = name_;
       if (ref instanceof java.lang.String) {
@@ -6946,7 +7188,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>string name = 8;</code>
+     * @return The bytes for name.
      */
+    @java.lang.Override
     public org.nd4j.shade.protobuf.ByteString
         getNameBytes() {
       java.lang.Object ref = name_;
@@ -6969,7 +7213,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>string doc_string = 12;</code>
+     * @return The docString.
      */
+    @java.lang.Override
     public java.lang.String getDocString() {
       java.lang.Object ref = docString_;
       if (ref instanceof java.lang.String) {
@@ -6988,7 +7234,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>string doc_string = 12;</code>
+     * @return The bytes for docString.
      */
+    @java.lang.Override
     public org.nd4j.shade.protobuf.ByteString
         getDocStringBytes() {
       java.lang.Object ref = docString_;
@@ -7023,7 +7271,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>bytes raw_data = 9;</code>
+     * @return The rawData.
      */
+    @java.lang.Override
     public org.nd4j.shade.protobuf.ByteString getRawData() {
       return rawData_;
     }
@@ -7045,6 +7295,7 @@ public final class TensorNamespace {
      *
      * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
      */
+    @java.lang.Override
     public java.util.List<org.nd4j.ir.TensorNamespace.StringStringEntryProto> getExternalDataList() {
       return externalData_;
     }
@@ -7063,6 +7314,7 @@ public final class TensorNamespace {
      *
      * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
      */
+    @java.lang.Override
     public java.util.List<? extends org.nd4j.ir.TensorNamespace.StringStringEntryProtoOrBuilder> 
         getExternalDataOrBuilderList() {
       return externalData_;
@@ -7082,6 +7334,7 @@ public final class TensorNamespace {
      *
      * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
      */
+    @java.lang.Override
     public int getExternalDataCount() {
       return externalData_.size();
     }
@@ -7100,6 +7353,7 @@ public final class TensorNamespace {
      *
      * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
      */
+    @java.lang.Override
     public org.nd4j.ir.TensorNamespace.StringStringEntryProto getExternalData(int index) {
       return externalData_.get(index);
     }
@@ -7118,6 +7372,7 @@ public final class TensorNamespace {
      *
      * <code>repeated .org.nd4j.ir.StringStringEntryProto external_data = 13;</code>
      */
+    @java.lang.Override
     public org.nd4j.ir.TensorNamespace.StringStringEntryProtoOrBuilder getExternalDataOrBuilder(
         int index) {
       return externalData_.get(index);
@@ -7131,8 +7386,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>.org.nd4j.ir.TensorProto.DataLocation data_location = 14;</code>
+     * @return The enum numeric value on the wire for dataLocation.
      */
-    public int getDataLocationValue() {
+    @java.lang.Override public int getDataLocationValue() {
       return dataLocation_;
     }
     /**
@@ -7141,8 +7397,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>.org.nd4j.ir.TensorProto.DataLocation data_location = 14;</code>
+     * @return The dataLocation.
      */
-    public org.nd4j.ir.TensorNamespace.TensorProto.DataLocation getDataLocation() {
+    @java.lang.Override public org.nd4j.ir.TensorNamespace.TensorProto.DataLocation getDataLocation() {
       @SuppressWarnings("deprecation")
       org.nd4j.ir.TensorNamespace.TensorProto.DataLocation result = org.nd4j.ir.TensorNamespace.TensorProto.DataLocation.valueOf(dataLocation_);
       return result == null ? org.nd4j.ir.TensorNamespace.TensorProto.DataLocation.UNRECOGNIZED : result;
@@ -7162,7 +7419,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated double double_data = 10 [packed = true];</code>
+     * @return A list containing the doubleData.
      */
+    @java.lang.Override
     public java.util.List<java.lang.Double>
         getDoubleDataList() {
       return doubleData_;
@@ -7179,6 +7438,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated double double_data = 10 [packed = true];</code>
+     * @return The count of doubleData.
      */
     public int getDoubleDataCount() {
       return doubleData_.size();
@@ -7195,6 +7455,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated double double_data = 10 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The doubleData at the given index.
      */
     public double getDoubleData(int index) {
       return doubleData_.getDouble(index);
@@ -7211,7 +7473,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
+     * @return A list containing the uint64Data.
      */
+    @java.lang.Override
     public java.util.List<java.lang.Long>
         getUint64DataList() {
       return uint64Data_;
@@ -7224,6 +7488,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
+     * @return The count of uint64Data.
      */
     public int getUint64DataCount() {
       return uint64Data_.size();
@@ -7236,6 +7501,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The uint64Data at the given index.
      */
     public long getUint64Data(int index) {
       return uint64Data_.getLong(index);
@@ -7250,7 +7517,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int32 half_val = 15 [packed = true];</code>
+     * @return A list containing the halfVal.
      */
+    @java.lang.Override
     public java.util.List<java.lang.Integer>
         getHalfValList() {
       return halfVal_;
@@ -7261,6 +7530,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int32 half_val = 15 [packed = true];</code>
+     * @return The count of halfVal.
      */
     public int getHalfValCount() {
       return halfVal_.size();
@@ -7271,6 +7541,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated int32 half_val = 15 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The halfVal at the given index.
      */
     public int getHalfVal(int index) {
       return halfVal_.getInt(index);
@@ -7285,7 +7557,9 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated bool bool_val = 16 [packed = true];</code>
+     * @return A list containing the boolVal.
      */
+    @java.lang.Override
     public java.util.List<java.lang.Boolean>
         getBoolValList() {
       return boolVal_;
@@ -7296,6 +7570,7 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated bool bool_val = 16 [packed = true];</code>
+     * @return The count of boolVal.
      */
     public int getBoolValCount() {
       return boolVal_.size();
@@ -7306,6 +7581,8 @@ public final class TensorNamespace {
      * </pre>
      *
      * <code>repeated bool bool_val = 16 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The boolVal at the given index.
      */
     public boolean getBoolVal(int index) {
       return boolVal_.getBoolean(index);
@@ -8165,6 +8442,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int64 dims = 1;</code>
+       * @return A list containing the dims.
        */
       public java.util.List<java.lang.Long>
           getDimsList() {
@@ -8177,6 +8455,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int64 dims = 1;</code>
+       * @return The count of dims.
        */
       public int getDimsCount() {
         return dims_.size();
@@ -8187,6 +8466,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int64 dims = 1;</code>
+       * @param index The index of the element to return.
+       * @return The dims at the given index.
        */
       public long getDims(int index) {
         return dims_.getLong(index);
@@ -8197,6 +8478,9 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int64 dims = 1;</code>
+       * @param index The index to set the value at.
+       * @param value The dims to set.
+       * @return This builder for chaining.
        */
       public Builder setDims(
           int index, long value) {
@@ -8211,6 +8495,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int64 dims = 1;</code>
+       * @param value The dims to add.
+       * @return This builder for chaining.
        */
       public Builder addDims(long value) {
         ensureDimsIsMutable();
@@ -8224,6 +8510,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int64 dims = 1;</code>
+       * @param values The dims to add.
+       * @return This builder for chaining.
        */
       public Builder addAllDims(
           java.lang.Iterable<? extends java.lang.Long> values) {
@@ -8239,6 +8527,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int64 dims = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearDims() {
         dims_ = emptyLongList();
@@ -8255,7 +8544,9 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>int32 data_type = 2;</code>
+       * @return The dataType.
        */
+      @java.lang.Override
       public int getDataType() {
         return dataType_;
       }
@@ -8266,6 +8557,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>int32 data_type = 2;</code>
+       * @param value The dataType to set.
+       * @return This builder for chaining.
        */
       public Builder setDataType(int value) {
         
@@ -8280,6 +8573,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>int32 data_type = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearDataType() {
         
@@ -8293,12 +8587,14 @@ public final class TensorNamespace {
           org.nd4j.ir.TensorNamespace.TensorProto.Segment, org.nd4j.ir.TensorNamespace.TensorProto.Segment.Builder, org.nd4j.ir.TensorNamespace.TensorProto.SegmentOrBuilder> segmentBuilder_;
       /**
        * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
+       * @return Whether the segment field is set.
        */
       public boolean hasSegment() {
         return segmentBuilder_ != null || segment_ != null;
       }
       /**
        * <code>.org.nd4j.ir.TensorProto.Segment segment = 3;</code>
+       * @return The segment.
        */
       public org.nd4j.ir.TensorNamespace.TensorProto.Segment getSegment() {
         if (segmentBuilder_ == null) {
@@ -8424,6 +8720,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated float float_data = 4 [packed = true];</code>
+       * @return A list containing the floatData.
        */
       public java.util.List<java.lang.Float>
           getFloatDataList() {
@@ -8442,6 +8739,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated float float_data = 4 [packed = true];</code>
+       * @return The count of floatData.
        */
       public int getFloatDataCount() {
         return floatData_.size();
@@ -8458,6 +8756,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated float float_data = 4 [packed = true];</code>
+       * @param index The index of the element to return.
+       * @return The floatData at the given index.
        */
       public float getFloatData(int index) {
         return floatData_.getFloat(index);
@@ -8474,6 +8774,9 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated float float_data = 4 [packed = true];</code>
+       * @param index The index to set the value at.
+       * @param value The floatData to set.
+       * @return This builder for chaining.
        */
       public Builder setFloatData(
           int index, float value) {
@@ -8494,6 +8797,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated float float_data = 4 [packed = true];</code>
+       * @param value The floatData to add.
+       * @return This builder for chaining.
        */
       public Builder addFloatData(float value) {
         ensureFloatDataIsMutable();
@@ -8513,6 +8818,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated float float_data = 4 [packed = true];</code>
+       * @param values The floatData to add.
+       * @return This builder for chaining.
        */
       public Builder addAllFloatData(
           java.lang.Iterable<? extends java.lang.Float> values) {
@@ -8534,6 +8841,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated float float_data = 4 [packed = true];</code>
+       * @return This builder for chaining.
        */
       public Builder clearFloatData() {
         floatData_ = emptyFloatList();
@@ -8559,6 +8867,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int32 int32_data = 5 [packed = true];</code>
+       * @return A list containing the int32Data.
        */
       public java.util.List<java.lang.Integer>
           getInt32DataList() {
@@ -8575,6 +8884,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int32 int32_data = 5 [packed = true];</code>
+       * @return The count of int32Data.
        */
       public int getInt32DataCount() {
         return int32Data_.size();
@@ -8589,6 +8899,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int32 int32_data = 5 [packed = true];</code>
+       * @param index The index of the element to return.
+       * @return The int32Data at the given index.
        */
       public int getInt32Data(int index) {
         return int32Data_.getInt(index);
@@ -8603,6 +8915,9 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int32 int32_data = 5 [packed = true];</code>
+       * @param index The index to set the value at.
+       * @param value The int32Data to set.
+       * @return This builder for chaining.
        */
       public Builder setInt32Data(
           int index, int value) {
@@ -8621,6 +8936,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int32 int32_data = 5 [packed = true];</code>
+       * @param value The int32Data to add.
+       * @return This builder for chaining.
        */
       public Builder addInt32Data(int value) {
         ensureInt32DataIsMutable();
@@ -8638,6 +8955,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int32 int32_data = 5 [packed = true];</code>
+       * @param values The int32Data to add.
+       * @return This builder for chaining.
        */
       public Builder addAllInt32Data(
           java.lang.Iterable<? extends java.lang.Integer> values) {
@@ -8657,6 +8976,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int32 int32_data = 5 [packed = true];</code>
+       * @return This builder for chaining.
        */
       public Builder clearInt32Data() {
         int32Data_ = emptyIntList();
@@ -8682,6 +9002,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated bytes string_data = 6;</code>
+       * @return A list containing the stringData.
        */
       public java.util.List<org.nd4j.shade.protobuf.ByteString>
           getStringDataList() {
@@ -8698,6 +9019,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated bytes string_data = 6;</code>
+       * @return The count of stringData.
        */
       public int getStringDataCount() {
         return stringData_.size();
@@ -8712,6 +9034,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated bytes string_data = 6;</code>
+       * @param index The index of the element to return.
+       * @return The stringData at the given index.
        */
       public org.nd4j.shade.protobuf.ByteString getStringData(int index) {
         return stringData_.get(index);
@@ -8726,6 +9050,9 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated bytes string_data = 6;</code>
+       * @param index The index to set the value at.
+       * @param value The stringData to set.
+       * @return This builder for chaining.
        */
       public Builder setStringData(
           int index, org.nd4j.shade.protobuf.ByteString value) {
@@ -8747,6 +9074,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated bytes string_data = 6;</code>
+       * @param value The stringData to add.
+       * @return This builder for chaining.
        */
       public Builder addStringData(org.nd4j.shade.protobuf.ByteString value) {
         if (value == null) {
@@ -8767,6 +9096,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated bytes string_data = 6;</code>
+       * @param values The stringData to add.
+       * @return This builder for chaining.
        */
       public Builder addAllStringData(
           java.lang.Iterable<? extends org.nd4j.shade.protobuf.ByteString> values) {
@@ -8786,6 +9117,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated bytes string_data = 6;</code>
+       * @return This builder for chaining.
        */
       public Builder clearStringData() {
         stringData_ = java.util.Collections.emptyList();
@@ -8808,6 +9140,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int64 int64_data = 7 [packed = true];</code>
+       * @return A list containing the int64Data.
        */
       public java.util.List<java.lang.Long>
           getInt64DataList() {
@@ -8821,6 +9154,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int64 int64_data = 7 [packed = true];</code>
+       * @return The count of int64Data.
        */
       public int getInt64DataCount() {
         return int64Data_.size();
@@ -8832,6 +9166,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int64 int64_data = 7 [packed = true];</code>
+       * @param index The index of the element to return.
+       * @return The int64Data at the given index.
        */
       public long getInt64Data(int index) {
         return int64Data_.getLong(index);
@@ -8843,6 +9179,9 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int64 int64_data = 7 [packed = true];</code>
+       * @param index The index to set the value at.
+       * @param value The int64Data to set.
+       * @return This builder for chaining.
        */
       public Builder setInt64Data(
           int index, long value) {
@@ -8858,6 +9197,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int64 int64_data = 7 [packed = true];</code>
+       * @param value The int64Data to add.
+       * @return This builder for chaining.
        */
       public Builder addInt64Data(long value) {
         ensureInt64DataIsMutable();
@@ -8872,6 +9213,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int64 int64_data = 7 [packed = true];</code>
+       * @param values The int64Data to add.
+       * @return This builder for chaining.
        */
       public Builder addAllInt64Data(
           java.lang.Iterable<? extends java.lang.Long> values) {
@@ -8888,6 +9231,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int64 int64_data = 7 [packed = true];</code>
+       * @return This builder for chaining.
        */
       public Builder clearInt64Data() {
         int64Data_ = emptyLongList();
@@ -8903,6 +9247,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string name = 8;</code>
+       * @return The name.
        */
       public java.lang.String getName() {
         java.lang.Object ref = name_;
@@ -8922,6 +9267,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string name = 8;</code>
+       * @return The bytes for name.
        */
       public org.nd4j.shade.protobuf.ByteString
           getNameBytes() {
@@ -8942,6 +9288,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string name = 8;</code>
+       * @param value The name to set.
+       * @return This builder for chaining.
        */
       public Builder setName(
           java.lang.String value) {
@@ -8959,6 +9307,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string name = 8;</code>
+       * @return This builder for chaining.
        */
       public Builder clearName() {
         
@@ -8972,6 +9321,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string name = 8;</code>
+       * @param value The bytes for name to set.
+       * @return This builder for chaining.
        */
       public Builder setNameBytes(
           org.nd4j.shade.protobuf.ByteString value) {
@@ -8992,6 +9343,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string doc_string = 12;</code>
+       * @return The docString.
        */
       public java.lang.String getDocString() {
         java.lang.Object ref = docString_;
@@ -9011,6 +9363,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string doc_string = 12;</code>
+       * @return The bytes for docString.
        */
       public org.nd4j.shade.protobuf.ByteString
           getDocStringBytes() {
@@ -9031,6 +9384,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string doc_string = 12;</code>
+       * @param value The docString to set.
+       * @return This builder for chaining.
        */
       public Builder setDocString(
           java.lang.String value) {
@@ -9048,6 +9403,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string doc_string = 12;</code>
+       * @return This builder for chaining.
        */
       public Builder clearDocString() {
         
@@ -9061,6 +9417,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>string doc_string = 12;</code>
+       * @param value The bytes for docString to set.
+       * @return This builder for chaining.
        */
       public Builder setDocStringBytes(
           org.nd4j.shade.protobuf.ByteString value) {
@@ -9093,7 +9451,9 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>bytes raw_data = 9;</code>
+       * @return The rawData.
        */
+      @java.lang.Override
       public org.nd4j.shade.protobuf.ByteString getRawData() {
         return rawData_;
       }
@@ -9115,6 +9475,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>bytes raw_data = 9;</code>
+       * @param value The rawData to set.
+       * @return This builder for chaining.
        */
       public Builder setRawData(org.nd4j.shade.protobuf.ByteString value) {
         if (value == null) {
@@ -9143,6 +9505,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>bytes raw_data = 9;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRawData() {
         
@@ -9614,8 +9977,9 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>.org.nd4j.ir.TensorProto.DataLocation data_location = 14;</code>
+       * @return The enum numeric value on the wire for dataLocation.
        */
-      public int getDataLocationValue() {
+      @java.lang.Override public int getDataLocationValue() {
         return dataLocation_;
       }
       /**
@@ -9624,8 +9988,11 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>.org.nd4j.ir.TensorProto.DataLocation data_location = 14;</code>
+       * @param value The enum numeric value on the wire for dataLocation to set.
+       * @return This builder for chaining.
        */
       public Builder setDataLocationValue(int value) {
+        
         dataLocation_ = value;
         onChanged();
         return this;
@@ -9636,7 +10003,9 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>.org.nd4j.ir.TensorProto.DataLocation data_location = 14;</code>
+       * @return The dataLocation.
        */
+      @java.lang.Override
       public org.nd4j.ir.TensorNamespace.TensorProto.DataLocation getDataLocation() {
         @SuppressWarnings("deprecation")
         org.nd4j.ir.TensorNamespace.TensorProto.DataLocation result = org.nd4j.ir.TensorNamespace.TensorProto.DataLocation.valueOf(dataLocation_);
@@ -9648,6 +10017,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>.org.nd4j.ir.TensorProto.DataLocation data_location = 14;</code>
+       * @param value The dataLocation to set.
+       * @return This builder for chaining.
        */
       public Builder setDataLocation(org.nd4j.ir.TensorNamespace.TensorProto.DataLocation value) {
         if (value == null) {
@@ -9664,6 +10035,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>.org.nd4j.ir.TensorProto.DataLocation data_location = 14;</code>
+       * @return This builder for chaining.
        */
       public Builder clearDataLocation() {
         
@@ -9691,6 +10063,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated double double_data = 10 [packed = true];</code>
+       * @return A list containing the doubleData.
        */
       public java.util.List<java.lang.Double>
           getDoubleDataList() {
@@ -9709,6 +10082,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated double double_data = 10 [packed = true];</code>
+       * @return The count of doubleData.
        */
       public int getDoubleDataCount() {
         return doubleData_.size();
@@ -9725,6 +10099,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated double double_data = 10 [packed = true];</code>
+       * @param index The index of the element to return.
+       * @return The doubleData at the given index.
        */
       public double getDoubleData(int index) {
         return doubleData_.getDouble(index);
@@ -9741,6 +10117,9 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated double double_data = 10 [packed = true];</code>
+       * @param index The index to set the value at.
+       * @param value The doubleData to set.
+       * @return This builder for chaining.
        */
       public Builder setDoubleData(
           int index, double value) {
@@ -9761,6 +10140,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated double double_data = 10 [packed = true];</code>
+       * @param value The doubleData to add.
+       * @return This builder for chaining.
        */
       public Builder addDoubleData(double value) {
         ensureDoubleDataIsMutable();
@@ -9780,6 +10161,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated double double_data = 10 [packed = true];</code>
+       * @param values The doubleData to add.
+       * @return This builder for chaining.
        */
       public Builder addAllDoubleData(
           java.lang.Iterable<? extends java.lang.Double> values) {
@@ -9801,6 +10184,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated double double_data = 10 [packed = true];</code>
+       * @return This builder for chaining.
        */
       public Builder clearDoubleData() {
         doubleData_ = emptyDoubleList();
@@ -9824,6 +10208,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
+       * @return A list containing the uint64Data.
        */
       public java.util.List<java.lang.Long>
           getUint64DataList() {
@@ -9838,6 +10223,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
+       * @return The count of uint64Data.
        */
       public int getUint64DataCount() {
         return uint64Data_.size();
@@ -9850,6 +10236,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
+       * @param index The index of the element to return.
+       * @return The uint64Data at the given index.
        */
       public long getUint64Data(int index) {
         return uint64Data_.getLong(index);
@@ -9862,6 +10250,9 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
+       * @param index The index to set the value at.
+       * @param value The uint64Data to set.
+       * @return This builder for chaining.
        */
       public Builder setUint64Data(
           int index, long value) {
@@ -9878,6 +10269,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
+       * @param value The uint64Data to add.
+       * @return This builder for chaining.
        */
       public Builder addUint64Data(long value) {
         ensureUint64DataIsMutable();
@@ -9893,6 +10286,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
+       * @param values The uint64Data to add.
+       * @return This builder for chaining.
        */
       public Builder addAllUint64Data(
           java.lang.Iterable<? extends java.lang.Long> values) {
@@ -9910,6 +10305,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
+       * @return This builder for chaining.
        */
       public Builder clearUint64Data() {
         uint64Data_ = emptyLongList();
@@ -9931,6 +10327,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int32 half_val = 15 [packed = true];</code>
+       * @return A list containing the halfVal.
        */
       public java.util.List<java.lang.Integer>
           getHalfValList() {
@@ -9943,6 +10340,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int32 half_val = 15 [packed = true];</code>
+       * @return The count of halfVal.
        */
       public int getHalfValCount() {
         return halfVal_.size();
@@ -9953,6 +10351,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int32 half_val = 15 [packed = true];</code>
+       * @param index The index of the element to return.
+       * @return The halfVal at the given index.
        */
       public int getHalfVal(int index) {
         return halfVal_.getInt(index);
@@ -9963,6 +10363,9 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int32 half_val = 15 [packed = true];</code>
+       * @param index The index to set the value at.
+       * @param value The halfVal to set.
+       * @return This builder for chaining.
        */
       public Builder setHalfVal(
           int index, int value) {
@@ -9977,6 +10380,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int32 half_val = 15 [packed = true];</code>
+       * @param value The halfVal to add.
+       * @return This builder for chaining.
        */
       public Builder addHalfVal(int value) {
         ensureHalfValIsMutable();
@@ -9990,6 +10395,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int32 half_val = 15 [packed = true];</code>
+       * @param values The halfVal to add.
+       * @return This builder for chaining.
        */
       public Builder addAllHalfVal(
           java.lang.Iterable<? extends java.lang.Integer> values) {
@@ -10005,6 +10412,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated int32 half_val = 15 [packed = true];</code>
+       * @return This builder for chaining.
        */
       public Builder clearHalfVal() {
         halfVal_ = emptyIntList();
@@ -10026,6 +10434,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated bool bool_val = 16 [packed = true];</code>
+       * @return A list containing the boolVal.
        */
       public java.util.List<java.lang.Boolean>
           getBoolValList() {
@@ -10038,6 +10447,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated bool bool_val = 16 [packed = true];</code>
+       * @return The count of boolVal.
        */
       public int getBoolValCount() {
         return boolVal_.size();
@@ -10048,6 +10458,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated bool bool_val = 16 [packed = true];</code>
+       * @param index The index of the element to return.
+       * @return The boolVal at the given index.
        */
       public boolean getBoolVal(int index) {
         return boolVal_.getBoolean(index);
@@ -10058,6 +10470,9 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated bool bool_val = 16 [packed = true];</code>
+       * @param index The index to set the value at.
+       * @param value The boolVal to set.
+       * @return This builder for chaining.
        */
       public Builder setBoolVal(
           int index, boolean value) {
@@ -10072,6 +10487,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated bool bool_val = 16 [packed = true];</code>
+       * @param value The boolVal to add.
+       * @return This builder for chaining.
        */
       public Builder addBoolVal(boolean value) {
         ensureBoolValIsMutable();
@@ -10085,6 +10502,8 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated bool bool_val = 16 [packed = true];</code>
+       * @param values The boolVal to add.
+       * @return This builder for chaining.
        */
       public Builder addAllBoolVal(
           java.lang.Iterable<? extends java.lang.Boolean> values) {
@@ -10100,6 +10519,7 @@ public final class TensorNamespace {
        * </pre>
        *
        * <code>repeated bool bool_val = 16 [packed = true];</code>
+       * @return This builder for chaining.
        */
       public Builder clearBoolVal() {
         boolVal_ = emptyBooleanList();

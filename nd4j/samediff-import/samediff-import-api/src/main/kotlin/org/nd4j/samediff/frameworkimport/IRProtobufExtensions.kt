@@ -432,13 +432,15 @@ fun loadDataBufferFromRawData(inputTensor: TensorNamespace.TensorProto): INDArra
     val byteArray = inputTensor.rawData.toByteArray()
     //note: scalar can be zero
     val totalLen = ArrayUtil.prod(*shape)
-    if(totalLen < 1) {
+    if(totalLen < 1 && byteArray.isEmpty()) {
         if(shape.isNotEmpty()) {
             return Nd4j.zeros(*shape).castTo(dtype)
         }
-        else
+        else {
             return Nd4j.empty(dtype)
+        }
     }
+
 
     if(dtype == DataType.UTF8) {
         val rawDataBuffer =  Nd4j.getDataBufferFactory().createUtf8Buffer(byteArray,byteArray.size.toLong())

@@ -59,18 +59,17 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
      * the status of the test failing. No tests will run.
      */
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
-            /*"layers_dropout/rank2_d01_train",
-            "layers_dropout/rank4_d05_train",
-            "layers_dropout/rank3_d05_train_mask2",
-            "layers_dropout/rank4_d05_train_mask",
-            "layers_dropout/rank3_d05_train_mask1",
-            "layers_dropout/rank2_d09_train",
-            "layers_dropout/rank2_d05_train",*/
-
+            //"split/rank2_8,7_sz2,1,4_axis1"
+            //"resize_bicubic/float64",
 
     );
 
     public static final String[] IGNORE_REGEXES = new String[]{
+            //invalid graph:  Unable to run session input_0:0 is both fed and fetched.
+            //also due to the dynamic inputs being -1 3 for the first matrix multiply for the first 2 inputs
+            //the only valid batch size is 3.
+            "math_mul_order",
+
             //Failing 2019/09/11 - https://github.com/eclipse/deeplearning4j/issues/7965
             // Still failing 2020/04/27 java.lang.IllegalStateException: Requested output variable Bincount does not exist in SameDiff instance
             //Invalid test cases. Verified by running graph against actual TF.
@@ -207,9 +206,5 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
     }
 
 
-    @Test
-    public void testOther() {
-        SameDiff importAssertion = SameDiff.importFrozenTF(new File("C:\\Users\\agibs\\AppData\\Local\\Temp\\frozen_model.pb1052249717728562635tmp"));
-    }
 
 }

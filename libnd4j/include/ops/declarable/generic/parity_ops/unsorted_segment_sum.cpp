@@ -40,6 +40,7 @@ CUSTOM_OP_IMPL(unsorted_segment_sum, 2, 1, false, 0, 0) {
   REQUIRE_TRUE(reshapedSegments.isVector(), 0,
                "unsorted_segment_sum: segment indexes array should be a vector, but it rank is %i.",
                idxSegments->rankOf());
+  if(reshapedSegments.lengthOf() > 1)
   REQUIRE_TRUE(reshapedSegments.lengthOf() == input->sizeAt(0), 0,
                "unsorted_segment_sum: segment indexes array length should be equal to the input first dimension, but "
                "%ld != %ld.",

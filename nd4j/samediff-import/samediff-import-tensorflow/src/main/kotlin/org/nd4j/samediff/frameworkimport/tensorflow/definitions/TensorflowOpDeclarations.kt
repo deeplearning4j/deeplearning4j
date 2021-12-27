@@ -1891,7 +1891,8 @@ val l2Loss = multipleNameMapping(inputFrameworkOpNames = listOf("L2Loss"),opName
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
 
-val select = mapTensorNamesWithOp(inputFrameworkOpName = "Select",opName = "select",tensorNames = mutableMapOf("cond" to "condition","input" to "t","y" to "e")
+val select = mapTensorNamesWithOp(inputFrameworkOpName = "Select",opName = "select",
+        tensorNames = mutableMapOf("cond" to "condition","input" to "t","y" to "e")
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
 val segmentMean = multipleNameMapping(inputFrameworkOpNames = listOf("SegmentMean"),opName = "segment_mean",
@@ -2367,7 +2368,7 @@ val all = TensorflowMappingProcess(
         inputFrameworkOpName = "All",
         opMappingRegistry = tensorflowOpRegistry,
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input","y" to "reduction_indices"))),
-        attributeMappingRules = listOf()
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("keepDims"  to "keep_dims")))
 )
 
 val any = TensorflowMappingProcess(
@@ -2375,7 +2376,7 @@ val any = TensorflowMappingProcess(
         inputFrameworkOpName = "Any",
         opMappingRegistry = tensorflowOpRegistry,
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input","y" to "reduction_indices"))),
-        attributeMappingRules = listOf()
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("keepDims"  to "keep_dims")))
 )
 
 

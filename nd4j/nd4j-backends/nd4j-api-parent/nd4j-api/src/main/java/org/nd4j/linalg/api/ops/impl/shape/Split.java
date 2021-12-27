@@ -92,10 +92,25 @@ public class Split extends DynamicCustomOp {
     }
 
     @Override
-    public void setPropertiesForFunction(Map<String, Object> properties) {
-        super.setPropertiesForFunction(properties);
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new HashMap<>();
+        ret.put("numSplit",numSplit);
+        ret.put("splitDim",splitDim);
+        return ret;
     }
 
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("splitDim")) {
+            Integer splitDim = getIntValueFromProperty("splitDim",properties);
+            this.splitDim = splitDim;
+        }
+
+        if(properties.containsKey("numSplit")) {
+            Integer numSplit = getIntValueFromProperty("numSplit",properties);
+            this.numSplit = numSplit;
+        }
+    }
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val numSplits = (int) attributesForNode.get("num_split").getI();

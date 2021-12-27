@@ -188,6 +188,8 @@ public class Conv3D extends DynamicCustomOp {
     }
 
     private void addArgs() {
+        if(getConfig().getPaddingMode() == null)
+            getConfig().setPaddingMode(PaddingMode.VALID);
         addIArgument(
                 // TODO: support bias terms
 //                ArrayUtil.fromBoolean(getConfig().isBiasUsed()),
@@ -206,7 +208,6 @@ public class Conv3D extends DynamicCustomOp {
                 getConfig().getDD(),
                 getConfig().getDH(),
                 getConfig().getDW(),
-
                 getConfig().getPaddingMode().index,
                 getConfig().isNCDHW() ? 0 : 1
         );

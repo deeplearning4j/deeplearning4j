@@ -254,6 +254,10 @@ public abstract class AbstractSession<T, O> {
             if (!dt.hasNewAllSatisfied()) {
                 //Haven't got all of the outputs the user requested, but there's nothing left that we can execute. Should not happen.
                 execFailed(userRequestedUnique, out, allRequired, allExecuted, step);
+                //note execFailed will not always throw an exception if a user required all variables from
+                //outputAll. A common case is conditional paths not being executed. This will just ensure that
+                //no other exceptions are thrown.
+                break;
             }
 
             //G et variable in the current frame/iteration and execute it's corresponding op
@@ -277,7 +281,7 @@ public abstract class AbstractSession<T, O> {
             log.trace("Beginning execution step {}: {}", step, es);
 
             FrameIter outFrameIter;
-            boolean skipDepUpdate = false;      //Only used for Switch ops, which have slighly different handling...
+            boolean skipDepUpdate = false;      //Only used for Switch ops, which have slightly different handling...
             boolean skipMarkSatisfied = false;  //Only for enter ops, because of different frame/iter
             if (es.getType() == ExecType.CONSTANT || es.getType() == ExecType.VARIABLE) {
                 VarId vid = new VarId(es.getName(), OUTER_FRAME, 0, null);
@@ -343,9 +347,9 @@ public abstract class AbstractSession<T, O> {
 
                 List<String> inputNames = op.getInputsToOp();
                 if (inputNames != null && !inputNames.isEmpty()) {
-                    inputs = new HashSet<>();
-                    allIterInputs = new HashSet<>();
-                    constAndPhInputs = new HashSet<>();
+                    inputs = new LinkedHashSet<>();
+                    allIterInputs = new LinkedHashSet<>();
+                    constAndPhInputs = new LinkedHashSet<>();
                     List<ExecStep> deps = dl.getDependencies();
                     if (deps != null && !deps.isEmpty()) {
                         for (ExecStep dep : deps) {
@@ -520,7 +524,7 @@ public abstract class AbstractSession<T, O> {
         sb.append("No variable are available for execution at step ")
                 .append(step).append(": ").append(missingCount).append(" requested output values remaining, ")
                 .append(allExecuted.size() - allRequired.size()).append(" variables required to be executed remaining");
-        Set<String> missing = new HashSet<>();
+        Set<String> missing = new LinkedHashSet<>();
         for (String s : userRequestedUnique) {
             if (!out.containsKey(s)) {
                 missing.add(s);
@@ -539,8 +543,14 @@ public abstract class AbstractSession<T, O> {
                 sb.append(iter.next());
             }
         }
-        String s = sb.toString();
-        throw new IllegalStateException(s);
+        if(allRequired.size() <  sameDiff.variables().size()) {
+            String s = sb.toString();
+            throw new IllegalStateException(s);
+        } else {
+            log.warn("Not all required variables were executed. This may be due to conditionals. Missing variables include: " + sb.toString());
+            return;
+        }
+
     }
 
     /**

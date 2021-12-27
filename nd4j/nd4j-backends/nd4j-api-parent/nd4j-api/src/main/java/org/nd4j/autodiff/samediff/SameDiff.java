@@ -1784,7 +1784,7 @@ public class SameDiff extends SDBaseOps {
 
             while (iter.hasNext()) {
                 long dataStart = hasListeners ? System.currentTimeMillis() : 0;
-                org.nd4j.linalg.dataset.api.MultiDataSet ds = iter.next();
+                MultiDataSet ds = iter.next();
 
                 long dataEnd = hasListeners ? System.currentTimeMillis() : 0;
                 if (!performedValidation) {
@@ -2021,7 +2021,7 @@ public class SameDiff extends SDBaseOps {
      * @param ds MultiDataSet - source of the features/labels
      * @return MultiDataSet converted to a Map, based on TrainingConfig
      */
-    private Map<String, INDArray> toPlaceholderMap(org.nd4j.linalg.dataset.api.MultiDataSet ds) {
+    private Map<String, INDArray> toPlaceholderMap(MultiDataSet ds) {
         Map<String, INDArray> placeholders = new HashMap<>();
         int count = 0;
         for (String s : trainingConfig.getDataSetFeatureMapping()) {
@@ -2716,7 +2716,7 @@ public class SameDiff extends SDBaseOps {
      * @param shape the shape of the array to be created
      * @return the created variable
      */
-    public SDVariable one(String name, org.nd4j.linalg.api.buffer.DataType dataType, int... shape) {
+    public SDVariable one(String name, DataType dataType, int... shape) {
         return one(name, dataType, ArrayUtil.toLongArray(shape));
     }
 
@@ -2728,7 +2728,7 @@ public class SameDiff extends SDBaseOps {
      * @param shape the shape of the array to be created
      * @return the created variable
      */
-    public SDVariable one(String name, org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
+    public SDVariable one(String name, DataType dataType, long... shape) {
         return constant(name, Nd4j.ones(dataType, shape));
     }
 
@@ -2758,7 +2758,7 @@ public class SameDiff extends SDBaseOps {
      * @param shape the shape of the array to be created
      * @return the created variable
      */
-    public SDVariable zero(String name, org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
+    public SDVariable zero(String name, DataType dataType, long... shape) {
         return constant(name, Nd4j.zeros(dataType, shape));
     }
 
@@ -2770,7 +2770,7 @@ public class SameDiff extends SDBaseOps {
      * @param shape the shape of the array to be created
      * @return the created variable
      */
-    public SDVariable zero(String name, org.nd4j.linalg.api.buffer.DataType dataType, int... shape) {
+    public SDVariable zero(String name, DataType dataType, int... shape) {
         return zero(name, dataType, ArrayUtil.toLongArray(shape));
     }
 
@@ -2821,7 +2821,7 @@ public class SameDiff extends SDBaseOps {
      * @param shape    the shape of the variable if any
      * @return SDVariable placeholder
      */
-    public SDVariable placeHolder(@NonNull String name, org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
+    public SDVariable placeHolder(@NonNull String name, DataType dataType, long... shape) {
         SDVariable ret = new SDVariable(name, VariableType.PLACEHOLDER, this, shape, dataType);
         variables.put(name, Variable.builder().name(name).variable(ret).build());
         return ret;
@@ -2836,7 +2836,7 @@ public class SameDiff extends SDBaseOps {
      * @param weightInitScheme the weight initialization scheme
      * @return the created variable
      */
-    public SDVariable var(@NonNull String name, @NonNull WeightInitScheme weightInitScheme, @NonNull org.nd4j.linalg.api.buffer.DataType dataType, @NonNull long... shape) {
+    public SDVariable var(@NonNull String name, @NonNull WeightInitScheme weightInitScheme, @NonNull DataType dataType, @NonNull long... shape) {
         return var(name, VariableType.VARIABLE, weightInitScheme, dataType, shape);
     }
 
@@ -2852,7 +2852,7 @@ public class SameDiff extends SDBaseOps {
      * @return the created variable
      */
     public SDVariable var(@NonNull String name, @NonNull VariableType variableType, WeightInitScheme weightInitScheme,
-                          org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
+                          DataType dataType, long... shape) {
         if(shape != null) {
             for (long l : shape) {
                 Preconditions.checkArgument(l != 0, "Cannot create variable with a shape that contains zeros (empty array shape) - got shape %s", shape);
@@ -2913,7 +2913,7 @@ public class SameDiff extends SDBaseOps {
      * @param shape the shape of the variable
      * @return the created variable
      */
-    public SDVariable var(String name, org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
+    public SDVariable var(String name, DataType dataType, long... shape) {
         Preconditions.checkNotNull(shape != null, "Invalid shape: shape may not be null");
         if (Shape.isPlaceholderShape(shape)) {
             return placeHolder(name, dataType, shape);
@@ -2982,7 +2982,7 @@ public class SameDiff extends SDBaseOps {
      * @param shape the shape of the variable
      * @return the created variable
      */
-    public SDVariable var(String name, org.nd4j.linalg.api.buffer.DataType dataType, int... shape) {
+    public SDVariable var(String name, DataType dataType, int... shape) {
         Preconditions.checkNotNull(shape, "Invalid shape: shape may not be null");
         if (Shape.isPlaceholderShape(shape)) {
             return placeHolder(name, dataType, ArrayUtil.toLongArray(shape));
@@ -3042,7 +3042,7 @@ public class SameDiff extends SDBaseOps {
      * @param shape the shape of the variable
      * @return the created variable
      */
-    public SDVariable var(org.nd4j.linalg.api.buffer.DataType dataType, int... shape) {
+    public SDVariable var(DataType dataType, int... shape) {
         return var(getNewVarName(), dataType, shape);
     }
 
@@ -3054,7 +3054,7 @@ public class SameDiff extends SDBaseOps {
      * @param shape the shape of the variable
      * @return the created variable
      */
-    public SDVariable var(org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
+    public SDVariable var(DataType dataType, long... shape) {
         return var(getNewVarName(), dataType, shape);
     }
 
@@ -3066,7 +3066,7 @@ public class SameDiff extends SDBaseOps {
      * @param shape            the shape of the variable
      * @return the created variable
      */
-    public SDVariable var(WeightInitScheme weightInitScheme, org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
+    public SDVariable var(WeightInitScheme weightInitScheme, DataType dataType, long... shape) {
         return var(getNewVarName(), weightInitScheme, dataType, shape);
     }
 
@@ -3932,10 +3932,10 @@ public class SameDiff extends SDBaseOps {
 
         //First: calculate output data types. We can always calculate output data types, even if the input arrays
         //are not available - *except for sometimes during import, until all ops/variables have been added*
-        List<org.nd4j.linalg.api.buffer.DataType> outputDataTypes = null;
+        List<DataType> outputDataTypes = null;
 
         if (!isImport) {
-            List<org.nd4j.linalg.api.buffer.DataType> inputDataTypes = new ArrayList<>();
+            List<DataType> inputDataTypes = new ArrayList<>();
             List<String> fnInputs = ops.get(function.getOwnName()).getInputsToOp();
             if (fnInputs != null) {
                 for (String var : fnInputs) {
@@ -3981,7 +3981,7 @@ public class SameDiff extends SDBaseOps {
                     //Generate new variable name if one with the specified name doesn't exist
                     //Note: output of an op is ARRAY type - activations, not a trainable parameter. Thus has no weight init scheme
 
-                    org.nd4j.linalg.api.buffer.DataType dataType = isImport ? null : outputDataTypes.get(i);
+                    DataType dataType = isImport ? null : outputDataTypes.get(i);
                     var = var(generateNewVarName(baseName, i), VariableType.ARRAY, null, dataType, (long[]) null);
                 }
 
@@ -4004,13 +4004,13 @@ public class SameDiff extends SDBaseOps {
             SDVariable[] args = function.args();
             if (checkGet == null) {
                 //Note: output of an op is ARRAY type - activations, not a trainable parameter. Thus has no weight init scheme
-                org.nd4j.linalg.api.buffer.DataType dataType = outputDataTypes.get(0);
+                DataType dataType = outputDataTypes.get(0);
                 checkGet = var(baseName, VariableType.ARRAY, null, dataType, (long[]) null);
             }
 
             if (checkGet == null) {
                 //Note: output of an op is ARRAY type - activations, not a trainable parameter. Thus has no weight init scheme
-                org.nd4j.linalg.api.buffer.DataType dataType = outputDataTypes.get(0);
+                DataType dataType = outputDataTypes.get(0);
                 checkGet = var(baseName, VariableType.ARRAY, null, dataType, (long[]) null);
             }
 
@@ -5429,7 +5429,7 @@ public class SameDiff extends SDBaseOps {
             String n = v.name();
 
             byte dtypeByte = v.dtype();
-            org.nd4j.linalg.api.buffer.DataType dtype = FlatBuffersMapper.getDataTypeFromByte(dtypeByte);
+            DataType dtype = FlatBuffersMapper.getDataTypeFromByte(dtypeByte);
 
             //TODO Infer this properly! Could be constant, etc.
             VariableType vt = VariableType.values()[v.variabletype()];

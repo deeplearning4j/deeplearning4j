@@ -308,6 +308,7 @@
               <forkCount>0</forkCount>
               <threadCount>1</threadCount>
               <perCoreThreadCount>false</perCoreThreadCount>
+              <argLine>-Dorg.bytedeco.javacpp.nopointerGC=true</argLine>
             </configuration>
           </plugin>
         </plugins>

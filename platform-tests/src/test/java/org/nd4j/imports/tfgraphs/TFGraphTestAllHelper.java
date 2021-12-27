@@ -21,6 +21,7 @@
 package org.nd4j.imports.tfgraphs;
 
 import org.apache.commons.io.FileUtils;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.imports.listeners.ExecPrintListener;
 import org.nd4j.imports.tfgraphs.listener.OpExecOrderListener;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +64,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFrameworkImporter;
+import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraph;
+import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraphRunner;
 import org.nd4j.shade.guava.io.Files;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -76,6 +79,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.imports.tfgraphs.TFGraphsSkipNodes.skipNode;
@@ -151,20 +155,30 @@ public class TFGraphTestAllHelper {
             outputsToCheck.add(s);
         }
 
+
+//        SameDiff graph = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
+        //Collect coverage info about ops
+        TensorflowFrameworkImporter tensorflowFrameworkImporter = new TensorflowFrameworkImporter();
+        File oldModel = new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile();
+        Map<String,INDArray> oldOutputs =  null;
+        Map<String,INDArray> outputs = null;
+        SameDiff oldForComparison = null;
+/*
+        if(modelName.equals("math_mul_order")) {
+            GraphDef g  = GraphDef.parseFrom(IOUtils.toByteArray(oldModel.toURI()));
+            oldForComparison = TFGraphMapper.importGraph(oldModel);
+            oldOutputs = oldForComparison.outputAll(inputs);
+            TensorflowIRGraph tensorflowIRGraph = new TensorflowIRGraph(g,tensorflowFrameworkImporter.getOpDefList(),tensorflowFrameworkImporter.getRegistry());
+            TensorflowIRGraphRunner tensorflowIRGraphRunner = new TensorflowIRGraphRunner(tensorflowIRGraph,new ArrayList<>(inputs.keySet()),new ArrayList<>(oldOutputs.keySet()));
+            //outputs = tensorflowIRGraphRunner.run(inputs);
+            System.out.println();
+        }
+*/
+
         Pair<SameDiff,Map<String,INDArray>> p = getGraphAfterExec(baseDir, modelFilename, modelName, inputs, execType, loader, null, outputsToCheck, printArraysDebugging);
         SameDiff graph = p.getFirst();
         Map<String,INDArray> sameDiffPredictions = p.getSecond();
-//        SameDiff graph = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
-        //Collect coverage info about ops
-       /* TensorflowFrameworkImporter tensorflowFrameworkImporter = new TensorflowFrameworkImporter();
-        File oldModel = new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile();
-        GraphDef g  = GraphDef.parseFrom(IOUtils.toByteArray(oldModel.toURI()));
-        TensorflowIRGraph tensorflowIRGraph = new TensorflowIRGraph(g,tensorflowFrameworkImporter.getOpDefList(),tensorflowFrameworkImporter.getRegistry());
-        TensorflowIRGraphRunner tensorflowIRGraphRunner = new TensorflowIRGraphRunner(tensorflowIRGraph,p.getFirst().inputs(),outputsToCheck.stream().collect(Collectors.toList()));
-        Map<String,INDArray> outputs = tensorflowIRGraphRunner.run(inputs);
-        SameDiff oldForComparison = TFGraphMapper.importGraph(oldModel);
-        Map<String,INDArray> oldOutputs = oldForComparison.outputAll(inputs);
-        */
+
         OpValidation.collectTensorflowImportCoverage(graph);
 
         if (!execType.equals(ExecuteWith.JUST_PRINT)) {

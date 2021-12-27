@@ -142,7 +142,7 @@ public class Transforms {
 
     /**
      * Atan2 operation, new INDArray instance will be returned
-     * Note the order of x and y parameters is opposite to that of {@link java.lang.Math#atan2(double, double)}
+     * Note the order of x and y parameters is opposite to that of {@link Math#atan2(double, double)}
      *
      * @param x the abscissa coordinate
      * @param y the ordinate coordinate

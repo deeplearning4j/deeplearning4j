@@ -285,7 +285,7 @@ public class Nd4j {
     }
 
     /**
-     * See {@link #pad(INDArray, INDArray, Pad.Mode, double)} with zero padding (zeros for padValue).
+     * See {@link #pad(INDArray, INDArray, Mode, double)} with zero padding (zeros for padValue).
      */
     public static INDArray pad(INDArray toPad, INDArray padding) {
         return pad(toPad, padding, Mode.CONSTANT, 0);
@@ -315,7 +315,7 @@ public class Nd4j {
      * @param toPad the ndarray to pad
      * @param padWidth the width to pad along each dimension
      * @param padMode the mode to pad in
-     * @param padValue the value used during padding.  Only used when padMode is {@link Pad.Mode#CONSTANT}.
+     * @param padValue the value used during padding.  Only used when padMode is {@link Mode#CONSTANT}.
      * @return the padded ndarray
      * based on the specified mode
      */
@@ -894,7 +894,7 @@ public class Nd4j {
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#cumsum(int)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#cumsum(int)} with Integer.MAX_VALUE for full array reduction.
      *
      * @return scalar ndarray.
      */
@@ -903,147 +903,147 @@ public class Nd4j {
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#max(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#max(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray max(INDArray compute) {
         return compute.max(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#min(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#min(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray min(INDArray compute) {
         return compute.min(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#prod(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#prod(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray prod(INDArray compute) {
         return compute.prod(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#normmax(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#normmax(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray normmax(INDArray compute) {
         return compute.normmax(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#norm2(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#norm2(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray norm2(INDArray compute) {
         return compute.norm2(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#norm1(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#norm1(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray norm1(INDArray compute) {
         return compute.norm1(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#std(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#std(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray std(INDArray compute) {
         return compute.std(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#var(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#var(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray var(INDArray compute) {
         return compute.var(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#sum(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#sum(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray sum(INDArray compute) {
         return compute.sum(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#mean(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#mean(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray mean(INDArray compute) {
         return compute.mean(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#cumsum(int)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#cumsum(int)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray cumsum(INDArray compute, int dimension) {
         return compute.cumsum(dimension);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#max(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#max(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray max(INDArray compute, int dimension) {
         return compute.max(dimension);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#min(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#min(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray min(INDArray compute, int dimension) {
         return compute.min(dimension);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#prod(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#prod(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray prod(INDArray compute, int dimension) {
         return compute.prod(dimension);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#normmax(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#normmax(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray normmax(INDArray compute, int dimension) {
         return compute.normmax(dimension);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#norm2(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#norm2(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray norm2(INDArray compute, int dimension) {
         return compute.norm2(dimension);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#norm1(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#norm1(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray norm1(INDArray compute, int dimension) {
         return compute.norm1(dimension);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#std(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#std(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray std(INDArray compute, int dimension) {
         return compute.std(dimension);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#var(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#var(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray var(INDArray compute, int dimension) {
         return compute.var(dimension);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#sum(int...)}with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#sum(int...)}with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray sum(INDArray compute, int dimension) {
         return compute.sum(dimension);
     }
 
     /**
-     * See {@link org.nd4j.linalg.api.ndarray.INDArray#mean(int...)}with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#mean(int...)}with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray mean(INDArray compute, int dimension) {
         return compute.mean(dimension);
@@ -2825,7 +2825,7 @@ public class Nd4j {
     }
 
     /**
-     * @deprecated use {@link Nd4j#rand(org.nd4j.linalg.api.buffer.DataType, char, long...))
+     * @deprecated use {@link Nd4j#rand(DataType, char, long...))
      */
     @Deprecated
     public static INDArray rand(@NonNull DataType dataType, int[] shape, char order) {
@@ -2833,7 +2833,7 @@ public class Nd4j {
     }
 
     /**
-     * @deprecated use {@link org.nd4j.linalg.factory.Nd4j#rand(org.nd4j.linalg.api.buffer.DataType, char, long...)}
+     * @deprecated use {@link Nd4j#rand(DataType, char, long...)}
      */
     @Deprecated
     public static INDArray rand(@NonNull DataType dataType, char order, @NonNull int... shape) {
@@ -2959,7 +2959,7 @@ public class Nd4j {
     }
 
     /**
-     * @deprecated use {@link Nd4j#rand(org.nd4j.linalg.api.rng.distribution.Distribution, long...)}
+     * @deprecated use {@link Nd4j#rand(Distribution, long...)}
      */
     @Deprecated
     public static INDArray rand(int[] shape, @NonNull Distribution dist) {
@@ -2968,7 +2968,7 @@ public class Nd4j {
 
     /**
      * @deprecated use
-     * {@link org.nd4j.linalg.factory.Nd4j#rand(org.nd4j.linalg.api.rng.distribution.Distribution, long...)}
+     * {@link Nd4j#rand(Distribution, long...)}
      */
     @Deprecated
     public static INDArray rand(long[] shape, @NonNull Distribution dist) {
@@ -4162,9 +4162,6 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(long[] shape, long[] stride, long offset, char ordering) {
-        if(shape.length == 0 || ArrayUtil.prod(shape) == 0)
-            return INSTANCE.scalar(Nd4j.dataType());
-
         checkShapeValues(shape);
         return INSTANCE.create(shape, stride, offset, ordering);
     }
@@ -4192,9 +4189,6 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int[] shape, int[] stride, char ordering) {
-        if(shape.length == 0 || ArrayUtil.prod(shape) == 0)
-            return INSTANCE.scalar(Nd4j.dataType());
-
         checkShapeValues(shape);
         return INSTANCE.create(shape, stride, 0, ordering);
     }
@@ -4203,9 +4197,6 @@ public class Nd4j {
      * See {@link #create(int[], int[], char)}
      */
     public static INDArray create(long[] shape, long[] stride, char ordering) {
-        if(shape.length == 0 || ArrayUtil.prod(shape) == 0)
-            return INSTANCE.scalar(Nd4j.dataType());
-
         checkShapeValues(shape);
         return INSTANCE.create(shape, stride, 0, ordering);
     }
@@ -4242,9 +4233,6 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(@NonNull int[] shape, char ordering) {
-        if(shape.length == 0 || ArrayUtil.prod(shape) == 0)
-            return INSTANCE.scalar(dataType());
-
         return INSTANCE.create(shape, ordering);
     }
 
@@ -4257,8 +4245,6 @@ public class Nd4j {
      * @return the created array.
      */
     public static INDArray create(@NonNull long[] shape, char ordering) {
-        if(shape.length == 0 || ArrayUtil.prod(shape) == 0)
-            return INSTANCE.scalar(dataType());
         //ensure shapes that wind up being scalar end up with the right shape
         checkShapeValues(shape);
         return INSTANCE.create(shape, ordering);
@@ -4274,9 +4260,6 @@ public class Nd4j {
      * @return the created array.
      */
     public static INDArray create(DataType dataType, @NonNull long[] shape, long[] strides, char ordering) {
-        if(shape.length == 0 || ArrayUtil.prod(shape) == 0)
-            return INSTANCE.scalar(dataType);
-
         checkShapeValues(shape);
         return INSTANCE.create(dataType, shape, strides, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
@@ -4291,8 +4274,6 @@ public class Nd4j {
      * @return the created array.
      */
     public static INDArray create(@NonNull DataType dataType, @NonNull long[] shape, char ordering) {
-        if(shape.length == 0 || ArrayUtil.prod(shape) == 0)
-            return INSTANCE.scalar(dataType);
         //ensure shapes that wind up being scalar end up with the right shape
         checkShapeValues(shape);
         return INSTANCE.create(dataType, shape, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -4352,10 +4333,6 @@ public class Nd4j {
      * @return the created array.
      */
     public static INDArray createUninitialized(DataType type, long[] shape, char ordering) {
-        if (shape.length == 0 || ArrayUtil.prod(shape) == 0) {
-            return INSTANCE.scalar(type);
-        }
-
         checkShapeValues(shape);
         return INSTANCE.createUninitialized(type, shape, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
@@ -4368,9 +4345,6 @@ public class Nd4j {
      * @return the created array.
      */
     public static INDArray createUninitialized(long[] shape, char ordering) {
-        if (shape.length == 0 || ArrayUtil.prod(shape) == 0)
-            return INSTANCE.scalar(dataType());
-
         checkShapeValues(shape);
         return INSTANCE.createUninitialized(shape, ordering);
     }
@@ -4379,10 +4353,8 @@ public class Nd4j {
      * See {@link #createUninitialized(long[])}
      */
     public static INDArray createUninitialized(int... shape) {
-        if(shape.length == 0 || ArrayUtil.prod(shape) == 0)
-            return INSTANCE.scalar(dataType());
         checkShapeValues(shape);
-        //ensure shapes that wind up being scalar end up with the write shape
+        //ensure shapes that wind up being scalar end up with the right shape
         return createUninitialized(shape, Nd4j.order());
     }
 
@@ -4443,9 +4415,6 @@ public class Nd4j {
      * @return the created array.
      */
     public static INDArray zeros(DataType dataType, @NonNull long... shape) {
-        if(shape.length == 0 || ArrayUtil.prod(shape) == 0)
-            return INSTANCE.scalar(dataType);
-
         return INSTANCE.create(dataType, shape, Nd4j.order(), Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
@@ -4593,8 +4562,6 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray ones(DataType dataType, @NonNull long... shape) {
-        if(shape.length == 0 || ArrayUtil.prod(shape) == 0)
-            return INSTANCE.scalar(dataType);
         INDArray ret = INSTANCE.createUninitialized(dataType, shape, Nd4j.order(), Nd4j.getMemoryManager().getCurrentWorkspace());
         ret.assign(1);
         return ret;
@@ -4921,8 +4888,6 @@ public class Nd4j {
      * See {@link #ones(int... shape)}
      */
     public static INDArray ones(@NonNull long... shape) {
-        if(shape.length == 0 || ArrayUtil.prod(shape) == 0)
-            return Nd4j.scalar(dataType(), 1.0);
         checkShapeValues(shape);
         return INSTANCE.ones(shape);
     }

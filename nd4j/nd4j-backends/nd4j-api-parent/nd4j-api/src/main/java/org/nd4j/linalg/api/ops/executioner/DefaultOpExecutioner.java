@@ -268,6 +268,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                 config = ProfilerConfig.builder().build();
                 break;
         }
+
         OpProfiler.getInstance().setConfig(config);
     }
 

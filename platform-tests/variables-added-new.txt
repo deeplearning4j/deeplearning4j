@@ -1,0 +1,12 @@
+in_0/read,in_0/read
+batch_normalization/gamma/read,batch_normalization/gamma/read
+batch_normalization/beta/read,batch_normalization/beta/read
+batch_normalization/moving_mean/read,batch_normalization/moving_mean/read
+batch_normalization/moving_variance/read,batch_normalization/moving_variance/read
+batch_normalization/batchnorm/add,batch_normalization/batchnorm/add
+batch_normalization/batchnorm/Rsqrt,batch_normalization/batchnorm/Rsqrt
+batch_normalization/batchnorm/mul,batch_normalization/batchnorm/mul
+batch_normalization/batchnorm/mul_1,batch_normalization/batchnorm/mul_1
+batch_normalization/batchnorm/mul_2,batch_normalization/batchnorm/mul_2
+batch_normalization/batchnorm/sub,batch_normalization/batchnorm/sub
+batch_normalization/batchnorm/add_1,batch_normalization/batchnorm/add_1

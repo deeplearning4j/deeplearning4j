@@ -110,10 +110,10 @@ public abstract class DifferentialFunction {
 
     /**
      * Initialize the function from the given
-     * {@link onnx.Onnx.NodeProto}
+     * {@link Onnx.NodeProto}
      * @param node
      */
-    public DifferentialFunction(SameDiff sameDiff,onnx.Onnx.NodeProto node,Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
+    public DifferentialFunction(SameDiff sameDiff, Onnx.NodeProto node, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
         this.sameDiff = sameDiff;
         setInstanceId();
         initFromOnnx(node, sameDiff, attributesForNode, graph);
@@ -774,7 +774,7 @@ public abstract class DifferentialFunction {
 
     /**
      * Iniitialize the function from the given
-     * {@link onnx.Onnx.NodeProto}
+     * {@link Onnx.NodeProto}
      * @param node
      * @param initWith
      * @param attributesForNode
@@ -840,7 +840,7 @@ public abstract class DifferentialFunction {
      * @param dataTypes The data types of the inputs
      * @return The data types of the outputs
      */
-    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         throw new UnsupportedOperationException("Op type of " + getClass().getName() + " and name " +  this.toString() + " did not override  calculateOutputDataTypes()! This function has not been implemented for " + getClass().getName());
     }
 

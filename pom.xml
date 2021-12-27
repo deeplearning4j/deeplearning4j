@@ -310,7 +310,7 @@
         <maven-invoker-plugin.version>2.2</maven-invoker-plugin.version>
         <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>
         <maven-replacer-plugin.version>1.5.3</maven-replacer-plugin.version>
-        <protoc-jar-maven-plugin.version>3.8.0</protoc-jar-maven-plugin.version>
+        <protoc-jar-maven-plugin.version>3.11.4</protoc-jar-maven-plugin.version>
         <mockito.version>3.8.0</mockito.version>
         <mockito.jupter.version>3.8.0</mockito.jupter.version>
         <exec-maven-plugin.version>1.6.0</exec-maven-plugin.version>
@@ -1107,6 +1107,13 @@
             <properties>
                 <libnd4jhome>${basedir}/../../../../libnd4j/</libnd4jhome>
             </properties>
+        </profile>
+
+        <profile>
+            <id>platform-tests</id>
+            <modules>
+                <module>platform-tests</module>
+            </modules>
         </profile>
 
 

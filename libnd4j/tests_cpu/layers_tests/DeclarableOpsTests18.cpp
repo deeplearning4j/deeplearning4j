@@ -25,6 +25,8 @@
 #include <helpers/GradCheck.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/ops.h>
+#include <types/float16.h>
+#include <types/bfloat16.h>
 
 #include <array>
 
@@ -51,6 +53,8 @@ TEST_F(DeclarableOpsTests18, test_bitcast_1) {
 
   ASSERT_EQ(e, z);
 }
+
+
 
 TEST_F(DeclarableOpsTests18, test_tanh_1) {
   auto x = NDArrayFactory::create<float>('c', {8}, {0.23f, -0.23f, 0.35f, -0.35f, 0.64f, -0.64f, 100000.f, -100000.f});
