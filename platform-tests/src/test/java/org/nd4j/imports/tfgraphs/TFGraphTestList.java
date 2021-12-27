@@ -53,7 +53,7 @@ public class TFGraphTestList {
     //Only enable this for debugging, and leave it disabled for normal testing and CI - it prints all arrays for every execution step
     //Implemented internally using ExecPrintListener
     public static final boolean printArraysDebugging = false;
-
+    @TempDir Path testDir;
     public static String[] modelNames = new String[]{
             "resize_nearest_neighbor/int32"
     };
@@ -92,7 +92,7 @@ public class TFGraphTestList {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.imports.tfgraphs.TFGraphTestList#data")
-    public void testOutputOnly(@TempDir Path testDir,String modelName) throws IOException {
+    public void testOutputOnly(String modelName) throws IOException {
         //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
         File dir = testDir.toFile();
         Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);

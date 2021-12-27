@@ -53,8 +53,8 @@ public class BinomialDistribution extends BaseDistribution {
      *
      * @param trials Number of trials.
      * @param p      Probability of success.
-     * @throws org.apache.commons.math3.exception.NotPositiveException if {@code trials < 0}.
-     * @throws org.apache.commons.math3.exception.OutOfRangeException  if {@code p < 0} or {@code p > 1}.
+     * @throws NotPositiveException if {@code trials < 0}.
+     * @throws OutOfRangeException  if {@code p < 0} or {@code p > 1}.
      */
     public BinomialDistribution(int trials, double p) {
         this(Nd4j.getRandom(), trials, p);
@@ -66,8 +66,8 @@ public class BinomialDistribution extends BaseDistribution {
      * @param rng    Random number generator.
      * @param trials Number of trials.
      * @param p      Probability of success.
-     * @throws org.apache.commons.math3.exception.NotPositiveException if {@code trials < 0}.
-     * @throws org.apache.commons.math3.exception.OutOfRangeException  if {@code p < 0} or {@code p > 1}.
+     * @throws NotPositiveException if {@code trials < 0}.
+     * @throws OutOfRangeException  if {@code p < 0} or {@code p > 1}.
      * @since 3.1
      */
     public BinomialDistribution(Random rng, int trials, double p) {

@@ -213,7 +213,7 @@ public class TensorflowConversion {
         int[] ndShape;
         if (rank == 0) {
             // scalar
-            ndShape = new int[] { 1 };
+            ndShape = new int[] {};
         } else {
             ndShape = new int[rank];
             for (int i = 0; i < ndShape.length; i++) {
@@ -224,7 +224,8 @@ public class TensorflowConversion {
         int tfType = TF_TensorType(tensor);
         DataType nd4jType = typeFor(tfType);
 
-        int length = ArrayUtil.prod(ndShape);
+        //scalars are technically length 1 but of rank 0
+        int length = Math.max(1,ArrayUtil.prod(ndShape));
         INDArray array;
         if (nd4jType == DataType.UTF8) {
             String[] strings = new String[length];

@@ -178,7 +178,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
                         } else {
                             //Multiple files... try to find "frozen_inference_graph.pb"
                             for(String str : pbFiles){
-                                if(str.endsWith("frozen_inference_graph.pb")) {
+                                if(str.endsWith("_frozen.pb")) {
                                     toExtract = str;
                                 }
                             }
@@ -209,7 +209,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
     }
 
     @BeforeAll
-    public static void beforeClass(){
+    public static void beforeClass() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
     }
@@ -221,53 +221,24 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
         return params.stream().map(Arguments::of);
     }
 
-    private static Boolean isPPC = null;
 
-    public static boolean isPPC(){
-        if(isPPC == null){
-            ///mnt/jenkins/workspace/deeplearning4j-bugfix-tests-linux-ppc64le-cpu/
-            File f = new File("");
-            String path = f.getAbsolutePath();
-            log.info("Current directory: {}", path);
-            isPPC = path.contains("ppc64le");
-        }
-        return isPPC;
-    }
 
-    @Test   //(timeout = 360000L)
     @ParameterizedTest
-    @MethodSource("#data")
-    public void testOutputOnly(@TempDir Path testDir) throws Exception {
-        if(isPPC()){
-            /*
-            Ugly hack to temporarily disable tests on PPC only on CI
-            Issue logged here: https://github.com/eclipse/deeplearning4j/issues/7657
-            These will be re-enabled for PPC once fixed - in the mean time, remaining tests will be used to detect and prevent regressions
-             */
+    @MethodSource("org.nd4j.imports.tfgraphs.TFGraphTestZooModels#data")
+    public void testOutputOnly(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws Exception {
 
-            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/eclipse/deeplearning4j/issues/7657");
-            //OpValidationSuite.ignoreFailing();
-        }
+        currentTestDir =  localTestDir;
 
-//        if(!modelName.startsWith("ssd_mobilenet_v1_coco_2018_01_28")){
-//        if(!modelName.startsWith("ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03")){
-//        if(!modelName.startsWith("faster_rcnn_resnet101_coco_2018_01_28")){
-//            OpValidationSuite.ignoreFailing();
-//        }
-        currentTestDir = testDir.toFile();
-
-//        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.NAN_PANIC);
         Nd4j.getMemoryManager().setAutoGcWindow(2000);
 
         Nd4j.create(1);
         if(ArrayUtils.contains(IGNORE_REGEXES, modelName)){
             log.info("\n\tIGNORE MODEL ON REGEX: {} - regex {}", modelName, modelName);
-           // OpValidationSuite.ignoreFailing();
+            // OpValidationSuite.ignoreFailing();
         }
 
         Double maxRE = 1e-3;
         Double minAbs = 1e-4;
-        currentTestDir = testDir.toFile();
         log.info("----- SameDiff Exec: {} -----", modelName);
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
                 LOADER, maxRE, minAbs, false);
@@ -277,13 +248,5 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
             return;
         }
 
-        //Libnd4j exec:
-        /*
-        //AB 2019/10/19 - Libnd4j execution disabled pending execution rewrite
-        currentTestDir = testDir.newFolder();
-        log.info("----- Libnd4j Exec: {} -----", modelName);
-        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.LIBND4J,
-                LOADER, maxRE, minAbs);
-         */
     }
 }

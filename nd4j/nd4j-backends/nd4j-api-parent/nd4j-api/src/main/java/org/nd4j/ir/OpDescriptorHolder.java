@@ -57,7 +57,7 @@ public class OpDescriptorHolder {
     }
 
     /**
-     * Return the {@link org.nd4j.ir.OpNamespace.OpDescriptor}
+     * Return the {@link OpNamespace.OpDescriptor}
      * for a given op name
      * @param name the name of the op to get the descriptor for
      * @return the desired op descriptor or null if it does not exist

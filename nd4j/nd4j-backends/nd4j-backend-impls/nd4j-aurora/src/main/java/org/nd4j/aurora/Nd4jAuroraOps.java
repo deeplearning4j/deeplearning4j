@@ -74,6 +74,9 @@ public class Nd4jAuroraOps implements NativeOps {
             setDevice(deviceId);
             pointerArrayField = PointerPointer.class.getDeclaredField("pointerArray");
             pointerArrayField.setAccessible(true);
+
+
+
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -148,7 +151,6 @@ public class Nd4jAuroraOps implements NativeOps {
 
     public synchronized Object call(String symname, Object... args) {
         log.debug("call(" + symname + ", " + Arrays.deepToString(args) + ")");
-
         long sym = veo_get_sym(proc, handle, symname);
         if (sym == 0) {
             throw new RuntimeException("veo_get_sym(): failed to find symbol " + symname);
@@ -312,8 +314,6 @@ public class Nd4jAuroraOps implements NativeOps {
             }
         }
         veo_args_free(argp);
-
-        log.debug("return " + retval[0]);
         return retval[0];
     }
 

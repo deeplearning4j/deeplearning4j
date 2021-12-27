@@ -58,7 +58,8 @@ class TensorflowFrameworkImporter: FrameworkImporter {
     fun importFromGraph(graphDef: GraphDef, dynamicVariables: Map<String, INDArray>): SameDiff {
         val dynamicVariablesConverted = HashMap<String, TensorProto>()
         dynamicVariables.forEach { (name, array) ->
-            dynamicVariablesConverted[name] = convertNDArrayToTensorflowTensor(array)
+            val converted = convertNDArrayToTensorflowTensor(array)
+            dynamicVariablesConverted[name] = converted
         }
         val irGraph = TensorflowIRGraph(graphDef, opDefList, registry)
         return tfImporter.importGraph(irGraph, null, null, dynamicVariablesConverted, tensorflowOpRegistry)

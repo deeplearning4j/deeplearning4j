@@ -126,7 +126,7 @@ public abstract class BaseTransformBoolOp extends BaseTransformOp implements Tra
     }
 
     @Override
-    public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         //All bool tranform ops: always bool output type
         SDVariable[] args = args();
         Preconditions.checkState(dataTypes != null && dataTypes.size() == args.length, "Expected exactly %s input datatype(s) for %s, got input %s", args.length, getClass(), dataTypes);

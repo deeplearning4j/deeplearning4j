@@ -3811,7 +3811,9 @@ public class Shape {
                     }
                 }
             } else {
-                retShape = wholeArray ? new long[0] : ArrayUtil.removeIndex(x.shape(), dimension);
+                if(wholeArray)
+                    return new long[]{};
+                retShape =  ArrayUtil.removeIndex(x.shape(), dimension);
             }
         }
         return retShape;

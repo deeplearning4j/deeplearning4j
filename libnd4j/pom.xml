@@ -57,6 +57,7 @@
         <libnd4j.buildprogram>bash</libnd4j.buildprogram>
         <libnd4j.operations></libnd4j.operations>
         <libnd4j.datatypes></libnd4j.datatypes>
+        <libnd4j.sanitize>OFF</libnd4j.sanitize>
     </properties>
 
     <build>
@@ -156,6 +157,8 @@
                                 <argument>${libnd4j.operations}</argument>
                                 <argument>--datatypes</argument>
                                 <argument>${libnd4j.datatypes}</argument>
+                                <argument>--sanitize</argument>
+                                <argument>${libnd4j.sanitize}</argument>
                             </buildCommand>
                             <workingDirectory>${project.basedir}</workingDirectory>
                         </configuration>
@@ -344,6 +347,8 @@
                                         <argument>"${libnd4j.operations}"</argument>
                                         <argument>--datatypes</argument>
                                         <argument>"${libnd4j.datatypes}"</argument>
+                                        <argument>--sanitize</argument>
+                                        <argument>"${libnd4j.sanitize}"</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>

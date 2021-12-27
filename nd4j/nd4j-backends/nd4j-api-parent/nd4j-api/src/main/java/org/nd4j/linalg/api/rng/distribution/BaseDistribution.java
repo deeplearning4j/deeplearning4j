@@ -57,7 +57,7 @@ public abstract class BaseDistribution implements Distribution {
      * @return the probability that a random variable with this distribution
      * takes a value between {@code x0} and {@code x1}, excluding the lower
      * and including the upper endpoint.
-     * @throws org.apache.commons.math3.exception.NumberIsTooLargeException if {@code x0 > x1}.
+     * @throws NumberIsTooLargeException if {@code x0 > x1}.
      *                                                                      <p/>
      *                                                                      The default implementation uses the identity
      *                                                                      {@code P(x0 < X <= x1) = P(X <= x1) - P(X <= x0)}
