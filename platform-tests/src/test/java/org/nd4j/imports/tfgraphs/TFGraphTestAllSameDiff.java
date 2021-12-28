@@ -59,7 +59,7 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
      * the status of the test failing. No tests will run.
      */
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
-            //"split/rank2_8,7_sz2,1,4_axis1"
+            "split/rank2_8,7_sz2,1,4_axis1"
             //"resize_bicubic/float64",
 
     );
@@ -69,6 +69,8 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             //also due to the dynamic inputs being -1 3 for the first matrix multiply for the first 2 inputs
             //the only valid batch size is 3.
             "math_mul_order",
+            //points to a file with a URL, needs additional work
+            "compression_residual_gru",
 
             //Failing 2019/09/11 - https://github.com/eclipse/deeplearning4j/issues/7965
             // Still failing 2020/04/27 java.lang.IllegalStateException: Requested output variable Bincount does not exist in SameDiff instance
@@ -197,7 +199,7 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             // TFGraphTestAllHelper.checkIntermediate(inputs,modelName,BASE_DIR,MODEL_FILENAME,EXECUTE_WITH,TFGraphTestAllHelper.LOADER,maxRE,minAbs,localTestDir,true);
             Nd4j.getExecutioner().enableDebugMode(true);
             Nd4j.getExecutioner().enableVerboseMode(true);
-            TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, TFGraphTestAllHelper.LOADER, maxRE, minAbs, verboseDebugMode);
+            TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, new TFGraphTestAllHelper.DefaultGraphLoader(inputs), maxRE, minAbs, verboseDebugMode);
         } catch (Throwable t){
             log.error("ERROR Executing test: {} - input keys {}", modelName, (inputs == null ? null : inputs.keySet()), t);
             throw t;

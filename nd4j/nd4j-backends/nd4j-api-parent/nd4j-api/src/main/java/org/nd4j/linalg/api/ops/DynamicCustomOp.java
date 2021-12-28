@@ -49,7 +49,6 @@ import org.tensorflow.framework.NodeDef;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
@@ -306,7 +305,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                     if (arg.getArr() != null && !arg.isPlaceHolder())
                         addInputArgument(arg.getArr());
                     else if(arg.isPlaceHolder() && arg.getShape() != null) {
-                        if(arg.getShape() != null) {
+                        if(arg.getShape() != null && !sameDiff.getEagerArrays().hasArray(arg.name())) {
                            //if we have a shape, ensure we create a proper 1 mini batch size input of the relevant shape
                             long[] inputShape = ArrayUtil.copy(arg.getShape());
                             for(int i = 0; i < inputShape.length; i++) {
@@ -328,6 +327,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                             sameDiff.setEagerArrForVarName(arg.name(),arr);
                             addInputArgument(arr);
                             log.warn("Variable name " + arg.name() + " from  op of type " + opName() + " with unique name of " + getOwnName() + " was not able to resolve an array for eager computation, inserting dummy array. This can happen with control flow ops. Please validate this if in error.");
+                        } else {
+                            addInputArgument(sameDiff.getEagerArrForVarName(arg.name()));
                         }
                     }
                     else {

@@ -79,10 +79,6 @@ public class ValidateZooModelPredictions extends BaseNd4jTestWithBackends {
     public void testMobilenetV1(Nd4jBackend backend) throws Exception {
         TFGraphTestZooModels.currentTestDir = testDir.toFile();
 
-        //Load model
-        String path = "tf_graphs/zoo_models/mobilenet_v1_0.5_128/tf_model.txt";
-        File resource = new ClassPathResource(path).getFile();
-        SameDiff sd = TFGraphTestZooModels.LOADER.apply(resource, "mobilenet_v1_0.5_128");
 
         //Load data
         //Because we don't have DataVec NativeImageLoader in ND4J tests due to circular dependencies, we'll load the image previously saved...
@@ -94,6 +90,12 @@ public class ValidateZooModelPredictions extends BaseNd4jTestWithBackends {
         //i.e., scale to (-1,1) range
         //Image is originally 0 to 255
         img.divi(255).subi(0.5).muli(2);
+
+        //Load model
+        String path = "tf_graphs/zoo_models/mobilenet_v1_0.5_128/tf_model.txt";
+        File resource = new ClassPathResource(path).getFile();
+        SameDiff sd = new TFGraphTestZooModels.RemoteCachingLoader(Collections.singletonMap("input",img)).apply(resource, "mobilenet_v1_0.5_128").getSameDiff();
+
 
         double min = img.minNumber().doubleValue();
         double max = img.maxNumber().doubleValue();
@@ -137,13 +139,14 @@ public class ValidateZooModelPredictions extends BaseNd4jTestWithBackends {
         //Load model
         String path = "tf_graphs/zoo_models/resnetv2_imagenet_frozen_graph/tf_model.txt";
         File resource = new ClassPathResource(path).getFile();
-        SameDiff sd = TFGraphTestZooModels.LOADER.apply(resource, "resnetv2_imagenet_frozen_graph");
+
 
         //Load data
         //Because we don't have DataVec NativeImageLoader in ND4J tests due to circular dependencies, we'll load the image previously saved...
         File imgFile = new ClassPathResource("deeplearning4j-zoo/goldenretriever_rgb224_unnormalized_nchw_INDArray.bin").getFile();
         INDArray img = Nd4j.readBinary(imgFile).castTo(DataType.FLOAT);
         img = img.permute(0,2,3,1).dup();   //to NHWC
+        SameDiff sd = new TFGraphTestZooModels.RemoteCachingLoader(Collections.singletonMap("input",img)).apply(resource, "resnetv2_imagenet_frozen_graph").getSameDiff();
 
         //Resnet v2 - NO external normalization, just resize and center crop
         // https://github.com/tensorflow/models/blob/d32d957a02f5cffb745a4da0d78f8432e2c52fd4/research/tensorrt/tensorrt.py#L70

@@ -20,7 +20,10 @@
 
 package org.nd4j.imports.tfgraphs;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.apache.commons.io.FileUtils;
+import org.nd4j.common.resources.Resources;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.imports.listeners.ExecPrintListener;
 import org.nd4j.imports.tfgraphs.listener.OpExecOrderListener;
@@ -93,28 +96,49 @@ public class TFGraphTestAllHelper {
         SAMEDIFF, LIBND4J, JUST_PRINT
     }
 
-    public static class DefaultGraphLoader implements BiFunction<File,String,SameDiff> {
+
+    @Data
+    @AllArgsConstructor
+    public static class ModelLoadResult {
+        private SameDiff sameDiff;
+        private GraphDef graphDef;
+    }
+
+    public static class DefaultGraphLoader implements BiFunction<File,String,ModelLoadResult> {
+        private boolean suggestDynamicVariables = false;
+        private Map<String,INDArray> dynamicVariables = Collections.emptyMap();
+
+
+
+        public DefaultGraphLoader(Map<String,INDArray> dynamicVariables) {
+            this.dynamicVariables = dynamicVariables;
+        }
+
+
+        public DefaultGraphLoader(boolean suggestDynamicVariables) {
+            this.suggestDynamicVariables = suggestDynamicVariables;
+        }
+
+
         @Override
-        public SameDiff apply(File file, String name) {
-
-            String prop = System.getProperty(PRINT_GRAPH_PROP,"false");
-            Boolean printGraph = Boolean.parseBoolean(prop);
-            if(printGraph) {
-                try {
-                    GraphDef graphDef = GraphDef.parseFrom(Files.toByteArray(file));
-                    System.out.println("Processing graph : \n" + graphDef);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+        public ModelLoadResult apply(File file, String name) {
+            GraphDef graphDef = null;
+            try {
+                graphDef = GraphDef.parseFrom(Files.toByteArray(file));
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            else
-                System.out.println("Processing graph at path : \n" + file.getAbsolutePath());
 
-            return tensorflowFrameworkImporter.runImport(file.getAbsolutePath(),Collections.emptyMap(),true);
+            System.out.println("Processing graph at path : \n" + file.getAbsolutePath());
+            try {
+                SameDiff result = tensorflowFrameworkImporter.runImport(file.getAbsolutePath(), dynamicVariables, suggestDynamicVariables);
+                return new ModelLoadResult(result, graphDef);
+            }catch(Exception e) {
+                return new ModelLoadResult(null,graphDef);
+            }
         }
     }
 
-    public static final DefaultGraphLoader LOADER = new DefaultGraphLoader();
 
 
     private static ExecutorConfiguration configuration = ExecutorConfiguration.builder()
@@ -139,7 +163,7 @@ public class TFGraphTestAllHelper {
     }
 
     protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName,
-                                          String baseDir, String modelFilename, ExecuteWith execType, BiFunction<File,String,SameDiff> loader,
+                                          String baseDir, String modelFilename, ExecuteWith execType, BiFunction<File,String,ModelLoadResult> loader,
                                           Double maxRelErrorOverride, Double minAbsErrorOverride, boolean printArraysDebugging) throws IOException {
         Preconditions.checkArgument((maxRelErrorOverride == null) == (minAbsErrorOverride == null), "Both maxRelErrorOverride and minAbsErrorOverride" +
                 " must be null or both must be provided");
@@ -158,23 +182,6 @@ public class TFGraphTestAllHelper {
 
 //        SameDiff graph = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
         //Collect coverage info about ops
-        TensorflowFrameworkImporter tensorflowFrameworkImporter = new TensorflowFrameworkImporter();
-        File oldModel = new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile();
-        Map<String,INDArray> oldOutputs =  null;
-        Map<String,INDArray> outputs = null;
-        SameDiff oldForComparison = null;
-/*
-        if(modelName.equals("math_mul_order")) {
-            GraphDef g  = GraphDef.parseFrom(IOUtils.toByteArray(oldModel.toURI()));
-            oldForComparison = TFGraphMapper.importGraph(oldModel);
-            oldOutputs = oldForComparison.outputAll(inputs);
-            TensorflowIRGraph tensorflowIRGraph = new TensorflowIRGraph(g,tensorflowFrameworkImporter.getOpDefList(),tensorflowFrameworkImporter.getRegistry());
-            TensorflowIRGraphRunner tensorflowIRGraphRunner = new TensorflowIRGraphRunner(tensorflowIRGraph,new ArrayList<>(inputs.keySet()),new ArrayList<>(oldOutputs.keySet()));
-            //outputs = tensorflowIRGraphRunner.run(inputs);
-            System.out.println();
-        }
-*/
-
         Pair<SameDiff,Map<String,INDArray>> p = getGraphAfterExec(baseDir, modelFilename, modelName, inputs, execType, loader, null, outputsToCheck, printArraysDebugging);
         SameDiff graph = p.getFirst();
         Map<String,INDArray> sameDiffPredictions = p.getSecond();
@@ -320,11 +327,11 @@ public class TFGraphTestAllHelper {
 
     public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, String modelFileName,
                                          ExecuteWith execType, File localTestDir, boolean printArraysDebugging) throws IOException {
-        checkIntermediate(inputs, modelName, baseDir, modelFileName, execType, LOADER, null, null, localTestDir, printArraysDebugging);
+        checkIntermediate(inputs, modelName, baseDir, modelFileName, execType, new DefaultGraphLoader(inputs), null, null, localTestDir, printArraysDebugging);
     }
 
     public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, String modelFileName,
-                                         ExecuteWith execType, BiFunction<File,String,SameDiff> loader,
+                                         ExecuteWith execType, BiFunction<File,String,ModelLoadResult> loader,
                                          Double maxRelErrorOverride, Double minAbsErrorOverride, File localTestDir, boolean printArraysDebugging) throws IOException {
         Preconditions.checkArgument((maxRelErrorOverride == null) == (minAbsErrorOverride == null), "Both maxRelErrorOverride and minAbsErrorOverride" +
                 " must be null or both must be provided");
@@ -410,10 +417,11 @@ public class TFGraphTestAllHelper {
     }
 
     public static Pair<SameDiff, Map<String,INDArray>> getGraphAfterExec(String baseDir, String modelFilename, String modelName, Map<String, INDArray> inputs,
-                                                                         ExecuteWith executeWith, BiFunction<File,String,SameDiff> graphLoaderFunction, List<Listener> listeners,
+                                                                         ExecuteWith executeWith, BiFunction<File,String,ModelLoadResult> graphLoaderFunction, List<Listener> listeners,
                                                                          Set<String> requiredOutputs, boolean printArraysDebugging) throws IOException {
         log.info("RUNNING TEST {}...", modelName);
-        SameDiff graph = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
+        ModelLoadResult result  = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
+        SameDiff graph = result.getSameDiff();
         if(listeners != null){
             graph.setListeners(listeners);
         }
@@ -429,12 +437,6 @@ public class TFGraphTestAllHelper {
         Map<String,INDArray> outMap = null;
         if (executeWith.equals(ExecuteWith.SAMEDIFF)) {
             //Set memory manager - check that all arrays (other than the ones we requested as output)
-            CloseValidationMemoryMgr mmgr = new CloseValidationMemoryMgr(graph, new ArrayCloseMemoryMgr());
-           /* long tid = Thread.currentThread().getId();
-            if(!graph.getSessions().containsKey(tid))
-                graph.getSessions().put(tid, new InferenceSession(graph));*/
-            //Execute
-            // graph.getSessions().get(tid).setMmgr(mmgr);
             Map<String,String> shapes = new HashMap<>();
             inputs.entrySet().stream().forEach(entry -> {
                 shapes.put(entry.getKey(),Arrays.toString(entry.getValue().shape()));
@@ -444,16 +446,12 @@ public class TFGraphTestAllHelper {
 
             outMap = graph.output(inputs, new ArrayList<>(requiredOutputs));
 
-            //Check that all arrays were released
-            //mmgr.assertAllReleasedExcept(outMap.values());
             graph.getSessions().clear();
         } else if (executeWith.equals(ExecuteWith.LIBND4J)) {
             for (String input : inputs.keySet()) {
                 graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));
             }
 
-//            val string = graph.asFlatPrint();
-//            log.info("Graph structure: \n{}", string);
             val executioner = new NativeGraphExecutioner();
             val results = executioner.executeGraph(graph, configuration);
 

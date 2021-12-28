@@ -431,7 +431,7 @@ fun loadDataBufferFromRawData(inputTensor: TensorNamespace.TensorProto): INDArra
     val dtype = convertNd4jDataTypeFromNameSpaceTensorDataType(TensorNamespace.DataType.values()[inputTensor.dataType])
     val byteArray = inputTensor.rawData.toByteArray()
     //note: scalar can be zero
-    val totalLen = ArrayUtil.prod(*shape)
+    var totalLen = ArrayUtil.prod(*shape)
     if(totalLen < 1 && byteArray.isEmpty()) {
         if(shape.isNotEmpty()) {
             return Nd4j.zeros(*shape).castTo(dtype)
@@ -453,6 +453,10 @@ fun loadDataBufferFromRawData(inputTensor: TensorNamespace.TensorProto): INDArra
         }
         return Nd4j.create(rawDataBuffer)
     } else {
+        //sometimes data isn't empty but the shape is still a scalar
+        if(totalLen < 1)
+            totalLen = 1
+
         val byteBuffer = ByteBuffer.allocateDirect(totalLen * dtype.width())
         byteBuffer.put(byteArray)
         //See: https://github.com/apache/felix/pull/114

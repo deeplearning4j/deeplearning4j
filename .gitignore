@@ -38,6 +38,7 @@ release.properties
 *dependency-reduced-pom.xml
 Test Results*.xml
 Test Results*.html
+libnd4j/tests_*
 # Specific for Nd4j
 *.md5
 *.pom

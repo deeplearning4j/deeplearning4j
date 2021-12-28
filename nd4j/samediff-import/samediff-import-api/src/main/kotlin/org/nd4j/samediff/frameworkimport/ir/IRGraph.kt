@@ -79,6 +79,8 @@ interface IRGraph<
 
     fun convertToNDArray(tensorTypeInput: TENSOR_TYPE): INDArray
 
+    fun convertToTensor(ndarrayInput: INDArray, tensorName: String): TENSOR_TYPE
+
     fun nodesWithInput(name: String): List<IRNode<NODE_TYPE, TENSOR_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, DATA_TYPE>>
 
     fun nodeList(): List<IRNode<NODE_TYPE, TENSOR_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, DATA_TYPE>>

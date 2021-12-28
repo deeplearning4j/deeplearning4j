@@ -204,9 +204,7 @@
                     <classPaths>
                         <classPath>${project.build.outputDirectory}</classPath>
                     </classPaths>
-            <!--        <compilerOptions>
-                        <compilerOption>-g</compilerOption>
-                    </compilerOptions>-->
+
                     <includePaths>
                         <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
                         <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/
