@@ -258,8 +258,13 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             //declare as variables
             dynamicVariables.forEach { (name, ndarray) ->
                 val converted = irGraph.convertToNDArray(ndarray)
+                /**
+                 * TODO: convert placeholders to proper data types
+                 * with checking. It appears not all dyanmicVariables will match expected data type.
+                 */
                 if(!sd.hasVariable(name))
                     sd.`var`(name,converted)
+                sd.setEagerArrForVarName(name,converted)
             }
         }
 
@@ -403,9 +408,18 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             val sdVar = sd.getVariable(nd.nodeName())
                             sdVar.variableType = VariableType.PLACEHOLDER
                             sdVar.creator = df
+                            val dt = irGraph.dataTypeForVariable(nd.nodeName()).nd4jDataType()
+                            sdVar.setDataType(dt)
                             if(sdVar.arr == null && dynamicVariables.containsKey(nd.nodeName())) {
-                                sdVar.setArray(irGraph.convertToNDArray(dynamicVariables[nd.nodeName()]!!))
+                                //ensure we set the array to the proper data type
+                                val castedArr = irGraph.convertToNDArray(dynamicVariables[nd.nodeName()]!!).castTo(dt)
+                                sd.associateArrayWithVariable(castedArr,sdVar)
+                                dynamicVariables[nd.nodeName()] = irGraph.convertToTensor(castedArr,nd.nodeName())
+                                sd.setEagerArrForVarName(nd.nodeName(),castedArr)
+
                             }
+
+
                         }
 
                     }
