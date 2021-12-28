@@ -39,6 +39,8 @@ release.properties
 Test Results*.xml
 Test Results*.html
 libnd4j/tests_*
+platform-tests/*.proto
+platform-tests/*.txt
 # Specific for Nd4j
 *.md5
 *.pom
