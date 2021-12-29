@@ -1884,7 +1884,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         long st = profilingConfigurableHookIn(op, context);
         boolean mklOverride = false;
         try {
-        String ownName = differentialFunction.getOwnName();
             if (Nd4jCpu.Environment.getInstance().isUseONEDNN()) {
                 val opName = op.opName();
                 val state = mklOverrides.get(op);
