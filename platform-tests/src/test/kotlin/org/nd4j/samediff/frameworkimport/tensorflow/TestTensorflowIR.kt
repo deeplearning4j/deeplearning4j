@@ -319,21 +319,6 @@ class TestTensorflowIR {
 
 
 
-
-    @Test
-    @Tag(TagNames.LARGE_RESOURCES)
-    fun loadModelTest() {
-        val tensorflowOpRegistry = registry()
-        val importGraph = ImportGraph<GraphDef,NodeDef,OpDef,TensorProto,OpDef.AttrDef,AttrValue,DataType>()
-        val inputs = listOf("input_0", "input_1")
-        val content = IOUtils.toByteArray(ClassPathResource("lenet_frozen.pb").inputStream)
-        val graphDef = GraphDef.parseFrom(content)
-        val irGraph = TensorflowIRGraph(graphDef, tensorflowOps,tensorflowOpRegistry)
-        val importedModel = importGraph.importGraph(irGraph = irGraph,importOverride = null,opFilter = null,opMappingRegistry = OpRegistryHolder.tensorflow())
-        println(importedModel)
-    }
-
-
     @Test
     fun testRegistry() {
         val tensorflowOpRegistry = registry()

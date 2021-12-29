@@ -64,16 +64,17 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <java.version>1.8</java.version>
         <maven-shade-plugin.version>3.1.1</maven-shade-plugin.version>
-        <test.heap.size>2g</test.heap.size>
-        <test.offheap.size>2g</test.offheap.size>
         <dokka.version>1.4.30</dokka.version>
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
-        <test.heap.size>1g</test.heap.size>
-        <test.offheap.size>3g</test.offheap.size>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>io.github.microutils</groupId>
+            <artifactId>kotlin-logging-jvm</artifactId>
+            <version>${kotlin-logging.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-test</artifactId>
@@ -269,14 +270,12 @@
                         </classpathDependencyExcludes>
                         <useSystemClassLoader>true</useSystemClassLoader>
                         <useManifestOnlyJar>false</useManifestOnlyJar>
-                        <argLine>-Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                        <argLine>-Dorg.bytedeco.javacpp.nopointerGC=true </argLine>
                         <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
                         <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
                         <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
                         <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
-                        <forkCount>1</forkCount>
-                        <threadCount>1</threadCount>
-                        <perCoreThreadCount>false</perCoreThreadCount>
+
                     </configuration>
                 </plugin>
             </plugins>
