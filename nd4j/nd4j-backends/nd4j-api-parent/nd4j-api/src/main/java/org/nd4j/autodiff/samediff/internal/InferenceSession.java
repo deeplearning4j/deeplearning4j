@@ -786,7 +786,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
     @Override
     public Pair<SameDiffOp,OpContext> getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
-                                           Set<String> constAndPhInputs, Map<String, INDArray> placeholderValues, Set<String> allReqVariables) {
+                                                           Set<String> constAndPhInputs, Map<String, INDArray> placeholderValues, Set<String> allReqVariables) {
         SameDiffOp sdo = sameDiff.getOps().get(opName);
         DifferentialFunction df = sdo.getOp();
 
@@ -968,6 +968,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         String n = sdv.name();
         if (sdv.getVariableType() == VariableType.CONSTANT || sdv.getVariableType() == VariableType.VARIABLE) {
             return getConstantOrVariable(n);
+
+        }  else if(sdv.getArr() != null) {
+            return sdv.getArr();
         } else {
             VarId inVarId = lookup(n, opInputs, allIterInputs, false);
             Preconditions.checkState(inVarId != null, "Could not find array for variable %s", sdv.name());

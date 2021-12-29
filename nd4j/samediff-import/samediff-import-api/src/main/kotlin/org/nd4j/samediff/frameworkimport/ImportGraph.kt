@@ -52,6 +52,8 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import java.io.File
 import java.util.*
 
+import mu.KotlinLogging
+
 /**
  * Core import class for running model import for any framework.
  * This should be paired with an [OpMappingRegistry]
@@ -71,6 +73,8 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         ATTR_DEF_TYPE : GeneratedMessageV3,
         ATTR_VALUE_TYPE : GeneratedMessageV3,
         DATA_TYPE: ProtocolMessageEnum> {
+
+    private val logger = KotlinLogging.logger {}
 
     val defaultRunner =
         DefaultImportRunner<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>()
@@ -300,7 +304,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             if (irGraph.isConstantOpName(op)|| numInputs == 0) {
                 availableToAdd.add(nd)
                 availableToAddSet.add(name)
-                println("Added $name")
+                logger.debug {"Added $name" }
             } else {
                 remainingNodes[name] = nd
 
@@ -348,7 +352,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             val nd = availableToAdd.remove()
             val name = nd.nodeName()
             availableToAddSet.remove(name)
-            println("Removed $name")
+            logger.debug {"Removed $name" }
             val opName = nd.opName()
             val importInfoForNode = importInfo[name]
             val opMappingProcess = OpRegistryHolder.lookupOpMappingProcess<
@@ -376,7 +380,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
 
 
-            println("Adding operation to graph: $opName (name=$name)")
+            logger.debug {"Adding operation to graph: $opName (name=$name)"}
             opsAdded.add("$opName,$name")
             var skipCase = false
             val rawAttrMap = HashMap<String, ATTR_VALUE_TYPE>()
@@ -388,7 +392,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             if (opFilter != null && opFilter.skipOp(
                     nd.internalValue(),
                     sd,rawAttrMap, irGraph.internalValue())) {
-                println("Skipping op $name of type $opName due to op filter")
+                logger.debug {"Skipping op $name of type $opName due to op filter" }
                 //Don't continue at this point - we still need to process what this feeds into...
                 skipCase = true
             } else {
@@ -396,7 +400,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     //Standard case
                     //note, ordering matters here for onnx
                     if (irGraph.nodeIsPlaceHolder(nd.nodeName())) {
-                        println("Adding placeholder ${nd.nodeName()}")
+                        logger.debug {"Adding placeholder ${nd.nodeName()}" }
                         if(!sd.hasVariable(nd.nodeName())) {
                             var shape = irGraph.shapeOfInput(nd.nodeName())
                             val dt = irGraph.dataTypeForVariable(nd.nodeName()).nd4jDataType()
@@ -425,11 +429,11 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     }
                     else if (irGraph.isConstant(opName)) {
                         if(!sd.hasVariable(nd.nodeName())) {
-                            println("Adding constant ${nd.nodeName()}")
+                            logger.debug {"Adding constant ${nd.nodeName()}" }
                             //Get array, create a constant
                             val arr = irGraph.getConstantArrayForName(name)
                             sd.constant(name, arr)
-                            println("Added constant for node name ${nd.nodeName()} with shape ${arr.shapeInfoToString()}")
+                            logger.debug {"Added constant for node name ${nd.nodeName()} with shape ${arr.shapeInfoToString()}" }
                             val inputCount = nd.numInputs()
                             if (inputCount > 0) {
                                 //Very likely control dependency. i.e., "we must execute op X before the constant is really available to be used"
@@ -683,7 +687,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 throw IllegalStateException("Op $nd4jOpName does not have any outputs!")
                             }
 
-                            //println("Out dtypes size ${outDTypes.size} and numOutputs $numOutputs")
+                            //logger.debug {"Out dtypes size ${outDTypes.size} and numOutputs $numOutputs")
                             val outSDVars = arrayOfNulls<SDVariable>(numOutputs)
                             val outVars = arrayOfNulls<Variable>(numOutputs)
                             val outNames: MutableList<String> = ArrayList(numOutputs)
@@ -714,7 +718,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                         .build()
                                     sd.variables[varName] = outVars[i]
                                 }
-                                println("Added variable to graph: $varName (output of op $name)")
+                                logger.debug {"Added variable to graph: $varName (output of op $name)" }
                                 variablesAdded.add("$varName,$name")
                             }
 
@@ -732,7 +736,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                     }
                                 }
                             }
-                            println("Imported op: $opName (name=$name)")
+                            logger.debug {"Imported op: $opName (name=$name)" }
                             opsImported.add("$opName,$name")
 
                         }
@@ -740,7 +744,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
                     }
                     else {
-                        println("Node ${nd.nodeName()} not found in import context, skipping!")
+                        logger.debug {"Node ${nd.nodeName()} not found in import context, skipping!" }
                     }
                 } else {
 
@@ -768,7 +772,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
                     //Import override case
                     val o = importOverride[name]
-                    println("Importing op $opName using override $importOverride")
+                    logger.debug {"Importing op $opName using override $importOverride" }
 
                     //First, get inputs:
                     val inputs: MutableList<SDVariable> = ArrayList()
@@ -847,9 +851,9 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                         if (!availableToAddSet.contains(nextOp)) {
                             //Avoid processing same op multiple times, for repeated inputs to one op, etc
                             availableToAdd.add(nextOpDef)
-                            println("Added ${nextOpDef.nodeName()}")
+                            logger.debug {"Added ${nextOpDef.nodeName()}" }
                             availableToAddSet.add(nextOp)
-                            println("Added to processing queue: ${nextOpDef.opName()} (name=$nextOp)")
+                            logger.debug {"Added to processing queue: ${nextOpDef.opName()} (name=$nextOp)" }
                         }
                     }
                 }
@@ -884,14 +888,10 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         }
 
 
-        println("Variables added $variablesAdded")
-        FileUtils.writeLines(File("variables-added-new.txt"),variablesAdded)
-        println("Ops imported $opsImported")
-        FileUtils.writeLines(File("ops-imported-new.txt"),opsImported)
-        println("Ops added $opsAdded")
-        FileUtils.writeLines(File("ops-added-new.txt"),opsAdded)
-        println("Ops removed $opsRemoved")
-        FileUtils.writeLines(File("ops-removed-new.txt"),opsRemoved)
+        logger.debug {"Variables added $variablesAdded"}
+        logger.debug {"Ops imported $opsImported"}
+        logger.debug {"Ops added $opsAdded"}
+        logger.debug {"Ops removed $opsRemoved"}
 
 
         Preconditions.checkState(

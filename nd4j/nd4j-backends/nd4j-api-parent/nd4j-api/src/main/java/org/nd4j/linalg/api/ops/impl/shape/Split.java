@@ -30,6 +30,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -172,5 +173,10 @@ public class Split extends DynamicCustomOp {
             out.add(dt);
         }
         return out;
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Arrays.asList(new Concat(sameDiff,splitDim,f1.toArray(new SDVariable[f1.size()])).outputVariables());
     }
 }

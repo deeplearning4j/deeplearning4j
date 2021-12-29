@@ -59,14 +59,15 @@ class TestOnnxFrameworkImporter {
     fun testLenet() {
         Nd4j.getExecutioner().enableDebugMode(true)
         Nd4j.getExecutioner().enableVerboseMode(true)
+        val arr = Nd4j.ones(1,1,28,28)
+        val inputs = mapOf("import/Placeholder" to arr)
         val importer = OnnxFrameworkImporter()
         val file = ClassPathResource("lenet.onnx").file
-        val result  = importer.runImport(file.absolutePath, emptyMap())
-        val labelsVar = result.placeHolder("label", DataType.FLOAT,1,10)
+        val result  = importer.runImport(file.absolutePath, inputs)
+        val labelsVar = result.placeHolder("label", DataType.FLOAT,1,10,1,1)
         val output = result.getVariable("raw_output___13")!!
         result.loss().softmaxCrossEntropy("loss",labelsVar,output,null)
-        val arr = Nd4j.ones(1,1,28,28)
-        val labels = Nd4j.ones(1,10,5,1)
+        val labels = Nd4j.ones(1,10,1,1)
         result.convertConstantsToVariables()
         val trainingConfig = TrainingConfig.builder()
         trainingConfig.updater(Adam())
