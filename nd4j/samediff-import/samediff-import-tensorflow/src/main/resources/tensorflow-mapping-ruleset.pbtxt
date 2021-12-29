@@ -1949,17 +1949,6 @@ mappings {
     ruleType: "attribute"
     inputFrameworkOpName: "Sum"
   }
-  rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
-    inputToOutput {
-      key: "dimensions"
-      value: "reduction_indices"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Sum"
-  }
 }
 mappings {
   frameworkName: "tensorflow"
@@ -2079,17 +2068,6 @@ mappings {
     inputToOutput {
       key: "keepDims"
       value: "keep_dims"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Min"
-  }
-  rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
-    inputToOutput {
-      key: "dimensions"
-      value: "reduction_indices"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "Min"
@@ -9933,17 +9911,6 @@ mappings {
     ruleType: "attribute"
     inputFrameworkOpName: "Max"
   }
-  rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
-    inputToOutput {
-      key: "dimensions"
-      value: "reduction_indices"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Max"
-  }
 }
 mappings {
   frameworkName: "tensorflow"
@@ -10159,17 +10126,6 @@ mappings {
     inputToOutput {
       key: "keepDims"
       value: "keep_dims"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Prod"
-  }
-  rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
-    inputToOutput {
-      key: "dimensions"
-      value: "reduction_indices"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "Prod"
@@ -11803,6 +11759,18 @@ mappings {
       value: "reduction_indices"
     }
     ruleType: "tensor"
+    inputFrameworkOpName: "All"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputBooleanName: "keep_dims"
+    outputBooleanName: "keepDims"
+    inputToOutput {
+      key: "keepDims"
+      value: "keep_dims"
+    }
+    ruleType: "attribute"
     inputFrameworkOpName: "All"
   }
 }
@@ -14376,17 +14344,6 @@ mappings {
     ruleType: "attribute"
     inputFrameworkOpName: "Mean"
   }
-  rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
-    inputToOutput {
-      key: "dimensions"
-      value: "reduction_indices"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Mean"
-  }
 }
 mappings {
   frameworkName: "tensorflow"
@@ -14706,6 +14663,18 @@ mappings {
       value: "reduction_indices"
     }
     ruleType: "tensor"
+    inputFrameworkOpName: "Any"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputBooleanName: "keep_dims"
+    outputBooleanName: "keepDims"
+    inputToOutput {
+      key: "keepDims"
+      value: "keep_dims"
+    }
+    ruleType: "attribute"
     inputFrameworkOpName: "Any"
   }
 }

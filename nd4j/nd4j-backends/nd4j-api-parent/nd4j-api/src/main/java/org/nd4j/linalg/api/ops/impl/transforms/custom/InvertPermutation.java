@@ -24,10 +24,12 @@ import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.List;
@@ -67,6 +69,19 @@ public class InvertPermutation extends BaseDynamicTransformOp {
         return "InvertPermutation";
     }
 
+    @Override
+    public INDArray generateFake(long... shape) {
+        return Nd4j.arange(0, ArrayUtil.prod(shape),1.0).reshape(shape).castTo(Nd4j.defaultFloatingPointType());
+    }
+
+    @Override
+    public INDArray generateFake(DataType dataType, long... shape) {
+        return Nd4j.arange(0, ArrayUtil.prod(shape),1.0).reshape(shape).castTo(dataType);
+    }
+
+    public InvertPermutation(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+        super(sameDiff, args, inPlace);
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {

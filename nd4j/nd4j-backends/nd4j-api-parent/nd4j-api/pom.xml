@@ -164,7 +164,7 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <protocVersion>${protoc-jar-maven-plugin.version}</protocVersion>
+                            <protocVersion>${google.protobuf.version}</protocVersion>
                             <extension>.proto</extension>
                             <includeDirectories>
                                 <include>src/main/protobuf/tf</include>

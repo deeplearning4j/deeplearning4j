@@ -339,8 +339,7 @@ fun defineSingularReduce(inputFrameworkOpName: String,
         inputFrameworkOpName = inputFrameworkOpName,
         opName = inputOpName,
         attributeMappingRules = listOf(
-            valueMapping(mutableMapOf("keepDims" to "keep_dims")),
-            ndarrayToIntList(mutableMapOf("dimensions" to "reduction_indices"))
+            valueMapping(mutableMapOf("keepDims" to "keep_dims"))
         ),
         tensorNames = mutableMapOf("input" to "input","dimensions" to "reduction_indices"),
         tensorflowOpRegistry = tensorflowOpRegistry

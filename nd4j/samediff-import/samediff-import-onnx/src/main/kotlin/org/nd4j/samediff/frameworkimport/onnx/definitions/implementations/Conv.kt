@@ -283,12 +283,6 @@ class Conv : PreImportHook  {
         }
 
 
-        //remove old op: as there is no 1 to 1 relationship
-        //when saving the model it will throw a nullpointer exception
-        //with a not fully configured op. The convolution operation
-        //in this model replaces the 1 to 1 intended call
-        //otherwise used.
-        sd.ops.remove(op.name)
 
         //grouped convolutions need to handle bias differently
         if(op.inputsToOp.size > 2) {

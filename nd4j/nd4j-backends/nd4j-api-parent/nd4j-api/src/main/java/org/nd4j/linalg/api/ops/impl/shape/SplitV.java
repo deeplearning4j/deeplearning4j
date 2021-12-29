@@ -82,6 +82,13 @@ public class SplitV extends DynamicCustomOp {
         //addIArgument(numSplits);  //libnd4j op doesn't used/need it for execution
     }
 
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new HashMap<>();
+        ret.put("numSplit",numSplit);
+        ret.put("splitDim",splitDim);
+        return ret;
+    }
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
@@ -108,7 +115,30 @@ public class SplitV extends DynamicCustomOp {
     }
 
     @Override
-    public int getNumOutputs(){
+    public void configureWithSameDiff(SameDiff sameDiff) {
+        super.configureWithSameDiff(sameDiff);
+    }
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("splitDim")) {
+            Integer splitDim = getIntValueFromProperty("splitDim",properties);
+            this.splitDim = splitDim;
+        }
+
+        if(properties.containsKey("numSplit")) {
+            Integer numSplit = getIntValueFromProperty("numSplit",properties);
+            this.numSplit = numSplit;
+        }
+    }
+
+    @Override
+    public int getNumOutputs() {
         return numSplit;
     }
 

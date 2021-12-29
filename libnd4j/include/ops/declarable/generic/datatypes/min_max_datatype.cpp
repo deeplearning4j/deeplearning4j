@@ -130,8 +130,10 @@ CUSTOM_OP_IMPL(min_max_datatype, -2, 1, false, 0, 2) {
       }
     }
 
-    return sd::Status::OK;
   }
+
+  return sd::Status::OK;
+
 }
 
 DECLARE_SHAPE_FN(min_max_datatype) {

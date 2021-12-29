@@ -22,22 +22,23 @@ package org.nd4j.imports.tfgraphs;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.*;
+
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.tests.tags.TagNames;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraphRunner;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -51,18 +52,26 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
     private static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.SAMEDIFF;
     private static final String BASE_DIR = "tf_graphs/examples";
     private static final String MODEL_FILENAME = "frozen_model.pb";
-    @TempDir
-    static
-    Path tempDir;
+
     /**
      * NOTE: If this is empty or the tests names are wrong,
      * all tests will trigger an assumeFalse(..) that indicates
      * the status of the test failing. No tests will run.
      */
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
+            "split/rank2_8,7_sz2,1,4_axis1"
+            //"resize_bicubic/float64",
+
     );
 
     public static final String[] IGNORE_REGEXES = new String[]{
+            //invalid graph:  Unable to run session input_0:0 is both fed and fetched.
+            //also due to the dynamic inputs being -1 3 for the first matrix multiply for the first 2 inputs
+            //the only valid batch size is 3.
+            "math_mul_order",
+            //points to a file with a URL, needs additional work
+            "compression_residual_gru",
+
             //Failing 2019/09/11 - https://github.com/eclipse/deeplearning4j/issues/7965
             // Still failing 2020/04/27 java.lang.IllegalStateException: Requested output variable Bincount does not exist in SameDiff instance
             //Invalid test cases. Verified by running graph against actual TF.
@@ -86,6 +95,8 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             // 2020/04/27 java.lang.IllegalStateException: Could not find class for TF Ops: SparseTensorDenseAdd
             "confusion/.*",
 
+            //2019/09/11 - Couple of tests failing (InferenceSession issues)
+            // Still failing 2020/04/27 Requested output variable concat does not exist in SameDiff instance
 
 
             //2019/05/21 - Failing on windows-x86_64-cuda-9.2 only -
@@ -138,31 +149,15 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
     public static Stream<Arguments> data() throws IOException {
         val localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
-        List<Object[]> ret = new ArrayList<>();
 
         // if this variable isn't set - we're using dl4j-tests-resources
         if (localPath == null) {
-            File baseDir = tempDir.toFile();
+            File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
             List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
-            if(EXECUTE_ONLY_MODELS.isEmpty()) {
-                return params.stream()
-                        .map(input -> Arguments.of(input));
-            } else {
-                for(Object[] param : params) {
-                    if(EXECUTE_ONLY_MODELS.contains(param[2])) {
-                        ret.add(param);
-                    }
-                }
-
-                return ret.stream().map(Arguments::of);
-
-            }
-
+            return params.stream().map(input -> Arguments.of(input));
         } else {
             File baseDir = new File(localPath);
-            return TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir)
-                    .stream().filter(input -> EXECUTE_ONLY_MODELS.contains(input[2]))
-                    .map(input -> Arguments.of(input));
+            return TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir).stream().map(input -> Arguments.of(input));
         }
     }
 
@@ -170,6 +165,7 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
     @MethodSource("data")
     //@DisableIfModelFound
     public void testOutputOnly(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws Exception {
+        Nd4j.create(1);
         if(EXECUTE_ONLY_MODELS.isEmpty()) {
             for(String s : IGNORE_REGEXES)  {
                 if(modelName.matches(s)) {
@@ -182,7 +178,6 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             assumeFalse(true);
             //OpValidationSuite.ignoreFailing();
         }
-
 
 
 
@@ -204,7 +199,7 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             // TFGraphTestAllHelper.checkIntermediate(inputs,modelName,BASE_DIR,MODEL_FILENAME,EXECUTE_WITH,TFGraphTestAllHelper.LOADER,maxRE,minAbs,localTestDir,true);
             Nd4j.getExecutioner().enableDebugMode(true);
             Nd4j.getExecutioner().enableVerboseMode(true);
-            TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, TFGraphTestAllHelper.LOADER, maxRE, minAbs, verboseDebugMode);
+            TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, new TFGraphTestAllHelper.DefaultGraphLoader(inputs), maxRE, minAbs, verboseDebugMode);
         } catch (Throwable t){
             log.error("ERROR Executing test: {} - input keys {}", modelName, (inputs == null ? null : inputs.keySet()), t);
             throw t;

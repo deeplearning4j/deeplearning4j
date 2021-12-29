@@ -90,7 +90,7 @@ class SD_LIB_EXPORT DeclarableOp {
   bool allocateResult(Context& block, sd::LongType* shape);
 
   /**
-   * This method overwrites existen NDArray or NDArrayList in VariableSpace
+   * This method overwrites existing NDArray or NDArrayList in VariableSpace
    *
    * PLEASE NOTE: This method is dangerous.
    *

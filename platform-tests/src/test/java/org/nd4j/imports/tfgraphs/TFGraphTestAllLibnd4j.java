@@ -156,7 +156,7 @@ public class TFGraphTestAllLibnd4j {   //Note: Can't extend BaseNd4jTest here as
         Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());
 
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH,
-                TFGraphTestAllHelper.LOADER, maxRE, minAbs, false);
+                new TFGraphTestAllHelper.DefaultGraphLoader(inputs), maxRE, minAbs, false);
         //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 

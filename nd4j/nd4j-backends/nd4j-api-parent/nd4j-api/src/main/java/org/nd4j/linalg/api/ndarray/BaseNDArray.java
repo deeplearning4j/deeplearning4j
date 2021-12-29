@@ -331,8 +331,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int rank = shape.length;
         if(paddings == null || paddings.length != rank ) throw new IllegalArgumentException("The length of Padding should be equal to the length of Shape");
         long [] paddedShape = new long[rank];
-        boolean empty = false; 
-        boolean zeroOffset = paddingOffsets == null || paddingOffsets.length == 0; 
+        boolean empty = false;
+        boolean zeroOffset = paddingOffsets == null || paddingOffsets.length == 0;
         boolean paddingOffsetsInvalid = paddingOffsets != null && paddingOffsets.length != rank ;
         long ews = 1;
         if(!paddingOffsetsInvalid){
@@ -344,7 +344,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     paddingOffsetsInvalid = true;
                     break;
                 }
-            }   
+            }
         }
         if(!zeroOffset && paddingOffsetsInvalid) throw new IllegalArgumentException("If PaddingOffsets is not empty or zero length then its length should match the length of Paddings and also its elements should not be greater");
 
@@ -1319,12 +1319,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray assign(final INDArray arr) {
-        Preconditions.checkState((this.isScalar() && arr.isScalar()) || (this.isVector() && arr.isVector()) || Shape.shapeEqualWithSqueeze(this.shape(), arr.shape()),
-                "Cannot assign arrays: arrays must both be scalars, both vectors, or shapes must be equal other than size 1 dimensions. Attempting to do x.assign(y)" +
-                        " with x.shape=%ndShape and y.shape=%ndShape", this, arr );
-
-        Preconditions.checkArgument(this.length() == arr.length(), "Length of both arrays must be equal");
-
         Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.any.Assign(arr, this));
         return this;
     }
@@ -2333,54 +2327,54 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     protected INDArray doColumnWise(INDArray columnVector, char operation) {
         Nd4j.getCompressor().autoDecompress(this);
-       if(columnVector.isScalar()) {
-           switch (operation) {
-               case 'a':
-                   addi(columnVector.getDouble(0));
-                   break;
-               case 'p':
-                   assign(columnVector.getDouble(0));
-                   break;
-               case 's':
-                   subi(columnVector.getDouble(0));
-                   break;
-               case 'm':
-                   muli(columnVector.getDouble(0));
-                   break;
-               case 'd':
-                   divi(columnVector.getDouble(0));
-                   break;
-               case 'h':
-                   rsubi(columnVector.getDouble(0));
-                   break;
-               case 't':
-                   rdivi(columnVector.getDouble(0));
-                   break;
+        if(columnVector.isScalar()) {
+            switch (operation) {
+                case 'a':
+                    addi(columnVector.getDouble(0));
+                    break;
+                case 'p':
+                    assign(columnVector.getDouble(0));
+                    break;
+                case 's':
+                    subi(columnVector.getDouble(0));
+                    break;
+                case 'm':
+                    muli(columnVector.getDouble(0));
+                    break;
+                case 'd':
+                    divi(columnVector.getDouble(0));
+                    break;
+                case 'h':
+                    rsubi(columnVector.getDouble(0));
+                    break;
+                case 't':
+                    rdivi(columnVector.getDouble(0));
+                    break;
 
-           }
+            }
 
-           return this;
-       }
+            return this;
+        }
 
-       else if(isScalar()) {
-           switch (operation) {
-               case 'a':
-                   return columnVector.addi(getDouble(0));
-               case 'p':
-                   return columnVector.assign(getDouble(0));
-               case 's':
-                   return columnVector.subi(getDouble(0));
-               case 'm':
-                   return columnVector.muli(getDouble(0));
-               case 'd':
-                   return columnVector.divi(getDouble(0));
-               case 'h':
-                   return columnVector.rsubi(getDouble(0));
-               case 't':
-                   return columnVector.rdivi(getDouble(0));
+        else if(isScalar()) {
+            switch (operation) {
+                case 'a':
+                    return columnVector.addi(getDouble(0));
+                case 'p':
+                    return columnVector.assign(getDouble(0));
+                case 's':
+                    return columnVector.subi(getDouble(0));
+                case 'm':
+                    return columnVector.muli(getDouble(0));
+                case 'd':
+                    return columnVector.divi(getDouble(0));
+                case 'h':
+                    return columnVector.rsubi(getDouble(0));
+                case 't':
+                    return columnVector.rdivi(getDouble(0));
 
-           }
-       }
+            }
+        }
 
         //Input validation: require (a) columnVector to actually be a column vector, and (b) this.size(0) to match columnVector.size(0)
         //Or, simply require it to be a rank 1 vector
@@ -3714,7 +3708,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray transposei() {
         Preconditions.checkState(rank() >= 2, "Can't transpose array with rank < 2: array shape %ndShape", this);
-        
+
         return permutei(ArrayUtil.reverseCopy(ArrayUtil.range(0, rank())));
     }
 
@@ -4650,7 +4644,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray broadcast(long... shape) {
-      return broadcast(Nd4j.createUninitialized(this.dataType(), shape, this.ordering()));
+        return broadcast(Nd4j.createUninitialized(this.dataType(), shape, this.ordering()));
     }
 
     @Deprecated

@@ -123,6 +123,17 @@ TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test1) {
   ASSERT_TRUE(shape::shapeEquals(expected.shapeInfo(), newShapeInfo));
 }
 
+
+TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test6) {
+  auto x = NDArrayFactory::create<float>('c', {0,1});
+  auto expected = NDArrayFactory::create<float>('c', {0});
+  std::vector<int> dimensions = {1};
+
+  auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.shapeInfo(),false);
+
+  ASSERT_TRUE(shape::shapeEquals(expected.shapeInfo(), newShapeInfo));
+}
+
 //////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test2) {
   auto x = NDArrayFactory::create<float>('c', {2, 3, 4, 5});

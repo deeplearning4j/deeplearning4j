@@ -256,8 +256,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
             //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
             if(z != null){
-                Preconditions.checkState(x.equalShapes(z), "For empty reductions, result (z) array must have same shape as x shape." +
-                        " Got: x=%ndShape, z=%ndShape", x, z);
+                if(!x.isScalar() && !z.isScalar())
+                    Preconditions.checkState(x.equalShapes(z), "For empty reductions, result (z) array must have same shape as x shape." +
+                            " Got: x=%ndShape, z=%ndShape", x, z);
                 z.assign(x);
                 return z;
             } else {

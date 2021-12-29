@@ -102,7 +102,7 @@ public class TFGraphTestList {
         Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());
 
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, MODEL_DIR, MODEL_FILENAME, executeWith,
-                TFGraphTestAllHelper.LOADER, maxRE, minAbs, printArraysDebugging);
+                new TFGraphTestAllHelper.DefaultGraphLoader(inputs), maxRE, minAbs, printArraysDebugging);
     }
 
     @Test @Disabled

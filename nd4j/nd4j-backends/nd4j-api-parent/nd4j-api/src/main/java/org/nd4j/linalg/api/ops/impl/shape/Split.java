@@ -30,6 +30,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -92,10 +93,25 @@ public class Split extends DynamicCustomOp {
     }
 
     @Override
-    public void setPropertiesForFunction(Map<String, Object> properties) {
-        super.setPropertiesForFunction(properties);
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new HashMap<>();
+        ret.put("numSplit",numSplit);
+        ret.put("splitDim",splitDim);
+        return ret;
     }
 
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("splitDim")) {
+            Integer splitDim = getIntValueFromProperty("splitDim",properties);
+            this.splitDim = splitDim;
+        }
+
+        if(properties.containsKey("numSplit")) {
+            Integer numSplit = getIntValueFromProperty("numSplit",properties);
+            this.numSplit = numSplit;
+        }
+    }
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val numSplits = (int) attributesForNode.get("num_split").getI();
@@ -157,5 +173,10 @@ public class Split extends DynamicCustomOp {
             out.add(dt);
         }
         return out;
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Arrays.asList(new Concat(sameDiff,splitDim,f1.toArray(new SDVariable[f1.size()])).outputVariables());
     }
 }

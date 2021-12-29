@@ -178,6 +178,12 @@ class Resize : PreImportHook  {
         } else {
             sizes.get(SDIndex.interval(2, 1,input.rank().arr.getInt(0)))
         }
+
+        if(ret.shape.size < 2) {
+            var newRet = sd.zero(null,DataType.INT32,2)
+            ret = newRet.add(ret.arr.getInt(0).toDouble())
+        }
+
         return ret.castTo(DataType.INT32)
     }
 
