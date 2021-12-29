@@ -86,7 +86,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("absoluteDifference", "label", label);
     SDValidation.validateNumerical("absoluteDifference", "predictions", predictions);
     SDValidation.validateNumerical("absoluteDifference", "weights", weights);
-    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.AbsoluteDifferenceLoss(sd,label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT).outputVariable();
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.AbsoluteDifferenceLoss(sd,label, predictions, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT).outputVariable();
     out.markAsLoss();
     return out;
   }
@@ -105,7 +105,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("absoluteDifference", "label", label);
     SDValidation.validateNumerical("absoluteDifference", "predictions", predictions);
     SDValidation.validateNumerical("absoluteDifference", "weights", weights);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.AbsoluteDifferenceLoss(sd,label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.AbsoluteDifferenceLoss(sd,label, predictions, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT).outputVariable();
     out.markAsLoss();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -177,7 +177,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("cosineDistance", "label", label);
     SDValidation.validateNumerical("cosineDistance", "predictions", predictions);
     SDValidation.validateNumerical("cosineDistance", "weights", weights);
-    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.CosineDistanceLoss(sd,label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, dimension).outputVariable();
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.CosineDistanceLoss(sd,label, predictions, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, dimension).outputVariable();
     out.markAsLoss();
     return out;
   }
@@ -201,7 +201,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("cosineDistance", "label", label);
     SDValidation.validateNumerical("cosineDistance", "predictions", predictions);
     SDValidation.validateNumerical("cosineDistance", "weights", weights);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.CosineDistanceLoss(sd,label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, dimension).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.CosineDistanceLoss(sd,label, predictions, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, dimension).outputVariable();
     out.markAsLoss();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -306,7 +306,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("hingeLoss", "label", label);
     SDValidation.validateNumerical("hingeLoss", "predictions", predictions);
     SDValidation.validateNumerical("hingeLoss", "weights", weights);
-    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.HingeLoss(sd,label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT).outputVariable();
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.HingeLoss(sd,label, predictions, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT).outputVariable();
     out.markAsLoss();
     return out;
   }
@@ -327,7 +327,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("hingeLoss", "label", label);
     SDValidation.validateNumerical("hingeLoss", "predictions", predictions);
     SDValidation.validateNumerical("hingeLoss", "weights", weights);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.HingeLoss(sd,label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.HingeLoss(sd,label, predictions, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT).outputVariable();
     out.markAsLoss();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -405,7 +405,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("huberLoss", "label", label);
     SDValidation.validateNumerical("huberLoss", "predictions", predictions);
     SDValidation.validateNumerical("huberLoss", "weights", weights);
-    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.HuberLoss(sd,label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, delta).outputVariable();
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.HuberLoss(sd,label, predictions, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, delta).outputVariable();
     out.markAsLoss();
     return out;
   }
@@ -431,7 +431,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("huberLoss", "label", label);
     SDValidation.validateNumerical("huberLoss", "predictions", predictions);
     SDValidation.validateNumerical("huberLoss", "weights", weights);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.HuberLoss(sd,label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, delta).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.HuberLoss(sd,label, predictions, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, delta).outputVariable();
     out.markAsLoss();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -517,7 +517,7 @@ public class SDLoss extends SDOps {
   public SDVariable logLoss(SDVariable label, SDVariable predictions) {
     SDValidation.validateNumerical("logLoss", "label", label);
     SDValidation.validateNumerical("logLoss", "predictions", predictions);
-    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.LogLoss(sd,label, predictions, null, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0).outputVariable();
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.LogLoss(sd,label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0).outputVariable();
     out.markAsLoss();
     return out;
   }
@@ -534,7 +534,7 @@ public class SDLoss extends SDOps {
   public SDVariable logLoss(String name, SDVariable label, SDVariable predictions) {
     SDValidation.validateNumerical("logLoss", "label", label);
     SDValidation.validateNumerical("logLoss", "predictions", predictions);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.LogLoss(sd,label, predictions, null, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.LogLoss(sd,label, predictions, null, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0).outputVariable();
     out.markAsLoss();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -597,7 +597,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("logPoisson", "label", label);
     SDValidation.validateNumerical("logPoisson", "predictions", predictions);
     SDValidation.validateNumerical("logPoisson", "weights", weights);
-    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.LogPoissonLoss(sd,label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, full).outputVariable();
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.LogPoissonLoss(sd,label, predictions, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, full).outputVariable();
     out.markAsLoss();
     return out;
   }
@@ -618,7 +618,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("logPoisson", "label", label);
     SDValidation.validateNumerical("logPoisson", "predictions", predictions);
     SDValidation.validateNumerical("logPoisson", "weights", weights);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.LogPoissonLoss(sd,label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, full).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.LogPoissonLoss(sd,label, predictions, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, full).outputVariable();
     out.markAsLoss();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -684,7 +684,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("meanPairwiseSquaredError", "label", label);
     SDValidation.validateNumerical("meanPairwiseSquaredError", "predictions", predictions);
     SDValidation.validateNumerical("meanPairwiseSquaredError", "weights", weights);
-    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.MeanPairwiseSquaredErrorLoss(sd,label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT).outputVariable();
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.MeanPairwiseSquaredErrorLoss(sd,label, predictions, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT).outputVariable();
     out.markAsLoss();
     return out;
   }
@@ -706,7 +706,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("meanPairwiseSquaredError", "label", label);
     SDValidation.validateNumerical("meanPairwiseSquaredError", "predictions", predictions);
     SDValidation.validateNumerical("meanPairwiseSquaredError", "weights", weights);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.MeanPairwiseSquaredErrorLoss(sd,label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.MeanPairwiseSquaredErrorLoss(sd,label, predictions, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT).outputVariable();
     out.markAsLoss();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -768,7 +768,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("meanSquaredError", "label", label);
     SDValidation.validateNumerical("meanSquaredError", "predictions", predictions);
     SDValidation.validateNumerical("meanSquaredError", "weights", weights);
-    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.MeanSquaredErrorLoss(sd,label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT).outputVariable();
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.MeanSquaredErrorLoss(sd,label, predictions, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT).outputVariable();
     out.markAsLoss();
     return out;
   }
@@ -789,7 +789,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("meanSquaredError", "label", label);
     SDValidation.validateNumerical("meanSquaredError", "predictions", predictions);
     SDValidation.validateNumerical("meanSquaredError", "weights", weights);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.MeanSquaredErrorLoss(sd,label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.MeanSquaredErrorLoss(sd,label, predictions, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT).outputVariable();
     out.markAsLoss();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -881,7 +881,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("sigmoidCrossEntropy", "label", label);
     SDValidation.validateNumerical("sigmoidCrossEntropy", "predictionLogits", predictionLogits);
     SDValidation.validateNumerical("sigmoidCrossEntropy", "weights", weights);
-    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss(sd,label, predictionLogits, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0).outputVariable();
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss(sd,label, predictionLogits, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0).outputVariable();
     out.markAsLoss();
     return out;
   }
@@ -911,7 +911,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("sigmoidCrossEntropy", "label", label);
     SDValidation.validateNumerical("sigmoidCrossEntropy", "predictionLogits", predictionLogits);
     SDValidation.validateNumerical("sigmoidCrossEntropy", "weights", weights);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss(sd,label, predictionLogits, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss(sd,label, predictionLogits, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0).outputVariable();
     out.markAsLoss();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -998,7 +998,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("softmaxCrossEntropy", "oneHotLabels", oneHotLabels);
     SDValidation.validateNumerical("softmaxCrossEntropy", "logitPredictions", logitPredictions);
     SDValidation.validateNumerical("softmaxCrossEntropy", "weights", weights);
-    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss(sd,oneHotLabels, logitPredictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0).outputVariable();
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss(sd,oneHotLabels, logitPredictions, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0).outputVariable();
     out.markAsLoss();
     return out;
   }
@@ -1026,7 +1026,7 @@ public class SDLoss extends SDOps {
     SDValidation.validateNumerical("softmaxCrossEntropy", "oneHotLabels", oneHotLabels);
     SDValidation.validateNumerical("softmaxCrossEntropy", "logitPredictions", logitPredictions);
     SDValidation.validateNumerical("softmaxCrossEntropy", "weights", weights);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss(sd,oneHotLabels, logitPredictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss(sd,oneHotLabels, logitPredictions, weights, LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0).outputVariable();
     out.markAsLoss();
     return sd.updateVariableNameAndReference(out, name);
   }

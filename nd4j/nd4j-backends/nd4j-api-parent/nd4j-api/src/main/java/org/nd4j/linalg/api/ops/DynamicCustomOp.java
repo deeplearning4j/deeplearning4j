@@ -49,7 +49,6 @@ import org.tensorflow.framework.NodeDef;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
@@ -276,15 +275,37 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         return outputVariables;
     }
 
+
+    /**
+     * Generate fake data for {@link #computeArrays()}
+     * of the the given shape with the data type {@link Nd4j#defaultFloatingPointType()}
+     * @param shape the shape to use
+     * @return the generated data
+     */
+    public INDArray generateFake(long... shape) {
+        return Nd4j.ones(Nd4j.defaultFloatingPointType(),shape);
+    }
+
+    /**
+     * Generate fake data for {@link #computeArrays()}
+     * of the the given shape with the given data type
+     * @param shape the shape to use
+     * @param dataType the data type of the output array
+     * @return the generated data
+     */
+    public INDArray generateFake(DataType dataType,long... shape) {
+        return Nd4j.ones(dataType,shape);
+    }
+
     public void computeArrays() {
         if(sameDiff.isEagerMode()) {
             SDVariable[] args = args();
             if(inputArguments.isEmpty()) {
                 for (SDVariable arg : args) {
-                    if (arg.getArr() != null)
+                    if (arg.getArr() != null && !arg.isPlaceHolder())
                         addInputArgument(arg.getArr());
-                    else if(arg.getArr() == null && arg.isPlaceHolder() && arg.getShape() != null) {
-                        if(arg.getShape() != null) {
+                    else if(arg.isPlaceHolder() && arg.getShape() != null) {
+                        if(arg.getShape() != null && !sameDiff.getEagerArrays().hasArray(arg.name())) {
                            //if we have a shape, ensure we create a proper 1 mini batch size input of the relevant shape
                             long[] inputShape = ArrayUtil.copy(arg.getShape());
                             for(int i = 0; i < inputShape.length; i++) {
@@ -296,14 +317,18 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                             DataType dtype = arg.dataType();
                             INDArray arr = null;
                             if(dtype != null) {
-                                arr = Nd4j.ones(dtype,inputShape);
+                                //some ops require unique inputs or specific behavior for inputs
+                                //this provides a way of overriding that behavior for specific ops
+                                arr = generateFake(dtype,inputShape);
                             } else {
-                                arr = Nd4j.ones(inputShape);
+                                arr = generateFake(inputShape);
                             }
 
                             sameDiff.setEagerArrForVarName(arg.name(),arr);
                             addInputArgument(arr);
                             log.warn("Variable name " + arg.name() + " from  op of type " + opName() + " with unique name of " + getOwnName() + " was not able to resolve an array for eager computation, inserting dummy array. This can happen with control flow ops. Please validate this if in error.");
+                        } else {
+                            addInputArgument(sameDiff.getEagerArrForVarName(arg.name()));
                         }
                     }
                     else {

@@ -302,6 +302,10 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 }
             }
 
+            if(x == null) {
+                throw new IllegalArgumentException("No variable found for the given input variables. At least one input required.");
+            }
+
             INDArray exec = Nd4j.getExecutioner().exec(this);
             for (int i = 0; i < newVars.length; i++) {
                 newVars[i].setShape(exec.shape());

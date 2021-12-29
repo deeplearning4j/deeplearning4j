@@ -33,7 +33,7 @@ class TestTensorflowImporter {
         Nd4j.getExecutioner().enableVerboseMode(true)
         val tfFrameworkImport = TensorflowFrameworkImporter()
         val tfFile = ClassPathResource("lenet_frozen.pb").file
-        val graph  = tfFrameworkImport.runImport(tfFile.absolutePath,mapOf("input" to  Nd4j.ones(1,784).castTo(DataType.DOUBLE)))
+         val graph  = tfFrameworkImport.runImport(tfFile.absolutePath,mapOf("input" to  Nd4j.ones(1,784).castTo(DataType.FLOAT)))
         //note this is just a test to make sure everything runs, we test the underlying import elsewhere
         assertNotNull(graph)
     }

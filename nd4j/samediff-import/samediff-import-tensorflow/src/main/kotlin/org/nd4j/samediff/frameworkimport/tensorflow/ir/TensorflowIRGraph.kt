@@ -34,7 +34,6 @@ import org.nd4j.samediff.frameworkimport.tensorflow.NodeDef
 import org.nd4j.samediff.frameworkimport.tensorflow.context.TensorflowMappingContext
 import org.nd4j.samediff.frameworkimport.tensorflow.convertNDArrayToTensorflowTensor
 import org.nd4j.samediff.frameworkimport.tensorflow.nodeByName
-import org.nd4j.tensorflow.conversion.TensorflowConversion
 import org.tensorflow.framework.*
 
 class TensorflowIRGraph(graphDef: GraphDef, opDef: OpList
@@ -269,6 +268,10 @@ class TensorflowIRGraph(graphDef: GraphDef, opDef: OpList
 
     override fun updateNodeCacheWith(nodeList: List<IRNode<NodeDef, TensorProto, OpDef.AttrDef, AttrValue, DataType>>) {
         this.cachedNodeList = nodeList
+    }
+
+    override fun convertToTensor(ndarrayInput: INDArray, tensorName: String): TensorProto {
+        return convertNDArrayToTensorflowTensor(ndarrayInput)
     }
 
 

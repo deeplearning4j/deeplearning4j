@@ -456,4 +456,8 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
 
         this.graphDef = graphDefBuilder.build()
     }
+
+    override fun convertToTensor(ndarrayInput: INDArray, tensorName: String): Onnx.TensorProto {
+        return convertToOnnxTensor(ndarrayInput,tensorName)
+    }
 }

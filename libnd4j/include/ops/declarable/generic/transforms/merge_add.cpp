@@ -42,6 +42,9 @@ OP_IMPL(mergeadd, -1, 1, false) {
 
   return sd::Status::OK;
 }
+
+
+
 DECLARE_SYN(mergesum, mergeadd);
 DECLARE_SYN(add_n, mergeadd);
 DECLARE_SYN(addn, mergeadd);

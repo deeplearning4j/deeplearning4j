@@ -63,6 +63,8 @@
 
   <dependencies>
 
+
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
@@ -71,7 +73,18 @@
       <groupId>org.junit.vintage</groupId>
       <artifactId>junit-vintage-engine</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>org.jetbrains.kotlin</groupId>
+      <artifactId>kotlin-stdlib</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains.kotlin</groupId>
+      <artifactId>kotlin-reflect</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains.kotlin</groupId>
+      <artifactId>kotlin-stdlib-common</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
       <artifactId>kotlin-stdlib-jdk8</artifactId>
@@ -308,6 +321,7 @@
               <forkCount>0</forkCount>
               <threadCount>1</threadCount>
               <perCoreThreadCount>false</perCoreThreadCount>
+              <argLine>-Dorg.bytedeco.javacpp.nopointerGC=true</argLine>
             </configuration>
           </plugin>
         </plugins>

@@ -99,17 +99,18 @@ public class Conv2D extends DynamicCustomOp {
     }
 
     protected void addArgs() {
-        addIArgument(config.getKH(),
-                config.getKW(),
-                config.getSH(),
-                config.getSW(),
-                config.getPH(),
-                config.getPW(),
-                config.getDH(),
-                config.getDW(),
-                config.getPaddingMode().index,
-                config.getDataFormat().equalsIgnoreCase("NCHW") ? 0 : 1,
-                config.getWeightsFormat().ordinal());
+        if(config != null)
+            addIArgument(config.getKH(),
+                    config.getKW(),
+                    config.getSH(),
+                    config.getSW(),
+                    config.getPH(),
+                    config.getPW(),
+                    config.getDH(),
+                    config.getDW(),
+                    config.getPaddingMode().index,
+                    config.getDataFormat().equalsIgnoreCase("NCHW") ? 0 : 1,
+                    config.getWeightsFormat().ordinal());
     }
 
 

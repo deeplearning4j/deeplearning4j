@@ -39,9 +39,11 @@ import onnx.Onnx
 import org.apache.commons.io.FileUtils
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.nd4j.common.io.ClassPathResource
 import org.nd4j.common.resources.Downloader
 import org.nd4j.common.util.ArchiveUtils
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraphRunner
@@ -101,7 +103,6 @@ class TestPretrainedModels {
         //"vision/classification/mnist/model/mnist-1.tar.gz",
         //"vision/classification/mnist/model/mnist-7.tar.gz",
         "vision/classification/mnist/model/mnist-8.tar.gz",
-        "vision/classification/mobilenet/model/mobilnetv2-7.tar.gz",
         //"vision/classification/rcnn_ilsvrc13/model/rcnn-ilsvrc13-3.tar.gz",
         //"vision/classification/rcnn_ilsvrc13/model/rcnn-ilsvrc13-6.tar.gz",
         //"vision/classification/rcnn_ilsvrc13/model/rcnn-ilsvrc13-7.tar.gz",
@@ -197,6 +198,18 @@ class TestPretrainedModels {
         }
 
         return true
+    }
+
+    @Test
+    fun testMobileNet() {
+        Nd4j.getExecutioner().enableDebugMode(true)
+        Nd4j.getExecutioner().enableVerboseMode(true)
+        val importer = OnnxFrameworkImporter()
+        val resource = ClassPathResource("mobilenet.onnx").file
+        val inputs = Nd4j.ones(1,3,224,224)
+        val inputDict = mapOf("input.1" to inputs)
+        val runImport = importer.runImport(resource.absolutePath,inputDict)
+        runImport.outputAll(inputDict)
     }
 
 

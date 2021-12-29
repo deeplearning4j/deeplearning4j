@@ -164,7 +164,7 @@ fun ndarrayFromNameSpaceTensor(inputTensor: TensorNamespace.TensorProto): INDArr
             if(floatArray.isEmpty())
                 return loadDataBufferFromRawData(inputTensor)
             else  if(totalLen <= 1 && shape.isEmpty()) {
-                return Nd4j.scalar(floatArray[0]).reshape(1)
+                return Nd4j.scalar(floatArray[0])
             } else if(totalLen != floatArray.size) {
                 //broadcast case
                 if(floatArray.size == 1) {
@@ -453,9 +453,10 @@ fun loadDataBufferFromRawData(inputTensor: TensorNamespace.TensorProto): INDArra
         }
         return Nd4j.create(rawDataBuffer)
     } else {
-        //we actually have data, if there isn't a shape it's probably a scalar
+        //sometimes data isn't empty but the shape is still a scalar
         if(totalLen < 1)
             totalLen = 1
+
         val byteBuffer = ByteBuffer.allocateDirect(totalLen * dtype.width())
         byteBuffer.put(byteArray)
         //See: https://github.com/apache/felix/pull/114

@@ -48,6 +48,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -67,6 +68,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
 
             // 2019/07/22 - OOM, Passes with sufficient memory (16GB heap, 32GB off-heap tested)
             "deeplabv3_xception_ade20k_train",
+            "compression_residual_gru",
 
             //2019/07/03 - o.n.i.g.t.TFGraphMapper - No TensorFlow descriptor found for tensor "sample_sequence/model/h0/attn/MatMul", op "BatchMatMulV2"
             //org.nd4j.linalg.exception.ND4JIllegalStateException: No tensorflow op found for Multinomial possibly missing operation class?
@@ -92,6 +94,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
             "temperature_bidirectional_63",
             "temperature_stacked_63",
             "text_gen_81",
+            "compression_residual_gru",
 
 
             // 2019/05/20 - Buffer is too big to export? https://github.com/eclipse/deeplearning4j/issues/7760
@@ -121,11 +124,24 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
         return System.getProperty("user.home");
     }
 
-    public static final BiFunction<File,String,SameDiff> LOADER = new RemoteCachingLoader();
 
-    public static class RemoteCachingLoader implements BiFunction<File,String,SameDiff> {
+    public static class RemoteCachingLoader implements BiFunction<File,String,TFGraphTestAllHelper.ModelLoadResult> {
+        private boolean suggestDynamicVariables = false;
+        private Map<String,INDArray> dynamicVariables = Collections.emptyMap();
+
+
+        public RemoteCachingLoader(Map<String,INDArray> dynamicVariables) {
+            this.dynamicVariables = dynamicVariables;
+        }
+
+
+        public RemoteCachingLoader(boolean suggestDynamicVariables) {
+            this.suggestDynamicVariables = suggestDynamicVariables;
+        }
+
+
         @Override
-        public SameDiff apply(File file, String name) {
+        public TFGraphTestAllHelper.ModelLoadResult apply(File file, String name) {
             try {
                 String s = FileUtils.readFileToString(file, StandardCharsets.UTF_8).replaceAll("\r\n","\n");
                 String[] split = s.split("\n");
@@ -198,7 +214,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
                     throw new IllegalStateException("Unknown format: " + filename);
                 }
 
-                SameDiff apply = TFGraphTestAllHelper.LOADER.apply(modelFile, name);
+                TFGraphTestAllHelper.ModelLoadResult apply = new TFGraphTestAllHelper.DefaultGraphLoader(dynamicVariables).apply(modelFile, name);
                 //"suggest" a GC before running the model to mitigate OOM
                 System.gc();
                 return apply;
@@ -241,7 +257,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
         Double minAbs = 1e-4;
         log.info("----- SameDiff Exec: {} -----", modelName);
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
-                LOADER, maxRE, minAbs, false);
+                new RemoteCachingLoader(inputs), maxRE, minAbs, false);
 
         if(ArrayUtils.contains(IGNORE_REGEXES_LIBND4J_EXEC_ONLY, modelName)){
             log.warn("\n\tIGNORING MODEL FOR LIBND4J EXECUTION ONLY: ");
