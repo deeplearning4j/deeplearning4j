@@ -49,7 +49,6 @@ interface PreImportHook {
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
     ): HookResult {
-        // Parameter docs below are from the onnx operator docs:
         return HookResult(outputVariables = handleOutputs(outputNames, sd, op, attributes,mappingRegistry,importGraph),
             proceedWithInit = false)
     }
