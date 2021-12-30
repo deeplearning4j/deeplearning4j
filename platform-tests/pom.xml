@@ -143,22 +143,7 @@
 
     </dependencies>
     <profiles>
-        <profile>
-            <id>javacpp-platform-default</id>
-            <activation>
-                <property>
-                    <name>!javacpp.platform</name>
-                </property>
-            </activation>
-            <properties>
-                <javacpp.platform>${os.name}-${os.arch}</javacpp.platform>
-            </properties>
-        </profile>
 
-
-
-
-        <!-- For Android: -Dplatform=android-arm -->
         <profile>
             <id>javacpp-platform-default</id>
             <activation>
