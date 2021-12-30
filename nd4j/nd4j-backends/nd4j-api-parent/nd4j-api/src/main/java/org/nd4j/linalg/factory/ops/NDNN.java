@@ -139,6 +139,18 @@ public class NDNN {
   }
 
   /**
+   * Dropout inverted operation. The dropout probability p is the probability of dropping an input.<br>
+   *
+   * @param input Input array (NUMERIC type)
+   * @param p Probability of dropping an input (set to 0 with probability p)
+   * @return output Output (NUMERIC type)
+   */
+  public INDArray dropoutInverted(INDArray input, double p) {
+    NDValidation.validateNumerical("dropoutInverted", "input", input);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.DropOutInverted(input, p));
+  }
+
+  /**
    * Element-wise exponential linear unit (ELU) function:<br>
    * out = x if x > 0<br>
    * out = a * (exp(x) - 1) if x <= 0<br>

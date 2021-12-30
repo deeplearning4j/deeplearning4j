@@ -59,11 +59,7 @@ abstract class ArgDescriptorConstant<
             it.value.map { descriptor ->
                 ArgDescriptor {
                     name = descriptor.name
-                    argIndex = lookupIndexForArgDescriptor(
-                        argDescriptorName = descriptor.name,
-                        opDescriptorName = mappingCtx.nd4jOpName(),
-                        argDescriptorType = descriptor.argType
-                    )
+                    argIndex =  descriptor.argIndex
                     argType = descriptor.argType
                     boolValue = descriptor.boolValue
                     floatValue = descriptor.floatValue

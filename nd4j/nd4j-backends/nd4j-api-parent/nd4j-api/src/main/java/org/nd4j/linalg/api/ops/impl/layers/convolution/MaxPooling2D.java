@@ -111,7 +111,7 @@ public class MaxPooling2D extends DynamicCustomOp {
                 .dW(iArguments.get(7))
                 .paddingMode(PaddingMode.fromNumber(iArguments.get(8).intValue()))
                 .extra(iArguments.get(9))
-                .isNHWC(iArguments.get(10) == 1)
+                .isNHWC(iArguments.size() >= 10 ? iArguments.get(10) == 1 : false)
                 .type(Pooling2D.Pooling2DType.MAX)
                 .build();
     }
@@ -305,6 +305,10 @@ public class MaxPooling2D extends DynamicCustomOp {
         return ret;
     }
 
+    @Override
+    public void configureFromArguments() {
+        createConfigFromArgs();
+    }
 
     @Override
     public String onnxName() {

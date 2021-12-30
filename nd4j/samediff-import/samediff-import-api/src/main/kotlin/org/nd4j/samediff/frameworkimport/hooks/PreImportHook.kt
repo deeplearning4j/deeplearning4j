@@ -50,7 +50,6 @@ interface PreImportHook {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
     ): HookResult {
         // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#slice
         return HookResult(outputVariables = handleOutputs(outputNames, sd, op, attributes,mappingRegistry,importGraph),
             proceedWithInit = false)
     }

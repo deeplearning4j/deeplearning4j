@@ -65,8 +65,6 @@
         <dokka.version>1.4.30</dokka.version>
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
-        <test.heap.size>1g</test.heap.size>
-        <test.offheap.size>3g</test.offheap.size>
     </properties>
 
     <dependencies>

@@ -165,15 +165,16 @@ val avgPool = OnnxMappingProcess(
         attributeMappingRules = listOf(
                 argDescriptorConstant(argDescriptorConstants = listOf(ArgDescriptor {
                         name = "isNCHW"
-                        int64Value = 1
+                        int64Value = 0
                         argIndex = 10
+                        argType = OpNamespace.ArgDescriptor.ArgType.INT64
                 })),
-                intConstant(inputName = "dH",constantValue = 0,argumentIndex = 6)[0],
-                intConstant(inputName = "dW",constantValue = 0,argumentIndex = 7)[0],
+                intConstant(inputName = "dH",constantValue = 1,argumentIndex = 6)[0],
+                intConstant(inputName = "dW",constantValue = 1,argumentIndex = 7)[0],
                 intConstant(inputName = "extraParam0",constantValue = 0,argumentIndex = 9)[0],
                 stringContainsRule(outputAttribute = "isSameMode",inputFrameworkAttributeName = "auto_pad",valueToTest = "SAME",argumentIndex = 8),
-                listAttributeValueLookup(outputAttributeValue = "pH",inputAttributeValue = "pads",indexValue = 0,argumentIndex = 4),
-                listAttributeValueLookup(outputAttributeValue = "pW",inputAttributeValue = "pads",indexValue = 1,argumentIndex = 5),
+                listAttributeValueLookup(outputAttributeValue = "pH",inputAttributeValue = "pads",indexValue = 2,argumentIndex = 4),
+                listAttributeValueLookup(outputAttributeValue = "pW",inputAttributeValue = "pads",indexValue = 3,argumentIndex = 5),
                 listAttributeValueLookup(outputAttributeValue = "sH",inputAttributeValue = "strides",indexValue = 0,argumentIndex = 2),
                 listAttributeValueLookup(outputAttributeValue = "sW",inputAttributeValue = "strides",indexValue = 1,argumentIndex = 3),
                 listAttributeValueLookup(outputAttributeValue = "kW",inputAttributeValue = "kernel_shape",indexValue = 1,argumentIndex = 1),
@@ -243,15 +244,6 @@ val determinant = OnnxMappingProcess(
 )
 
 
-//TODO: DictVectorizer
-//Dropout: Note https://github.com/eclipse/deeplearning4j/issues/5650
-val dropout = OnnxMappingProcess(
-        opName = "dropout_inverted",
-        inputFrameworkOpName = "Dropout",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(convertNDArrayInputToScalarAttr(outputAttributeValue = "p" ,inputAttributeValue = "ratio")),
-        opMappingRegistry = onnxOpRegistry
-)
 
 
 val floor = OnnxMappingProcess(
@@ -400,6 +392,16 @@ val cast = OnnxMappingProcess(
         inputFrameworkOpName = "Cast",
         opMappingRegistry = onnxOpRegistry
 )
+
+
+//TODO: DictVectorizer
+//Dropout: Note https://github.com/eclipse/deeplearning4j/issues/5650
+val dropout = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Dropout",
+        opMappingRegistry = onnxOpRegistry
+)
+
 
 val resize = OnnxMappingProcess(
         opName = "noop",
@@ -613,13 +615,13 @@ val maxPool = OnnxMappingProcess(
                                 argIndex = 7
                                 argType = OpNamespace.ArgDescriptor.ArgType.INT64
                         }),
-                listAttributeValueLookup(outputAttributeValue = "pH",inputAttributeValue = "pads",indexValue = 0,argumentIndex = 4,defaultValueIfNotFound = ArgDescriptor {
+                listAttributeValueLookup(outputAttributeValue = "pH",inputAttributeValue = "pads",indexValue = 2,argumentIndex = 4,defaultValueIfNotFound = ArgDescriptor {
                         int64Value = 0
                         name = "pads"
                         argIndex = 4
                         argType = OpNamespace.ArgDescriptor.ArgType.INT64
                 }),
-                listAttributeValueLookup(outputAttributeValue = "pW",inputAttributeValue = "pads",indexValue = 1,argumentIndex = 5,
+                listAttributeValueLookup(outputAttributeValue = "pW",inputAttributeValue = "pads",indexValue = 3,argumentIndex = 5,
                         defaultValueIfNotFound = ArgDescriptor {
                                 int64Value = 0
                                 name = "pads"

@@ -37,29 +37,36 @@ package org.nd4j.samediff.frameworkimport.onnx.modelzoo
 
 import onnx.Onnx
 import org.apache.commons.io.FileUtils
-import org.junit.jupiter.api.Disabled
+import org.apache.commons.io.IOUtils
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.nd4j.common.resources.Downloader
 import org.nd4j.common.util.ArchiveUtils
-import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ir.IRGraph
+import org.nd4j.samediff.frameworkimport.onnx.OnnxConverter
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraphRunner
-import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRTensor
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.net.URI
+import java.nio.file.Path
 
 data class InputDataset(val dataSetIndex: Int,val inputPaths: List<String>,val outputPaths: List<String>)
 class TestPretrainedModels {
 
     val modelBaseUrl = "https://media.githubusercontent.com/media/onnx/models/master"
-    public val modelDirectory = File(File(System.getProperty("user.home")),"models/")
-    public val importer = OnnxFrameworkImporter()
+    private val modelDirectory = File(File(System.getProperty("user.home")),"models/")
+    val importer = OnnxFrameworkImporter()
+    val converter = OnnxConverter()
     val runOnly = emptySet<String>()
     val dontRunRegexes = setOf("")
+
+
     val modelPaths = setOf("vision/body_analysis/age_gender/models/age_googlenet.onnx",
         "vision/body_analysis/age_gender/models/gender_googlenet.onnx",
         "vision/body_analysis/age_gender/models/vgg_ilsvrc_16_age_chalearn_iccv2015.onnx",
@@ -138,29 +145,41 @@ class TestPretrainedModels {
 
 
     @Test
-    fun test() {
+    fun test(@TempDir tempPath: Path) {
         modelPaths.forEach {
             pullModel(it)
         }
 
-        if(!runOnly.isEmpty()) {
+        if(runOnly.isNotEmpty()) {
             runOnly.forEach { path ->
-                testModel(path)
+                testModel(path,tempPath)
             }
         }
 
         else
             modelPaths.forEach { path ->
-                testModel(path)
+                testModel(path,tempPath)
             }
     }
 
-    fun testModel(path: String) {
+    fun testModel(path: String,tempDir: Path) {
 
+        Nd4j.getExecutioner().enableDebugMode(true)
+        Nd4j.getExecutioner().enableVerboseMode(true)
         val modelArchive = File(modelDirectory,filenameFromPath(path))
         pullModel(path)
+
+        val newModel = File(tempDir.toFile(),"converted-model.onnx")
+        var modelProto: Onnx.ModelProto = Onnx.ModelProto.parseFrom(FileInputStream(modelArchive))
+        val graphProto: Onnx.GraphProto = converter.addConstValueInfoToGraph(modelProto.graph)
+        modelProto = modelProto.toBuilder().setGraph(graphProto).build()
+        IOUtils.write(modelProto.toByteArray(), FileOutputStream(newModel))
+
+        converter.convertModel(newModel,newModel)
         val onnxImporter = OnnxFrameworkImporter()
-        val loadedGraph = Onnx.ModelProto.parseFrom(FileUtils.readFileToByteArray(modelArchive))
+        val loadedGraph = Onnx.ModelProto.parseFrom(FileUtils.readFileToByteArray(newModel))
+
+
         val onnxIRGraph = OnnxIRGraph(loadedGraph.graph,onnxImporter.registry)
         val toPrint = StringBuilder()
         loadedGraph.graph.initializerList.forEach {
@@ -173,15 +192,27 @@ class TestPretrainedModels {
             println(it)
         }
 
+        var appendAllOutputs = false
+        val outputList = if(appendAllOutputs) {
+            loadedGraph.graph.nodeList.map { input -> input.name }
+        } else {
+            loadedGraph.graph.outputList.map { input -> input.name }
+        }
+
+
+
+
+        val outputListMutable = ArrayList(outputList)
+
         println("Loaded initializers  $toPrint")
         println("Running model from model path $path")
 
-        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,loadedGraph.graph.inputList.map { input -> input.name },loadedGraph.graph.outputList.map { input -> input.name })
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,loadedGraph.graph.inputList.map { input -> input.name },outputListMutable)
         val dynamicVariables =
             importer.suggestDynamicVariables(onnxIRGraph as IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>)
         val outputs = onnxGraphRunner.run(dynamicVariables)
         val debugPrint = StringBuilder()
-        outputs.forEach { name, array ->
+        outputs.forEach { (name, array) ->
             debugPrint.append("$name and shape ${array.shapeInfoToString()}\n")
         }
         println(debugPrint)
@@ -190,7 +221,7 @@ class TestPretrainedModels {
         val batchOutput = imported.batchOutput()
         batchOutput.placeholders = dynamicVariables
         batchOutput.outputs = onnxIRGraph.graphOutputs()
-        batchOutput.outputSingle()
+        batchOutput.output()
         //assertEquals("Onnx runtime outputs not equal to list of assertions pre provided",outputs,outputAssertions)
         // assertEquals("Onnx runtime outputs not equal to nd4j outputs",outputAssertions,nd4jOutputs)
     }
