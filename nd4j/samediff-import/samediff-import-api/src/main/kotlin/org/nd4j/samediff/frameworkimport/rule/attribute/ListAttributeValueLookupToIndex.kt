@@ -64,7 +64,7 @@ abstract class ListAttributeValueLookupToIndex<
             when (listOfValues.attributeValueType()) {
                 AttributeValueType.LIST_FLOAT -> {
                     val listFloat = listOfValues.listFloatValue()
-                    if(!listFloat.isEmpty()) {
+                    if(listFloat.isNotEmpty()) {
                         val argDescriptor = ArgDescriptor {
                             name = k
                             doubleValue = listFloat[index.toInt()].toDouble()
@@ -85,7 +85,7 @@ abstract class ListAttributeValueLookupToIndex<
                 }
                 AttributeValueType.LIST_INT -> {
                     val listInt = listOfValues.listIntValue()
-                    if(!listInt.isEmpty()) {
+                    if(listInt.isNotEmpty()) {
                         val argDescriptor = ArgDescriptor {
                             name = k
                             int64Value = listInt[index.toInt()]
@@ -107,7 +107,7 @@ abstract class ListAttributeValueLookupToIndex<
 
                 AttributeValueType.LIST_STRING -> {
                     val listString = listOfValues.listStringValue()
-                    if(!listString.isEmpty()) {
+                    if(listString.isNotEmpty()) {
                         val argDescriptor = ArgDescriptor {
                             name = k
                             stringValue = listString[index.toInt()]
@@ -129,7 +129,7 @@ abstract class ListAttributeValueLookupToIndex<
 
                 AttributeValueType.LIST_TENSOR -> {
                     val listTensor = listOfValues.listTensorValue()
-                    if(!listTensor.isEmpty()) {
+                    if(listTensor.isNotEmpty()) {
                         val argDescriptor = ArgDescriptor {
                             name = k
                             inputValue = listTensor[index.toInt()].toArgTensor()
@@ -151,7 +151,7 @@ abstract class ListAttributeValueLookupToIndex<
 
                 AttributeValueType.LIST_BOOL -> {
                     val listBool = listOfValues.listBoolValue()
-                    if(!listBool.isEmpty()) {
+                    if(listBool.isNotEmpty()) {
                         val argDescriptor = ArgDescriptor {
                             name = k
                             boolValue = listBool[index.toInt()]

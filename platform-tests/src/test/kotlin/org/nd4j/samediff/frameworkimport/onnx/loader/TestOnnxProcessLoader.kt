@@ -65,5 +65,8 @@ class TestOnnxProcessLoader {
     @Test
     fun saveTest() {
         registry().saveProcessesAndRuleSet()
+        val loader = OnnxMappingProcessLoader(registry())
+        registry().loadFromFile("onnx-processes.pbtxt",loader)
+
     }
 }

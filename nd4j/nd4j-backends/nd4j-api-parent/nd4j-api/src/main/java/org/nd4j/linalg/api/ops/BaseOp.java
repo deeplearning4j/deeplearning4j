@@ -249,9 +249,10 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             //no need to dynamically create if already exists
             if(outputNames != null) {
                 zVertexId = sameDiff.getVariable(outputNames[0]).name();
+                SDVariable[] ret =  new SDVariable[]{sameDiff.getVariable(outputNames[0])};
+                computeVariables(ret);
+                return ret;
 
-
-                return new SDVariable[]{sameDiff.getVariable(outputNames[0])};
             }
 
             if(isInPlace()) {
@@ -259,6 +260,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 val inputArr = x();
                 //in place op
                 if(inputArr == null) {
+                    computeVariables(newVars);
                     return newVars;
                 }
 
@@ -266,6 +268,8 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 z = inputArr;
                 if(sameDiff.getOutputsForOp(this) == null)
                     sameDiff.addOutgoingFor(newVars,this);
+                computeVariables(newVars);
+
                 return newVars;
             }
 
@@ -304,6 +308,14 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
             if(x == null) {
                 throw new IllegalArgumentException("No variable found for the given input variables. At least one input required.");
+            }
+
+            if(z == null) {
+                if( dimensions == null)
+                    setZ(Nd4j.zeros(x.shape()).castTo(x.dataType()));
+                else {
+                    setZ(Nd4j.create(Shape.reductionShape(x,dimensions,true,false)).castTo(x.dataType()));
+                }
             }
 
             INDArray exec = Nd4j.getExecutioner().exec(this);

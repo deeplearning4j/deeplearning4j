@@ -254,6 +254,32 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Dropout inverted operation. The dropout probability p is the probability of dropping an input.<br>
+   *
+   * @param input Input array (NUMERIC type)
+   * @param p Probability of dropping an input (set to 0 with probability p)
+   * @return output Output (NUMERIC type)
+   */
+  public SDVariable dropoutInverted(SDVariable input, double p) {
+    SDValidation.validateNumerical("dropoutInverted", "input", input);
+    return new org.nd4j.linalg.api.ops.random.impl.DropOutInverted(sd,input, p).outputVariable();
+  }
+
+  /**
+   * Dropout inverted operation. The dropout probability p is the probability of dropping an input.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input array (NUMERIC type)
+   * @param p Probability of dropping an input (set to 0 with probability p)
+   * @return output Output (NUMERIC type)
+   */
+  public SDVariable dropoutInverted(String name, SDVariable input, double p) {
+    SDValidation.validateNumerical("dropoutInverted", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.random.impl.DropOutInverted(sd,input, p).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Element-wise exponential linear unit (ELU) function:<br>
    * out = x if x > 0<br>
    * out = a * (exp(x) - 1) if x <= 0<br>

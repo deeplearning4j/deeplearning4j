@@ -231,6 +231,7 @@ mappings {
       key: "pH"
       transformerArgs {
         name: "pads"
+        int64Value: 2
         argIndex: 4
       }
       transformerArgs {
@@ -243,6 +244,7 @@ mappings {
       key: "pH"
       transformerArgs {
         name: "pads"
+        int64Value: 2
         argIndex: 4
       }
       transformerArgs {
@@ -268,7 +270,7 @@ mappings {
       key: "pW"
       transformerArgs {
         name: "pads"
-        int64Value: 1
+        int64Value: 3
         argIndex: 5
       }
       transformerArgs {
@@ -281,7 +283,7 @@ mappings {
       key: "pW"
       transformerArgs {
         name: "pads"
-        int64Value: 1
+        int64Value: 3
         argIndex: 5
       }
       transformerArgs {
@@ -1701,13 +1703,13 @@ mappings {
   rule {
     ruleName: "argdescriptorconstant"
     functionName: "argdescriptorconstant"
-    inputFloatName: "isNCHW"
+    inputIntName: "isNCHW"
     ruleType: "attribute"
     transformerArgs {
       key: "value"
       transformerArgs {
         name: "isNCHW"
-        int64Value: 1
+        argType: INT64
         argIndex: 10
       }
     }
@@ -1722,6 +1724,7 @@ mappings {
       key: "value"
       transformerArgs {
         name: "dH"
+        int64Value: 1
         argType: INT64
         argIndex: 6
       }
@@ -1737,6 +1740,7 @@ mappings {
       key: "value"
       transformerArgs {
         name: "dW"
+        int64Value: 1
         argType: INT64
         argIndex: 7
       }
@@ -1793,6 +1797,7 @@ mappings {
       key: "pH"
       transformerArgs {
         name: "pads"
+        int64Value: 2
         argIndex: 4
       }
     }
@@ -1812,7 +1817,7 @@ mappings {
       key: "pW"
       transformerArgs {
         name: "pads"
-        int64Value: 1
+        int64Value: 3
         argIndex: 5
       }
     }
@@ -6345,31 +6350,8 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "dropout_inverted"
+  opName: "noop"
   inputFrameworkOpName: "Dropout"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "data"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Dropout"
-  }
-  rule {
-    ruleName: "ndarrayinputtonumericalattribute"
-    functionName: "ndarrayinputtonumericalattribute"
-    outputDoubleName: "p"
-    inputToOutput {
-      key: "p"
-      value: "ratio"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Dropout"
-  }
 }
 mappings {
   frameworkName: "onnx"

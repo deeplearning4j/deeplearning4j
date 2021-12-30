@@ -1240,7 +1240,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         //validateDataType(Nd4j.dataType(), op);
 
-        Preconditions.checkArgument(z.isR(), "Op.Z must have one of floating point types");
+        if(z != null)
+            Preconditions.checkArgument(z.isR(), "Op.Z must have one of floating point types");
 
         val xb = x == null ? null : ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
         val yb = y == null ? null : ((BaseCpuDataBuffer) y.data()).getOpaqueDataBuffer();

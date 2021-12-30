@@ -68,11 +68,11 @@ abstract class StringContainsAdapterRule<
 
                 when(argDescriptorType) {
                     OpNamespace.ArgDescriptor.ArgType.BOOL -> {
-                        descriptorBuilder.boolValue = compString.contains(testValue)
+                        descriptorBuilder.boolValue = testValue.isNotEmpty() && compString.contains(testValue)
                     }
 
                     OpNamespace.ArgDescriptor.ArgType.INT64 -> {
-                        descriptorBuilder.int64Value = if (compString.contains(testValue)) 1 else 0
+                        descriptorBuilder.int64Value = if (testValue.isNotEmpty() && compString.contains(testValue)) 1 else 0
 
                     }
 
