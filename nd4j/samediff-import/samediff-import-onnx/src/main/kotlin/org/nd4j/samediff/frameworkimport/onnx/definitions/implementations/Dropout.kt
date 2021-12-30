@@ -37,7 +37,6 @@ class Dropout : PreImportHook  {
             0.5
         }
 
-        sd.ops.remove(op.name)
 
         val outputVar = sd.nn().dropoutInverted(outputNames[0],inputVariable,p)
         return mapOf(outputVar.name() to listOf(outputVar))
