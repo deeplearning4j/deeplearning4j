@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.imports;
+package org.nd4j.serde;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;

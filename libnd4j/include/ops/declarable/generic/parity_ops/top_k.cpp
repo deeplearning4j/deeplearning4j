@@ -37,7 +37,9 @@ CUSTOM_OP_IMPL(top_k, 1, 2, false, 0, -1) {
   auto values = OUTPUT_VARIABLE(0);
   auto indices = OUTPUT_VARIABLE(1);
 
-  if (block.numB() == 1) needSort = B_ARG(0);
+  if (block.numB() == 1) {
+      needSort = B_ARG(0);
+  }
 
   if (block.width() == 1) {
     if (block.numI() > 0) {

@@ -18,15 +18,13 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.imports.tfgraphs;
+package org.nd4j.samediff.frameworkimport.tensorflow;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;

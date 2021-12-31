@@ -451,26 +451,4 @@ public class NDLossTest extends BaseNd4jTestWithBackends {
     }
 
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testWeightedCrossEntropyWithLogits(Nd4jBackend backend) {
-        // This one from SamediffTests.java
-        SameDiff sameDiff = SameDiff.create();
-        INDArray targets = Nd4j.create(new long[]{1, 5});
-        INDArray inputs = Nd4j.create(new long[]{1, 5});
-        INDArray weights = Nd4j.create(new long[]{1, 5});
-
-        SDVariable sdInputs = sameDiff.var("inputs", inputs);
-        SDVariable sdWeights = sameDiff.var("weights", weights);
-        SDVariable sdTargets = sameDiff.var("targets", targets);
-
-        SDVariable res = sameDiff.loss().weightedCrossEntropyWithLogits(sdTargets, sdInputs, sdWeights);
-
-        INDArray resultArray = res.eval();
-        assertArrayEquals(new long[]{1, 5}, resultArray.shape());
-
-        // Make sure the INDArray interface produces the same result.
-        INDArray y = Nd4j.loss().weightedCrossEntropyWithLogits(targets, inputs, weights);
-        assertEquals(resultArray , y);
-    }
 }

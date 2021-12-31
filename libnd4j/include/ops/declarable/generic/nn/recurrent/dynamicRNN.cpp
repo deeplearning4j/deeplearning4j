@@ -52,8 +52,7 @@ CUSTOM_OP_IMPL(dynamic_rnn, 4, 2, false, 0, 0) {
     maxTimeStep = INPUT_VARIABLE(5);
   }
 
-  auto h = OUTPUT_VARIABLE(
-      0);  // cell outputs [time x bS x numUnits] or [bS x time x numUnits], depends on timeMajor parameter
+  auto h = OUTPUT_VARIABLE(0);  // cell outputs [time x bS x numUnits] or [bS x time x numUnits], depends on timeMajor parameter
   auto hFinal = OUTPUT_VARIABLE(1);  // at the end it will store cell final non-zero output [bS x numUnits]
 
   REQUIRE_TRUE(x->rankOf() == 3, 0,

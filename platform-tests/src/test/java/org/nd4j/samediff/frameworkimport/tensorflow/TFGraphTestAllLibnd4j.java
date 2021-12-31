@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.imports.tfgraphs;
+package org.nd4j.samediff.frameworkimport.tensorflow;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;

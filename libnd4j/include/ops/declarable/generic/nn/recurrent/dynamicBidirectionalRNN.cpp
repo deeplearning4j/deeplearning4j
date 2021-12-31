@@ -27,8 +27,8 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
-  auto x =
-      INPUT_VARIABLE(0);  // input [time x bS x inSize] or [bS x time x inSize], shape depends on timeMajor parameter
+  auto x = INPUT_VARIABLE(0);
+  // input [time x bS x inSize] or [bS x time x inSize], shape depends on timeMajor parameter
   auto WxFW = INPUT_VARIABLE(1);  // input-to-hidden  weights for forward  RNN, [inSize  x numUnitsFW]
   auto WhFW = INPUT_VARIABLE(2);  // hidden-to-hidden weights for forward  RNN, [numUnitsFW x numUnitsFW]
   auto bFW = INPUT_VARIABLE(3);   // biases for forward  RNN, [2*numUnitsFW]

@@ -143,7 +143,23 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
 
                             argDescriptorProposals = new ArrayList<>();
 
-                            if(!name.equals("randomuniform"))
+
+
+                            if(name.equals("argmax") || name.equals("argmin")) {
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .sourceOfProposal("cpp")
+                                        .proposalWeight(99999.0)
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                                .setName("dimensions")
+                                                .setIsArray(true)
+                                                .setArgIndex(0)
+                                                .build()).build());
+
+
+                            }
+
+                            if(!name.equals("randomuniform") && !name.equals("bincount"))
                                 argDescriptorProposals.add(ArgDescriptorProposal.builder()
                                         .sourceOfProposal("cpp")
                                         .proposalWeight(9999999.0)
@@ -153,7 +169,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                                                 .setIsArray(false)
                                                 .setArgIndex(0)
                                                 .build()).build());
-                            else {
+                            else if(!name.equals("bincount")) {
                                 argDescriptorProposals.add(ArgDescriptorProposal.builder()
                                         .sourceOfProposal("cpp")
                                         .proposalWeight(9999999.0)
@@ -294,11 +310,11 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                             if(name.equals("bincount")) {
                                 argDescriptorProposals.add(ArgDescriptorProposal.builder()
                                         .sourceOfProposal("cpp")
-                                        .proposalWeight(Double.MAX_VALUE)
+                                        .proposalWeight(Double.POSITIVE_INFINITY)
                                         .descriptor(OpNamespace.ArgDescriptor.newBuilder()
                                                 .setArgType(OpNamespace.ArgDescriptor.ArgType.DATA_TYPE)
                                                 .setName("outputType")
-                                                .setIsArray(true)
+                                                .setIsArray(false)
                                                 .setArgIndex(0)
                                                 .build()).build());
 
@@ -458,6 +474,20 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                             }
 
 
+
+
+                            if(name.equals("batchnorm")) {
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .sourceOfProposal("cpp")
+                                        .proposalWeight(Double.POSITIVE_INFINITY)
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                                .setName("axes")
+                                                .setIsArray(true)
+                                                .setArgIndex(2)
+                                                .build()).build());
+
+                            }
 
 
                             if(name.equals("reshape")) {
@@ -1073,6 +1103,18 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                                         .descriptor(OpNamespace.ArgDescriptor.newBuilder()
                                                 .setArgType(OpNamespace.ArgDescriptor.ArgType.DATA_TYPE)
                                                 .setName("dtype")
+                                                .setIsArray(false)
+                                                .setArgIndex(0)
+                                                .build()).build());
+                            }
+
+                            if(name.equals("create_list")) {
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .sourceOfProposal("cpp")
+                                        .proposalWeight(Double.POSITIVE_INFINITY)
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.DATA_TYPE)
+                                                .setName("importDataType")
                                                 .setIsArray(false)
                                                 .setArgIndex(0)
                                                 .build()).build());

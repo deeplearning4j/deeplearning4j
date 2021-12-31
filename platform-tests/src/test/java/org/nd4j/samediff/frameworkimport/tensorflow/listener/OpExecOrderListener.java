@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.imports.tfgraphs.listener;
+package org.nd4j.samediff.frameworkimport.tensorflow.listener;
 
 import lombok.Getter;
 import lombok.Setter;

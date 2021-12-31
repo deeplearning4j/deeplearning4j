@@ -192,7 +192,10 @@ val batchNorm = OnnxMappingProcess(
                 booleanConstant(inputName = "applyGamma",constantValue = false,argumentIndex = 1)[0],
                 booleanConstant(inputName = "applyBeta",constantValue = false,argumentIndex = 2)[0],
                 intConstant(inputName = "applyScale",constantValue = 0,argumentIndex = 0)[0],
-                intConstant(inputName = "applyOffset",constantValue = 0,argumentIndex = 1)[0]
+                intConstant(inputName = "applyOffset",constantValue = 0,argumentIndex = 1)[0],
+                //onnx is always NCHW/NCDHW expected inputs
+                intConstant(inputName = "dimensions",constantValue = 1,argumentIndex = 2)[0]
+
         ))
 //TODO: Binarizer
 //TODO: Bitshift
@@ -219,9 +222,8 @@ val cumSum = OnnxMappingProcess(
         opName = "cumsum",
         inputFrameworkOpName = "CumSum",
         opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "x"))),
-        attributeMappingRules = listOf(valueMappings(mapOf("exclusive" to "exclusive","reverse" to "reverse")),
-                ndarrayToIntList(ndarrayNameToAttributeName = mutableMapOf("dimensions" to "axis")))
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "x","dimensions" to "axis"))),
+        attributeMappingRules = listOf(valueMappings(mapOf("exclusive" to "exclusive","reverse" to "reverse")))
 )
 
 val depthToSpace = OnnxMappingProcess(

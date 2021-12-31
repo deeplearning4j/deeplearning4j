@@ -37,11 +37,17 @@ class OnnxConverter {
     @SneakyThrows
     fun convertModel(inputModel: File,outputModelFilePath: File)  {
         val converter = DefaultVersionConverter()
-        val bytes = ByteBuffer.wrap(IOUtils.toByteArray(BufferedInputStream(FileInputStream(inputModel))))
+        var bytes = ByteBuffer.wrap(IOUtils.toByteArray(BufferedInputStream(FileInputStream(inputModel))))
         val bytePointer = BytePointer(bytes)
-        val proto = ModelProto(bytes.capacity().toLong())
-        //val operatorSet = Onnx.OperatorSetIdProto()
+
+        val proto = ModelProto()
         proto.ParseFromString(bytePointer)
+        //done: read in the pointer
+        bytePointer.releaseReference()
+        //clean up on heap reference for the pointer
+        bytes = null
+        System.gc()
+        Thread.sleep(5000)
         val initialId = OpSetID(0)
         for(i in 0 until proto.opset_import_size()) {
             val opSetImport = proto.opset_import(i)
@@ -54,6 +60,8 @@ class OnnxConverter {
         }
 
         val convertVersion = converter.convert_version(proto, initialId, OpSetID(13))
+        proto.releaseReference()
+
         val save = convertVersion.SerializeAsString()
         IOUtils.write(save.stringBytes, FileOutputStream(outputModelFilePath))
 

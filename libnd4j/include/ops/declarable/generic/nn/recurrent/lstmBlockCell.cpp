@@ -56,8 +56,8 @@ CUSTOM_OP_IMPL(lstmBlockCell, 8, 7, false, 2, 1) {
   const int peephole = INT_ARG(0);  // if 1, provide peephole connections
 
   const double forgetBias = T_ARG(0);
-  const double clippingCellValue =
-      T_ARG(1);  // clipping value for ct, if it is not equal to zero, then cell state is clipped
+  const double clippingCellValue = T_ARG(1);
+  // clipping value for ct, if it is not equal to zero, then cell state is clipped
 
   REQUIRE_TRUE(xt->rankOf() == 2 && cLast->rankOf() == 2 && yLast->rankOf() == 2, 0,
                "lstmBlockCell: Input ranks must be 2 for inputs 0/1/2 (x, cLast, outLast) - got %i, %i, %i",
