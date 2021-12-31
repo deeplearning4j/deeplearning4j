@@ -31,6 +31,7 @@ import org.nd4j.common.primitives.*;
 import org.nd4j.descriptor.OpDeclarationDescriptor;
 import org.nd4j.descriptor.proposal.ArgDescriptorProposal;
 import org.nd4j.ir.OpNamespace;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.lang.reflect.Field;
@@ -176,6 +177,9 @@ public class ArgDescriptorParserUtils {
                 return OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR;
             }
             else return OpNamespace.ArgDescriptor.ArgType.OUTPUT_TENSOR;
+        } else if(type.contains(DataType.class.getName()))  {
+            return OpNamespace.ArgDescriptor.ArgType.DATA_TYPE;
+
         } else if(type.contains(double.class.getName()) || type.contains(float.class.getName()) || type.contains(Float.class.getName()) || type.contains(Double.class.getName())) {
             return OpNamespace.ArgDescriptor.ArgType.DOUBLE;
         } else if(type.contains(int.class.getName()) || type.contains(long.class.getName()) ||

@@ -307,14 +307,14 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             }
 
             if(x == null) {
-                throw new IllegalArgumentException("No variable found for the given input variables. At least one input required.");
+                throw new IllegalArgumentException("No variable found for the given input variables of " +  args[0].name() + " At least one input required.");
             }
 
             if(z == null) {
                 if( dimensions == null)
-                    setZ(Nd4j.zeros(x.shape()).castTo(x.dataType()));
+                    setZ(Nd4j.zeros(x.shape()).castTo(newVars[0].dataType()));
                 else {
-                    setZ(Nd4j.create(Shape.reductionShape(x,dimensions,true,false)).castTo(x.dataType()));
+                    setZ(Nd4j.create(Shape.reductionShape(x,dimensions,true,false)).castTo(newVars[0].dataType()));
                 }
             }
 

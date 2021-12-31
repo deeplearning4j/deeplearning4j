@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.imports.listeners;
+package org.nd4j.serde.listeners;
 
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.BaseListener;

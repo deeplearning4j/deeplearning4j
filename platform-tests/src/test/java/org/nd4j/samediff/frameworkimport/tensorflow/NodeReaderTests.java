@@ -18,11 +18,10 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.imports.tfgraphs;
+package org.nd4j.samediff.frameworkimport.tensorflow;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;

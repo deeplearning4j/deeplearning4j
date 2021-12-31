@@ -481,7 +481,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 //Strip ":0" suffix. Some ops can depend on placeholders, like "image_tensor:0" but in SameDiff this is a variable called "image_tensor"
                                 inName = inName.substring(0, inName.length - 2)
                             }
-                            val isControlDep = isControlDep(origInName)
+                             val isControlDep = isControlDep(origInName)
                             if (isControlDep) {
                                 if (controlDeps == null) controlDeps = ArrayList()
                                 controlDeps.add(inName)

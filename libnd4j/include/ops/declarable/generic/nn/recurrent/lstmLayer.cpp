@@ -124,9 +124,9 @@ CUSTOM_OP_IMPL(lstmLayer, 3, 1, false, 1, 5) {
 
   const auto dataFormat = INT_ARG(0);  // for unidirectional: 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn], 2 = [bS, nIn, sL],
                                        // for bidirectional: 3 = [sL, bS, nIn] && [sL, 2, bS, nOut] (for ONNX)
-  const auto directionMode =
-      INT_ARG(1);  // direction: 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat, 4 = bidirectional
-                   // extra output dim (in conjunction with format dataFormat = 3)
+  const auto directionMode = INT_ARG(1);
+  // direction: 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat, 4 = bidirectional
+  // extra output dim (in conjunction with format dataFormat = 3)
 
   // integer numbers corresponding to activations: 0=tanh, 1=relu, 2=sigmoid, 3=affine, 4=leaky relu, 5= thresholded
   // relu, 6=scaled tanh, 7=hard sigmoid, 8=ELU, 9=softsign, 10=softplus
@@ -558,9 +558,9 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
 
   const auto dataFormat = INT_ARG(0);  // for unidirectional: 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn], 2 = [bS, nIn, sL],
                                        // for bidirectional: 3 = [sL, bS, nIn] && [sL, 2, bS, nOut] (for ONNX)
-  const auto directionMode =
-      INT_ARG(1);  // direction: 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat, 4 = bidirectional
-                   // extra output dim (in conjunction with format dataFormat = 3)
+  const auto directionMode = INT_ARG(1);
+  // direction: 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat, 4 = bidirectional
+   // extra output dim (in conjunction with format dataFormat = 3)
 
   // integer numbers corresponding to activations: 0=tanh, 1=relu, 2=sigmoid, 3=affine, 4=leaky relu, 5= thresholded
   // relu, 6=scaled tanh, 7=hard sigmoid, 8=ELU, 9=softsign, 10=softplus

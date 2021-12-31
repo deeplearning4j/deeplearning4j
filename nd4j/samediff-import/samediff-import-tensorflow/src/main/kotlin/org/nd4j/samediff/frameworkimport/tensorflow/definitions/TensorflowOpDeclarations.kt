@@ -521,12 +521,13 @@ val parallelConcat = TensorflowMappingProcess(
                 intConstant(inputName = "concatDimension",constantValue = 0,argumentIndex = 0)[0])
 )
 
+//note that tensorarrayv3 is just an alias for create_list
 val tensorArrayV3 = TensorflowMappingProcess(
         opMappingRegistry = tensorflowOpRegistry,
-        opName = "tensorarrayv3",
+        opName = "create_list",
         inputFrameworkOpName = "TensorArrayV3",
         tensorMappingRules = listOf(),
-        attributeMappingRules = listOf(dataTypeToInt(mutableMapOf("dataType" to "dtype")))
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("importDataType" to "dtype")))
 )
 
 
@@ -535,7 +536,7 @@ val mergeadd = TensorflowMappingProcess(
         opName = "mergeadd",
         inputFrameworkOpName = "AccumulateNV2",
         variableResolutionType = MapperNamespace.VariableResolutionType.DIRECT,
-        tensorMappingRules = listOf(mappingListNDArrays(mutableMapOf("inArrs" to "inputs"))),
+        tensorMappingRules = listOf(mappingListNDArrays(mutableMapOf("i" to "inputs"))),
         attributeMappingRules = listOf( booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0]))
 
 /**
@@ -874,8 +875,7 @@ val cast = TensorflowMappingProcess(
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "x"))),
         inputFrameworkOpName = "Cast",
         attributeMappingRules = listOf(
-                valueMapping(mutableMapOf("dtype" to "DstT")),
-                dataTypeToInt(mutableMapOf("dst" to "DstT"))),
+                valueMapping(mutableMapOf("dtype" to "DstT"))),
         opMappingRegistry = tensorflowOpRegistry
 )
 
@@ -1022,7 +1022,7 @@ val histogramFixedWidth = TensorflowMappingProcess(
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "values","range" to "value_range","numBins" to "nbins"))),
         inputFrameworkOpName = "HistogramFixedWidth",
         opMappingRegistry = tensorflowOpRegistry,
-        attributeMappingRules = listOf(ndarrayToIntList(mutableMapOf("nbins" to "nbins")))
+        attributeMappingRules = listOf()
 )
 
 val identity = multipleNameMapping(
@@ -1538,7 +1538,7 @@ val nonMaxSuppressionOverlaps = multipleNameMapping(inputFrameworkOpNames = list
         attributeMappingRules = listOf(
                 convertNDArrayInputToNumericalAttr(mutableMapOf(
                         "maxOutputSize" to "max_output_size",
-                        "overlapThreshold" to "overlap_threshold",
+                        "iouThreshold" to "overlap_threshold",
                         "scoreThreshold" to "score_threshold")))
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
@@ -1551,7 +1551,7 @@ val oneHot = mapTensorNamesWithOp(inputFrameworkOpName = "OneHot",opName = "oneh
         attributeMappingRules = listOf(
                 convertNDArrayInputToNumericalAttr(mutableMapOf("on" to "on_value","off" to "off_value"
                         ,"depth" to "depth")),
-                valueMapping(mutableMapOf("dimensions" to "axis","dataType" to "T")))
+                valueMapping(mutableMapOf("dimensions" to "axis","dtype" to "T")))
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
 
@@ -1560,7 +1560,7 @@ val or = mapTensorNamesWithOp(inputFrameworkOpName = "LogicalOr",opName = "boole
 
 val onesLike = mapTensorNamesWithOp(inputFrameworkOpName = "OnesLike",
         opName = "ones_as",
-        attributeMappingRules = listOf(valueMapping(mutableMapOf("dataType" to "T"))),
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("dtype" to "T"))),
         tensorNames = mutableMapOf("input" to "x"),tensorflowOpRegistry = tensorflowOpRegistry)
 
 
@@ -1777,10 +1777,10 @@ val resizeArea = multipleNameMapping(inputFrameworkOpNames = listOf("ResizeArea"
 
 val resizeBiCubic = multipleNameMapping(inputFrameworkOpNames = listOf("ResizeBicubic"),opName = "resize_bicubic",
         attributeMappingRules = listOf(valueMapping(mutableMapOf("alignCorners" to "align_corners","alignPixelCenters" to "half_pixel_centers"))),
-        tensorNames = mutableMapOf("image" to "images","size" to "size"),tensorflowOpRegistry = tensorflowOpRegistry)
+        tensorNames = mutableMapOf("image" to "images","newImageSize" to "size"),tensorflowOpRegistry = tensorflowOpRegistry)
 
 val resizeBiLinear = multipleNameMapping(inputFrameworkOpNames = listOf("ResizeBilinear"),opName = "resize_bilinear",
-        attributeMappingRules = listOf(valueMapping(mutableMapOf("alignCorners" to "align_corners","halfPixelCenter" to "half_pixel_centers"))),
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("alignCorners" to "align_corners","halfPixelCenters" to "half_pixel_centers"))),
         tensorNames = mutableMapOf("image" to "images","newImageSize" to "size"),tensorflowOpRegistry = tensorflowOpRegistry)
 
 val resizeNearestNeighbor = multipleNameMapping(inputFrameworkOpNames = listOf("ResizeNearestNeighbor"),opName = "resize_nearest_neighbor",
@@ -2056,8 +2056,7 @@ val split = TensorflowMappingProcess(
         opName = "split",
         inputFrameworkOpName = "Split",
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("a" to "split_dim","b" to "value"))),
-        attributeMappingRules = listOf(valueMapping(mapOf("numSplit" to "num_split"))
-                , ndarrayToIntList(mutableMapOf("dimensions" to "split_dim"))),
+        attributeMappingRules = listOf(valueMapping(mapOf("numSplit" to "num_split"))),
         opMappingRegistry = tensorflowOpRegistry
 )
 
@@ -2275,7 +2274,7 @@ val topkV2 = multipleNameMapping(inputFrameworkOpNames = listOf("TopKV2"),opName
 val transpose = mapTensorNamesWithOp(
         inputFrameworkOpName = "Transpose",
         opName = "transpose",
-        tensorNames = mutableMapOf("input" to "x","permutationVector" to "perm"),
+        tensorNames = mutableMapOf("input" to "x","permuteDims" to "perm"),
         attributeMappingRules = listOf(valueMapping(mutableMapOf("dtype" to "T")))
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
@@ -2353,8 +2352,7 @@ val whileOp = mapTensorNamesWithOp(inputFrameworkOpName = "While",opName = "Whil
 val zerosLike = mapTensorNamesWithOp(inputFrameworkOpName = "ZerosLike",opName = "zeroslike",
         tensorNames = mutableMapOf("input" to "x"),
         attributeMappingRules = listOf(
-                booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0],
-                valueMapping(mutableMapOf("dataType" to "T"))
+                booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0]
         ),tensorflowOpRegistry = tensorflowOpRegistry)
 
 val zeta = mapTensorNamesWithOp(inputFrameworkOpName = "Zeta",opName = "zeta",

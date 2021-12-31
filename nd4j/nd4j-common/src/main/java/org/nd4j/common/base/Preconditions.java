@@ -630,6 +630,7 @@ public final class Preconditions {
 
     public static void throwEx(String message, Object... args) {
         String f = format(message, args);
+
         throw new IllegalArgumentException(f);
     }
 

@@ -66,7 +66,6 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -534,7 +533,6 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -633,7 +631,6 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -807,7 +804,6 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axis"
@@ -852,7 +848,6 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -1130,7 +1125,7 @@ mappings {
     ruleName: "invertbooleannumber"
     functionName: "invertbooleannumber"
     inputIntName: "keepdims"
-    outputDoubleName: "keepDims"
+    outputBooleanName: "keepDims"
     inputToOutput {
       key: "keepDims"
       value: "keepdims"
@@ -1142,7 +1137,7 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "keepdims"
-    outputDoubleName: "keepDims"
+    outputBooleanName: "keepDims"
     inputToOutput {
       key: "keepDims"
       value: "keepdims"
@@ -1153,7 +1148,6 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -1522,7 +1516,6 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -1593,7 +1586,6 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -1665,7 +1657,6 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axis"
@@ -5235,6 +5226,22 @@ mappings {
     }
     inputFrameworkOpName: "BatchNormalization"
   }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputIntName: "dimensions"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "dimensions"
+        int64Value: 1
+        argType: INT64
+        argIndex: 2
+      }
+    }
+    inputFrameworkOpName: "BatchNormalization"
+  }
 }
 mappings {
   frameworkName: "onnx"
@@ -5285,7 +5292,6 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
-    outputIntName: "concatDimension"
     inputToOutput {
       key: "concatDimension"
       value: "axis"
@@ -5688,7 +5694,6 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axes"
@@ -5765,7 +5770,6 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputDoubleName: "from"
     inputToOutput {
       key: "from"
       value: "start"
@@ -5776,7 +5780,6 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputDoubleName: "to"
     inputToOutput {
       key: "to"
       value: "limit"
@@ -5787,7 +5790,6 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputDoubleName: "step"
     inputToOutput {
       key: "step"
       value: "delta"
@@ -5928,8 +5930,6 @@ mappings {
     functionName: "valuemapping"
     inputFloatName: "low"
     inputFloatName: "high"
-    outputDoubleName: "min"
-    outputDoubleName: "max"
     inputToOutput {
       key: "max"
       value: "high"
@@ -6167,7 +6167,13 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "x"
+    inputTensorName: "axis"
     outputTensorName: "input"
+    outputTensorName: "dimensions"
+    inputToOutput {
+      key: "dimensions"
+      value: "axis"
+    }
     inputToOutput {
       key: "input"
       value: "x"
@@ -6180,8 +6186,8 @@ mappings {
     functionName: "valuemapping"
     inputIntName: "exclusive"
     inputIntName: "reverse"
-    outputIntName: "exclusive"
-    outputIntName: "reverse"
+    outputBooleanName: "exclusive"
+    outputBooleanName: "reverse"
     inputToOutput {
       key: "exclusive"
       value: "exclusive"
@@ -6189,17 +6195,6 @@ mappings {
     inputToOutput {
       key: "reverse"
       value: "reverse"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "CumSum"
-  }
-  rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
-    inputToOutput {
-      key: "dimensions"
-      value: "axis"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "CumSum"

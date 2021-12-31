@@ -18,23 +18,18 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.imports.tfgraphs;
+package org.nd4j.samediff.frameworkimport.tensorflow;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.commons.io.FileUtils;
-import org.nd4j.common.resources.Resources;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
-import org.nd4j.imports.listeners.ExecPrintListener;
-import org.nd4j.imports.tfgraphs.listener.OpExecOrderListener;
+import org.nd4j.serde.listeners.ExecPrintListener;
+import org.nd4j.samediff.frameworkimport.tensorflow.listener.OpExecOrderListener;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.nd4j.autodiff.execution.NativeGraphExecutioner;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
@@ -43,8 +38,6 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
-import org.nd4j.autodiff.samediff.internal.memory.ArrayCloseMemoryMgr;
-import org.nd4j.autodiff.samediff.internal.memory.CloseValidationMemoryMgr;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.common.base.Preconditions;
@@ -65,10 +58,7 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.string.NDArrayStrings;
-import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFrameworkImporter;
-import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraph;
-import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraphRunner;
 import org.nd4j.shade.guava.io.Files;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -82,10 +72,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.nd4j.imports.tfgraphs.TFGraphsSkipNodes.skipNode;
+import static org.nd4j.samediff.frameworkimport.tensorflow.TFGraphsSkipNodes.skipNode;
 
 @Slf4j
 public class TFGraphTestAllHelper {

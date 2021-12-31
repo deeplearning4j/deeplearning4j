@@ -162,8 +162,11 @@ public class ParseOpFile {
                         finalName = finalName.replaceAll("\\[.*\\]","").replace("*","");
                     }
 
-                    if(currDescriptor.getArgIndex() != j) {
+                    if(currDescriptor.getArgIndex() != j && !namesEncountered.contains(currDescriptor.getName())) {
                         throw new IllegalStateException("Op name " + opList.getName() + " has incontiguous indices for type " + entry.getKey() + " with descriptor being "  +currDescriptor);
+                    } else if(currDescriptor.getArgIndex() != j && namesEncountered.contains(currDescriptor.getName())) {
+                       //skip names we already mapped
+                       System.err.println("Op name " + opList.getName() + " has incontiguous indices for type " + entry.getKey() + " with descriptor being "  +currDescriptor + " skipping");
                     }
 
                     OpNamespace.ArgDescriptor.Builder newDescriptor = OpNamespace.ArgDescriptor.newBuilder()

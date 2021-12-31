@@ -162,8 +162,8 @@ DECLARE_SHAPE_FN(sru) {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
-  auto x = INPUT_VARIABLE(
-      0);  // X, input 3d tensor [bS x K x N], N - number of time steps, bS - batch size, K - number of features
+  auto x = INPUT_VARIABLE(0);
+  // X, input 3d tensor [bS x K x N], N - number of time steps, bS - batch size, K - number of features
   auto w = INPUT_VARIABLE(1);         // W, 2d tensor of weights [3K x K]
   auto b = INPUT_VARIABLE(2);         // B, row of biases with twice length [1 x 2*K]
   auto c0 = INPUT_VARIABLE(3);        // C_{0}, 2d tensor of initial state [bS x K] at time t=0

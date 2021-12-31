@@ -44,10 +44,11 @@ import org.nd4j.common.primitives.CounterMap;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.descriptor.proposal.ArgDescriptorProposal;
 import org.nd4j.descriptor.proposal.ArgDescriptorSource;
-import org.nd4j.graph.OpType;
 import org.nd4j.ir.OpNamespace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import org.reflections.Reflections;
 
@@ -274,6 +275,7 @@ public class JavaSourceArgDescriptorSource implements ArgDescriptorSource {
             int outputIdx = 0;
             int intIdx = 0;
             int boolIdx = 0;
+            int dTypeIndex = 0;
 
             for(ResolvedConstructorDeclaration parameterDeclaration : collect) {
                 floatIdx = 0;
@@ -281,6 +283,7 @@ public class JavaSourceArgDescriptorSource implements ArgDescriptorSource {
                 outputIdx = 0;
                 intIdx = 0;
                 boolIdx = 0;
+                dTypeIndex = 0;
                 for(int i = 0; i < parameterDeclaration.getNumberOfParams(); i++) {
                     ResolvedParameterDeclaration param = parameterDeclaration.getParam(i);
                     OpNamespace.ArgDescriptor.ArgType argType = argTypeForParam(param);
@@ -295,6 +298,10 @@ public class JavaSourceArgDescriptorSource implements ArgDescriptorSource {
                             case INT32:
                                 paramIndicesCount.incrementCount(Pair.of(param.getName(), OpNamespace.ArgDescriptor.ArgType.INT64), intIdx, 100.0);
                                 intIdx++;
+                                break;
+                            case DATA_TYPE:
+                                paramIndicesCount.incrementCount(Pair.of(param.getName(), OpNamespace.ArgDescriptor.ArgType.DATA_TYPE), dTypeIndex, 100.0);
+                                dTypeIndex++;
                                 break;
                             case DOUBLE:
                             case FLOAT:
@@ -325,7 +332,7 @@ public class JavaSourceArgDescriptorSource implements ArgDescriptorSource {
             intIdx = 0;
             boolIdx = 0;
             Set<List<Pair<String, String>>> typesAndParams = parameters.stream().map(collectedParam ->
-                    Pair.of(collectedParam.describeType(), collectedParam.getName()))
+                            Pair.of(collectedParam.describeType(), collectedParam.getName()))
                     .collect(Collectors.groupingBy(input -> input.getSecond())).entrySet()
                     .stream()
                     .map(inputPair -> inputPair.getValue())
@@ -497,6 +504,18 @@ public class JavaSourceArgDescriptorSource implements ArgDescriptorSource {
                                     .setArgIndex(boolIdx)
                                     .build()).build());
 
+
+
+                    argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                            .sourceOfProposal("java")
+                            .proposalWeight(9999.0)
+                            .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                    .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                    .setName("dimensions")
+                                    .setIsArray(true)
+                                    .setArgIndex(intIdx)
+                                    .build()).build());
+
                     argDescriptorProposals.add(ArgDescriptorProposal.builder()
                             .sourceOfProposal("java")
                             .proposalWeight(9999.0)
@@ -507,23 +526,24 @@ public class JavaSourceArgDescriptorSource implements ArgDescriptorSource {
                                     .setArgIndex(1)
                                     .build()).build());
                 }
-                
-                if(funcInstance instanceof BaseTransformBoolOp) {
-                    BaseTransformBoolOp baseTransformBoolOp = (BaseTransformBoolOp) funcInstance;
-                    if(baseTransformBoolOp.getOpType() == Op.Type.PAIRWISE_BOOL) {
-                        if(numProposalsWithType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR,argDescriptorProposals) < 2) {
-                            argDescriptorProposals.add(ArgDescriptorProposal.builder()
-                                    .sourceOfProposal("java")
-                                    .proposalWeight(9999.0)
-                                    .descriptor(OpNamespace.ArgDescriptor.newBuilder()
-                                            .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
-                                            .setName("y")
-                                            .setIsArray(false)
-                                            .setArgIndex(1)
-                                            .build()).build());
-                        }
-                    }
+
+
+                if(funcInstance instanceof ArgMax || funcInstance instanceof ArgMin) {
+                    argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                            .sourceOfProposal("java")
+                            .proposalWeight(99999.0)
+                            .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                    .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                    .setName("dimensions")
+                                    .setIsArray(true)
+                                    .setArgIndex(intIdx)
+                                    .build()).build());
+
+
                 }
+
+
+
 
 
                 if(!containsProposalWithDescriptorName("dimensions",argDescriptorProposals)) {
@@ -537,6 +557,24 @@ public class JavaSourceArgDescriptorSource implements ArgDescriptorSource {
                                     .setArgIndex(0)
                                     .build()).build());
 
+                }
+            }
+
+
+            if(funcInstance instanceof BaseTransformBoolOp) {
+                BaseTransformBoolOp baseTransformBoolOp = (BaseTransformBoolOp) funcInstance;
+                if(baseTransformBoolOp.getOpType() == Op.Type.PAIRWISE_BOOL) {
+                    if(numProposalsWithType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR,argDescriptorProposals) < 2) {
+                        argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                .sourceOfProposal("java")
+                                .proposalWeight(9999.0)
+                                .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                        .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                        .setName("y")
+                                        .setIsArray(false)
+                                        .setArgIndex(1)
+                                        .build()).build());
+                    }
                 }
             }
 
@@ -830,6 +868,62 @@ public class JavaSourceArgDescriptorSource implements ArgDescriptorSource {
                                 .setIsArray(true)
                                 .setArgIndex(0)
                                 .build()).build());
+            }
+
+
+
+            if(name.equals("bincount")) {
+                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                        .sourceOfProposal("cpp")
+                        .proposalWeight(Double.MAX_VALUE)
+                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                .setArgType(OpNamespace.ArgDescriptor.ArgType.DATA_TYPE)
+                                .setName("outputType")
+                                .setIsArray(false)
+                                .setArgIndex(0)
+                                .build()).build());
+
+                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                        .sourceOfProposal("cpp")
+                        .proposalWeight(Double.POSITIVE_INFINITY)
+                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                .setName("values")
+                                .setIsArray(false)
+                                .setArgIndex(0)
+                                .build()).build());
+
+                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                        .sourceOfProposal("cpp")
+                        .proposalWeight(Double.POSITIVE_INFINITY)
+                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                .setName("weights")
+                                .setIsArray(false)
+                                .setArgIndex(1)
+                                .build()).build());
+
+                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                        .sourceOfProposal("cpp")
+                        .proposalWeight(Double.POSITIVE_INFINITY)
+                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                .setName("min")
+                                .setIsArray(false)
+                                .setArgIndex(2)
+                                .build()).build());
+
+
+                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                        .sourceOfProposal("cpp")
+                        .proposalWeight(Double.POSITIVE_INFINITY)
+                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                .setName("max")
+                                .setIsArray(false)
+                                .setArgIndex(3)
+                                .build()).build());
+
             }
 
             if(name.equals("while") || name.equals("enter") || name.equals("exit") || name.equals("next_iteration")

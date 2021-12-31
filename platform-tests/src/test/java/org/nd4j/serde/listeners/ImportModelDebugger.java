@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.imports.listeners;
+package org.nd4j.serde.listeners;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Disabled;

@@ -42,7 +42,7 @@ public class BinCount extends DynamicCustomOp {
 
     public BinCount(){ }
 
-    public BinCount(SameDiff sd, SDVariable in, SDVariable weights, Integer minLength, Integer maxLength, DataType outputType){
+    public BinCount(SameDiff sd, SDVariable in, SDVariable weights, Integer minLength, Integer maxLength, DataType outputType) {
         super(sd, weights == null ? new SDVariable[]{in} : new SDVariable[]{in, weights}, false);
         Preconditions.checkState((minLength == null) != (maxLength == null), "Cannot have only one of minLength and maxLength" +
                 "non-null: both must be simultaneously null or non-null. minLength=%s, maxLength=%s", minLength, maxLength);

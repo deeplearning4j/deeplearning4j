@@ -234,23 +234,6 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(outputAssertion, out);
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testWeightedXentWithLogits(Nd4jBackend backend) {
-        SameDiff sameDiff = SameDiff.create();
-        INDArray targets = Nd4j.create(new long[]{1, 5});
-        INDArray inputs = Nd4j.create(new long[]{1, 5});
-        INDArray weights = Nd4j.create(new long[]{1, 5});
-
-        SDVariable sdInputs = sameDiff.var("inputs", inputs);
-        SDVariable sdWeights = sameDiff.var("weights", weights);
-        SDVariable sdTargets = sameDiff.var("targets", targets);
-
-        SDVariable res = sameDiff.loss().weightedCrossEntropyWithLogits(sdTargets, sdInputs, sdWeights);
-
-        INDArray resultArray = res.eval();
-        assertArrayEquals(new long[]{1, 5}, resultArray.shape());
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

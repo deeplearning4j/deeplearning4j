@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.imports.listeners;
+package org.nd4j.serde.listeners;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;

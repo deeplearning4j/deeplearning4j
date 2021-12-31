@@ -48,14 +48,14 @@ CUSTOM_OP_IMPL(lstm, 8, 2, false, 3, 2) {
   auto c = OUTPUT_VARIABLE(1);  // cell states  [time x bS x numUnits] that is per each time step
 
   const int peephole = INT_ARG(0);  // if 1, provide peephole connections
-  const int projection =
-      INT_ARG(1);  // if 1, then projection is performed, if false then numProj==numUnits is mandatory!!!!
+  const int projection = INT_ARG(1);
+   // if 1, then projection is performed, if false then numProj==numUnits is mandatory!!!!
 
   // FIXME: double
-  const double clippingCellValue =
-      T_ARG(0);  // clipping value for ct, if it is not equal to zero, then cell state is clipped
-  const double clippingProjValue =
-      T_ARG(1);  // clipping value for projected ht, if it is not equal to zero, then projected cell output is clipped
+  const double clippingCellValue = T_ARG(0);
+   // clipping value for ct, if it is not equal to zero, then cell state is clipped
+  const double clippingProjValue =  T_ARG(1);
+   // clipping value for projected ht, if it is not equal to zero, then projected cell output is clipped
   const double forgetBias = T_ARG(2);
 
   const int rank = x->rankOf();

@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.imports;
+package org.nd4j.serde;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
