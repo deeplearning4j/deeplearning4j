@@ -65,7 +65,7 @@ enum  StorageType {
     COMPRESSED,UNCOMPRESSED
 }
 ```
-When loading a model, will be done via either samediff or deeplearning4j.
+Loading a model will be done using either samediff or deeplearning4j.
 This will leverage and extend the existing work in the model import
 work built previously.
 
