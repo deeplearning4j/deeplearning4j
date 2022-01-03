@@ -1,4 +1,4 @@
-# Testing
+# Model Hub Zoo - Download
 
 ## Status
 **Discussion**
@@ -31,8 +31,7 @@ and add the appropriate tooling for converting these models to something consuma
 by the model import framework.
 
 
-A user is able to download models with a standard python interface:
-
+A user is able to download models with a standard python interface using
 ModelHub. A ModelHub implementation might look like:
 ```python
 class ModelHub(object):
