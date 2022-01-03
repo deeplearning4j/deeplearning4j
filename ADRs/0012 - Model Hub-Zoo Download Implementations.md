@@ -29,14 +29,14 @@ download workflow described in [downloading models](0011%20-%20Model%20Hub-Zoo%2
 We will also cover how we will handle staging of models for each framework.
 
 
-###Onnx
+### Onnx
 
 Onnx is pretty straightforward as a github repo download.
 These models do not have any special structure beyond the zip file.
 Our downloader will focus on the already uncompressed models
 for ease of simplicity.
 
-###Tensorflow
+### Tensorflow
 
 Tensorflow will use the tf hub web service. Our access will be focused
 on using the uncompressed pb models + handling other conversion code
@@ -46,7 +46,7 @@ For our purposes a staged model will be a frozen model
 that can be directly imported.
 
 
-###Pytorch
+### Pytorch
 
 Pytorch will need to be converted to onnx. Pytorch serving uses
 the [model archive tool](https://github.com/pytorch/serve/tree/master/model-archiver/) 
@@ -55,7 +55,7 @@ for handling model storage.
 For our purposes a staged model will be considered an onnx model
 that is exported via pytorch.
 
-###Huggingface
+### Huggingface
 
 Huggingface spaces uses git repositories to store models.
 URLs are accessible using the [huggingface hub SDK](https://huggingface.co/docs/hub/how-to-downstream)
@@ -75,7 +75,7 @@ but reusing the staging techniques from the tensorflow and onnx frameworks.
 
 
 
-###Keras
+### Keras
 
 Keras applications are simple archives that contain .h5 files.
 We will use the keras applications library to download and cache the models.

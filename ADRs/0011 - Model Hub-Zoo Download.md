@@ -70,7 +70,7 @@ This will leverage and extend the existing work in the model import
 work built previously.
 
 
-###Storage directory
+### Storage directory
 
 Every model downloaded by this interface will be stored in an uncompressed
 format (.onnx,.pb,..) files with their original names under a standard unified directory
@@ -94,7 +94,7 @@ stored under the $MODELHUB_PATH in the form they need to be in
 to work with the model import framework.
 
 
-###Staging models
+### Staging models
 
 Every model will be downloaded by its original SDK and then preprocessed.
 We will call this staging. Staging is a secondary step that takes
