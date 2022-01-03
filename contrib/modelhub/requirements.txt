@@ -1,0 +1,7 @@
+keras-applications
+huggingface-hub
+tensorflow-hub
+onnx
+requests
+pytest
+torch-model-archiver

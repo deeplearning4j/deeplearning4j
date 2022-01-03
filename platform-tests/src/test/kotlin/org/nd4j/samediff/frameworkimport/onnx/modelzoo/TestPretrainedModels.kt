@@ -50,8 +50,9 @@ class TestPretrainedModels {
     val dontRunRegexes = setOf("")
 
 
-    val modelPaths = setOf(//"vision/body_analysis/age_gender/models/age_googlenet.onnx",
-        //"vision/body_analysis/age_gender/models/gender_googlenet.onnx",
+    val modelPaths = setOf(
+        "vision/body_analysis/age_gender/models/age_googlenet.onnx",
+        "vision/body_analysis/age_gender/models/gender_googlenet.onnx",
         //seems to fail in converter due to bad memory alloc
         //6g of ram
         //"vision/body_analysis/age_gender/models/vgg_ilsvrc_16_age_chalearn_iccv2015.onnx",
@@ -80,54 +81,86 @@ class TestPretrainedModels {
         //"vision/classification/mnist/model/mnist-8.onnx",
         //java.lang.IllegalStateException: Node name was empty!
         //"vision/classification/rcnn_ilsvrc13/model/rcnn-ilsvrc13-9.onnx",
-        "vision/classification/resnet/model/resnet101-v1-7.onnx",
+        //"vision/classification/resnet/model/resnet101-v1-7.onnx",
+        //has NANs in padding and crashes
         //"vision/classification/resnet/model/resnet152-v2-7.onnx",
+        //has NANs in padding and crashes with corrupted size vs. prev_size and linkedlist
         //"vision/classification/resnet/model/resnet18-v1-7.onnx",
+        //has NANs and reshape seems to be zero length
         //"vision/classification/resnet/model/resnet18-v2-7.onnx",
+        //has NANs and reshape seems to be zero length
         //"vision/classification/resnet/model/resnet34-v1-7.onnx",
         //"vision/classification/resnet/model/resnet34-v2-7.onnx",
+        //java.lang.IllegalArgumentException: No import process defined for Sum
         //"vision/classification/shufflenet/model/shufflenet-9.onnx",
+        //fails with NAN in batch norm
         //"vision/classification/shufflenet/model/shufflenet-v2-10.onnx",
+        //ORT: on-zero status code returned while running Reshape node. Name:'' Status Message: /__w/javacpp-presets/javacpp-presets/onnxruntime/cppbuild/linux-x86_64/onnxruntime/onnxruntime/core/providers/cpu/tensor/reshape_helper.h:42 onnxruntime::ReshapeHelper::ReshapeHelper(const onnxruntime::TensorShape&, std::vector<long int>&, bool) gsl::narrow_cast<int64_t>(input_shape.Size()) == size was false. The input tensor cannot be reshaped to the requested shape. Input shape:{1,1000}, requested shape:{}
         //"vision/classification/squeezenet/model/squeezenet1.0-9.onnx",
         //"vision/classification/squeezenet/model/squeezenet1.1-7.onnx",
         //"vision/classification/vgg/model/vgg16-7.onnx",
+        //fails in ORT: Error in Node:vgg0_batchnorm0_fwd : Unrecognized attribute: spatial for operator BatchNormalization
         //"vision/classification/vgg/model/vgg16-bn-7.onnx",
         //"vision/classification/vgg/model/vgg19-7.onnx",
+        //ORT:  Reshape node. Name:'' Status Message: /__w/javacpp-presets/javacpp-presets/onnxruntime/cppbuild/linux-x86_64/onnxruntime/onnxruntime/core/providers/cpu/tensor/reshape_helper.h:42 onnxruntime::ReshapeHelper::ReshapeHelper(const onnxruntime::TensorShape&, std::vector<long int>&, bool) gsl::narrow_cast<int64_t>(input_shape.Size()) == size was false. The input tensor cannot be reshaped to the requested shape. Input shape:{1,1000}, requested shape:{}
         //"vision/classification/vgg/model/vgg19-caffe2-9.onnx",
+        //ORT: Reshape node. Name:'' Status Message: /__w/javacpp-presets/javacpp-presets/onnxruntime/cppbuild/linux-x86_64/onnxruntime/onnxruntime/core/providers/cpu/tensor/reshape_helper.h:42 onnxruntime::ReshapeHelper::ReshapeHelper(const onnxruntime::TensorShape&, std::vector<long int>&, bool) gsl::narrow_cast<int64_t>(input_shape.Size()) == size was false. The input tensor cannot be reshaped to the requested shape. Input shape:{1,1000}, requested shape:{}
         //"vision/classification/zfnet-512/model/zfnet512-9.onnx",
+        //java.lang.IllegalArgumentException: No import process defined for Sum
         //"vision/object_detection_segmentation/duc/model/ResNet101-DUC-7.onnx",
+        //java.lang.IllegalArgumentException: No import process defined for Scatter
         //"vision/object_detection_segmentation/faster-rcnn/model/FasterRCNN-10.onnx",
+        //Op [less] execution failed, NDArray::applyTrueBroadcast bool method: this and other arrays must have the same type !
         //"vision/object_detection_segmentation/fcn/model/fcn-resnet101-11.onnx",
+        //Op [less] execution failed, NDArray::applyTrueBroadcast bool method: this and other arrays must have the same type !
         //"vision/object_detection_segmentation/fcn/model/fcn-resnet50-11.onnx",
+        //java.lang.IllegalArgumentException: No import process defined for Scatter
         //"vision/object_detection_segmentation/mask-rcnn/model/MaskRCNN-10.onnx",
+        //java.lang.IllegalArgumentException: No import process defined for Upsample
         //"vision/object_detection_segmentation/retinanet/model/retinanet-9.onnx",
+        //java.lang.IllegalArgumentException: No import process defined for Loop
         //"vision/object_detection_segmentation/ssd-mobilenetv1/model/ssd_mobilenet_v1_10.onnx",
+        //java.lang.IllegalArgumentException: No import process defined for Loop
         //"vision/object_detection_segmentation/ssd/model/ssd-10.onnx",
         //"vision/object_detection_segmentation/tiny-yolov2/model/tinyyolov2-7.onnx",
         //"vision/object_detection_segmentation/tiny-yolov2/model/tinyyolov2-8.onnx",
+        //java.lang.IllegalArgumentException: No import process defined for Loop
         //"vision/object_detection_segmentation/tiny-yolov3/model/tiny-yolov3-11.onnx",
+        //java.lang.IllegalStateException: Node name was empty!
         //"vision/object_detection_segmentation/yolov2-coco/model/yolov2-coco-9.onnx",
+        //java.lang.IllegalArgumentException: No import process defined for Loop
         //"vision/object_detection_segmentation/yolov3/model/yolov3-10.onnx",
+        // ORT: void onnxruntime::Graph::InitializeStateFromModelFileGraphProto() node_arg was false. Graph ctor should have created NodeArg for initializer. Missing:StatefulPartitionedCall/model/conv2d_93/Conv2D/ReadVariableOp:0
         //"vision/object_detection_segmentation/yolov4/model/yolov4.onnx",
         //"vision/style_transfer/fast_neural_style/model/candy-8.onnx",
         //"vision/style_transfer/fast_neural_style/model/candy-9.onnx",
         //"/vision/style_transfer/fast_neural_style/model/mosaic-8.onnx",
         //"vision/style_transfer/fast_neural_style/model/mosaic-9.onnx",
+        //model does not exist
         //"vision/style_transfer/fast_neural_style/model/pointilism-8.onnx",
         //"vision/style_transfer/fast_neural_style/model/pointilism-9.onnx",
         //"vision/style_transfer/fast_neural_style/model/rain-princess-8.onnx",
         //"vision/style_transfer/fast_neural_style/model/rain-princess-9.onnx",
         //"vision/style_transfer/fast_neural_style/model/udnie-8.onnx",
         //"vision/style_transfer/fast_neural_style/model/udnie-9.onnx",
+        //java.lang.IllegalStateException: Node name was empty!
         //"vision/super_resolution/sub_pixel_cnn_2016/model/super-resolution-10.onnx",
+        //java.lang.IllegalArgumentException: No import process defined for OneHot
         //"text/machine_comprehension/bert-squad/model/bertsquad-10.onnx",
         //"text/machine_comprehension/bert-squad/model/bertsquad-8.onnx",
+        //java.lang.IllegalArgumentException: No import process defined for CategoryMapper
         //"text/machine_comprehension/bidirectional_attention_flow/model/bidaf-9.onnx",
+        //ORT: Softmax node. Name:'Softmax_145' Status Message: /__w/javacpp-presets/javacpp-presets/onnxruntime/cppbuild/linux-x86_64/onnxruntime/onnxruntime/core/providers/common.h:24 int64_t onnxruntime::HandleNegativeAxis(int64_t, int64_t) axis >= -tensor_rank && axis <= tensor_rank - 1 was false. axis 3 is not in valid range [-2,1]
         //"text/machine_comprehension/gpt-2/model/gpt2-10.onnx",
+        //Non-zero status code returned while running Softmax node. Name:'Softmax_141' Status Message: /__w/javacpp-presets/javacpp-presets/onnxruntime/cppbuild/linux-x86_64/onnxruntime/onnxruntime/core/providers/common.h:24 int64_t onnxruntime::HandleNegativeAxis(int64_t, int64_t) axis >= -tensor_rank && axis <= tensor_rank - 1 was false. axis 3 is not in valid range [-2,1]
         //"text/machine_comprehension/gpt-2/model/gpt2-lm-head-10.onnx",
+        //Non-zero status code returned while running Softmax node. Name:'Softmax_92' Status Message: /__w/javacpp-presets/javacpp-presets/onnxruntime/cppbuild/linux-x86_64/onnxruntime/onnxruntime/core/providers/common.h:24 int64_t onnxruntime::HandleNegativeAxis(int64_t, int64_t) axis >= -tensor_rank && axis <= tensor_rank - 1 was false. axis 3 is not in valid range [-2,1]
         //"text/machine_comprehension/roberta/model/roberta-base-11.onnx",
+        //ORT: Non-zero status code returned while running Softmax node. Name:'Softmax_90' Status Message: /__w/javacpp-presets/javacpp-presets/onnxruntime/cppbuild/linux-x86_64/onnxruntime/onnxruntime/core/providers/common.h:24 int64_t onnxruntime::HandleNegativeAxis(int64_t, int64_t) axis >= -tensor_rank && axis <= tensor_rank - 1 was false. axis 3 is not in valid range [-2,1]
         //"text/machine_comprehension/roberta/model/roberta-sequence-classification-9.onnx",
+        //ORT:  Non-zero status code returned while running Softmax node. Name:'Softmax_124' Status Message: /__w/javacpp-presets/javacpp-presets/onnxruntime/cppbuild/linux-x86_64/onnxruntime/onnxruntime/core/providers/common.h:24 int64_t onnxruntime::HandleNegativeAxis(int64_t, int64_t) axis >= -tensor_rank && axis <= tensor_rank - 1 was false. axis 3 is not in valid range [-2,1]
         //"text/machine_comprehension/t5/model/t5-decoder-with-lm-head-12.onnx",
+        // Non-zero status code returned while running Softmax node. Name:'Softmax_98' Status Message: /__w/javacpp-presets/javacpp-presets/onnxruntime/cppbuild/linux-x86_64/onnxruntime/onnxruntime/core/providers/common.h:24 int64_t onnxruntime::HandleNegativeAxis(int64_t, int64_t) axis >= -tensor_rank && axis <= tensor_rank - 1 was false. axis 3 is not in valid range [-2,1]
         //"text/machine_comprehension/t5/model/t5-encoder-12.onnx"
 
     )
