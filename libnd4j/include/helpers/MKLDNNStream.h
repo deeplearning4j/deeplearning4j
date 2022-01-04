@@ -31,7 +31,7 @@
 #endif
 
 
-#if defined(HAVE_ONEDNN) || defined(HAVE_VEDNN)
+#if defined(HAVE_ONEDNN)
 #include <vector>
 #include <string>
 #include <array/NDArray.h>

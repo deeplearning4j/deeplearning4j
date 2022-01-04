@@ -187,7 +187,7 @@ if (HAVE_ONEDNN)
 endif()
 
 if (HAVE_VEDNN)
-    file(GLOB_RECURSE CUSTOMOPS_VEDNN_SOURCES false ../include/ops/declarable/platform/mkldnn/*.cpp ../include/ops/declarable/platform/mkldnn/mkldnnUtils.h)
+    file(GLOB_RECURSE CUSTOMOPS_VEDNN_SOURCES false ../include/ops/declarable/platform/vednn/*.cpp ../include/ops/declarable/platform/vednn/*.h)
 endif()
 
 if(HAVE_ARMCOMPUTE)

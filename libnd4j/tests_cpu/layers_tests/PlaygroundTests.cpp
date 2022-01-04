@@ -45,7 +45,7 @@
 #include <ops/declarable/helpers/reductions.h>
 #include <ops/declarable/helpers/scatter.h>
 #include <ops/ops.h>
-
+#include <build_info.h>
 #include <array>
 #include <chrono>
 #include <random>
@@ -89,6 +89,116 @@ TEST_F(PlaygroundTests, test_biasAdd_1) {
   std::sort(values.begin(), values.end());
 
   sd_printf("Time: %lld us;\n", values[values.size() / 2]);
+}
+
+ 
+void bench_conv(int outter_loop, const char *msg,  const std::vector<NDArray *> &inList,  const std::vector<NDArray *> &outList,     const std::vector<sd::LongType> &iArgs ){
+   std::vector<sd::LongType> values;
+   if(outter_loop<1) outter_loop=1;
+   if(msg==nullptr ) msg="bench:";
+    sd::ops::conv2d op;
+   for (int e = 0; e < outter_loop; e++) {
+    auto timeStart = std::chrono::system_clock::now();
+
+    op.execute(inList, outList, {} , iArgs);
+
+    auto timeEnd = std::chrono::system_clock::now();
+    auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+    values.emplace_back(outerTime);
+  }
+
+  std::sort(values.begin(), values.end());
+  double sum = 0.0;
+  for(auto ss: values){
+    sum+=ss;
+  }
+  sd_printf("%s:\nTime: %lld us; avg %f   Loop count %d\n", msg, values[values.size() / 2], sum/(double)values.size(), outter_loop);
+}
+
+
+TEST_F(PlaygroundTests, test_conv2d_bench) {
+  // sd::Environment::getInstance().setDebug(true);
+  // sd::Environment::getInstance().setVerbose(true);
+  auto rr=buildInfo();
+  sd_printf("info:\n%s\n",rr);
+// shapeInfo input: [4,  1,27,27,512,  373248,13824,512,1,  8192,1,99]
+// shapeInfo weights: [4,  3,3,512,1024,  1572864,524288,1024,1,  8192,1,99]
+// shapeInfo output: [4,  1,13,13,1024,  173056,13312,1024,1,  8192,1,99]
+  auto in0 = NDArrayFactory::create<float>('c', {1,27,27,512});
+  auto w0 = NDArrayFactory::create<float>('c', {3,3,512,1024});
+  auto out0 = NDArrayFactory::create<float>('c', {1,13,13,1024});
+  in0.linspace(0);
+  w0.linspace(0);
+//   shapeInfo input: [4,  1,417,417,32,  5564448,13344,32,1,  8192,1,99]
+//  shapeInfo weights: [4,  3,3,32,64,  6144,2048,64,1,  8192,1,99]
+// shapeInfo output: [4,  1,208,208,64,  2768896,13312,64,1,  8192, z1,99]
+  auto in1 = NDArrayFactory::create<float>('c', {1,417,417,32});
+  auto w1 = NDArrayFactory::create<float>('c', {3,3,32,64});
+  in1.linspace(0);
+  w1.linspace(0);
+  auto out1 = NDArrayFactory::create<float>('c', {1,208,208,64});
+
+  auto in0_2 =in0.permute( {0,3, 1, 2} ).dup('c');
+  auto w0_2 = w0.permute( {3, 2, 0, 1} ).dup('c');
+  auto out0_2 = out0.permute( {0,3, 1, 2} ).dup('c');
+  in0_2.printShapeInfo("in0_2");
+  w0_2.printShapeInfo("w0_2");
+  out0_2.printShapeInfo("out0_2");
+
+  auto in1_2 =in1.permute( {0,3, 1, 2} ).dup('c');
+  auto w1_2 = w1.permute( {3, 2, 0, 1} ).dup('c');
+  auto out1_2 = out1.permute( {0,3, 1, 2} ).dup('c');
+  in1_2.printShapeInfo("in1_2");
+  w1_2.printShapeInfo("w1_2");
+  out1_2.printShapeInfo("out1_2");
+  //Running conv2d onednn with kernels: 3 3 strides: 2 2 padding: 0 0 dilation: 1 1 paddingMode 0 weightFormat 0  isNCHW 0
+  int   kH = 3, kW = 3, sH = 2, sW = 2, pH = 0, pW = 0, dH = 1, dW = 1, paddingMode=0, weightFormat=0;
+ 
+  //op.execute( std::vector<NDArray *>{&in0, &w0},  std::vector<NDArray *>{&out0},{kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, weightFormat});
+  std::vector<sd::LongType> iArgs = {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, 1, weightFormat} ;
+  std::vector<sd::LongType> iArgs2 = {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, 0, 1} ;
+ 
+
+  bench_conv(20, "first ", {&in0, &w0},  {&out0}, iArgs );
+  bench_conv(20, "second", {&in1, &w1},  {&out1}, iArgs  );
+  bench_conv(20, "first_nchw_wformat1",{&in0_2, &w0_2},  {&out0_2},  iArgs2   );
+  bench_conv(20, "second_nchw_wformat1", {&in1_2, &w1_2},  {&out1_2}, iArgs2  );
+
+  auto out_revert0= out0_2.permute({0,2,3,1});
+  auto out_revert1= out1_2.permute({0,2,3,1});
+  ASSERT_TRUE(out0.equalsTo(&out_revert0));
+  ASSERT_TRUE(out1.equalsTo(&out_revert1)); 
+   
+
+}
+
+TEST_F(PlaygroundTests, tt_conv2) {
+    auto in0 = NDArrayFactory::create<float>('c', { 1,2,5,4 });
+    auto w0 = NDArrayFactory::create<float>('c', { 2, 2, 2,2 }); 
+    in0.linspace(0);
+    w0.linspace(0);
+    //w0 = 1;
+    int kH =2;
+    int kW =2;
+    int sH =1;
+    int sW =1;
+    int pH =0;
+    int pW =0;
+    int dH = 1;
+    int dW= 1;
+    int paddingMode =0;
+    //int isNCHW = 1;
+    int weightFormat= 1 ;
+    //w0.permutei({1,0,3,2});
+    in0.printIndexedBuffer("input");
+    w0.printIndexedBuffer("weights");
+    std::vector<sd::LongType> iArgs = {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, 0, weightFormat} ;
+    sd::ops::conv2d op; 
+    auto res= op.evaluate({&in0, &w0},   {} , iArgs);
+    auto out=res.at(0);
+    out->printShapeInfo("out");
+    out->printIndexedBuffer("out");
+
 }
 
 TEST_F(PlaygroundTests, test_bert_full_1) {

@@ -359,49 +359,22 @@ if(${HELPERS_armcompute})
 
 endif()
 
-# ve-dnn entry
 if (${HELPERS_vednn})
-    message("Going to pull & build vednn")
-    set(HAVE_VEDNN 1)
-    if(SD_AURORA)
-        set(NECVE 1 CACHE BOOL "" FORCE )
-    endif()
-    set(ENV{NLC_HOME} $ENV{NLC_ROOT})
-    set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "enforce static mode" FORCE)
-    set(DDNNL_BUILD_TESTS OFF CACHE BOOL "BUILD TESTS" FORCE)
-    set(VE_SEQ  1 CACHE BOOL "" FORCE)
-    set(DNNL_ISA  "ALL" CACHE STRING "" FORCE)
-    set(DNNL_ENABLE_CONCURRENT_EXEC  ON CACHE BOOL "" FORCE)
-    set(DNNL_ENABLE_PRIMITIVE_CACHE  0 CACHE BOOL "" FORCE)
-    set(DNNL_CPU_RUNTIME  "OMP" CACHE STRING "" FORCE)
+find_package(VEDNN REQUIRED)
 
+if(VEDNN_FOUND)
+   message("Found VEDNN: ${VEDNN_LIBRARIES}")
+   set(HAVE_VEDNN 1)
+   include_directories(${VEDNN_INCLUDE})
+   message("----${VEDNN_INCLUDE}---")
+else()
+    message( FATAL_ERROR "could not locate necessary VEDNN files")
+endif()
 
-    configure_file(./CMakeLists.txt.vednn.in vednn-download/CMakeLists.txt)
-    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-            RESULT_VARIABLE result
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vednn-download )
-    if(result)
-        message(FATAL_ERROR "CMake step for vednn failed: ${result}")
-    endif()
-    execute_process(COMMAND ${CMAKE_COMMAND} --build .
-            RESULT_VARIABLE result
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vednn-download )
-    if(result)
-        message(FATAL_ERROR "Build step for vednn failed: ${result}")
-    endif()
+list(APPEND EXTERNAL_DEPENDENCY_LIBS  ${VEDNN_LIBRARIES} )
+endif()
 
-    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/vednn-src
-            ${CMAKE_CURRENT_BINARY_DIR}/vednn-build
-            EXCLUDE_FROM_ALL)
-
-    set(vednn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/vednn-build)
-    set(vednn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/vednn-src)
-    set(VEDNN_PATH "${vednn_SOURCE_DIR}")
-    include_directories(${vednn_SOURCE_DIR}/include ${vednn_EXT_DIR}/include ${vednn_SOURCE_DIR})
-    list(APPEND EXTERNAL_DEPENDENCY_LIBS dnnl )
-
-# one-dnn entry
-elseif (${HELPERS_onednn})
+if (${HELPERS_onednn})
     message("Going to pull & build onednn")
     set(HAVE_ONEDNN 1)
     set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
