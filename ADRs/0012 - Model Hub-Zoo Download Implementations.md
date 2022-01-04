@@ -52,8 +52,20 @@ Pytorch will need to be converted to onnx. Pytorch serving uses
 the [model archive tool](https://github.com/pytorch/serve/tree/master/model-archiver/) 
 for handling model storage.
 
-For our purposes a staged model will be considered an onnx model
-that is exported via pytorch.
+Unfortunately, this requires a bit of to integrate with.
+Pytorch serve archives can vary in format. We will typically 
+want to extract the model from it to manipulate it.
+
+Separately, pytorch has various model zoos both official and community provided:
+1. [Example of community provided](https://github.com/rwightman/pytorch-image-models)
+2. [Torchvision model zoo](https://pytorch.org/vision/stable/models.html)
+
+
+At the end, we will want to convert the model to onnx. 
+This will be considered a staged model that is consumable
+by the framework.
+
+
 
 ### Huggingface
 

@@ -26,71 +26,71 @@ class KerasModelHub(ModelHub):
     def __init__(self):
         super().__init__(framework_name, BASE_URL)
 
-    def download_model(self, model_path):
-        model_path = self.download_for_url(model_path)
+    def download_model(self, model_path,**kwargs):
+        model_path = self.download_for_url(model_path,**kwargs)
         return model_path
 
     def stage_model(self, model_path: str, model_name: str):
         super().stage_model(model_path, model_name)
 
-    def download_for_url(self, path: str):
+    def download_for_url(self, path: str,**kwargs):
         path_split = path.split('/')
         type = path_split[0]
         weights_file = path_split[1]
         include_top = 'no_top' in weights_file
         if type == 'vgg19':
-            ret = VGG19(include_top=include_top)
+            ret = VGG19(include_top=include_top, **kwargs)
         elif type == 'vgg16':
-            ret = VGG16(include_top=include_top)
+            ret = VGG16(include_top=include_top, **kwargs)
         elif type == 'resnet50':
-            ret = ResNet50(include_top=include_top)
+            ret = ResNet50(include_top=include_top, **kwargs)
         elif type == 'resnet101':
-            ret = ResNet101(include_top=include_top)
+            ret = ResNet101(include_top=include_top, **kwargs)
         elif type == 'resnet152':
-            ret = ResNet152(include_top=include_top)
+            ret = ResNet152(include_top=include_top, **kwargs)
         elif type == 'resnet50v2':
-            ret = ResNet50V2(include_top=include_top)
+            ret = ResNet50V2(include_top=include_top, **kwargs)
         elif type == 'resnet101v2':
-            ret = ResNet101V2(include_top=include_top)
+            ret = ResNet101V2(include_top=include_top, **kwargs)
         elif type == 'resnet152v2':
-            ret = ResNet152V2(include_top=include_top)
+            ret = ResNet152V2(include_top=include_top, **kwargs)
         elif type == 'densenet121':
             ret = DenseNet121(include_top=include_top)
         elif type == 'densenet169':
-            ret = DenseNet169(include_top=include_top)
+            ret = DenseNet169(include_top=include_top, **kwargs)
         elif type == 'densenet201':
-            ret = DenseNet201(include_top=include_top)
+            ret = DenseNet201(include_top=include_top, **kwargs)
         elif type == 'inceptionresnetv2':
-            ret = InceptionResNetV2(include_top=include_top)
+            ret = InceptionResNetV2(include_top=include_top, **kwargs)
         elif type == 'efficientnetb0':
-            ret = EfficientNetB0(include_top=include_top)
+            ret = EfficientNetB0(include_top=include_top, **kwargs)
         elif type == 'efficientnetb1':
-            ret = EfficientNetB1(include_top=include_top)
+            ret = EfficientNetB1(include_top=include_top, **kwargs)
         elif type == 'efficientnetb2':
-            ret = EfficientNetB2(include_top=include_top)
+            ret = EfficientNetB2(include_top=include_top, **kwargs)
         elif type == 'efficientnetb3':
-            ret = EfficientNetB3(include_top=include_top)
+            ret = EfficientNetB3(include_top=include_top, **kwargs)
         elif type == 'efficientnetb4':
-            ret = EfficientNetB4(include_top=include_top)
+            ret = EfficientNetB4(include_top=include_top, **kwargs)
         elif type == 'efficientnetb5':
-            ret = EfficientNetB5(include_top=include_top)
+            ret = EfficientNetB5(include_top=include_top, **kwargs)
         elif type == 'efficientnetb6':
-            ret = EfficientNetB6(include_top=include_top)
+            ret = EfficientNetB6(include_top=include_top, **kwargs)
         elif type == 'efficientnetb8':
-            efficient_net = EfficientNetB7(include_top=include_top)
+            efficient_net = EfficientNetB7(include_top=include_top, **kwargs)
         elif type == 'mobilenet':
-            ret = MobileNet(include_top=include_top)
+            ret = MobileNet(include_top=include_top, **kwargs)
         elif type == 'mobilenetv2':
             ret = MobileNetV2(include_top=include_top)
         elif type == 'mobilenetv3':
-            mobile_net = MobileNetV3(include_top=include_top)
+            mobile_net = MobileNetV3(include_top=include_top, **kwargs)
         elif type == 'inceptionv3':
-            ret = InceptionV3(include_top=include_top)
+            ret = InceptionV3(include_top=include_top, **kwargs)
         elif type == 'nasnet':
-            ret = NASNetLarge(include_top=include_top)
+            ret = NASNetLarge(include_top=include_top, **kwargs)
         elif type == 'nasnet_mobile':
-            ret = NASNetMobile(include_top=include_top)
+            ret = NASNetMobile(include_top=include_top, **kwargs)
         elif type == 'xception':
-            ret = Xception(include_top=include_top)
+            ret = Xception(include_top=include_top, **kwargs)
         model_path = os.path.join(keras_path,weights_file)
         return model_path

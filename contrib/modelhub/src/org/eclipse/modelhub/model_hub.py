@@ -22,7 +22,7 @@ class ModelHub(object):
             os.mkdir(self.stage_model_dir)
         self.base_url = base_url
 
-    def _download_file(self, url: str):
+    def _download_file(self, url: str,**kwargs):
         local_filename = os.path.join(self.stage_model_dir, url.split('/')[-1])
         # NOTE the stream=True parameter below
         with requests.get(url, stream=True) as r:
@@ -35,7 +35,7 @@ class ModelHub(object):
                     f.write(chunk)
         return local_filename
 
-    def download_model(self, model_path) -> str:
+    def download_model(self, model_path,**kwargs) -> str:
         """
         Meant to be overridden by sub classes.
         Handles downloading a model with the target URL

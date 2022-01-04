@@ -5,3 +5,4 @@ onnx
 requests
 pytest
 torch-model-archiver
+cchardet
