@@ -26,7 +26,13 @@ class KerasModelHub(ModelHub):
     def __init__(self):
         super().__init__(framework_name, BASE_URL)
 
-    def download_model(self, model_path,**kwargs):
+    def download_model(self, model_path, **kwargs) -> str:
+        """
+        Download the model and return the model path on the file system
+        :param model_path:  the model path for the URL
+        :param kwargs: various kwargs for customizing the underlying behavior
+        :return:  the local file path
+        """
         model_path = self.download_for_url(model_path,**kwargs)
         return model_path
 
@@ -34,6 +40,13 @@ class KerasModelHub(ModelHub):
         super().stage_model(model_path, model_name)
 
     def download_for_url(self, path: str,**kwargs):
+        """
+        Download the file at the given URL
+        :param path:  the path to download
+        :param kwargs:  various kwargs for customizing the underlying behavior of
+        the model download and setup
+        :return: the absolute path to the model
+        """
         path_split = path.split('/')
         type = path_split[0]
         weights_file = path_split[1]

@@ -59,11 +59,12 @@ want to extract the model from it to manipulate it.
 Separately, pytorch has various model zoos both official and community provided:
 1. [Example of community provided](https://github.com/rwightman/pytorch-image-models)
 2. [Torchvision model zoo](https://pytorch.org/vision/stable/models.html)
-
+3. [Pytorch hub](https://pytorch.org/hub/)
 
 At the end, we will want to convert the model to onnx. 
 This will be considered a staged model that is consumable
 by the framework.
+
 
 
 
@@ -84,6 +85,16 @@ so we can convert it to onnx.
 
 For each of tensorflow and pytorch we will be storing models under huggingface
 but reusing the staging techniques from the tensorflow and onnx frameworks.
+
+Huggingface model paths should be direct to files.  The URL format is:
+https://huggingface.co + the repo name followed by resolve/main/file_name
+This file name should be a path to a raw model file. Optional pre processing
+maybe desirable for huggingface downloaded models. 
+The biggest reason for this is due to many huggingface repos supporting multiple frameworks.
+1 or more files maybe relevant for import.
+
+
+
 
 
 

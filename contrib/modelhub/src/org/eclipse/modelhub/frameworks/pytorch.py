@@ -227,7 +227,12 @@ class PytorchModelHub(ModelHub):
             x = torch.from_numpy(np.ones((1,3,height,width),dtype=np.float32))
             model = models.detection.RetinaNet(pretrained=True,**kwargs)
         print('done downloading')
-        torch.onnx.export(model,x,f'{framework_dir}/{model_path}.onnx',export_params=True,opset_version=13,**kwargs)
+        torch.onnx.export(model,
+                          x,
+                          f'{framework_dir}/{model_path}.onnx',
+                          export_params=True,
+                          opset_version=13,
+                          **kwargs)
 
     def stage_model(self, model_path: str, model_name: str):
         super().stage_model(model_path, model_name)
