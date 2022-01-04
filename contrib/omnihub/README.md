@@ -35,7 +35,7 @@ steps per framework such as freezing/unfreezing, downloading of models.
 -------------
 
 An SDK for interacting with various model zoos across different frameworks.
-Model hub handles downloading and initializing models from different model zoos
+Omnihub handles downloading and initializing models from different model zoos
 handling conversion to standalone files. Various complexities
 across different frameworks exist for making deployable or finetunable model files.
 
