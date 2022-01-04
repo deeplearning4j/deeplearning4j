@@ -1,10 +1,10 @@
-from org.eclipse.modelhub.frameworks.huggingface import HuggingFaceModelHub
-from org.eclipse.modelhub.frameworks.keras import KerasModelHub
-from org.eclipse.modelhub.frameworks.onnx import OnnxModelHub
-from org.eclipse.modelhub.frameworks.pytorch import PytorchModelHub
-from org.eclipse.modelhub.frameworks.tensorflow import TensorflowModelHub
+from omnihub.frameworks.huggingface import HuggingFaceModelHub
+from omnihub.frameworks.keras import KerasModelHub
+from omnihub import OnnxModelHub
+from omnihub.frameworks.pytorch import PytorchModelHub
+from omnihub.frameworks.tensorflow import TensorflowModelHub
 import os
-from org.eclipse.modelhub.model_hub import model_hub_dir
+from omnihub.model_hub import model_hub_dir
 
 
 def test_keras():

@@ -1,9 +1,7 @@
 import os
-from org.eclipse.modelhub.model_hub import model_hub_dir, ModelHub
-from model_archiver.manifest_components import manifest,model
+from omnihub.model_hub import model_hub_dir, ModelHub
 import torch
 from  torchvision import models
-from torchvision.models.detection import FasterRCNN
 import numpy as np
 
 framework_name = 'pytorch'

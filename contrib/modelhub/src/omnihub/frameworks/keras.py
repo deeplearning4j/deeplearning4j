@@ -3,7 +3,7 @@ import os
 from tensorflow.python.keras.applications.mobilenet_v2 import MobileNetV2
 from tensorflow.python.keras.applications.mobilenet_v3 import MobileNetV3
 
-from org.eclipse.modelhub.model_hub import model_hub_dir, ModelHub
+from omnihub.model_hub import model_hub_dir, ModelHub
 from tensorflow.keras.applications.vgg19 import VGG19
 from tensorflow.keras.applications.vgg16 import VGG16
 from tensorflow.keras.applications.resnet import ResNet50, ResNet101, ResNet152

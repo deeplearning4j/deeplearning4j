@@ -1,4 +1,4 @@
-Modelhub
+Omnihub
 --------------------------
 Simple downloading and conversion of pretrained models
 
@@ -9,13 +9,15 @@ python setup.py install
 ```
 
 ###Basic Usage
-See the [unit tests](./src/tests/org/eclipse/modelhub/test_frameworks.py) for basic usage
+See the [unit tests](src/tests/omnihub/test_frameworks.py) for basic usage
 Simple example:
+
 ```python
-from org.eclipse.modelhub.frameworks.onnx import OnnxModelHub
+from omnihub import OnnxModelHub
+
 keras_model_hub = KerasModelHub()
 model_path = keras_model_hub.download_model('vgg19/vgg19_weights_tf_dim_ordering_tf_kernels_notop.h5')
-keras_model_hub.stage_model(model_path,'vgg19_weights_tf_dim_ordering_tf_kernels_notop.h5')
+keras_model_hub.stage_model(model_path, 'vgg19_weights_tf_dim_ordering_tf_kernels_notop.h5')
 ```
 
 This will download a model using keras applications and put it in:

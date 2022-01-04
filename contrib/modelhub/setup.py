@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="modelhub",
+    name="omnihub",
     version="0.0.1",
     author="Adam Gibson (agibsonccc)",
     author_email="adam@konduit.ai",

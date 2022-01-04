@@ -2,7 +2,7 @@ import os
 
 from tensorflow.core.framework.graph_pb2 import GraphDef
 
-from org.eclipse.modelhub.model_hub import model_hub_dir, ModelHub
+from omnihub.model_hub import model_hub_dir, ModelHub
 import tarfile
 from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2
 import tensorflow as tf

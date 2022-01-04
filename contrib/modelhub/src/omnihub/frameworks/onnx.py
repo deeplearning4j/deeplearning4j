@@ -1,5 +1,5 @@
 import os
-from org.eclipse.modelhub.model_hub import model_hub_dir, ModelHub
+from omnihub.model_hub import model_hub_dir, ModelHub
 
 framework_name = 'onnx'
 framework_dir = os.path.join(model_hub_dir, framework_name)
