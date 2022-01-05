@@ -65,20 +65,15 @@ and samediff() will point to a /samediff folder.
 
 ### Advantages
 
-* Greatly strengthens our ability to test and execute models
-needed for different use cases
-* Allows us to be flexible in what we can enable users to do with
-our framework as a starting point
-* Further, builds out the work from downloading models and greatly increases
-the testing allowed for our model import framework
+* Java will be used to consume models and allow for creation of the model zoo 
+repository using git lfs as the base
+* Increases the number of models have access to without needing to convert them manually
+
 
 
 
 ### Disadvantages
-* Different work is needed for each ecosystem
-* APIs may change and need to be updated
-* Just pre-processing models does not mean they are guaranteed to be imported. Additional
-  work will need to be done on model import to allow models to execute. This comes with additional validation work.
-* Not a comprehensive solution, users will still need to know things like the inputs and outputs
-and may still need to refer to the underlying docs for a given model to use effectively.
-* A user may still need to understand how to pre-process different kinds of models
+* Workflow for converting models is not completely automated and requires
+manual curation
+* The tool isn't a complete solution to adding new models as they come out
+* Models found are not guaranteed to be converted and may need manual interference
