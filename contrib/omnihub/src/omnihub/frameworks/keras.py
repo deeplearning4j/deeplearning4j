@@ -3,7 +3,7 @@ import os
 from tensorflow.python.keras.applications.mobilenet_v2 import MobileNetV2
 from tensorflow.python.keras.applications.mobilenet_v3 import MobileNetV3
 
-from omnihub.model_hub import model_hub_dir, ModelHub
+from omnihub.model_hub import omnihub_dir, ModelHub
 from tensorflow.keras.applications.vgg19 import VGG19
 from tensorflow.keras.applications.vgg16 import VGG16
 from tensorflow.keras.applications.resnet import ResNet50, ResNet101, ResNet152
@@ -17,7 +17,7 @@ from tensorflow.keras.applications.inception_v3 import InceptionV3
 from tensorflow.keras.applications.nasnet import NASNetLarge, NASNetMobile
 from tensorflow.keras.applications.xception import Xception
 framework_name = 'keras'
-framework_dir = os.path.join(model_hub_dir, framework_name)
+framework_dir = os.path.join(omnihub_dir, framework_name)
 BASE_URL = 'https://storage.googleapis.com/tensorflow/keras-applications'
 keras_path = os.path.join(os.path.expanduser('~'), '.keras','models')
 
@@ -105,5 +105,5 @@ class KerasModelHub(ModelHub):
             ret = NASNetMobile(include_top=include_top, **kwargs)
         elif type == 'xception':
             ret = Xception(include_top=include_top, **kwargs)
-        model_path = os.path.join(keras_path,weights_file)
+        model_path = os.path.join(keras_path, weights_file)
         return model_path

@@ -1,11 +1,11 @@
 import os
-from omnihub.model_hub import model_hub_dir, ModelHub
+from omnihub.model_hub import omnihub_dir, ModelHub
 import torch
 from  torchvision import models
 import numpy as np
 
 framework_name = 'pytorch'
-framework_dir = os.path.join(model_hub_dir, framework_name)
+framework_dir = os.path.join(omnihub_dir, framework_name)
 BASE_URL = 'https://s3.amazonaws.com/pytorch/models'
 
 

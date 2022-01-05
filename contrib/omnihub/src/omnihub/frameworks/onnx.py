@@ -1,8 +1,8 @@
 import os
-from omnihub.model_hub import model_hub_dir, ModelHub
+from omnihub.model_hub import omnihub_dir, ModelHub
 
 framework_name = 'onnx'
-framework_dir = os.path.join(model_hub_dir, framework_name)
+framework_dir = os.path.join(omnihub_dir, framework_name)
 BASE_URL = 'https://media.githubusercontent.com/media/onnx/models/master'
 
 

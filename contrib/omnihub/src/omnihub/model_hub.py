@@ -4,20 +4,20 @@ from typing import IO
 
 import requests
 
-MODEL_HUB_DIR = 'MODEL_HUB_DIR'
-if os.environ.__contains__(MODEL_HUB_DIR):
-    model_hub_dir = os.environ[MODEL_HUB_DIR]
+OMNIHUB_HOME = 'OMNIHUB_HOME'
+if os.environ.__contains__(OMNIHUB_HOME):
+    omnihub_dir = os.environ[OMNIHUB_HOME]
 else:
-    model_hub_dir = os.path.join(os.path.expanduser('~'), '.model_hub')
+    omnihub_dir = os.path.join(os.path.expanduser('~'), '.omnihub')
 
-if not os.path.exists(model_hub_dir):
-    os.mkdir(model_hub_dir)
+if not os.path.exists(omnihub_dir):
+    os.mkdir(omnihub_dir)
 
 
 class ModelHub(object):
     def __init__(self, framework_name: str, base_url: str):
         self.framework_name = framework_name
-        self.stage_model_dir = os.path.join(model_hub_dir, self.framework_name)
+        self.stage_model_dir = os.path.join(omnihub_dir, self.framework_name)
         if not os.path.exists(self.stage_model_dir):
             os.mkdir(self.stage_model_dir)
         self.base_url = base_url

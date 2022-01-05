@@ -2,14 +2,14 @@ import os
 
 from tensorflow.core.framework.graph_pb2 import GraphDef
 
-from omnihub.model_hub import model_hub_dir, ModelHub
+from omnihub.model_hub import omnihub_dir, ModelHub
 import tarfile
 from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2
 import tensorflow as tf
 import tempfile
 
 framework_name = 'tensorflow'
-framework_dir = os.path.join(model_hub_dir, framework_name)
+framework_dir = os.path.join(omnihub_dir, framework_name)
 BASE_URL = 'https://tfhub.dev'
 
 
@@ -41,3 +41,5 @@ class TensorflowModelHub(ModelHub):
             with tarfile.open(model_path, mode=mode) as downloaded:
                 downloaded.extractall(tmpdir)
                 tf.io.write_graph(convert_saved_model(tmpdir), framework_dir, f'{final_name}.pb', as_text=False)
+        # remove extra tar file
+        os.remove(model_path)
