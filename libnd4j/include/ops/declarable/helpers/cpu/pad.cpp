@@ -21,12 +21,81 @@
 //
 
 #include <helpers/Loops.h>
-#include <ops/declarable/helpers/transforms.h>
 #include <helpers/LoopsCoordsHelper.h>
+#include <ops/declarable/helpers/transforms.h>
+#include <system/Environment.h>
+
+#include <type_traits>
 namespace sd {
 namespace ops {
 namespace helpers {
 
+template <typename T, size_t constRank>
+static void copy_core_rank(const T* x, T* coreZ, const sd::LongType* xShapes, const sd::LongType* xStrides,
+                           const sd::LongType* zStrides, int start, int stop) {
+  static_assert(constRank > 1, "implement rank 1 directly");
+  size_t loop_count = (stop - start);
+  sd::ZipCoordsState<constRank - 1> cst;
+  sd::zip_size_t offset = sd::init_coords<constRank - 1>(cst, start, xShapes, xStrides, zStrides);
+  auto lastStrideX = xStrides[constRank - 1];
+  auto lastStrideZ = zStrides[constRank - 1];
+  auto inputLastSize = xShapes[constRank - 1];
+  // sd_printf("%d %d %d %d %d\n",start, stop,(int)offset.second, (int)lastStrideX, (int)lastStrideZ);
+  if (lastStrideZ == 1 && lastStrideX == 1) {
+    for (auto k = 0; k < (stop - start); k++) {
+      auto xPtr = &(x[offset.first]);
+      auto zPtr = &(coreZ[offset.second]);
+      for (int i = 0; i < inputLastSize; i++) {
+        zPtr[i] = xPtr[i];
+      }
+      offset = sd::inc_coords<constRank - 1>(cst, offset);
+    }
+  } else {
+    for (auto k = 0; k < loop_count; k++) {
+      auto xPtr = &(x[offset.first]);
+      auto zPtr = &(coreZ[offset.second]);
+      for (int i = 0; i < inputLastSize; i++) {
+        zPtr[i * lastStrideZ] = xPtr[i * lastStrideX];
+      }
+      offset = sd::inc_coords<constRank - 1>(cst, offset);
+    }
+  }
+}
+
+template <typename T>
+void copy_core_generic(int rank, const T* x, T* coreZ, const sd::LongType* xShapes, const sd::LongType* xStrides,
+                       const sd::LongType* zStrides, int start, int stop) {
+  auto lastStrideX = xStrides[rank - 1];
+  auto lastStrideZ = zStrides[rank - 1];
+  auto inputLastSize = xShapes[rank - 1];
+  sd::LongType coords[SD_MAX_RANK] = {};
+  sd::LongType* ptrCoords = (sd::LongType*)&coords;
+
+  zip_size_t offset = {};
+  if (rank > 1) {
+    index2coords_C(start, rank - 1, xShapes, ptrCoords);
+    offset = offset_from_coords(xStrides, zStrides, ptrCoords, rank - 1);
+  }
+  if (lastStrideZ == 1 && lastStrideX == 1) {
+    for (auto k = 0; k < (stop - start); k++) {
+      auto xPtr = &(x[offset.first]);
+      auto zPtr = &(coreZ[offset.second]);
+      for (int i = 0; i < inputLastSize; i++) {
+        zPtr[i] = xPtr[i];
+      }
+      offset = inc_coords(xShapes, xStrides, zStrides, ptrCoords, offset, rank - 1);
+    }
+  } else {
+    for (auto k = 0; k < (stop - start); k++) {
+      auto xPtr = &(x[offset.first]);
+      auto zPtr = &(coreZ[offset.second]);
+      for (int i = 0; i < inputLastSize; i++) {
+        zPtr[i * lastStrideZ] = xPtr[i * lastStrideX];
+      }
+      offset = inc_coords(xShapes, xStrides, zStrides, ptrCoords, offset, rank - 1);
+    }
+  }
+}
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, const NDArray& padValue) {
@@ -38,7 +107,6 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
 
   const int rank = input.rankOf();  // both input and output have the same rank
   const int rankMinusOne = rank - 1;
-
   const auto zLen = output.lengthOf();
 
   if (mode == 0) {  // CONSTANT case
@@ -49,36 +117,43 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
     auto outShapes = output.shapeOf();
     auto xStrides = input.stridesOf();
     auto zStrides = output.stridesOf();
-    sd::LongType coords[SD_MAX_RANK] = {};
     sd::LongType paddingOffsetCoords[SD_MAX_RANK] = {};
-    sd::LongType* prtCoords = (sd::LongType*)&coords; 
-    sd::LongType* prtPaddingCoords = (sd::LongType*)&paddingOffsetCoords; 
+    sd::LongType* ptrPaddingCoords = (sd::LongType*)&paddingOffsetCoords;
+    bool all_paddings_zero = true;
+    for (int j = 0; j < rank; j++) {
+      auto p0 = paddings.e<sd::LongType>(j, 0);
+      auto p1 = paddings.e<sd::LongType>(j, 1);
+      paddingOffsetCoords[j] = p0;
 
-    for (int j = 0 ; j<rank ;j++) { 
-        paddingOffsetCoords[j]= paddings.e<sd::LongType>(j, 0);
+      all_paddings_zero = all_paddings_zero && (p0 == 0) && (p1 == 0);
     }
-    auto paddingOffset = sd::offset_from_coords(zStrides, prtPaddingCoords, rank);
-    auto lastStrideX = xStrides[rank-1];
-    auto lastStrideZ = zStrides[rank-1];
-    auto inputLastSize = xShapes[rank-1];
 
-    //fill everything with padding Value
-    output.assign(padVal);
+    auto paddingOffset = all_paddings_zero ? 0 : sd::offset_from_coords(zStrides, ptrPaddingCoords, rank);
 
-    //fill the core from input
-    zip_size_t offset = {};
+    auto inputLastSize = xShapes[rank - 1];
+
+    // fill everything with padding Value
+    if (!all_paddings_zero) output.assign(padVal, true);
+
+    // fill the core from input
     auto coreZ = &(z[paddingOffset]);
-    //iterate over core
-    auto len = input.lengthOf();
-    for (auto k = 0; k < len/inputLastSize; k++) {
-        auto xPtr = &(x[offset.first]);
-        auto zPtr = &(coreZ[offset.second]);
-        for(int i=0;i<inputLastSize;i++){
-          zPtr[i*lastStrideZ] = xPtr[i*lastStrideX];
-        }
-        offset = inc_coords(xShapes, xStrides, zStrides, prtCoords, offset, rank-1);
-    }
+    // iterate over core
+    auto len = input.lengthOf() / inputLastSize;
 
+    auto func = PRAGMA_THREADS_FOR {
+      if (rank == 3) {
+        copy_core_rank<T, 3>(x, coreZ, xShapes, xStrides, zStrides, start, stop);
+      } else if (rank == 4) {
+        copy_core_rank<T, 4>(x, coreZ, xShapes, xStrides, zStrides, start, stop);
+      } else if (rank == 5) {
+        copy_core_rank<T, 5>(x, coreZ, xShapes, xStrides, zStrides, start, stop);
+      } else {
+        copy_core_generic(rank, x, coreZ, xShapes, xStrides, zStrides, start, stop);
+      }
+    };
+    // fixed restriction for smaller inputs
+    auto numThreads = (zLen > 64 || inputLastSize > 4096) ? sd::Environment::getInstance().maxMasterThreads() : 1;
+    samediff::Threads::parallel_tad(func, 0, len, 1, numThreads);
 
   } else {  // REFLECT and SYMMETRIC cases
 
