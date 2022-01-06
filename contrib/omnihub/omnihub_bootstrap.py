@@ -21,6 +21,6 @@ pytorch_urls = ['resnet18']
 for url in pytorch_urls:
     pytorch_model_hub.download_model(url)
 huggingface_model_hub = HuggingFaceModelHub()
-huggingface_urls = [huggingface_model_hub.resolve_url('gpt2', 'tf_model.h5')]
-for url in huggingface_urls:
-    huggingface_model_hub.download_model(url)
+huggingface_urls =  { huggingface_model_hub.resolve_url('gpt2', 'tf_model.h5'): 'keras' }
+for url,framework_name in huggingface_urls.items():
+    huggingface_model_hub.download_model(url,framework_name=framework_name)

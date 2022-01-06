@@ -7,3 +7,5 @@ pytest
 torch-model-archiver
 cchardet
 tensorflow
+transformers
+scikit-learn

@@ -80,23 +80,16 @@ JAX will come at a later date when we have implemented JAX
 for the model import framework.
 
 When loading a model, we will need to know which model type we are running
-so we can convert it to onnx.
+so we can convert it to onnx. We will know this by letting a user specify
+the model type when they go to download it.
 
 
-For each of tensorflow and pytorch we will be storing models under huggingface
-but reusing the staging techniques from the tensorflow and onnx frameworks.
+For each of tensorflow and pytorch we will be storing models under their respective
+frameworks reusing the staging techniques from the tensorflow and onnx frameworks.
 
-Huggingface model paths should be direct to files.  The URL format is:
-https://huggingface.co + the repo name followed by resolve/main/file_name
-This file name should be a path to a raw model file. Optional pre processing
-maybe desirable for huggingface downloaded models. 
-The biggest reason for this is due to many huggingface repos supporting multiple frameworks.
-1 or more files maybe relevant for import.
-
-
-
-
-
+Huggingface paths should be repositories + the framework_name specifier.
+We use AutoModel(pytorch) and AutoTFModel(tensorflow) for converting models
+to onnx and saved_model -> pb respectively.
 
 ### Keras
 

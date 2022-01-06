@@ -22,12 +22,15 @@ package org.eclipse.deeplearning4j.omnihub;
 import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter;
 import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFrameworkImporter;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 
 public class BootstrapFromLocal {
@@ -68,42 +71,57 @@ public class BootstrapFromLocal {
         }
         switch(outputFramework) {
             case SAMEDIFF:
-                SameDiff sameDiff = null;
-                switch(framework) {
-                    case ONNX:
-                    case PYTORCH:
-                        //filter out invalid files
-                        if(format.equals("onnx"))
-                            sameDiff = onnxFrameworkImporter.runImport(inputFile.getAbsolutePath(), Collections.emptyMap(),true);
-                        break;
-                    case TENSORFLOW:
-                        if(format.equals("pb"))
-                            sameDiff = tensorflowFrameworkImporter.runImport(inputFile.getAbsolutePath(), Collections.emptyMap(),true);
-                        break;
-                }
-
-                //reuse the same model name but with the samediff format
-                File saveModel = new File(saveModelDir,inputFileNameMinusFormat + ".fb");
-                if(sameDiff != null)
-                    sameDiff.asFlatFile(saveModel,true);
-                else {
-                    System.err.println("Skipping model " + inputFile.getAbsolutePath());
-                }
+                importTfOnnxSameDiff(onnxFrameworkImporter, tensorflowFrameworkImporter, framework, inputFile, inputFileNameMinusFormat, format, saveModelDir);
                 break;
             case DL4J:
                 File saveModel2 = new File(saveModelDir,inputFileNameMinusFormat + ".zip");
-                //filter out invlaid file formats
+                //filter out invalid file formats
                 if(format.equals("h5")) {
-                    try {
-                        ComputationGraph computationGraph = KerasModelImport.importKerasModelAndWeights(inputFile.getAbsolutePath(),true);
-                        computationGraph.save(saveModel2,true);
-                    }catch(Exception e) {
-                        MultiLayerNetwork multiLayerNetwork = KerasModelImport.importKerasSequentialModelAndWeights(inputFile.getAbsolutePath(), true);
-                        multiLayerNetwork.save(saveModel2,true);
-
-                    }
-                    break;
+                    importKerasDl4j(inputFile, saveModel2);
                 }
+
+                break;
+        }
+
+
+    }
+
+    private static void importTfOnnxSameDiff(OnnxFrameworkImporter onnxFrameworkImporter, TensorflowFrameworkImporter tensorflowFrameworkImporter, Framework framework, File inputFile, String inputFileNameMinusFormat, String format, File saveModelDir) throws IOException {
+        SameDiff sameDiff = null;
+        switch(framework) {
+            case ONNX:
+            case PYTORCH:
+                //filter out invalid files
+                if(format.equals("onnx"))
+                    sameDiff = onnxFrameworkImporter.runImport(inputFile.getAbsolutePath(), Collections.emptyMap(),true);
+                break;
+            case TENSORFLOW:
+                if(format.equals("pb"))
+                    sameDiff = tensorflowFrameworkImporter.runImport(inputFile.getAbsolutePath(), Collections.emptyMap(),true);
+                break;
+        }
+
+        //reuse the same model name but with the samediff format
+        File saveModel = new File(saveModelDir, inputFileNameMinusFormat + ".fb");
+        if(sameDiff != null)
+            sameDiff.asFlatFile(saveModel,true);
+        else {
+            System.err.println("Skipping model " + inputFile.getAbsolutePath());
+        }
+    }
+
+    private static void importKerasDl4j(File inputFile, File saveModel2) throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        try {
+            ComputationGraph computationGraph = KerasModelImport.importKerasModelAndWeights(inputFile.getAbsolutePath(),true);
+            computationGraph.save(saveModel2,true);
+        }catch(Exception e) {
+            if(e instanceof InvalidKerasConfigurationException) {
+                e.printStackTrace();
+            } else {
+                MultiLayerNetwork multiLayerNetwork = KerasModelImport.importKerasSequentialModelAndWeights(inputFile.getAbsolutePath(), true);
+                multiLayerNetwork.save(saveModel2,true);
+            }
+
 
         }
     }
