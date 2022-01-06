@@ -33,6 +33,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 
+/**
+ * Main class for taking the local downloads of an omnihub download directory
+ * and converting them to output formats.
+ *
+ * @author Adam Gibson
+ */
 public class BootstrapFromLocal {
 
     public static void main(String...args) {

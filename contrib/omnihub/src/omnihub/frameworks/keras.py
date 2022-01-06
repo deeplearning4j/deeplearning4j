@@ -106,4 +106,5 @@ class KerasModelHub(ModelHub):
         elif type == 'xception':
             ret = Xception(include_top=include_top, **kwargs)
         model_path = os.path.join(keras_path, weights_file)
+        ret.save(model_path)
         return model_path

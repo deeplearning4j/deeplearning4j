@@ -49,7 +49,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     protected boolean isEmptyReduce = false;
     @Setter @Getter
     protected SDVariable dimensionVariable;
-
+    private String dimensionVariableName;
 
     public BaseReduceOp(SameDiff sameDiff,
                         SDVariable i_v,
@@ -283,5 +283,40 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
         defineDimensions(dimensions);
     }
 
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("isEmptyReduce")) {
+            Boolean isEmptyReduce = getBooleanFromProperty("isEmptyReduce",properties);
+            this.isEmptyReduce = isEmptyReduce;
+        }
 
+        if(properties.containsKey("keepDims")) {
+            Boolean keepDims = getBooleanFromProperty("keepDims",properties);
+            this.keepDims = keepDims;
+
+        }
+
+
+        if(properties.containsKey("isComplex")) {
+            Boolean isComplex = getBooleanFromProperty("isComplex",properties);
+            this.isComplex = isComplex;
+        }
+
+        if(properties.containsKey("dimensionz")) {
+            INDArray array = (INDArray) properties.get("dimensionz");
+            this.dimensionz = array;
+        }
+
+        if(properties.containsKey("dimensionVariable") && properties.get("dimensionVariable") != null) {
+            String varName = properties.get("dimensionVariable").toString();
+            this.dimensionVariableName = varName;
+        }
+    }
+
+    @Override
+    public void configureWithSameDiff(SameDiff sameDiff) {
+        if(dimensionVariableName != null)
+            this.dimensionVariable = sameDiff.getVariable(dimensionVariableName);
+
+    }
 }

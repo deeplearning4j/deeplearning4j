@@ -249,7 +249,7 @@ public class Nd4jNamespaceGenerator {
                     String text = DocTokens.processDocText(ds.getText(), op, DocTokens.GenerationType.ND4J);
                     //Add <br> tags at the end of each line, where none already exists
                     String[] lines = text.split("\n");
-                    for( int i=0; i<lines.length; i++ ){
+                    for( int i = 0; i < lines.length; i++) {
                         if(!lines[i].endsWith("<br>")){
                             lines[i] = lines[i] + "<br>";
                         }

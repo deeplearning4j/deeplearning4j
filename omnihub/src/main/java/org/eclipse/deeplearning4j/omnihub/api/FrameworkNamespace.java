@@ -17,11 +17,35 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
+package org.eclipse.deeplearning4j.omnihub.api;
 
-package org.nd4j.codegen.api
+import org.eclipse.deeplearning4j.omnihub.Framework;
 
-enum class Namespace {
-    BASE, CNN, IMAGE, LOSS, MATH, NN, RANDOM, RNN;
+import java.util.Locale;
 
-    fun displayName() = name[0].toString() + name.substring(1).toLowerCase()
+public enum FrameworkNamespace {
+    DL4J,SAMEDIFF;
+
+    public static FrameworkNamespace fromString(String namespace) {
+        switch(namespace.toLowerCase()) {
+            case "dl4j":
+                return DL4J;
+            case "samediff":
+                return SAMEDIFF;
+            default:
+                return null;
+        }
+    }
+
+    public  String javaClassName() {
+        switch(this) {
+            case DL4J:
+                return "DL4J";
+            case SAMEDIFF:
+                return "SAMEDIFF";
+        }
+
+        throw new IllegalStateException("Unable to determine java class type. Invalid namespace type " + this.name());
+    }
+
 }
