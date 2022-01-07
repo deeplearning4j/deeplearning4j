@@ -89,14 +89,15 @@ class KerasModelHub(ModelHub):
             ret = EfficientNetB5(include_top=include_top, **kwargs)
         elif type == 'efficientnetb6':
             ret = EfficientNetB6(include_top=include_top, **kwargs)
-        elif type == 'efficientnetb8':
+        elif type == 'efficientnetb7':
             efficient_net = EfficientNetB7(include_top=include_top, **kwargs)
         elif type == 'mobilenet':
             ret = MobileNet(include_top=include_top, **kwargs)
         elif type == 'mobilenetv2':
             ret = MobileNetV2(include_top=include_top)
-        elif type == 'mobilenetv3':
-            mobile_net = MobileNetV3(include_top=include_top, **kwargs)
+        #  MobileNetV3() missing 2 required positional arguments: 'stack_fn' and 'last_point_ch'
+        #elif type == 'mobilenetv3':
+        #    mobile_net = MobileNetV3(include_top=include_top, **kwargs)
         elif type == 'inceptionv3':
             ret = InceptionV3(include_top=include_top, **kwargs)
         elif type == 'nasnet':

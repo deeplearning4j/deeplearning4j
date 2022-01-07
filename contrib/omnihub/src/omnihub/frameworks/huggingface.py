@@ -3,7 +3,6 @@ import os
 from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2
 
 from omnihub.model_hub import omnihub_dir, ModelHub
-import shutil
 framework_name = 'huggingface'
 framework_dir = os.path.join(omnihub_dir, framework_name)
 BASE_URL = 'https://huggingface.co'
@@ -35,6 +34,22 @@ class HuggingFaceModelHub(ModelHub):
         """
         return f'{repo_path}/resolve/{branch_name}/{file_name}'
 
+    def _download_tf(self,model_path):
+        output_model = TFAutoModel.from_pretrained(model_path)
+        return output_model
+    def _download_pytorch(self,model_path):
+        output_model = AutoModel.from_pretrained(model_path)
+        dummy_inputs = output_model.dummy_inputs
+        inputs_ordered = []
+        non_main_inputs = []
+        for name, array in dummy_inputs.items():
+            if name == output_model.main_input_name:
+                inputs_ordered.append(array)
+            else:
+                non_main_inputs.append(array)
+            ordred_dummy_inputs = inputs_ordered + non_main_inputs
+        return output_model, tuple(ordred_dummy_inputs)
+
     def download_model(self, model_path, **kwargs) -> str:
         """
         Download the model for the given path.
@@ -54,21 +69,22 @@ class HuggingFaceModelHub(ModelHub):
         assert 'framework_name' in kwargs
         model_name = model_path.split('/')[-1]
         framework_name = kwargs.pop('framework_name')
+
         if framework_name == 'keras' or framework_name == 'tensorflow':
             output_model = TFAutoModel.from_pretrained(model_path)
             callable = tf.function(output_model.call)
             concrete_function = callable.get_concrete_function(output_model.dummy_inputs)
             frozen = convert_variables_to_constants_v2(concrete_function)
             graph_def = frozen.graph.as_graph_def()
-            tf.io.write_graph(graph_def, framework_dir, f'{model_name}.pb', as_text=False)
-            shutil.copy(f'{model_name}.pb', os.path.join(omnihub_dir, framework_name, model_name))
-            os.remove(f'{model_name}.pb')
+            tf.io.write_graph(graph_def, os.path.join(omnihub_dir,'tensorflow'), f'{model_name}.pb', as_text=False)
         else:
-            output_model = AutoModel.from_pretrained(model_path)
-            dummy_inputs = tuple(output_model.dummy_inputs.values())
+            download_function = kwargs.get('download_function', self._download_pytorch)
+            if 'download_function' in kwargs:
+                kwargs.pop('download_function')
+            output_model,dummy_inputs = download_function(model_path)
             torch.onnx.export(output_model,
                               dummy_inputs,
-                              f'{os.path.join(omnihub_dir,framework_name)}/{model_path}.onnx',
+                              f'{os.path.join(omnihub_dir,framework_name)}/{model_name}.onnx',
                               export_params=True,
                               do_constant_folding=False,
                               opset_version=13,

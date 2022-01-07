@@ -7,7 +7,8 @@ public class TestPretrained {
 
     @Test
     public void testPretrained() throws Exception {
-        Pretrained.samediff().resnet18(true);
+        //Pretrained.samediff().gpt2(true);
+        Pretrained.dl4j().vgg19noTop(true);
     }
 
 }
