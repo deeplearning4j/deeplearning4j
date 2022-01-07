@@ -34,7 +34,5 @@ def test_pytorch():
 
 def test_huggingface():
     huggingface_model_hub = HuggingFaceModelHub()
-    # download the underlying model, note we use resolve_url as a util method for finding the right model to download
-    #huggingface_model_hub.download_model(huggingface_model_hub.resolve_url('gpt2', 'tf_model.h5'),framework_name='keras')
     huggingface_model_hub.download_model('gpt2',framework_name='pytorch')
     #assert os.path.exists(os.path.join(omnihub_dir, 'huggingface', 'tf_model.h5'))
