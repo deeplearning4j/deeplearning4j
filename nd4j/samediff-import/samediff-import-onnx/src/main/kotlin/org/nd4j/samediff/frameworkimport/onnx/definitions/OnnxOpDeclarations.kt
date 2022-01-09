@@ -200,23 +200,12 @@ val avgPool = OnnxMappingProcess(
                 listAttributeValueLookup(outputAttributeValue = "kW",inputAttributeValue = "kernel_shape",indexValue = 1,argumentIndex = 1),
                 listAttributeValueLookup(outputAttributeValue = "kH",inputAttributeValue = "kernel_shape",indexValue = 0,argumentIndex = 0)))
 
+//note: this is handled by the batchnorm class now
 val batchNorm = OnnxMappingProcess(
-        opName = "batchnorm",
+        opName = "noop",
         opMappingRegistry = onnxOpRegistry,
-        inputFrameworkOpName = "BatchNormalization",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf(
-                "input" to "X","mean" to "input_mean",
-                "variance" to "input_var","gamma" to "scale"))),
-        attributeMappingRules = listOf(valueMappings(mapOf("epsilon" to "epsilon")),
-                booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0],
-                booleanConstant(inputName = "applyGamma",constantValue = false,argumentIndex = 1)[0],
-                booleanConstant(inputName = "applyBeta",constantValue = false,argumentIndex = 2)[0],
-                intConstant(inputName = "applyScale",constantValue = 0,argumentIndex = 0)[0],
-                intConstant(inputName = "applyOffset",constantValue = 0,argumentIndex = 1)[0],
-                //onnx is always NCHW/NCDHW expected inputs
-                intConstant(inputName = "dimensions",constantValue = 1,argumentIndex = 2)[0]
-
-        ))
+        inputFrameworkOpName = "BatchNormalization"
+)
 //TODO: Binarizer
 //TODO: Bitshift
 //TODO: CastMap
@@ -690,20 +679,10 @@ val nonMaxSuppression = OnnxMappingProcess(
 //TODO: Normalizer
 //TODO: OneHot
 //TODO: OneHotEncoder
-//TODO: look at broadcasting rules between slope input
+//note: this is handled by the PRelu class now
 val pRelu = OnnxMappingProcess(
         inputFrameworkOpName = "PRelu",
-        opName = "prelu",
-        //TODO: verify default value
-        attributeMappingRules  = listOf(argDescriptorConstant(listOf(
-                ArgDescriptor {
-                        name = "sharedAxes"
-                        argIndex = 0
-                        int64Value = -1
-                        argType = OpNamespace.ArgDescriptor.ArgType.INT64
-                }
-        ))),
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "X","alpha" to "slope"))),
+        opName = "noop",
         opMappingRegistry = onnxOpRegistry
 )
 
