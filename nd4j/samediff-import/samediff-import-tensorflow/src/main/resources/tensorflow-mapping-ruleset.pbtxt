@@ -4346,6 +4346,35 @@ mappings {
 }
 mappings {
   frameworkName: "tensorflow"
+  opName: "select"
+  inputFrameworkOpName: "SelectV2"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "condition"
+    inputTensorName: "t"
+    inputTensorName: "e"
+    outputTensorName: "cond"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "cond"
+      value: "condition"
+    }
+    inputToOutput {
+      key: "input"
+      value: "t"
+    }
+    inputToOutput {
+      key: "y"
+      value: "e"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "SelectV2"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
   opName: "softmax_cross_entropy_loss_with_logits"
   inputFrameworkOpName: "SoftmaxCrossEntropyWithLogits"
   rule {

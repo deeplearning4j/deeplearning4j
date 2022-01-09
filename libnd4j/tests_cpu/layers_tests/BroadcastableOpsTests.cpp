@@ -33,6 +33,8 @@ class BroadcastableOpsTests : public testing::Test {
  public:
 };
 
+
+
 TEST_F(BroadcastableOpsTests, Test_Add_1) {
   NDArray x('c', {5, 5}, sd::DataType::FLOAT32);
   NDArray y('c', {1, 5}, sd::DataType::FLOAT32);
@@ -54,6 +56,34 @@ TEST_F(BroadcastableOpsTests, Test_Add_1) {
 
   // exp.printIndexedBuffer("E A");
   // z->printIndexedBuffer("Z");
+
+  ASSERT_TRUE(exp.isSameShape(z));
+  ASSERT_TRUE(exp.equalsTo(z));
+}
+
+
+
+TEST_F(BroadcastableOpsTests, Test_Add_12) {
+  NDArray x('c', {1,2,3}, sd::DataType::FLOAT32);
+  NDArray y('c', {2}, sd::DataType::FLOAT32);
+  NDArray exp('c', {1,2,3}, sd::DataType::FLOAT32);
+  x.linspace(1);
+  y.assign(1.0f);
+  exp.assign(x + 1);
+
+  // exp.printIndexedBuffer("E B");
+
+  //exp.applyBroadcast(broadcast::Add, {1}, y, exp);
+
+  sd::ops::add op;
+  auto result = op.evaluate({&x, &y});
+
+  ASSERT_EQ(sd::Status::OK, result.status());
+
+  auto z = result.at(0);
+
+   exp.printIndexedBuffer("E A");
+   z->printIndexedBuffer("Z");
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));

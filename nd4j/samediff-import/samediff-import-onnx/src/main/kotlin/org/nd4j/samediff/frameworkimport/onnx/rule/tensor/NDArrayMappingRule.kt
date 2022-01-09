@@ -27,6 +27,7 @@ import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRTensor
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.rule.MappingRule
 import org.nd4j.samediff.frameworkimport.rule.tensor.BaseNDArrayMappingRule
+import java.lang.IllegalArgumentException
 
 @MappingRule("onnx","ndarraymapping","tensor")
 class NDArrayMappingRule(mappingNamesToPerform: MutableMap<String,String>,
@@ -41,8 +42,13 @@ class NDArrayMappingRule(mappingNamesToPerform: MutableMap<String,String>,
     }
 
     override fun isInputTensorName(inputName: String): Boolean {
-        val onnxOp = OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")[mappingProcess!!.inputFrameworkOpName()]!!
-        return onnxOp.inputList.contains(inputName)
+        val onnxOp = OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")
+        if(!onnxOp.containsKey(mappingProcess!!.inputFrameworkOpName())) {
+            throw IllegalArgumentException("No op definition found for ${mappingProcess!!.inputFrameworkOpName()}")
+        }
+
+        val ret = onnxOp[mappingProcess!!.inputFrameworkOpName()]!!
+        return ret.inputList.contains(inputName)
     }
 
     override fun isOutputTensorName(outputName: String): Boolean {

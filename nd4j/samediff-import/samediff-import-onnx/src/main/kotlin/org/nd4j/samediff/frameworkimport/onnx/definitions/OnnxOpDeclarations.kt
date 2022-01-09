@@ -173,10 +173,30 @@ val avgPool = OnnxMappingProcess(
                 intConstant(inputName = "dW",constantValue = 1,argumentIndex = 7)[0],
                 intConstant(inputName = "extraParam0",constantValue = 0,argumentIndex = 9)[0],
                 stringContainsRule(outputAttribute = "isSameMode",inputFrameworkAttributeName = "auto_pad",valueToTest = "SAME",argumentIndex = 8),
-                listAttributeValueLookup(outputAttributeValue = "pH",inputAttributeValue = "pads",indexValue = 2,argumentIndex = 4),
-                listAttributeValueLookup(outputAttributeValue = "pW",inputAttributeValue = "pads",indexValue = 3,argumentIndex = 5),
-                listAttributeValueLookup(outputAttributeValue = "sH",inputAttributeValue = "strides",indexValue = 0,argumentIndex = 2),
-                listAttributeValueLookup(outputAttributeValue = "sW",inputAttributeValue = "strides",indexValue = 1,argumentIndex = 3),
+                listAttributeValueLookup(outputAttributeValue = "pH",inputAttributeValue = "pads",indexValue = 2,argumentIndex = 4, defaultValueIfNotFound = ArgDescriptor {
+                        argIndex = 4
+                        argType = OpNamespace.ArgDescriptor.ArgType.INT64
+                        int64Value = 0
+                        name = "pH"
+                }),
+                listAttributeValueLookup(outputAttributeValue = "pW",inputAttributeValue = "pads",indexValue = 3,argumentIndex = 5,defaultValueIfNotFound = ArgDescriptor {
+                        argIndex = 5
+                        argType = OpNamespace.ArgDescriptor.ArgType.INT64
+                        int64Value = 0
+                        name = "pW"
+                }),
+                listAttributeValueLookup(outputAttributeValue = "sH",inputAttributeValue = "strides",indexValue = 0,argumentIndex = 2,defaultValueIfNotFound = ArgDescriptor {
+                        argIndex = 2
+                        argType = OpNamespace.ArgDescriptor.ArgType.INT64
+                        int64Value = 1
+                        name = "sH"
+                }),
+                listAttributeValueLookup(outputAttributeValue = "sW",inputAttributeValue = "strides",indexValue = 1,argumentIndex = 3,defaultValueIfNotFound = ArgDescriptor {
+                        argIndex = 3
+                        argType = OpNamespace.ArgDescriptor.ArgType.INT64
+                        int64Value = 1
+                        name = "sW"
+                }),
                 listAttributeValueLookup(outputAttributeValue = "kW",inputAttributeValue = "kernel_shape",indexValue = 1,argumentIndex = 1),
                 listAttributeValueLookup(outputAttributeValue = "kH",inputAttributeValue = "kernel_shape",indexValue = 0,argumentIndex = 0)))
 
@@ -832,11 +852,10 @@ val flatten = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry
 )
 
+//note this is implemented by Reshape.kt instead
 val reshape = OnnxMappingProcess(
         inputFrameworkOpName = "Reshape",
-        opName = "reshape",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data","shape" to "shape"))),
-        attributeMappingRules = listOf(intConstant(inputName = "shapeArr",constantValue = -99,argumentIndex = 0)[0]),
+        opName = "noop",
         opMappingRegistry = onnxOpRegistry
 )
 
@@ -857,6 +876,15 @@ val scatter = OnnxMappingProcess(
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("operand" to "data","updates" to "updates","indices" to "indices")))
 )
 
+
+
+val scatterNd = OnnxMappingProcess(inputFrameworkOpName ="ScatterND",
+        opName = "scatter_nd",
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf(
+                "indices" to "indices",
+                "updates" to "updates","shape" to "data"))),
+        attributeMappingRules = listOf()
+        ,opMappingRegistry = onnxOpRegistry)
 
 //TODO: SequenceAt
 //TODO: SequenceConstruct

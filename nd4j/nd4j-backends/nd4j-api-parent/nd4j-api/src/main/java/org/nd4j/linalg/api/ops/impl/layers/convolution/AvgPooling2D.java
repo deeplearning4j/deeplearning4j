@@ -166,7 +166,7 @@ public class AvgPooling2D extends DynamicCustomOp {
                 .dH(iArguments.get(6))
                 .dW(iArguments.get(7))
                 .paddingMode(PaddingMode.fromNumber(iArguments.get(8).intValue()))
-                .extra(iArguments.get(9))
+                .extra(iArguments.size() > 9 ? iArguments.get(9) : 0)
                 .isNHWC(iArguments.size() > 10 ? iArguments.get(10) == 1 : false)
                 .type(Pooling2D.Pooling2DType.AVG)
                 .build();

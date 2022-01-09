@@ -283,6 +283,11 @@ public class Shape {
     }
 
     public static long[] broadcastOutputShape(long[] left,long[] right) {
+        if(left.length == 1  && right.length > 1) {
+            return right;
+        } else if(right.length == 1 && left.length > 1) {
+            return left;
+        }
         if (containsZeros(left))
             return left;
         else if (containsZeros(right))
@@ -3583,6 +3588,20 @@ public class Shape {
     }
 
     public static boolean areShapesBroadcastable(@NonNull long[] left, @NonNull long[] right){
+        if(left.length == 1 && right.length > 1) {
+            for(int i = 0; i < right.length; i++) {
+                if(right[i] == left[0])
+                    return true;
+            }
+        } else if(right.length == 1 && left.length > 1) {
+            for(int i = 0; i < left.length; i++) {
+                if(left[i] == right[0])
+                    return true;
+            }
+        }
+
+
+
         //Ported from: https://github.com/eclipse/deeplearning4j/libnd4j/blob/master/include/helpers/impl/ShapeUtils.cpp
 
         int minRank = Math.min(left.length, right.length);

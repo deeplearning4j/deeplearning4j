@@ -98,7 +98,7 @@ DECLARE_CUSTOM_OP(to_uint64, 1, 1, true, 0, 0);
  * 0: target DataType
  */
 #if NOT_EXCLUDED(OP_cast)
-DECLARE_CUSTOM_OP(cast, 1, 1, false, 0, 1);
+DECLARE_CUSTOM_OP(cast, 1, 1, false, 0, -2);
 #endif
 
 /**

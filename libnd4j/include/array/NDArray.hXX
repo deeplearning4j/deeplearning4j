@@ -2685,6 +2685,8 @@ void NDArray::applyTrueBroadcast(sd::BroadcastOpsTuple op, const NDArray &other,
       (op.s == scalar::ReverseDivide && this->isB()))
     throw std::runtime_error("NDArray::applyTrueBroadcast method: you can't divide by bool array !");
 
+  other.printIndexedBuffer("other at apply true broadcast");
+
   if (isEmpty() || other.isEmpty()) return;
 
   // if (lengthOf() == 1) {

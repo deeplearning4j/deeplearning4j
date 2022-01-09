@@ -33,6 +33,29 @@ namespace sd {
 namespace ops {
 class BroadcastHelper {
  public:
+
+  static SD_INLINE std::vector<sd::LongType> reshapeOneDimensional(NDArray *largerInput,NDArray *oneDInput) {
+    auto largeShape = largerInput->getShapeAsVector();
+    auto oneDShape = oneDInput->getShapeAsVector();
+    bool discoveredShapeEqual = false;
+    std::vector<sd::LongType> newShape;
+    for(int i = 0; i < largeShape.size(); i++) {
+      //found a broadcastable dimension,reshape
+      if(oneDShape[0] == largeShape[i]) {
+        discoveredShapeEqual = true;
+        newShape.push_back(oneDShape[0]);
+      } else {
+        newShape.push_back(1);
+      }
+    }
+
+    if(discoveredShapeEqual) {
+      return newShape;
+    }
+
+    return oneDShape;
+  }
+
   static SD_INLINE NDArray* broadcastApply(sd::BroadcastOpsTuple op, NDArray* x, NDArray* y, NDArray* z,
                                            ExtraArguments* extraArgs = nullptr) {
     if (x->isEmpty() || y->isEmpty()) {
@@ -43,14 +66,17 @@ class BroadcastHelper {
       return z;
     }
 
-    std::unique_ptr<NDArray> ptr;
-    if (!Environment::getInstance().isExperimentalBuild()) {
-      if (y->dataType() != x->dataType()) {
-        y = new NDArray(y->cast(x->dataType()));
-        std::unique_ptr<NDArray> ptr2(y);
-        ptr.swap(ptr2);
-      }
+    auto xInput = x;
+    auto yInput = y;
+    //special case where we have a 1d array and need to reshape it to be broadcastable as long as 1 dimension matches
+    if(!x->isSameShape(y) && y->rankOf() == 1 && !y->isScalar()) {
+      auto shape = reshapeOneDimensional(x,y);
+      yInput = new NDArray(y->dataBuffer(),'c',shape);
+    } else if(x->isSameShape(y) && x->rankOf() == 1 && !x->isScalar()) {
+      auto newShape = reshapeOneDimensional(y,x);
+      xInput = new NDArray(x->dataBuffer(),x->ordering(),newShape);
     }
+
 
     if (!x->isScalar() && !y->isScalar() && x->isSameShape(y)) {
       x->applyPairwiseTransform(op.p, *y, *z);
@@ -90,8 +116,10 @@ class BroadcastHelper {
       }
     } else if (x->isScalar() && y->isScalar()) {  // x->isScalar() && y->isScalar()
       x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
-    } else if (ShapeUtils::areShapesBroadcastable(*x, *y)) {
-      x->applyTrueBroadcast(op, *y, *z, true, extraArgs);
+      //only use xInput/yInput where relevant, both shapes if changed are broadcastable by this point
+      //also note we don't change the original pointers here
+    } else if (ShapeUtils::areShapesBroadcastable(*xInput, *yInput)) {
+      xInput->applyTrueBroadcast(op, *yInput, *z, true, extraArgs);
       return z;
     } else {
       auto sx = ShapeUtils::shapeAsString(x);

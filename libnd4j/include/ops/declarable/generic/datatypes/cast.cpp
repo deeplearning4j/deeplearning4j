@@ -28,7 +28,7 @@
 
 namespace sd {
 namespace ops {
-CUSTOM_OP_IMPL(cast, 1, 1, false, 0, 1) {
+CUSTOM_OP_IMPL(cast, 1, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -46,11 +46,16 @@ DECLARE_SYN(Cast, cast);
 
 DECLARE_SHAPE_FN(cast) {
   auto inShape = inputShape->at(0);
+  if(!block.getIArguments()->empty()) {
+    auto it = INT_ARG(0);
+    DataType newType = DataTypeUtils::fromInt(it);
 
-  auto it = INT_ARG(0);
-  DataType newType = DataTypeUtils::fromInt(it);
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, newType)));
+  } else if(block.getDArguments()->empty()) {
+    auto newType = block.dataType(0);
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, newType)));
+  }
 
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, newType)));
 }
 
 DECLARE_TYPES(cast) {

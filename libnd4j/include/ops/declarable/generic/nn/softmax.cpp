@@ -39,8 +39,10 @@ CONFIGURABLE_OP_IMPL(softmax, 1, 1, true, 0, 0) {
   auto output = OUTPUT_VARIABLE(0);
 
   const int rank = input->rankOf();
-  const int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
-
+  int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
+  //often happens when softmax dimension == 1 but final output is rank 1
+  if(dim >= rank)
+     dim = rank - 1;
   REQUIRE_TRUE(dim < rank, 0,
                "SOFTMAX OP: the value of input integer parameter (dimension) must be less than input array rank %i, "
                "but got dimension = %i instead !",

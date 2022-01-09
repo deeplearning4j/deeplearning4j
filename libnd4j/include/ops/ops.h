@@ -27,7 +27,6 @@
 #include <system/Environment.h>
 #include <system/common.h>
 #include <system/op_boilerplate.h>
-
 #include <vector>
 
 #define no_op_exec_special_any                                                                                     \
@@ -146,7 +145,9 @@ namespace simdOps {
 template <typename X, typename Y, typename Z>
 class Add {
  public:
-  SD_OP_DEF static Z op(X d1, Y d2) { return static_cast<Z>(d1 + d2); }
+  SD_OP_DEF static Z op(X d1, Y d2) {
+    return static_cast<Z>(d1 + d2);
+  }
 
   SD_OP_DEF static Z op(X d1, Y d2, Z *params) { return static_cast<Z>(d1 + d2); }
 
@@ -3837,7 +3838,7 @@ class CompareAndSet {
         return d2;
       else
         return d1;
-    //equivalent case to NOT_FINITE
+      //equivalent case to NOT_FINITE
     else if (mode == 8 || mode == 15)  // is inf
       if (sd::math::sd_isinf(d2))
         return d2;
