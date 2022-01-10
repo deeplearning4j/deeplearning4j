@@ -58,6 +58,7 @@
         <module>deeplearning4j</module>
         <module>python4j</module>
         <module>rl4j</module>
+        <module>omnihub</module>
     </modules>
 
     <scm>
