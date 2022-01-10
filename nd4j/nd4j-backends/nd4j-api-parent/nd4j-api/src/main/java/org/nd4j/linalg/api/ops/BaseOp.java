@@ -314,7 +314,13 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 if( dimensions == null)
                     setZ(Nd4j.zeros(x.shape()).castTo(newVars[0].dataType()));
                 else {
-                    setZ(Nd4j.create(Shape.reductionShape(x,dimensions,true,false)).castTo(newVars[0].dataType()));
+                    if(this instanceof BaseReduceOp) {
+                        BaseReduceOp baseReduceOp = (BaseReduceOp) this;
+                        setZ(Nd4j.create(Shape.reductionShape(x,dimensions,true,baseReduceOp.keepDims)).castTo(newVars[0].dataType()));
+                    } else {
+                        setZ(Nd4j.create(Shape.reductionShape(x,dimensions,true,false)).castTo(newVars[0].dataType()));
+
+                    }
                 }
             }
 
