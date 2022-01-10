@@ -376,7 +376,7 @@ public abstract class DifferentialFunction {
 
 
                 target.set(this,value);
-            } catch (IllegalAccessException e) {
+            } catch (Exception e) {
                 throw new RuntimeException("Error setting property for function " + getClass().getName(), e);
             }
         }

@@ -30,9 +30,8 @@ import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
-@PreHookRule(nodeNames = [],opNames = ["GlobalMaxPool"],frameworkName = "onnx")
-class GlobalMaxPooling: PreImportHook {
-
+@PreHookRule(nodeNames = [],opNames = ["PRelu"],frameworkName = "onnx")
+class PRelu: PreImportHook {
     override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
@@ -42,12 +41,10 @@ class GlobalMaxPooling: PreImportHook {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
     ): Map<String, List<SDVariable>> {
         val inputVariable = sd.getVariable(op.inputsToOp[0])
-        val rankOf = sd.rank(inputVariable)
-        val range = sd.range(sd.constant(0),rankOf,sd.constant(1),DataType.INT64)
-        val sizes = sd.concat(0,sd.constant(2).castTo(DataType.INT64),sd.prod(range.shape()).sub(2.0).castTo(DataType.INT64))
-        val split = sd.splitV(range,sizes,2,0)
-        val output = sd.math.reduceMax(outputNames[0],inputVariable,split[1],true)
+        val slope = sd.getVariable(op.inputsToOp[1])
+        val output = sd.nn().prelu(outputNames[0],inputVariable,slope,2,3)
         return mapOf(output.name() to listOf(output))
     }
+
 
 }

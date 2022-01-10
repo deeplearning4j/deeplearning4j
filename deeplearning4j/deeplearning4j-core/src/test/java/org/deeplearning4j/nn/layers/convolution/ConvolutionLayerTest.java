@@ -35,7 +35,6 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitNormal;
@@ -135,7 +134,16 @@ class ConvolutionLayerTest extends BaseDL4JTest {
         long batchSize = 1;
         INDArray arr = Nd4j.randn(batchSize, vectorLength, timeSteps);
         MultiLayerConfiguration build = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU).weightInit(// better init
-        new WeightInitNormal()).updater(new Adam(learningRate)).list().layer(new Convolution1D.Builder().kernelSize(2).rnnDataFormat(RNNFormat.NCW).stride(1).nOut(14).convolutionMode(ConvolutionMode.Causal).dilation(4).build()).layer(new RnnLossLayer.Builder().dataFormat(RNNFormat.NCW).activation(new ActivationSoftmax()).lossFunction(new LossMCXENT()).build()).setInputType(InputType.recurrent(vectorLength, timeSteps, RNNFormat.NCW)).build();
+        new WeightInitNormal()).updater(new Adam(learningRate)).list()
+                .layer(new Convolution1D.Builder().kernelSize(2)
+                        .rnnDataFormat(RNNFormat.NCW).stride(1).nOut(14)
+                        .convolutionMode(ConvolutionMode.Causal)
+                        .dilation(4).build())
+                .layer(new RnnLossLayer.Builder().dataFormat(RNNFormat.NCW)
+                        .activation(new ActivationSoftmax())
+                        .lossFunction(new LossMCXENT()).build())
+                .setInputType(InputType.recurrent(vectorLength, timeSteps, RNNFormat.NCW))
+                .build();
         MultiLayerNetwork network = new MultiLayerNetwork(build);
         network.init();
         INDArray output = network.output(arr);

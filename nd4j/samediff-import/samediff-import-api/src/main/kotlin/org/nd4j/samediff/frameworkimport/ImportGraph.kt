@@ -295,11 +295,14 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         //Setup initial inputs
         for (i in 0 until nNodes) {
             val nd = irGraph.nodeList()[i]
-
+            val name = nd.nodeName()
+            if(name.isEmpty()) {
+               println("Skipping node $i due to empty name.")
+                continue
+            }
             val op = nd.opName()
             val numInputs = nd.numInputs()
             val numOutputs = nd.numOutputs()
-            val name = nd.nodeName()
             Preconditions.checkState(name.isNotEmpty(), "Node name was empty!")
             if (irGraph.isConstantOpName(op)|| numInputs == 0) {
                 availableToAdd.add(nd)
@@ -351,6 +354,9 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         while (!availableToAdd.isEmpty()) {
             val nd = availableToAdd.remove()
             val name = nd.nodeName()
+            if(name.isEmpty()) {
+                continue
+            }
             availableToAddSet.remove(name)
             logger.debug {"Removed $name" }
             val opName = nd.opName()
@@ -481,7 +487,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 //Strip ":0" suffix. Some ops can depend on placeholders, like "image_tensor:0" but in SameDiff this is a variable called "image_tensor"
                                 inName = inName.substring(0, inName.length - 2)
                             }
-                             val isControlDep = isControlDep(origInName)
+                            val isControlDep = isControlDep(origInName)
                             if (isControlDep) {
                                 if (controlDeps == null) controlDeps = ArrayList()
                                 controlDeps.add(inName)

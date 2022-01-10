@@ -22,7 +22,6 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
-import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -30,8 +29,12 @@ import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
-@PreHookRule(nodeNames = [],opNames = ["GlobalMaxPool"],frameworkName = "onnx")
-class GlobalMaxPooling: PreImportHook {
+/**
+  Implements reshape
+ * @author Adam Gibson
+ */
+@PreHookRule(nodeNames = [],opNames = ["Reshape"],frameworkName = "onnx")
+class Reshape : PreImportHook  {
 
     override fun doImport(
         sd: SameDiff,
@@ -41,13 +44,20 @@ class GlobalMaxPooling: PreImportHook {
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
     ): Map<String, List<SDVariable>> {
-        val inputVariable = sd.getVariable(op.inputsToOp[0])
-        val rankOf = sd.rank(inputVariable)
-        val range = sd.range(sd.constant(0),rankOf,sd.constant(1),DataType.INT64)
-        val sizes = sd.concat(0,sd.constant(2).castTo(DataType.INT64),sd.prod(range.shape()).sub(2.0).castTo(DataType.INT64))
-        val split = sd.splitV(range,sizes,2,0)
-        val output = sd.math.reduceMax(outputNames[0],inputVariable,split[1],true)
-        return mapOf(output.name() to listOf(output))
-    }
+        // Parameter docs below are from the onnx operator docs:
+        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#reshape
+        var inputVariable = sd.getVariable(op.inputsToOp[0])
+        //older attributes based shape
+        if(attributes.isNotEmpty()) {
+            val newShape = attributes["shape"] as List<Int>
+            val shapeArr = newShape.toIntArray().map { input -> input.toLong() }.toLongArray()
+            val finalOutput = sd.reshape(outputNames[0],inputVariable,*shapeArr)
+            return mapOf(outputNames[0] to listOf(finalOutput))
+        } else {
+            val shapeVar = sd.getVariable(op.inputsToOp[1])
+            val finalOutput = sd.reshape(outputNames[0],inputVariable,shapeVar)
+            return mapOf(outputNames[0] to listOf(finalOutput))
+        }
 
+    }
 }
