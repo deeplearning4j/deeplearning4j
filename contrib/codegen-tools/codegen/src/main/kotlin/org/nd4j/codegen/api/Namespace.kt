@@ -17,11 +17,21 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
+package org.eclipse.deeplearning4j.omnihub.api;
 
-package org.nd4j.codegen.api
+public enum ModelType {
+    COMP_GRAPH,SEQUENTIAL;
 
-enum class Namespace {
-    BASE, CNN, IMAGE, LOSS, MATH, NN, RANDOM, RNN;
+    public static ModelType fromString(String namespace) {
+        switch(namespace.toLowerCase()) {
+            case "comp_graph":
+                return COMP_GRAPH;
+            case "sequential":
+                return SEQUENTIAL;
+            default:
+                return null;
+        }
+    }
 
-    fun displayName() = name[0].toString() + name.substring(1).toLowerCase()
+
 }

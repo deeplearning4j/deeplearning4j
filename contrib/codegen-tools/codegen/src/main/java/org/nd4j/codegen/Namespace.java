@@ -64,7 +64,7 @@ public enum Namespace {
         }
     }
 
-    public String javaClassName(){
+    public String javaClassName() {
         switch (this){
             case BITWISE:
                 return "NDBitwise";
@@ -90,7 +90,7 @@ public enum Namespace {
         throw new IllegalStateException("No java class name defined for: " + this);
     }
 
-    public String javaSameDiffClassName(){
+    public String javaSameDiffClassName() {
         switch (this){
             case BITWISE:
                 return "SDBitwise";
@@ -118,7 +118,7 @@ public enum Namespace {
         throw new IllegalStateException("No java SameDiff class name defined for: " + this);
     }
 
-    public NamespaceOps getNamespace(){
+    public NamespaceOps getNamespace() {
         switch (this){
             case BITWISE:
                 return BitwiseKt.Bitwise();
