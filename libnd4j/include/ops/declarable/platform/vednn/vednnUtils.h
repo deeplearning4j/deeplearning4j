@@ -37,6 +37,7 @@ namespace platforms {
 /**
  * Here we actually declare our platform helpers
  */
+DECLARE_PLATFORM(maxpool2d, ENGINE_CPU);
 DECLARE_PLATFORM(conv2d, ENGINE_CPU);
 
 
