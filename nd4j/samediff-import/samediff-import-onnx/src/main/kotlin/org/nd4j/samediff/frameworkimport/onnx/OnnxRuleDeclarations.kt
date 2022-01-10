@@ -238,6 +238,7 @@ fun listAttributeValueLookup(outputAttributeValue: String, inputAttributeValue: 
                 name = inputAttributeValue
                 int64Value = indexValue.toLong()
                 argIndex = argumentIndex
+                argType = OpNamespace.ArgDescriptor.ArgType.INT64
             },defaultValueIfNotFound!!)
             ))
     else
@@ -246,6 +247,8 @@ fun listAttributeValueLookup(outputAttributeValue: String, inputAttributeValue: 
                 name = inputAttributeValue
                 int64Value = indexValue.toLong()
                 argIndex = argumentIndex
+                argType = OpNamespace.ArgDescriptor.ArgType.INT64
+
             })
             ))
 }

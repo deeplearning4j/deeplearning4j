@@ -1895,6 +1895,10 @@ val select = mapTensorNamesWithOp(inputFrameworkOpName = "Select",opName = "sele
         tensorNames = mutableMapOf("cond" to "condition","input" to "t","y" to "e")
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
+val selectV2 = mapTensorNamesWithOp(inputFrameworkOpName = "SelectV2",opName = "select",
+        tensorNames = mutableMapOf("cond" to "condition","input" to "t","y" to "e")
+        ,tensorflowOpRegistry = tensorflowOpRegistry)
+
 val segmentMean = multipleNameMapping(inputFrameworkOpNames = listOf("SegmentMean"),opName = "segment_mean",
         tensorNames = mutableMapOf("input" to "data","idxSegments" to "segment_ids"),tensorflowOpRegistry = tensorflowOpRegistry)
 

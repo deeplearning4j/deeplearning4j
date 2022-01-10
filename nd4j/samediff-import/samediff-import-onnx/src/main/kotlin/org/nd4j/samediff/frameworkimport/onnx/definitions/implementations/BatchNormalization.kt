@@ -30,9 +30,8 @@ import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
-@PreHookRule(nodeNames = [],opNames = ["GlobalMaxPool"],frameworkName = "onnx")
-class GlobalMaxPooling: PreImportHook {
-
+@PreHookRule(nodeNames = [],opNames = ["BatchNormalization"],frameworkName = "onnx")
+class BatchNormalization: PreImportHook {
     override fun doImport(
         sd: SameDiff,
         attributes: Map<String, Any>,
@@ -42,12 +41,15 @@ class GlobalMaxPooling: PreImportHook {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
     ): Map<String, List<SDVariable>> {
         val inputVariable = sd.getVariable(op.inputsToOp[0])
-        val rankOf = sd.rank(inputVariable)
-        val range = sd.range(sd.constant(0),rankOf,sd.constant(1),DataType.INT64)
-        val sizes = sd.concat(0,sd.constant(2).castTo(DataType.INT64),sd.prod(range.shape()).sub(2.0).castTo(DataType.INT64))
-        val split = sd.splitV(range,sizes,2,0)
-        val output = sd.math.reduceMax(outputNames[0],inputVariable,split[1],true)
+        val scale = sd.getVariable(op.inputsToOp[1])
+        val bias = sd.getVariable(op.inputsToOp[2])
+        val inputMean = sd.getVariable(op.inputsToOp[3])
+        val inputVariance = sd.getVariable(op.inputsToOp[4])
+        val epsilon = attributes.getOrDefault("epsilon",1e-5) as Number
+        val dim = 1
+        val output = sd.nn().batchNorm(outputNames[0],inputVariable,inputMean,inputVariance,scale,bias,epsilon.toDouble(),dim)
         return mapOf(output.name() to listOf(output))
     }
+
 
 }
