@@ -53,9 +53,6 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
   // const int extraParam0 = INT_ARG(9);
   const int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;  // INT_ARG(10): 1-NHWC, 0-NCHW
 
-  REQUIRE_TRUE(dH != 0 && dW != 0, 0, "MAXPOOL2D MKLDNN op: dilation must not be zero, but got instead {%i, %i}", dH,
-               dW);
-
   auto dataLayout = isNCHW ? arm_compute::DataLayout::NCHW : arm_compute::DataLayout::NHWC;
 
   // Calculate individual paddings
@@ -73,10 +70,6 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
   padTop = pH;
   padRight = (oW - 1) * sW - iW + kW - pW;
   padBottom = (oH - 1) * sH - iH + kH - pH;
-#if 0
-    sd_printf("avgpool kH = %d, kW = %d, sH = %d, sW = %d  , pH = %d  , pW = %d, dH = %d, dW = %d, paddingMode = %d , isNCHW %d exclude pad %d \n" , kH , kW , sH , sW  , pH 
-     , pW , dH , dW , paddingMode,isNCHW?1:0 ,exclude_padding?1:0);
-#endif
 
   auto poolPad = arm_compute::PadStrideInfo(sW, sH, padLeft, padRight, padTop, padBottom,
                                             arm_compute::DimensionRoundingType::FLOOR);
