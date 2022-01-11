@@ -117,6 +117,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     protected NeuralNetConfiguration defaultConfiguration;
     protected MultiLayerConfiguration layerWiseConfigurations;
+    @Getter
+    @Setter
     protected Gradient gradient;
     protected double score;
     @Setter
@@ -124,7 +126,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     protected INDArray flattenedParams; //Params for all layers are a view/subset of this array
     @Getter
     protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
-
+    @Getter
+    @Setter
     protected boolean clearTbpttState = true;  //Mainly for unit testing (should be enabled otherwise)
     protected transient ThreadLocal<Long> lastEtlTime = new ThreadLocal<>();
     protected INDArray mask;

@@ -1,0 +1,105 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+package org.eclipse.deeplearning4j.dl4jcore.datasets.iterator;
+
+import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.DisplayName;
+
+@DisplayName("Early Termination Data Set Iterator Test")
+@NativeTag
+@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.LONG_TEST)
+class EarlyTerminationDataSetIteratorTest extends BaseDL4JTest {
+
+    int minibatchSize = 10;
+
+    int numExamples = 105;
+
+
+
+    @Test
+    @DisplayName("Test Next And Reset")
+    void testNextAndReset() throws Exception {
+        int terminateAfter = 2;
+        DataSetIterator iter = new MnistDataSetIterator(minibatchSize, numExamples);
+        EarlyTerminationDataSetIterator earlyEndIter = new EarlyTerminationDataSetIterator(iter, terminateAfter);
+        assertTrue(earlyEndIter.hasNext());
+        int batchesSeen = 0;
+        List<DataSet> seenData = new ArrayList<>();
+        while (earlyEndIter.hasNext()) {
+            DataSet path = earlyEndIter.next();
+            assertFalse(path == null);
+            seenData.add(path);
+            batchesSeen++;
+        }
+        assertEquals(batchesSeen, terminateAfter);
+        // check data is repeated after reset
+        earlyEndIter.reset();
+        batchesSeen = 0;
+        while (earlyEndIter.hasNext()) {
+            DataSet path = earlyEndIter.next();
+            assertEquals(seenData.get(batchesSeen).getFeatures(), path.getFeatures());
+            assertEquals(seenData.get(batchesSeen).getLabels(), path.getLabels());
+            batchesSeen++;
+        }
+    }
+
+    @Test
+    @DisplayName("Test Next Num")
+    void testNextNum() throws IOException {
+        int terminateAfter = 1;
+        DataSetIterator iter = new MnistDataSetIterator(minibatchSize, numExamples);
+        EarlyTerminationDataSetIterator earlyEndIter = new EarlyTerminationDataSetIterator(iter, terminateAfter);
+        earlyEndIter.next(10);
+        assertEquals(false, earlyEndIter.hasNext());
+        earlyEndIter.reset();
+        assertEquals(true, earlyEndIter.hasNext());
+    }
+
+    @Test
+    @DisplayName("Test calls to Next Not Allowed")
+    void testCallstoNextNotAllowed() throws IOException {
+        assertThrows(RuntimeException.class,() -> {
+            int terminateAfter = 1;
+            DataSetIterator iter = new MnistDataSetIterator(minibatchSize, numExamples);
+            EarlyTerminationDataSetIterator earlyEndIter = new EarlyTerminationDataSetIterator(iter, terminateAfter);
+            earlyEndIter.next(10);
+            iter.reset();
+            earlyEndIter.next(10);
+        });
+
+    }
+}

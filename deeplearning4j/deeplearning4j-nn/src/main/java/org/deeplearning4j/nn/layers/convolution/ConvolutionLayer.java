@@ -21,6 +21,8 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
@@ -58,6 +60,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     protected INDArray i2d;
     protected ConvolutionHelper helper = null;
     protected int helperCountFail = 0;
+    @Getter
+    @Setter
     protected ConvolutionMode convolutionMode;
     protected transient INDArray dummyBias;     //Used only when: hasBias == false AND helpers are used
     protected transient INDArray dummyBiasGrad; //As above

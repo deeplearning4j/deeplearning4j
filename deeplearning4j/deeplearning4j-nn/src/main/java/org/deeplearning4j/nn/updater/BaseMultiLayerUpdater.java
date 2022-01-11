@@ -188,7 +188,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
     /**
      * @return The flattened gradient view array for the model
      */
-    protected abstract INDArray getFlattenedGradientsView();
+    public abstract INDArray getFlattenedGradientsView();
 
     /**
      * @return The flattened parameter array for the model

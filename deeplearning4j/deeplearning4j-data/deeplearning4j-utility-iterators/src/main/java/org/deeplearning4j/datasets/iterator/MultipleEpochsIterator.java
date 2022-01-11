@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.datasets.iterator;
 
+import lombok.Setter;
 import org.nd4j.shade.guava.annotations.VisibleForTesting;
 import org.nd4j.shade.guava.collect.Lists;
 import lombok.Getter;
@@ -37,6 +38,8 @@ import java.util.concurrent.atomic.AtomicLong;
 @Deprecated
 public class MultipleEpochsIterator implements DataSetIterator {
     @VisibleForTesting
+    @Getter
+    @Setter
     protected int epochs = 0;
     protected int numEpochs;
     protected int batch = 0;
