@@ -112,10 +112,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     protected INDArray flattenedParams; //Params for all layers are a view/subset of this array
     @Getter
     protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
+    @Getter
+    @Setter
     protected Gradient gradient;
     protected double score;
     @Setter
     private boolean initDone = false;
+    @Getter
+    @Setter
     protected boolean clearTbpttState = true;  //Mainly for unit testing (should be enabled otherwise)
     //Workspaces for CUDNN. Pass to LayerWorkspaceMgr for re-use in cudnn helpers
     @Getter

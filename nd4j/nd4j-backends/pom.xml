@@ -37,7 +37,6 @@
     <name>nd4j-backends</name>
 
     <modules>
-        <module>nd4j-tests</module>
         <module>nd4j-backend-impls</module>
         <module>nd4j-api-parent</module>
     </modules>
