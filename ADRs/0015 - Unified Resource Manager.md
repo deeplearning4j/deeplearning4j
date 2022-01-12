@@ -41,10 +41,8 @@ A Resource  is how we handle this. It will be aware of the following concepts:
 A Resource will manage a remote resource like a file. Similar to the current resource types
 in deeplearning4j-common. These resources will mostly be stored on git LFS.
 
-As part of this introduction of a unified resource manager and resource type
-we will also introduce proper cache management so a user can list
-the caches and downloads available and allow them to delete or update
-specific resources.
+As part of this introduction of a unified resource abstraction
+will be cache aware exposing the cache so users can delete if they wish.
 
 For existing datasets we  use the old sources but have a common abstraction
 for knowing which dataset we want to download.
