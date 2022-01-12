@@ -57,7 +57,7 @@ We  use md5sum and standardize this for all resources.
 
 Note that in order to avoid maintenance burdens md5 checksum verification
 is optional. By default, if a resource returns null or an empty
-string verification is not be performed. This distinction is important
+string verification is not  performed. This distinction is important
 for resource types such as test resources vs end user assets like pretrained model
 weights.
 
