@@ -28,17 +28,17 @@ Relevant ADRs include:
 
 ## Proposal
 
-Migrate all resources off of azure and on to github LFS
-and introduce a new resource abstraction for binding the 
-various resource types in to 1 abstraction and downloader.
+All resources are hosted on  github LFS.
+A  resource abstraction for binding the  various resource types in
+to 1 abstraction and downloader.
 
-A resource manager will be how we handle this. A ResourceManager will be aware of the following concepts:
+A Resource  is how we handle this. It will be aware of the following concepts:
 1. A base url for downloading a file
 2. A cache directory for managing the resource
 3. Common download + retry logic for ensuring a download succeeds
 
 
-A ResourceManager will manage resources. Similar to the current resource types
+A Resource will manage a remote resource like a file. Similar to the current resource types
 in deeplearning4j-common. These resources will mostly be stored on git LFS.
 
 As part of this introduction of a unified resource manager and resource type
@@ -46,7 +46,7 @@ we will also introduce proper cache management so a user can list
 the caches and downloads available and allow them to delete or update
 specific resources.
 
-For existing datasets we will use the old sources but have a common abstraction
+For existing datasets we  use the old sources but have a common abstraction
 for knowing which dataset we want to download.
 
 Another problem is file verification.
@@ -54,10 +54,11 @@ Another problem is file verification.
 The legacy model zoo uses simpler adler checksums for verification.
 Some download cache verification implementations use md5sum.
 
-We will use md5sum and standardize this for all resources.
+We  use md5sum and standardize this for all resources.
+
 
 Note that in order to avoid maintenance burdens md5 checksum verification
-will be optional. By default if a resource returns null or an empty
+will be optional. By default, if a resource returns null or an empty
 string verification will not be performed. This distinction is important
 for resource types such as test resources vs end user assets like pretrained model
 weights.
@@ -65,7 +66,12 @@ weights.
 This is also important for compatibility. Due to the legacy checksum
 verification in the zoo module, md5 checksum verification can come later.
 
-
+This leads us to 5 resource types:
+1. Omnihub: The omnihub pretrained models
+2. Datasets: the legacy datasets for custom iterators like mnist and lfw
+3. Dl4j zoo: The legacy zoo models
+4. Strumpf: the legacy test resource manager
+5. Custom: custom resources where a user can specify a URL and file destination
 
 ## Consequences
 

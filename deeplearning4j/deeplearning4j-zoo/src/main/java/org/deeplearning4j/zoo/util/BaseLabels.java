@@ -132,7 +132,7 @@ public abstract class BaseLabels implements Labels {
      *
      * @return File of the local resource
      */
-    protected File getResourceFile(){
+    protected File getResourceFile() {
 
         URL url = getURL();
         String urlString = url.toString();
@@ -144,7 +144,7 @@ public abstract class BaseLabels implements Labels {
         if(localFile.exists()) {
             try{
                 //empty string means ignore the MD5
-                if(expMD5.isEmpty() || Downloader.checkMD5OfFile(expMD5, localFile)){
+                if(Downloader.checkMD5OfFile(expMD5, localFile)) {
                     return localFile;
                 }
             } catch (IOException e){
