@@ -149,6 +149,24 @@ public class Downloader {
         });
     }
 
+
+    /**
+     * Check if the  input file is corrupted by
+     * verifying the target md5 hash.
+     * If corrupted, file is deleted
+     * @param inputFile the input file to check
+     * @param targetmd5 the target md5 to test
+     * @throws IOException
+     */
+    public static boolean deleteIfCorrupted(File inputFile,String targetmd5) throws IOException {
+        if(!checkMD5OfFile(targetmd5, inputFile)) {
+            inputFile.delete();
+            return true;
+        }
+
+        return false;
+    }
+
     /**
      * Check the MD5 of the specified file
      * @param targetMD5 Expected MD5
@@ -156,7 +174,10 @@ public class Downloader {
      * @return          True if MD5 matches, false otherwise
      */
     public static boolean checkMD5OfFile(String targetMD5, File file) throws IOException {
-       if(targetMD5.isEmpty())
+       if(!file.exists())
+           return false;
+
+        if(targetMD5.isEmpty())
            return true;
 
         InputStream in = FileUtils.openInputStream(file);

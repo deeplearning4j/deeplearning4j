@@ -79,9 +79,9 @@ public class BERTGraphTest extends BaseNd4jTestWithBackends {
         File localFile = new File(saveDir, "bert_mrpc_frozen_v1.zip");
         String md5 = "7cef8bbe62e701212472f77a0361f443";
 
-        if(localFile.exists() && !Downloader.checkMD5OfFile(md5, localFile)) {
+
+        if(Downloader.deleteIfCorrupted(localFile,md5)) {
             log.info("Deleting local file: does not match MD5. {}", localFile.getAbsolutePath());
-            localFile.delete();
         }
 
         if (!localFile.exists()) {
@@ -91,7 +91,7 @@ public class BERTGraphTest extends BaseNd4jTestWithBackends {
 
         //Extract
         File f = new File(saveDir, "bert_mrpc_frozen.pb");
-        if(!Downloader.checkMD5OfFile("93d82bca887625632578df37ea3d3ca5", f)){
+        if(f.exists() && !Downloader.checkMD5OfFile("93d82bca887625632578df37ea3d3ca5", f)){
             if(f.exists()) {
                 f.delete();
             }
