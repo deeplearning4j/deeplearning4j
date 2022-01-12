@@ -128,9 +128,10 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         labelsCenterXYInGridBox.subi(Transforms.floor(labelsCenterXYInGridBox,true));
 
         //Also infer size/scale (label w/h) from (x1,y1,x2,y2) format to (w,h) format
+        //add epsilon for numerical stability
         INDArray labelWHSqrt = labelBRXY.sub(labelTLXY);
         labelWHSqrt = Transforms.sqrt(labelWHSqrt, false);
-
+        BooleanIndexing.replaceWhere(labelWHSqrt,1e-6,Conditions.isNan());
 
 
         // ----- Step 2: apply activation functions to network output activations -----
@@ -303,9 +304,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Note that loss function gets sqrt(w) and sqrt(h)
         //gradWHSqrt2d = dL/dsqrt(w) and dL/dsqrt(h)
         INDArray gradWHSqrt2d = layerConf().getLossPositionScale().computeGradient(labelWHSqrt2d, predictedWHSqrt2d, identity, mask1_ij_obj_2d);   //Shape: [mb*b*h*w, 2]
-            //dL/dW = dL/dsqrtw * dsqrtw / dW = dL/dsqrtw * 0.5 / sqrt(w)
+        //dL/dW = dL/dsqrtw * dsqrtw / dW = dL/dsqrtw * 0.5 / sqrt(w)
         INDArray gradWH2d = gradWHSqrt2d.muli(0.5).divi(predictedWHSqrt2d);  //dL/dW and dL/dH, w = pw * exp(tw)
-            //dL/dinWH = dL/dW * dW/dInWH = dL/dW * pw * exp(tw)
+        //dL/dinWH = dL/dW * dW/dInWH = dL/dW * pw * exp(tw)
         INDArray gradWH5d = gradWH2d.dup('c').reshape(mb, b, h, w, 2).permute(0,1,4,2,3);   //To: [mb, b, 2, h, w]
         gradWH5d.muli(predictedWH);
         gradWH5d.muli(lambdaCoord);

@@ -48,7 +48,7 @@ public class SvhnLabelProvider implements ImageObjectLabelProvider {
     private Map<String, List<ImageObject>> labelMap;
 
     public SvhnLabelProvider(File dir) throws IOException {
-        labelMap = new HashMap<String, List<ImageObject>>();
+        labelMap = new HashMap<>();
 
         H5File file = new H5File(dir.getPath() + "/digitStruct.mat", H5F_ACC_RDONLY());
         Group group = file.openGroup("digitStruct");
@@ -165,5 +165,15 @@ public class SvhnLabelProvider implements ImageObjectLabelProvider {
     @Override
     public List<ImageObject> getImageObjectsForPath(URI uri) {
         return getImageObjectsForPath(uri.toString());
+    }
+
+    @Override
+    public int numLabels() {
+        return labelMap.keySet().size();
+    }
+
+    @Override
+    public List<String> labels() {
+        return new ArrayList<>(labelMap.keySet());
     }
 }

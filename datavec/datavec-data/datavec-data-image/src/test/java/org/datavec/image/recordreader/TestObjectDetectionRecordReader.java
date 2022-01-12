@@ -251,6 +251,16 @@ public class TestObjectDetectionRecordReader {
         }
 
         @Override
+        public int numLabels() {
+            return 0;
+        }
+
+        @Override
+        public List<String> labels() {
+            return null;
+        }
+
+        @Override
         public List<ImageObject> getImageObjectsForPath(String path) {
             if (path.endsWith("000012.jpg")) {
                 return Collections.singletonList(new ImageObject(156, 97, 351, 270, "car"));

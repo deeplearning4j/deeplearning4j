@@ -99,12 +99,21 @@ public class ArchiveUtils {
                         throw new IOException("Entry is outside of the target dir: ");
                     }
 
+                    if(!newFile.getParentFile().exists()) {
+                        if(!newFile.getParentFile().mkdirs()) {
+                            throw new IllegalStateException("Failed to create new directory when extracting for name " + fileName);
+
+                        }
+                    }
+
                     if (ze.isDirectory()) {
                         newFile.mkdirs();
                         zis.closeEntry();
                         ze = zis.getNextEntry();
                         continue;
                     }
+
+
 
                     FileOutputStream fos = new FileOutputStream(newFile);
 

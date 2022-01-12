@@ -17,20 +17,18 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
+package org.datavec.image.recordreader.objdetect.coco;
 
-package org.datavec.image.recordreader.objdetect;
+import java.util.ArrayList;
 
-import java.net.URI;
-import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public interface ImageObjectLabelProvider {
 
-    List<ImageObject> getImageObjectsForPath(String path);
-
-    List<ImageObject> getImageObjectsForPath(URI uri);
-
-    int numLabels();
-
-    List<String> labels();
-
+@Data
+@Builder
+@NoArgsConstructor
+public class COCOImages extends ArrayList<COCOImage> {
 }

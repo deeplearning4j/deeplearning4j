@@ -1,0 +1,71 @@
+{
+  "annotations": [
+    {
+      "caption": "A bicycle replica with a clock as the front wheel.",
+      "id": 1,
+      "image_id": 1
+    }
+  ],
+  "images": [
+    {
+      "coco_url": "http://images.cocodataset.org/val2014/COCO_val2014_000000074478.jpg",
+      "date_captured": "2013-11-25 20:09:45",
+      "file_name": "COCO_val2014_000000074478.jpg",
+      "flickr_url": "http://farm3.staticflickr.com/2753/4318988969_653bb58b41_z.jpg",
+      "height": 640,
+      "id": 1,
+      "license": 3,
+      "width": 428
+    }
+  ],
+  "info": {
+    "contributor": "COCO Consortium",
+    "date_created": "2017/09/01",
+    "description": "COCO 2014 Dataset",
+    "url": "http://cocodataset.org",
+    "version": "1.0",
+    "year": 2014
+  },
+  "licenses": [
+    {
+      "id": 1,
+      "name": "Attribution-NonCommercial-ShareAlike License",
+      "url": "http://creativecommons.org/licenses/by-nc-sa/2.0/"
+    },
+    {
+      "id": 2,
+      "name": "Attribution-NonCommercial License",
+      "url": "http://creativecommons.org/licenses/by-nc/2.0/"
+    },
+    {
+      "id": 3,
+      "name": "Attribution-NonCommercial-NoDerivs License",
+      "url": "http://creativecommons.org/licenses/by-nc-nd/2.0/"
+    },
+    {
+      "id": 4,
+      "name": "Attribution License",
+      "url": "http://creativecommons.org/licenses/by/2.0/"
+    },
+    {
+      "id": 5,
+      "name": "Attribution-ShareAlike License",
+      "url": "http://creativecommons.org/licenses/by-sa/2.0/"
+    },
+    {
+      "id": 6,
+      "name": "Attribution-NoDerivs License",
+      "url": "http://creativecommons.org/licenses/by-nd/2.0/"
+    },
+    {
+      "id": 7,
+      "name": "No known copyright restrictions",
+      "url": "http://flickr.com/commons/usage/"
+    },
+    {
+      "id": 8,
+      "name": "United States Government Work",
+      "url": "http://www.usa.gov/copyright.shtml"
+    }
+  ]
+}

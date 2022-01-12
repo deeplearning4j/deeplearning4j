@@ -17,20 +17,34 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
+package org.datavec.image.recordreader.objdetect.coco;
 
-package org.datavec.image.recordreader.objdetect;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.net.URI;
-import java.util.List;
+import java.io.Serializable;
 
-public interface ImageObjectLabelProvider {
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class COCOImage implements Serializable {
+    private int id;
+    private long width;
+    private long height;
+    @JsonProperty("file_name")
+    private String fileName;
+    private int license;
+    private String dataCaptured;
+    @JsonProperty("coco_url")
+    private String cocoUrl;
+    @JsonProperty("flickr_url")
+    private String flickrUrl;
+    @JsonProperty("image_id")
+    private int imageId;
 
-    List<ImageObject> getImageObjectsForPath(String path);
-
-    List<ImageObject> getImageObjectsForPath(URI uri);
-
-    int numLabels();
-
-    List<String> labels();
 
 }

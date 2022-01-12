@@ -29,7 +29,9 @@ import org.datavec.image.recordreader.objdetect.ImageObjectLabelProvider;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class VocLabelProvider implements ImageObjectLabelProvider {
@@ -58,7 +60,7 @@ public class VocLabelProvider implements ImageObjectLabelProvider {
         int idx = path.lastIndexOf('/');
         idx = Math.max(idx, path.lastIndexOf('\\'));
 
-        String filename = path.substring(idx+1, path.length()-4);   //-4: ".jpg"
+        String filename = path.substring(idx + 1, path.length() - 4);   //-4: ".jpg"
         String xmlPath = FilenameUtils.concat(annotationsDir, filename + ".xml");
         File xmlFile = new File(xmlPath);
         if(!xmlFile.exists()){
@@ -67,7 +69,7 @@ public class VocLabelProvider implements ImageObjectLabelProvider {
 
         String xmlContent;
         try{
-            xmlContent = FileUtils.readFileToString(xmlFile);
+            xmlContent = FileUtils.readFileToString(xmlFile, Charset.defaultCharset());
         } catch (IOException e){
             throw new RuntimeException(e);
         }
@@ -78,7 +80,7 @@ public class VocLabelProvider implements ImageObjectLabelProvider {
         String[] lines = xmlContent.split("\n");
 
         List<ImageObject> out = new ArrayList<>();
-        for( int i=0; i<lines.length; i++ ){
+        for( int i = 0; i < lines.length; i++) {
             if(!lines[i].contains(OBJECT_START_TAG)){
                 continue;
             }
@@ -87,8 +89,8 @@ public class VocLabelProvider implements ImageObjectLabelProvider {
             int ymin = Integer.MIN_VALUE;
             int xmax = Integer.MIN_VALUE;
             int ymax = Integer.MIN_VALUE;
-            while(!lines[i].contains(OBJECT_END_TAG)){
-                if(name == null && lines[i].contains(NAME_TAG)){
+            while(!lines[i].contains(OBJECT_END_TAG)) {
+                if(name == null && lines[i].contains(NAME_TAG)) {
                     int idxStartName = lines[i].indexOf('>') + 1;
                     int idxEndName = lines[i].lastIndexOf('<');
                     name = lines[i].substring(idxStartName, idxEndName);
@@ -119,7 +121,7 @@ public class VocLabelProvider implements ImageObjectLabelProvider {
                 i++;
             }
 
-            if(name == null){
+            if(name == null) {
                 throw new IllegalStateException("Invalid object format: no name tag found for object in file " + xmlPath);
             }
             if(xmin == Integer.MIN_VALUE || ymin == Integer.MIN_VALUE || xmax == Integer.MIN_VALUE || ymax == Integer.MIN_VALUE){
@@ -132,7 +134,7 @@ public class VocLabelProvider implements ImageObjectLabelProvider {
         return out;
     }
 
-    private int extractAndParse(String line){
+    private int extractAndParse(String line) {
         int idxStartName = line.indexOf('>') + 1;
         int idxEndName = line.lastIndexOf('<');
         String substring = line.substring(idxStartName, idxEndName);
@@ -142,6 +144,16 @@ public class VocLabelProvider implements ImageObjectLabelProvider {
     @Override
     public List<ImageObject> getImageObjectsForPath(URI uri) {
         return getImageObjectsForPath(uri.toString());
+    }
+
+    @Override
+    public int numLabels() {
+        return 0;
+    }
+
+    @Override
+    public List<String> labels() {
+        return Collections.emptyList();
     }
 
 }

@@ -17,20 +17,23 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
+package org.datavec.image.recordreader.objdetect.coco;
 
-package org.datavec.image.recordreader.objdetect;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.net.URI;
-import java.util.List;
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class COCOCategory {
 
-public interface ImageObjectLabelProvider {
-
-    List<ImageObject> getImageObjectsForPath(String path);
-
-    List<ImageObject> getImageObjectsForPath(URI uri);
-
-    int numLabels();
-
-    List<String> labels();
+    @JsonProperty("supercategory")
+    private String superCategory;
+    private int id;
+    private String name;
 
 }
