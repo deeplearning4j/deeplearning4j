@@ -141,9 +141,10 @@ public abstract class BaseLabels implements Labels {
         File localFile = new File(resourceDir, filename);
 
         String expMD5 = resourceMD5();
-        if(localFile.exists()){
+        if(localFile.exists()) {
             try{
-                if(Downloader.checkMD5OfFile(expMD5, localFile)){
+                //empty string means ignore the MD5
+                if(expMD5.isEmpty() || Downloader.checkMD5OfFile(expMD5, localFile)){
                     return localFile;
                 }
             } catch (IOException e){

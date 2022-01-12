@@ -79,7 +79,7 @@ public class Downloader {
             if (attempt < maxTries) {
                 if(!isCorrectFile) {
                     FileUtils.copyURLToFile(url, f, connectionTimeout, readTimeout);
-                    if (!checkMD5OfFile(targetMD5, f)) {
+                    if (!targetMD5.isEmpty() && !checkMD5OfFile(targetMD5, f)) {
                         f.delete();
                         download(name, url, f, targetMD5, maxTries, attempt + 1, connectionTimeout, readTimeout);
                     }
@@ -127,7 +127,7 @@ public class Downloader {
             if (attempt < maxTries) {
                 if(!isCorrectFile) {
                     FileUtils.copyURLToFile(url, f, connectionTimeout, readTimeout);
-                    if (!checkMD5OfFile(targetMD5, f)) {
+                    if (!targetMD5.isEmpty() && !checkMD5OfFile(targetMD5, f)) {
                         f.delete();
                         downloadAndExtract(attempt + 1, maxTries, name, url, f, extractToDir, targetMD5, connectionTimeout, readTimeout);
                     }

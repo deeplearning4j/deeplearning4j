@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.datavec.image.data.Image;
 import org.datavec.image.transform.ImageTransform;
+import org.nd4j.common.resources.Downloader;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.util.ArchiveUtils;
 
@@ -31,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.net.URI;
 import java.net.URL;
 import java.util.Map;
 import java.util.Random;
@@ -98,13 +100,12 @@ public abstract class BaseImageLoader implements Serializable {
         try {
             File file = new File(fullDir, urlMap.get("filesFilename").toString());
             if (!file.isFile()) {
-                FileUtils.copyURLToFile(new URL(urlMap.get("filesURL").toString()), file);
+                Downloader.downloadAndExtract(urlMap.get("filesFilename").toString(),
+                        URI.create(urlMap.get("filesURL").toString()).toURL(),
+                        file,fullDir,"",
+                        3);
             }
 
-            String fileName = file.toString();
-            if (fileName.endsWith(".tgz") || fileName.endsWith(".tar.gz") || fileName.endsWith(".gz")
-                            || fileName.endsWith(".zip"))
-                ArchiveUtils.unzipFileTo(file.getAbsolutePath(), fullDir.getAbsolutePath(), false);
         } catch (IOException e) {
             throw new IllegalStateException("Unable to fetch images", e);
         }

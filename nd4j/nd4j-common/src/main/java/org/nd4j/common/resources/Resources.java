@@ -45,12 +45,7 @@ public class Resources {
         }
 
         //Sort resolvers by priority: check resolvers with lower numbers first
-        Collections.sort(resolvers, new Comparator<Resolver>() {
-            @Override
-            public int compare(Resolver r1, Resolver r2) {
-                return Integer.compare(r1.priority(), r2.priority());
-            }
-        });
+        Collections.sort(resolvers, Comparator.comparingInt(Resolver::priority));
     }
 
     /**
