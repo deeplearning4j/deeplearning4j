@@ -32,17 +32,17 @@ All resources are hosted on  github LFS.
 A  resource abstraction for binding the  various resource types in
 to 1 abstraction and downloader.
 
-A Resource  is how we handle this. It will be aware of the following concepts:
+A Resource  is how we handle this. It is be aware of the following concepts:
 1. A base url for downloading a file
 2. A cache directory for managing the resource
 3. Common download + retry logic for ensuring a download succeeds
 
 
-A Resource will manage a remote resource like a file. Similar to the current resource types
-in deeplearning4j-common. These resources will mostly be stored on git LFS.
+A Resource manages a remote resource like a file. Similar to the current resource types
+in deeplearning4j-common. These resources are mostly be stored on git LFS.
 
 As part of this introduction of a unified resource abstraction
-will be cache aware exposing the cache so users can delete if they wish.
+is cache aware exposing the cache so users can delete if they wish.
 
 For existing datasets we  use the old sources but have a common abstraction
 for knowing which dataset we want to download.
@@ -56,8 +56,8 @@ We  use md5sum and standardize this for all resources.
 
 
 Note that in order to avoid maintenance burdens md5 checksum verification
-will be optional. By default, if a resource returns null or an empty
-string verification will not be performed. This distinction is important
+is optional. By default, if a resource returns null or an empty
+string verification is not be performed. This distinction is important
 for resource types such as test resources vs end user assets like pretrained model
 weights.
 
