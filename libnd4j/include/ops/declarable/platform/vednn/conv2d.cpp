@@ -213,6 +213,10 @@ PLATFORM_CHECK(conv2d, ENGINE_CPU) {
   auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
   auto output = OUTPUT_VARIABLE(0);
   auto paddingMode = INT_ARG(8);
+#if 1
+  sd::Environment::getInstance().setDebug(true) ;
+  sd::Environment::getInstance().setVerbose(true);
+#endif
   Requirements req("VEDNN CONV2d OP");
   req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&

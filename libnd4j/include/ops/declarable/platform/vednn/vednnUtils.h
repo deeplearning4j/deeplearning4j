@@ -37,9 +37,13 @@ namespace platforms {
 /**
  * Here we actually declare our platform helpers
  */
+DECLARE_PLATFORM(relu, ENGINE_CPU);
+DECLARE_PLATFORM(relu_bp, ENGINE_CPU);
 DECLARE_PLATFORM(maxpool2d, ENGINE_CPU);
+DECLARE_PLATFORM(maxpool2d_bp, ENGINE_CPU);
 DECLARE_PLATFORM(conv2d, ENGINE_CPU);
-
+DECLARE_PLATFORM(softmax, ENGINE_CPU);
+DECLARE_PLATFORM(log_softmax, ENGINE_CPU);
 
 
 }  // namespace platforms
