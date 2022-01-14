@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.eclipse.deeplearning4j.frameworkimport.keras.preprocessors;
+package org.deeplearning4j.preprocessors;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
