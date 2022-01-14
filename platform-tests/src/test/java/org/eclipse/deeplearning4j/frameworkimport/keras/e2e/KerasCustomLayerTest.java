@@ -24,10 +24,10 @@ import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.BaseDL4JTest;
-import org.eclipse.deeplearning4j.frameworkimport.keras.KerasLayer;
-import org.eclipse.deeplearning4j.frameworkimport.keras.KerasModelImport;
-import org.eclipse.deeplearning4j.frameworkimport.keras.layers.custom.KerasLRN;
-import org.eclipse.deeplearning4j.frameworkimport.keras.layers.custom.KerasPoolHelper;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasLayer;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasModelImport;
+import org.deeplearning4j.frameworkimport.keras.keras.layers.custom.KerasLRN;
+import org.deeplearning4j.frameworkimport.keras.keras.layers.custom.KerasPoolHelper;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.jupiter.api.Disabled;
 

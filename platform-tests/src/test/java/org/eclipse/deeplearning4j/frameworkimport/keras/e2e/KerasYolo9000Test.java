@@ -22,9 +22,9 @@ package org.eclipse.deeplearning4j.frameworkimport.keras.e2e;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.BaseDL4JTest;
-import org.eclipse.deeplearning4j.frameworkimport.keras.KerasLayer;
-import org.eclipse.deeplearning4j.frameworkimport.keras.KerasModel;
-import org.eclipse.deeplearning4j.frameworkimport.keras.layers.convolutional.KerasSpaceToDepth;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasLayer;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasModel;
+import org.deeplearning4j.frameworkimport.keras.keras.layers.convolutional.KerasSpaceToDepth;
 import org.junit.jupiter.api.Disabled;
 
 import org.junit.jupiter.api.Tag;

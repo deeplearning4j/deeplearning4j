@@ -24,6 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.eclipse.deeplearning4j.resources.DataSetResource;
+import org.eclipse.deeplearning4j.resources.ResourceDataSets;
 import org.nd4j.linalg.api.ops.impl.reduce.same.Sum;
 import org.nd4j.common.primitives.Pair;
 import org.datavec.image.data.ImageWritable;
@@ -59,9 +61,6 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     private static final String[] TRAINFILENAMES =
                     {"data_batch_1.bin", "data_batch_2.bin", "data_batch_3.bin", "data_batch_4.bin", "data_batch5.bin"};
     private static final String TESTFILENAME = "test_batch.bin";
-    private static final String dataBinUrl = "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz";
-    private static final String localDir = "cifar";
-    private static final String dataBinFile = "cifar-10-batches-bin";
     private static final String labelFileName = "batches.meta.txt";
     private static final int numToConvertDS = 10000; // Each file is 10000 images, limiting for file preprocess load
 
@@ -90,9 +89,11 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     protected int loadDSIndex = 0;
     protected DataSet loadDS = new DataSet();
     protected int fileNum = 0;
+    private static DataSetResource cifar = ResourceDataSets.cifar10();
+
 
     private static File getDefaultDirectory() {
-        return new File(BASE_DIR, FilenameUtils.concat(localDir, dataBinFile));
+        return cifar.localCacheDirectory();
     }
 
     public CifarLoader() {
@@ -168,11 +169,6 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         throw new UnsupportedOperationException();
     }
 
-    protected void generateMaps() {
-        cifarDataMap.put("filesFilename", new File(dataBinUrl).getName());
-        cifarDataMap.put("filesURL", dataBinUrl);
-        cifarDataMap.put("filesFilenameUnzipped", dataBinFile);
-    }
 
     private void defineLabels() {
         try {
@@ -190,11 +186,10 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
 
     protected void load() {
         if (!cifarRawFilesExist() && !fullDir.exists()) {
-            generateMaps();
             fullDir.mkdir();
 
             log.info("Downloading CIFAR data set");
-            downloadAndUntar(cifarDataMap, new File(BASE_DIR, localDir));
+            cifar.download(true,3,10000,100000);
         }
         try {
             Collection<File> subFiles = FileUtils.listFiles(fullDir, new String[] {"bin"}, true);

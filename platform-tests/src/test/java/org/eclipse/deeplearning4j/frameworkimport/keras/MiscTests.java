@@ -22,7 +22,10 @@ package org.eclipse.deeplearning4j.frameworkimport.keras;
 
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.BaseDL4JTest;
-import org.eclipse.deeplearning4j.frameworkimport.keras.utils.DL4JKerasModelValidator;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasModel;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasModelImport;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasSequentialModel;
+import org.deeplearning4j.frameworkimport.keras.keras.utils.DL4JKerasModelValidator;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.jupiter.api.Disabled;
 

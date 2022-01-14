@@ -19,15 +19,16 @@
  */
 package org.eclipse.deeplearning4j.frameworkimport.keras.layers.local;
 
+import org.deeplearning4j.frameworkimport.keras.keras.layers.local.KerasLocallyConnected2D;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.LocallyConnected2D;
 import org.deeplearning4j.BaseDL4JTest;
 import org.eclipse.deeplearning4j.frameworkimport.keras.KerasTestUtils;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.Keras1LayerConfiguration;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.Keras2LayerConfiguration;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.KerasLayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.Keras1LayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.Keras2LayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;

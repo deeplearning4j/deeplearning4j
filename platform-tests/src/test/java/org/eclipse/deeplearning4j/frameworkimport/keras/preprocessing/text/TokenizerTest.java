@@ -21,6 +21,8 @@
 package org.eclipse.deeplearning4j.frameworkimport.keras.preprocessing.text;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.frameworkimport.keras.keras.preprocessing.text.KerasTokenizer;
+import org.deeplearning4j.frameworkimport.keras.keras.preprocessing.text.TokenizerMode;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;

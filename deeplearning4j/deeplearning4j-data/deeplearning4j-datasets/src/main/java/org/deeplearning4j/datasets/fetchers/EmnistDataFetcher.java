@@ -26,6 +26,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.datasets.base.EmnistFetcher;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.common.resources.ResourceType;
+import org.eclipse.deeplearning4j.resources.utils.EMnistSet;
 import org.deeplearning4j.datasets.iterator.impl.EmnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.MnistManager;
 import org.nd4j.linalg.dataset.api.iterator.fetcher.DataSetFetcher;
@@ -40,7 +41,7 @@ public class EmnistDataFetcher extends MnistDataFetcher implements DataSetFetche
 
     protected EmnistFetcher fetcher;
 
-    public EmnistDataFetcher(EmnistDataSetIterator.Set dataSet, boolean binarize, boolean train, boolean shuffle,
+    public EmnistDataFetcher(EMnistSet dataSet, boolean binarize, boolean train, boolean shuffle,
                              long rngSeed) throws IOException {
         fetcher = new EmnistFetcher(dataSet);
         if (!emnistExists(fetcher)) {
@@ -50,12 +51,12 @@ public class EmnistDataFetcher extends MnistDataFetcher implements DataSetFetche
 
         String EMNIST_ROOT = DL4JResources.getDirectory(ResourceType.DATASET, "EMNIST").getAbsolutePath();
         if (train) {
-            images = FilenameUtils.concat(EMNIST_ROOT, fetcher.getTrainingFilesFilename_unzipped());
-            labels = FilenameUtils.concat(EMNIST_ROOT, fetcher.getTrainingFileLabelsFilename_unzipped());
+            images = fetcher.getEmnistDataTrain().localPath().getAbsolutePath();
+            labels = fetcher.getEmnistLabelsTrain().localPath().getAbsolutePath();
             totalExamples = EmnistDataSetIterator.numExamplesTrain(dataSet);
         } else {
-            images = FilenameUtils.concat(EMNIST_ROOT, fetcher.getTestFilesFilename_unzipped());
-            labels = FilenameUtils.concat(EMNIST_ROOT, fetcher.getTestFileLabelsFilename_unzipped());
+            images = fetcher.getEmnistDataTest().localPath().getAbsolutePath();
+            labels = fetcher.getEmnistLabelsTest().localPath().getAbsolutePath();
             totalExamples = EmnistDataSetIterator.numExamplesTest(dataSet);
         }
         MnistManager man;
@@ -85,7 +86,7 @@ public class EmnistDataFetcher extends MnistDataFetcher implements DataSetFetche
 
         //For some inexplicable reason, EMNIST LETTERS set is indexed 1 to 26 (i.e., 1 to nClasses), while everything else
         // is indexed (0 to nClasses-1) :/
-        if (dataSet == EmnistDataSetIterator.Set.LETTERS) {
+        if (dataSet == EMnistSet.LETTERS) {
             oneIndexed = true;
         } else {
             oneIndexed = false;
@@ -96,18 +97,13 @@ public class EmnistDataFetcher extends MnistDataFetcher implements DataSetFetche
 
     private boolean emnistExists(EmnistFetcher e) {
         //Check 4 files:
-        String EMNIST_ROOT = DL4JResources.getDirectory(ResourceType.DATASET, "EMNIST").getAbsolutePath();
-        File f = new File(EMNIST_ROOT, e.getTrainingFilesFilename_unzipped());
-        if (!f.exists())
+        if (!fetcher.getEmnistDataTrain().existsLocally())
             return false;
-        f = new File(EMNIST_ROOT, e.getTrainingFileLabelsFilename_unzipped());
-        if (!f.exists())
+        if (!fetcher.getEmnistLabelsTrain().existsLocally())
             return false;
-        f = new File(EMNIST_ROOT, e.getTestFilesFilename_unzipped());
-        if (!f.exists())
+        if (!fetcher.getEmnistDataTest().existsLocally())
             return false;
-        f = new File(EMNIST_ROOT, e.getTestFileLabelsFilename_unzipped());
-        if (!f.exists())
+        if (!fetcher.getEmnistLabelsTest().existsLocally())
             return false;
         return true;
     }

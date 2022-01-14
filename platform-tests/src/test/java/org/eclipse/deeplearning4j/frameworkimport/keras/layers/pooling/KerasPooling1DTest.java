@@ -19,6 +19,7 @@
  */
 package org.eclipse.deeplearning4j.frameworkimport.keras.layers.pooling;
 
+import org.deeplearning4j.frameworkimport.keras.keras.layers.pooling.KerasPooling1D;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -27,10 +28,10 @@ import org.deeplearning4j.nn.conf.layers.Subsampling1DLayer;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
-import org.eclipse.deeplearning4j.frameworkimport.keras.KerasModelImport;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.Keras1LayerConfiguration;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.Keras2LayerConfiguration;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.KerasLayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasModelImport;
+import org.deeplearning4j.frameworkimport.keras.keras.config.Keras1LayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.Keras2LayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

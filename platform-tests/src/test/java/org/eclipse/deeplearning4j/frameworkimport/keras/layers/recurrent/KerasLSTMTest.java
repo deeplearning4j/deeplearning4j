@@ -19,19 +19,20 @@
  */
 package org.eclipse.deeplearning4j.frameworkimport.keras.layers.recurrent;
 
+import org.deeplearning4j.frameworkimport.keras.keras.layers.recurrent.KerasLSTM;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.BaseDL4JTest;
-import org.eclipse.deeplearning4j.frameworkimport.keras.exceptions.InvalidKerasConfigurationException;
-import org.eclipse.deeplearning4j.frameworkimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.eclipse.deeplearning4j.frameworkimport.keras.layers.embeddings.KerasEmbedding;
+import org.deeplearning4j.frameworkimport.keras.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.frameworkimport.keras.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.frameworkimport.keras.keras.layers.embeddings.KerasEmbedding;
 import org.eclipse.deeplearning4j.frameworkimport.keras.KerasTestUtils;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.Keras1LayerConfiguration;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.Keras2LayerConfiguration;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.KerasLayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.Keras1LayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.Keras2LayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.junit.jupiter.api.Assertions;

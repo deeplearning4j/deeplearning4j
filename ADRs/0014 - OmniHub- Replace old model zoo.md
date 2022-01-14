@@ -1,9 +1,9 @@
 # Replace old model zoo
 
 ## Status
-**Discussion**
+**Accepted**
 
-Proposed by: Adam Gibson (3st Jan 2022)
+Proposed by: Adam Gibson (3rd Jan 2022)
 
 
 ## Context

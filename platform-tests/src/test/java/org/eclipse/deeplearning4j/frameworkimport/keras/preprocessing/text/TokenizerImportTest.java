@@ -21,7 +21,8 @@
 package org.eclipse.deeplearning4j.frameworkimport.keras.preprocessing.text;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.eclipse.deeplearning4j.frameworkimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.frameworkimport.keras.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.frameworkimport.keras.keras.preprocessing.text.KerasTokenizer;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;

@@ -63,14 +63,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @Tag(TagNames.LONG_TEST)
 public class TestInstantiation extends BaseDL4JTest {
 
-    protected static void ignoreIfCuda(){
-        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
-        if("CUDA".equalsIgnoreCase(backend)) {
-            log.warn("IGNORING TEST ON CUDA DUE TO CI CRASHES - SEE ISSUE #7657");
-            assumeTrue(false);
-        }
-    }
-
     @AfterEach
     public void after() throws Exception {
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -94,13 +86,12 @@ public class TestInstantiation extends BaseDL4JTest {
         runTest(TinyYOLO.builder().numClasses(10).build(), "TinyYOLO", 10);
     }
 
-    @Test @Disabled("AB 2019/05/28 - Crashing on CI linux-x86-64 CPU only - Issue #7657")
+    @Test
     public void testCnnTrainingYOLO2() throws Exception {
         runTest(YOLO2.builder().numClasses(10).build(), "YOLO2", 10);
     }
 
     public static void runTest(ZooModel model, String modelName, int numClasses) throws Exception {
-        ignoreIfCuda();
         int gridWidth = -1;
         int gridHeight = -1;
         if (modelName.equals("TinyYOLO") || modelName.equals("YOLO2")) {
@@ -139,7 +130,6 @@ public class TestInstantiation extends BaseDL4JTest {
 
     @Test
     public void testInitPretrained() throws IOException {
-        ignoreIfCuda();
         ZooModel model = ResNet50.builder().numClasses(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
@@ -201,7 +191,6 @@ public class TestInstantiation extends BaseDL4JTest {
     }
 
     public void testInitPretrained(ZooModel model, long[] inShape, long[] outShape) throws Exception {
-        ignoreIfCuda();
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
@@ -265,7 +254,6 @@ public class TestInstantiation extends BaseDL4JTest {
 
 
     public void testInitRandomModel(ZooModel model, long[] inShape, long[] outShape){
-        ignoreIfCuda();
         //Test initialization of NON-PRETRAINED models
 
         log.info("Testing {}", model.getClass().getSimpleName());
@@ -288,7 +276,6 @@ public class TestInstantiation extends BaseDL4JTest {
 
     @Test
     public void testYolo4635() throws Exception {
-        ignoreIfCuda();
         //https://github.com/eclipse/deeplearning4j/issues/4635
 
         int nClasses = 10;
@@ -299,7 +286,6 @@ public class TestInstantiation extends BaseDL4JTest {
 
     @Test
     public void testTransferLearning() throws Exception {
-        ignoreIfCuda();
         //https://github.com/eclipse/deeplearning4j/issues/7193
 
         ComputationGraph cg = (ComputationGraph) ResNet50.builder().build().initPretrained();

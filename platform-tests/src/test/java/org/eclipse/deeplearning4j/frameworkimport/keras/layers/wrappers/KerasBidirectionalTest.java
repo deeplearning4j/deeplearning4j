@@ -19,12 +19,13 @@
  */
 package org.eclipse.deeplearning4j.frameworkimport.keras.layers.wrappers;
 
+import org.deeplearning4j.frameworkimport.keras.keras.layers.wrappers.KerasBidirectional;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.BaseDL4JTest;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.Keras1LayerConfiguration;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.Keras2LayerConfiguration;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.KerasLayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.Keras1LayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.Keras2LayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

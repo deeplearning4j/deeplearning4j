@@ -74,7 +74,7 @@ public class TestTimeDistributed extends BaseDL4JTest {
     }
 
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.TestTimeDistributed#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.nn.layers.recurrent.TestTimeDistributed#params")
     public void testTimeDistributed(RNNFormat rnnDataFormat,Nd4jBackend backend){
         for(WorkspaceMode wsm : new WorkspaceMode[]{WorkspaceMode.ENABLED, WorkspaceMode.NONE}) {
 
@@ -145,7 +145,7 @@ public class TestTimeDistributed extends BaseDL4JTest {
     }
 
 
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.TestTimeDistributed#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.nn.layers.recurrent.TestTimeDistributed#params")
     @ParameterizedTest
     public void testTimeDistributedDense(RNNFormat rnnDataFormat,Nd4jBackend backend) {
 

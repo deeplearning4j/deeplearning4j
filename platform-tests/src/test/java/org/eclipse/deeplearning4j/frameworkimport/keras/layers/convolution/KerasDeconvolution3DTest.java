@@ -20,7 +20,7 @@
 package org.eclipse.deeplearning4j.frameworkimport.keras.layers.convolution;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.eclipse.deeplearning4j.frameworkimport.keras.KerasModelImport;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasModelImport;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.junit.jupiter.api.DisplayName;

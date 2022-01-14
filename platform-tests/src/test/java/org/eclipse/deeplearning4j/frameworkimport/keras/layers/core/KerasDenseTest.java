@@ -19,13 +19,14 @@
  */
 package org.eclipse.deeplearning4j.frameworkimport.keras.layers.core;
 
+import org.deeplearning4j.frameworkimport.keras.keras.layers.core.KerasDense;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.BaseDL4JTest;
 import org.eclipse.deeplearning4j.frameworkimport.keras.KerasTestUtils;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.Keras1LayerConfiguration;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.Keras2LayerConfiguration;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.KerasLayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.Keras1LayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.Keras2LayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.junit.jupiter.api.Assertions;

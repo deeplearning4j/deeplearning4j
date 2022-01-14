@@ -77,7 +77,7 @@ public class TestRnnLayers extends BaseDL4JTest {
     }
 
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.TestRnnLayers#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.nn.layers.recurrent.TestRnnLayers#params")
     public void testTimeStepIs3Dimensional(RNNFormat rnnDataFormat,Nd4jBackend backend) {
 
         int nIn = 12;
@@ -128,7 +128,7 @@ public class TestRnnLayers extends BaseDL4JTest {
     }
 
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.TestRnnLayers#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.nn.layers.recurrent.TestRnnLayers#params")
     public void testDropoutRecurrentLayers(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 

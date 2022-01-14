@@ -19,11 +19,12 @@
  */
 package org.eclipse.deeplearning4j.frameworkimport.keras.layers.embeddings;
 
+import org.deeplearning4j.frameworkimport.keras.keras.layers.embeddings.KerasEmbedding;
 import org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer;
 import org.deeplearning4j.BaseDL4JTest;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.Keras1LayerConfiguration;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.Keras2LayerConfiguration;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.KerasLayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.Keras1LayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.Keras2LayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;

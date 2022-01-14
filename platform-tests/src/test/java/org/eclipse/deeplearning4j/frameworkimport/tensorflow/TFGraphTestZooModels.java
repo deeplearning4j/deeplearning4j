@@ -158,9 +158,8 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
                 String filename = FilenameUtils.getName(url);
                 File localFile = new File(localDir, filename);
 
-                if(localFile.exists() && !Downloader.checkMD5OfFile(md5, localFile)) {
+                if(Downloader.deleteIfCorrupted(localFile,md5)) {
                     log.info("Deleting local file: does not match MD5. {}", localFile.getAbsolutePath());
-                    localFile.delete();
                 }
 
                 if (!localFile.exists()) {
