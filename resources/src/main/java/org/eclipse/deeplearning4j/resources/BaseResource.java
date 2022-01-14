@@ -21,11 +21,23 @@ package org.eclipse.deeplearning4j.resources;
 
 public abstract class BaseResource implements DownloadableResource {
     protected String fileName;
+    protected String archiveFileName;
+    protected String md5Sum;
 
-    public BaseResource(String fileName) {
+
+    public BaseResource(String fileName,String md5Sum,String archiveFileName) {
         this.fileName = fileName;
+        this.archiveFileName = archiveFileName;
+        this.md5Sum = md5Sum;
     }
 
 
+    public BaseResource(String fileName,String archiveFileName) {
+        this(fileName,"",archiveFileName);
+    }
 
+    @Override
+    public String archiveFileName() {
+        return archiveFileName;
+    }
 }

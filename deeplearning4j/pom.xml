@@ -59,7 +59,6 @@
         <module>deeplearning4j-modelexport-solr</module>
         <module>deeplearning4j-zoo</module>
         <module>deeplearning4j-data</module>
-        <module>deeplearning4j-common</module>
         <module>deeplearning4j-common-tests</module>
     </modules>
 

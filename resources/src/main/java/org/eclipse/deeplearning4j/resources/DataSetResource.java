@@ -19,16 +19,29 @@
  */
 package org.eclipse.deeplearning4j.resources;
 
-import org.eclipse.deeplearning4j.omnihub.OmniHubUtils;
-import org.nd4j.common.resources.strumpf.StrumpfResolver;
 
 import java.io.File;
-
 public class DataSetResource extends BaseResource {
 
 
-    public DataSetResource(String fileName) {
-        super(fileName);
+    private String localCacheDirectory;
+    private String rootUrl;
+
+
+    public DataSetResource(String fileName,String localCacheDirectory, String rootUrl) {
+        this(fileName,"",localCacheDirectory,rootUrl);
+    }
+
+    public DataSetResource(String fileName, String archiveFileName,String localCacheDirectory, String rootUrl) {
+        super(fileName,archiveFileName);
+        this.localCacheDirectory = localCacheDirectory;
+        this.rootUrl = rootUrl;
+    }
+
+    public DataSetResource(String fileName, String md5Sum, String archiveFileName, String localCacheDirectory, String rootUrl) {
+        super(fileName, md5Sum, archiveFileName);
+        this.localCacheDirectory = localCacheDirectory;
+        this.rootUrl = rootUrl;
     }
 
     @Override
@@ -38,12 +51,12 @@ public class DataSetResource extends BaseResource {
 
     @Override
     public String rootUrl() {
-        return OmniHubUtils.getOmnihubUrl();
+        return rootUrl;
     }
 
     @Override
     public File localCacheDirectory() {
-        return new StrumpfResolver().localCacheRoot();
+        return new File(localCacheDirectory);
     }
 
     @Override

@@ -44,7 +44,6 @@ public abstract class BaseImageLoader implements Serializable {
         MINIBATCH, FIRST //, CHANNELS,
     }
 
-    public static final File BASE_DIR = new File(System.getProperty("user.home"));
     public static final String[] ALLOWED_FORMATS = {"tif", "jpg", "png", "jpeg", "bmp", "JPEG", "JPG", "TIF", "PNG"};
     protected Random rng = new Random(System.currentTimeMillis());
 
@@ -100,6 +99,7 @@ public abstract class BaseImageLoader implements Serializable {
         try {
             File file = new File(fullDir, urlMap.get("filesFilename").toString());
             if (!file.isFile()) {
+
                 Downloader.downloadAndExtract(urlMap.get("filesFilename").toString(),
                         URI.create(urlMap.get("filesURL").toString()).toURL(),
                         file,fullDir,"",

@@ -20,9 +20,11 @@
 package org.eclipse.deeplearning4j.resources;
 
 import lombok.SneakyThrows;
+import org.apache.commons.io.FileUtils;
 import org.nd4j.common.resources.Downloader;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 
 /**
@@ -33,11 +35,20 @@ import java.net.URI;
  */
 public interface DownloadableResource {
 
+
     /**
      * The name of the file to be downloaded
+     * or if an archive, the naem of the extracted file
      * @return
      */
     String fileName();
+
+    /**
+     * The name of the archive file to be downloaded
+     * @return
+     */
+    String archiveFileName();
+
 
     /**
      * The root url to the resource.
@@ -72,13 +83,28 @@ public interface DownloadableResource {
     }
 
 
+
+
     @SneakyThrows
-    default void download() {
-        Downloader.download(fileName(),
-                URI.create(rootUrl() + "/" + fileName()).toURL(),
-                localPath(),
-                md5Sum(),
-                3);
+    default void download(boolean archive,int retries,int connectionTimeout,int readTimeout) {
+        if(archive) {
+            localCacheDirectory().mkdirs();
+            Downloader.downloadAndExtract(archiveFileName(),
+                    URI.create(rootUrl() + "/" + archiveFileName()).toURL(),
+                    new File(localCacheDirectory(),archiveFileName()),
+                    localPath(),
+                    md5Sum(),
+                    retries, connectionTimeout,
+                    readTimeout);
+        } else {
+            Downloader.download(fileName(),
+                    URI.create(rootUrl() + "/" + fileName()).toURL(),
+                    localPath(),
+                    md5Sum(),
+                    retries,
+                    connectionTimeout,
+                    readTimeout);
+        }
     }
 
 
@@ -89,5 +115,20 @@ public interface DownloadableResource {
      */
     ResourceType resourceType();
 
+
+    /**
+     *
+     * @return
+     */
+    default boolean existsLocally() {
+        return localPath().exists();
+    }
+
+    default void delete() throws IOException {
+        if(localPath().isDirectory())
+            FileUtils.deleteDirectory(localPath());
+        else
+            FileUtils.forceDelete(localPath());
+    }
 
 }

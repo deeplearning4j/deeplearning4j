@@ -28,9 +28,14 @@ public class Dl4jZooResource extends BaseResource {
 
     private String modelName;
 
-    public Dl4jZooResource(String fileName,String modelName) {
-        super(fileName);
+
+    public Dl4jZooResource(String fileName,String archiveName,String modelName) {
+        super(fileName,archiveName);
         this.modelName = modelName;
+    }
+
+    public Dl4jZooResource(String fileName,String modelName) {
+        this(fileName,"",modelName);
     }
 
 

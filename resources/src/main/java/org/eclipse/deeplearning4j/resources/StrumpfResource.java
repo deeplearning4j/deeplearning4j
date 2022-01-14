@@ -25,10 +25,10 @@ import org.nd4j.common.resources.strumpf.StrumpfResolver;
 import java.io.File;
 
 public class StrumpfResource extends BaseResource {
-
+    private StrumpfResolver resolver = new StrumpfResolver();
 
     public StrumpfResource(String fileName) {
-        super(fileName);
+        super(fileName,"");
     }
 
     @Override
@@ -38,12 +38,12 @@ public class StrumpfResource extends BaseResource {
 
     @Override
     public String rootUrl() {
-        return OmniHubUtils.getOmnihubUrl();
+        return "resolver";
     }
 
     @Override
     public File localCacheDirectory() {
-        return new StrumpfResolver().localCacheRoot();
+        return resolver.localCacheRoot();
     }
 
     @Override

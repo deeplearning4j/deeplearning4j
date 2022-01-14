@@ -26,8 +26,18 @@ public class CustomResource extends BaseResource {
     private String localCacheDirectory;
     private String rootUrl;
 
-    public CustomResource(String fileName, String localCacheDirectory, String rootUrl) {
-        super(fileName);
+    public CustomResource(String fileName,String localCacheDirectory, String rootUrl) {
+        this(fileName,"",localCacheDirectory,rootUrl);
+    }
+
+    public CustomResource(String fileName, String archiveFile,String localCacheDirectory, String rootUrl) {
+        super(fileName,archiveFile);
+        this.localCacheDirectory = localCacheDirectory;
+        this.rootUrl = rootUrl;
+    }
+
+    public CustomResource(String fileName, String md5Sum, String archiveFileName, String localCacheDirectory, String rootUrl) {
+        super(fileName, md5Sum, archiveFileName);
         this.localCacheDirectory = localCacheDirectory;
         this.rootUrl = rootUrl;
     }

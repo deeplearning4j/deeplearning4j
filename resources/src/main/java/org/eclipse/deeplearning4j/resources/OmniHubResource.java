@@ -27,7 +27,7 @@ public class OmniHubResource extends BaseResource {
 
 
     public OmniHubResource(String fileName) {
-        super(fileName);
+        super(fileName,"");
     }
 
     @Override

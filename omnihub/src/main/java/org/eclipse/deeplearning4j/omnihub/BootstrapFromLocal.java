@@ -23,9 +23,8 @@ import lombok.SneakyThrows;
 import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.eclipse.deeplearning4j.frameworkimport.keras.KerasModelImport;
-import org.eclipse.deeplearning4j.frameworkimport.keras.exceptions.InvalidKerasConfigurationException;
-import org.eclipse.deeplearning4j.frameworkimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasModelImport;
+import org.deeplearning4j.frameworkimport.keras.keras.exceptions.InvalidKerasConfigurationException;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter;
 import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFrameworkImporter;
@@ -118,7 +117,7 @@ public class BootstrapFromLocal {
     }
 
     @SneakyThrows
-    private static void importKerasDl4j(File inputFile, File saveModel2) throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    private static void importKerasDl4j(File inputFile, File saveModel2) {
         try {
             ComputationGraph computationGraph = KerasModelImport.importKerasModelAndWeights(inputFile.getAbsolutePath(),true);
             computationGraph.save(saveModel2,true);

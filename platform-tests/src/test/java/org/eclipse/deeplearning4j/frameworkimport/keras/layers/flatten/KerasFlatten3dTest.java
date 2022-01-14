@@ -24,7 +24,7 @@ import org.deeplearning4j.nn.conf.preprocessor.Cnn3DToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.PreprocessorVertex;
-import org.eclipse.deeplearning4j.frameworkimport.keras.KerasModelImport;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasModelImport;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.io.ClassPathResource;

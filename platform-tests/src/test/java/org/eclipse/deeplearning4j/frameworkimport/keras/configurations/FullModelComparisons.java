@@ -28,10 +28,10 @@ import org.deeplearning4j.nn.layers.recurrent.LSTM;
 import org.deeplearning4j.nn.layers.recurrent.LastTimeStepLayer;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.eclipse.deeplearning4j.frameworkimport.keras.KerasModel;
-import org.eclipse.deeplearning4j.frameworkimport.keras.KerasSequentialModel;
-import org.eclipse.deeplearning4j.frameworkimport.keras.exceptions.InvalidKerasConfigurationException;
-import org.eclipse.deeplearning4j.frameworkimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasModel;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasSequentialModel;
+import org.deeplearning4j.frameworkimport.keras.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.frameworkimport.keras.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.junit.jupiter.api.Disabled;
 
 import org.junit.jupiter.api.Tag;

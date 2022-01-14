@@ -20,9 +20,6 @@
 
 package org.nd4j.common.config;
 
-import org.nd4j.common.resources.Resources;
-import org.nd4j.common.resources.strumpf.ResourceFile;
-import org.nd4j.common.resources.strumpf.StrumpfResolver;
 
 import java.io.File;
 import java.net.URL;

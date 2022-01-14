@@ -19,13 +19,14 @@
  */
 package org.eclipse.deeplearning4j.frameworkimport.keras.layers.normalization;
 
+import org.deeplearning4j.frameworkimport.keras.keras.layers.normalization.KerasBatchNormalization;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.eclipse.deeplearning4j.frameworkimport.keras.KerasModelImport;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.Keras1LayerConfiguration;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.Keras2LayerConfiguration;
-import org.eclipse.deeplearning4j.frameworkimport.keras.config.KerasLayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasModelImport;
+import org.deeplearning4j.frameworkimport.keras.keras.config.Keras1LayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.Keras2LayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.KerasLayerConfiguration;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.resources.Resources;

@@ -22,6 +22,7 @@ package org.eclipse.deeplearning4j.dl4jcore.datasets.iterator;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
+import org.eclipse.deeplearning4j.resources.utils.EMnistSet;
 import org.deeplearning4j.datasets.iterator.impl.EmnistDataSetIterator;
 
 import org.junit.jupiter.api.Disabled;
@@ -41,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @NativeTag
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.NDARRAY_ETL)
-@Disabled("Fails on an edge case (last test batch?)")
 public class TestEmnistDataSetIterator extends BaseDL4JTest {
 
 
@@ -57,14 +57,14 @@ public class TestEmnistDataSetIterator extends BaseDL4JTest {
     public void testEmnistDataSetIterator() throws Exception {
         int batchSize = 128;
 
-        EmnistDataSetIterator.Set[] sets;
+        EMnistSet[] sets;
         if(isIntegrationTests()){
-            sets = EmnistDataSetIterator.Set.values();
+            sets = EMnistSet.values();
         } else {
-            sets = new EmnistDataSetIterator.Set[]{EmnistDataSetIterator.Set.MNIST, EmnistDataSetIterator.Set.LETTERS};
+            sets = new EMnistSet[]{EMnistSet.MNIST, EMnistSet.LETTERS};
         }
 
-        for (EmnistDataSetIterator.Set s : sets) {
+        for (EMnistSet s : sets) {
             boolean isBalanced = EmnistDataSetIterator.isBalanced(s);
             int numLabels = EmnistDataSetIterator.numLabels(s);
             INDArray labelCounts = null;

@@ -5,6 +5,14 @@
 
 Proposed by: Adam Gibson (12th Jan 2022)
 
+TODO:
+1. centralized MD5 sum directory
+2. List of directories stored in a local .dl4jresources config file
+3. Configuration file format for listing directories and their types
+4. Additional checks for old directories at default values not covered by newer support
+5. Pre cataloging based on default dataset directories found from prior releases
+6. 
+
 
 ## Context
 

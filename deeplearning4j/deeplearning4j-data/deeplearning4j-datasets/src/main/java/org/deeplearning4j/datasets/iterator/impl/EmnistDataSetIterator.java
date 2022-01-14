@@ -22,6 +22,7 @@ package org.deeplearning4j.datasets.iterator.impl;
 
 import lombok.Getter;
 import org.deeplearning4j.datasets.fetchers.EmnistDataFetcher;
+import org.eclipse.deeplearning4j.resources.utils.EMnistSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.BaseDatasetIterator;
 
@@ -67,14 +68,7 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
     private static final char[] LABELS_LETTERS = new char[] {65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
                     80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90};
 
-    /**
-     * EMNIST dataset has multiple different subsets. See {@link EmnistDataSetIterator} Javadoc for details.
-     */
-    public enum Set {
-        COMPLETE, MERGE, BALANCED, LETTERS, DIGITS, MNIST
-    }
-
-    protected Set dataSet;
+    protected EMnistSet dataSet;
     protected int batch, numExamples;
     @Getter
     protected DataSetPreProcessor preProcessor;
@@ -87,7 +81,7 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
      * @param train   If true: use training set. If false: use test set
      * @throws IOException If an error occurs when loading/downloading the dataset
      */
-    public EmnistDataSetIterator(Set dataSet, int batch, boolean train) throws IOException {
+    public EmnistDataSetIterator(EMnistSet dataSet, int batch, boolean train) throws IOException {
         this(dataSet, batch, train, System.currentTimeMillis());
     }
 
@@ -99,7 +93,7 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
      * @param train     If true: use training set. If false: use test set
      * @param seed      Random number generator seed
      */
-    public EmnistDataSetIterator(Set dataSet, int batchSize, boolean train, long seed) throws IOException {
+    public EmnistDataSetIterator(EMnistSet dataSet, int batchSize, boolean train, long seed) throws IOException {
         this(dataSet, batchSize, false, train, true, seed);
     }
 
@@ -112,13 +106,13 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
      * @param shuffle  whether to shuffle the examples
      * @param rngSeed  random number generator seed to use when shuffling examples
      */
-    public EmnistDataSetIterator(Set dataSet, int batch, boolean binarize, boolean train, boolean shuffle, long rngSeed)
+    public EmnistDataSetIterator(EMnistSet dataSet, int batch, boolean binarize, boolean train, boolean shuffle, long rngSeed)
             throws IOException {
         super(batch, numExamples(train, dataSet), new EmnistDataFetcher(dataSet, binarize, train, shuffle, rngSeed));
         this.dataSet = dataSet;
     }
 
-    private static int numExamples(boolean train, Set ds) {
+    private static int numExamples(boolean train, EMnistSet ds) {
         if (train) {
             return numExamplesTrain(ds);
         } else {
@@ -132,7 +126,7 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
      * @param dataSet Subset to get
      * @return Number of examples for the specified subset
      */
-    public static int numExamplesTrain(Set dataSet) {
+    public static int numExamplesTrain(EMnistSet dataSet) {
         switch (dataSet) {
             case COMPLETE:
                 return NUM_COMPLETE_TRAIN;
@@ -157,7 +151,7 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
      * @param dataSet Subset to get
      * @return Number of examples for the specified subset
      */
-    public static int numExamplesTest(Set dataSet) {
+    public static int numExamplesTest(EMnistSet dataSet) {
         switch (dataSet) {
             case COMPLETE:
                 return NUM_COMPLETE_TEST;
@@ -182,7 +176,7 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
      * @param dataSet Subset to get
      * @return Number of labels for the specified subset
      */
-    public static int numLabels(Set dataSet) {
+    public static int numLabels(EMnistSet dataSet) {
         switch (dataSet) {
             case COMPLETE:
                 return 62;
@@ -225,7 +219,7 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
      * @param dataSet DataSet to get the label assignment for
      * @return Label assignment and given dataset
      */
-    public static char[] getLabelsArray(Set dataSet) {
+    public static char[] getLabelsArray(EMnistSet dataSet) {
         switch (dataSet) {
             case COMPLETE:
                 return LABELS_COMPLETE;
@@ -249,7 +243,7 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
      * @param dataSet DataSet to get the label assignment for
      * @return Label assignment and given dataset
      */
-    public static List<String> getLabels(Set dataSet) {
+    public static List<String> getLabels(EMnistSet dataSet) {
         char[] c = getLabelsArray(dataSet);
         List<String> l = new ArrayList<>(c.length);
         for (char c2 : c) {
@@ -264,7 +258,7 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
      * @param dataSet Set to get balanced value for
      * @return True if balanced dataset, false otherwise
      */
-    public static boolean isBalanced(Set dataSet) {
+    public static boolean isBalanced(EMnistSet dataSet) {
         switch (dataSet) {
             case COMPLETE:
             case MERGE:

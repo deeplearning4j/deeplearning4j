@@ -23,9 +23,9 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLambdaLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.BaseDL4JTest;
-import org.eclipse.deeplearning4j.frameworkimport.keras.KerasLayer;
-import org.eclipse.deeplearning4j.frameworkimport.keras.KerasModel;
-import org.eclipse.deeplearning4j.frameworkimport.keras.KerasSequentialModel;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasLayer;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasModel;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasSequentialModel;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import org.junit.jupiter.api.Tag;
