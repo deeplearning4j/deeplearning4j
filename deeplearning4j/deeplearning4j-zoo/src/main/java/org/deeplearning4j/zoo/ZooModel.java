@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
+import org.eclipse.deeplearning4j.resources.DownloadResources;
 
 import java.io.File;
 import java.io.IOException;
@@ -65,8 +66,8 @@ public abstract class ZooModel<T> implements InstantiableModel {
             throw new UnsupportedOperationException(
                             "Pretrained " + pretrainedType + " weights are not available for this model.");
 
-        String localFilename = new File(remoteUrl).getName();
 
+        String localFilename = new File(remoteUrl).getName();
         File rootCacheDir = DL4JResources.getDirectory(ResourceType.ZOO_MODEL, modelName());
         File cachedFile = new File(rootCacheDir, localFilename);
 

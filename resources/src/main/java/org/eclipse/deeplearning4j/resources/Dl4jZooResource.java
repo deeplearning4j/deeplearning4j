@@ -46,7 +46,7 @@ public class Dl4jZooResource extends BaseResource {
 
     @Override
     public String rootUrl() {
-        return DL4JResources.getBaseDownloadURL();
+        return DL4JResources.getBaseDownloadURL() + "/models";
     }
 
     @Override

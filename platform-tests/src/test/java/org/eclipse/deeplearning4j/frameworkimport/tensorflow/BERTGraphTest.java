@@ -91,10 +91,8 @@ public class BERTGraphTest extends BaseNd4jTestWithBackends {
 
         //Extract
         File f = new File(saveDir, "bert_mrpc_frozen.pb");
-        if(f.exists() && !Downloader.checkMD5OfFile("93d82bca887625632578df37ea3d3ca5", f)){
-            if(f.exists()) {
-                f.delete();
-            }
+        Downloader.deleteIfCorrupted(f,"93d82bca887625632578df37ea3d3ca5");
+        if(Downloader.deleteIfCorrupted(f,"93d82bca887625632578df37ea3d3ca5")){
             ArchiveUtils.zipExtractSingleFile(localFile, f, "bert_mrpc_frozen.pb");
         }
 
