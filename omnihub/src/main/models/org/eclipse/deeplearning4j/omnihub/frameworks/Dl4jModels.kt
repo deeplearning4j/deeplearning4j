@@ -19,14 +19,14 @@
  */
 package org.eclipse.deeplearning4j.omnihub.frameworks
 
-import org.eclipse.deeplearning4j.omnihub.OmniHubUtils
+import org.deeplearning4j.omnihub.OmnihubConfig
 import org.eclipse.deeplearning4j.omnihub.api.ModelType
 import org.eclipse.deeplearning4j.omnihub.dsl.DL4JModel
 import org.eclipse.deeplearning4j.omnihub.dsl.FrameworkNamespace
 
 fun Dl4jModels() = FrameworkNamespace("DL4JModels") {
     DL4JModel("vgg19noTop","This model is converted from keras applications." +
-            "Keras applications vgg19 weights can be created with:","${OmniHubUtils.DEFAULT_OMNIHUB_URL}/dl4j/vgg19_weights_tf_dim_ordering_tf_kernels_notop.zip",
+            "Keras applications vgg19 weights can be created with:","${OmnihubConfig.DEFAULT_OMNIHUB_URL}/dl4j/vgg19_weights_tf_dim_ordering_tf_kernels_notop.zip",
         true,
         ModelType.COMP_GRAPH)
 }

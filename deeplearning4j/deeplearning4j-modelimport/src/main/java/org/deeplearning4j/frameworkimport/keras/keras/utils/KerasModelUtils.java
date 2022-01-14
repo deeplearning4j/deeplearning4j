@@ -33,7 +33,7 @@ import org.deeplearning4j.frameworkimport.keras.keras.Hdf5Archive;
 import org.deeplearning4j.frameworkimport.keras.keras.KerasLayer;
 import org.deeplearning4j.frameworkimport.keras.keras.config.KerasModelConfiguration;
 import org.deeplearning4j.frameworkimport.keras.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.eclipse.deeplearning4j.frameworkimport.keras.preprocessors.ReshapePreprocessor;
+import org.deeplearning4j.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.frameworkimport.keras.keras.layers.wrappers.KerasBidirectional;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;

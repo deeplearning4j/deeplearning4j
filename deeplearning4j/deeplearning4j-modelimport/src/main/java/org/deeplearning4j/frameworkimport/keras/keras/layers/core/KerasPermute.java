@@ -26,7 +26,7 @@ import org.deeplearning4j.frameworkimport.keras.keras.exceptions.InvalidKerasCon
 import org.deeplearning4j.frameworkimport.keras.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.eclipse.deeplearning4j.frameworkimport.keras.preprocessors.PermutePreprocessor;
+import org.deeplearning4j.preprocessors.PermutePreprocessor;
 import org.deeplearning4j.frameworkimport.keras.keras.utils.KerasLayerUtils;
 import org.nd4j.common.util.ArrayUtil;
 

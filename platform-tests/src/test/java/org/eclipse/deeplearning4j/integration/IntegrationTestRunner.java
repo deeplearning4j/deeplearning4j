@@ -25,7 +25,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.common.config.DL4JClassLoading;
+import org.deeplearning4j.config.DL4JClassLoading;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.eclipse.deeplearning4j.integration.util.CountingMultiDataSetIterator;
 import org.deeplearning4j.nn.api.Model;

@@ -19,7 +19,7 @@
  */
 package org.eclipse.deeplearning4j.resources;
 
-import org.eclipse.deeplearning4j.omnihub.OmniHubUtils;
+import org.deeplearning4j.omnihub.OmnihubConfig;
 
 import java.io.File;
 
@@ -37,12 +37,12 @@ public class OmniHubResource extends BaseResource {
 
     @Override
     public String rootUrl() {
-        return OmniHubUtils.getOmnihubUrl();
+        return OmnihubConfig.getOmnihubUrl();
     }
 
     @Override
     public File localCacheDirectory() {
-        return OmniHubUtils.getOmnihubHome();
+        return OmnihubConfig.getOmnihubHome();
     }
 
     @Override

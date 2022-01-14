@@ -22,7 +22,7 @@ package org.deeplearning4j.ui.i18n;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
-import org.deeplearning4j.common.config.DL4JClassLoading;
+import org.deeplearning4j.config.DL4JClassLoading;
 import org.deeplearning4j.ui.api.I18N;
 import org.deeplearning4j.ui.api.UIModule;
 

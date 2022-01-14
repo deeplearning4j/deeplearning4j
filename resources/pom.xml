@@ -21,12 +21,6 @@
     </properties>
 
     <dependencies>
-
-        <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>omnihub</artifactId>
-            <version>${project.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-common</artifactId>

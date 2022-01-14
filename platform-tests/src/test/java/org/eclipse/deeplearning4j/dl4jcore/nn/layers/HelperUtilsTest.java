@@ -33,7 +33,7 @@ import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 
-import static org.deeplearning4j.common.config.DL4JSystemProperties.DISABLE_HELPER_PROPERTY;
+import static org.deeplearning4j.config.DL4JSystemProperties.DISABLE_HELPER_PROPERTY;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**

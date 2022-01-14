@@ -32,7 +32,7 @@ import org.deeplearning4j.frameworkimport.keras.keras.config.Keras1LayerConfigur
 import org.deeplearning4j.frameworkimport.keras.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.frameworkimport.keras.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.frameworkimport.keras.keras.layers.convolutional.KerasConvolution3D;
-import org.eclipse.deeplearning4j.frameworkimport.keras.preprocessors.ReshapePreprocessor;
+import org.deeplearning4j.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.junit.jupiter.api.Tag;
