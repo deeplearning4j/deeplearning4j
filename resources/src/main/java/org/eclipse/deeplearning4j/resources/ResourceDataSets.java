@@ -256,9 +256,9 @@ public class ResourceDataSets {
      */
     public static DataSetResource mnistTest(File topLevelDir) {
         return new DataSetResource(
-                MnistResourceConstants.getMNISTTrainingFileLabelsFilename_unzipped(),
+                MnistResourceConstants.getTestFilesFilename_unzipped(),
                 MnistResourceConstants.getTestFilesMD5(),
-                MnistResourceConstants.getMNISTTrainingFileLabelsFilename(),
+                MnistResourceConstants.getTestFilesFilename(),
                 topLevelDir.getAbsolutePath(),
                 DL4JResources.getURLString(MnistResourceConstants.MNIST_ROOT)
         );
@@ -305,9 +305,9 @@ public class ResourceDataSets {
      */
     public static DataSetResource mnistTestLabels(File topLevelDir) {
         return new DataSetResource(
-                MnistResourceConstants.getMNISTTrainingFileLabelsFilename_unzipped(),
+                MnistResourceConstants.getTestFileLabelsFilename_unzipped(),
                 MnistResourceConstants.getTestFileLabelsMD5(),
-                MnistResourceConstants.getMNISTTrainingFileLabelsFilename(),
+                MnistResourceConstants.getTestFileLabelsFilename(),
                 topLevelDir.getAbsolutePath(),
                 DL4JResources.getURLString(MnistResourceConstants.MNIST_ROOT)
         );
