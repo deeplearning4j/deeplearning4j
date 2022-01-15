@@ -1885,7 +1885,7 @@ public class Shape {
 
     public static long elementWiseStride(long[] shape, long[] stride, boolean isFOrder) {
         // 0D edge case
-        if (shape.length == 0 && stride.length == 0)
+        if (shape.length == 0 || stride == null && stride.length == 0)
             return 1;
 
         if (shape.length == 1 && stride.length == 1)
