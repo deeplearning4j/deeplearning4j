@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.common.config;
+package org.deeplearning4j.config;
 
 public class DL4JSystemProperties {
 

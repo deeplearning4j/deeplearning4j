@@ -36,7 +36,7 @@ import org.deeplearning4j.core.storage.Persistable;
 import org.deeplearning4j.core.storage.StatsStorage;
 import org.deeplearning4j.core.storage.StatsStorageEvent;
 import org.deeplearning4j.core.storage.StatsStorageListener;
-import org.deeplearning4j.common.config.DL4JSystemProperties;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;

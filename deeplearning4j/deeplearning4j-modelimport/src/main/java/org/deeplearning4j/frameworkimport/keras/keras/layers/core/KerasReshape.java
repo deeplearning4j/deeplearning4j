@@ -28,7 +28,7 @@ import org.deeplearning4j.frameworkimport.keras.keras.exceptions.UnsupportedKera
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.eclipse.deeplearning4j.frameworkimport.keras.preprocessors.ReshapePreprocessor;
+import org.deeplearning4j.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.frameworkimport.keras.keras.utils.KerasLayerUtils;
 
 import java.util.List;

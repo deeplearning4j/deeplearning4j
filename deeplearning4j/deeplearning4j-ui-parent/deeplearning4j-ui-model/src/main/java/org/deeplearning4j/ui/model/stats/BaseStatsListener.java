@@ -23,7 +23,7 @@ package org.deeplearning4j.ui.model.stats;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.Pointer;
-import org.deeplearning4j.common.config.DL4JClassLoading;
+import org.deeplearning4j.config.DL4JClassLoading;
 import org.deeplearning4j.core.storage.StatsStorageRouter;
 import org.deeplearning4j.core.storage.StorageMetaData;
 import org.deeplearning4j.core.storage.listener.RoutingIterationListener;
@@ -52,7 +52,6 @@ import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
-import java.lang.reflect.Constructor;
 import java.util.*;
 
 @Slf4j

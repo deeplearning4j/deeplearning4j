@@ -22,13 +22,13 @@ package org.deeplearning4j.frameworkimport.keras.keras;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.common.util.ND4JFileUtils;
 import org.deeplearning4j.frameworkimport.keras.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.frameworkimport.keras.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.common.util.DL4JFileUtils;
 
 import java.io.*;
 
@@ -366,7 +366,7 @@ public class KerasModelImport {
     }
 
     private static File toTempFile(InputStream is) throws IOException {
-        File f = DL4JFileUtils.createTempFile("DL4JKerasModelImport",".bin");
+        File f = ND4JFileUtils.createTempFile("DL4JKerasModelImport",".bin");
         f.deleteOnExit();
 
 

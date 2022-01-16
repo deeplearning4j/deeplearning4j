@@ -20,11 +20,11 @@
 package org.deeplearning4j.nn.layers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.common.config.DL4JClassLoading;
+import org.deeplearning4j.config.DL4JClassLoading;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.deeplearning4j.common.config.DL4JSystemProperties.DISABLE_HELPER_PROPERTY;
-import static org.deeplearning4j.common.config.DL4JSystemProperties.HELPER_DISABLE_DEFAULT_VALUE;
+import static org.deeplearning4j.config.DL4JSystemProperties.DISABLE_HELPER_PROPERTY;
+import static org.deeplearning4j.config.DL4JSystemProperties.HELPER_DISABLE_DEFAULT_VALUE;
 
 /**
  * Simple meta helper util class for instantiating

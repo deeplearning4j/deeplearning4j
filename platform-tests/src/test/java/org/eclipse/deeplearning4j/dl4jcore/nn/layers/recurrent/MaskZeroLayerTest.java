@@ -72,7 +72,7 @@ class MaskZeroLayerTest extends BaseDL4JTest {
 
     @DisplayName("Activate")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.MaskZeroLayerTest#params")
+    @MethodSource("params")
     void activate(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         // GIVEN two examples where some of the timesteps are zero.
         INDArray ex1 = Nd4j.create(new double[][] { new double[] { 0, 3, 5 }, new double[] { 0, 0, 2 } });
@@ -112,7 +112,7 @@ class MaskZeroLayerTest extends BaseDL4JTest {
 
     @DisplayName("Test Serialization")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.MaskZeroLayerTest#params")
+    @MethodSource("params")
     void testSerialization(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list().layer(new org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer.Builder().setMaskValue(0.0).setUnderlying(new LSTM.Builder().nIn(4).nOut(5).dataFormat(rnnDataFormat).build()).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

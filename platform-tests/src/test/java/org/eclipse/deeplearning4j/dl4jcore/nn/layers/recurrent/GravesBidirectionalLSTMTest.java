@@ -80,7 +80,7 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
     }
 
     @DisplayName("Test Bidirectional LSTM Graves Forward Basic")
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTMTest#params")
+    @MethodSource("params")
     @ParameterizedTest
     void testBidirectionalLSTMGravesForwardBasic(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         // Very basic test of forward prop. of LSTM layer with a time series.
@@ -123,7 +123,7 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
     }
 
     @DisplayName("Test Bidirectional LSTM Graves Backward Basic")
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTMTest#params")
+    @MethodSource("params")
     @ParameterizedTest
     void testBidirectionalLSTMGravesBackwardBasic(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         // Very basic test of backprop for mini-batch + time series
@@ -183,7 +183,7 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
     @DisplayName("Test Graves Bidirectional LSTM Forward Pass Helper")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTMTest#params")
+    @MethodSource("params")
     void testGravesBidirectionalLSTMForwardPassHelper(RNNFormat rnnDataFormat,Nd4jBackend backend) throws Exception {
         // GravesBidirectionalLSTM.activateHelper() has different behaviour (due to optimizations) when forBackprop==true vs false
         // But should otherwise provide identical activations
@@ -219,7 +219,7 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
     }
 
     @DisplayName("Test Get Set Params")
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTMTest#params")
+    @MethodSource("params")
     @ParameterizedTest
     void testGetSetParmas(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         final int nIn = 2;
@@ -240,7 +240,7 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
     }
 
     @DisplayName("Test Simple Forwards And Backwards Activation")
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTMTest#params")
+    @MethodSource("params")
     @ParameterizedTest
     void testSimpleForwardsAndBackwardsActivation(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         final int nIn = 2;
@@ -348,7 +348,8 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         assertArrayEquals(backEpsilon.dup().data().asDouble(), refEpsilon.dup().data().asDouble(), 1e-6);
     }
 
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTMTest#params")
+    @MethodSource("" +
+            "params")
     @DisplayName("Test Serialization")
     @ParameterizedTest
     void testSerialization(RNNFormat rnnDataFormat,Nd4jBackend backend) {
@@ -360,7 +361,7 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
     }
 
     @DisplayName("Test Gate Activation Fns Sanity Check")
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTMTest#params")
+    @MethodSource("params")
     @ParameterizedTest
     void testGateActivationFnsSanityCheck(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         for (String gateAfn : new String[] { "sigmoid", "hardsigmoid" }) {

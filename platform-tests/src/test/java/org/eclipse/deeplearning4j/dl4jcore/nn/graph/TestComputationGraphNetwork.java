@@ -55,7 +55,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.util.GraphIndices;
 import org.eclipse.deeplearning4j.dl4jcore.nn.multilayer.MultiLayerTest;
-import org.eclipse.deeplearning4j.frameworkimport.keras.preprocessors.PermutePreprocessor;
+import org.deeplearning4j.preprocessors.PermutePreprocessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.weights.WeightInit;

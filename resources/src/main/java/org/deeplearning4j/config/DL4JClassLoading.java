@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.common.config;
+package org.deeplearning4j.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.common.base.Preconditions;

@@ -75,7 +75,7 @@ public class TestLastTimeStepLayer extends BaseDL4JTest {
     }
 
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.TestLastTimeStepLayer#params")
+    @MethodSource("params")
     public void testLastTimeStepVertex(RNNFormat rnnDataFormat,Nd4jBackend backend) {
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
@@ -139,7 +139,7 @@ public class TestLastTimeStepLayer extends BaseDL4JTest {
     }
 
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.TestLastTimeStepLayer#params")
+    @MethodSource("params")
     public void testMaskingAndAllMasked(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         ComputationGraphConfiguration.GraphBuilder builder = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(STOCHASTIC_GRADIENT_DESCENT)

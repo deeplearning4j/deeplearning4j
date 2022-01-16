@@ -21,7 +21,7 @@ package org.eclipse.deeplearning4j.dl4jcore.nn.layers.recurrent;
 
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.common.config.DL4JClassLoading;
+import org.deeplearning4j.config.DL4JClassLoading;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;

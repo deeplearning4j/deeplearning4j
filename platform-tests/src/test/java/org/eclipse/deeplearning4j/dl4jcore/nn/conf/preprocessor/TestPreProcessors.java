@@ -33,7 +33,7 @@ import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.*;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer;
-import org.eclipse.deeplearning4j.frameworkimport.keras.preprocessors.ReshapePreprocessor;
+import org.deeplearning4j.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

@@ -27,7 +27,7 @@ import org.deeplearning4j.frameworkimport.keras.keras.config.Keras2LayerConfigur
 import org.deeplearning4j.frameworkimport.keras.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.frameworkimport.keras.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.frameworkimport.keras.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.eclipse.deeplearning4j.frameworkimport.keras.preprocessors.PermutePreprocessor;
+import org.deeplearning4j.preprocessors.PermutePreprocessor;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
