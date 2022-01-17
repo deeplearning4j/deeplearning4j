@@ -18,7 +18,8 @@ LLVM_PATH=$(rpm -ql llvm-ve-rv-2.1-2.1-1.el8.x86_64 | grep lib/cmake/llvm | head
 
 #download vednn source files
 git clone https://github.com/mergian/vednn
-
+#revert the commit that disabled some kernels
+git revert ab93927d71dc6eed5e2c39aad1ae64d2a53e1764
 #build and install vednn
 cd vednn
 mkdir build
@@ -35,7 +36,11 @@ Specify vednn installation folder if it was not installed in ```/opt/nec/ve```:
 ```
 export VEDNN_ROOT="your installation folder"
 ```
-
+Specify nlc root:
+```
+#here we are using 2.3.0
+export NLC_ROOT=/opt/nec/ve/nlc/2.3.0/
+```
 Building libdn4j:
 ```
 
