@@ -826,8 +826,6 @@ TEST_F(DeclarableOpsTests14, matmul_test10) {
   ASSERT_TRUE(variableSpace->hasVariable(1));
 
   auto result = variableSpace->getVariable(1)->getNDArray();
-result->printIndexedBuffer("result");
-exp.printIndexedBuffer("exp");
   ASSERT_TRUE(result->equalsTo(&exp));
 
   delete block;
