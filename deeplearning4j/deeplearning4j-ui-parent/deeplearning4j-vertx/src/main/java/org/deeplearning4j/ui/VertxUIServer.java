@@ -36,9 +36,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
-import org.deeplearning4j.common.config.DL4JClassLoading;
-import org.deeplearning4j.common.config.DL4JSystemProperties;
-import org.deeplearning4j.common.util.DL4JFileUtils;
+import org.deeplearning4j.config.DL4JClassLoading;
+import org.deeplearning4j.config.DL4JSystemProperties;
+import org.deeplearning4j.common.util.ND4JFileUtils;
 import org.deeplearning4j.core.storage.StatsStorage;
 import org.deeplearning4j.core.storage.StatsStorageEvent;
 import org.deeplearning4j.core.storage.StatsStorageListener;
@@ -651,7 +651,7 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
         UIServer.getInstance(d.isCliMultiSession(), null);
         if(d.isCliEnableRemote()){
             try {
-                File tempStatsFile = DL4JFileUtils.createTempFile("dl4j", "UIstats");
+                File tempStatsFile = ND4JFileUtils.createTempFile("dl4j", "UIstats");
                 tempStatsFile.delete();
                 tempStatsFile.deleteOnExit();
                 enableRemoteListener(new FileStatsStorage(tempStatsFile), true);

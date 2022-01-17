@@ -1,0 +1,136 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+package org.eclipse.deeplearning4j.frameworkimport.keras.layers.normalization;
+
+import org.deeplearning4j.frameworkimport.keras.keras.layers.normalization.KerasBatchNormalization;
+import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasModelImport;
+import org.deeplearning4j.frameworkimport.keras.keras.config.Keras1LayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.Keras2LayerConfiguration;
+import org.deeplearning4j.frameworkimport.keras.keras.config.KerasLayerConfiguration;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.nd4j.common.resources.Resources;
+import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+
+/**
+ * @author Max Pumperla
+ */
+@DisplayName("Keras Batch Normalization Test")
+@Tag(TagNames.FILE_IO)
+@Tag(TagNames.KERAS)
+@NativeTag
+class KerasBatchNormalizationTest extends BaseDL4JTest {
+
+    public static final String PARAM_NAME_BETA = "beta";
+
+    private final String LAYER_NAME = "batch_norm_layer";
+
+    private Integer keras1 = 1;
+
+    private Integer keras2 = 2;
+
+    private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
+
+    private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
+
+    @Test
+    @DisplayName("Test Batchnorm Layer")
+    void testBatchnormLayer() throws Exception {
+        buildBatchNormalizationLayer(conf1, keras1);
+        buildBatchNormalizationLayer(conf2, keras2);
+    }
+
+    private void buildBatchNormalizationLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+        double epsilon = 1E-5;
+        double momentum = 0.99;
+        KerasBatchNormalization batchNormalization = new KerasBatchNormalization(kerasVersion);
+        Map<String, Object> layerConfig = new HashMap<>();
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_BATCHNORMALIZATION());
+        Map<String, Object> config = new HashMap<>();
+        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        config.put(batchNormalization.getLAYER_FIELD_EPSILON(), epsilon);
+        config.put(batchNormalization.getLAYER_FIELD_MOMENTUM(), momentum);
+        config.put(batchNormalization.getLAYER_FIELD_GAMMA_REGULARIZER(), null);
+        config.put(batchNormalization.getLAYER_FIELD_BETA_REGULARIZER(), null);
+        config.put(batchNormalization.getLAYER_FIELD_MODE(), 0);
+        config.put(batchNormalization.getLAYER_FIELD_AXIS(), 3);
+        layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
+        layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
+        BatchNormalization layer = new KerasBatchNormalization(layerConfig).getBatchNormalizationLayer();
+        assertEquals(LAYER_NAME, layer.getLayerName());
+        assertEquals(epsilon, layer.getEps(), 0.0);
+        assertEquals(momentum, layer.getDecay(), 0.0);
+    }
+
+    @Test
+    @DisplayName("Test Set Weights")
+    void testSetWeights() throws Exception {
+        Map<String, INDArray> weights = weightsWithoutGamma();
+        KerasBatchNormalization batchNormalization = new KerasBatchNormalization(keras2);
+        batchNormalization.setScale(false);
+        batchNormalization.setWeights(weights);
+        int size = batchNormalization.getWeights().size();
+        assertEquals(4, size);
+    }
+
+
+    @Test
+    @DisplayName("Test CNN1d with batch norm")
+    public void testWithCnn1d() throws Exception {
+        String absolutePath = Resources.asFile("modelimport/keras/tfkeras/batchNormError.h5").getAbsolutePath();
+        ComputationGraph computationGraph = KerasModelImport.importKerasModelAndWeights(absolutePath);
+        INDArray sampleInput = Nd4j.ones(25,25,25);
+        INDArray[] output = computationGraph.output(sampleInput);
+        assertArrayEquals(new long[]{25,24,10},output[0].shape());
+
+    }
+
+
+    @Test
+    @DisplayName("Test CNN1d with batch norm")
+    public void testWithCnn1d2() throws Exception {
+        String absolutePath = Resources.asFile("modelimport/keras/tfkeras/batchNormError2.h5").getAbsolutePath();
+        ComputationGraph computationGraph = KerasModelImport.importKerasModelAndWeights(absolutePath);
+        System.out.println(computationGraph.summary());
+        INDArray sampleInput = Nd4j.ones(25,25,25);
+        INDArray[] output = computationGraph.output(sampleInput);
+        assertArrayEquals(new long[]{25,24,512},output[0].shape());
+
+    }
+    private Map<String, INDArray> weightsWithoutGamma() {
+        Map<String, INDArray> weights = new HashMap<>();
+        weights.put(conf2.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE(), Nd4j.ones(1L));
+        weights.put(conf2.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN(), Nd4j.ones(1L));
+        weights.put(PARAM_NAME_BETA, Nd4j.ones(1));
+        return weights;
+    }
+}

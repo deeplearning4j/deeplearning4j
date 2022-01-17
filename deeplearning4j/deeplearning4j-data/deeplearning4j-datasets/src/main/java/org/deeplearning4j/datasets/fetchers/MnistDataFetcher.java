@@ -27,6 +27,7 @@ import org.deeplearning4j.datasets.base.MnistFetcher;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.common.resources.ResourceType;
 import org.deeplearning4j.datasets.mnist.MnistManager;
+import org.eclipse.deeplearning4j.resources.ResourceDataSets;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -64,7 +65,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
     protected boolean fOrder = false; //MNIST is C order, EMNIST is F order
 
     protected boolean firstShuffle = true;
-    protected final int numExamples;
+    protected  int numExamples = 0;
     protected String images,labels;
     //note: we default to zero here on purpose, otherwise when first initializes an error is thrown.
     private long lastCursor = 0;
@@ -80,6 +81,9 @@ public class MnistDataFetcher extends BaseDataFetcher {
     }
 
     public MnistDataFetcher(boolean binarize, boolean train, boolean shuffle, long rngSeed, int numExamples) throws IOException {
+        if(this instanceof EmnistDataFetcher)
+            return;
+
         if (!mnistExists()) {
             new MnistFetcher().downloadAndUntar();
         }
@@ -87,13 +91,13 @@ public class MnistDataFetcher extends BaseDataFetcher {
         String MNIST_ROOT = DL4JResources.getDirectory(ResourceType.DATASET, "MNIST").getAbsolutePath();
         long[] checksums;
         if (train) {
-            images = FilenameUtils.concat(MNIST_ROOT, MnistFetcher.TRAINING_FILES_FILENAME_UNZIPPED);
-            labels = FilenameUtils.concat(MNIST_ROOT, MnistFetcher.TRAINING_FILE_LABELS_FILENAME_UNZIPPED);
+            images = ResourceDataSets.mnistTrain().localPath().getAbsolutePath();
+            labels = ResourceDataSets.mnistTrainLabels().localPath().getAbsolutePath();
             totalExamples = NUM_EXAMPLES;
             checksums = CHECKSUMS_TRAIN;
         } else {
-            images = FilenameUtils.concat(MNIST_ROOT, MnistFetcher.TEST_FILES_FILENAME_UNZIPPED);
-            labels = FilenameUtils.concat(MNIST_ROOT, MnistFetcher.TEST_FILE_LABELS_FILENAME_UNZIPPED);
+            images = ResourceDataSets.mnistTest().localPath().getAbsolutePath();
+            labels = ResourceDataSets.mnistTestLabels().localPath().getAbsolutePath();
             totalExamples = NUM_EXAMPLES_TEST;
             checksums = CHECKSUMS_TEST;
         }
@@ -139,17 +143,13 @@ public class MnistDataFetcher extends BaseDataFetcher {
     private boolean mnistExists() {
         String MNIST_ROOT = DL4JResources.getDirectory(ResourceType.DATASET, "MNIST").getAbsolutePath();
         //Check 4 files:
-        File f = new File(MNIST_ROOT, MnistFetcher.TRAINING_FILES_FILENAME_UNZIPPED);
-        if (!f.exists())
+        if (!ResourceDataSets.mnistTrain().existsLocally())
             return false;
-        f = new File(MNIST_ROOT, MnistFetcher.TRAINING_FILE_LABELS_FILENAME_UNZIPPED);
-        if (!f.exists())
+        if (!ResourceDataSets.mnistTest().existsLocally())
             return false;
-        f = new File(MNIST_ROOT, MnistFetcher.TEST_FILES_FILENAME_UNZIPPED);
-        if (!f.exists())
+        if (!ResourceDataSets.mnistTrainLabels().existsLocally())
             return false;
-        f = new File(MNIST_ROOT, MnistFetcher.TEST_FILE_LABELS_FILENAME_UNZIPPED);
-        if (!f.exists())
+        if (!ResourceDataSets.mnistTestLabels().existsLocally())
             return false;
         return true;
     }

@@ -23,12 +23,12 @@ package org.deeplearning4j.core.util;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.deeplearning4j.common.util.DL4JFileUtils;
-import org.deeplearning4j.common.config.DL4JSystemProperties;
+import org.deeplearning4j.common.util.ND4JFileUtils;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasModelImport;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.dataset.api.preprocessor.Normalizer;
 
@@ -122,7 +122,7 @@ public class ModelGuesser {
      */
     public static Object loadConfigGuess(InputStream stream) throws Exception {
         String p = System.getProperty(DL4JSystemProperties.DL4J_TEMP_DIR_PROPERTY);
-        File tmp = DL4JFileUtils.createTempFile("model-" + UUID.randomUUID().toString(), "bin");
+        File tmp = ND4JFileUtils.createTempFile("model-" + UUID.randomUUID().toString(), "bin");
         BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(tmp));
         IOUtils.copy(stream, bufferedOutputStream);
         bufferedOutputStream.flush();
@@ -199,7 +199,7 @@ public class ModelGuesser {
         //Simplest solution here: write to a temporary file
         File f;
         if(tempDirectory == null){
-            f = DL4JFileUtils.createTempFile("loadModelGuess",".bin");
+            f = ND4JFileUtils.createTempFile("loadModelGuess",".bin");
         } else {
             f = File.createTempFile("loadModelGuess", ".bin", tempDirectory);
         }

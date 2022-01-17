@@ -35,7 +35,7 @@ namespace ops {
 namespace platforms {
 
 /**
- * Here we actually declare our platform helpers
+ * forward, backward
  */
 DECLARE_PLATFORM(relu, ENGINE_CPU);
 DECLARE_PLATFORM(relu_bp, ENGINE_CPU);

@@ -121,8 +121,6 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
   int kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));  // filter(kernel) height
   int kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));  // filter(kernel) width
 
-  // // Calculate individual paddings
-  // unsigned int padLeft, padTop, padRight, padBottom;
   // batch size, input channels, input height/width, output channels, output height/width;
   int bS, iC, iH, iW, oC, oH, oW;
   int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
@@ -164,8 +162,7 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
       wTemp.reset(new NDArray(weights->permute({3, 2, 0, 1}).dup('c')));
     }
     w = wTemp.get();
-        
-        
+
   } else if (2 == weightFormat) {
     // [oC, kH, kW, iC] -> [oC, iC, kH, kW]
     wTemp.reset(new NDArray(weights->permute({0, 3, 1, 2}).dup('c')));
@@ -177,7 +174,6 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
     in = inTemp.get();
     outTemp.reset(new NDArray(output->permute({0, 3, 1, 2}).ulike()));
     out = outTemp.get();
-    
   }
 
   if (bias) {
@@ -234,10 +230,7 @@ PLATFORM_CHECK(conv2d, ENGINE_CPU) {
   auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
   auto output = OUTPUT_VARIABLE(0);
   auto paddingMode = INT_ARG(8);
-#if 1
-  sd::Environment::getInstance().setDebug(true);
-  sd::Environment::getInstance().setVerbose(true);
-#endif
+
   Requirements req("VEDNN CONV2d OP");
   // Note: For kW,kH==2 and paddingMode = 1 (same) Vednn was failing to output correct results
   // So we decided to restrict it
@@ -417,10 +410,7 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
   auto gradI = OUTPUT_VARIABLE(0);
   auto gradW = OUTPUT_VARIABLE(1);
   auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;
-#if 1
-  sd::Environment::getInstance().setDebug(true);
-  sd::Environment::getInstance().setVerbose(true);
-#endif
+
   Requirements req("VEDNN CONV2d BP OP");
   req.expectEq(makeInfoVariable(paddingMode, "paddingMode"), 0) &&
       req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&

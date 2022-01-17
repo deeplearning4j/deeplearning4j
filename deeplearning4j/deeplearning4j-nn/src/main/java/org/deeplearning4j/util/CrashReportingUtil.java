@@ -44,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.bytedeco.javacpp.Pointer;
-import org.deeplearning4j.common.config.DL4JSystemProperties;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.BackpropType;

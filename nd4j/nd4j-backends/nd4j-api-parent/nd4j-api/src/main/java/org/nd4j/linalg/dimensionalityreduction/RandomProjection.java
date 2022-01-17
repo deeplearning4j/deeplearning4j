@@ -184,7 +184,7 @@ public class RandomProjection {
      * @param eps the relative error used in the Johnson-Lindenstrauss estimation
      * @return the shape of the projection matrix to use
      */
-    protected static long[] targetShape(INDArray X, double eps) {
+    public static long[] targetShape(INDArray X, double eps) {
         return targetShape(X.shape(), eps, -1, true);
     }
 

@@ -19,12 +19,12 @@
  */
 package org.eclipse.deeplearning4j.omnihub.frameworks
 
-import org.eclipse.deeplearning4j.omnihub.OmniHubUtils
+import org.deeplearning4j.omnihub.OmnihubConfig
 import org.eclipse.deeplearning4j.omnihub.dsl.FrameworkNamespace
 import org.eclipse.deeplearning4j.omnihub.dsl.SameDiffModel
 
 fun SameDiffModels() = FrameworkNamespace("SameDiffModels") {
-    SameDiffModel("ageGooglenet","This model is converted from the onnx model age_googlenet.onnx at the onnx model zoo at: https://github.com/onnx/models","${OmniHubUtils.DEFAULT_OMNIHUB_URL}/samediff/age_googlenet.fb",true)
-    SameDiffModel("resnet18","This model is converted from pytorch's torchvision resnet18 model via onnx. For more information see: https://pytorch.org/vision/stable/models.html","${OmniHubUtils.DEFAULT_OMNIHUB_URL}/samediff/resnet18.fb",true)
+    SameDiffModel("ageGooglenet","This model is converted from the onnx model age_googlenet.onnx at the onnx model zoo at: https://github.com/onnx/models","${OmnihubConfig.DEFAULT_OMNIHUB_URL}/samediff/age_googlenet.fb",true)
+    SameDiffModel("resnet18","This model is converted from pytorch's torchvision resnet18 model via onnx. For more information see: https://pytorch.org/vision/stable/models.html","${OmnihubConfig.DEFAULT_OMNIHUB_URL}/samediff/resnet18.fb",true)
 
 }

@@ -41,7 +41,6 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
   auto pW = INT_ARG(5);
   auto dH = INT_ARG(6);
   auto dW = INT_ARG(7);
-
   auto isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;  // INT_ARG(10): 1-NHWC, 0-NCHW
 
   std::unique_ptr<NDArray> inTemp, outTemp;

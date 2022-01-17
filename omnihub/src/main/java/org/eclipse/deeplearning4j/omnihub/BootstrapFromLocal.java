@@ -19,12 +19,13 @@
  */
 package org.eclipse.deeplearning4j.omnihub;
 
+import lombok.SneakyThrows;
 import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
-import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
-import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.frameworkimport.keras.keras.KerasModelImport;
+import org.deeplearning4j.frameworkimport.keras.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.omnihub.OmnihubConfig;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter;
 import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFrameworkImporter;
@@ -42,7 +43,7 @@ import java.util.Collections;
 public class BootstrapFromLocal {
 
     public static void main(String...args) {
-        File localOmnihubHome = OmniHubUtils.getOmnihubHome();
+        File localOmnihubHome = OmnihubConfig.getOmnihubHome();
         File[] frameworks = localOmnihubHome.listFiles();
         OnnxFrameworkImporter onnxFrameworkImporter = new OnnxFrameworkImporter();
         TensorflowFrameworkImporter tensorflowFrameworkImporter = new TensorflowFrameworkImporter();
@@ -116,7 +117,8 @@ public class BootstrapFromLocal {
         }
     }
 
-    private static void importKerasDl4j(File inputFile, File saveModel2) throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    @SneakyThrows
+    private static void importKerasDl4j(File inputFile, File saveModel2) {
         try {
             ComputationGraph computationGraph = KerasModelImport.importKerasModelAndWeights(inputFile.getAbsolutePath(),true);
             computationGraph.save(saveModel2,true);

@@ -59,6 +59,7 @@
         <module>python4j</module>
         <module>rl4j</module>
         <module>omnihub</module>
+        <module>resources</module>
     </modules>
 
     <scm>
@@ -87,7 +88,7 @@
         <repository>
             <id>ossrh</id>
             <name>Sonatype Nexus Snapshots</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
             <releases>
                 <enabled>false</enabled>
             </releases>
@@ -102,7 +103,7 @@
         <pluginRepository>
             <id>ossrh</id>
             <name>Sonatype Nexus Snapshots</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
             <releases>
                 <enabled>false</enabled>
             </releases>
@@ -924,7 +925,7 @@
                 <snapshotRepository>
                     <id>ossrh</id>
                     <name>Sonatype Nexus snapshot repository</name>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
                 </snapshotRepository>
             </distributionManagement>
         </profile>

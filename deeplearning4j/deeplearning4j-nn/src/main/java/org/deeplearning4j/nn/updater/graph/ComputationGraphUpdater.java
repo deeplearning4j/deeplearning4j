@@ -78,7 +78,7 @@ public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGr
     }
 
     @Override
-    protected INDArray getFlattenedGradientsView() {
+    public INDArray getFlattenedGradientsView() {
         if (network.getFlattenedGradients() == null) {
             network.initGradientsView();
         }
