@@ -48,10 +48,7 @@ PLATFORM_CHECK(log_softmax, ENGINE_CPU) {
 
   const int rank = input->rankOf();
   int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
-#if 1
-  sd::Environment::getInstance().setDebug(true) ;
-  sd::Environment::getInstance().setVerbose(true);
-#endif
+
   Requirements req("VEDNN LOG SOFTMAX OP");
   req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&

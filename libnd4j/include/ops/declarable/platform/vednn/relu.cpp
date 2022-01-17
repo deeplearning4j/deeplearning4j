@@ -42,10 +42,7 @@ PLATFORM_CHECK(relu, ENGINE_CPU) {
   auto output = OUTPUT_VARIABLE(0);
 
   auto scalar = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
-#if 1
-  sd::Environment::getInstance().setDebug(true) ;
-  sd::Environment::getInstance().setVerbose(true);
-#endif
+
   Requirements req("VEDNN RELU OP");
   req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
@@ -73,10 +70,7 @@ PLATFORM_CHECK(relu_bp, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
-#if 1
-  sd::Environment::getInstance().setDebug(true) ;
-  sd::Environment::getInstance().setVerbose(true);
-#endif
+
   Requirements req("VEDNN RELU_BP OP");
   req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&

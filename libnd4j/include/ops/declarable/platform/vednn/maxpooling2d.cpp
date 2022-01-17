@@ -193,10 +193,7 @@ PLATFORM_CHECK(maxpool2d_bp, ENGINE_CPU) {
   auto paddingMode = INT_ARG(8);
 
   Requirements req("VEDNN MAXPOOL2d OP");
-#if 1
-  sd::Environment::getInstance().setDebug(true) ;
-  sd::Environment::getInstance().setVerbose(true);
-#endif
+
   req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(gradOut->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
