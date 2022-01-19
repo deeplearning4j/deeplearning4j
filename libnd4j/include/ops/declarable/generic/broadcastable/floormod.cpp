@@ -66,11 +66,12 @@ CUSTOM_OP_IMPL(floormod_bp, 3, 2, false, 0, 0) {
   auto gradY = OUTPUT_VARIABLE(1);
   gradX->assign(epsNext);
 
-  NDArray temp(*epsNext);
-  BroadcastHelper::broadcastApply(BROADCAST(FloorMod), x, y, &temp);
+
+  NDArray temp2(*epsNext);
+  BroadcastHelper::broadcastApply(BROADCAST(FloorMod), x, y, &temp2);
 
   if (gradY->rankOf() == gradX->rankOf())
-    epsNext->applyPairwiseTransform(pairwise::Multiply, temp, *gradY);
+    epsNext->applyPairwiseTransform(pairwise::Multiply, temp2, *gradY);
   else  // epsNext is greater than gradY
   {
     std::vector<sd::LongType> dims(epsNext->rankOf() * 2);
@@ -78,7 +79,7 @@ CUSTOM_OP_IMPL(floormod_bp, 3, 2, false, 0, 0) {
     for (sd::LongType d = 0; d < gap; d++) {
       dims[d * 2 + 1] = 1;
     }
-    auto tempIn((temp)(dims));
+    auto tempIn((temp2)(dims));
     (*epsNext)(dims).applyPairwiseTransform(pairwise::Multiply, tempIn, *gradY);
   }
   return sd::Status::OK;

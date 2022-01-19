@@ -905,8 +905,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 53:
                     t = sd.math().diag(in);
-                    ia = Nd4j.create(new float[]{4, 2});
-                    in = sd.var("in", 1, 2);
+                    ia = Nd4j.create(new double[]{4, 2});
                     INDArray expOut53 = Nd4j.create(DataType.DOUBLE, 2, 2);
                     DynamicCustomOp op = DynamicCustomOp.builder("diag").addInputs(ia).addOutputs(expOut53).build();
                     Nd4j.getExecutioner().exec(op);

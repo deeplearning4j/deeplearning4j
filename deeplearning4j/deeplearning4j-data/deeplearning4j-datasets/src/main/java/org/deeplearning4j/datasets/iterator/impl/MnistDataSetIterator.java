@@ -23,6 +23,7 @@ package org.deeplearning4j.datasets.iterator.impl;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.nd4j.linalg.dataset.api.iterator.BaseDatasetIterator;
 
+import java.io.File;
 import java.io.IOException;
 
 public class MnistDataSetIterator extends BaseDatasetIterator {
@@ -62,8 +63,23 @@ public class MnistDataSetIterator extends BaseDatasetIterator {
      */
     public MnistDataSetIterator(int batch, int numExamples, boolean binarize, boolean train, boolean shuffle,
                                 long rngSeed) throws IOException {
-        super(batch, numExamples, new MnistDataFetcher(binarize, train, shuffle, rngSeed, numExamples));
+        this(batch, numExamples, binarize,train,shuffle,rngSeed,null);
     }
+
+
+    /**Get the specified number of MNIST examples (test or train set), with optional shuffling and binarization.
+     * @param batch Size of each patch
+     * @param numExamples total number of examples to load
+     * @param binarize whether to binarize the data or not (if false: normalize in range 0 to 1)
+     * @param train Train vs. test set
+     * @param shuffle whether to shuffle the examples
+     * @param rngSeed random number generator seed to use when shuffling examples
+     */
+    public MnistDataSetIterator(int batch, int numExamples, boolean binarize, boolean train, boolean shuffle,
+                                long rngSeed, File topLevelDir) throws IOException {
+        super(batch, numExamples, new MnistDataFetcher(binarize, train, shuffle, rngSeed, numExamples,topLevelDir));
+    }
+
 
     public void close() {
         MnistDataFetcher mnistDataFetcher = (MnistDataFetcher) fetcher;

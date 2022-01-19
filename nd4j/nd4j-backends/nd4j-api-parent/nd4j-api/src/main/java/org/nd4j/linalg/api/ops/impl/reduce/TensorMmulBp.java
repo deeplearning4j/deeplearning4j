@@ -35,7 +35,7 @@ public class TensorMmulBp  extends DynamicCustomOp  {
     public TensorMmulBp(){}
 
     public TensorMmulBp(SameDiff samediff, SDVariable x, SDVariable y, SDVariable gradAtOutput, int[][] axes) {
-        this(samediff, x, y, gradAtOutput, axes[0], axes[1] );
+        this(samediff, x, y, gradAtOutput, axes[0], axes[1]);
     }
 
     public TensorMmulBp(SameDiff samediff, SDVariable x, SDVariable y, SDVariable gradAtOutput, int[] axesX, int[] axesY ) {

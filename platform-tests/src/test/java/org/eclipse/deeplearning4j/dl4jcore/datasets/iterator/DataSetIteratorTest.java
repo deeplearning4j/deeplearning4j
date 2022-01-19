@@ -44,6 +44,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
@@ -53,6 +54,8 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -66,9 +69,12 @@ import org.junit.jupiter.api.DisplayName;
 @Tag(TagNames.LONG_TEST)
 class DataSetIteratorTest extends BaseDL4JTest {
 
+
+
+
     @Override
     public long getTimeoutMilliseconds() {
-        // Should run quickly; increased to large timeout due to occasonal slow CI downloads
+        // Should run quickly; increased to large timeout due to occasoinal slow CI downloads
         return 360000;
     }
 
@@ -104,12 +110,12 @@ class DataSetIteratorTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Mnist")
-    void testMnist() throws Exception {
+    void testMnist(@TempDir Path tempDir) throws Exception {
         ClassPathResource cpr = new ClassPathResource("mnist_first_200.txt");
         CSVRecordReader rr = new CSVRecordReader(0, ',');
         rr.initialize(new FileSplit(cpr.getTempFileFromArchive()));
         RecordReaderDataSetIterator dsi = new RecordReaderDataSetIterator(rr, 10, 0, 10);
-        MnistDataSetIterator iter = new MnistDataSetIterator(10, 200, false, true, false, 0);
+        MnistDataSetIterator iter = new MnistDataSetIterator(10, 200, false, true, false, 0,tempDir.toFile());
         while (dsi.hasNext()) {
             DataSet dsExp = dsi.next();
             DataSet dsAct = iter.next();

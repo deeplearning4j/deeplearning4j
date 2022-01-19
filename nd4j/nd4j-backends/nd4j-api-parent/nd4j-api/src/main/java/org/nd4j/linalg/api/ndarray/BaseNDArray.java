@@ -1174,7 +1174,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void setShapeAndStride(int[] shape, int[] stride) {
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride),  0, ordering(), this.dataType(), false));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride),  0, ordering(), this.dataType(), isEmpty()));
     }
 
     @Override
@@ -2190,7 +2190,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
             int[] counts = new int[specifiedIdxs.size()];
             int[] dims = new int[specifiedIdxDims.size()];
-            for( int i=0; i<specifiedIdxs.size(); i++ ){
+            for( int i = 0; i < specifiedIdxs.size(); i++) {
                 counts[i] = specifiedIdxs.get(i).length;
                 dims[i] = specifiedIdxDims.get(i);
             }

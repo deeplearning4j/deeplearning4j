@@ -50,16 +50,18 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
     /**
      * NOTE: If this is empty or the tests names are wrong,
-     * all tests will trigger an assumeFalse(..) that indicates
+     * all tests will triggr an assumeFalse(..) that indicates
      * the status of the test failing. No tests will run.
      */
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
-            "split/rank2_8,7_sz2,1,4_axis1"
-            //"resize_bicubic/float64",
-
+            "emptyReduceAxisTests/reduce_logsumexp/rank1"
     );
 
     public static final String[] IGNORE_REGEXES = new String[]{
+            //crashes JVM
+            "scatter_nd_sub/unique_idxs/rank3shape_2indices",
+
+            //
             //invalid graph:  Unable to run session input_0:0 is both fed and fetched.
             //also due to the dynamic inputs being -1 3 for the first matrix multiply for the first 2 inputs
             //the only valid batch size is 3.
@@ -160,7 +162,6 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
     @MethodSource("data")
     //@DisableIfModelFound
     public void testOutputOnly(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws Exception {
-        Nd4j.create(1);
         if(EXECUTE_ONLY_MODELS.isEmpty()) {
             for(String s : IGNORE_REGEXES)  {
                 if(modelName.matches(s)) {

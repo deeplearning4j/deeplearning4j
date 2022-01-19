@@ -123,6 +123,7 @@ public class TFGraphTestAllHelper {
                 SameDiff result = tensorflowFrameworkImporter.runImport(file.getAbsolutePath(), dynamicVariables, suggestDynamicVariables);
                 return new ModelLoadResult(result, graphDef);
             }catch(Exception e) {
+                e.printStackTrace();
                 return new ModelLoadResult(null,graphDef);
             }
         }
@@ -414,6 +415,11 @@ public class TFGraphTestAllHelper {
         if(listeners != null){
             graph.setListeners(listeners);
         }
+
+        if(graph == null) {
+            throw new IllegalStateException("Graph " + modelName + " was not able to be imported!");
+        }
+
 
         if(printArraysDebugging) {
             graph.addListeners(new ExecPrintListener());

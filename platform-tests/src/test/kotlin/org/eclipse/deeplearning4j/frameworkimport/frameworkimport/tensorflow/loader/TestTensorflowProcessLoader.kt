@@ -20,8 +20,8 @@
 
 package org.eclipse.deeplearning4j.frameworkimport.frameworkimport.tensorflow.loader
 
-import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.samediff.frameworkimport.tensorflow.definitions.registry

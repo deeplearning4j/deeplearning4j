@@ -54,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @NativeTag
 @Tag(TagNames.LONG_TEST)
 @Tag(TagNames.LARGE_RESOURCES)
+@Disabled
 public class TestDownload extends BaseDL4JTest {
     @TempDir
     static Path sharedTempDir;
