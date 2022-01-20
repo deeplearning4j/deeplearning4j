@@ -118,7 +118,7 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             //08.05.2020 - https://github.com/eclipse/deeplearning4j/issues/8927
             "random_gamma/.*",
 
-            //08.05.2020 - https://github.com/eclipse/deeplearning4j/issues/8928
+            //08.05.2020 - https://github.cMatchCondom/eclipse/deeplearning4j/issues/8928
             "Conv3DBackpropInputV2/.*",
 
 

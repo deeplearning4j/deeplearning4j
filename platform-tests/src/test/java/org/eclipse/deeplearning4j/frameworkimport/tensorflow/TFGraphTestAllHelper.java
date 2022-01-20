@@ -115,7 +115,7 @@ public class TFGraphTestAllHelper {
             try {
                 graphDef = GraphDef.parseFrom(Files.toByteArray(file));
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
 
             System.out.println("Processing graph at path : \n" + file.getAbsolutePath());
@@ -123,8 +123,7 @@ public class TFGraphTestAllHelper {
                 SameDiff result = tensorflowFrameworkImporter.runImport(file.getAbsolutePath(), dynamicVariables, suggestDynamicVariables);
                 return new ModelLoadResult(result, graphDef);
             }catch(Exception e) {
-                e.printStackTrace();
-                return new ModelLoadResult(null,graphDef);
+                throw new RuntimeException(e);
             }
         }
     }
