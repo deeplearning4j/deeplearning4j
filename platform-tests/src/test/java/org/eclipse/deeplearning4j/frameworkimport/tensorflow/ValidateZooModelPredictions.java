@@ -22,6 +22,7 @@ package org.eclipse.deeplearning4j.frameworkimport.tensorflow;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.eclipse.deeplearning4j.longrunning.frameworkimport.tensorflow.TFGraphTestZooModels;
 import org.junit.jupiter.api.BeforeEach;
 
 import org.junit.jupiter.api.Tag;

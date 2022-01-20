@@ -19,7 +19,6 @@
  */
 package org.eclipse.deeplearning4j.resources;
 
-import org.eclipse.deeplearning4j.omnihub.OmniHubUtils;
 import org.nd4j.common.resources.strumpf.StrumpfResolver;
 
 import java.io.File;

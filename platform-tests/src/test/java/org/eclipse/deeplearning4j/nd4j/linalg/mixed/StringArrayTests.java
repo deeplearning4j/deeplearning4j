@@ -50,7 +50,7 @@ public class StringArrayTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCreateUtf8EmptyArray(Nd4jBackend backend) {
         long[] shape = {};
-        Nd4j.create(DataType.UTF8, shape, null /*irrelevant*/, 'c' /*irrelevant*/);
+        Nd4j.create(DataType.UTF8, shape, new long[]{},  'c' /*irrelevant*/);
     }
 
     @ParameterizedTest

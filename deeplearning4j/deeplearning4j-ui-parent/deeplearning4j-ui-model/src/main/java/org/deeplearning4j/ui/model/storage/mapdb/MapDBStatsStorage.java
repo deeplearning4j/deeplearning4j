@@ -22,10 +22,8 @@ package org.deeplearning4j.ui.model.storage.mapdb;
 
 import lombok.Data;
 import lombok.NonNull;
-import org.deeplearning4j.common.config.DL4JClassLoading;
+import org.deeplearning4j.config.DL4JClassLoading;
 import org.deeplearning4j.core.storage.*;
-import org.deeplearning4j.ui.model.storage.FileStatsStorage;
-import org.deeplearning4j.ui.model.storage.InMemoryStatsStorage;
 import org.deeplearning4j.ui.model.storage.BaseCollectionStatsStorage;
 import org.mapdb.*;
 

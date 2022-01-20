@@ -27,6 +27,7 @@ import org.nd4j.linalg.util.FeatureUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.List;
 
 public abstract class BaseDataFetcher implements DataSetFetcher {
@@ -41,6 +42,17 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
     protected int inputColumns = -1;
     protected DataSet curr;
     protected int totalExamples;
+    protected File topLevelDir;
+
+    @Override
+    public File topLevelDir() {
+        return topLevelDir;
+    }
+
+    @Override
+    public void setTopLevelDir(File topLevelDir) {
+       this.topLevelDir = topLevelDir;
+    }
 
     /**
      * Creates a feature vector

@@ -39,7 +39,7 @@ import org.deeplearning4j.core.loader.impl.SerializedMultiDataSetLoader;
 import org.deeplearning4j.core.storage.Persistable;
 import org.deeplearning4j.core.storage.StatsStorageRouter;
 import org.deeplearning4j.core.storage.StorageMetaData;
-import org.deeplearning4j.common.config.DL4JEnvironmentVars;
+import org.deeplearning4j.config.DL4JEnvironmentVars;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;

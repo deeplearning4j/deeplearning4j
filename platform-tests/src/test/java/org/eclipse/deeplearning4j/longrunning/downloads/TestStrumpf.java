@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.eclipse.deeplearning4j.resources;
+package org.eclipse.deeplearning4j.longrunning.downloads;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;

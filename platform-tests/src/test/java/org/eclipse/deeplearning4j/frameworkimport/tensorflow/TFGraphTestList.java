@@ -91,7 +91,7 @@ public class TFGraphTestList {
 
 
     @ParameterizedTest
-    @MethodSource("org.nd4j.imports.tfgraphs.TFGraphTestList#data")
+    @MethodSource("data")
     public void testOutputOnly(String modelName) throws IOException {
         //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
         File dir = testDir.toFile();

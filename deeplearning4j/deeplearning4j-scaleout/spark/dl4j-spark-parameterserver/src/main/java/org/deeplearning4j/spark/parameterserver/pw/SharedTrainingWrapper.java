@@ -25,7 +25,7 @@ import lombok.val;
 import org.bytedeco.javacpp.Loader;
 import org.deeplearning4j.core.storage.StatsStorageRouter;
 import org.deeplearning4j.core.storage.listener.RoutingIterationListener;
-import org.deeplearning4j.common.config.DL4JEnvironmentVars;
+import org.deeplearning4j.config.DL4JEnvironmentVars;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;

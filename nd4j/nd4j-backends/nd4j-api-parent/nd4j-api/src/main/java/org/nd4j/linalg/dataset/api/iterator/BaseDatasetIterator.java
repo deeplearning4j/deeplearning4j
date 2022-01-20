@@ -24,6 +24,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.fetcher.DataSetFetcher;
 
+import java.io.File;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -34,6 +35,7 @@ public class BaseDatasetIterator implements DataSetIterator {
     protected int batch, numExamples;
     protected DataSetFetcher fetcher;
     protected DataSetPreProcessor preProcessor;
+    protected File topLevelDir;
 
 
     public BaseDatasetIterator(int batch, int numExamples, DataSetFetcher fetcher) {
@@ -43,6 +45,18 @@ public class BaseDatasetIterator implements DataSetIterator {
 
         this.numExamples = numExamples;
         this.fetcher = fetcher;
+    }
+
+
+    public void setTopLevelDir(File topLevelDir) {
+        this.topLevelDir = topLevelDir;
+        if(fetcher != null)
+            fetcher.setTopLevelDir(topLevelDir);
+    }
+
+
+    public File topLevelDir() {
+        return topLevelDir;
     }
 
     @Override

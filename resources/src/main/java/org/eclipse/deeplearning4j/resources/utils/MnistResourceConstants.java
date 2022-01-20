@@ -41,6 +41,8 @@ public class MnistResourceConstants {
     public static final String TEST_FILE_LABELS_FILENAME = "t10k-labels-idx1-ubyte.gz";
     public static final String TEST_FILE_LABELS_FILENAME_UNZIPPED = "t10k-labels-idx1-ubyte";
 
+    public final static String MNIST_ROOT = "datasets/mnist";
+
     // --- Train files ---
     public static String getMNISTTrainingFilesURL() {
         return DL4JResources.getURLString(TRAINING_FILES_URL_RELATIVE);

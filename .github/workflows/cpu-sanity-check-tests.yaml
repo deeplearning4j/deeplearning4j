@@ -88,7 +88,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           java-version: 8
-          distribution: 'zulu'
+          distribution: 'temurin'
           cache: 'maven'
 
       - name: Setup libnd4j home if a download url is specified
@@ -182,7 +182,7 @@ jobs:
         uses: konduitai/setup-java@main
         with:
           java-version: 8
-          distribution: 'zulu'
+          distribution: 'temurin'
           cache: 'maven'
 
 
@@ -262,7 +262,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           java-version: 8
-          distribution: 'zulu'
+          distribution: 'temurin'
           cache: 'maven'
 
 

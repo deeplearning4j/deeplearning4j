@@ -20,7 +20,6 @@
 package org.eclipse.deeplearning4j.resources;
 
 import org.deeplearning4j.common.resources.DL4JResources;
-import org.eclipse.deeplearning4j.omnihub.OmniHubUtils;
 
 import java.io.File;
 

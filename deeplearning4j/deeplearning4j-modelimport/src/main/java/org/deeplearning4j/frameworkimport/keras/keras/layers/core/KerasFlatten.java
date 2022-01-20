@@ -32,8 +32,8 @@ import org.deeplearning4j.nn.conf.inputs.InputType.InputTypeConvolutional;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.conf.preprocessor.Cnn3DToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
-import org.eclipse.deeplearning4j.frameworkimport.keras.preprocessors.KerasFlattenRnnPreprocessor;
-import org.eclipse.deeplearning4j.frameworkimport.keras.preprocessors.ReshapePreprocessor;
+import org.deeplearning4j.preprocessors.KerasFlattenRnnPreprocessor;
+import org.deeplearning4j.preprocessors.ReshapePreprocessor;
 
 import java.util.Map;
 

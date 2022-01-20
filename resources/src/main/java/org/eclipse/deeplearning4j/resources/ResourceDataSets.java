@@ -26,6 +26,7 @@ import org.eclipse.deeplearning4j.resources.utils.*;
 import java.io.File;
 
 import static org.eclipse.deeplearning4j.resources.utils.EMnistResourceConstants.*;
+import static org.eclipse.deeplearning4j.resources.utils.MnistResourceConstants.*;
 
 /**
  * Top level class for leveraging pre curated datasets
@@ -230,11 +231,11 @@ public class ResourceDataSets {
      */
     public static DataSetResource mnistTrain(File topLevelDir) {
         return new DataSetResource(
-                MnistResourceConstants.getMNISTTrainingFilesFilename(),
-                MnistResourceConstants.getMNISTTrainingFilesMD5(),
                 MnistResourceConstants.getMNISTTrainingFilesFilename_unzipped(),
+                MnistResourceConstants.getMNISTTrainingFilesMD5(),
+                MnistResourceConstants.getMNISTTrainingFilesFilename(),
                 topLevelDir.getAbsolutePath(),
-                DL4JResources.getBaseDownloadURL()
+                DL4JResources.getURLString(MnistResourceConstants.MNIST_ROOT)
         );
     }
 
@@ -255,11 +256,11 @@ public class ResourceDataSets {
      */
     public static DataSetResource mnistTest(File topLevelDir) {
         return new DataSetResource(
-                MnistResourceConstants.getMNISTTrainingFileLabelsFilename(),
+                MnistResourceConstants.getTestFilesFilename_unzipped(),
                 MnistResourceConstants.getTestFilesMD5(),
-                MnistResourceConstants.getMNISTTrainingFileLabelsFilename_unzipped(),
+                MnistResourceConstants.getTestFilesFilename(),
                 topLevelDir.getAbsolutePath(),
-                DL4JResources.getBaseDownloadURL()
+                DL4JResources.getURLString(MnistResourceConstants.MNIST_ROOT)
         );
     }
 
@@ -280,12 +281,11 @@ public class ResourceDataSets {
      */
     public static DataSetResource mnistTrainLabels(File topLevelDir) {
         return new DataSetResource(
-                MnistResourceConstants.getMNISTTrainingFileLabelsFilename(),
-                MnistResourceConstants.getMNISTTrainingFileLabelsMD5(),
                 MnistResourceConstants.getMNISTTrainingFileLabelsFilename_unzipped(),
+                MnistResourceConstants.getMNISTTrainingFileLabelsMD5(),
+                MnistResourceConstants.getMNISTTrainingFileLabelsFilename(),
                 topLevelDir.getAbsolutePath(),
-                DL4JResources.getBaseDownloadURL()
-        );
+                DL4JResources.getURLString(MnistResourceConstants.MNIST_ROOT));
     }
 
     /**
@@ -305,11 +305,11 @@ public class ResourceDataSets {
      */
     public static DataSetResource mnistTestLabels(File topLevelDir) {
         return new DataSetResource(
-                MnistResourceConstants.getMNISTTrainingFileLabelsFilename(),
+                MnistResourceConstants.getTestFileLabelsFilename_unzipped(),
                 MnistResourceConstants.getTestFileLabelsMD5(),
-                MnistResourceConstants.getMNISTTrainingFileLabelsFilename_unzipped(),
+                MnistResourceConstants.getTestFileLabelsFilename(),
                 topLevelDir.getAbsolutePath(),
-                DL4JResources.getBaseDownloadURL()
+                DL4JResources.getURLString(MnistResourceConstants.MNIST_ROOT)
         );
     }
 

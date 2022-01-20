@@ -80,7 +80,7 @@ public class RnnDataFormatTests extends BaseDL4JTest {
     }
 
 
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.RnnDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     public void testSimpleRnn(boolean helpers,
                               boolean lastTimeStep,
@@ -118,7 +118,7 @@ public class RnnDataFormatTests extends BaseDL4JTest {
     }
 
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.RnnDataFormatTests#params")
+    @MethodSource("params")
     public void testLSTM(boolean helpers,
                          boolean lastTimeStep,
                          boolean maskZeros,Nd4jBackend backend) {
@@ -154,7 +154,7 @@ public class RnnDataFormatTests extends BaseDL4JTest {
     }
 
 
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.RnnDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     @Tag(TagNames.LARGE_RESOURCES)
     @Tag(TagNames.LONG_TEST)
@@ -193,7 +193,7 @@ public class RnnDataFormatTests extends BaseDL4JTest {
     }
 
 
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.RnnDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     public void testGraveBiLSTM(boolean helpers,
                                 boolean lastTimeStep,

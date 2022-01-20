@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.layers.mkldnn;
 
-import org.deeplearning4j.common.config.DL4JClassLoading;
+import org.deeplearning4j.config.DL4JClassLoading;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.lang.reflect.Method;

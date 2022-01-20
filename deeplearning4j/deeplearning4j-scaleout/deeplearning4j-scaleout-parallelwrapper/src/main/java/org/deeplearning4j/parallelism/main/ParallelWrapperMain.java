@@ -25,7 +25,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.common.config.DL4JClassLoading;
+import org.deeplearning4j.config.DL4JClassLoading;
 import org.deeplearning4j.core.storage.StatsStorageRouter;
 import org.deeplearning4j.core.storage.impl.RemoteUIStatsStorageRouter;
 import org.deeplearning4j.nn.api.Model;

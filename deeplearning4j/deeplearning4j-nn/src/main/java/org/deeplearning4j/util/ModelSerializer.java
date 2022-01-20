@@ -21,7 +21,7 @@
 package org.deeplearning4j.util;
 
 import org.apache.commons.io.input.CloseShieldInputStream;
-import org.deeplearning4j.common.util.DL4JFileUtils;
+import org.nd4j.common.util.ND4JFileUtils;
 import org.nd4j.shade.guava.io.Files;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -717,7 +717,7 @@ public class ModelSerializer {
         File tempFile = null;
         try {
             // copy existing model to temporary file
-            tempFile = DL4JFileUtils.createTempFile("dl4jModelSerializerTemp", "bin");
+            tempFile = ND4JFileUtils.createTempFile("dl4jModelSerializerTemp", "bin");
             tempFile.deleteOnExit();
             Files.copy(f, tempFile);
             try (ZipFile zipFile = new ZipFile(tempFile);
@@ -772,7 +772,7 @@ public class ModelSerializer {
         File tempFile = null;
         try {
             // copy existing model to temporary file
-            tempFile = DL4JFileUtils.createTempFile("dl4jModelSerializerTemp", "bin");
+            tempFile = ND4JFileUtils.createTempFile("dl4jModelSerializerTemp", "bin");
             Files.copy(f, tempFile);
             f.delete();
             try (ZipFile zipFile = new ZipFile(tempFile);

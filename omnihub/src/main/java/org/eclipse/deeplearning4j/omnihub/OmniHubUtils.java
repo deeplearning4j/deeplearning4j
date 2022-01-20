@@ -23,6 +23,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.omnihub.OmnihubConfig;
 import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.io.BufferedInputStream;
@@ -38,10 +39,6 @@ import java.net.*;
  * @author Adam Gibson
  */
 public class OmniHubUtils {
-
-    public final static String OMNIHUB_HOME = "OMNIHUB_HOME";
-    public final static String OMNIHUB_URL = "OMNIHUB_URL";
-    public static final String DEFAULT_OMNIHUB_URL = "https://raw.githubusercontent.com/KonduitAI/omnihub-zoo/main";
 
 
     /**
@@ -129,14 +126,14 @@ public class OmniHubUtils {
      */
     @SneakyThrows
     public static File downloadAndLoadFromZoo(String framework,String name,boolean forceDownload) {
-        File destination = new File(getOmnihubHome(),framework);
+        File destination = new File(OmnihubConfig.getOmnihubHome(),framework);
         File destFile = new File(destination,name);
         if(forceDownload && destFile.exists()) {
             destFile.delete();
         }
         if(!destFile.exists()) {
             String url = new StringBuilder()
-                    .append(getOmnihubUrl()).append("/").append(framework).append("/").
+                    .append(OmnihubConfig.getOmnihubUrl()).append("/").append(framework).append("/").
                     append(name).toString();
             URL remoteUrl = URI.create(url).toURL();
             long size = getFileSize(remoteUrl);
@@ -172,30 +169,4 @@ public class OmniHubUtils {
         }
     }
 
-    /**
-     * Return the omnihub hurl defaulting to
-     * {@link #DEFAULT_OMNIHUB_URL}
-     * if the {@link #OMNIHUB_URL} is not specified.
-     * @return
-     */
-    public static String getOmnihubUrl() {
-        if(System.getenv(OMNIHUB_URL) != null) {
-            return System.getenv(OMNIHUB_URL);
-        } else {
-            return DEFAULT_OMNIHUB_URL;
-        }
-    }
-
-    /**
-     * return the default omnihub home at $USER/.omnihub or
-     * value of the environment variable {@link #OMNIHUB_HOME} if applicable
-     * @return
-     */
-    public static File getOmnihubHome() {
-        if(System.getenv(OMNIHUB_HOME) != null) {
-            return new File(OMNIHUB_HOME);
-        } else {
-            return new File(System.getProperty("user.home"),".omnihub");
-        }
-    }
 }

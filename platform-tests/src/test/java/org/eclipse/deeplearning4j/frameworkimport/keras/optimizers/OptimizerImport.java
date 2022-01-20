@@ -24,7 +24,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.frameworkimport.keras.keras.KerasModel;
 import org.deeplearning4j.frameworkimport.keras.keras.KerasSequentialModel;
 import org.deeplearning4j.frameworkimport.keras.keras.utils.KerasModelBuilder;
-import org.deeplearning4j.common.util.DL4JFileUtils;
+import org.deeplearning4j.common.util.ND4JFileUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.resources.Resources;
@@ -76,7 +76,7 @@ public class OptimizerImport extends BaseDL4JTest {
     }
 
     private void importSequential(String modelPath) throws Exception {
-        File modelFile = DL4JFileUtils.createTempFile("tempModel", ".h5");
+        File modelFile = ND4JFileUtils.createTempFile("tempModel", ".h5");
         try(InputStream is = Resources.asStream(modelPath)) {
             Files.copy(is, modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())

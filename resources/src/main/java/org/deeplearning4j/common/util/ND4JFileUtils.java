@@ -20,14 +20,14 @@
 
 package org.deeplearning4j.common.util;
 
-import org.deeplearning4j.common.config.DL4JSystemProperties;
+import org.deeplearning4j.config.DL4JSystemProperties;
 
 import java.io.File;
 import java.io.IOException;
 
-public class DL4JFileUtils {
+public class ND4JFileUtils {
 
-    private DL4JFileUtils(){ }
+    private ND4JFileUtils(){ }
 
     /**
      * Create a temporary file in the location specified by {@link DL4JSystemProperties#DL4J_TEMP_DIR_PROPERTY} if set,
