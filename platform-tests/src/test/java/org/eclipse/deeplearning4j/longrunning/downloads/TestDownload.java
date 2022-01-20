@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.eclipse.deeplearning4j.zoo;
+package org.eclipse.deeplearning4j.longrunning.downloads;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;

@@ -210,9 +210,7 @@ class DataSetIteratorTest extends BaseDL4JTest {
         assertEquals(channels * row * col, data.getFeatures().ravel().length());
     }
 
-    // Ignored for now - CIFAR iterator needs work - https://github.com/eclipse/deeplearning4j/issues/4673
     @Test
-    @Disabled
     @DisplayName("Test Cifar Model")
     void testCifarModel() throws Exception {
         // Streaming

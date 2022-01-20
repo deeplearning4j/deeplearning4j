@@ -323,7 +323,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
             sd_printf(
                 "First array empty: %d Second shape empty: %d\n",shape::isEmpty(out), shape::isEmpty(shape));
 
-            throw std::runtime_error("Expected vs provided shapes mismatch);
+            throw std::runtime_error("Expected vs provided shapes mismatch");
           }
 
 

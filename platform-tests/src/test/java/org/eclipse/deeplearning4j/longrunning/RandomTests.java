@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.eclipse.deeplearning4j.dl4jcore;
+package org.eclipse.deeplearning4j.longrunning;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;

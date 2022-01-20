@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.eclipse.deeplearning4j.downloads;
+package org.eclipse.deeplearning4j.longrunning.downloads;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.base.MnistFetcher;

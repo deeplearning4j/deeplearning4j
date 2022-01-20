@@ -283,7 +283,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
         for (val p : testCases) {
 
-            for (int i = 0; i < 8; i++) {
+            for (int i = 0; i < 7; i++) {
 
                 SameDiff sd = SameDiff.create();
 

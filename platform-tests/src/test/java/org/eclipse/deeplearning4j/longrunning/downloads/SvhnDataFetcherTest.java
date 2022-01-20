@@ -17,7 +17,7 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.eclipse.deeplearning4j.downloads;
+package org.eclipse.deeplearning4j.longrunning.downloads;
 
 import org.deeplearning4j.BaseDL4JTest;
 

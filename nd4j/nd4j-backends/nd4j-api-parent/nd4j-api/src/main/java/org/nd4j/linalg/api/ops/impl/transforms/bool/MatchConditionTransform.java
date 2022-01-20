@@ -99,6 +99,15 @@ public class MatchConditionTransform extends BaseTransformBoolOp {
     }
 
 
+    @Override
+    public Type getOpType() {
+        return Type.PAIRWISE_BOOL;
+    }
+
+    @Override
+    public Type opType() {
+        return Type.PAIRWISE_BOOL;
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

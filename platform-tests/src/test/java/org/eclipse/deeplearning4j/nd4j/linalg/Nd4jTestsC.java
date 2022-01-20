@@ -7665,14 +7665,14 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testPutSpecifiedIndices3d(){
+    public void testPutSpecifiedIndices3d() {
 
         INDArray arr = Nd4j.create(2,3,4);
         INDArray toPut = Nd4j.create(new double[]{1,2,3,4}, new int[]{1,2,2}, 'c');
         INDArrayIndex[] indices = new INDArrayIndex[]{
                 NDArrayIndex.point(1),
                 NDArrayIndex.indices(0,2),
-                NDArrayIndex.indices(1,3)} ;
+                NDArrayIndex.indices(1,3)};
 
         INDArray exp = Nd4j.create(2,3,4);
         exp.putScalar(1, 0, 1, 1);

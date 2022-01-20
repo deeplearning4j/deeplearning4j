@@ -132,8 +132,6 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
     public boolean validateDataTypes(OpContext oc) {
         INDArray x = oc != null ? oc.getInputArray(0) : x();
         INDArray y = oc != null ? oc.getInputArray(1) : y();
-        //note, we used to validate data types here ensuring x and y were the sam.
-        //dimensions are allowed to be second input for ops now so we can't enforce that anymore.
 
         INDArray z = oc != null ? oc.getOutputArray(0) : z();
         if (z != null)

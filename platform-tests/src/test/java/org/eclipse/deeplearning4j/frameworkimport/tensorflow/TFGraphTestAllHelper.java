@@ -138,7 +138,7 @@ public class TFGraphTestAllHelper {
             .outputMode(OutputMode.VARIABLE_SPACE)
             .build();
 
-    protected static List<Object[]> fetchTestParams(String baseDir, String modelFileName, ExecuteWith executeWith, File localTestDir) throws IOException {
+    public static List<Object[]> fetchTestParams(String baseDir, String modelFileName, ExecuteWith executeWith, File localTestDir) throws IOException {
         String[] modelNames = modelDirNames(baseDir, executeWith, modelFileName);
         List<Object[]> modelParams = new ArrayList<>();
         for (int i = 0; i < modelNames.length; i++) {
@@ -152,9 +152,9 @@ public class TFGraphTestAllHelper {
         return modelParams;
     }
 
-    protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName,
-                                          String baseDir, String modelFilename, ExecuteWith execType, BiFunction<File,String,ModelLoadResult> loader,
-                                          Double maxRelErrorOverride, Double minAbsErrorOverride, boolean printArraysDebugging) throws IOException {
+    public static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName,
+                                       String baseDir, String modelFilename, ExecuteWith execType, BiFunction<File, String, ModelLoadResult> loader,
+                                       Double maxRelErrorOverride, Double minAbsErrorOverride, boolean printArraysDebugging) throws IOException {
         Preconditions.checkArgument((maxRelErrorOverride == null) == (minAbsErrorOverride == null), "Both maxRelErrorOverride and minAbsErrorOverride" +
                 " must be null or both must be provided");
         Nd4j.EPS_THRESHOLD = 1e-3;

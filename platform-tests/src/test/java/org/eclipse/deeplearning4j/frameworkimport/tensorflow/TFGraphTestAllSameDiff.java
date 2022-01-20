@@ -50,11 +50,10 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
     /**
      * NOTE: If this is empty or the tests names are wrong,
-     * all tests will triggr an assumeFalse(..) that indicates
+     * all tests will trigger an assumeFalse(..) that indicates
      * the status of the test failing. No tests will run.
      */
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
-            "emptyReduceAxisTests/reduce_logsumexp/rank1"
     );
 
     public static final String[] IGNORE_REGEXES = new String[]{
@@ -160,7 +159,6 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
     @ParameterizedTest(name = "{2}")
     @MethodSource("data")
-    //@DisableIfModelFound
     public void testOutputOnly(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws Exception {
         if(EXECUTE_ONLY_MODELS.isEmpty()) {
             for(String s : IGNORE_REGEXES)  {

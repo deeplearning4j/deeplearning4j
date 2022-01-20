@@ -2017,7 +2017,6 @@ SD_INLINE SD_HOST_DEVICE sd::LongType strideAt(const sd::LongType *shapeInfo, co
  */
 SD_INLINE SD_HOST_DEVICE bool equalsSoft(const sd::LongType *shapeA, const sd::LongType *shapeB) {
   if (shapeA[0] != shapeB[0]) {
-    sd_printf("First case shape failure\n",0);
     return false;
   }
 
