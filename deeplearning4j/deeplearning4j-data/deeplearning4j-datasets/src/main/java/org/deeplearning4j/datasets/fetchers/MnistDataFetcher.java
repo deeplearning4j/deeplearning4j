@@ -120,16 +120,14 @@ public class MnistDataFetcher extends BaseDataFetcher {
         labels = labelResource.localPath().getAbsolutePath();
 
         String[] files = new String[]{images, labels};
-
+        MnistManager man = null;
         try {
-            MnistManager man = new MnistManager(images, labels, train);
+            man = new MnistManager(images, labels, train);
             validateFiles(files, checksums);
-            man.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
 
-        MnistManager man = new MnistManager(images, labels, train);
 
         numOutcomes = 10;
         this.binarize = binarize;
