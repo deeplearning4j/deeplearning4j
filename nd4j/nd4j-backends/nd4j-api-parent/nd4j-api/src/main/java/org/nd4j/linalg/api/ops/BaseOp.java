@@ -250,7 +250,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             if(outputNames != null) {
                 zVertexId = sameDiff.getVariable(outputNames[0]).name();
                 SDVariable[] ret =  new SDVariable[]{sameDiff.getVariable(outputNames[0])};
-                computeVariables(ret);
                 return ret;
 
             }
@@ -310,6 +309,17 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 throw new IllegalArgumentException("No variable found for the given input variables of " +  args[0].name() + " At least one input required.");
             }
 
+            //ensure data types are correct
+            if(args.length > 0 && args[0].dataType() != null) {
+                x = x.castTo(args[0].dataType());
+            }
+
+            //can be reduce float op or something similar where dimensions were specified
+            //as an input
+            if(args.length > 1 && args[1].dataType() != null && y != null) {
+                y = y.castTo(args[1].dataType());
+            }
+
             if(z == null) {
                 if( dimensions == null)
                     setZ(Nd4j.zeros(x.shape()).castTo(newVars[0].dataType()));
@@ -320,6 +330,15 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                     } else {
                         setZ(Nd4j.create(Shape.reductionShape(x,dimensions,true,false)).castTo(newVars[0].dataType()));
 
+                    }
+                }
+            }
+
+            if(this instanceof BaseScalarOp) {
+                BaseScalarOp baseScalarOp = (BaseScalarOp) this;
+                if(baseScalarOp.scalar() != null) {
+                    if(baseScalarOp.scalar().dataType() != baseScalarOp.x().dataType()) {
+                        baseScalarOp.setScalar(baseScalarOp.scalar().castTo(x().dataType()));
                     }
                 }
             }

@@ -17,7 +17,7 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.eclipse.deeplearning4j.dl4jcore.datasets;
+package org.eclipse.deeplearning4j.longrunning.downloads;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.common.resources.DL4JResources;
@@ -44,27 +44,18 @@ import static org.junit.jupiter.api.Assertions.*;
 @NativeTag
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.NDARRAY_ETL)
+@Disabled
 class MnistFetcherTest extends BaseDL4JTest {
 
-    @TempDir public static Path tempPath;
 
-    @BeforeAll
-    static void setup() throws Exception {
-        DL4JResources.setBaseDirectory(tempPath.toFile());
-    }
-
-    @AfterAll
-    static void after() throws Exception {
-        DL4JResources.resetBaseDirectoryLocation();
-    }
 
     @Test
     @DisplayName("Test Mnist")
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
     @Tag(TagNames.FILE_IO)
-    void testMnist() throws Exception {
-        MnistDataSetIterator iter = new MnistDataSetIterator(32, 60000, false, true, false, -1);
+    void testMnist(@TempDir Path tempPath) throws Exception {
+        MnistDataSetIterator iter = new MnistDataSetIterator(32, 60000, false, true, false, -1,tempPath.toFile());
         int count = 0;
         while (iter.hasNext()) {
             DataSet ds = iter.next();
@@ -107,9 +98,9 @@ class MnistFetcherTest extends BaseDL4JTest {
     @Tag(TagNames.FILE_IO)
     @Disabled("Temp directory not being set properly on CI")
     @Tag(TagNames.NEEDS_VERIFY)
-    public void testMnistSubset() throws Exception {
+    public void testMnistSubset(@TempDir Path tempPath) throws Exception {
         final int numExamples = 100;
-        MnistDataSetIterator iter1 = new MnistDataSetIterator(10, numExamples, false, true, true, 123);
+        MnistDataSetIterator iter1 = new MnistDataSetIterator(10, numExamples, false, true, true, 123,tempPath.toFile());
         int examples1 = 0;
         int itCount1 = 0;
         while (iter1.hasNext()) {
@@ -119,7 +110,7 @@ class MnistFetcherTest extends BaseDL4JTest {
         assertEquals(10, itCount1);
         assertEquals(100, examples1);
         iter1.close();
-        MnistDataSetIterator iter2 = new MnistDataSetIterator(10, numExamples, false, true, true, 123);
+        MnistDataSetIterator iter2 = new MnistDataSetIterator(10, numExamples, false, true, true, 123,tempPath.toFile());
         iter2.close();
         int examples2 = 0;
         int itCount2 = 0;
@@ -130,7 +121,7 @@ class MnistFetcherTest extends BaseDL4JTest {
         assertFalse(iter2.hasNext());
         assertEquals(10, itCount2);
         assertEquals(100, examples2);
-        MnistDataSetIterator iter3 = new MnistDataSetIterator(19, numExamples, false, true, true, 123);
+        MnistDataSetIterator iter3 = new MnistDataSetIterator(19, numExamples, false, true, true, 123,tempPath.toFile());
         iter3.close();
         int examples3 = 0;
         int itCount3 = 0;
@@ -157,8 +148,8 @@ class MnistFetcherTest extends BaseDL4JTest {
     @Tag(TagNames.FILE_IO)
     @Disabled("Temp directory not being set properly on CI")
     @Tag(TagNames.NEEDS_VERIFY)
-    void testSubsetRepeatability() throws Exception {
-        MnistDataSetIterator it = new MnistDataSetIterator(1, 1, false, false, true, 0);
+    void testSubsetRepeatability(@TempDir  Path tempDir) throws Exception {
+        MnistDataSetIterator it = new MnistDataSetIterator(1, 1, false, false, true, 0,tempDir.toFile());
         DataSet d1 = it.next();
         for (int i = 0; i < 10; i++) {
             it.reset();
@@ -167,7 +158,7 @@ class MnistFetcherTest extends BaseDL4JTest {
         }
         it.close();
         // Check larger number:
-        it = new MnistDataSetIterator(8, 32, false, false, true, 12345);
+        it = new MnistDataSetIterator(8, 32, false, false, true, 12345,tempDir.toFile());
         Set<String> featureLabelSet = new HashSet<>();
         while (it.hasNext()) {
             DataSet ds = it.next();

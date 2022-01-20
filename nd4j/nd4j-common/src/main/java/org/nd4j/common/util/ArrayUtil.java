@@ -1311,15 +1311,6 @@ public class ArrayUtil {
                     + index.length + ", data.length=" + data.length + ")");
         }
         int offset = 0;
-        /*
-            workaround for non-existent indexes (such as Integer.MAX_VALUE)
-
-
-        for (int i = 0; i < index.length; i ++) {
-            if (index[i] >= data.length || index[i] < 0) offset++;
-        }
-        */
-
         long[] ret = new long[data.length - index.length + offset];
         int count = 0;
         for (int i = 0; i < data.length; i++)

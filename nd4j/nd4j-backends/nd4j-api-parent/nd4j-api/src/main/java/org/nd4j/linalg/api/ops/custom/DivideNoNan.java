@@ -25,8 +25,10 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.DivBpOp;
 import org.nd4j.linalg.api.shape.Shape;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -56,6 +58,11 @@ public class DivideNoNan extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "DivNoNan";
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Arrays.asList(new DivBpOp(sameDiff, larg(), rarg(), f1.get(0)).outputVariables());
     }
 
     @Override

@@ -26,6 +26,15 @@ import java.net.URL;
 
 public class ND4JSystemProperties {
 
+
+    /**
+     * Applicability: always.
+     * Description: Nd4j
+     * has a DeallocatorService for handling automatic
+     * deallocation of ndarrays. This can cause crashes.
+     */
+    public final static String NO_ARRAY_GC = "org.nd4j.noarraygc";
+
     /**
      * Applicability: Always<br>
      * Description: Sets the default datatype for ND4J - should be one of "float", "double", "half".

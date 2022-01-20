@@ -401,6 +401,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         //pairwise reduction like similarity of two arrays
         else if (y != null && op.getOpType() == Op.Type.REDUCE3) {
             val yb = ((BaseCpuDataBuffer) y.data()).getOpaqueDataBuffer();
+            yTadBuffers = tadManager.getTADOnlyShapeInfo(y, dimension);
             if (op.isComplexAccumulation()) {
                 try {
                     loop.execReduce3All(null, op.opNum(),
@@ -648,7 +649,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
+            throw new RuntimeException("Op " + op.opName() + " failed with message:" + loop.lastErrorMessage());
 
         profilingConfigurableHookOut(op, oc, st);
 
@@ -1898,12 +1899,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             val status = loop.execCustomOp2(null, op.opHash(), context.contextPointer());
 
-            if (loop.lastErrorCode() != 0)
-                throw new RuntimeException(loop.lastErrorMessage());
 
             if (status != 0) {
                 DifferentialFunction differentialFunction = (DifferentialFunction)  op;
-                throw new RuntimeException("Op with name " + differentialFunction.getOwnName() + " and op type [" + op.opName() + "] execution failed");
+                throw new RuntimeException("Op with name " + differentialFunction.getOwnName() + " and op type [" + op.opName() + "] execution failed with message " + loop.lastErrorMessage());
             }
             if (context.getOutputArrays().isEmpty())
                 return new INDArray[0];

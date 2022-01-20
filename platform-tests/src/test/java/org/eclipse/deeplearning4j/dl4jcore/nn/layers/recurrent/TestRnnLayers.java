@@ -128,7 +128,7 @@ public class TestRnnLayers extends BaseDL4JTest {
     }
 
     @ParameterizedTest
-    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.nn.layers.recurrent.TestRnnLayersparams")
+    @MethodSource("params")
     public void testDropoutRecurrentLayers(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 

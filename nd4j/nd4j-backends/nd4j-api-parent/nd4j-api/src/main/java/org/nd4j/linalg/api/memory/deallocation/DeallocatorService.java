@@ -24,6 +24,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -41,7 +42,7 @@ public class DeallocatorService {
     private ReferenceQueue<Deallocatable>[] queues;
     private Map<String, DeallocatableReference> referenceMap = new ConcurrentHashMap<>();
     private List<List<ReferenceQueue<Deallocatable>>> deviceMap = new ArrayList<>();
-
+    private Boolean noPointerGc;
     private final transient AtomicLong counter = new AtomicLong(0);
 
     public DeallocatorService() {
@@ -50,24 +51,31 @@ public class DeallocatorService {
         int numThreads = Math.max(2, numDevices * 2);
 
         for (int e = 0; e < numDevices; e++)
-            deviceMap.add(new ArrayList<ReferenceQueue<Deallocatable>>());
+            deviceMap.add(new ArrayList<>());
 
         deallocatorThreads = new Thread[numThreads];
         queues = new ReferenceQueue[numThreads];
-        for (int e = 0; e < numThreads; e++) {
-            log.trace("Starting deallocator thread {}", e + 1);
-            queues[e] = new ReferenceQueue<>();
+        noPointerGc = Boolean.parseBoolean(System.getProperty(ND4JSystemProperties.NO_ARRAY_GC,"false")) || Boolean.parseBoolean(System.getProperty("org.bytedeco.javacpp.nopointergc","false"));
+        if(!noPointerGc) {
+            for (int e = 0; e < numThreads; e++) {
+                log.trace("Starting deallocator thread {}", e + 1);
+                queues[e] = new ReferenceQueue<>();
 
-            int deviceId = e % numDevices;
-            // attaching queue to its own thread
-            deallocatorThreads[e] = new DeallocatorServiceThread(queues[e], e, deviceId);
-            deallocatorThreads[e].setName("DeallocatorServiceThread_" + e);
-            deallocatorThreads[e].setDaemon(true);
+                int deviceId = e % numDevices;
+                // attaching queue to its own thread
+                deallocatorThreads[e] = new DeallocatorServiceThread(queues[e], e, deviceId);
+                deallocatorThreads[e].setName("DeallocatorServiceThread_" + e);
+                deallocatorThreads[e].setDaemon(true);
 
-            deviceMap.get(deviceId).add(queues[e]);
-            
-            deallocatorThreads[e].start();
+                deviceMap.get(deviceId).add(queues[e]);
+
+                deallocatorThreads[e].start();
+            }
+        } else {
+            log.warn("Disabling automatic garbage collection since the system property " + ND4JSystemProperties.NO_ARRAY_GC + " or " + " org.bytedeco.javacpp.nopointergc was set to false");
         }
+
+
     }
 
     public long nextValue() {
@@ -80,10 +88,15 @@ public class DeallocatorService {
      * @param deallocatable object to track
      */
     public void pickObject(@NonNull Deallocatable deallocatable) {
-        val desiredDevice = deallocatable.targetDevice();
-        val map = deviceMap.get(desiredDevice);
-        val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, map.size())));
-        referenceMap.put(deallocatable.getUniqueId(), reference);
+        if(noPointerGc) {
+            log.trace("Deallocation turned off. Reference " + deallocatable.getUniqueId() + " will need to be de allocated manually.");
+          } else {
+            val desiredDevice = deallocatable.targetDevice();
+            val map = deviceMap.get(desiredDevice);
+            val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, map.size())));
+            referenceMap.put(deallocatable.getUniqueId(), reference);
+
+        }
     }
 
 

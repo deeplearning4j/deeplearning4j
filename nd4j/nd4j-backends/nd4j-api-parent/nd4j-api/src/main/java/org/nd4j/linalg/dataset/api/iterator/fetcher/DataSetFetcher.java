@@ -22,9 +22,26 @@ package org.nd4j.linalg.dataset.api.iterator.fetcher;
 
 import org.nd4j.linalg.dataset.DataSet;
 
+import java.io.File;
 import java.io.Serializable;
 
 public interface DataSetFetcher extends Serializable {
+
+
+    /**
+     * The top level directory to download datasets from
+     * This will usually be the default dl4j resources directory
+     * at user home/.deeplearning4j
+     * @return
+     */
+    File topLevelDir();
+
+    /**
+     * For file download datasets this sets a top level directory
+     * outside the default
+     * @param topLevelDir the top level directory to use
+     */
+    void setTopLevelDir(File topLevelDir);
 
     /**
      * Whether the dataset has more to load

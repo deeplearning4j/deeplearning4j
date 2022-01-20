@@ -246,7 +246,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         var nNodes: Int
         val importInfo = irGraph.importInfoForEachNode(dynamicVariables = dynamicVariables)
         var containsControlflow = false
-        val controlflowOps = setOf("while","enter","if","switch","next_iteration","merge","exit","loop_cond")
+        val controlflowOps = setOf("select","while","enter","if","switch","next_iteration","merge","exit","loop_cond")
         for (it in importInfo.values) {
             if (controlflowOps.contains(it.second.name)) {
                 containsControlflow = true

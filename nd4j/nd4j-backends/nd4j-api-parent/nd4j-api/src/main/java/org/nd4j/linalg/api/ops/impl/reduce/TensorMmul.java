@@ -202,6 +202,50 @@ public class TensorMmul extends DynamicCustomOp {
         return result;
     }
 
+    @Override
+    public void configureFromArguments() {
+        if(!iArguments.isEmpty()) {
+            long numDimensionsX = iArguments.get(0);
+            List<Long> xDims = new ArrayList<>();
+            List<Long> yDims = new ArrayList<>();
+            for(int i = 0; i < numDimensionsX; i++) {
+                xDims.add(iArguments.get(i));
+            }
+
+            long numDimensionsY = iArguments.get((int) numDimensionsX + 1);
+            for(int i = 0; i < numDimensionsY; i++) {
+                yDims.add(i + numDimensionsX + 1);
+            }
+
+
+            this.axes = new int[][]{Ints.toArray(xDims),Ints.toArray(yDims)};
+        }
+
+
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        //ignore dimensionsX,Y these will be initialized in configureFromArguments
+        MMulTranspose.MMulTransposeBuilder mMulTransposeBuilder = MMulTranspose.builder();
+        if(properties.containsKey("transposeX")) {
+            Boolean transposeX = getBooleanFromProperty("transposeX",properties);
+            mMulTransposeBuilder.transposeA(transposeX);
+        }
+
+        if(properties.containsKey("transposeZ")) {
+            Boolean transposeZ = getBooleanFromProperty("transposeZ",properties);
+            mMulTransposeBuilder.transposeResult(transposeZ);
+        }
+
+        if(properties.containsKey("transposeY")) {
+            Boolean transposeY = getBooleanFromProperty("transposeY",properties);
+            mMulTransposeBuilder.transposeB(transposeY);
+        }
+
+        this.mMulTranspose = mMulTransposeBuilder.build();
+
+    }
 
     @Override
     public Op.Type opType() {

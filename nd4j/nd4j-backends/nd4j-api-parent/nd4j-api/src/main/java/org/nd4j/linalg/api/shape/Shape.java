@@ -3804,6 +3804,11 @@ public class Shape {
      */
     public static long[] reductionShape(INDArray x, int[] dimension, boolean newFormat, boolean keepDims){
         boolean wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == x.rank();
+        for(int i = 0; i < dimension.length; i++) {
+            if(dimension[i] < 0)
+                dimension[i] += x.rank();
+        }
+
         long[] retShape;
         if(!newFormat) {
             retShape = wholeArray ? new long[] {1, 1} : ArrayUtil.removeIndex(x.shape(), dimension);
@@ -3826,6 +3831,8 @@ public class Shape {
                     }
                 } else {
                     for (int d : dimension) {
+                        if(d < 0)
+                             d += dimension.length;
                         retShape[d] = 1;
                     }
                 }

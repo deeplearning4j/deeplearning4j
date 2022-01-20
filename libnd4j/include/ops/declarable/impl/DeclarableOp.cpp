@@ -300,12 +300,14 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
 
           if (canUseFastPath) ctx.setOutputArray(pair.second, var->getNDArray());
 
-          if (!shape::equalsSoft(out, shape) || shape::isEmpty(out) != shape::isEmpty(shape)) {
+          //note we only compare the shapes here not the shape info which may
+          //have extra information attached to it. We compare data types and empty status down below.
+          //sometimes empty strides (that don't actually matter) can cause errors, we omit this on purpose
+          if (!shape::equalsSoft(out, shape)) {
             auto eShape = ShapeUtils::shapeAsString(out);
             auto aShape = ShapeUtils::shapeAsString(shape);
             auto eShapeInfoString = ShapeUtils::shapeInfoAsString(out);
             auto aShapeInfoString = ShapeUtils::shapeInfoAsString(shape);
-            // outSha->destroy();
             delete outSha;
 
             sd_printf(
@@ -313,8 +315,18 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
                 "shape info %s\n",
                 eShape.c_str(), aShape.c_str(), pair.second, eShapeInfoString.c_str(), aShapeInfoString.c_str());
 
+            throw std::runtime_error("Expected vs provided shapes mismatch first case");
+          }
+
+
+          if (shape::isEmpty(out) != shape::isEmpty(shape)) {
+            sd_printf(
+                "First array empty: %d Second shape empty: %d\n",shape::isEmpty(out), shape::isEmpty(shape));
+
             throw std::runtime_error("Expected vs provided shapes mismatch");
           }
+
+
 
           // checking out data type equality
           if (ArrayOptions::dataType(out) != ArrayOptions::dataType(shape)) {
@@ -335,7 +347,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
           int shapeEquals = shape::equalsSoft(out, array->shapeInfo());
           int arrayEmpty = array->isEmpty();
           // checking out shape equality
-          if (!shapeEquals || arrayEmpty) {
+          if (!shapeEquals) {
             auto eShape = ShapeUtils::shapeAsString(out);
             auto aShape = ShapeUtils::shapeAsString(array->shapeInfo());
             auto eShapeInfoString = ShapeUtils::shapeInfoAsString(out);
@@ -635,8 +647,8 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       auto p = fp->profile();
       if (p != nullptr) {
         sd::LongType memoryAfter = block->workspace() == nullptr
-                                       ? 0L
-                                       : block->workspace()->getSpilledSize() + block->workspace()->getUsedSize();
+                                   ? 0L
+                                   : block->workspace()->getSpilledSize() + block->workspace()->getUsedSize();
         sd::LongType memoryUsed = memoryAfter - memoryBefore;
         p->nodeById(block->nodeId())->setPreparationTime(prepTime);
         p->nodeById(block->nodeId())->setExecutionTime(outerTime);
