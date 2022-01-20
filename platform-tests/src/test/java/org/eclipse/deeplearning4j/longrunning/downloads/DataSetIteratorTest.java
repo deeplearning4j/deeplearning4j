@@ -17,7 +17,7 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.eclipse.deeplearning4j.dl4jcore.datasets.iterator;
+package org.eclipse.deeplearning4j.longrunning.downloads;
 
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
@@ -67,6 +67,7 @@ import org.junit.jupiter.api.DisplayName;
 @NativeTag
 @Tag(TagNames.LARGE_RESOURCES)
 @Tag(TagNames.LONG_TEST)
+@Disabled
 class DataSetIteratorTest extends BaseDL4JTest {
 
 

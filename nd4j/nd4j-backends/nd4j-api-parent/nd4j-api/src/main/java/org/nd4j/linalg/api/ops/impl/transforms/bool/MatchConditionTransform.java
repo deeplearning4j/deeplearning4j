@@ -101,11 +101,15 @@ public class MatchConditionTransform extends BaseTransformBoolOp {
 
     @Override
     public Type getOpType() {
+        if(y == null)
+            return Type.TRANSFORM_BOOL;
         return Type.PAIRWISE_BOOL;
     }
 
     @Override
     public Type opType() {
+        if(y == null)
+            return Type.TRANSFORM_BOOL;
         return Type.PAIRWISE_BOOL;
     }
 
