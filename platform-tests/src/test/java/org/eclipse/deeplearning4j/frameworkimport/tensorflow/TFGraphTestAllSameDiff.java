@@ -40,8 +40,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 @Slf4j
-@Tag(TagNames.LONG_TEST)
-@Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.TENSORFLOW)
 public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
 
     private static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.SAMEDIFF;

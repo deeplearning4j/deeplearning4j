@@ -2195,23 +2195,28 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 dims[i] = specifiedIdxDims.get(i);
             }
 
+            /**
+             * TODO: Resolve both indexing testSpecifiedIndexPut and
+             * the need to persist a difference reference.
+             * Note: https://github.com/eclipse/deeplearning4j/pull/9552
+             */
             NdIndexIterator iter = new NdIndexIterator(counts);
             while(iter.hasNext()) {
                 long[] iterationIdxs = iter.next();
+                long[] putIndices = new long[iterationIdxs.length];
                 for(int i = 0; i < iterationIdxs.length; i++) {
                     long[] indicesForDim = specifiedIdxs.get(i);
+                    putIndices[i] = (int) indicesForDim[(int)iterationIdxs[i]];
                     destinationIndices[dims[i]] = NDArrayIndex.point(indicesForDim[(int)iterationIdxs[i]]);
                     sourceIndices[dims[i]] = NDArrayIndex.point(iterationIdxs[i]);
                 }
 
-                INDArray sourceView = element.get(sourceIndices);
-                INDArray destinationView = this.get(destinationIndices);
-                destinationView.assign(sourceView);
+                get(destinationIndices).assign(element.get(sourceIndices));
             }
 
+            return this;
 
         }
-        return this;
     }
 
     @Override

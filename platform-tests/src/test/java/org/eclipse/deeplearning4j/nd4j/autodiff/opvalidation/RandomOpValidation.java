@@ -233,7 +233,7 @@ public class RandomOpValidation extends BaseOpValidation {
                         rand = sd.random().normalTruncated(1, 2, DataType.DOUBLE, shape);
                         checkFn = in -> {
                             double mean = in.meanNumber().doubleValue();
-                            double stdev = in.std(true).getDouble(0);
+                            double stdev = in.std(false).getDouble(0);
                             if (in.length() == 1 || (Math.abs(mean - 1) < 0.1 && Math.abs(stdev - 2) < 0.2))
                                 return null;
                             return "Failed: mean = " + mean + ", stdev = " + stdev;

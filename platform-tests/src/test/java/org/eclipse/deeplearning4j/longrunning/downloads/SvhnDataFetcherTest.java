@@ -39,6 +39,7 @@ import org.nd4j.common.tests.tags.TagNames;
 @DisplayName("Svhn Data Fetcher Test")
 @Tag(TagNames.FILE_IO)
 @NativeTag
+@Tag(TagNames.DOWNLOADS)
 class SvhnDataFetcherTest extends BaseDL4JTest {
 
     @Override

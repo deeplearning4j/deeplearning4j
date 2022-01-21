@@ -41,7 +41,7 @@ import java.util.concurrent.CountDownLatch;
 
 @NativeTag
 @Tag(TagNames.RNG)
-@Disabled
+@Tag(TagNames.DOWNLOADS)
 public class RandomTests extends BaseDL4JTest {
 
     @Test

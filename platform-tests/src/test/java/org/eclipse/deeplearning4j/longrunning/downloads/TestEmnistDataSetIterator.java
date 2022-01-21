@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.eclipse.deeplearning4j.dl4jcore.datasets.iterator;
+package org.eclipse.deeplearning4j.longrunning.downloads;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
@@ -42,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @NativeTag
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.NDARRAY_ETL)
+@Disabled
 public class TestEmnistDataSetIterator extends BaseDL4JTest {
 
 

@@ -21,6 +21,7 @@ package org.eclipse.deeplearning4j.nd4j.autodiff.optimization;
 
 import org.eclipse.deeplearning4j.nd4j.autodiff.optimization.util.OptTestConfig;
 import org.eclipse.deeplearning4j.nd4j.autodiff.optimization.util.OptimizationTestUtil;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -30,6 +31,7 @@ import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.autodiff.samediff.optimize.optimizations.ConstantFunctionOptimizations;
 import org.nd4j.autodiff.samediff.optimize.optimizations.IdentityFunctionOptimizations;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
@@ -41,6 +43,7 @@ import java.util.Collections;
 
 import static org.junit.Assert.*;
 
+@Tag(TagNames.DL4J_OLD_API)
 public class TestOptimization extends BaseNd4jTestWithBackends {
     @TempDir
     Path tempDir;

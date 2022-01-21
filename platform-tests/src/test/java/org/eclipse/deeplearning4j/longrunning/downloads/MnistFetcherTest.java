@@ -45,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.NDARRAY_ETL)
 @Disabled
+@Tag(TagNames.DOWNLOADS)
 class MnistFetcherTest extends BaseDL4JTest {
 
 

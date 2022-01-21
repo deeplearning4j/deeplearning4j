@@ -32,6 +32,7 @@ import org.nd4j.autodiff.listeners.checkpoint.CheckpointListener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -48,7 +49,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+@Tag(TagNames.SAMEDIFF)
+@NativeTag
 public class CheckpointListenerTest extends BaseNd4jTestWithBackends {
     @TempDir Path testDir;
 
