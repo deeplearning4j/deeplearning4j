@@ -24,8 +24,10 @@ package org.eclipse.deeplearning4j.frameworkimport.frameworkimport.onnx
 import onnx.Onnx
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.nd4j.autodiff.samediff.SameDiff
+import org.nd4j.common.tests.tags.TagNames
 import org.nd4j.common.util.ArrayUtil
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
@@ -41,7 +43,7 @@ import kotlin.test.assertTrue
 data class OnnxGraphInput(val graphDef: Onnx.GraphProto, val inputNames: List<String>, val outputNames: List<String>,
                           val inputArrays: Map<String, INDArray>, val dynamicArrays: Map<String, INDArray>)
 
-@Disabled("Onnxruntime appears broken for some reason. Op implementations are marked as not found.")
+@Tag(TagNames.ONNX)
 class TestOnnxIR {
     val declarations = OnnxOpDeclarations
 

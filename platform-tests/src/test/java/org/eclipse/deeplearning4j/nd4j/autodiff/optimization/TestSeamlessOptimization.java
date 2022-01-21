@@ -20,6 +20,7 @@
 package org.eclipse.deeplearning4j.nd4j.autodiff.optimization;
 
 import lombok.Data;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -33,6 +34,7 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -51,6 +53,7 @@ import java.util.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+@Tag(TagNames.DL4J_OLD_API)
 public class TestSeamlessOptimization extends BaseNd4jTestWithBackends {
 
     @TempDir

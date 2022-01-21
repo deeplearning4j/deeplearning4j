@@ -67,7 +67,7 @@ public class MatchCondition extends BaseReduceLongOp {
         this.mode = condition.conditionType();
         this.eps = eps;
 
-        this.extraArgs = new Object[] {compare, eps, (double) mode.index};
+        this.extraArgs = new Object[] {compare, eps, mode.index};
 
         defineDimensions(dimensions);
     }

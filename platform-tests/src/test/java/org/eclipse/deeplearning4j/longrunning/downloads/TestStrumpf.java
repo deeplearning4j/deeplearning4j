@@ -25,12 +25,14 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.junit.jupiter.api.Disabled;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.resources.Resources;
 import org.nd4j.common.resources.strumpf.StrumpfResolver;
+import org.nd4j.common.tests.tags.TagNames;
 
 
 import java.io.BufferedReader;
@@ -42,7 +44,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-@Disabled
+@Tag(TagNames.DOWNLOADS)
 public class TestStrumpf {
 
 

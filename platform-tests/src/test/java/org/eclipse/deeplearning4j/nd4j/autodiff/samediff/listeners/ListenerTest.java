@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.autodiff.samediff.listeners;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.listeners.At;
@@ -37,6 +38,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.Evaluation.Metric;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
@@ -61,7 +63,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@Tag(TagNames.SAMEDIFF)
 public class ListenerTest extends BaseNd4jTestWithBackends {
 
 

@@ -67,7 +67,7 @@ import org.junit.jupiter.api.DisplayName;
 @NativeTag
 @Tag(TagNames.LARGE_RESOURCES)
 @Tag(TagNames.LONG_TEST)
-@Disabled
+@Tag(TagNames.DOWNLOADS)
 class DataSetIteratorTest extends BaseDL4JTest {
 
 

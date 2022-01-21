@@ -43,8 +43,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.target>1.7</maven.compiler.target>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
         <backend.artifactId>nd4j-native</backend.artifactId>
@@ -61,12 +59,17 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <java.version>1.8</java.version>
         <maven-shade-plugin.version>3.1.1</maven-shade-plugin.version>
-        <test.heap.size>9g</test.heap.size>
-        <test.offheap.size>9g</test.offheap.size>
+        <test.heap.size>4g</test.heap.size>
+        <test.offheap.size>4g</test.offheap.size>
         <test.nogc>true</test.nogc>
         <dokka.version>1.4.30</dokka.version>
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
+        <surefire.forks>4</surefire.forks>
+        <surefire.threads>1</surefire.threads>
+        <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
+        <excludedTests>large-resources,downloads,long-running-test,large-resources</excludedTests>
+        <preload>/usr/local/lib/libjemalloc.so.2</preload>
     </properties>
 
     <dependencies>
@@ -512,11 +515,13 @@
                     </dependency>
                 </dependencies>
                 <configuration>
+                    <groups>${tests}</groups>
+                    <excludedGroups>${excludedTests}</excludedGroups>
                     <trimStackTrace>false</trimStackTrace>
                     <reuseForks>false</reuseForks>
                     <environmentVariables>
                         <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
-                        <LD_PRELOAD>/usr/local/lib/libjemalloc.so.2</LD_PRELOAD>
+                        <LD_PRELOAD>${preload}</LD_PRELOAD>
                         <MALLOC_CONF>tcache:false</MALLOC_CONF>
                     </environmentVariables>
                     <shutdown>kill</shutdown>
@@ -533,8 +538,8 @@
                     <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
                     <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
                     <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
-                    <forkCount>2</forkCount>
-                    <threadCount>4</threadCount>
+                    <forkCount>${surefire.forks}</forkCount>
+                    <threadCount>${surefire.threads}</threadCount>
                     <perCoreThreadCount>false</perCoreThreadCount>
                 </configuration>
             </plugin>

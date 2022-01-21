@@ -22,6 +22,7 @@ package org.nd4j.samediff.frameworkimport.tensorflow
 
 
 import org.apache.commons.io.IOUtils
+import org.eclipse.deeplearning4j.frameworkimport.frameworkimport.tensorflow.GraphInput
 import org.junit.jupiter.api.Test
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.common.io.ClassPathResource
@@ -81,13 +82,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("tensor" to xVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("tensor"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "gruCell" -> {
@@ -237,13 +240,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("x" to xVal,"h_prev" to hPrevVal,"w_ru" to wRuVal,"w_c" to wcVal,"b_ru" to bRuVal,"b_c" to bcVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("x","h_prev","w_ru","w_c","b_ru","b_c"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "lstmBlockCell" -> {
@@ -446,13 +451,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("x" to xVal,"cs_prev" to csPrevVal,"h_prev" to hPrevVal,"w" to wVal,"wci" to wciVal,"wcf" to wcfVal,"wco" to wcoVal,"b" to bVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("x","cs_prev","h_prev","w","wci","wcf","wco","b"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "lstmBlock" -> {
@@ -670,13 +677,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("seq_len_max" to seqLenVal,"x" to xVal,"cs_prev" to csPrevVal,"h_prev" to hPrevVal,"w" to wVal,"wci" to wciVal,"wcf" to wcfVal,"wco" to wcoVal,"b" to bVal)
 
 
-                return listOf(GraphInput(
+                return listOf(
+                    GraphInput(
                     graphDef = graphDef,
                     inputNames = listOf("seq_len_max","x","cs_prev","h_prev","w","wci","wcf","wco","b"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             } else { //BlockLSTMV2
                 val seqLenMax = NodeDef {
                     name = "seq_len_max"
@@ -886,13 +895,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("seq_len_max" to seqLenVal,"x" to xVal,"cs_prev" to csPrevVal,"h_prev" to hPrevVal,"w" to wVal,"wci" to wciVal,"wcf" to wcfVal,"wco" to wcoVal,"b" to bVal)
 
 
-                return listOf(GraphInput(
+                return listOf(
+                    GraphInput(
                     graphDef = graphDef,
                     inputNames = listOf("seq_len_max","x","cs_prev","h_prev","w","wci","wcf","wco","b"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             }
         }
 
@@ -942,13 +953,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to xVal,"delta" to deltaVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("input","delta"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -996,13 +1009,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to xVal,"contrast_factor" to deltaVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("input","contrast_factor"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "rgb_to_hsv" -> {
@@ -1040,13 +1055,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to xVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("input"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "reverse_sequence" -> {
@@ -1106,13 +1123,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to xVal,"seq_lengths" to yVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("input","seq_lengths"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
         "resize_nearest_neighbor" -> {
             val images = NodeDef {
@@ -1162,13 +1181,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("images" to xVal,"size" to yVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("images","size"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
         "resize_bilinear" -> {
             val images = NodeDef {
@@ -1218,13 +1239,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("images" to xVal,"size" to yVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("images","size"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "resize_bicubic" -> {
@@ -1275,13 +1298,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("images" to xVal,"size" to yVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("images","size"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "resize_area" -> {
@@ -1332,13 +1357,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("images" to xVal,"size" to yVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("images","size"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -1398,13 +1425,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("input" to xVal,"paddings" to yVal)
 
 
-                mirrorPadRet.add(GraphInput(
+                mirrorPadRet.add(
+                    GraphInput(
                     graphDef = graphDef,
                     inputNames = listOf("input","paddings"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             }
 
             return mirrorPadRet
@@ -1458,13 +1487,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("x" to xVal,"y" to yVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("x","y"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -1531,13 +1562,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("values" to valuesVal,"value_range" to valueRangeVal,"nbins" to nbinsVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("values","value_range","nbins"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -1591,13 +1624,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("images" to imagesVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("images"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "crop_and_resize" -> {
@@ -1677,13 +1712,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("images" to imagesVal,"boxes" to boxesVal,"boxesI" to boxesIVal,"cropSize" to cropSizeVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("images","boxes","boxesI","cropSize"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -1733,13 +1770,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("s0" to s0Val,"s1" to s1Val)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("s0","s1"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "broadcast_dynamic_shape" -> {
@@ -1788,13 +1827,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("s0" to s0Val,"s1" to s1Val)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("s0","s1"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -1848,13 +1889,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("input"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -1983,13 +2026,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             val inputs = mapOf("x" to xVal,"scale" to scaleVal,"mean" to meanVal,"offset" to offsetVal,"variance" to varianceVal)
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("x","scale","offset","mean","variance"),
                 outputNames = listOf("y","batch_mean","batch_variance"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -2061,13 +2106,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"filter" to filterVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("input","filter"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "avgpool3dnew","maxpool3dnew" -> {
@@ -2116,13 +2163,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("input"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "draw_bounding_boxes" -> {
@@ -2182,13 +2231,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             val inputs = mapOf("images" to imagesVal,"boxes" to boxesVal,"colors" to colorVal)
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("images","boxes","colors"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -2227,13 +2278,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("shape" to shapeVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("shape"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -2297,13 +2350,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("condition" to conditionVal,"t" to tVal,"e" to eVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("condition","t","e"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -2354,13 +2409,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"threshold" to thresholdVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("input","threshold"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "strided_slice" -> {
@@ -2440,13 +2497,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"begin" to beginVal, "end" to endVal,"strides" to strideVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("input","begin","end","strides"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
         "bincount" -> {
             val input = NodeDef {
@@ -2506,13 +2565,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"size" to sizeVal, "weights" to weightVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("input","size","weights"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -2563,13 +2624,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"shape" to shapeVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("input","shape"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -2630,13 +2693,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("condition" to conditionVal,"t" to tVal,"e" to eVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("condition","t","e"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "biasadd" -> {
@@ -2683,13 +2748,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"bias" to biasVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("input","bias"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
         "dilation2d" -> {
             val input = NodeDef {
@@ -2749,13 +2816,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"filter" to filterVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("input","filter"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -2816,13 +2885,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"filter" to filterVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("input","filter"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -2883,13 +2954,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"filter" to filterVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("input","filter"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -2939,13 +3012,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("input" to inputVal)
 
 
-                return listOf(GraphInput(
+                return listOf(
+                    GraphInput(
                     graphDef = graphDef,
                     inputNames = listOf("input"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             } else { //MaxPoolV2
                 val input = NodeDef {
                     name = "input"
@@ -3009,13 +3084,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("input" to inputVal,"ksize" to ksizeVal,"stride" to strideVal)
 
 
-                return listOf(GraphInput(
+                return listOf(
+                    GraphInput(
                     graphDef = graphDef,
                     inputNames = listOf("input","ksize","stride"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             }
 
         }
@@ -3072,12 +3149,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"paddings" to paddingsVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input","paddings"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
         }
 
@@ -3152,12 +3231,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to tVal,"block_shape" to blockShapeVal,"crops" to cropsVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input","block_shape","crops"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
         }
 
@@ -3231,12 +3312,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to tVal,"block_shape" to blockShapeVal,"paddings" to paddingsVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input","block_shape","paddings"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
         }
 
@@ -3292,12 +3375,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to tVal,"crops" to cropsVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input","crops"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
         }
 
@@ -3360,12 +3445,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to tVal,"begin" to beginVal,"size" to sizeVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input","begin","size"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
         }
 
@@ -3425,12 +3512,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("t" to tVal,"clip_value_min" to clipValueMinVal,"clip_value_max" to clipValueMaxVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("t","clip_value_min","clip_value_max"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
         }
 
@@ -3473,12 +3562,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("value" to valuesVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("value"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
         }
 
@@ -3548,12 +3639,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input","input2"),
                 outputNames = listOf("out0","out1"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
         }
 
@@ -3631,12 +3724,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input1" to input1Val,"input2" to input2Val)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input1","input2"),
                 outputNames = listOf("out0","out1"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
         }
 
@@ -3716,12 +3811,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("indices" to indicesVal,"indices2" to indices2Val,"data0" to dataVal,"data1" to data2Val)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("indices","indices2","data0","data1"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
         }
 
@@ -3796,12 +3893,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("data" to dataVal,"partitions" to partitionsVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("data","partitions"),
                 outputNames = listOf("out0","out1"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
         }
 
@@ -3891,12 +3990,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("split_dim" to splitDimVal,"value" to valuesVal,"size_splits" to sizeSplitsVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("value","size_splits","split_dim"),
                 outputNames = listOf("out0","out1"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
         }
 
@@ -3947,12 +4048,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("split_dim" to concatDimVal,"value" to valuesVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("split_dim","value"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
         }
 
@@ -4004,13 +4107,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
                     val inputs = mapOf("a" to aVal,"b" to bVal)
-                    mmulInput.add(GraphInput(
+                    mmulInput.add(
+                        GraphInput(
                         graphDef =graphDef,
                         inputNames = listOf("a","b"),
                         outputNames = listOf("output"),
                         inputArrays = inputs,
                         dynamicArrays = inputs
-                    ))
+                    )
+                    )
                 }
             }
 
@@ -4205,12 +4310,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("params" to paramsVal,"indices" to indicesVal.dup())
 
 
-                return listOf(GraphInput(
+                return listOf(
+                    GraphInput(
                     graphDef =graphDef, inputNames = listOf("params","indices"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             } else {
                 val params = NodeDef {
                     name = "params"
@@ -4271,12 +4378,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("params" to paramsVal,"indices" to indicesVal.dup(),"axis" to axisVal)
 
 
-                return listOf(GraphInput(
+                return listOf(
+                    GraphInput(
                     graphDef =graphDef, inputNames = listOf("params","indices","axis"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             }
 
 
@@ -4329,12 +4438,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input","input2"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -4376,12 +4487,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -4430,12 +4543,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input","input2"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "merge" -> {
@@ -4483,12 +4598,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input","input2"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "mergeadd" -> {
@@ -4541,12 +4658,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input","input2"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "concat" -> {
@@ -4611,12 +4730,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
 
 
-                return listOf(GraphInput(
+                return listOf(
+                    GraphInput(
                     graphDef =graphDef, inputNames = listOf("input","input2"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             } else { //ConcatV2
                 val concatDim = NodeDef {
                     name = "concat_dim"
@@ -4678,12 +4799,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
 
 
-                return listOf(GraphInput(
+                return listOf(
+                    GraphInput(
                     graphDef =graphDef, inputNames = listOf("input","input2"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             }
 
         }
@@ -4722,12 +4845,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "toggle_bits","invert_permutation" -> {
@@ -4761,12 +4886,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -4821,12 +4948,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"axis" to axisVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input","axis"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "roll" -> {
@@ -4897,12 +5026,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"shift" to shiftVal,"axis" to axisVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input","shift","axis"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -4958,12 +5089,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"multiples" to multiplesVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input","multiples"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "leakyrelu" -> {
@@ -5005,12 +5138,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("a" to aVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("a"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
         "betainc" -> {
             val a = NodeDef {
@@ -5073,12 +5208,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("a" to aVal,"b" to bVal,"x" to xVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("a","b","x"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
         "top_k" -> {
             if(tensorflowOpDef.name == "TopK") {
@@ -5121,12 +5258,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("input" to xVal)
 
 
-                return listOf(GraphInput(
+                return listOf(
+                    GraphInput(
                     graphDef =graphDef, inputNames = listOf("input"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             } else { //TopKV2
                 val input = NodeDef {
                     name = "input"
@@ -5181,12 +5320,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("input" to xVal)
 
 
-                return listOf(GraphInput(
+                return listOf(
+                    GraphInput(
                     graphDef =graphDef, inputNames = listOf("input"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             }
 
         }
@@ -5228,12 +5369,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             val inputs = mapOf("input" to xVal)
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "Assert" -> {
@@ -5283,13 +5426,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             val inputs = mapOf("condition" to xVal)
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("condition"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -5327,12 +5472,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             val inputs = mapOf("input" to xVal)
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "exit" -> {
@@ -5367,12 +5514,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             val inputs = mapOf("input" to xVal)
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "expand_dims" -> {
@@ -5423,12 +5572,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             val inputs = mapOf("input" to xVal)
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("input"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "non_max_suppression","non_max_suppression_v3" -> {
@@ -5498,13 +5649,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
                 val inputs = mapOf("overlaps" to overlapsVal,"scores" to scoresVal)
 
-                return listOf(GraphInput(
+                return listOf(
+                    GraphInput(
                     graphDef = graphDef,
                     inputNames = listOf("overlaps","scores"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             }
             else if(inputFrameworkOpName == "NonMaxSuppressionV2") {
                 val overlaps = NodeDef {
@@ -5587,13 +5740,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
                 val inputs = mapOf("overlaps" to overlapsVal,"scores" to scoresVal)
 
-                return listOf(GraphInput(
+                return listOf(
+                    GraphInput(
                     graphDef = graphDef,
                     inputNames = listOf("overlaps","scores"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             } else {
                 //V3 and later
                 val overlaps = NodeDef {
@@ -5691,13 +5846,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
                 val inputs = mapOf("overlaps" to overlapsVal,"scores" to scoresVal)
 
-                return listOf(GraphInput(
+                return listOf(
+                    GraphInput(
                     graphDef = graphDef,
                     inputNames = listOf("overlaps","scores"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             }
         }
 
@@ -5797,14 +5954,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             val inputs = mapOf("overlaps" to overlapsVal,"scores" to scoresVal)
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = graphDef,
                 inputNames = listOf("overlaps","scores"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
 
-            ))
+            )
+            )
         }
 
         "nth_element" -> {
@@ -5862,12 +6021,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
                 val inputs = mapOf("input" to xVal)
 
-                ret.add(GraphInput(
+                ret.add(
+                    GraphInput(
                     graphDef =graphDef, inputNames = listOf("input"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             }
 
             return ret
@@ -5907,12 +6068,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("x" to xVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("x"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
 
@@ -5954,12 +6117,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal)
 
 
-            retSolve.add(GraphInput(
+            retSolve.add(
+                GraphInput(
                 graphDef = graphDef, inputNames = listOf("input"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
 
             return retSolve
@@ -6016,12 +6181,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("input" to inputVal,"diagonal" to diagonalVal)
 
 
-            retSolve.add(GraphInput(
+            retSolve.add(
+                GraphInput(
                 graphDef = graphDef, inputNames = listOf("input","diagonal"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
 
             return retSolve
@@ -6081,12 +6248,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("a" to aVal,"b" to bVal)
 
 
-                retSolve.add(GraphInput(
+                retSolve.add(
+                    GraphInput(
                     graphDef = graphDef, inputNames = listOf("a","b"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             }
 
             return retSolve
@@ -6138,12 +6307,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("x" to xVal)
 
 
-                return listOf(GraphInput(
+                return listOf(
+                    GraphInput(
                     graphDef = graphDef, inputNames = listOf("x"),
                     outputNames = listOf("finalResult"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
 
             } else {
                 val graphDef = GraphDef {
@@ -6159,12 +6330,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("x" to xVal)
 
 
-                return listOf(GraphInput(
+                return listOf(
+                    GraphInput(
                     graphDef =graphDef, inputNames = listOf("x"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             }
         }
 
@@ -6202,12 +6375,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("x" to xVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("x"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "matrix_inverse" -> {
@@ -6243,12 +6418,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("x" to xVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("x"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "in_top_k" -> {
@@ -6303,12 +6480,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("x" to xVal,"predictions" to predictionsArr)
 
 
-                return listOf(GraphInput(
+                return listOf(
+                    GraphInput(
                     graphDef =graphDef, inputNames = listOf("x","predictions"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             } else {
                 val tensorNode = NodeDef {
                     name = "x"
@@ -6374,12 +6553,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("x" to xVal,"predictions" to predictionsArr)
 
 
-                return listOf(GraphInput(
+                return listOf(
+                    GraphInput(
                     graphDef =graphDef, inputNames = listOf("x","predictions"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             }
 
 
@@ -6478,12 +6659,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("indices" to indicesVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("indices"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "cross" -> {
@@ -6535,12 +6718,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("a" to aVal,"b" to bVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("a","b"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "transpose" ->  {
@@ -6598,12 +6783,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("x" to xVal)
 
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("x"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
         }
         "relu", "relu6" -> {
@@ -6631,7 +6818,8 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             val inputs = mapOf("x" to xVal)
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = GraphDef {
                     Node(tensorNode)
                     Node(opNode)
@@ -6639,7 +6827,8 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "depth_to_space","space_to_depth" -> {
@@ -6673,7 +6862,8 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             val inputs = mapOf("x" to xVal)
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = GraphDef {
                     Node(tensorNode)
                     Node(opNode)
@@ -6681,7 +6871,8 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "softmax","digamma","diag","diag_part","lgamma" -> {
@@ -6709,7 +6900,8 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             val inputs = mapOf("x" to xVal)
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef = GraphDef {
                     Node(tensorNode)
                     Node(opNode)
@@ -6717,7 +6909,8 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "cumsum","cumprod" -> {
@@ -6782,12 +6975,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
                     val inputs = mapOf("x" to xVal)
-                    ret.add(GraphInput(
+                    ret.add(
+                        GraphInput(
                         graphDef =graphDef, inputNames = inputNames,
                         outputNames = listOf("output"),
                         inputArrays = inputs,
                         dynamicArrays = inputs
-                    ))
+                    )
+                    )
                 }
             }
 
@@ -6834,11 +7029,13 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("data" to Nd4j.linspace(1,4,4).castTo(
                 org.nd4j.linalg.api.buffer.DataType.DOUBLE
             ),"condition" to Nd4j.ones(2).addi(1).castTo(org.nd4j.linalg.api.buffer.DataType.BOOL))
-            return listOf(GraphInput(graphDef = graphDef,
+            return listOf(
+                GraphInput(graphDef = graphDef,
                 inputNames = listOf("condition","data"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
-                dynamicArrays = inputs))
+                dynamicArrays = inputs)
+            )
         }
 
 
@@ -6872,10 +7069,12 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("x" to Nd4j.linspace(1,4,4).castTo(
                 org.nd4j.linalg.api.buffer.DataType.DOUBLE
             ))
-            return listOf(GraphInput(graphDef = graphDef,inputNames = listOf("x"),
+            return listOf(
+                GraphInput(graphDef = graphDef,inputNames = listOf("x"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
-                dynamicArrays = inputs))
+                dynamicArrays = inputs)
+            )
         }
 
 
@@ -6920,10 +7119,12 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 Node(opNode)
             }
 
-            return listOf(GraphInput(graphDef = graphDef,inputNames = listOf("x","y"),
+            return listOf(
+                GraphInput(graphDef = graphDef,inputNames = listOf("x","y"),
                 outputNames = listOf("and"),
                 inputArrays = inputs,
-                dynamicArrays = inputs))
+                dynamicArrays = inputs)
+            )
         }
 
 
@@ -6967,10 +7168,12 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 Node(opNode)
             }
 
-            return listOf(GraphInput(graphDef = graphDef,inputNames = listOf("x","y"),
+            return listOf(
+                GraphInput(graphDef = graphDef,inputNames = listOf("x","y"),
                 outputNames = listOf("and"),
                 inputArrays = inputs,
-                dynamicArrays = inputs))
+                dynamicArrays = inputs)
+            )
         }
 
 
@@ -7017,10 +7220,12 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 Node(opNode)
             }
 
-            return listOf(GraphInput(graphDef = graphDef,inputNames = listOf("a","x"),
+            return listOf(
+                GraphInput(graphDef = graphDef,inputNames = listOf("a","x"),
                 outputNames = listOf("igamma"),
                 inputArrays = inputs,
-                dynamicArrays = inputs))
+                dynamicArrays = inputs)
+            )
         }
 
         "boolean_not" -> {
@@ -7052,10 +7257,12 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 Node(opNode)
             }
 
-            return listOf(GraphInput(graphDef = graphDef,inputNames = listOf("x"),
+            return listOf(
+                GraphInput(graphDef = graphDef,inputNames = listOf("x"),
                 outputNames = listOf("not"),
                 inputArrays = inputs,
-                dynamicArrays = inputs))
+                dynamicArrays = inputs)
+            )
         }
 
 
@@ -7093,11 +7300,13 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 org.nd4j.linalg.api.buffer.DataType.FLOAT
             ))
 
-            return listOf(GraphInput(graphDef = graphDef,
+            return listOf(
+                GraphInput(graphDef = graphDef,
                 inputNames = listOf("x"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
-                dynamicArrays = emptyMap()))
+                dynamicArrays = emptyMap())
+            )
         }
 
         "noop" -> {
@@ -7113,11 +7322,13 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 Node(opNode)
             }
 
-            return listOf(GraphInput(graphDef = graphDef,
+            return listOf(
+                GraphInput(graphDef = graphDef,
                 inputNames = listOf(),
                 outputNames = listOf(),
                 inputArrays = emptyMap(),
-                dynamicArrays = emptyMap()))
+                dynamicArrays = emptyMap())
+            )
         }
 
         "While" -> {
@@ -7146,10 +7357,12 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             val inputs = mapOf("x" to Nd4j.scalar(1.0))
 
-            return listOf(GraphInput(graphDef = graphDef,inputNames = listOf("x"),
+            return listOf(
+                GraphInput(graphDef = graphDef,inputNames = listOf("x"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
-                dynamicArrays = inputs))
+                dynamicArrays = inputs)
+            )
         }
 
         "unique_with_counts","unique" -> {
@@ -7193,10 +7406,12 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("x" to Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE),
                     "axis" to Nd4j.scalar(1).reshape(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT64))
 
-                return listOf(GraphInput(graphDef = graphDef,inputNames = listOf("x","axis"),
+                return listOf(
+                    GraphInput(graphDef = graphDef,inputNames = listOf("x","axis"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
-                    dynamicArrays = inputs))
+                    dynamicArrays = inputs)
+                )
             }
             else {
                 val opNode = NodeDef {
@@ -7217,10 +7432,12 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
                 val inputs = mapOf("x" to Nd4j.linspace(1,4,4).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE))
 
-                return listOf(GraphInput(graphDef = graphDef,inputNames = listOf("x"),
+                return listOf(
+                    GraphInput(graphDef = graphDef,inputNames = listOf("x"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
-                    dynamicArrays = inputs))
+                    dynamicArrays = inputs)
+                )
             }
 
         }
@@ -7268,9 +7485,11 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("x" to Nd4j.linspace(1,4,4).castTo(
                     org.nd4j.linalg.api.buffer.DataType.DOUBLE
                 ),"paddings" to Nd4j.ones(1,2).addi(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT32))
-                return listOf(GraphInput(graphDef = graphDef,inputNames = listOf("x","paddings"),outputNames = listOf("output"),
+                return listOf(
+                    GraphInput(graphDef = graphDef,inputNames = listOf("x","paddings"),outputNames = listOf("output"),
                     inputArrays = inputs,
-                    dynamicArrays = inputs))
+                    dynamicArrays = inputs)
+                )
             } else if(tensorflowOpDef.name == "PadV2"){
                 val tensorNode = NodeDef {
                     name = "x"
@@ -7332,10 +7551,12 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 val inputs = mapOf("x" to Nd4j.linspace(1,4,4).castTo(
                     org.nd4j.linalg.api.buffer.DataType.DOUBLE
                 ),"paddings" to Nd4j.ones(1,2).addi(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT32))
-                return listOf(GraphInput(graphDef = graphDef,inputNames = listOf("x","paddings"),
+                return listOf(
+                    GraphInput(graphDef = graphDef,inputNames = listOf("x","paddings"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
-                    dynamicArrays = inputs))
+                    dynamicArrays = inputs)
+                )
             } else {
                 throw IllegalArgumentException("Illegal mapping for padding op $tensorflowOpDef.name")
             }
@@ -7381,9 +7602,11 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val inputs = mapOf("x" to Nd4j.linspace(1,4,4).castTo(
                 org.nd4j.linalg.api.buffer.DataType.DOUBLE
             ),"shape" to Nd4j.ones(2).addi(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT32))
-            return listOf(GraphInput(graphDef = graphDef,inputNames = listOf("x","shape"),outputNames = listOf("output"),
+            return listOf(
+                GraphInput(graphDef = graphDef,inputNames = listOf("x","shape"),outputNames = listOf("output"),
                 inputArrays = inputs,
-                dynamicArrays = inputs))
+                dynamicArrays = inputs)
+            )
         }
 
         "reduce_logsumexp" -> {
@@ -7442,12 +7665,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             val inputs = mapOf("x" to xVal)
 
-            return listOf(GraphInput(
+            return listOf(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("x"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
         }
 
         "argmin", "argmax" -> {
@@ -7505,12 +7730,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
                 val inputs = mapOf("x" to xVal)
 
-                ret.add(GraphInput(
+                ret.add(
+                    GraphInput(
                     graphDef =graphDef, inputNames = listOf("x"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             }
 
             return ret
@@ -7568,12 +7795,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             val inputs = mapOf("x" to xVal)
 
-            ret.add(GraphInput(
+            ret.add(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("x"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
             return ret
         }
@@ -7644,12 +7873,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
                 val inputs = mapOf("shape" to shape,"updates" to updates,"indices" to indices)
 
-                ret.add(GraphInput(
+                ret.add(
+                    GraphInput(
                     graphDef =graphDef, inputNames = listOf("indices","updates","shape"),
                     outputNames = listOf("output"),
                     inputArrays = inputs,
                     dynamicArrays = inputs
-                ))
+                )
+                )
             }
 
 
@@ -7713,12 +7944,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val indices = Nd4j.create(floatArrayOf(1.0f,2.0f,3.0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
             val inputs = mapOf("data" to xVal,"segment_ids" to indices)
 
-            ret.add(GraphInput(
+            ret.add(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("data","segment_ids"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
 
             return ret
@@ -7795,12 +8028,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             val numSegments = Nd4j.scalar(2).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
             val inputs = mapOf("data" to xVal,"segment_ids" to indices,"num_segments" to numSegments)
 
-            ret.add(GraphInput(
+            ret.add(
+                GraphInput(
                 graphDef =graphDef, inputNames = listOf("data","segment_ids","num_segments"),
                 outputNames = listOf("output"),
                 inputArrays = inputs,
                 dynamicArrays = inputs
-            ))
+            )
+            )
 
 
             return ret

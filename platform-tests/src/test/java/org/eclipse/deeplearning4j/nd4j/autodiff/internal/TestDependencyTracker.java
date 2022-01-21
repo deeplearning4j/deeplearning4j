@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.autodiff.internal;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.internal.DependencyList;
@@ -27,6 +28,7 @@ import org.nd4j.autodiff.samediff.internal.DependencyTracker;
 import org.nd4j.autodiff.samediff.internal.IdentityDependencyTracker;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.tests.tags.NativeTag;
+import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,7 +37,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@Tag(TagNames.JAVA_ONLY)
 public class TestDependencyTracker extends BaseNd4jTestWithBackends {
 
 

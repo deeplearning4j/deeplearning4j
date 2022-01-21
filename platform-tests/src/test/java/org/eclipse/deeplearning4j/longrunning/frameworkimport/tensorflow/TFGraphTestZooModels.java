@@ -57,7 +57,7 @@ import java.util.stream.Stream;
 @Slf4j
 @Tag(TagNames.LONG_TEST)
 @Tag(TagNames.LARGE_RESOURCES)
-@Disabled
+@Tag(TagNames.DOWNLOADS)
 public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
     @TempDir
     static Path classTestDir;

@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 @NativeTag
 @Tag(TagNames.FILE_IO)
-@Disabled
+@Tag(TagNames.DOWNLOADS)
 public class ConcurrentDownloaderTest extends BaseDL4JTest {
 
     @Override

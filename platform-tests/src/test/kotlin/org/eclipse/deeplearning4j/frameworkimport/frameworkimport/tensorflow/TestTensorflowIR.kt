@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.samediff.frameworkimport.tensorflow
+package org.eclipse.deeplearning4j.frameworkimport.frameworkimport.tensorflow
 
 
 import org.apache.commons.io.FileUtils
@@ -54,11 +54,13 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.common.tests.tags.TagNames
+import org.nd4j.samediff.frameworkimport.tensorflow.*
 
 
 data class GraphInput(val graphDef: GraphDef,val inputNames: List<String>,val outputNames: List<String>,
                       val inputArrays: Map<String,INDArray>,val dynamicArrays: Map<String,INDArray>)
 
+@Tag(TagNames.TENSORFLOW)
 class TestTensorflowIR {
 
     val tensorflowOps =  {
@@ -733,7 +735,7 @@ class TestTensorflowIR {
                 val tensorNode = NodeDef {
                     name = "x"
                     op = "Placeholder"
-                    Attribute("dtype",AttrValue {
+                    Attribute("dtype", AttrValue {
                         type = DataType.DT_DOUBLE
                     })
                 }
@@ -743,7 +745,7 @@ class TestTensorflowIR {
                     Input("x")
                     op = tensorflowOpDef.name
                     name = "output"
-                    Attribute("T",AttrValue {
+                    Attribute("T", AttrValue {
                         type = DataType.DT_DOUBLE
                     })
                 }
@@ -777,7 +779,7 @@ class TestTensorflowIR {
                         val tensorNode = NodeDef {
                             name = "x"
                             op = "Placeholder"
-                            Attribute("dtype",AttrValue {
+                            Attribute("dtype", AttrValue {
                                 type = DataType.DT_DOUBLE
                             })
                         }
@@ -787,13 +789,13 @@ class TestTensorflowIR {
                             Input("dimensions")
                             op = tensorflowOpDef.name
                             name = "output"
-                            Attribute("T",AttrValue {
+                            Attribute("T", AttrValue {
                                 type = DataType.DT_DOUBLE
                             })
-                            Attribute("Tidx",AttrValue {
+                            Attribute("Tidx", AttrValue {
                                 type = DataType.DT_INT32
                             })
-                            Attribute("keep_dims",AttrValue {
+                            Attribute("keep_dims", AttrValue {
                                 b = keepDim
                             })
                         }
@@ -801,7 +803,7 @@ class TestTensorflowIR {
                         val tensorNode2 = NodeDef {
                             op = "Const"
                             name = "dimensions"
-                            Attribute("value",AttrValue {
+                            Attribute("value", AttrValue {
                                 tensor = TensorProto {
                                     Int32Data(dimensions)
                                     dtype = DataType.DT_INT32
@@ -810,7 +812,7 @@ class TestTensorflowIR {
                                     }
                                 }
                             })
-                            Attribute("dtype",AttrValue {
+                            Attribute("dtype", AttrValue {
                                 type = DataType.DT_INT32
                             })
                         }
@@ -847,7 +849,7 @@ class TestTensorflowIR {
                         val tensorNode = NodeDef {
                             name = "x"
                             op = "Placeholder"
-                            Attribute("dtype",AttrValue {
+                            Attribute("dtype", AttrValue {
                                 type = DataType.DT_BOOL
                             })
                         }
@@ -858,10 +860,10 @@ class TestTensorflowIR {
                             op = tensorflowOpDef.name
                             name = "output"
 
-                            Attribute("Tidx",AttrValue {
+                            Attribute("Tidx", AttrValue {
                                 type = DataType.DT_INT32
                             })
-                            Attribute("keep_dims",AttrValue {
+                            Attribute("keep_dims", AttrValue {
                                 b = keepDim
                             })
                         }
@@ -869,7 +871,7 @@ class TestTensorflowIR {
                         val tensorNode2 = NodeDef {
                             op = "Const"
                             name = "dimensions"
-                            Attribute("value",AttrValue {
+                            Attribute("value", AttrValue {
                                 tensor = TensorProto {
                                     Int32Data(dimensions)
                                     dtype = DataType.DT_INT32
@@ -878,7 +880,7 @@ class TestTensorflowIR {
                                     }
                                 }
                             })
-                            Attribute("dtype",AttrValue {
+                            Attribute("dtype", AttrValue {
                                 type = DataType.DT_INT32
                             })
                         }
@@ -913,7 +915,7 @@ class TestTensorflowIR {
                 val tensorNode = NodeDef {
                     name = "x"
                     op = "Placeholder"
-                    Attribute("dtype",AttrValue {
+                    Attribute("dtype", AttrValue {
                         type = DataType.DT_DOUBLE
                     })
                 }
@@ -921,7 +923,7 @@ class TestTensorflowIR {
                 val tensorNode2 = NodeDef {
                     op = "Placeholder"
                     name = "y"
-                    Attribute("dtype",AttrValue {
+                    Attribute("dtype", AttrValue {
                         type = DataType.DT_DOUBLE
                     })
                 }
@@ -931,7 +933,7 @@ class TestTensorflowIR {
                     Input("y")
                     op = tensorflowOpDef.name
                     name = "output"
-                    Attribute("T",AttrValue {
+                    Attribute("T", AttrValue {
                         type = DataType.DT_DOUBLE
                     })
                 }
@@ -969,7 +971,7 @@ class TestTensorflowIR {
                 val tensorNode = NodeDef {
                     name = "x"
                     op = "Placeholder"
-                    Attribute("dtype",AttrValue {
+                    Attribute("dtype", AttrValue {
                         type = DataType.DT_INT32
                     })
                 }
@@ -977,7 +979,7 @@ class TestTensorflowIR {
                 val tensorNode2 = NodeDef {
                     op = "Placeholder"
                     name = "y"
-                    Attribute("dtype",AttrValue {
+                    Attribute("dtype", AttrValue {
                         type = DataType.DT_INT32
                     })
                 }
@@ -987,7 +989,7 @@ class TestTensorflowIR {
                     Input("y")
                     op = tensorflowOpDef.name
                     name = "output"
-                    Attribute("T",AttrValue {
+                    Attribute("T", AttrValue {
                         type = DataType.DT_INT32
                     })
                 }

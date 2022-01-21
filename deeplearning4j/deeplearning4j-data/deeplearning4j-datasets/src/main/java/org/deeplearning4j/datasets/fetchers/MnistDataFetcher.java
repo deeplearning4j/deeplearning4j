@@ -119,11 +119,9 @@ public class MnistDataFetcher extends BaseDataFetcher {
         images = imageResource.localPath().getAbsolutePath();
         labels = labelResource.localPath().getAbsolutePath();
 
-        String[] files = new String[]{images, labels};
         MnistManager man = null;
         try {
             man = new MnistManager(images, labels, train);
-            validateFiles(files, checksums);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
