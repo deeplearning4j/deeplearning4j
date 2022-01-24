@@ -140,12 +140,12 @@ int isShapeExtendedWithOnes(const NDArray &input, int axis) {
   auto rank = input.rankOf();
   if (rank > axis) {
     if (input.ordering() == 'c') {
-      // check befor axis
+      // check before the axis
       for (int i = 0; i < axis; i++) {
         isAllOne = isAllOne && (shapes[i] == 1);
       }
     } else {
-      // check after axis
+      // check after the axis
       for (int i = axis + 1; i < rank; i++) {
         isAllOne = isAllOne && (shapes[i] == 1);
       }
@@ -180,7 +180,15 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
 
   bool copyCaseEws1 = followEws1 & matchesOutputOrdering;
   bool copyCase1 = numOfInArrs > 1 ? copyCaseEws1 & shapeExtendedWithOnes : copyCaseEws1;
+
   if (copyCase1) {
+    // copyCase1:
+    // in this case:
+    // When NdArrays follow the same order and unit elementwise stride and
+    // the concantenation axis is 0th or has only 1 before it {1, 1, ..., axis} for "c"
+    // or axis is (rank-1)th or has only 1 after it {axis, 1, 1, ..., 1} for "f"
+    // we will concatenate them by sequential copying of the whole buffers
+
     std::vector<T *> zPtrList;
     T *z = output.bufferAsT<T>();
     for (int i = 0; i < numOfInArrs; i++) {
@@ -211,11 +219,20 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
     output.assign(inArrs[0]);
     return;
   }
+  bool copyCase2 = copyCaseEws1 && output.ordering() == 'c';
+  if (copyCase2) {
+    // copyCase2:
+    // in this case:
+    // when NDArrays follow the same order (here it is done for the "c" "the last index is fast" order)
+    // and unit elementwise stride.
+    // we will just concatenate by iterating over t=shape[0]*...*shape[axis-1] times
+    // and copying all buffers with {offset: t * copy_size_i, size: copy_size_i} into output buffer with { offset: t*
+    // total_copy_size, total copy size} where: copy_size_i = shape[axis] * .. * shape[rank-1] of the iTh input array
+    // total copy size is sum of all {copy_size_i}
 
-  if (copyCaseEws1 && output.ordering() == 'c') {
     int times = 1;
     auto shapes = shape::shapeOf(output.shapeInfo());
-    assert(axis < rank);
+
     T *z = output.bufferAsT<T>();
     for (int i = 0; i < axis; i++) {
       times = times * shapes[i];
