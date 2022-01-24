@@ -61,6 +61,17 @@ public class EmnistFetcher extends MnistFetcher {
 
     }
 
+    public EmnistFetcher(EMnistSet ds,File topLevelDir) {
+        this.ds = ds;
+        emnistDataTrain = ResourceDataSets.emnistTrain(ds,topLevelDir);
+        emnistDataTest = ResourceDataSets.emnistTest(ds,topLevelDir);
+        emnistLabelsTrain = ResourceDataSets.emnistLabelsTrain(ds,topLevelDir);
+        emnistLabelsTest = ResourceDataSets.emnistLabelsTest(ds,topLevelDir);
+        emnistMappingTrain = ResourceDataSets.emnistMappingTrain(ds,topLevelDir);
+        emnistMappingTest = ResourceDataSets.emnistMappingTest(ds,topLevelDir);
+
+    }
+
 
     @Override
     public String getName() {

@@ -55,7 +55,7 @@ class MnistFetcherTest extends BaseDL4JTest {
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
     @Tag(TagNames.FILE_IO)
-    void testMnist(@TempDir Path tempPath) throws Exception {
+    public void testMnist(@TempDir Path tempPath) throws Exception {
         MnistDataSetIterator iter = new MnistDataSetIterator(32, 60000, false, true, false, -1,tempPath.toFile());
         int count = 0;
         while (iter.hasNext()) {
@@ -84,10 +84,9 @@ class MnistFetcherTest extends BaseDL4JTest {
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
     @Tag(TagNames.FILE_IO)
-    @Disabled("Temp directory not being set properly on CI")
     @Tag(TagNames.NEEDS_VERIFY)
-    void testMnistDataFetcher() throws Exception {
-        MnistFetcher mnistFetcher = new MnistFetcher();
+    void testMnistDataFetcher(@TempDir Path tempDir) throws Exception {
+        MnistFetcher mnistFetcher = new MnistFetcher(tempDir.toFile());
         File mnistDir = mnistFetcher.downloadAndUntar();
         assertTrue(mnistDir.isDirectory());
 
@@ -97,7 +96,6 @@ class MnistFetcherTest extends BaseDL4JTest {
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
     @Tag(TagNames.FILE_IO)
-    @Disabled("Temp directory not being set properly on CI")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testMnistSubset(@TempDir Path tempPath) throws Exception {
         final int numExamples = 100;
@@ -147,7 +145,6 @@ class MnistFetcherTest extends BaseDL4JTest {
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
     @Tag(TagNames.FILE_IO)
-    @Disabled("Temp directory not being set properly on CI")
     @Tag(TagNames.NEEDS_VERIFY)
     void testSubsetRepeatability(@TempDir  Path tempDir) throws Exception {
         MnistDataSetIterator it = new MnistDataSetIterator(1, 1, false, false, true, 0,tempDir.toFile());

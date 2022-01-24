@@ -21,11 +21,14 @@
 package org.deeplearning4j.datasets.iterator.impl;
 
 import lombok.Getter;
+import org.deeplearning4j.common.resources.DL4JResources;
+import org.deeplearning4j.common.resources.ResourceType;
 import org.deeplearning4j.datasets.fetchers.EmnistDataFetcher;
 import org.eclipse.deeplearning4j.resources.utils.EMnistSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.BaseDatasetIterator;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,22 +54,22 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
     private static final int NUM_MNIST_TEST = 10000;
 
     private static final char[] LABELS_COMPLETE = new char[] {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68,
-                    69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99,
-                    100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
-                    120, 121, 122};
+            69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 99,
+            100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+            120, 121, 122};
 
     private static final char[] LABELS_MERGE = new char[] {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69,
-                    70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 100,
-                    101, 102, 103, 104, 110, 113, 114, 116};
+            70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 100,
+            101, 102, 103, 104, 110, 113, 114, 116};
 
     private static final char[] LABELS_BALANCED = new char[] {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68,
-                    69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 100,
-                    101, 102, 103, 104, 110, 113, 114, 116};
+            69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 97, 98, 100,
+            101, 102, 103, 104, 110, 113, 114, 116};
 
     private static final char[] LABELS_DIGITS = new char[] {48, 49, 50, 51, 52, 53, 54, 55, 56, 57};
 
     private static final char[] LABELS_LETTERS = new char[] {65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
-                    80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90};
+            80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90};
 
     protected EMnistSet dataSet;
     protected int batch, numExamples;
@@ -106,10 +109,25 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
      * @param shuffle  whether to shuffle the examples
      * @param rngSeed  random number generator seed to use when shuffling examples
      */
-    public EmnistDataSetIterator(EMnistSet dataSet, int batch, boolean binarize, boolean train, boolean shuffle, long rngSeed)
+    public EmnistDataSetIterator(EMnistSet dataSet, int batch, boolean binarize, boolean train, boolean shuffle, long rngSeed, File topLevelDir)
             throws IOException {
         super(batch, numExamples(train, dataSet), new EmnistDataFetcher(dataSet, binarize, train, shuffle, rngSeed));
         this.dataSet = dataSet;
+    }
+
+
+    /**
+     * Get the specified number of MNIST examples (test or train set), with optional shuffling and binarization.
+     *
+     * @param batch    Size of each minibatch
+     * @param binarize whether to binarize the data or not (if false: normalize in range 0 to 1)
+     * @param train    Train vs. test set
+     * @param shuffle  whether to shuffle the examples
+     * @param rngSeed  random number generator seed to use when shuffling examples
+     */
+    public EmnistDataSetIterator(EMnistSet dataSet, int batch, boolean binarize, boolean train, boolean shuffle, long rngSeed)
+            throws IOException {
+        this(dataSet,batch,binarize,train,shuffle,rngSeed, DL4JResources.getDirectory(ResourceType.DATASET,"emnist"));
     }
 
     private static int numExamples(boolean train, EMnistSet ds) {
