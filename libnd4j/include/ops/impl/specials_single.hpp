@@ -127,6 +127,41 @@ namespace sd {
 //     return result == 9223372036854775807LL ? 1 : result;
 // }
 
+/**
+ * @brief Checks if the shape of NDArray contains 1 before(order c) or after(order f) the specified axis
+ *
+ * @param input
+ * @param axis
+ * @return int
+ */
+int isShapeExtendedWithOnes(const NDArray &input, int axis) {
+  bool isAllOne = true;
+  auto shapes = shape::shapeOf(input.shapeInfo());
+  auto rank = input.rankOf();
+  if (rank > axis) {
+    if (input.ordering() == 'c') {
+      // check before the axis
+      for (int i = 0; i < axis; i++) {
+        isAllOne = isAllOne && (shapes[i] == 1);
+      }
+    } else {
+      // check after the axis
+      for (int i = axis + 1; i < rank; i++) {
+        isAllOne = isAllOne && (shapes[i] == 1);
+      }
+    }
+    return isAllOne;
+  }
+
+  return true;
+}
+
+template <typename T>
+struct InputArgsCase2 {
+  const T *ptr;
+  int size;
+};
+
 template <typename T>
 void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inArrs, NDArray &output, const int axis) {
   const int numOfInArrs = inArrs.size();
@@ -134,69 +169,105 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
 
   T *zBuff = output.bufferAsT<T>();
 
-  bool luckCase1 =
-      ((axis == 0 && output.ordering() == 'c') || (axis == output.rankOf() - 1 && output.ordering() == 'f')) &&
-      output.ews() == 1;
-
-  if (luckCase1) {
-    for (sd::Unsigned i = 0; i < numOfInArrs; ++i) {
-      luckCase1 &= inArrs[i]->ordering() == output.ordering() && inArrs[i]->ews() == 1;
-      if (!luckCase1) break;
-    }
+  bool shapeExtendedWithOnes = isShapeExtendedWithOnes(output, axis);
+  bool followEws1 = output.ews() == 1;
+  bool matchesOutputOrdering = true;
+  for (int i = 0; i < numOfInArrs; ++i) {
+    shapeExtendedWithOnes = shapeExtendedWithOnes && isShapeExtendedWithOnes(*inArrs[i], axis);
+    followEws1 = followEws1 && inArrs[i]->ews() == 1;
+    matchesOutputOrdering = matchesOutputOrdering && inArrs[i]->ordering() == output.ordering();
   }
 
-  if (luckCase1) {  // for example {1,10} + {2,10} + {3,10} = {6, 10} order c; or {10,1} + {10,2} + {10,3} = {10, 6}
-                    // order f
+  bool copyCaseEws1 = followEws1 & matchesOutputOrdering;
+  bool copyCase1 = numOfInArrs > 1 ? copyCaseEws1 & shapeExtendedWithOnes : copyCaseEws1;
 
-    T *z = zBuff;
-    for (sd::Unsigned i = 0; i < numOfInArrs; ++i) {
-      const auto memAmountToCopy = inArrs[i]->lengthOf();
-      memcpy(z, inArrs[i]->bufferAsT<T>(), memAmountToCopy * sizeofT);
-      z += memAmountToCopy;
+  if (copyCase1) {
+    // copyCase1:
+    // in this case:
+    // When NdArrays follow the same order and unit elementwise stride and
+    // the concantenation axis is 0th or has only 1 before it {1, 1, ..., axis} for "c"
+    // or axis is (rank-1)th or has only 1 after it {axis, 1, 1, ..., 1} for "f"
+    // we will concatenate them by sequential copying of the whole buffers
+
+    std::vector<T *> zPtrList;
+    T *z = output.bufferAsT<T>();
+    for (int i = 0; i < numOfInArrs; i++) {
+      zPtrList.push_back(z);
+      z += inArrs[i]->lengthOf();
     }
+    auto func = [&inArrs, &zPtrList](uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) -> void {
+      for (int i = start; i < stop; ++i) {
+        const auto memAmountToCopy = inArrs[i]->lengthOf();
+        const auto inputPtr = inArrs[i]->bufferAsT<T>();
+#if defined(__NEC__)
+        auto zPtr = zPtrList[i];
+        for (int j = 0; j < memAmountToCopy; j++) {
+          zPtr[j] = inputPtr[j];
+        }
+#else
+        memcpy(zPtrList[i], inputPtr, memAmountToCopy * sizeof(T));
+#endif
+      }
+    };
+
+    samediff::Threads::parallel_tad(func, 0, numOfInArrs, 1);
     return;
   }
 
-  // const bool isZcontin = output.strideAt(axis) == 1;
-  // bool areInputsContin = true;
-  // bool allSameOrder    = true;
-  // std::vector<sd::LongType> strideOfContigStride(numOfInArrs);
+  // for one Array
+  if (numOfInArrs < 2) {
+    output.assign(inArrs[0]);
+    return;
+  }
+  bool copyCase2 = copyCaseEws1 && output.ordering() == 'c';
+  if (copyCase2) {
+    // copyCase2:
+    // in this case:
+    // when NDArrays follow the same order (here it is done for the "c" "the last index is fast" order)
+    // and unit elementwise stride.
+    // we will just concatenate by iterating over t=shape[0]*...*shape[axis-1] times
+    // and copying all buffers with {offset: t * copy_size_i, size: copy_size_i} into output buffer with { offset: t*
+    // total_copy_size, total copy size} where: copy_size_i = shape[axis] * .. * shape[rank-1] of the iTh input array
+    // total copy size is sum of all {copy_size_i}
 
-  // if(isZcontin) {
+    int times = 1;
+    auto shapes = shape::shapeOf(output.shapeInfo());
 
-  //     for (sd::Unsigned i = 0; i < numOfInArrs; ++i) {
+    T *z = output.bufferAsT<T>();
+    for (int i = 0; i < axis; i++) {
+      times = times * shapes[i];
+    }
+    int totalCopySize = output.lengthOf() / times;
 
-  //         areInputsContin &= inArrs[i]->strideAt(axis) == 1;
-  //         allSameOrder    &= inArrs[i]->ordering() == output.ordering();
-  //         if(!areInputsContin || !allSameOrder)
-  //             break;
+    std::vector<InputArgsCase2<T>> inputArgs;
+    for (int i = 0; i < numOfInArrs; i++) {
+      InputArgsCase2<T> input = {inArrs[i]->bufferAsT<T>(), inArrs[i]->lengthOf() / times};
+      inputArgs.push_back(input);
+    }
 
-  //         strideOfContigStride[i] = strideOverContigAxis(axis, inArrs[i]->getShapeInfo());
-  //     }
-  // }
+    auto func = [&inputArgs, z, totalCopySize](uint64_t thread_id, int64_t start, int64_t stop,
+                                               int64_t increment) -> void {
+      auto outPtr = &(z[start * totalCopySize]);
+      auto numOfInArrs = inputArgs.size();
+      for (int i = start; i < stop; i++) {
+        for (int j = 0; j < numOfInArrs; j++) {
+          auto inputCopySize = inputArgs[j].size;
+          const T *inputBasePtr = inputArgs[j].ptr;
+          auto inputPtr = &(inputBasePtr[i * inputCopySize]);
+          // copy
+          PRAGMA_OMP_SIMD
+          for (int k = 0; k < inputCopySize; k++) {
+            outPtr[k] = inputPtr[k];
+          }
+          outPtr += inputCopySize;
+        }
+      }
+    };
+    samediff::Threads::parallel_tad(func, 0, times, 1);
+    return;
+  }
 
-  // const bool luckCase2 = isZcontin && areInputsContin && allSameOrder;
-
-  // if(luckCase2) {     // for example {2,1,3} + {2,5,3} + {2,10,3} = {2,16,3}, here axis 1 shoud have stride = 1 for
-  // all inputs arrays and output array
-
-  //     const auto zStep = strideOverContigAxis(axis, output.getShapeInfo());
-
-  //     for (sd::Unsigned i = 0; i < output.lengthOf() / output.sizeAt(axis); ++i) {
-
-  //         T* z = zBuff + zStep * i;
-
-  //         for (sd::Unsigned j = 0; j < inArrs.size(); ++j) {
-  //             const auto xDim = inArrs[j]->sizeAt(axis);
-  //             const T* x = inArrs[j]->bufferAsT<T>() + strideOfContigStride[j] * i;
-  //             memcpy(z, x, xDim * sizeofT);
-  //             z += xDim;
-  //         }
-  //     }
-
-  //     return;
-  // }
-
+  // TODO: optimize the other cases to be NEC friendly as well
   // general case
   auto func = PRAGMA_THREADS_FOR {
     int coords[SD_MAX_RANK], temp;
