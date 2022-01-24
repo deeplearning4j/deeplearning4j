@@ -70,7 +70,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
     protected String images,labels;
     //note: we default to zero here on purpose, otherwise when first initializes an error is thrown.
     private long lastCursor = 0;
-
+    protected MnistManager manager;
 
     /**
      * Constructor telling whether to binarize the dataset or not
@@ -119,9 +119,9 @@ public class MnistDataFetcher extends BaseDataFetcher {
         images = imageResource.localPath().getAbsolutePath();
         labels = labelResource.localPath().getAbsolutePath();
 
-        MnistManager man = null;
+
         try {
-            man = new MnistManager(images, labels, train);
+            manager = new MnistManager(images, labels, train);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -130,7 +130,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
         numOutcomes = 10;
         this.binarize = binarize;
         cursor = 0;
-        inputColumns = man.getImages().getEntryLength();
+        inputColumns = manager.getImages().getEntryLength();
         this.train = train;
         this.shuffle = shuffle;
 
@@ -144,7 +144,6 @@ public class MnistDataFetcher extends BaseDataFetcher {
         rng = new Random(rngSeed);
         this.numExamples = numExamples;
         reset(); //Shuffle order
-        man.close();
     }
 
     public MnistDataFetcher(boolean binarize, boolean train, boolean shuffle, long rngSeed, int numExamples) throws IOException {
@@ -183,8 +182,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
             throw new IllegalStateException("Unable to get more; there are no more images");
         }
 
-        MnistManager man = new MnistManager(images, labels, totalExamples);
-        man.setCurrent((int) lastCursor);
+        manager.setCurrent((int) lastCursor);
         INDArray labels = Nd4j.zeros(DataType.FLOAT, numExamples, numOutcomes);
 
         if(featureData == null || featureData.length < numExamples){
@@ -197,9 +195,9 @@ public class MnistDataFetcher extends BaseDataFetcher {
             if (!hasMore())
                 break;
 
-            man.setCurrent(cursor);
+            manager.setCurrent(cursor);
             lastCursor = cursor;
-            byte[] img = man.readImageUnsafe(order[cursor]);
+            byte[] img = manager.readImageUnsafe(order[cursor]);
 
             if (fOrder) {
                 //EMNIST requires F order to C order
@@ -212,7 +210,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
                 img = working;
             }
 
-            int label = man.readLabel(order[cursor]);
+            int label = manager.readLabel(order[cursor]);
             if (oneIndexed) {
                 //For some inexplicable reason, Emnist LETTERS set is indexed 1 to 26 (i.e., 1 to nClasses), while everything else
                 // is indexed (0 to nClasses-1) :/
@@ -247,7 +245,6 @@ public class MnistDataFetcher extends BaseDataFetcher {
         }
 
         curr = new DataSet(features, labels);
-        man.close();
     }
 
     @Override

@@ -29,12 +29,15 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -55,7 +58,7 @@ public class TestEmnistDataSetIterator extends BaseDL4JTest {
     @Test
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
-    public void testEmnistDataSetIterator() throws Exception {
+    public void testEmnistDataSetIterator(@TempDir Path tempDir) throws Exception {
         int batchSize = 128;
 
         EMnistSet[] sets;

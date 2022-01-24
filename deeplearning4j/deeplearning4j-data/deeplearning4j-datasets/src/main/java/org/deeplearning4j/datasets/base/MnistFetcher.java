@@ -47,6 +47,11 @@ public class MnistFetcher {
     private DataSetResource mnistTestLabels = ResourceDataSets.mnistTestLabels();
 
 
+    public MnistFetcher(File tempDir) {
+        this.fileDir = tempDir;
+    }
+
+
     public String getName() {
         return "MNIST";
     }
