@@ -22,12 +22,14 @@ package org.eclipse.deeplearning4j.frameworkimport.frameworkimport.onnx.loader
 
 import onnx.Onnx
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.nd4j.common.tests.tags.TagNames
 import org.nd4j.samediff.frameworkimport.onnx.definitions.registry
 import org.nd4j.samediff.frameworkimport.onnx.process.OnnxMappingProcessLoader
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
-
+@Tag(TagNames.ONNX)
 class TestOnnxProcessLoader {
 
 

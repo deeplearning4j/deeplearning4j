@@ -17,19 +17,22 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.nd4j.samediff.frameworkimport.onnx;
+package org.eclipse.deeplearning4j.frameworkimport.frameworkimport.onnx;
 
 import onnx.Onnx;
 import org.apache.commons.io.IOUtils;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.tests.tags.TagNames;
+import org.nd4j.samediff.frameworkimport.onnx.OnnxConverter;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
-
+@Tag(TagNames.ONNX)
 public class TestOnnxConverter {
 
     @TempDir

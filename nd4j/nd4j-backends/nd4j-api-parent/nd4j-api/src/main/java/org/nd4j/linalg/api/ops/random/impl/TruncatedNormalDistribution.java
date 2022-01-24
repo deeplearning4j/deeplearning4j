@@ -35,6 +35,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class TruncatedNormalDistribution extends BaseRandomOp {
     private double mean;
@@ -133,6 +134,10 @@ public class TruncatedNormalDistribution extends BaseRandomOp {
         this.z = z;
     }
 
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        super.setPropertiesForFunction(properties);
+    }
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {

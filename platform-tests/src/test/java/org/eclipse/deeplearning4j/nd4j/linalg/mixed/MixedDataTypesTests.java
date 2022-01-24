@@ -386,20 +386,6 @@ public class MixedDataTypesTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, arrayZ);
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-
-    public void testTypesValidation_1(Nd4jBackend backend) {
-        assertThrows(IllegalArgumentException.class,() -> {
-            val arrayX = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.LONG);
-            val arrayY = Nd4j.create(new int[]{1, 2, 3, 4}, new  long[]{4}, DataType.INT);
-            val exp = new long[]{1, 0, 0, 1};
-
-            val op = new CosineSimilarity(arrayX, arrayY);
-            val result = Nd4j.getExecutioner().exec(op);
-        });
-
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

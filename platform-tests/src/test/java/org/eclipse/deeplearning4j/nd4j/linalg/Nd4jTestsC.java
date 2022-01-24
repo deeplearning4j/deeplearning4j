@@ -1576,6 +1576,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled
     public void testSubRowVector(Nd4jBackend backend) {
         INDArray matrix = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray row = Nd4j.linspace(1, 3, 3, DataType.DOUBLE);
@@ -5082,6 +5083,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled
     public void testJaccardDistance1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {0, 1, 0, 0, 1, 0}).castTo(DataType.DOUBLE);
         INDArray y = Nd4j.create(new double[] {1, 1, 0, 1, 0, 0}).castTo(DataType.DOUBLE);
@@ -7663,14 +7665,14 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testPutSpecifiedIndices3d(){
+    public void testPutSpecifiedIndices3d() {
 
         INDArray arr = Nd4j.create(2,3,4);
         INDArray toPut = Nd4j.create(new double[]{1,2,3,4}, new int[]{1,2,2}, 'c');
         INDArrayIndex[] indices = new INDArrayIndex[]{
                 NDArrayIndex.point(1),
                 NDArrayIndex.indices(0,2),
-                NDArrayIndex.indices(1,3)} ;
+                NDArrayIndex.indices(1,3)};
 
         INDArray exp = Nd4j.create(2,3,4);
         exp.putScalar(1, 0, 1, 1);
@@ -7992,6 +7994,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled()
     public void testArangeWithStep(Nd4jBackend backend) {
         int begin = -9, end = 9, step = 2;
         INDArray in = Nd4j.arange(begin, end, step);

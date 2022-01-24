@@ -306,7 +306,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                         addInputArgument(arg.getArr());
                     else if(arg.isPlaceHolder() && arg.getShape() != null) {
                         if(arg.getShape() != null && !sameDiff.getEagerArrays().hasArray(arg.name())) {
-                           //if we have a shape, ensure we create a proper 1 mini batch size input of the relevant shape
+                            //if we have a shape, ensure we create a proper 1 mini batch size input of the relevant shape
                             long[] inputShape = ArrayUtil.copy(arg.getShape());
                             for(int i = 0; i < inputShape.length; i++) {
                                 if(inputShape[i] < 0) {
@@ -340,7 +340,27 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 }
             }
 
-            if(outputVariables.length > 0) {
+            if(outputVariables.length > 0 && outputArguments().isEmpty()) {
+                //override output variables to ensure data types, shapes and output arrays are properly computed
+                List<LongShapeDescriptor> longShapeDescriptors = Nd4j.getExecutioner().calculateOutputShape(this);
+                for(int i = 0; i < outputVariables.length; i++) {
+                    if(outputVariables[i].getArr() != null) {
+                        addOutputArgument(outputVariables[i].getArr());
+                    } else {
+                        //not yet computed
+                        long[] shape = longShapeDescriptors.get(i).getShape();
+                        DataType defaultType = DataType.FLOAT;
+                        if(outputVariables[i].dataType() != null) {
+                            defaultType = outputVariables[i].dataType();
+                        }
+
+                        INDArray arr = longShapeDescriptors.get(i).isEmpty() ? Nd4j.create(longShapeDescriptors.get(i)) : Nd4j.create(defaultType,shape);
+                        addOutputArgument(arr);
+                    }
+
+
+                }
+
                 INDArray[] exec = Nd4j.getExecutioner().exec(this);
                 if(outputVariables.length != exec.length) {
                     log.warn("During eager execution of op " + getOwnName() + " of type " + opName() + " the output variables had length " + outputVariables.length + " while execution output was " + exec.length + " stub scalar variables will be used.");

@@ -27,6 +27,7 @@ import org.deeplearning4j.datasets.base.MnistFetcher;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.common.resources.ResourceType;
 import org.deeplearning4j.datasets.mnist.MnistManager;
+import org.eclipse.deeplearning4j.resources.DataSetResource;
 import org.eclipse.deeplearning4j.resources.ResourceDataSets;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -80,45 +81,51 @@ public class MnistDataFetcher extends BaseDataFetcher {
         this(binarize, true, true, System.currentTimeMillis(), NUM_EXAMPLES);
     }
 
-    public MnistDataFetcher(boolean binarize, boolean train, boolean shuffle, long rngSeed, int numExamples) throws IOException {
+
+
+    public MnistDataFetcher(boolean binarize, boolean train, boolean shuffle, long rngSeed, int numExamples,File topLevelDir) throws IOException {
         if(this instanceof EmnistDataFetcher)
             return;
 
-        if (!mnistExists()) {
-            new MnistFetcher().downloadAndUntar();
-        }
 
-        String MNIST_ROOT = DL4JResources.getDirectory(ResourceType.DATASET, "MNIST").getAbsolutePath();
+        this.topLevelDir = topLevelDir;
         long[] checksums;
+        DataSetResource imageResource = null;
+        DataSetResource labelResource = null;
         if (train) {
-            images = ResourceDataSets.mnistTrain().localPath().getAbsolutePath();
-            labels = ResourceDataSets.mnistTrainLabels().localPath().getAbsolutePath();
+            imageResource = topLevelDir() != null ?  ResourceDataSets.mnistTrain(topLevelDir()) :  ResourceDataSets.mnistTrain();
+            if(!imageResource.existsLocally())
+                imageResource.download(true,3,200000,20000);
+
+            labelResource = topLevelDir() != null ? ResourceDataSets.mnistTrainLabels(topLevelDir()) : ResourceDataSets.mnistTrainLabels();
+            if(!labelResource.existsLocally())
+                labelResource.download(true,3,200000,20000);
+
             totalExamples = NUM_EXAMPLES;
             checksums = CHECKSUMS_TRAIN;
         } else {
-            images = ResourceDataSets.mnistTest().localPath().getAbsolutePath();
-            labels = ResourceDataSets.mnistTestLabels().localPath().getAbsolutePath();
+            imageResource = topLevelDir() != null ?  ResourceDataSets.mnistTest(topLevelDir()) :  ResourceDataSets.mnistTest();
+            if(!imageResource.existsLocally())
+                imageResource.download(true,3,200000,20000);
+
+            labelResource = topLevelDir() != null ? ResourceDataSets.mnistTestLabels(topLevelDir()) : ResourceDataSets.mnistTestLabels();
+            if(!labelResource.existsLocally())
+                labelResource.download(true,3,200000,20000);
+
             totalExamples = NUM_EXAMPLES_TEST;
             checksums = CHECKSUMS_TEST;
         }
-        String[] files = new String[]{images, labels};
 
+        images = imageResource.localPath().getAbsolutePath();
+        labels = labelResource.localPath().getAbsolutePath();
+
+        MnistManager man = null;
         try {
-            MnistManager man = new MnistManager(images, labels, train);
-            validateFiles(files, checksums);
-            man.close();
+            man = new MnistManager(images, labels, train);
         } catch (Exception e) {
-            try {
-                FileUtils.deleteDirectory(new File(MNIST_ROOT));
-            } catch (Exception e2){ }
-            new MnistFetcher().downloadAndUntar();
-            MnistManager man = new MnistManager(images, labels, train);
-            lastCursor = man.getCurrent();
-            validateFiles(files, checksums);
-            man.close();
+            throw new RuntimeException(e);
         }
 
-        MnistManager man = new MnistManager(images, labels, train);
 
         numOutcomes = 10;
         this.binarize = binarize;
@@ -140,19 +147,11 @@ public class MnistDataFetcher extends BaseDataFetcher {
         man.close();
     }
 
-    private boolean mnistExists() {
-        String MNIST_ROOT = DL4JResources.getDirectory(ResourceType.DATASET, "MNIST").getAbsolutePath();
-        //Check 4 files:
-        if (!ResourceDataSets.mnistTrain().existsLocally())
-            return false;
-        if (!ResourceDataSets.mnistTest().existsLocally())
-            return false;
-        if (!ResourceDataSets.mnistTrainLabels().existsLocally())
-            return false;
-        if (!ResourceDataSets.mnistTestLabels().existsLocally())
-            return false;
-        return true;
+    public MnistDataFetcher(boolean binarize, boolean train, boolean shuffle, long rngSeed, int numExamples) throws IOException {
+        this(binarize,train,shuffle,rngSeed,numExamples,null);
     }
+
+
 
     private void validateFiles(String[] files, long[] checksums) {
         //Validate files:

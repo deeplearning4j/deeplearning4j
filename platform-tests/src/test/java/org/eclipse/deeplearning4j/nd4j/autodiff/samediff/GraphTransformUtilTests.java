@@ -32,6 +32,7 @@ import org.nd4j.autodiff.samediff.transform.OpPredicate;
 import org.nd4j.autodiff.samediff.transform.SubGraph;
 import org.nd4j.autodiff.samediff.transform.SubGraphPredicate;
 import org.nd4j.autodiff.samediff.transform.SubGraphProcessor;
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -49,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 @Tag(TagNames.SAMEDIFF)
+@NativeTag
 public class GraphTransformUtilTests extends BaseNd4jTestWithBackends {
 
 

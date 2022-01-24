@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.eclipse.deeplearning4j.zoo;
+package org.eclipse.deeplearning4j.longrunning.downloads;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
@@ -54,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @NativeTag
 @Tag(TagNames.LONG_TEST)
 @Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.DOWNLOADS)
 public class TestDownload extends BaseDL4JTest {
     @TempDir
     static Path sharedTempDir;

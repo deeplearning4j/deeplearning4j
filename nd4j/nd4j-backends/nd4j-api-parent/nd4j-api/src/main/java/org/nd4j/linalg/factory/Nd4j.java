@@ -4313,9 +4313,6 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray createUninitialized(int[] shape, char ordering) {
-        if (shape.length == 0 || ArrayUtil.prod(shape) == 0)
-            return INSTANCE.scalar(dataType());
-
         checkShapeValues(shape);
         return INSTANCE.createUninitialized(shape, ordering);
     }
@@ -4463,9 +4460,6 @@ public class Nd4j {
      * See {@link #valueArrayOf(long[], double, DataType)}
      */
     public static INDArray valueArrayOf(long[] shape, double value) {
-        if (shape.length == 0 || ArrayUtil.prod(shape) == 0)
-            return scalar(value);
-
         checkShapeValues(shape);
         return INSTANCE.valueArrayOf(shape, value);
     }
@@ -4481,12 +4475,8 @@ public class Nd4j {
      * @return the created ndarray
      */
     @SuppressWarnings("Duplicates")
-    public static INDArray valueArrayOf(long[] shape, double value, DataType type) {
-        if (shape.length == 0 || ArrayUtil.prod(shape) == 0)
-            return scalar(type, value);
-
+    public static INDArray valueArrayOf(long[] shape, double value, DataType type) {;
         checkShapeValues(shape);
-
         INDArray ret = createUninitialized(type, shape);
         ret.assign(value);
         return ret;
@@ -4880,7 +4870,7 @@ public class Nd4j {
      * @return an ndarray with ones filled in
      */
     public static INDArray ones(@NonNull int... shape) {
-        return (shape.length == 0 || ArrayUtil.prod(shape) == 0) ? Nd4j.scalar(dataType(), 1.0) : INSTANCE.ones(shape);
+        return INSTANCE.ones(shape);
     }
 
 

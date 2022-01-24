@@ -18,10 +18,11 @@
  *  *****************************************************************************
  */
 
-package org.eclipse.deeplearning4j.dl4jcore.datasets;
+package org.eclipse.deeplearning4j.longrunning.downloads;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.base.MnistFetcher;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -33,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 @NativeTag
 @Tag(TagNames.FILE_IO)
+@Tag(TagNames.DOWNLOADS)
 public class ConcurrentDownloaderTest extends BaseDL4JTest {
 
     @Override

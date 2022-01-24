@@ -444,6 +444,10 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
     @Override
     public Pointer addressPointer() {
+        //possible with empty buffers
+        if(ptrDataBuffer.primaryBuffer() == null)
+            return null;
+
         // we're fetching actual pointer right from C++
         val tempPtr = new PagedPointer(ptrDataBuffer.primaryBuffer());
 

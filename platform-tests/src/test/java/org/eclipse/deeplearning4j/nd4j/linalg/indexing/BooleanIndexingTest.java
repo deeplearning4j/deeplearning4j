@@ -152,11 +152,8 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
     public void test2dAnd2(Nd4jBackend backend) {
         INDArray array = Nd4j.zeros(DataType.DOUBLE,10, 10);
         array.slice(4).putScalar(2, 1e-4);
-//        System.out.println(array);
         boolean and = BooleanIndexing.and(array, Conditions.epsEquals(0f));
         assertFalse(and);
-
-
     }
 
     @ParameterizedTest

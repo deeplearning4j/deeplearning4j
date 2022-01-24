@@ -17,7 +17,7 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.eclipse.deeplearning4j.dl4jcore.datasets.fetchers;
+package org.eclipse.deeplearning4j.longrunning.downloads;
 
 import org.deeplearning4j.BaseDL4JTest;
 
@@ -39,6 +39,7 @@ import org.nd4j.common.tests.tags.TagNames;
 @DisplayName("Svhn Data Fetcher Test")
 @Tag(TagNames.FILE_IO)
 @NativeTag
+@Tag(TagNames.DOWNLOADS)
 class SvhnDataFetcherTest extends BaseDL4JTest {
 
     @Override

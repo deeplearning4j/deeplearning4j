@@ -18,12 +18,13 @@
  *  *****************************************************************************
  */
 
-package org.eclipse.deeplearning4j.frameworkimport.tensorflow;
+package org.eclipse.deeplearning4j.longrunning.frameworkimport.tensorflow;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.deeplearning4j.frameworkimport.tensorflow.TFGraphTestAllHelper;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -56,6 +57,7 @@ import java.util.stream.Stream;
 @Slf4j
 @Tag(TagNames.LONG_TEST)
 @Tag(TagNames.LARGE_RESOURCES)
+@Tag(TagNames.DOWNLOADS)
 public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
     @TempDir
     static Path classTestDir;
@@ -124,7 +126,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
     }
 
 
-    public static class RemoteCachingLoader implements BiFunction<File,String,TFGraphTestAllHelper.ModelLoadResult> {
+    public static class RemoteCachingLoader implements BiFunction<File,String, TFGraphTestAllHelper.ModelLoadResult> {
         private boolean suggestDynamicVariables = false;
         private Map<String,INDArray> dynamicVariables = Collections.emptyMap();
 
@@ -238,7 +240,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
 
 
     @ParameterizedTest
-    @MethodSource("org.nd4j.imports.tfgraphs.TFGraphTestZooModels#data")
+    @MethodSource("data")
     public void testOutputOnly(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) throws Exception {
 
         currentTestDir =  localTestDir;

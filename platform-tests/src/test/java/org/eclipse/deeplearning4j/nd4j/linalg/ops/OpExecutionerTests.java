@@ -78,18 +78,6 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testBroadcastAddNonScalar(Nd4jBackend backend) {
-        long prod = 2 * 3;
-        INDArray vec1 = Nd4j.linspace(1,prod,prod).reshape(1,2,3);
-        INDArray vec2 = Nd4j.ones(2);
-        INDArray broadcastAdd = vec1.add(vec2);
-        assertEquals(vec1.add(1),broadcastAdd);
-
-    }
-
-
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCosineSimilarity(Nd4jBackend backend) {
         INDArray vec1 = Nd4j.create(new float[] {1, 2, 3, 4, 5});
         INDArray vec2 = Nd4j.create(new float[] {1, 2, 3, 4, 5});

@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.eclipse.deeplearning4j.dl4jcore;
+package org.eclipse.deeplearning4j.longrunning;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -40,6 +41,7 @@ import java.util.concurrent.CountDownLatch;
 
 @NativeTag
 @Tag(TagNames.RNG)
+@Tag(TagNames.DOWNLOADS)
 public class RandomTests extends BaseDL4JTest {
 
     @Test

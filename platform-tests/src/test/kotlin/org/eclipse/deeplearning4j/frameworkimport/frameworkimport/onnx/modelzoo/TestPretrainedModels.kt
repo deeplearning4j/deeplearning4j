@@ -15,15 +15,16 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.nd4j.samediff.frameworkimport.onnx.modelzoo
+package org.eclipse.deeplearning4j.frameworkimport.frameworkimport.onnx.modelzoo
 
 import onnx.Onnx
 import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
 import org.eclipse.deeplearning4j.testinit.convertedModelDirectory
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.nd4j.common.resources.Downloader
+import org.nd4j.common.tests.tags.TagNames
 import org.nd4j.common.util.ArchiveUtils
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ir.IRGraph
@@ -34,12 +35,11 @@ import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraphRunner
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.net.URI
 import java.nio.file.Path
 
 data class InputDataset(val dataSetIndex: Int,val inputPaths: List<String>,val outputPaths: List<String>)
+@Tag(TagNames.ONNX)
 class TestPretrainedModels {
 
     val modelBaseUrl = "https://media.githubusercontent.com/media/onnx/models/master"

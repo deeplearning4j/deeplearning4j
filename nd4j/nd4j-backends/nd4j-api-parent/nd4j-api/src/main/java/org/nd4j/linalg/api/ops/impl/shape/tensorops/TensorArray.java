@@ -99,7 +99,7 @@ public class TensorArray extends  BaseTensorOp {
 
     @Override
     public String opName() {
-        return "tensorarrayv3";
+        return "create_list";
     }
 
 

@@ -55,9 +55,10 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSpecifiedIndexPut(Nd4jBackend backend) {
         INDArray arr = Nd4j.arange(12.0).reshape(2,3,2);
+        INDArray original = arr.dup();
         INDArrayIndex[] indices = {NDArrayIndex.all(),NDArrayIndex.indices(0,2),NDArrayIndex.point(1)};
         INDArray put  = arr.put(indices,Nd4j.onesLike(arr.muli(-1)));
-        assertNotEquals(arr,put);
+        assertNotEquals(original,put);
     }
 
 
@@ -381,7 +382,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testIndexingThorough(){
+    public void testIndexingThorough() {
         long[] fullShape = {3,4,5,6,7};
 
         //Note: 888,880 total test cases here - randomly run a fraction of the tests to minimize runtime
@@ -580,17 +581,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         return d;
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void debugging(){
-        long[] inShape = {3,4};
-        INDArrayIndex[] indexes = new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.interval(1, 2, 4)};
 
-        long prod = ArrayUtil.prod(inShape);
-        char order = 'c';
-        INDArray arr = Nd4j.linspace(DataType.FLOAT, 1, prod, prod).reshape('c', inShape).dup(order);
-        INDArray sub = arr.get(indexes);
-    }
 
     @Override
     public char ordering() {

@@ -17,17 +17,23 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.eclipse.deeplearning4j.resources;
+package org.eclipse.deeplearning4j.longrunning.downloads;
 
+import org.eclipse.deeplearning4j.resources.DataSetResource;
+import org.eclipse.deeplearning4j.resources.ResourceDataSets;
 import org.eclipse.deeplearning4j.resources.utils.EMnistSet;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.tests.tags.TagNames;
 
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Tag(TagNames.DOWNLOADS)
 public class DataSetTests {
 
     @Test

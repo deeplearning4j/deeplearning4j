@@ -20,14 +20,17 @@
 
 package org.eclipse.deeplearning4j.frameworkimport.frameworkimport.tensorflow.loader
 
-import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Tag
+import org.junit.jupiter.api.Test
+import org.nd4j.common.tests.tags.TagNames
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.samediff.frameworkimport.tensorflow.definitions.registry
 import org.nd4j.samediff.frameworkimport.tensorflow.process.TensorflowMappingProcessLoader
 import org.tensorflow.framework.*
 
+@Tag(TagNames.TENSORFLOW)
 class TestTensorflowProcessLoader {
 
     @Test

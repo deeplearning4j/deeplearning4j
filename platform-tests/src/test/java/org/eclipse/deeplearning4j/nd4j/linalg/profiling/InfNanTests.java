@@ -91,7 +91,7 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testInf3(Nd4jBackend backend) {
-        INDArray x = Nd4j.create(100);
+        INDArray x = Nd4j.scalar(Double.NEGATIVE_INFINITY);
         assertThrows(ND4JOpProfilerException.class,() -> {
             OpExecutionerUtil.checkForAny(x);
 
@@ -140,7 +140,7 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNaN3(Nd4jBackend backend) {
-        INDArray x = Nd4j.create(100);
+        INDArray x = Nd4j.scalar(Double.NaN);
         assertThrows(ND4JOpProfilerException.class,() -> {
             OpExecutionerUtil.checkForAny(x);
 
@@ -151,7 +151,7 @@ public class InfNanTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNaN4(Nd4jBackend backend) {
 
-        INDArray x = Nd4j.create(100);
+        INDArray x = Nd4j.scalar(Double.NaN);
 
         assertThrows(ND4JOpProfilerException.class,() -> {
             OpExecutionerUtil.checkForAny(x);

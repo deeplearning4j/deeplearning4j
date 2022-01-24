@@ -1174,7 +1174,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void setShapeAndStride(int[] shape, int[] stride) {
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride),  0, ordering(), this.dataType(), false));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride),  0, ordering(), this.dataType(), isEmpty()));
     }
 
     @Override
@@ -1878,7 +1878,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray match(INDArray comp, Condition condition) {
         // TODO: obviously, we can make this broadcastable, eventually. But this will require new CustomOp based on MatchCondition
         Preconditions.checkArgument(Arrays.equals(this.shape(), comp.shape()), "Shapes must be equal");
-        Preconditions.checkArgument(this.dataType() == comp.dataType(), "Data types bmust be equal");
+        Preconditions.checkArgument(this.dataType() == comp.dataType(), "Data types must be equal");
         return Nd4j.getExecutioner().exec(new MatchConditionTransform(this, comp, Nd4j.createUninitialized(DataType.BOOL, this.shape()), condition));
     }
 
@@ -2190,26 +2190,33 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
             int[] counts = new int[specifiedIdxs.size()];
             int[] dims = new int[specifiedIdxDims.size()];
-            for( int i=0; i<specifiedIdxs.size(); i++ ){
+            for( int i = 0; i < specifiedIdxs.size(); i++) {
                 counts[i] = specifiedIdxs.get(i).length;
                 dims[i] = specifiedIdxDims.get(i);
             }
 
+            /**
+             * TODO: Resolve both indexing testSpecifiedIndexPut and
+             * the need to persist a difference reference.
+             * Note: https://github.com/eclipse/deeplearning4j/pull/9552
+             */
             NdIndexIterator iter = new NdIndexIterator(counts);
             while(iter.hasNext()) {
                 long[] iterationIdxs = iter.next();
+                long[] putIndices = new long[iterationIdxs.length];
                 for(int i = 0; i < iterationIdxs.length; i++) {
                     long[] indicesForDim = specifiedIdxs.get(i);
+                    putIndices[i] = (int) indicesForDim[(int)iterationIdxs[i]];
                     destinationIndices[dims[i]] = NDArrayIndex.point(indicesForDim[(int)iterationIdxs[i]]);
                     sourceIndices[dims[i]] = NDArrayIndex.point(iterationIdxs[i]);
                 }
 
-                INDArray sourceView = element.get(sourceIndices);
-                INDArray destinationView = this.get(destinationIndices);
-                return destinationView.assign(sourceView);
+                get(destinationIndices).assign(element.get(sourceIndices));
             }
+
+            return this;
+
         }
-        return this;
     }
 
     @Override

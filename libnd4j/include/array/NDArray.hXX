@@ -1127,7 +1127,7 @@ void NDArray::assign(const NDArray &other, bool allowParallelism) {
       }
     }
   } else {
-    if (other.lengthOf() != lengthOf()) {
+    if (other.lengthOf() != lengthOf() && !ShapeUtils::areShapesBroadcastable(other.shapeInfo(),this->shapeInfo())) {
       auto shapeThis = ShapeUtils::shapeAsString(this);
       auto shapeThat = ShapeUtils::shapeAsString(&other);
       sd_printf("Can't assign array: this shape %s; other shape: %s\n", shapeThis.c_str(), shapeThat.c_str());

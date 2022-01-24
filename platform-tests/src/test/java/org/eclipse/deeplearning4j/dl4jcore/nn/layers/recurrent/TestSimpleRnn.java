@@ -68,7 +68,7 @@ public class TestSimpleRnn extends BaseDL4JTest {
     }
 
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.TestRnnLayers#params")
+    @MethodSource("params")
     public void testSimpleRnn(RNNFormat rnnDataFormat, Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
@@ -138,7 +138,7 @@ public class TestSimpleRnn extends BaseDL4JTest {
     }
 
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.nn.layers.recurrent.TestRnnLayers#params")
+    @MethodSource("params")
     public void testBiasInit(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         int nIn = 5;
