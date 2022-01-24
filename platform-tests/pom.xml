@@ -67,12 +67,18 @@
         <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
         <surefire.forks>4</surefire.forks>
         <surefire.threads>1</surefire.threads>
-        <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
-        <excludedTests>large-resources,downloads,long-running-test,large-resources</excludedTests>
+        <tests>samediff|rng|java-only|dl4j-old-api|ndarray-indexing|compression|loss-functions|keras|python|tensorflow|onnx</tests>
+        <excludedTests>large-resources,downloads,long-running-test</excludedTests>
         <preload>/usr/local/lib/libjemalloc.so.2</preload>
     </properties>
 
     <dependencies>
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>python4j-numpy</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.deeplearning4j</groupId>
