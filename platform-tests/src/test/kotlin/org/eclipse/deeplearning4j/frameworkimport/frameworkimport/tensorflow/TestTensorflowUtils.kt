@@ -21,25 +21,14 @@
 package org.nd4j.samediff.frameworkimport.tensorflow
 
 
-import org.apache.commons.io.IOUtils
 import org.eclipse.deeplearning4j.frameworkimport.frameworkimport.tensorflow.GraphInput
-import org.junit.jupiter.api.Test
-import org.nd4j.autodiff.samediff.SameDiff
-import org.nd4j.common.io.ClassPathResource
-import org.nd4j.ir.OpNamespace
-import org.nd4j.linalg.api.ndarray.INDArray
-import org.nd4j.linalg.api.ops.DynamicCustomOp
-import org.nd4j.linalg.api.ops.impl.transforms.BinCount
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt
 import org.nd4j.linalg.factory.Nd4j
-import org.nd4j.linalg.profiler.ProfilerConfig
 import org.nd4j.samediff.frameworkimport.tensorflow.definitions.registry
 import org.nd4j.shade.protobuf.ByteString
 import org.nd4j.tensorflow.conversion.graphrunner.GraphRunner
 import org.tensorflow.framework.*
-import java.lang.IllegalStateException
 import java.nio.charset.Charset
-import kotlin.math.max
 
 fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput> {
     val tensorflowOpDef = registry().lookupInputFrameworkOpDef(inputFrameworkOpName)

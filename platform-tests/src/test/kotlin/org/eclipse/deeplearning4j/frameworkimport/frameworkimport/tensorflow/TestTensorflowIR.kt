@@ -22,11 +22,9 @@ package org.eclipse.deeplearning4j.frameworkimport.frameworkimport.tensorflow
 
 
 import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.nd4j.common.io.ClassPathResource
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.ndarray.INDArray
@@ -49,10 +47,8 @@ import java.nio.charset.StandardCharsets
 import java.util.*
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
-import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.common.tests.tags.TagNames
 import org.nd4j.samediff.frameworkimport.tensorflow.*
 

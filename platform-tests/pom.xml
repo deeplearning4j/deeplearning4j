@@ -75,6 +75,12 @@
     <dependencies>
 
         <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>python4j-numpy</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>resources</artifactId>
             <version>${dl4j.version}</version>
