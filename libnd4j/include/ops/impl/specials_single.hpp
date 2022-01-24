@@ -134,7 +134,7 @@ namespace sd {
  * @param axis
  * @return int
  */
-int isShapeExtendedWithOnes(const NDArray &input, int axis) {
+SD_INLINE int isShapeExtendedWithOnes(const NDArray &input, int axis) {
   bool isAllOne = true;
   auto shapes = shape::shapeOf(input.shapeInfo());
   auto rank = input.rankOf();
