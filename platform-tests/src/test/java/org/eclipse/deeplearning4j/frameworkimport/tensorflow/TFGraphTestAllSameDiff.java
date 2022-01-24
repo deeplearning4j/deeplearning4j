@@ -53,6 +53,7 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
      * the status of the test failing. No tests will run.
      */
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
+            "resize_bicubic/float64"
     );
 
     public static final String[] IGNORE_REGEXES = new String[]{

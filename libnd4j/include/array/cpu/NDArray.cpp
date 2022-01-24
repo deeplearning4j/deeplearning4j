@@ -96,7 +96,6 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
       const auto zOffset = shape::getOffset(target.shapeInfo(), coords);
       sd::LongType row = coords[0];
       sd::LongType col = coords[1];
-      // if( (row + upper < col) || (row + lower > col) )
       if (direction == 'l' && row + lower > col || direction == 'u' && row + upper < col) {
         z[zOffset] = value;
       }
