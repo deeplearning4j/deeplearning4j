@@ -44,6 +44,7 @@ data class OnnxGraphInput(val graphDef: Onnx.GraphProto, val inputNames: List<St
                           val inputArrays: Map<String, INDArray>, val dynamicArrays: Map<String, INDArray>)
 
 @Tag(TagNames.ONNX)
+@Disabled
 class TestOnnxIR {
     val declarations = OnnxOpDeclarations
 
