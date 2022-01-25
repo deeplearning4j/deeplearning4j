@@ -59,6 +59,7 @@ import static org.junit.Assume.assumeTrue;
 @Tag(TagNames.SAMEDIFF)
 @Tag(TagNames.CUSTOM_FUNCTIONALITY)
 @Tag(TagNames.DL4J_OLD_API)
+@Disabled
 public class TestSameDiffConv extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
