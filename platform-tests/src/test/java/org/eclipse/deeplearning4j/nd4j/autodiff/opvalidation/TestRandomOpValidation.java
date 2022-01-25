@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @NativeTag
 @Tag(TagNames.RNG)
-public class RandomOpValidation extends BaseOpValidation {
+public class TestRandomOpValidation extends BaseOpValidation {
 
 
     @ParameterizedTest

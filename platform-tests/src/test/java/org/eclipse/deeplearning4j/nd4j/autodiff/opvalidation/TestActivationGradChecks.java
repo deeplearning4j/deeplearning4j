@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @NativeTag
 @Tag(TagNames.SAMEDIFF)
 @TrainingTag
-public class ActivationGradChecks extends BaseOpValidation {
+public class TestActivationGradChecks extends BaseOpValidation {
 
 
     @ParameterizedTest

@@ -73,7 +73,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @NativeTag
 @Tag(TagNames.SAMEDIFF)
 @NotThreadSafe
-public class LayerOpValidation extends BaseOpValidation {
+public class TestLayerOpValidation extends BaseOpValidation {
 
     @Override
     public long getTimeoutMilliseconds() {

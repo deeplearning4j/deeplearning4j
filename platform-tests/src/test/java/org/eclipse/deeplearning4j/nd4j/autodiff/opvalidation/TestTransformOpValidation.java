@@ -91,7 +91,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @NativeTag
 @Tag(TagNames.SAMEDIFF)
-public class TransformOpValidation extends BaseOpValidation {
+public class TestTransformOpValidation extends BaseOpValidation {
 
     private DataType initialType;
 

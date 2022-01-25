@@ -59,7 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag(TagNames.DL4J_OLD_API)
 @NativeTag
 
-public class UtilLayerGradientChecks extends BaseDL4JTest {
+public class TestUtilLayerGradientChecks extends BaseDL4JTest {
 
     static {
         Nd4j.setDataType(DataType.DOUBLE);

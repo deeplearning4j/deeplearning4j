@@ -38,7 +38,7 @@ import java.nio.file.StandardCopyOption;
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.KERAS)
 @NativeTag
-public class OptimizerImport extends BaseDL4JTest {
+public class TestOptimizerImport extends BaseDL4JTest {
 
     @Test
     public void importAdam() throws Exception {

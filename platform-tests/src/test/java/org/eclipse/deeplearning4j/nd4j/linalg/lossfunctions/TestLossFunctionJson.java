@@ -21,7 +21,6 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.lossfunctions;
 
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -56,21 +55,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @NativeTag
 @Tag(TagNames.LOSS_FUNCTIONS)
 @Tag(TagNames.JACKSON_SERDE)
-public class LossFunctionJson extends BaseNd4jTestWithBackends {
+public class TestLossFunctionJson extends BaseNd4jTestWithBackends {
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testJsonSerialization(Nd4jBackend backend) throws Exception {
 
         INDArray w = Nd4j.create(new double[] {1.0, 2.0, 3.0});
 
         ILossFunction[] lossFns = new ILossFunction[] {new LossBinaryXENT(), new LossBinaryXENT(w),
-                        new LossCosineProximity(), new LossHinge(), new LossKLD(), new LossL1(), new LossL1(w),
-                        new LossL2(), new LossL2(w), new LossMAE(), new LossMAE(w), new LossMAPE(), new LossMAPE(w),
-                        new LossMCXENT(), new LossMCXENT(w), new LossMSE(), new LossMSE(w), new LossMSLE(),
-                        new LossMSLE(w), new LossNegativeLogLikelihood(), new LossNegativeLogLikelihood(w),
-                        new LossPoisson(), new LossSquaredHinge(), new LossMultiLabel()};
+                new LossCosineProximity(), new LossHinge(), new LossKLD(), new LossL1(), new LossL1(w),
+                new LossL2(), new LossL2(w), new LossMAE(), new LossMAE(w), new LossMAPE(), new LossMAPE(w),
+                new LossMCXENT(), new LossMCXENT(w), new LossMSE(), new LossMSE(w), new LossMSLE(),
+                new LossMSLE(w), new LossNegativeLogLikelihood(), new LossNegativeLogLikelihood(w),
+                new LossPoisson(), new LossSquaredHinge(), new LossMultiLabel()};
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

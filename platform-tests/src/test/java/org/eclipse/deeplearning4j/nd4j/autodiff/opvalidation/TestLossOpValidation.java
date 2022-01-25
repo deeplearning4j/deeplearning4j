@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @NativeTag
-public class LossOpValidation extends BaseOpValidation {
+public class TestLossOpValidation extends BaseOpValidation {
 
 
     @Override

@@ -80,7 +80,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @Tag(TagNames.SAMEDIFF)
-public class MiscOpValidation extends BaseOpValidation {
+public class TestMiscOpValidation extends BaseOpValidation {
 
 
 

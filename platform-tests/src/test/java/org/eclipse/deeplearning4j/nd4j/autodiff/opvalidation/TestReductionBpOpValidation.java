@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 @Slf4j
 @NativeTag
-public class ReductionBpOpValidation extends BaseOpValidation {
+public class TestReductionBpOpValidation extends BaseOpValidation {
 
     private DataType initialType;
 

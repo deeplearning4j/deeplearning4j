@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Slf4j
 @NativeTag
 @Tag(TagNames.SAMEDIFF)
-public class RnnOpValidation extends BaseOpValidation {
+public class TestRnnOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

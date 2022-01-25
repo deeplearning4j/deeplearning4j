@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag(TagNames.TRAINING)
 @Tag(TagNames.DL4J_OLD_API)
 @NativeTag
-public class RnnGradientChecks extends BaseDL4JTest {
+public class TestRnnGradientChecks extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
 

@@ -59,7 +59,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 @Tag(TagNames.TRAINING)
 @Tag(TagNames.DL4J_OLD_API)
 @NativeTag
-public class GradientCheckTestsMasking extends BaseDL4JTest {
+public class TestGradientCheckTestsMasking extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
 

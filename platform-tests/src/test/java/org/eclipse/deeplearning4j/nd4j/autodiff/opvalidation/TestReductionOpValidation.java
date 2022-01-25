@@ -80,7 +80,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @NativeTag
 @NotThreadSafe
-public class ReductionOpValidation extends BaseOpValidation {
+public class TestReductionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
-public class MiscRegressionTests extends BaseDL4JTest {
+public class TestMiscRegression extends BaseDL4JTest {
 
     @Test
     public void testFrozen() throws Exception {

@@ -59,7 +59,7 @@ import java.io.File;
 import static org.junit.jupiter.api.Assertions.*;
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
-public class RegressionTest071 extends BaseDL4JTest {
+public class TestRegressionTest071 extends BaseDL4JTest {
 
     @Override
     public DataType getDataType(){

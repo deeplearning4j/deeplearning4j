@@ -72,7 +72,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 @Slf4j
 @NativeTag
 @Tag(TagNames.SAMEDIFF)
-public class ShapeOpValidation extends BaseOpValidation {
+public class TestShapeOpValidation extends BaseOpValidation {
 
     /*
     To test:

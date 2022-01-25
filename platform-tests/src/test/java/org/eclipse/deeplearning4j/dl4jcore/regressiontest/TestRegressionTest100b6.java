@@ -20,31 +20,12 @@
 
 package org.eclipse.deeplearning4j.dl4jcore.regressiontest;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import org.deeplearning4j.BaseDL4JTest;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
-import org.deeplearning4j.nn.conf.layers.CnnLossLayer;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.DepthwiseConvolution2D;
-import org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer;
-import org.deeplearning4j.nn.conf.layers.LSTM;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.PoolingType;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
-import org.deeplearning4j.nn.conf.layers.SeparableConvolution2D;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
-import org.deeplearning4j.nn.conf.layers.Upsampling2D;
-import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
@@ -60,12 +41,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
-import org.nd4j.linalg.activations.impl.ActivationIdentity;
-import org.nd4j.linalg.activations.impl.ActivationLReLU;
-import org.nd4j.linalg.activations.impl.ActivationReLU;
-import org.nd4j.linalg.activations.impl.ActivationSigmoid;
-import org.nd4j.linalg.activations.impl.ActivationSoftmax;
-import org.nd4j.linalg.activations.impl.ActivationTanH;
+import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -75,19 +51,25 @@ import org.nd4j.linalg.learning.regularization.L2Regularization;
 import org.nd4j.linalg.lossfunctions.impl.LossMAE;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.common.resources.Resources;
+
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+
+import static org.junit.jupiter.api.Assertions.*;
 @Disabled
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
-public class RegressionTest100b4 extends BaseDL4JTest {
-
-    @Override
-    public long getTimeoutMilliseconds() {
-        return 180000L;  //Most tests should be fast, but slow download may cause timeout on slow connections
-    }
+public class TestRegressionTest100b6 extends BaseDL4JTest {
 
     @Override
     public DataType getDataType() {
         return DataType.FLOAT;
+    }
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 180000L;  //Most tests should be fast, but slow download may cause timeout on slow connections
     }
 
     @Test
@@ -97,7 +79,7 @@ public class RegressionTest100b4 extends BaseDL4JTest {
 
             String dtypeName = dtype.toString().toLowerCase();
 
-            File f = Resources.asFile("regression_testing/100b4/CustomLayerExample_100b4_" + dtypeName + ".bin");
+            File f = Resources.asFile("regression_testing/100b6/CustomLayerExample_100b6_" + dtypeName + ".bin");
             MultiLayerNetwork.load(f, true);
 
             MultiLayerNetwork net = MultiLayerNetwork.load(f, true);
@@ -115,13 +97,13 @@ public class RegressionTest100b4 extends BaseDL4JTest {
 
             INDArray outExp;
             File f2 = Resources
-                    .asFile("regression_testing/100b4/CustomLayerExample_Output_100b4_" + dtypeName + ".bin");
+                    .asFile("regression_testing/100b6/CustomLayerExample_Output_100b6_" + dtypeName + ".bin");
             try (DataInputStream dis = new DataInputStream(new FileInputStream(f2))) {
                 outExp = Nd4j.read(dis);
             }
 
             INDArray in;
-            File f3 = Resources.asFile("regression_testing/100b4/CustomLayerExample_Input_100b4_" + dtypeName + ".bin");
+            File f3 = Resources.asFile("regression_testing/100b6/CustomLayerExample_Input_100b6_" + dtypeName + ".bin");
             try (DataInputStream dis = new DataInputStream(new FileInputStream(f3))) {
                 in = Nd4j.read(dis);
             }
@@ -140,7 +122,7 @@ public class RegressionTest100b4 extends BaseDL4JTest {
             assertEquals(dtype, net.getLayerWiseConfigurations().getDataType());
             assertEquals(dtype, net.params().dataType());
             boolean eq = outExp.equalsWithEps(outAct, 0.01);
-            assertTrue(eq,"Test for dtype: " + dtypeName + "\n" + outExp + " vs " + outAct);
+            assertTrue(eq, "Test for dtype: " + dtypeName + " - " + outExp + " vs " + outAct);
         }
     }
 
@@ -148,7 +130,7 @@ public class RegressionTest100b4 extends BaseDL4JTest {
     @Test
     public void testLSTM() throws Exception {
 
-        File f = Resources.asFile("regression_testing/100b4/GravesLSTMCharModelingExample_100b4.bin");
+        File f = Resources.asFile("regression_testing/100b6/GravesLSTMCharModelingExample_100b6.bin");
         MultiLayerNetwork net = MultiLayerNetwork.load(f, true);
 
         LSTM l0 = (LSTM) net.getLayer(0).conf().getLayer();
@@ -177,13 +159,13 @@ public class RegressionTest100b4 extends BaseDL4JTest {
         assertEquals(50, net.getLayerWiseConfigurations().getTbpttFwdLength());
 
         INDArray outExp;
-        File f2 = Resources.asFile("regression_testing/100b4/GravesLSTMCharModelingExample_Output_100b4.bin");
+        File f2 = Resources.asFile("regression_testing/100b6/GravesLSTMCharModelingExample_Output_100b6.bin");
         try (DataInputStream dis = new DataInputStream(new FileInputStream(f2))) {
             outExp = Nd4j.read(dis);
         }
 
         INDArray in;
-        File f3 = Resources.asFile("regression_testing/100b4/GravesLSTMCharModelingExample_Input_100b4.bin");
+        File f3 = Resources.asFile("regression_testing/100b6/GravesLSTMCharModelingExample_Input_100b6.bin");
         try (DataInputStream dis = new DataInputStream(new FileInputStream(f3))) {
             in = Nd4j.read(dis);
         }
@@ -196,7 +178,7 @@ public class RegressionTest100b4 extends BaseDL4JTest {
     @Test
     public void testVae() throws Exception {
 
-        File f = Resources.asFile("regression_testing/100b4/VaeMNISTAnomaly_100b4.bin");
+        File f = Resources.asFile("regression_testing/100b6/VaeMNISTAnomaly_100b6.bin");
         MultiLayerNetwork net = MultiLayerNetwork.load(f, true);
 
         VariationalAutoencoder l0 = (VariationalAutoencoder) net.getLayer(0).conf().getLayer();
@@ -209,13 +191,13 @@ public class RegressionTest100b4 extends BaseDL4JTest {
         assertEquals(new Adam(1e-3), l0.getIUpdater());
 
         INDArray outExp;
-        File f2 = Resources.asFile("regression_testing/100b4/VaeMNISTAnomaly_Output_100b4.bin");
+        File f2 = Resources.asFile("regression_testing/100b6/VaeMNISTAnomaly_Output_100b6.bin");
         try (DataInputStream dis = new DataInputStream(new FileInputStream(f2))) {
             outExp = Nd4j.read(dis);
         }
 
         INDArray in;
-        File f3 = Resources.asFile("regression_testing/100b4/VaeMNISTAnomaly_Input_100b4.bin");
+        File f3 = Resources.asFile("regression_testing/100b6/VaeMNISTAnomaly_Input_100b6.bin");
         try (DataInputStream dis = new DataInputStream(new FileInputStream(f3))) {
             in = Nd4j.read(dis);
         }
@@ -227,10 +209,9 @@ public class RegressionTest100b4 extends BaseDL4JTest {
 
 
     @Test
-    @Disabled("Failing due to new data format changes. Sept 10,2020")
     public void testYoloHouseNumber() throws Exception {
 
-        File f = Resources.asFile("regression_testing/100b4/HouseNumberDetection_100b4.bin");
+        File f = Resources.asFile("regression_testing/100b6/HouseNumberDetection_100b6.bin");
         ComputationGraph net = ComputationGraph.load(f, true);
 
         int nBoxes = 5;
@@ -245,13 +226,13 @@ public class RegressionTest100b4 extends BaseDL4JTest {
         assertArrayEquals(new int[]{1, 1}, cl.getKernelSize());
 
         INDArray outExp;
-        File f2 = Resources.asFile("regression_testing/100b4/HouseNumberDetection_Output_100b4.bin");
+        File f2 = Resources.asFile("regression_testing/100b6/HouseNumberDetection_Output_100b6.bin");
         try (DataInputStream dis = new DataInputStream(new FileInputStream(f2))) {
             outExp = Nd4j.read(dis);
         }
 
         INDArray in;
-        File f3 = Resources.asFile("regression_testing/100b4/HouseNumberDetection_Input_100b4.bin");
+        File f3 = Resources.asFile("regression_testing/100b6/HouseNumberDetection_Input_100b6.bin");
         try (DataInputStream dis = new DataInputStream(new FileInputStream(f3))) {
             in = Nd4j.read(dis);
         }
@@ -263,10 +244,9 @@ public class RegressionTest100b4 extends BaseDL4JTest {
     }
 
     @Test
-    @Disabled("failing due to new input data format changes.")
     public void testSyntheticCNN() throws Exception {
 
-        File f = Resources.asFile("regression_testing/100b4/SyntheticCNN_100b4.bin");
+        File f = Resources.asFile("regression_testing/100b6/SyntheticCNN_100b6.bin");
         MultiLayerNetwork net = MultiLayerNetwork.load(f, true);
 
         ConvolutionLayer l0 = (ConvolutionLayer) net.getLayer(0).conf().getLayer();
@@ -345,13 +325,13 @@ public class RegressionTest100b4 extends BaseDL4JTest {
         assertEquals(new LossMAE(), l9.getLossFn());
 
         INDArray outExp;
-        File f2 = Resources.asFile("regression_testing/100b4/SyntheticCNN_Output_100b4.bin");
+        File f2 = Resources.asFile("regression_testing/100b6/SyntheticCNN_Output_100b6.bin");
         try (DataInputStream dis = new DataInputStream(new FileInputStream(f2))) {
             outExp = Nd4j.read(dis);
         }
 
         INDArray in;
-        File f3 = Resources.asFile("regression_testing/100b4/SyntheticCNN_Input_100b4.bin");
+        File f3 = Resources.asFile("regression_testing/100b6/SyntheticCNN_Input_100b6.bin");
         try (DataInputStream dis = new DataInputStream(new FileInputStream(f3))) {
             in = Nd4j.read(dis);
         }
@@ -370,7 +350,7 @@ public class RegressionTest100b4 extends BaseDL4JTest {
     @Test
     public void testSyntheticBidirectionalRNNGraph() throws Exception {
 
-        File f = Resources.asFile("regression_testing/100b4/SyntheticBidirectionalRNNGraph_100b4.bin");
+        File f = Resources.asFile("regression_testing/100b6/SyntheticBidirectionalRNNGraph_100b6.bin");
         ComputationGraph net = ComputationGraph.load(f, true);
 
         Bidirectional l0 = (Bidirectional) net.getLayer("rnn1").conf().getLayer();
@@ -409,13 +389,13 @@ public class RegressionTest100b4 extends BaseDL4JTest {
         assertEquals(new LossMCXENT(), outl.getLossFn());
 
         INDArray outExp;
-        File f2 = Resources.asFile("regression_testing/100b4/SyntheticBidirectionalRNNGraph_Output_100b4.bin");
+        File f2 = Resources.asFile("regression_testing/100b6/SyntheticBidirectionalRNNGraph_Output_100b6.bin");
         try (DataInputStream dis = new DataInputStream(new FileInputStream(f2))) {
             outExp = Nd4j.read(dis);
         }
 
         INDArray in;
-        File f3 = Resources.asFile("regression_testing/100b4/SyntheticBidirectionalRNNGraph_Input_100b4.bin");
+        File f3 = Resources.asFile("regression_testing/100b6/SyntheticBidirectionalRNNGraph_Input_100b6.bin");
         try (DataInputStream dis = new DataInputStream(new FileInputStream(f3))) {
             in = Nd4j.read(dis);
         }

@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag(TagNames.TRAINING)
 @Tag(TagNames.DL4J_OLD_API)
 @NativeTag
-public class DropoutGradientCheck extends BaseDL4JTest {
+public class TestDropoutGradientCheck extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
