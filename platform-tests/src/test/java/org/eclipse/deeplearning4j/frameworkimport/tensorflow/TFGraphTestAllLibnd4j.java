@@ -136,7 +136,7 @@ public class TFGraphTestAllLibnd4j {   //Note: Can't extend BaseNd4jTest here as
         Nd4j.create(1);
         Nd4j.getExecutioner().enableVerboseMode(true);
         Nd4j.getExecutioner().enableDebugMode(true);
-        for(String s : TFGraphTestAllSameDiff.IGNORE_REGEXES) {
+        for(String s : TestTFGraphAllSameDiff.IGNORE_REGEXES) {
             if(modelName.matches(s)){
                 log.info("\n\tIGNORE MODEL ON REGEX: {} - regex {}", modelName, s);
                 assumeFalse(true);

@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.eclipse.deeplearning4j.dl4jcore.nn.layers.samediff.testlayers.SameDiffDenseVertex;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -53,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Tag(TagNames.SAMEDIFF)
 @Tag(TagNames.CUSTOM_FUNCTIONALITY)
 @Tag(TagNames.DL4J_OLD_API)
+@Disabled
 public class TestSameDiffDenseVertex extends BaseDL4JTest {
 
     @Test
