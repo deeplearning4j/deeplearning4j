@@ -49,6 +49,7 @@
         <lombok.version>1.18.16</lombok.version>
 
         <logback.version>1.1.7</logback.version>
+        <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
 
         <kotlin.version>1.4.30</kotlin.version>
         <kotlin.compiler.jvmTarget>1.8</kotlin.compiler.jvmTarget>
@@ -363,6 +364,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
                 <executions>
                     <!-- Replacing default-compile as it is treated specially by maven -->
                     <execution>
@@ -525,6 +527,9 @@
                     <excludedGroups>${excludedTests}</excludedGroups>
                     <trimStackTrace>false</trimStackTrace>
                     <reuseForks>false</reuseForks>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <trimStackTrace>false</trimStackTrace>
+                    <testFailureIgnore>true</testFailureIgnore>
                     <environmentVariables>
                         <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                         <LD_PRELOAD>${preload}</LD_PRELOAD>
