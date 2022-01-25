@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Slf4j
 @Tag(TagNames.LONG_TEST)
 @Tag(TagNames.LARGE_RESOURCES)
-public class ValidateZooModelPredictions extends BaseNd4jTestWithBackends {
+public class TestValidateZooModelPredictions extends BaseNd4jTestWithBackends {
 
     @TempDir Path testDir;
 

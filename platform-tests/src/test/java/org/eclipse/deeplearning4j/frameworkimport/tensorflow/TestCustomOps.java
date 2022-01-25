@@ -33,7 +33,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class CustomOpTests extends BaseNd4jTestWithBackends {
+public class TestCustomOps extends BaseNd4jTestWithBackends {
 
 
     @Override

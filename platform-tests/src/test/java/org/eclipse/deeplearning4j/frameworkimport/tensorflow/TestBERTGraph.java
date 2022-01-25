@@ -60,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Slf4j
 @Tag(TagNames.LONG_TEST)
 @Tag(TagNames.LARGE_RESOURCES)
-public class BERTGraphTest extends BaseNd4jTestWithBackends {
+public class TestBERTGraph extends BaseNd4jTestWithBackends {
 
 
     @Override

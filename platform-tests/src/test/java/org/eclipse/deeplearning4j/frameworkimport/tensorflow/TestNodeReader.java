@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Slf4j
-public class NodeReaderTests extends BaseNd4jTestWithBackends {
+public class TestNodeReader extends BaseNd4jTestWithBackends {
 
 
     @Override
