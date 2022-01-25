@@ -49,6 +49,7 @@
         <lombok.version>1.18.16</lombok.version>
 
         <logback.version>1.1.7</logback.version>
+        <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
 
         <kotlin.version>1.4.30</kotlin.version>
         <kotlin.compiler.jvmTarget>1.8</kotlin.compiler.jvmTarget>
@@ -67,7 +68,7 @@
         <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
         <surefire.forks>4</surefire.forks>
         <surefire.threads>1</surefire.threads>
-        <tests>samediff|rng|java-only|dl4j-old-api|ndarray-indexing|compression|loss-functions|keras|python|tensorflow|onnx</tests>
+        <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
         <excludedTests>large-resources,downloads,long-running-test</excludedTests>
         <preload>/usr/local/lib/libjemalloc.so.2</preload>
     </properties>
@@ -158,6 +159,36 @@
             <version>${kotlin.version}</version>
             <scope>test</scope>
         </dependency>
+
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>1.8.0-M1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
 
 
         <dependency>
@@ -363,6 +394,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
                 <executions>
                     <!-- Replacing default-compile as it is treated specially by maven -->
                     <execution>
@@ -507,24 +539,15 @@
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.junit.jupiter</groupId>
-                        <artifactId>junit-jupiter</artifactId>
-                        <version>5.8.0-M1</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.junit.platform</groupId>
-                        <artifactId>junit-platform-launcher</artifactId>
-                        <version>1.8.0-M1</version>
-                        <scope>test</scope>
-                    </dependency>
-                </dependencies>
+
                 <configuration>
-                    <groups>${tests}</groups>
+                    <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                     <excludedGroups>${excludedTests}</excludedGroups>
                     <trimStackTrace>false</trimStackTrace>
                     <reuseForks>false</reuseForks>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <trimStackTrace>false</trimStackTrace>
+                    <testFailureIgnore>true</testFailureIgnore>
                     <environmentVariables>
                         <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                         <LD_PRELOAD>${preload}</LD_PRELOAD>
@@ -536,8 +559,6 @@
                         <classpathDependencyExclude>com.google.android:android
                         </classpathDependencyExclude>
                     </classpathDependencyExcludes>
-
-                    <useSystemClassLoader>true</useSystemClassLoader>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
                     <argLine>-Dorg.nd4j.arraynogc=true -Dorg.bytedeco.javacpp.logger.debug=true -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
                     <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
