@@ -32,7 +32,7 @@ on:
         default: ossrh
 
       runsOn:
-        description: 'Server id to publish to'
+        description: 'System to run on'
         required: false
         default: ubuntu-18.04
 
