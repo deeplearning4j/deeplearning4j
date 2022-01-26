@@ -815,7 +815,7 @@
                 <configuration>
                     <detail>true</detail>
                     <serverId>${dl4j.release.server}</serverId>
-                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
                     <keepStagingRepositoryOnFailure>true</keepStagingRepositoryOnFailure>
                     <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
                 </configuration>
@@ -919,7 +919,7 @@
                 <repository>
                     <id>ossrh</id>
                     <name>Nexus Release Repository</name>
-                    <url>http://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                    <url>http://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
                 </repository>
 
                 <snapshotRepository>
