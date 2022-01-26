@@ -82,9 +82,9 @@ pytorch_urls = ['resnet18']
 for url in pytorch_urls:
     pytorch_model_hub.download_model(url)
 huggingface_model_hub = HuggingFaceModelHub()
-frameworks = ['tensorflow','pytorch']
+frameworks = ['pytorch']
 huggingface_urls =  [ 'gpt2','bert-base-uncased','t5-base','bert-base-chinese','google/electra-small-discriminator','facebook/wav2vec2-base-960h','facebook/bart-large-cnn']
-huggingface_urls = ['facebook/bart-large-cnn']
+huggingface_urls = ['openai/clip-vit-base-patch32']
 for url in huggingface_urls:
     for framework_name in frameworks:
         huggingface_model_hub.download_model(url,framework_name=framework_name)

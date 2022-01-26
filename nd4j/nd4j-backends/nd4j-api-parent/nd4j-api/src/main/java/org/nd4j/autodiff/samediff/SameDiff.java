@@ -3014,7 +3014,7 @@ public class SameDiff extends SDBaseOps {
                 SDVariable r = new SDVariable(v.name(), v.getVariableType(), this, v.getShape(), v.dataType());
                 addVariable(r);
                 if(v.getArr() != null)
-                    try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
+                    try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                         variablesArrays.setArray(v.name(), v.getArr().dup());
                     }
                 return r;

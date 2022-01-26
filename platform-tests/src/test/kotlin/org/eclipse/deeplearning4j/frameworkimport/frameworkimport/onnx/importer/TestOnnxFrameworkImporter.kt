@@ -12,6 +12,7 @@ import org.nd4j.linalg.dataset.DataSet
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.learning.config.Adam
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter
+import java.io.File
 import java.util.*
 
 @Tag(TagNames.ONNX)
@@ -29,6 +30,19 @@ class TestOnnxFrameworkImporter {
         assertArrayEquals(longArrayOf(1,3,224,224),shape)
 
     }
+
+    @Test
+    fun testDetectron2() {
+        val importer = OnnxFrameworkImporter()
+        //TODO: Implement https://github.com/chaudhary-rohit/RPN-Faster-R-CNN/blob/2e63ee184241e2df3f8ecf7ca0cf7f27bed47d6e/RPN.py#L266
+        //Porting over: https://github.com/pytorch/pytorch/blob/master/caffe2/operators/generate_proposals_op.cc
+        //the first one is the equivalent
+        val file = File("/home/agibsonccc/Downloads/model.onnx")
+        val suggestedVariables = importer.runImport(file.absolutePath, suggestDynamicVariables = true)
+
+
+    }
+
 
     @Test
     fun testMobileNet() {

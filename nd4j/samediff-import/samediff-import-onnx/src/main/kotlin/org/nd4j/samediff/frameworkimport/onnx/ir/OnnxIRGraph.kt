@@ -187,11 +187,13 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         val frameworkList =  OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")
         graphDef.nodeList.forEach {
 
-            if(!frameworkList.containsKey(it.opType)) {
-                throw IllegalArgumentException("Op def name ${it.opType} not found!")
-            }
 
-            val opDefOrNull = frameworkList[it.opType]!!
+            val opDefOrNull = if(!frameworkList.containsKey(it.opType)) {
+                //use Constant as a placeholder for any op that resolves to noop, this is probably an op handled by the custom implementation
+                frameworkList["Constant"]!!
+            } else {
+                frameworkList[it.opType]!!
+            }
             ret2.add(OnnxIRNode(it, opDefOrNull!!,opMappingRegistry))
         }
 

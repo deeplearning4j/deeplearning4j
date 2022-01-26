@@ -200,6 +200,13 @@ val avgPool = OnnxMappingProcess(
                 listAttributeValueLookup(outputAttributeValue = "kW",inputAttributeValue = "kernel_shape",indexValue = 1,argumentIndex = 1),
                 listAttributeValueLookup(outputAttributeValue = "kH",inputAttributeValue = "kernel_shape",indexValue = 0,argumentIndex = 0)))
 
+
+val aliasWithName = OnnxMappingProcess(
+        opName = "noop",
+        opMappingRegistry = onnxOpRegistry,
+        inputFrameworkOpName = "AliasWithName"
+)
+
 //note: this is handled by the batchnorm class now
 val batchNorm = OnnxMappingProcess(
         opName = "noop",
@@ -228,11 +235,11 @@ val concat = OnnxMappingProcess(
 //TODO: ConvInteger
 //TODO: ConvTranspose
 val cumSum = OnnxMappingProcess(
-        opName = "cumsum",
+        opName = "noop",
         inputFrameworkOpName = "CumSum",
         opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "x","dimensions" to "axis"))),
-        attributeMappingRules = listOf(valueMappings(mapOf("exclusive" to "exclusive","reverse" to "reverse")))
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
 )
 
 val depthToSpace = OnnxMappingProcess(
@@ -417,6 +424,13 @@ val dropout = OnnxMappingProcess(
 val resize = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "Resize",
+        opMappingRegistry = onnxOpRegistry
+)
+
+//pytorch op
+val resizeNearest = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ResizeNearest",
         opMappingRegistry = onnxOpRegistry
 )
 

@@ -5171,6 +5171,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "ResizeNearest"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "lrn"
   inputFrameworkOpName: "LRN"
   rule {
@@ -5586,6 +5591,11 @@ mappings {
     }
     inputFrameworkOpName: "GatherND"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "AliasWithName"
 }
 mappings {
   frameworkName: "onnx"
@@ -6120,44 +6130,8 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "cumsum"
+  opName: "noop"
   inputFrameworkOpName: "CumSum"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "x"
-    inputTensorName: "axis"
-    outputTensorName: "input"
-    outputTensorName: "dimensions"
-    inputToOutput {
-      key: "dimensions"
-      value: "axis"
-    }
-    inputToOutput {
-      key: "input"
-      value: "x"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "CumSum"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputIntName: "exclusive"
-    inputIntName: "reverse"
-    outputBooleanName: "exclusive"
-    outputBooleanName: "reverse"
-    inputToOutput {
-      key: "exclusive"
-      value: "exclusive"
-    }
-    inputToOutput {
-      key: "reverse"
-      value: "reverse"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "CumSum"
-  }
 }
 mappings {
   frameworkName: "onnx"
