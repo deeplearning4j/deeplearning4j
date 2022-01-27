@@ -43,7 +43,7 @@ on:
 
 
       runsOn:
-        description: 'The OS to run on, default ubuntu-18.04'
+        description: 'System to run on'
         required: false
         default: ubuntu-18.04
 
