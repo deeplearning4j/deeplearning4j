@@ -230,14 +230,15 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
     // total_copy_size, total copy size} where: copy_size_i = shape[axis] * .. * shape[rank-1] of the iTh input array
     // total copy size is sum of all {copy_size_i}
 
-    int times = 1;
+    sd::LongType times = 1;
     auto shapes = shape::shapeOf(output.shapeInfo());
 
     T *z = output.bufferAsT<T>();
     for (int i = 0; i < axis; i++) {
       times = times * shapes[i];
     }
-    int totalCopySize = output.lengthOf() / times;
+
+    sd::LongType totalCopySize = output.lengthOf() / times;
 
     std::vector<InputArgsCase2<T>> inputArgs;
     for (sd::LongType i = 0; i < numOfInArrs; i++) {
