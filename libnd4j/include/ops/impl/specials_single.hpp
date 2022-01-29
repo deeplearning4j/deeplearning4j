@@ -240,7 +240,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
     int totalCopySize = output.lengthOf() / times;
 
     std::vector<InputArgsCase2<T>> inputArgs;
-    for (int i = 0; i < numOfInArrs; i++) {
+    for (sd::LongType i = 0; i < numOfInArrs; i++) {
       InputArgsCase2<T> input = {inArrs[i]->bufferAsT<T>(), inArrs[i]->lengthOf() / times};
       inputArgs.push_back(input);
     }
