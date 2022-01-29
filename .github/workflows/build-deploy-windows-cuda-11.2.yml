@@ -146,7 +146,7 @@ jobs:
         with:
           msystem: MINGW64
           update: true
-          install: base-devel  git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch gnupg  mingw-w64-x86_64-make --noconfirm mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc  mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
+          install: base-devel  git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch   mingw-w64-x86_64-make --noconfirm mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc  mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
       - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
         env:
           cuda: 11.2.1
@@ -180,7 +180,11 @@ jobs:
              echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
         if: ${{ matrix.libnd4j_file_download != '' }}
 
-
+      - name: Import GPG Key
+        uses: crazy-max/ghaction-import-gpg@v1
+        env:
+            GPG_PRIVATE_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+            PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
       - name:  Run cuda build
         shell: cmd
         env:
