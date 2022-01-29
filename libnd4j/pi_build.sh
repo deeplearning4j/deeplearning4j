@@ -431,7 +431,7 @@ cd "$BASE_DIR/.."
 message "lets build jars"
 if [ "${DEPLOY-}" != "" ]; then
   message "Deploying to maven"
-  command="mvn  -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  $MODULES  -Dmaven.javadoc.failOnError=false -Dlibnd4j.buildthreads=\"${LIBND4J_BUILD_THREADS}\"  -P\"${PUBLISH_TO}\"  deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS}  -DprotocCommand=\"${PROTO_EXEC}\"  -DprotocExecutable=\"${PROTO_EXEC}\" -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  -DskipTests -Dmaven.test.skip=true"
+  command="mvn  -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  $MODULES  -Dmaven.javadoc.failOnError=false -Dlibnd4j.buildthreads=${LIBND4J_BUILD_THREADS}  -P${PUBLISH_TO}  deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS}  -DprotocCommand=${PROTO_EXEC}  -DprotocExecutable=${PROTO_EXEC} -Djavacpp.platform.compiler=${COMPILER} -Djava.library.path=${JAVA_LIBRARY_PATH}  -DskipTests -Dmaven.test.skip=true"
   message "$command"
   echo "Perform release or not ${PERFORM_RELEASE}"
   if [ "${PERFORM_RELEASE}" == "1" ] || [ "${PERFORM_RELEASE}" == 1 ]; then
@@ -443,7 +443,7 @@ if [ "${DEPLOY-}" != "" ]; then
 
 else
   message "Installing to local repo"
-  command="mvn  install  -Dlibnd4j.buildthreads=\"${LIBND4J_BUILD_THREADS}\"  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM}  ${XTRA_MVN_ARGS}   -DprotocCommand=\"${PROTO_EXEC}\"  -DprotocExecutable=\"${PROTO_EXEC}\"  -Djavacpp.platform.compiler=\"${COMPILER}\" -Djava.library.path=\"${JAVA_LIBRARY_PATH}\"  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true "
+  command="mvn  install  -Dlibnd4j.buildthreads=${LIBND4J_BUILD_THREADS}  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM}  ${XTRA_MVN_ARGS}   -DprotocCommand=${PROTO_EXEC}  -DprotocExecutable=${PROTO_EXEC}  -Djavacpp.platform.compiler=${COMPILER} -Djava.library.path=${JAVA_LIBRARY_PATH}  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true "
   message $command
   eval $command
 fi
