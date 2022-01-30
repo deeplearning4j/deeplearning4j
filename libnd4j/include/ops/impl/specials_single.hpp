@@ -242,7 +242,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
 
     std::vector<InputArgsCase2<T>> inputArgs;
     for (sd::LongType i = 0; i < numOfInArrs; i++) {
-      InputArgsCase2<T> input = {inArrs[i]->bufferAsT<T>(), inArrs[i]->lengthOf() / times};
+      InputArgsCase2<T> input = {inArrs[i]->bufferAsT<T>(), static_cast<T>(inArrs[i]->lengthOf()) / static_cast<T>(times)};
       inputArgs.push_back(input);
     }
 
