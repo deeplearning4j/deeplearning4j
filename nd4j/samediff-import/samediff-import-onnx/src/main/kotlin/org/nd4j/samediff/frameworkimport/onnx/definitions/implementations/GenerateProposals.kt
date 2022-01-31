@@ -23,6 +23,8 @@ import org.nd4j.autodiff.samediff.SDIndex
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
+import org.nd4j.linalg.api.buffer.DataType
+import org.nd4j.linalg.indexing.masking.Masking
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -31,9 +33,12 @@ import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 /**
- * A port of cast.py from onnx tensorflow for samediff:
- * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/cast.py
+ * A port of  RPN-FasterRCNN for pytorch interop. See:
+ * https://github.com/chaudhary-rohit/RPN-Faster-R-CNN/blob/2e63ee184241e2df3f8ecf7ca0cf7f27bed47d6e/RPN.py
  *
+ * This handles implementing pytorch's GenerateProposals op used within the detectron framework
+ * and exposed as a proprietary onnx op.
+ * 
  * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [],opNames = ["GenerateProposals"],frameworkName = "onnx")
@@ -71,14 +76,80 @@ class GenerateProposals : PreImportHook  {
         var allScores = scores.get(SDIndex.all(),SDIndex.point(1))
         allScores = sd.reshape(allScores,-1)
 
-        anchors = sd.bitwise().
-
-
+        anchors = Masking.applyMask(sd,anchors,filteredAnchors,0)
+        val bboxPredict = Masking.applyMask(sd,bboxDeltas,filteredAnchors,0)
+        scores = Masking.applyMask(sd,allScores,filteredAnchors,0)
+        var proposals = decode(sd,anchors,bboxPredict)
+        val minProbFilter = sd.gte(scores,0.0)
+        val (x1,y1,x2,y2) = sd.unstack(proposals,1,4)
+        val width = x2.sub(x1).add(1.0)
+        val height = y2.sub(y1).add(1.0)
+        val area = width.mul(height)
+        val areaFilter = sd.gte(area,0.0)
+         val netFilter = sd.bitwise().and(minProbFilter,areaFilter)
+        val unsortedProposals = Masking.applyMask(sd,proposals,netFilter,0)
+        val unsortedScores = Masking.applyMask(sd,scores,netFilter,0)
+        val (topKScores,indices) = sd.nn().topK(unsortedScores,prenmSTopN as Double,true)
+        var topKProposals = clipBoxes(sd,sd.gather(unsortedProposals,indices,0),imInfo)
+        val orderedProposals = changeOrder(sd,topKProposals)
+        val selectedIndices = sd.image().nonMaxSuppression(orderedProposals,sd.reshape(topKScores,-1),
+            postNmsTopN,
+            nmsThreshold.toDouble(),
+            0.5)
+        val nmsProposalOrder = sd.gather(orderedProposals,selectedIndices,0)
+        proposals = changeOrder(sd,nmsProposalOrder)
+        scores = sd.gather(topKScores,selectedIndices,0)
         //output 0: rois
         //output1: roi_probs
-        return mapOf("" to listOf(filteredAnchors))
+        return mapOf(outputNames[0] to listOf(proposals),outputNames[1] to listOf(scores))
     }
 
+
+    fun changeOrder(sd: SameDiff,bboxes: SDVariable): SDVariable {
+        val (firstMin,secondMin,firstMax,secondMax) = sd.unstack(bboxes,1,4)
+        return sd.stack(1,secondMin,firstMin,secondMax,firstMax)
+    }
+
+    fun clipBoxes(sd: SameDiff,bboxes: SDVariable,imShape: SDVariable): SDVariable {
+        val castedBboxes = bboxes.castTo(DataType.FLOAT)
+        val castedImShape = imShape.castTo(DataType.FLOAT)
+        var (x1,y1,x2,y2) = sd.split(castedBboxes,4,1)
+        val width = castedImShape.get(SDIndex.point(1))
+        val height = castedImShape.get(SDIndex.point(0))
+        x1 = sd.math().max(sd.min(x1,width.sub(1.0)),sd.constant(0.0))
+        x2 = sd.math().max(sd.min(x2,width.sub(1.0)),sd.constant(0.0))
+
+        y1 = sd.math().max(sd.min(y1,height.sub(1.0)),sd.constant(0.0))
+        y2 = sd.math().max(sd.min(y2,height.sub(1.0)),sd.constant(0.0))
+        return sd.concat(1,x1,y1,x2,y2)
+
+    }
+
+    fun decode(sd: SameDiff,anchors: SDVariable,bboxPred: SDVariable): SDVariable {
+        val (roiWidth,roiHeight,roiUrx,roiUry) = centerCorner(sd,anchors)
+        val (dx,dy,dw,dh) = sd.split(bboxPred,4,1)
+        val predUrX = dx.mul(roiWidth).add(roiUrx)
+        val predUrY = dy.mul(roiHeight).add(roiUry)
+        val predW = sd.math().exp(dw).mul(roiWidth)
+        val predH = sd.math().exp(dh).mul(roiHeight)
+        val bboxX1 = predUrX.sub(0.5).mul(predW)
+        val bboxY1 = predUrY.sub(0.5).mul(predH)
+        val bboxX2 = predUrX.add(0.5).mul(predW).sub(1.0)
+        val bboxY2 = predUrY.add(0.5).mul(predH).sub(1.0)
+        val bboxes = sd.concat(1,bboxX1,bboxX2,bboxY1,bboxY2)
+        return bboxes
+    }
+
+
+    fun centerCorner(sd: SameDiff,bboxes: SDVariable): Array<SDVariable> {
+        val bboxesCast = bboxes.castTo(DataType.FLOAT)
+        val (x1,y1,x2,y2) = sd.split(bboxesCast,4,1)
+        val width = x2.sub(x1).add(1.0)
+        val height = y2.sub(y1).add(1.0)
+        val urx = x1.add(.5).mul(width)
+        val ury = y1.add(.5).mul(height)
+        return arrayOf(width,height,urx,ury)
+    }
 
     fun filter(sd: SameDiff, anchors: SDVariable, imInfo: SDVariable): SDVariable {
         val (xMin, yMin, xMax, yMax) = sd.unstack(anchors, 1, 4)

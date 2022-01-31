@@ -50,6 +50,13 @@ public class TopK extends DynamicCustomOp {
         addIArgument(ArrayUtil.fromBoolean(sorted), k);
     }
 
+    public TopK(INDArray input, double k, boolean sorted) {
+        super(null,new INDArray[]{input},null);
+        this.k = (int) k;
+        this.sorted = sorted;
+        addIArgument(ArrayUtil.fromBoolean(sorted),this.k);
+    }
+
     @Override
     public String opName(){
         return "top_k";

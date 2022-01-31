@@ -609,4 +609,16 @@ public class NDNN {
     NDValidation.validateNumerical("tanh", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.Tanh(x));
   }
+
+  /**
+   * Find values and indices for the largest k entries along the last dimension.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param k The number of values to return
+   * @param sorted Whether to return the values sorted or not
+   */
+  public INDArray[] topK(INDArray input, double k, boolean sorted) {
+    NDValidation.validateNumerical("topK", "input", input);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TopK(input, k, sorted));
+  }
 }

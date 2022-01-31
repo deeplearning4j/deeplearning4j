@@ -562,5 +562,23 @@ fun NN() = Namespace("NN") {
         }
     }
 
+
+    Op("topK") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "TopK"
+        Input(NUMERIC, "input") { description = "Input tensor"}
+        Arg(NUMERIC, "k") { description = "The number of values to return" }
+        Arg(BOOL, "sorted") { description = "Whether to return the values sorted or not" }
+        Output(NUMERIC, "output"){ description = "Output of topk. The top k values from the input array." }
+        Output(NUMERIC, "indices"){ description = "The indices of the top k." }
+
+        Doc(Language.ANY, DocScope.ALL){
+            """
+            Find values and indices for the largest k entries along the last dimension.
+            """.trimIndent()
+        }
+    }
+
+
     Alias(Math(), "tanh")
 }
