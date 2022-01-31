@@ -33,7 +33,7 @@ on:
         default: ossrh
 
       runsOn:
-        description: 'Runs on:'
+        description: 'System to run on'
         required: false
         default: macos-10.15
 

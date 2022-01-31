@@ -44,7 +44,7 @@ on:
 
 
       runsOn:
-        description: 'OS to run on'
+        description: 'System to run on'
         required: false
         default: ubuntu-18.04
 

@@ -94,19 +94,18 @@ if [[ -z ${STAGING_REPOSITORY:-} ]]; then
         # this --also-make flag handles any transitive dependencies and uploads those. The reason this is important is if a build tries to upload
         # an already existing dependency, sonatype nexus returns a 400 bad request. So we need deps that haven't already been uploaded.
         # this is because repos are immutable by default, no overrides are allowed whereas for snapshots this is not the case.
-        STAGING_REPO_FLAG=" --also-make"
+        STAGING_REPO_FLAG=""
     else
         echo "Using staging repository ${STAGING_REPOSITORY}"
         #STAGING_REPOSITORY="${BASH_REMATCH[1]}"
         #only specify a staging repo if it's not empty
-        STAGING_REPO_FLAG="-DstagingRepositoryId=${STAGING_REPOSITORY} --also-make"
+        STAGING_REPO_FLAG="-DstagingRepositoryId=${STAGING_REPOSITORY}"
     fi
     else
-        STAGING_REPO_FLAG="-DstagingRepositoryId=${STAGING_REPOSITORY} --also-make"
+        STAGING_REPO_FLAG="-DstagingRepositoryId=${STAGING_REPOSITORY}"
         echo "USING STAGING_REPOSITORY ${STAGING_REPOSITORY}, setting flag to ${STAGING_REPO_FLAG}"
 fi
 
 DEPLOY_COMMAND="${DEPLOY_COMMAND} ${STAGING_REPO_FLAG}"
 echo "RUNNING maven command ${DEPLOY_COMMAND}"
 eval "$DEPLOY_COMMAND"
-
