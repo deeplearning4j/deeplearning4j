@@ -159,15 +159,13 @@ public abstract class Nd4jBackend {
         } catch (ServiceConfigurationError serviceError) {
             // a fatal error due to a syntax or provider construction error.
             // backends mustn't throw an exception during construction.
-            throw new RuntimeException("failed to process available backends", serviceError);
+            log.warn("failed to process available backends", serviceError);
+            return null;
         }
 
-        Collections.sort(backends, new Comparator<Nd4jBackend>() {
-            @Override
-            public int compare(Nd4jBackend o1, Nd4jBackend o2) {
-                // high-priority first
-                return o2.getPriority() - o1.getPriority();
-            }
+        Collections.sort(backends, (o1, o2) -> {
+            // high-priority first
+            return o2.getPriority() - o1.getPriority();
         });
 
         for (Nd4jBackend backend : backends) {

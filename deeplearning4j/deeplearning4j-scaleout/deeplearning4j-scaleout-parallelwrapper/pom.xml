@@ -35,9 +35,19 @@
 
     <name>deeplearning4j-parallel-wrapper</name>
 
+    <build>
+        <plugins>
+            <!--<plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>-->
+        </plugins>
+    </build>
+
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+
+
+        <module.name>deeplearning4j.parallel.wrapper</module.name>
     </properties>
 
     <dependencies>

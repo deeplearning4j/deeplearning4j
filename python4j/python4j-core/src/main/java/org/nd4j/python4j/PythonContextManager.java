@@ -123,7 +123,7 @@ public class PythonContextManager {
     }
 
     private static void collapseContext(String contextName) {
-        try (PythonGC _ = PythonGC.watch()) {
+        try (PythonGC gc = PythonGC.watch()) {
             PythonObject globals = Python.globals();
             PythonObject pop = globals.attr("pop");
             PythonObject keysF = globals.attr("keys");
@@ -147,7 +147,7 @@ public class PythonContextManager {
     }
 
     private static void expandContext(String contextName) {
-        try (PythonGC _ = PythonGC.watch()) {
+        try (PythonGC gc = PythonGC.watch()) {
             String prefix = getContextPrefix(contextName);
             PythonObject globals = Python.globals();
             PythonObject pop = globals.attr("pop");

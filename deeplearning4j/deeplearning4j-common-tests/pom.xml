@@ -32,6 +32,19 @@
 
     <artifactId>deeplearning4j-common-tests</artifactId>
 
+    <properties>
+        <module.name>deeplearning4j.common.tests</module.name>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>org.junit.platform</groupId>

@@ -38,7 +38,17 @@
     <properties>
         <kryo.version>4.0.2</kryo.version>
         <jkserializers.version>0.41</jkserializers.version>
+        <module.name>nd4j.kryo</module.name>
     </properties>
+
+    <build>
+  <!--      <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>-->
+    </build>
 
     <dependencyManagement>
         <dependencies>

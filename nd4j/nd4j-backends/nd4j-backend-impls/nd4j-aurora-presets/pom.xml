@@ -15,12 +15,21 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+
+
         <javacpp.version>1.5.6</javacpp.version>
         <javacpp.parser.skip>false</javacpp.parser.skip>
         <javacpp.compiler.skip>false</javacpp.compiler.skip>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>

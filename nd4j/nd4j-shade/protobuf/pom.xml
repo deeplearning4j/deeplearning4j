@@ -37,6 +37,7 @@
         <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
     </properties>
 
+
     <dependencies>
         <dependency>
             <groupId>com.google.protobuf</groupId>
@@ -116,6 +117,8 @@
 
     <build>
         <plugins>
+
+
             <!-- Disable Maven Lint plugin in this module. For some reason it chokes on this module (internal NPE) and we don't need it anyway here -->
             <plugin>
                 <groupId>com.lewisd</groupId>

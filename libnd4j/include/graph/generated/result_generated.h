@@ -3,7 +3,9 @@
 
 #ifndef FLATBUFFERS_GENERATED_RESULT_SD_GRAPH_H_
 #define FLATBUFFERS_GENERATED_RESULT_SD_GRAPH_H_
+
 #include "flatbuffers/flatbuffers.h"
+
 #include "array_generated.h"
 #include "node_generated.h"
 #include "properties_generated.h"
@@ -14,10 +16,13 @@ namespace sd {
 namespace graph {
 
 struct FlatTiming;
+struct FlatTimingBuilder;
 
 struct FlatResult;
+struct FlatResultBuilder;
 
 struct FlatTiming FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef FlatTimingBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_ID = 4,
     VT_NAME = 6,
@@ -29,8 +34,8 @@ struct FlatTiming FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
   }
-  const LongPair *timing() const {
-    return GetPointer<const LongPair *>(VT_TIMING);
+  const sd::graph::LongPair *timing() const {
+    return GetPointer<const sd::graph::LongPair *>(VT_TIMING);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -44,6 +49,7 @@ struct FlatTiming FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct FlatTimingBuilder {
+  typedef FlatTiming Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_id(int32_t id) {
@@ -52,7 +58,7 @@ struct FlatTimingBuilder {
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
     fbb_.AddOffset(FlatTiming::VT_NAME, name);
   }
-  void add_timing(flatbuffers::Offset<LongPair> timing) {
+  void add_timing(flatbuffers::Offset<sd::graph::LongPair> timing) {
     fbb_.AddOffset(FlatTiming::VT_TIMING, timing);
   }
   explicit FlatTimingBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -71,7 +77,7 @@ inline flatbuffers::Offset<FlatTiming> CreateFlatTiming(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t id = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
-    flatbuffers::Offset<LongPair> timing = 0) {
+    flatbuffers::Offset<sd::graph::LongPair> timing = 0) {
   FlatTimingBuilder builder_(_fbb);
   builder_.add_timing(timing);
   builder_.add_name(name);
@@ -83,7 +89,7 @@ inline flatbuffers::Offset<FlatTiming> CreateFlatTimingDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t id = 0,
     const char *name = nullptr,
-    flatbuffers::Offset<LongPair> timing = 0) {
+    flatbuffers::Offset<sd::graph::LongPair> timing = 0) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
   return sd::graph::CreateFlatTiming(
       _fbb,
@@ -93,6 +99,7 @@ inline flatbuffers::Offset<FlatTiming> CreateFlatTimingDirect(
 }
 
 struct FlatResult FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef FlatResultBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_ID = 4,
     VT_VARIABLES = 6,
@@ -103,11 +110,11 @@ struct FlatResult FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int64_t id() const {
     return GetField<int64_t>(VT_ID, 0);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<FlatVariable>> *variables() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<FlatVariable>> *>(VT_VARIABLES);
+  const flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatVariable>> *variables() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatVariable>> *>(VT_VARIABLES);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<FlatTiming>> *timing() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<FlatTiming>> *>(VT_TIMING);
+  const flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatTiming>> *timing() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatTiming>> *>(VT_TIMING);
   }
   int64_t footprintForward() const {
     return GetField<int64_t>(VT_FOOTPRINTFORWARD, 0);
@@ -131,15 +138,16 @@ struct FlatResult FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct FlatResultBuilder {
+  typedef FlatResult Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_id(int64_t id) {
     fbb_.AddElement<int64_t>(FlatResult::VT_ID, id, 0);
   }
-  void add_variables(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatVariable>>> variables) {
+  void add_variables(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatVariable>>> variables) {
     fbb_.AddOffset(FlatResult::VT_VARIABLES, variables);
   }
-  void add_timing(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatTiming>>> timing) {
+  void add_timing(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatTiming>>> timing) {
     fbb_.AddOffset(FlatResult::VT_TIMING, timing);
   }
   void add_footprintForward(int64_t footprintForward) {
@@ -163,8 +171,8 @@ struct FlatResultBuilder {
 inline flatbuffers::Offset<FlatResult> CreateFlatResult(
     flatbuffers::FlatBufferBuilder &_fbb,
     int64_t id = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatVariable>>> variables = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatTiming>>> timing = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatVariable>>> variables = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatTiming>>> timing = 0,
     int64_t footprintForward = 0,
     int64_t footprintBackward = 0) {
   FlatResultBuilder builder_(_fbb);
@@ -179,12 +187,12 @@ inline flatbuffers::Offset<FlatResult> CreateFlatResult(
 inline flatbuffers::Offset<FlatResult> CreateFlatResultDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     int64_t id = 0,
-    const std::vector<flatbuffers::Offset<FlatVariable>> *variables = nullptr,
-    const std::vector<flatbuffers::Offset<FlatTiming>> *timing = nullptr,
+    const std::vector<flatbuffers::Offset<sd::graph::FlatVariable>> *variables = nullptr,
+    const std::vector<flatbuffers::Offset<sd::graph::FlatTiming>> *timing = nullptr,
     int64_t footprintForward = 0,
     int64_t footprintBackward = 0) {
-  auto variables__ = variables ? _fbb.CreateVector<flatbuffers::Offset<FlatVariable>>(*variables) : 0;
-  auto timing__ = timing ? _fbb.CreateVector<flatbuffers::Offset<FlatTiming>>(*timing) : 0;
+  auto variables__ = variables ? _fbb.CreateVector<flatbuffers::Offset<sd::graph::FlatVariable>>(*variables) : 0;
+  auto timing__ = timing ? _fbb.CreateVector<flatbuffers::Offset<sd::graph::FlatTiming>>(*timing) : 0;
   return sd::graph::CreateFlatResult(
       _fbb,
       id,

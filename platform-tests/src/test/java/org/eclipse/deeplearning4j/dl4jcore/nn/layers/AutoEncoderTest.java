@@ -20,7 +20,7 @@
 package org.eclipse.deeplearning4j.dl4jcore.nn.layers;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
+import org.deeplearning4j.datasets.iterator.utilty.SingletonMultiDataSetIterator;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;

@@ -31,7 +31,7 @@ import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
+import org.deeplearning4j.datasets.iterator.utilty.SingletonMultiDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;

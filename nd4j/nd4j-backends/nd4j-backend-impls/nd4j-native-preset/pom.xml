@@ -35,6 +35,8 @@
 
     <name>nd4j-native-preset</name>
 
+
+
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -80,6 +82,11 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>

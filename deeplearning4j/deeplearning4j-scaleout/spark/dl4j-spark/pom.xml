@@ -35,6 +35,19 @@
 
     <name>dl4j-spark</name>
 
+    <build>
+        <plugins>
+         <!--   <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>-->
+        </plugins>
+    </build>
+
+    <properties>
+        <module.name>dl4j.spark</module.name>
+    </properties>
+
     <dependencies>
         <!-- ND4J Shaded Jackson Dependency -->
         <dependency>

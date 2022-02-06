@@ -50,8 +50,7 @@ import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.python4j.NumpyArray;
-import org.nd4j.python4j.PythonTypes;
+import org.nd4j.python4j.numpy.NumpyArray;
 
 import javax.annotation.concurrent.NotThreadSafe;
 

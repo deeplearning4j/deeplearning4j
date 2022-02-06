@@ -35,6 +35,19 @@
 
     <name>deeplearning4j-nn</name>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+    <properties>
+        <module.name>deeplearning4j.nn</module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.deeplearning4j</groupId>

@@ -29,7 +29,6 @@ import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
 import lombok.val;
-import lombok.var;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -5041,7 +5040,8 @@ public class Nd4j {
             defaultFloatingPointDataType = new AtomicReference<>();
             defaultFloatingPointDataType.set(DataType.FLOAT);
             Nd4jBackend backend = Nd4jBackend.load();
-            initWithBackend(backend);
+            if(backend != null)
+                initWithBackend(backend);
         } catch (NoAvailableBackendException e) {
             throw new RuntimeException(e);
         }

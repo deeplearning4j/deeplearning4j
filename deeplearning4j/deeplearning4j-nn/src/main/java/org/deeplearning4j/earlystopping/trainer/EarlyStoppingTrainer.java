@@ -21,12 +21,11 @@
 package org.deeplearning4j.earlystopping.trainer;
 
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
-import org.deeplearning4j.datasets.iterator.impl.SingletonDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
+import org.deeplearning4j.datasets.iterator.utilty.SingletonDataSetIterator;
+import org.deeplearning4j.datasets.iterator.utilty.SingletonMultiDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;

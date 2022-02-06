@@ -36,9 +36,19 @@
     <name>deeplearning4j-ui</name>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+
+
+        <module.name>deeplearning4j.ui</module.name>
     </properties>
+
+    <build>
+        <plugins>
+         <!--   <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>-->
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>

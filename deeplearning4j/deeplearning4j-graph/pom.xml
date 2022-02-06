@@ -34,6 +34,20 @@
 
     <artifactId>deeplearning4j-graph</artifactId>
 
+    <properties>
+        <module.name>deeplearning4j.graph</module.name>
+    </properties>
+
+    <build>
+        <plugins>
+           <!-- <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>-->
+        </plugins>
+    </build>
+
+
     <dependencies>
         <dependency>
             <groupId>org.deeplearning4j</groupId>

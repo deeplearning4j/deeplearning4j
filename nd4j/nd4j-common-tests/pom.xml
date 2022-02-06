@@ -34,9 +34,12 @@
     <artifactId>nd4j-common-tests</artifactId>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+
+
+        <module.name>nd4j.common.tests</module.name>
     </properties>
+
+
 
     <dependencies>
         <dependency>

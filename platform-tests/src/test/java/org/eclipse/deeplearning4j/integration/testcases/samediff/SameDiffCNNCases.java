@@ -21,7 +21,7 @@ package org.eclipse.deeplearning4j.integration.testcases.samediff;
 
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
+import org.deeplearning4j.datasets.iterator.utilty.SingletonMultiDataSetIterator;
 import org.eclipse.deeplearning4j.integration.ModelType;
 import org.eclipse.deeplearning4j.integration.TestCase;
 import org.eclipse.deeplearning4j.integration.TestUtils;

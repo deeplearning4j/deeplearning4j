@@ -43,6 +43,8 @@
         <javacpp-presets.cuda.version>1.5.6</javacpp-presets.cuda.version>
     </properties>
 
+
+
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -132,6 +134,11 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

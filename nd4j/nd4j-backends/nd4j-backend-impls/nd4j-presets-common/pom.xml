@@ -13,7 +13,18 @@
 
     <name>nd4j-presets-common</name>
 
+    <properties>
+        <module.name>nd4j.presets.common</module.name>
+    </properties>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>

@@ -36,11 +36,22 @@
     <name>nd4j-aeron</name>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+
+
         <sbe.version>1.5.4</sbe.version>
         <aeron.version>1.32.0</aeron.version>
+        <module.name>nd4j.aeron</module.name>
     </properties>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>
