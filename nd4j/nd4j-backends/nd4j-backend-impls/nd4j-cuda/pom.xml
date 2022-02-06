@@ -42,7 +42,7 @@
         <javacpp-presets.cuda.version>1.5.6</javacpp-presets.cuda.version>
         <!-- Try to avoid setting this. This is mainly for being able to override for where we put binaries in javacpp jars for android. -->
         <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
-
+        <module.name>nd4j.cuda</module.name>
     </properties>
 
 
@@ -176,7 +176,7 @@
                         <artifactId>nd4j-native-api</artifactId>
                         <version>${project.version}</version>
                     </dependency>
-          
+
                     <dependency>
                         <groupId>org.bytedeco</groupId>
                         <artifactId>cuda</artifactId>
@@ -280,6 +280,13 @@
 
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Automatic-Module-Name>${module.name}</Automatic-Module-Name>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
                 <executions>
                     <execution>
                         <id>default-jar</id>

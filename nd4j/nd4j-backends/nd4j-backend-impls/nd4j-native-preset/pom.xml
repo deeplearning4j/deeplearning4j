@@ -20,8 +20,8 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -35,6 +35,9 @@
 
     <name>nd4j-native-preset</name>
 
+    <properties>
+        <module.name>nd4j.cpu.preset</module.name>
+    </properties>
 
 
     <dependencies>
@@ -119,6 +122,7 @@
                         <configuration>
                             <classifier>javadoc</classifier>
                             <classesDirectory>${basedir}/javadoc</classesDirectory>
+
                         </configuration>
                     </execution>
                     <execution>
@@ -139,6 +143,11 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
+                            <archive>
+                                <manifestEntries>
+                                    <Automatic-Module-Name>${module.name}</Automatic-Module-Name>
+                                </manifestEntries>
+                            </archive>
                             <excludes>
                                 <exclude>
                                     org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
@@ -148,6 +157,7 @@
                                 <exclude>*.dylib</exclude>
                                 <exclude>*.so</exclude>
                                 <exclude>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</exclude>
+                                <exclude>module-info.java</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -158,6 +168,11 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
+                            <archive>
+                                <manifestEntries>
+                                    <Automatic-Module-Name>${module.name}.binary</Automatic-Module-Name>
+                                </manifestEntries>
+                            </archive>
                             <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
                             <skipIfEmpty>true</skipIfEmpty>
                             <includes>

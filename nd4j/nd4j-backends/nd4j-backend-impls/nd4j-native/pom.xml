@@ -105,6 +105,11 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
+                            <archive>
+                                <manifestEntries>
+                                    <Automatic-Module-Name>${module.name}</Automatic-Module-Name>
+                                </manifestEntries>
+                            </archive>
                             <excludes>
                                 <exclude>
                                     org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
@@ -124,6 +129,11 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
+                            <archive>
+                                <manifestEntries>
+                                    <Automatic-Module-Name>${module.name}.binary</Automatic-Module-Name>
+                                </manifestEntries>
+                            </archive>
                             <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
                             <skipIfEmpty>true</skipIfEmpty>
                             <includes>
@@ -152,7 +162,7 @@
                         <configuration>
                             <skipMain>${javacpp.parser.skip}</skipMain>
                             <includes>
-                                <include>org/nd4j/nativeblas/*.java</include>
+                                <include>org/nd4j/linalg/nativecpu/bindings/*.java</include>
                             </includes>
                         </configuration>
                     </execution>
@@ -271,7 +281,7 @@
                         <configuration>
                             <skip>${javacpp.parser.skip}</skip>
                             <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                            <classOrPackageName>org.nd4j.nativeblas.Nd4jCpuPresets
+                            <classOrPackageName>org.nd4j.presets.cpu.Nd4jCpuPresets
                             </classOrPackageName>
                         </configuration>
                     </execution>
@@ -283,7 +293,7 @@
                         </goals>
                         <configuration>
                             <skip>${javacpp.compiler.skip}</skip>
-                            <classOrPackageName>org.nd4j.nativeblas.Nd4jCpu</classOrPackageName>
+                            <classOrPackageName>org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu</classOrPackageName>
                             <copyLibs>true</copyLibs>
                             <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
                             <outputDirectory>${javacpp.build.output.path}</outputDirectory>

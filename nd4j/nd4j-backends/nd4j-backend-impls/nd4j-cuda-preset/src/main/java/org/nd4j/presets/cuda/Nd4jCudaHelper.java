@@ -16,7 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.nativeblas;
+package org.nd4j.presets.cuda;
+
+import org.nd4j.nativeblas.NativeOps;
 
 public abstract class Nd4jCudaHelper extends Nd4jCudaPresets implements NativeOps {
 }

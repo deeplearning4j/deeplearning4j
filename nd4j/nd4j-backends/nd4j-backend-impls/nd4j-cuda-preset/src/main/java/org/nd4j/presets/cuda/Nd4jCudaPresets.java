@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.nativeblas;
+package org.nd4j.presets.cuda;
 
 import java.util.List;
 import org.bytedeco.javacpp.ClassProperties;
@@ -183,18 +183,18 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
         infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_INLINE", "CUBLASWINAPI",
                 "SD_HOST", "SD_DEVICE", "SD_KERNEL", "SD_HOST_DEVICE", "SD_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
                 .put(new Info("NativeOps.h", "build_info.h").objectify())
-                .put(new Info("OpaqueTadPack").pointerTypes("OpaqueTadPack"))
-                .put(new Info("OpaqueResultWrapper").pointerTypes("OpaqueResultWrapper"))
-                .put(new Info("OpaqueShapeList").pointerTypes("OpaqueShapeList"))
-                .put(new Info("OpaqueVariablesSet").pointerTypes("OpaqueVariablesSet"))
-                .put(new Info("OpaqueVariable").pointerTypes("OpaqueVariable"))
-                .put(new Info("OpaqueConstantDataBuffer").pointerTypes("OpaqueConstantDataBuffer"))
-                .put(new Info("OpaqueConstantShapeBuffer").pointerTypes("OpaqueConstantShapeBuffer"))
-                .put(new Info("OpaqueConstantOffsetsBuffer").pointerTypes("OpaqueConstantOffsetsBuffer"))
-                .put(new Info("OpaqueContext").pointerTypes("OpaqueContext"))
-                .put(new Info("OpaqueRandomGenerator").pointerTypes("OpaqueRandomGenerator"))
-                .put(new Info("OpaqueLaunchContext").pointerTypes("OpaqueLaunchContext"))
-                .put(new Info("OpaqueDataBuffer").pointerTypes("OpaqueDataBuffer"))
+                .put(new Info("OpaqueTadPack").pointerTypes("org.nd4j.nativeblas.OpaqueTadPack"))
+                .put(new Info("OpaqueResultWrapper").pointerTypes("org.nd4j.nativeblas.OpaqueResultWrapper"))
+                .put(new Info("OpaqueShapeList").pointerTypes("org.nd4j.nativeblas.OpaqueShapeList"))
+                .put(new Info("OpaqueVariablesSet").pointerTypes("org.nd4j.nativeblas.OpaqueVariablesSet"))
+                .put(new Info("OpaqueVariable").pointerTypes("org.nd4j.nativeblas.OpaqueVariable"))
+                .put(new Info("OpaqueConstantDataBuffer").pointerTypes("org.nd4j.nativeblas.OpaqueConstantDataBuffer"))
+                .put(new Info("OpaqueConstantShapeBuffer").pointerTypes("org.nd4j.nativeblas.OpaqueConstantShapeBuffer"))
+                .put(new Info("OpaqueConstantOffsetsBuffer").pointerTypes("org.nd4j.nativeblas.OpaqueConstantOffsetsBuffer"))
+                .put(new Info("OpaqueContext").pointerTypes("org.nd4j.nativeblas.OpaqueContext"))
+                .put(new Info("OpaqueRandomGenerator").pointerTypes("org.nd4j.nativeblas.OpaqueRandomGenerator"))
+                .put(new Info("OpaqueLaunchContext").pointerTypes("org.nd4j.nativeblas.OpaqueLaunchContext"))
+                .put(new Info("OpaqueDataBuffer").pointerTypes("org.nd4j.nativeblas.OpaqueDataBuffer"))
                 .put(new Info("const char").valueTypes("byte").pointerTypes("@Cast(\"char*\") String",
                         "@Cast(\"char*\") BytePointer"))
                 .put(new Info("char").valueTypes("char").pointerTypes("@Cast(\"char*\") BytePointer",

@@ -18,7 +18,9 @@
  *  *****************************************************************************
  */
 
-package org.nd4j.nativeblas;
+package org.nd4j.presets.cpu;
+
+import org.nd4j.nativeblas.NativeOps;
 
 public abstract class Nd4jCpuHelper extends Nd4jCpuPresets implements NativeOps {
 }

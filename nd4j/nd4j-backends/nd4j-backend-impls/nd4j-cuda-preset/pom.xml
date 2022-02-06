@@ -41,6 +41,7 @@
         <cuda.version>11.4</cuda.version>
         <cudnn.version>8.2</cudnn.version>
         <javacpp-presets.cuda.version>1.5.6</javacpp-presets.cuda.version>
+        <module.name>nd4j.cuda.preset</module.name>
     </properties>
 
 
@@ -152,7 +153,7 @@
                         <configuration>
                             <skipMain>${javacpp.parser.skip}</skipMain>
                             <includes>
-                                <include>org/nd4j/nativeblas/**.java</include>
+                                <include>org/nd4j/presets/cuda/**.java</include>
                             </includes>
                         </configuration>
                     </execution>
@@ -167,6 +168,11 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
                     <forceCreation>true</forceCreation>
+                    <archive>
+                        <manifestEntries>
+                            <Automatic-Module-Name>${module.name}</Automatic-Module-Name>
+                        </manifestEntries>
+                    </archive>
                 </configuration>
                 <executions>
                     <execution>
