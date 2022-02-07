@@ -7,7 +7,7 @@ Please describe our issue, along with:
 #### Version Information
 
 Please indicate relevant versions, including, if relevant:
-
+dd
 * Deeplearning4j version
 * Platform information (OS, etc)
 * CUDA version, if used
