@@ -15,9 +15,10 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.nd4j.nativeblas;
+package org.nd4j.linalg.jcublas;
 
 import org.nd4j.linalg.factory.Environment;
+import org.nd4j.linalg.jcublas.bindings.Nd4jCuda;
 
 /**
  * CUDA backend implementation of {@link Environment}
