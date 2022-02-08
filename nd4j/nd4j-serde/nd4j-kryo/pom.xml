@@ -20,8 +20,8 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -42,12 +42,98 @@
     </properties>
 
     <build>
-  <!--      <plugins>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.moditect</groupId>
+                    <artifactId>moditect-maven-plugin</artifactId>
+                    <configuration>
+                        <jvmVersion>9</jvmVersion>
+                        <overwriteExistingFiles>true</overwriteExistingFiles>
+                        <outputDirectory>${project.build.directory}</outputDirectory>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>generate-module-info</id>
+                            <phase>generate-sources</phase>
+                            <goals>
+                                <goal>generate-module-info</goal>
+                            </goals>
+                            <configuration>
+                                <modules>
+                                    <module>
+                                        <artifact>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>${project.artifactId}</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifact>
+
+                                        <moduleInfo>
+                                            <name>${module.name}</name>
+                                            <exports>
+                                                *;
+                                            </exports>
+                                            <open>true</open>
+                                        </moduleInfo>
+
+                                    </module>
+
+
+                                    <module>
+                                        <artifact>
+                                            <groupId>com.twitter</groupId>
+                                            <artifactId>chill_2.12</artifactId>
+                                            <version>0.9.3</version>
+                                        </artifact>
+
+                                        <moduleInfo>
+                                            <name>chill</name>
+                                            <exports>
+                                                *;
+                                            </exports>
+                                            <open>true</open>
+                                        </moduleInfo>
+
+                                    </module>
+
+                                </modules>
+                                <jdepsExtraArgs>
+                                    <arg>--ignore-missing-deps</arg>
+                                    <arg>--multi-release</arg>
+                                    <arg>9</arg>
+                                </jdepsExtraArgs>
+                                <skip>${moditect.generate.skip}</skip>
+                            </configuration>
+                        </execution>
+
+                        <execution>
+                            <id>add-module-infos</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>add-module-info</goal>
+                            </goals>
+                            <configuration>
+                                <modules>
+                                    <module>
+                                        <file>${project.build.directory}/${project.artifactId}-${project.version}.jar</file>
+                                        <moduleInfoFile>${project.build.directory}/${module.name}/module-info.java</moduleInfoFile>
+                                    </module>
+                                </modules>
+                                <skip>${moditect.add.skip}</skip>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
             <plugin>
                 <groupId>org.moditect</groupId>
                 <artifactId>moditect-maven-plugin</artifactId>
             </plugin>
-        </plugins>-->
+        </plugins>
     </build>
 
     <dependencyManagement>
@@ -104,18 +190,6 @@
             <groupId>de.javakaffee</groupId>
             <artifactId>kryo-serializers</artifactId>
             <version>${jkserializers.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_2.12</artifactId>
-            <version>${spark.version}</version>
-            <scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.code.findbugs</groupId>
-                    <artifactId>jsr305</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>

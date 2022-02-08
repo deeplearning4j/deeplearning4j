@@ -36,21 +36,16 @@
     <name>deeplearning4j-scaleout-parallelwrapper-parameter-server</name>
 
     <properties>
-        <!-- Default scala versions, may be overwritten by build profiles -->
-        <scala.version>2.11.12</scala.version>
-        <scala.binary.version>2.11</scala.binary.version>
-
-
         <rxjava.version>2.2.21</rxjava.version>
         <module.name>deeplearning4j.scaleout.parallelwrapper.parameter.server</module.name>
     </properties>
 
     <build>
         <plugins>
-           <!-- <plugin>
+            <plugin>
                 <groupId>org.moditect</groupId>
                 <artifactId>moditect-maven-plugin</artifactId>
-            </plugin>-->
+            </plugin>
         </plugins>
     </build>
 

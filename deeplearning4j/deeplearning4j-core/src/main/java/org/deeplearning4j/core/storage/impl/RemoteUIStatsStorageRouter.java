@@ -23,13 +23,13 @@ package org.deeplearning4j.core.storage.impl;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Base64;
 import org.deeplearning4j.core.storage.Persistable;
 import org.deeplearning4j.core.storage.StatsStorageRouter;
 import org.deeplearning4j.core.storage.StorageMetaData;
 import org.deeplearning4j.core.storage.StorageType;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-import javax.xml.bind.DatatypeConverter;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -335,7 +335,7 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter, Serializa
             type = StorageType.Update;
         }
 
-        String base64 = DatatypeConverter.printBase64Binary(asBytes);
+        String base64 = Base64.encodeBase64String(asBytes);
 
         Map<String, String> jsonObj = new LinkedHashMap<>();
         jsonObj.put("type", type.name());

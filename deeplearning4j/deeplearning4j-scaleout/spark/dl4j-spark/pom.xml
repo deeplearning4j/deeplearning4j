@@ -37,7 +37,7 @@
 
     <build>
         <plugins>
-         <!--   <plugin>
+       <!--     <plugin>
                 <groupId>org.moditect</groupId>
                 <artifactId>moditect-maven-plugin</artifactId>
             </plugin>-->
@@ -49,6 +49,11 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-kryo_2.12</artifactId>
+            <version>${nd4j.version}</version>
+        </dependency>
         <!-- ND4J Shaded Jackson Dependency -->
         <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -101,12 +106,6 @@
                     <artifactId>lz4</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-kryo_2.12</artifactId>
-            <version>${nd4j.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>

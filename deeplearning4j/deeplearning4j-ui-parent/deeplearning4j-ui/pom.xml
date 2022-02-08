@@ -36,14 +36,12 @@
     <name>deeplearning4j-ui</name>
 
     <properties>
-
-
         <module.name>deeplearning4j.ui</module.name>
     </properties>
 
     <build>
         <plugins>
-         <!--   <plugin>
+       <!--     <plugin>
                 <groupId>org.moditect</groupId>
                 <artifactId>moditect-maven-plugin</artifactId>
             </plugin>-->
