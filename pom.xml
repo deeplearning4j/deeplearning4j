@@ -116,8 +116,8 @@
 
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
         <encoding>UTF-8</encoding>
         <project.build.sourceEncoding>${encoding}</project.build.sourceEncoding>
         <project.reporting.outputEncoding>${encoding}</project.reporting.outputEncoding>
@@ -206,7 +206,7 @@
 
 
         <moditect.generate.skip>true</moditect.generate.skip>
-        <moditect.add.skip>true</moditect.add.skip>
+        <moditect.add.skip>false</moditect.add.skip>
         <moditect.version>1.0.0.RC2</moditect.version>
 
         <python.version>3.9.6</python.version>
@@ -581,7 +581,7 @@
                                 <modules>
                                     <module>
                                         <file>${project.build.directory}/${project.artifactId}-${project.version}.jar</file>
-                                        <moduleInfoFile>${project.build.directory}/${module.name}/module-info.java</moduleInfoFile>
+                                        <moduleInfoFile>${project.basedir}/src/main/java9/module-info.java</moduleInfoFile>
                                     </module>
                                 </modules>
                                 <skip>${moditect.add.skip}</skip>

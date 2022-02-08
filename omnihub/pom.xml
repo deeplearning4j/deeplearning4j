@@ -16,10 +16,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-
-
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <commonsio.version>2.5</commonsio.version>
         <commons.lang.version>3.12.0</commons.lang.version>
         <commons.dbutils.version>1.7</commons.dbutils.version>

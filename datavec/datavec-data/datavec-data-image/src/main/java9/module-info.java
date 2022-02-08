@@ -1,0 +1,31 @@
+open module datavec.data.image {
+    requires commons.io;
+    requires guava;
+    requires imageio.bmp;
+    requires imageio.core;
+    requires imageio.jpeg;
+    requires imageio.psd;
+    requires jai.imageio.core;
+    requires org.bytedeco.ffmpeg;
+    requires org.bytedeco.hdf5;
+    requires org.bytedeco.javacpp;
+    requires org.bytedeco.leptonica;
+    requires resources;
+    requires slf4j.api;
+    requires static android;
+    requires datavec.api;
+    requires jackson;
+    requires java.desktop;
+    requires nd4j.api;
+    requires nd4j.common;
+    requires org.bytedeco.javacv;
+    requires org.bytedeco.opencv;
+    exports org.datavec.image.data;
+    exports org.datavec.image.format;
+    exports org.datavec.image.loader;
+    exports org.datavec.image.recordreader;
+    exports org.datavec.image.recordreader.objdetect;
+    exports org.datavec.image.recordreader.objdetect.impl;
+    exports org.datavec.image.transform;
+    exports org.datavec.image.util;
+}

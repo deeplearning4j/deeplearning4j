@@ -117,7 +117,7 @@
                                 <modules>
                                     <module>
                                         <file>${project.build.directory}/${project.artifactId}-${project.version}.jar</file>
-                                        <moduleInfoFile>${project.build.directory}/${module.name}/module-info.java</moduleInfoFile>
+                                        <moduleInfoFile>${project.basedir}/src/main/java9/module-info.java</moduleInfoFile>
                                     </module>
                                 </modules>
                                 <skip>${moditect.add.skip}</skip>
