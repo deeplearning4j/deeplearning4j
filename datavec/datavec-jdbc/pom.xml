@@ -35,8 +35,8 @@
 
     <properties>
         <dbutils.version>1.7</dbutils.version>
-        <hikaricp.version>2.4.12</hikaricp.version>
-        <derby.version>10.13.1.1</derby.version>
+        <hikaricp.version>5.0.1</hikaricp.version>
+        <derby.version>10.15.2.0</derby.version>
         <module.name>datavec.jdbc</module.name>
     </properties>
 
@@ -63,12 +63,18 @@
         </dependency>
         <dependency>
             <groupId>com.zaxxer</groupId>
-            <artifactId>HikariCP-java7</artifactId>
+            <artifactId>HikariCP</artifactId>
             <version>${hikaricp.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.derby</groupId>
             <artifactId>derby</artifactId>
+            <version>${derby.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.derby</groupId>
+            <artifactId>derbytools</artifactId>
             <version>${derby.version}</version>
             <scope>test</scope>
         </dependency>

@@ -86,14 +86,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- For ResourceUtils classpath scanning -->
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>5.0.2.RELEASE</version>
-        </dependency>
-
-
     </dependencies>
 
     <profiles>

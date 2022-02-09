@@ -19,45 +19,31 @@
  */
 package org.datavec.api.records.reader.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import java.io.File;
-import java.net.URI;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import org.apache.commons.dbutils.DbUtils;
-import org.apache.derby.jdbc.EmbeddedDataSource;
+import org.apache.derby.jdbc.EmbeddedConnectionPoolDataSource;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.listener.RecordListener;
 import org.datavec.api.records.listener.impl.LogRecordListener;
 import org.datavec.api.records.metadata.RecordMetaData;
-import org.datavec.jdbc.records.metadata.RecordMetaDataJdbc;
 import org.datavec.api.records.metadata.RecordMetaDataLine;
+import org.datavec.api.writable.*;
+import org.datavec.jdbc.records.metadata.RecordMetaDataJdbc;
 import org.datavec.jdbc.records.reader.impl.jdbc.JDBCRecordReader;
-import org.datavec.api.writable.BooleanWritable;
-import org.datavec.api.writable.DoubleWritable;
-import org.datavec.api.writable.FloatWritable;
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.LongWritable;
-import org.datavec.api.writable.Text;
-import org.datavec.api.writable.Writable;
 import org.junit.jupiter.api.*;
-
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Path;
-import java.util.UUID;
-
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.nd4j.common.tests.tags.TagNames;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import java.io.File;
+import java.net.URI;
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Jdbc Record Reader Test")
 @Tag(TagNames.FILE_IO)
@@ -67,7 +53,7 @@ public class JDBCRecordReaderTest {
 
     Connection conn;
 
-    EmbeddedDataSource dataSource;
+    EmbeddedConnectionPoolDataSource dataSource;
 
     private final String dbName = "datavecTests";
 
@@ -75,7 +61,7 @@ public class JDBCRecordReaderTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        dataSource = new EmbeddedDataSource();
+        dataSource = new EmbeddedConnectionPoolDataSource();
         dataSource.setDatabaseName(dbName);
         dataSource.setCreateDatabase("create");
         conn = dataSource.getConnection();

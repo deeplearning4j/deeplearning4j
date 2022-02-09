@@ -20,12 +20,8 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.FileUtils;
@@ -1587,7 +1583,8 @@ public class WordVectorSerializer {
      * @param inputStream  input stream
      * @return a {@link Pair} holding the lookup table and the vocab cache.
      */
-    public static Pair<InMemoryLookupTable, VocabCache> loadTxt(@NonNull InputStream inputStream) {
+    @SneakyThrows
+    public static Pair<InMemoryLookupTable, VocabCache> loadTxt(InputStream inputStream) {
         AbstractCache<VocabWord> cache = new AbstractCache<>();
         LineIterator lines = null;
 
@@ -1647,13 +1644,11 @@ public class WordVectorSerializer {
 
             lookupTable.setSyn0(syn);
 
-            return new Pair<>((InMemoryLookupTable) lookupTable, (VocabCache) cache);
+            return new Pair<>(lookupTable, cache);
         } catch (IOException readeTextStreamException) {
             throw new RuntimeException(readeTextStreamException);
         } finally {
-            if (lines != null) {
-                lines.close();
-            }
+            lines.close();
         }
     }
 

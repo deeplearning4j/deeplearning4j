@@ -94,9 +94,9 @@ public class JacksonLineSequenceRecordReader extends FileRecordReader implements
             return load(lineIter);
         } finally {
             if (lineIter != null) {
-                lineIter.close();
+                IOUtils.closeQuietly(lineIter,exception -> {});
             }
-            IOUtils.closeQuietly(inputStream);
+            IOUtils.closeQuietly(inputStream,exception -> {});
         }
     }
 

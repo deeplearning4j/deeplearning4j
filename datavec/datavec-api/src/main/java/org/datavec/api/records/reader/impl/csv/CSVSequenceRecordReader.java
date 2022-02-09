@@ -78,15 +78,13 @@ public class CSVSequenceRecordReader extends FileRecordReader implements Sequenc
     }
 
     private List<List<Writable>> loadAndClose(InputStream inputStream) {
-        LineIterator lineIter = null;
-        try {
-            lineIter = IOUtils.lineIterator(new BufferedReader(new InputStreamReader(inputStream)));
+        try(LineIterator lineIter = IOUtils.lineIterator(new BufferedReader(new InputStreamReader(inputStream)))) {
             return load(lineIter);
+        } catch (IOException e) {
+            e.printStackTrace();
         } finally {
-            if (lineIter != null) {
-                lineIter.close();
-            }
             IOUtils.closeQuietly(inputStream);
+            return Collections.emptyList();
         }
     }
 

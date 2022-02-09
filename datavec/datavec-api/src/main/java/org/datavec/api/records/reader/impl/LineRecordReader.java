@@ -235,7 +235,7 @@ public class LineRecordReader extends BaseRecordReader {
     protected void closeIfRequired(Iterator<String> iterator) {
         if (iterator instanceof LineIterator) {
             LineIterator iter = (LineIterator) iterator;
-            iter.close();
+            IOUtils.closeQuietly(iter,exception -> {});
         }
     }
 
@@ -263,7 +263,7 @@ public class LineRecordReader extends BaseRecordReader {
             RecordMetaData rmd = iter.next();
             if (!(rmd instanceof RecordMetaDataLine)) {
                 throw new IllegalArgumentException(
-                                "Invalid metadata; expected RecordMetaDataLine instance; got: " + rmd);
+                        "Invalid metadata; expected RecordMetaDataLine instance; got: " + rmd);
             }
             list.add(new Triple<>(count++, (RecordMetaDataLine) rmd, (List<Writable>) null));
             if (rmd.getURI() != null)
@@ -279,7 +279,7 @@ public class LineRecordReader extends BaseRecordReader {
         Collections.sort(list, new Comparator<Triple<Integer, RecordMetaDataLine, List<Writable>>>() {
             @Override
             public int compare(Triple<Integer, RecordMetaDataLine, List<Writable>> o1,
-                            Triple<Integer, RecordMetaDataLine, List<Writable>> o2) {
+                               Triple<Integer, RecordMetaDataLine, List<Writable>> o2) {
                 if (o1.getSecond().getURI() != null) {
                     if (!o1.getSecond().getURI().equals(o2.getSecond().getURI())) {
                         return o1.getSecond().getURI().compareTo(o2.getSecond().getURI());
@@ -311,7 +311,7 @@ public class LineRecordReader extends BaseRecordReader {
                     if (currentURIIdx >= sortedURIs.size()) {
                         //Should never happen
                         throw new IllegalStateException(
-                                        "Count not find URI " + thisURI + " in URIs list: " + sortedURIs);
+                                "Count not find URI " + thisURI + " in URIs list: " + sortedURIs);
                     }
                     currentURI = sortedURIs.get(currentURIIdx);
                     currentLineIdx = 0;
@@ -330,7 +330,7 @@ public class LineRecordReader extends BaseRecordReader {
                 }
                 if (currentLineIdx < nextLineIdx && !currentUriIter.hasNext()) {
                     throw new IllegalStateException("Could not get line " + nextLineIdx + " from URI " + currentURI
-                                    + ": has only " + currentLineIdx + " lines");
+                            + ": has only " + currentLineIdx + " lines");
                 }
                 t.setThird(Collections.<Writable>singletonList(new Text(line)));
             }
@@ -357,7 +357,7 @@ public class LineRecordReader extends BaseRecordReader {
         Collections.sort(list, new Comparator<Triple<Integer, RecordMetaDataLine, List<Writable>>>() {
             @Override
             public int compare(Triple<Integer, RecordMetaDataLine, List<Writable>> o1,
-                            Triple<Integer, RecordMetaDataLine, List<Writable>> o2) {
+                               Triple<Integer, RecordMetaDataLine, List<Writable>> o2) {
                 return Integer.compare(o1.getFirst(), o2.getFirst());
             }
         });
