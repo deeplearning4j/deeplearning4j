@@ -184,7 +184,7 @@ public class IndexedTail {
     public boolean hasAnything(long threadId) {
         var threadPosition = getLocalPosition(threadId);
 
-        val r = threadPosition < updatesCounter.get();
+        boolean r = threadPosition < updatesCounter.get();
         log.trace("hasAnything({}): {}; position: {}; updates: {}", threadId, r, threadPosition, updatesCounter.get());
 
         return r;
