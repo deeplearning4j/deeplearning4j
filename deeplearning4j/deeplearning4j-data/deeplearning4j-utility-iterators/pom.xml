@@ -36,6 +36,19 @@
 
     <name>deeplearning4j-utility-iterators</name>
 
+    <properties>
+        <module.name>deeplearning4j.utility.iterators</module.name>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>

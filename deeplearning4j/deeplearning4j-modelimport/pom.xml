@@ -36,7 +36,17 @@
     <properties>
         <test.offheap.size>4g</test.offheap.size>
         <test.heap.size>4g</test.heap.size>
+        <module.name>deeplearning4j.modelimport</module.name>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>

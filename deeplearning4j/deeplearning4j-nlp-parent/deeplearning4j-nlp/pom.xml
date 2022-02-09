@@ -35,7 +35,17 @@
 
     <properties>
         <jfasttext.version>0.4</jfasttext.version>
+        <module.name>deeplearning4j.nlp</module.name>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>

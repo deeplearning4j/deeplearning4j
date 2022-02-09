@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.dl4jcore.nn.graph;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
+import org.deeplearning4j.datasets.iterator.utilty.ListDataSetIterator;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.CNN2DFormat;

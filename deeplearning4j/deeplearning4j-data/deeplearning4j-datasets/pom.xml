@@ -36,6 +36,19 @@
 
     <name>deeplearning4j-datasets</name>
 
+    <properties>
+        <module.name>deeplearning4j.datasets</module.name>
+    </properties>
+
+    <build>
+        <plugins>
+           <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>org.datavec</groupId>

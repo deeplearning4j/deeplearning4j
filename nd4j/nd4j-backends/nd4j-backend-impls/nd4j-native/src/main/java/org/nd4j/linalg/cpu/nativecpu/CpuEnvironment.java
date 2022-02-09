@@ -19,8 +19,8 @@
  */
 package org.nd4j.linalg.cpu.nativecpu;
 
+import org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu;
 import org.nd4j.linalg.factory.Environment;
-import org.nd4j.nativeblas.Nd4jCpu;
 
 public class CpuEnvironment implements Environment {
 

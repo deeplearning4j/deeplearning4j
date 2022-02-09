@@ -19,17 +19,21 @@
  */
 
 package org.nd4j.graph;
+
+import com.google.flatbuffers.BaseVector;
+import com.google.flatbuffers.Constants;
+import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.flatbuffers.Table;
+
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.*;
-import java.lang.*;
-import java.util.*;
-import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class UIEvent extends Table {
+  public static void ValidateVersion() { Constants.FLATBUFFERS_1_12_0(); }
   public static UIEvent getRootAsUIEvent(ByteBuffer _bb) { return getRootAsUIEvent(_bb, new UIEvent()); }
   public static UIEvent getRootAsUIEvent(ByteBuffer _bb, UIEvent obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
-  public void __init(int _i, ByteBuffer _bb) { bb_pos = _i; bb = _bb; vtable_start = bb_pos - bb.getInt(bb_pos); vtable_size = bb.getShort(vtable_start); }
+  public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public UIEvent __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public byte eventType() { int o = __offset(4); return o != 0 ? bb.get(o + bb_pos) : 0; }
@@ -53,7 +57,7 @@ public final class UIEvent extends Table {
       short variableId,
       int frameIterOffset,
       int plugin) {
-    builder.startObject(9);
+    builder.startTable(9);
     UIEvent.addTimestamp(builder, timestamp);
     UIEvent.addFrameIter(builder, frameIterOffset);
     UIEvent.addEpoch(builder, epoch);
@@ -66,7 +70,7 @@ public final class UIEvent extends Table {
     return UIEvent.endUIEvent(builder);
   }
 
-  public static void startUIEvent(FlatBufferBuilder builder) { builder.startObject(9); }
+  public static void startUIEvent(FlatBufferBuilder builder) { builder.startTable(9); }
   public static void addEventType(FlatBufferBuilder builder, byte eventType) { builder.addByte(0, eventType, 0); }
   public static void addEventSubType(FlatBufferBuilder builder, byte eventSubType) { builder.addByte(1, eventSubType, 0); }
   public static void addNameIdx(FlatBufferBuilder builder, int nameIdx) { builder.addInt(2, nameIdx, 0); }
@@ -77,8 +81,15 @@ public final class UIEvent extends Table {
   public static void addFrameIter(FlatBufferBuilder builder, int frameIterOffset) { builder.addOffset(7, frameIterOffset, 0); }
   public static void addPlugin(FlatBufferBuilder builder, int plugin) { builder.addShort(8, (short)plugin, (short)0); }
   public static int endUIEvent(FlatBufferBuilder builder) {
-    int o = builder.endObject();
+    int o = builder.endTable();
     return o;
+  }
+
+  public static final class Vector extends BaseVector {
+    public Vector __assign(int _vector, int _element_size, ByteBuffer _bb) { __reset(_vector, _element_size, _bb); return this; }
+
+    public UIEvent get(int j) { return get(new UIEvent(), j); }
+    public UIEvent get(UIEvent obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
   }
 }
 

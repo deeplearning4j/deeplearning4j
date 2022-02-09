@@ -19,32 +19,43 @@
  */
 
 package org.nd4j.graph;
-import java.nio.ByteOrder;
-import java.nio.*;
-import java.lang.*;
-import java.util.*;
+
 import com.google.flatbuffers.*;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 @SuppressWarnings("unused")
 public final class UIGraphStructure extends Table {
+  public static void ValidateVersion() { Constants.FLATBUFFERS_1_12_0(); }
   public static UIGraphStructure getRootAsUIGraphStructure(ByteBuffer _bb) { return getRootAsUIGraphStructure(_bb, new UIGraphStructure()); }
   public static UIGraphStructure getRootAsUIGraphStructure(ByteBuffer _bb, UIGraphStructure obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
-  public void __init(int _i, ByteBuffer _bb) { bb_pos = _i; bb = _bb; vtable_start = bb_pos - bb.getInt(bb_pos); vtable_size = bb.getShort(vtable_start); }
+  public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public UIGraphStructure __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public String inputs(int j) { int o = __offset(4); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int inputsLength() { int o = __offset(4); return o != 0 ? __vector_len(o) : 0; }
+  public StringVector inputsVector() { return inputsVector(new StringVector()); }
+  public StringVector inputsVector(StringVector obj) { int o = __offset(4); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public IntPair inputsPair(int j) { return inputsPair(new IntPair(), j); }
   public IntPair inputsPair(IntPair obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int inputsPairLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
+  public IntPair.Vector inputsPairVector() { return inputsPairVector(new IntPair.Vector()); }
+  public IntPair.Vector inputsPairVector(IntPair.Vector obj) { int o = __offset(6); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public String outputs(int j) { int o = __offset(8); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int outputsLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
+  public StringVector outputsVector() { return outputsVector(new StringVector()); }
+  public StringVector outputsVector(StringVector obj) { int o = __offset(8); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public UIVariable variables(int j) { return variables(new UIVariable(), j); }
   public UIVariable variables(UIVariable obj, int j) { int o = __offset(10); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int variablesLength() { int o = __offset(10); return o != 0 ? __vector_len(o) : 0; }
+  public UIVariable.Vector variablesVector() { return variablesVector(new UIVariable.Vector()); }
+  public UIVariable.Vector variablesVector(UIVariable.Vector obj) { int o = __offset(10); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public UIOp ops(int j) { return ops(new UIOp(), j); }
   public UIOp ops(UIOp obj, int j) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int opsLength() { int o = __offset(12); return o != 0 ? __vector_len(o) : 0; }
+  public UIOp.Vector opsVector() { return opsVector(new UIOp.Vector()); }
+  public UIOp.Vector opsVector(UIOp.Vector obj) { int o = __offset(12); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
 
   public static int createUIGraphStructure(FlatBufferBuilder builder,
       int inputsOffset,
@@ -52,7 +63,7 @@ public final class UIGraphStructure extends Table {
       int outputsOffset,
       int variablesOffset,
       int opsOffset) {
-    builder.startObject(5);
+    builder.startTable(5);
     UIGraphStructure.addOps(builder, opsOffset);
     UIGraphStructure.addVariables(builder, variablesOffset);
     UIGraphStructure.addOutputs(builder, outputsOffset);
@@ -61,7 +72,7 @@ public final class UIGraphStructure extends Table {
     return UIGraphStructure.endUIGraphStructure(builder);
   }
 
-  public static void startUIGraphStructure(FlatBufferBuilder builder) { builder.startObject(5); }
+  public static void startUIGraphStructure(FlatBufferBuilder builder) { builder.startTable(5); }
   public static void addInputs(FlatBufferBuilder builder, int inputsOffset) { builder.addOffset(0, inputsOffset, 0); }
   public static int createInputsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startInputsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
@@ -78,8 +89,15 @@ public final class UIGraphStructure extends Table {
   public static int createOpsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startOpsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static int endUIGraphStructure(FlatBufferBuilder builder) {
-    int o = builder.endObject();
+    int o = builder.endTable();
     return o;
+  }
+
+  public static final class Vector extends BaseVector {
+    public Vector __assign(int _vector, int _element_size, ByteBuffer _bb) { __reset(_vector, _element_size, _bb); return this; }
+
+    public UIGraphStructure get(int j) { return get(new UIGraphStructure(), j); }
+    public UIGraphStructure get(UIGraphStructure obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
   }
 }
 

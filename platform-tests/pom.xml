@@ -46,7 +46,7 @@
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
         <backend.artifactId>nd4j-native</backend.artifactId>
-        <lombok.version>1.18.16</lombok.version>
+        <lombok.version>1.18.22</lombok.version>
 
         <logback.version>1.1.7</logback.version>
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
@@ -56,8 +56,8 @@
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
         <junit.version>5.8.0-M1</junit.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+
+
         <java.version>1.8</java.version>
         <maven-shade-plugin.version>3.1.1</maven-shade-plugin.version>
         <test.heap.size>4g</test.heap.size>

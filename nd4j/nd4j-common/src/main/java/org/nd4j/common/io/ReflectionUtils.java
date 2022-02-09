@@ -21,7 +21,6 @@
 package org.nd4j.common.io;
 
 import java.lang.reflect.*;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -131,18 +130,18 @@ public abstract class ReflectionUtils {
         }
     }
 
-    public static Object invokeJdbcMethod(Method method, Object target) throws SQLException {
+    public static Object invokeJdbcMethod(Method method, Object target) throws Exception {
         return invokeJdbcMethod(method, target, new Object[0]);
     }
 
-    public static Object invokeJdbcMethod(Method method, Object target, Object... args) throws SQLException {
+    public static Object invokeJdbcMethod(Method method, Object target, Object... args) throws Exception {
         try {
             return method.invoke(target, args);
         } catch (IllegalAccessException var4) {
             handleReflectionException(var4);
         } catch (InvocationTargetException var5) {
-            if (var5.getTargetException() instanceof SQLException) {
-                throw (SQLException) var5.getTargetException();
+            if (var5.getTargetException() instanceof Exception) {
+                throw (Exception) var5.getTargetException();
             }
 
             handleInvocationTargetException(var5);

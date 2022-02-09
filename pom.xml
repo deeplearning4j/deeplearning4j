@@ -57,7 +57,6 @@
         <module>datavec</module>
         <module>deeplearning4j</module>
         <module>python4j</module>
-        <module>rl4j</module>
         <module>omnihub</module>
         <module>resources</module>
     </modules>
@@ -117,10 +116,8 @@
 
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
-        <maven.compiler.testSource>1.8</maven.compiler.testSource>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
         <encoding>UTF-8</encoding>
         <project.build.sourceEncoding>${encoding}</project.build.sourceEncoding>
         <project.reporting.outputEncoding>${encoding}</project.reporting.outputEncoding>
@@ -136,7 +133,7 @@
         <rxjava.version>2.2.21</rxjava.version>
         <jackson-asl.version>1.9.13</jackson-asl.version>
         <asm.version>5.1</asm.version>
-        <arrow.version>4.0.0</arrow.version>
+        <arrow.version>6.0.1</arrow.version>
         <avro.version>1.7.7</avro.version>
         <curator.version>2.8.0</curator.version>
         <guice.version>4.0</guice.version>
@@ -172,7 +169,7 @@
         <dropwizard.version>0.8.0</dropwizard.version>
         <jodatime.version>2.2</jodatime.version>
         <protonpack.version>1.15</protonpack.version>
-        <poi.version>5.0.0</poi.version>
+        <poi.version>5.2.0</poi.version>
         <jodah.typetools.version>0.5.0</jodah.typetools.version>
         <freemarker.version>2.3.23</freemarker.version>
         <geoip2.version>2.8.1</geoip2.version>
@@ -207,6 +204,10 @@
         <nd4j.native.basedir />
         <nd4j.cuda.basedir />
 
+
+        <moditect.generate.skip>true</moditect.generate.skip>
+        <moditect.add.skip>false</moditect.add.skip>
+        <moditect.version>1.0.0.RC2</moditect.version>
 
         <python.version>3.9.6</python.version>
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
@@ -254,7 +255,7 @@
         <jackson.databind.version>2.12.2</jackson.databind.version>
         <shaded.snakeyaml.version>1.26</shaded.snakeyaml.version>
         <geo.jackson.version>2.8.7</geo.jackson.version>
-        <lombok.version>1.18.16</lombok.version>
+        <lombok.version>1.18.22</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
         <lucene-solr.version>8.8.0</lucene-solr.version>
         <json.versiounitn>20131018</json.versiounitn>
@@ -278,7 +279,7 @@
         <threadly.version>4.10.0</threadly.version>
         <vertx.version>3.9.0</vertx.version>
 
-        <flatbuffers.version>1.11.0</flatbuffers.version>
+        <flatbuffers.version>1.12.0</flatbuffers.version>
         <grpc.version>1.14.0</grpc.version>
         <javax.annotation-api.version>1.2</javax.annotation-api.version>
         <javax.activation.version>1.1.1</javax.activation.version>
@@ -347,6 +348,7 @@
         <kotlin-logging.version>2.1.21</kotlin-logging.version>
         <test.heap.size>8g</test.heap.size>
         <test.offheap.size>8g</test.offheap.size>
+        <module.name></module.name>
     </properties>
 
 
@@ -522,9 +524,71 @@
     </dependencies>
 
     <build>
-        <!-- <sourceDirectory>contrib</sourceDirectory>-->
         <pluginManagement>
             <plugins>
+
+                <plugin>
+                    <groupId>org.moditect</groupId>
+                    <artifactId>moditect-maven-plugin</artifactId>
+                    <version>${moditect.version}</version>
+                    <configuration>
+                        <jvmVersion>9</jvmVersion>
+                        <overwriteExistingFiles>true</overwriteExistingFiles>
+                        <outputDirectory>${project.build.directory}</outputDirectory>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>generate-module-info</id>
+                            <phase>generate-sources</phase>
+                            <goals>
+                                <goal>generate-module-info</goal>
+                            </goals>
+                            <configuration>
+                                <modules>
+                                    <module>
+                                        <artifact>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>${project.artifactId}</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifact>
+
+                                        <moduleInfo>
+                                            <name>${module.name}</name>
+                                            <exports>
+                                                *;
+                                            </exports>
+                                            <open>true</open>
+                                        </moduleInfo>
+
+                                    </module>
+                                </modules>
+                                <jdepsExtraArgs>
+                                    <arg>--ignore-missing-deps</arg>
+                                    <arg>--multi-release</arg>
+                                    <arg>9</arg>
+                                </jdepsExtraArgs>
+                                <skip>${moditect.generate.skip}</skip>
+                            </configuration>
+                        </execution>
+
+                        <execution>
+                            <id>add-module-infos</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>add-module-info</goal>
+                            </goals>
+                            <configuration>
+                                <modules>
+                                    <module>
+                                        <file>${project.build.directory}/${project.artifactId}-${project.version}.jar</file>
+                                        <moduleInfoFile>${project.basedir}/src/main/java9/module-info.java</moduleInfoFile>
+                                    </module>
+                                </modules>
+                                <skip>${moditect.add.skip}</skip>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-antrun-plugin</artifactId>

@@ -40,7 +40,17 @@
         <cuda.version>11.4</cuda.version>
         <cudnn.version>8.2</cudnn.version>
         <javacpp-presets.cuda.version>1.5.6</javacpp-presets.cuda.version>
+        <module.name>deeplearning4j.cuda</module.name>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>
@@ -99,11 +109,7 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <!-- Uncomment to run the full test suite using cuDNN.
-                <testSourceDirectory>../deeplearning4j-core/src/test/java</testSourceDirectory>
-        -->
-    </build>
+
 
     <profiles>
         <profile>

@@ -38,7 +38,17 @@
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
+        <module.name>nd4j.common</module.name>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+            <groupId>org.moditect</groupId>
+            <artifactId>moditect-maven-plugin</artifactId>
+        </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>

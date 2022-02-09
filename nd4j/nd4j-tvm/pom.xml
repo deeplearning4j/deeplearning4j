@@ -35,7 +35,17 @@
     <properties>
         <tvm.version>0.7.0</tvm.version>
         <tvm.javacpp.version>${tvm.version}-${javacpp-presets.version}</tvm.javacpp.version>
+        <module.name>nd4j.tvm</module.name>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>

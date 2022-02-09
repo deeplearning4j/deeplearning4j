@@ -22,7 +22,6 @@ package org.nd4j.linalg.api.memory;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import lombok.var;
 import org.nd4j.linalg.api.memory.enums.AllocationKind;
 
 import java.util.Map;
@@ -42,7 +41,7 @@ public class AllocationsTracker {
     }
 
     protected DeviceAllocationsTracker trackerForDevice(Integer deviceId) {
-        var tracker = devices.get(deviceId);
+        DeviceAllocationsTracker tracker = devices.get(deviceId);
         if (tracker == null) {
             synchronized (this) {
                 tracker = devices.get(deviceId);

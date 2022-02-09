@@ -37,6 +37,9 @@
         <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
     </properties>
 
+
+
+
     <dependencies>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -183,6 +186,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
             </plugin>
+
         </plugins>
     </build>
 </project>

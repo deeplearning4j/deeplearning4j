@@ -69,7 +69,7 @@ public class PythonObject {
         if (nativePythonObject == null || Pointer.isNull(nativePythonObject)) {
             return true;
         }
-        try (PythonGC _ = PythonGC.pause()) {
+        try (PythonGC gc = PythonGC.pause()) {
             PythonObject type = Python.type(this);
             boolean ret = Python.type(this).toString().equals("<class 'NoneType'>") && toString().equals("None");
             Py_DecRef(type.nativePythonObject);
@@ -145,7 +145,7 @@ public class PythonObject {
 
     public PythonObject callWithArgsAndKwargs(List args, Map kwargs) {
         PythonGIL.assertThreadSafe();
-        try (PythonGC _ = PythonGC.watch()) {
+        try (PythonGC gc = PythonGC.watch()) {
             if (!Python.callable(this)) {
                 throw new PythonException("Object is not callable: " + toString());
             }
@@ -192,7 +192,7 @@ public class PythonObject {
             owned = false;
             nativePythonObject = ((PythonObject) javaObject).nativePythonObject;
         } else {
-            try (PythonGC _ = PythonGC.pause()) {
+            try (PythonGC gc = PythonGC.pause()) {
                 nativePythonObject = PythonTypes.convert(javaObject).getNativePythonObject();
             }
             PythonGC.register(this);
