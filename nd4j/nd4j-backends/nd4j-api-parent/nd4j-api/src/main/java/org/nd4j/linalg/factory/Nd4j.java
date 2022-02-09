@@ -2572,7 +2572,7 @@ public class Nd4j {
         val headerShape = BaseDataBuffer.readHeader(dis);
 
         //noinspection UnnecessaryUnboxing
-        var shapeInformation = Nd4j.createBufferDetached(new long[]{headerShape.getMiddle().longValue()}, headerShape.getRight());
+        DataBuffer shapeInformation = Nd4j.createBufferDetached(new long[]{headerShape.getMiddle().longValue()}, headerShape.getRight());
         shapeInformation.read(dis, headerShape.getLeft(), headerShape.getMiddle(), headerShape.getThird());
         DataType type;
         DataBuffer data = null;

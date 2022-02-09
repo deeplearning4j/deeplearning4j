@@ -41,7 +41,7 @@ public class AllocationsTracker {
     }
 
     protected DeviceAllocationsTracker trackerForDevice(Integer deviceId) {
-        var tracker = devices.get(deviceId);
+        DeviceAllocationsTracker tracker = devices.get(deviceId);
         if (tracker == null) {
             synchronized (this) {
                 tracker = devices.get(deviceId);

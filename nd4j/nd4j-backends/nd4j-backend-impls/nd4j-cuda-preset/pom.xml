@@ -41,6 +41,7 @@
         <cuda.version>11.4</cuda.version>
         <cudnn.version>8.2</cudnn.version>
         <javacpp-presets.cuda.version>1.5.6</javacpp-presets.cuda.version>
+        <module.name>nd4j.cuda.preset</module.name>
     </properties>
 
 
@@ -109,7 +110,7 @@
                         <configuration>
                             <skipMain>${javacpp.parser.skip}</skipMain>
                             <includes>
-                                <include>org/nd4j/nativeblas/**.java</include>
+                                <include>org/nd4j/presets/cuda/**.java</include>
                             </includes>
                         </configuration>
                     </execution>
@@ -155,9 +156,14 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
+                            <archive>
+                                <manifestEntries>
+                                    <Automatic-Module-Name>${module.name}</Automatic-Module-Name>
+                                </manifestEntries>
+                            </archive>
                             <excludes>
                                 <exclude>
-                                    org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
+                                    org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}/*
                                 </exclude>
                                 <exclude>lib/**</exclude>
                                 <exclude>*.dll</exclude>
@@ -175,10 +181,15 @@
                         </goals>
                         <configuration>
                             <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+                            <archive>
+                                <manifestEntries>
+                                    <Automatic-Module-Name>${module.name}.binary</Automatic-Module-Name>
+                                </manifestEntries>
+                            </archive>
                             <skipIfEmpty>true</skipIfEmpty>
                             <includes>
                                 <include>
-                                    org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
+                                    org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}/*
                                 </include>
                                 <include>lib/**</include>
                                 <include>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</include>

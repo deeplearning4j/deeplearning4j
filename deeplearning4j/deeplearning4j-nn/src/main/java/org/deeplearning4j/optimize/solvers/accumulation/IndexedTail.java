@@ -182,9 +182,9 @@ public class IndexedTail {
      * @return
      */
     public boolean hasAnything(long threadId) {
-        var threadPosition = getLocalPosition(threadId);
+        long threadPosition = getLocalPosition(threadId);
 
-        val r = threadPosition < updatesCounter.get();
+        boolean r = threadPosition < updatesCounter.get();
         log.trace("hasAnything({}): {}; position: {}; updates: {}", threadId, r, threadPosition, updatesCounter.get());
 
         return r;
@@ -217,7 +217,7 @@ public class IndexedTail {
     }
 
     protected long getLocalPosition(long threadId) {
-        var threadPosition = positions.get(threadId);
+        AtomicLong threadPosition = positions.get(threadId);
 
         // will be instantiated on first call from any given thread
         if (threadPosition == null) {
@@ -229,7 +229,7 @@ public class IndexedTail {
     }
 
     public boolean drainTo(long threadId, @NonNull INDArray array) {
-        var threadPosition = positions.get(threadId);
+        AtomicLong threadPosition = positions.get(threadId);
 
         // will be instantiated on first call from any given thread
         if (threadPosition == null) {

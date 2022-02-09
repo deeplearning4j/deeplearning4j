@@ -178,6 +178,11 @@ public class BagOfWordsVectorizer extends BaseTextVectorizer {
             return this;
         }
 
+        public Builder labelsSource(@NonNull LabelsSource source) {
+            this.labelsSource = source;
+            return this;
+        }
+
         public BagOfWordsVectorizer build() {
             BagOfWordsVectorizer vectorizer = new BagOfWordsVectorizer();
 

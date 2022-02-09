@@ -1,0 +1,30 @@
+open module deeplearning4j.core {
+    requires commons.codec;
+    requires commons.io;
+    requires deeplearning4j.datavec.iterators;
+    requires deeplearning4j.modelimport;
+    requires deeplearning4j.ui.components;
+    requires jackson;
+    requires java.desktop;
+    requires java.rmi;
+    requires oshi.core;
+    requires resources;
+    requires slf4j.api;
+    requires datavec.api;
+    requires deeplearning4j.nn;
+    requires nd4j.api;
+    requires nd4j.common;
+    requires oshi.json;
+    exports org.deeplearning4j.core.datasets.test;
+    exports org.deeplearning4j.core.datasets.vectorizer;
+    exports org.deeplearning4j.core.evaluation;
+    exports org.deeplearning4j.core.listener;
+    exports org.deeplearning4j.core.loader;
+    exports org.deeplearning4j.core.loader.impl;
+    exports org.deeplearning4j.core.parallelism;
+    exports org.deeplearning4j.core.storage;
+    exports org.deeplearning4j.core.storage.impl;
+    exports org.deeplearning4j.core.storage.listener;
+    exports org.deeplearning4j.core.ui;
+    exports org.deeplearning4j.core.util;
+}
