@@ -14,7 +14,6 @@ open module deeplearning4j.nn {
     requires nd4j.api;
     requires nd4j.common;
     requires org.bytedeco.javacpp;
-    requires oswego.concurrent;
     requires slf4j.api;
     exports org.deeplearning4j.earlystopping;
     exports org.deeplearning4j.earlystopping.listener;
