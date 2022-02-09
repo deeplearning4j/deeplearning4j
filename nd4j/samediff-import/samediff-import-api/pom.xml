@@ -97,12 +97,6 @@
       <version>1.7.28</version>
     </dependency>
 
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
-      <scope>test</scope>
-    </dependency>
 
     <dependency>
       <groupId>commons-io</groupId>
