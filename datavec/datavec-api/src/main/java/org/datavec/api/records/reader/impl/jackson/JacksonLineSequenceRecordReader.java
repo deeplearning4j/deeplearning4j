@@ -20,6 +20,7 @@
 
 package org.datavec.api.records.reader.impl.jackson;
 
+import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.datavec.api.records.SequenceRecord;
@@ -87,6 +88,7 @@ public class JacksonLineSequenceRecordReader extends FileRecordReader implements
         return out;
     }
 
+    @SneakyThrows
     private List<List<Writable>> loadAndClose(InputStream inputStream) {
         LineIterator lineIter = null;
         try {

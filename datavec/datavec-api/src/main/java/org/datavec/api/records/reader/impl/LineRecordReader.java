@@ -22,6 +22,7 @@ package org.datavec.api.records.reader.impl;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -232,6 +233,7 @@ public class LineRecordReader extends BaseRecordReader {
         return iterator;
     }
 
+    @SneakyThrows
     protected void closeIfRequired(Iterator<String> iterator) {
         if (iterator instanceof LineIterator) {
             LineIterator iter = (LineIterator) iterator;
