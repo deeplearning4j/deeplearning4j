@@ -116,17 +116,17 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
-            command="mvn ${{ matrix.mvn_ext }} --also-make  -pl ':nd4j-cuda-11.2-preset,:nd4j-cuda-11.2,:libnd4j' -Dlibnd4j.compute='3.7 5.0 5.2 6.0 6.1 7.0 7.5 8.0 8.6' -Dlibnd4j.cpu.compile.skip=true -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildThreads=${{ matrix.build_threads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda --also-make -Pcuda clean --batch-mode package deploy -DskipTests"
+            command="mvn ${{ matrix.mvn_ext }} --also-make  -pl ':nd4j-cuda-11.6-preset,:nd4j-cuda-11.6,:libnd4j' -Dlibnd4j.compute='3.7 5.0 5.2 6.0 6.1 7.0 7.5 8.0 8.6' -Dlibnd4j.cpu.compile.skip=true -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ matrix.build_threads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda --also-make -Pcuda clean --batch-mode package deploy -DskipTests"
             libnd4j_download_file_url=""
             if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-               mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-cuda-11.2-${{ matrix.helper }}-${{matrix.extension}}"
-               libnd4j_download_file_url="linux-cuda-11.2-${{ matrix.extension }}-${{ matrix.helper }}"
+               mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-cuda-11.6-${{ matrix.helper }}-${{matrix.extension}}"
+               libnd4j_download_file_url="linux-cuda-11.6-${{ matrix.extension }}-${{ matrix.helper }}"
             elif [ "${{ matrix.helper }}" != '' ]; then
-               mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-cuda-11.2-${{ matrix.helper }}"
-               libnd4j_download_file_url="linux-cuda-11.2-${{ matrix.extension }}-${{ matrix.helper }}"
+               mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-cuda-11.6-${{ matrix.helper }}"
+               libnd4j_download_file_url="linux-cuda-11.6-${{ matrix.extension }}-${{ matrix.helper }}"
             else
-               mvn_ext=" -Dlibnd4j.classifier=linux-x86_64-cuda-11.2"
-               libnd4j_download_file_url="linux-cuda-11.2-${{ matrix.extension }}-${{ matrix.helper }}"
+               mvn_ext=" -Dlibnd4j.classifier=linux-x86_64-cuda-11.6"
+               libnd4j_download_file_url="linux-cuda-11.6-${{ matrix.extension }}-${{ matrix.helper }}"
 
             fi
             command="${command} ${mvn_ext}"
@@ -178,7 +178,7 @@ jobs:
 
       - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
         env:
-          cuda: 11.2.0_460
+          cuda: 11.6.0
           GCC:  7
 
       - name: Setup libnd4j home if a download url is specified
@@ -205,8 +205,8 @@ jobs:
           MODULES: ${{ matrix.mvn_flags }}
           LIBND4J_HOME_SUFFIX: cuda
           MAVEN_OPTS: -Xmx2g
-          CUDA_PATH: /usr/local/cuda-11.2
-          CUDNN_ROOT_DIR: /usr/local/cuda-11.2/cuda
+          CUDA_PATH: /usr/local/cuda-11.6
+          CUDNN_ROOT_DIR: /usr/local/cuda-11.6/cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
         run: |
@@ -221,16 +221,16 @@ jobs:
           echo "server id ${{ matrix.server_id }}"
           echo "release repo id ${{ matrix.release_repo_id }}"
 
-          export CUDA_PATH=/usr/local/cuda-11.2
+          export CUDA_PATH=/usr/local/cuda-11.6
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          export PATH="/usr/local/cuda-11.2/bin:$PATH"
+          export PATH="/usr/local/cuda-11.6/bin:$PATH"
           nvcc --version
           mvn --version
           cmake --version
           protoc --version
           sudo apt-get autoremove
           sudo apt-get clean
-          bash ./change-cuda-versions.sh 11.2
+          bash ./change-cuda-versions.sh 11.6
           # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
           bash ./bootstrap-libnd4j-from-url.sh
           # Note: we need this for the cudnn helpers, our cmake can't find it otherwise.
