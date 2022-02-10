@@ -58,7 +58,7 @@ jobs:
       fail-fast: false
       matrix:
         helper: [armcompute]
-        extension: []
+        extension: [""]
         include:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
             experimental: true
