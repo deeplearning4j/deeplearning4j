@@ -132,6 +132,7 @@ jobs:
               command="${command} ${mvn_ext}"
               echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
               echo "COMMAND=${command}" >> $GITHUB_ENV
+              sudo rm -Rf /Library/Developer/CommandLineTools/SDKs/MacOSX10*
 
       - name: Cache Maven packages
         uses: actions/cache@v2
