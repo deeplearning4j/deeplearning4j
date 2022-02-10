@@ -325,7 +325,7 @@ if [ -z "${BUILD_USING_MAVEN}" ] ;then
 #lets build OpenBlas 
 if [ ! -d "${OPENBLAS_DIR}" ]; then
     message "download OpenBLAS"
-    git_check "${OPENBLAS_GIT_URL}" "${OPENBLAS_DIR}" "v0.3.10"
+    git_check "${OPENBLAS_GIT_URL}" "${OPENBLAS_DIR}" "v0.3.19"
 fi
 
 if [ ! -f "${THIRD_PARTY}/lib/libopenblas.so" ]; then

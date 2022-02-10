@@ -132,41 +132,19 @@
         <dl4j-test-resources.classifier></dl4j-test-resources.classifier>
         <rxjava.version>2.2.21</rxjava.version>
         <jackson-asl.version>1.9.13</jackson-asl.version>
-        <asm.version>5.1</asm.version>
         <arrow.version>6.0.1</arrow.version>
-        <avro.version>1.7.7</avro.version>
-        <curator.version>2.8.0</curator.version>
-        <guice.version>4.0</guice.version>
-        <hibernate.version>5.1.3.Final</hibernate.version>
-        <hppc.version>0.8.1</hppc.version>
-        <httpclient.version>4.5.3</httpclient.version>
-        <httpcore.version>4.4.6</httpcore.version>
-        <httpmime.version>4.5.3</httpmime.version>
-        <janino.version>2.7.8</janino.version>
-        <javassist.version>3.19.0-GA</javassist.version>
         <jets3t.version>0.7.1</jets3t.version>
-        <jetty.version>9.4.10.v20180503</jetty.version>
-        <jersey.version>2.29</jersey.version>
-        <jsch.version>0.1.51</jsch.version>
-        <leveldb.version>1.8</leveldb.version>
-        <lz4.version>1.3.0</lz4.version>
         <metrics.version>3.2.6</metrics.version>
         <netty.version>4.1.74.Final</netty.version>
         <objenesis.version>2.6</objenesis.version>
         <paranamer.version>2.6</paranamer.version>
         <ws.rs.version>2.0</ws.rs.version>
-        <servlet.version>3.1.0</servlet.version>
         <snakeyaml.version>1.26</snakeyaml.version>
-        <snappy.version>1.1.2.6</snappy.version>
         <!-- FIXME: Might need be synced with all modules that uses spring-core plugin (nd4j-cuda-11.0, nd4j-tests, nd4j-common-tests) -->
         <spring.version>5.1.1.RELEASE</spring.version>
-        <t-digest.version>3.2</t-digest.version>
         <oshi.version>3.4.2</oshi.version>
-        <kafka.version>0.8.2.2</kafka.version>
         <typesafe.config.version>1.3.0</typesafe.config.version>
-        <py4j.version>0.10.4</py4j.version>
         <jcommander.version>1.27</jcommander.version>
-        <dropwizard.version>0.8.0</dropwizard.version>
         <jodatime.version>2.2</jodatime.version>
         <protonpack.version>1.15</protonpack.version>
         <poi.version>5.2.0</poi.version>
@@ -194,9 +172,9 @@
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
 
-        <javacpp.version>1.5.6</javacpp.version>
-        <javacpp-presets.version>1.5.6</javacpp-presets.version>
-        <javacv.version>1.5.6</javacv.version>
+        <javacpp.version>1.5.7</javacpp.version>
+        <javacpp-presets.version>1.5.7</javacpp-presets.version>
+        <javacv.version>1.5.7</javacv.version>
         <javacpp.platform.additionalIncludePaths />
         <javacpp.platform.cppincludepath />
         <javacpp.platform.library.path />
@@ -209,20 +187,19 @@
         <moditect.add.skip>false</moditect.add.skip>
         <moditect.version>1.0.0.RC2</moditect.version>
 
-        <python.version>3.9.6</python.version>
+        <python.version>3.10.2</python.version>
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
-        <numpy.version>1.21.1</numpy.version>
+        <numpy.version>1.22.2</numpy.version>
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
-        <onnx.version>1.9.0</onnx.version>
+        <onnx.version>1.10.2</onnx.version>
         <onnx.javacpp.version>${onnx.version}-${javacpp-presets.version}</onnx.javacpp.version>
-        <openblas.version>0.3.17</openblas.version>
-        <mkl.version>2021.3</mkl.version>
-        <opencv.version>4.5.3</opencv.version>
-        <ffmpeg.version>4.4</ffmpeg.version>
-        <leptonica.version>1.81.1</leptonica.version>
+        <openblas.version>0.3.19</openblas.version>
+        <mkl.version>2022.0</mkl.version>
+        <opencv.version>4.5.5</opencv.version>
+        <ffmpeg.version>5.0</ffmpeg.version>
+        <leptonica.version>1.82.0</leptonica.version>
         <hdf5.version>1.12.1</hdf5.version>
-        <ale.version>0.6.1</ale.version>
-        <gym.version>0.18.3</gym.version>
+        <ale.version>0.7.3</ale.version>
         <tensorflow.version>1.15.5</tensorflow.version>
         <tensorflow.javacpp.version>${tensorflow.version}-${javacpp-presets.version}</tensorflow.javacpp.version>
 
@@ -256,8 +233,6 @@
         <shaded.snakeyaml.version>1.26</shaded.snakeyaml.version>
         <geo.jackson.version>2.8.7</geo.jackson.version>
         <lombok.version>1.18.22</lombok.version>
-        <cleartk.version>2.0.0</cleartk.version>
-        <lucene-solr.version>8.8.0</lucene-solr.version>
         <json.versiounitn>20131018</json.versiounitn>
         <google.protobuf.version>3.12.2</google.protobuf.version>
         <google.protobuf.solr.version>2.6.1</google.protobuf.solr.version>
@@ -269,13 +244,10 @@
         <agrona.version>0.5.4</agrona.version>
         <mapdb.version>3.0.5</mapdb.version>
         <sqlite.version>3.15.1</sqlite.version>
-        <!-- 2.7.3 has Scala 2.11, 2.12 and 2.13 support only (no 2.10) -->
-        <playframework.version>2.7.3</playframework.version>
         <javax.ws.rs.version>2.0</javax.ws.rs.version>
         <guava.jre.version>30.1.1-jre</guava.jre.version>
         <guava.android.version>28.0-android</guava.android.version>
         <gson.version>2.8.0</gson.version>
-        <fbs.version>1.2.0-3f79e055</fbs.version>
         <threadly.version>4.10.0</threadly.version>
         <vertx.version>3.9.0</vertx.version>
 
@@ -319,17 +291,11 @@
         <exec-maven-plugin.version>1.6.0</exec-maven-plugin.version>
         <jetspeed-mvn-maven-plugin.version>2.3.1</jetspeed-mvn-maven-plugin.version>
 
-        <!-- base versions -->
-        <!-- Scala 2.11.x -->
-        <scala211.version>2.11.12</scala211.version>
-        <scala211.binary.version>2.11</scala211.binary.version>
+
         <!-- Scala 2.12.x -->
         <scala212.version>2.12.14</scala212.version>
         <scala212.binary.version>2.12</scala212.binary.version>
 
-        <scalatest.version>3.0.5</scalatest.version>
-        <scalafmt.version>1.3.0</scalafmt.version>
-        <scalacheck.version>1.14.0</scalacheck.version>
 
         <libnd4j.tests>--tests</libnd4j.tests>
         <libnd4j.test.skip>false</libnd4j.test.skip>
