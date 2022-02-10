@@ -116,7 +116,7 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: powershell
         run: |
-              $command="mvn  ${{ matrix.mvn_ext }} --also-make -pl ':nd4j-cuda-11.6-preset,:nd4j-cuda-11.6,:libnd4j' -Dlibnd4j.compute='5.0 5.2 6.1 7.5 8.6' -Dlibnd4j.cpu.compile.skip=true -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh  -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Djavacpp.platform=windows-x86_64    -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
+              $command='mvn  ${{ matrix.mvn_ext }} --also-make -pl ":nd4j-cuda-11.6-preset,:nd4j-cuda-11.6,:libnd4j" -Dlibnd4j.compute="5.0 5.2 6.1 7.5 8.6" -Dlibnd4j.cpu.compile.skip=true -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh  -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Djavacpp.platform=windows-x86_64    -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests'
               if ( "${{ matrix.helper }}" -ne "" -And "${{ matrix.extension }}" -ne "" ) {
                  $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-11.6-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}   -Dlibnd4j.helper=${{ matrix.helper }}   -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
                  $libnd4j_download_file_url="windows-cuda-11.6-${{ matrix.extension }}-${{ matrix.helper }}"
@@ -220,7 +220,7 @@ jobs:
           echo "snapshot version ${{ matrix.snapshot_version }}"
           echo "server id ${{ matrix.server_id }}"
           echo "release repo id ${{ matrix.release_repo_id }}"
-
+          
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set MSYSTEM=MINGW64
           echo "Running cuda build"
@@ -229,6 +229,7 @@ jobs:
           Rem Note: we need this for the cudnn helpers, our cmake can't find it otherwise.
           Rem See here: https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/CMakeLists.txt#L298
           set CUDNN_ROOT_DIR=%CUDA_PATH%
+          mvn -Pcuda dependency:tree
           if "%PERFORM_RELEASE%"=="1" (
               echo "Running release"
               bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
