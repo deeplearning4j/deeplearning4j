@@ -109,8 +109,8 @@ jobs:
              echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
              mkdir "${GITHUB_WORKSPACE}/openblas_home"
              cd "${GITHUB_WORKSPACE}/openblas_home"
-             wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-linux-arm64.jar
-             unzip openblas-0.3.13-1.5.5-linux-arm64.jar
+             wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-linux-arm64.jar
+             unzip openblas-0.3.19-1.5.7-linux-arm64.jar
              cd ..
              echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-arm64" >> "$GITHUB_ENV"
              cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-arm64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-arm64/libopenblas.so
