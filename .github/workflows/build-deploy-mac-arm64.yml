@@ -57,8 +57,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [ onednn,"" ]
-        extension: [ avx2,avx512,"" ]
+        helper: [armcompute]
+        extension: []
         include:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
             experimental: true
@@ -115,15 +115,15 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
-              command="mvn ${{ matrix.mvn_ext }} -Pcpu -Dlibnd4j.buildThreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh   -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-x86_64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+              command="mvn ${{ matrix.mvn_ext }}    -Dlibnd4j.platform=macosx-arm64 -Djavacpp.platform=macosx-arm64 -Pcpu -Dlibnd4j.buildThreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh   -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-arm64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
               if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-                  mvn_ext=" -Dlibnd4j.classifier=macosx-x86_64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
+                  mvn_ext=" -Dlibnd4j.classifier=macosx-arm64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
               elif [ "${{ matrix.helper }}" != '' ]; then
                   mvn_ext=" -Dlibnd4j.classifier=${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }}"
               elif [ "${{ matrix.extension }}" != '' ]; then
-                 mvn_ext=" -Dlibnd4j.classifier=macosx-x86_64-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
+                 mvn_ext=" -Dlibnd4j.classifier=macosx-arm64-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
               else
-                  mvn_ext=" -Dlibnd4j.classifier=macosx-x86_64"
+                  mvn_ext=" -Dlibnd4j.classifier=macosx-arm64"
               fi
               if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
                 echo "Adding libnd4j download"
@@ -171,11 +171,11 @@ jobs:
             echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j/" >> "$GITHUB_ENV"
             mkdir "${GITHUB_WORKSPACE}/openblas_home"
             cd "${GITHUB_WORKSPACE}/openblas_home"
-            wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-macosx-x86_64.jar
-            unzip openblas-0.3.19-1.5.7-macosx-x86_64.jar
+            wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-macosx-arm64.jar
+            unzip openblas-0.3.19-1.5.7-macosx-arm64.jar
             cd ..
-            cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-x86_64/libopenblas.0.dylib  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-x86_64/libopenblas.dylib
-            echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-x86_64/" >> "$GITHUB_ENV"
+            cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-arm64/libopenblas.0.dylib  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-arm64/libopenblas.dylib
+            echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-arm64/" >> "$GITHUB_ENV"
 
         if: ${{ matrix.libnd4j_file_download != '' }}
 
