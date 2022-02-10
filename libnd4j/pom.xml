@@ -57,7 +57,7 @@
         <libnd4j.buildprogram>bash</libnd4j.buildprogram>
         <libnd4j.operations></libnd4j.operations>
         <libnd4j.datatypes></libnd4j.datatypes>
-        <libnd4j.sanitize>OFF</libnd4j.sanitize
+        <libnd4j.sanitize>OFF</libnd4j.sanitize>
         <libnd4j.arch></libnd4j.arch>
     </properties>
 
