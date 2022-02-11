@@ -16,14 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.jita.allocator.impl;
+package org.nd4j.allocator.impl;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 

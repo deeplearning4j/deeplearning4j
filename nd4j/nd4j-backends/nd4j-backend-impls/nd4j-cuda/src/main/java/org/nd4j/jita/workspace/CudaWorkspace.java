@@ -39,7 +39,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.linalg.api.memory.Deallocator;
 import java.util.List;
 import java.util.Queue;
-import org.nd4j.jita.allocator.impl.MemoryTracker;
+import org.nd4j.allocator.impl.MemoryTracker;
 
 
 /**
