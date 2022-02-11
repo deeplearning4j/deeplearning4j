@@ -235,7 +235,6 @@ jobs:
           bash ./bootstrap-libnd4j-from-url.sh
           # Note: we need this for the cudnn helpers, our cmake can't find it otherwise.
           # See here: https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/CMakeLists.txt#L298
-          export CUDNN_ROOT_DIR="${CUDA_PATH}/cuda"
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release"
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
