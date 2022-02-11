@@ -206,7 +206,7 @@ jobs:
           LIBND4J_HOME_SUFFIX: cuda
           MAVEN_OPTS: -Xmx2g
           CUDA_PATH: /usr/local/cuda-11.6
-          CUDNN_ROOT_DIR: /usr/local/cuda-11.6/cuda
+          CUDNN_ROOT_DIR: /usr/local/cuda-11.6/
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
         run: |

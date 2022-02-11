@@ -3308,17 +3308,6 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testOr() {
-        SameDiff sd = SameDiff.create();
-        SDVariable a = sd.constant(Nd4j.createFromArray(true,false,false,true).reshape(2,2));
-        SDVariable b = sd.constant(Nd4j.createFromArray(false,false).reshape(1,2));
-        SDVariable result = sd.math().or(a,b);
-        INDArray eval = result.eval();
-        System.out.println(eval);
-    }
-
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIf() throws IOException {
         SameDiff sd = SameDiff.create();
         SDVariable a = sd.placeHolder("a", DataType.DOUBLE);
