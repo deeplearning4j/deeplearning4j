@@ -16,11 +16,11 @@
  ******************************************************************************/
 package org.eclipse.deeplearning4j.testinit
 
-import com.google.common.io.Files
 import org.apache.commons.io.FileUtils
 import org.nd4j.common.io.ClassPathResource
 import org.nd4j.common.resources.Downloader
 import org.nd4j.common.util.ArchiveUtils
+import org.nd4j.shade.guava.io.Files
 import java.io.File
 import java.net.URI
 import java.nio.charset.Charset
