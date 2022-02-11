@@ -205,8 +205,8 @@ jobs:
           MODULES: ${{ matrix.mvn_flags }}
           LIBND4J_HOME_SUFFIX: cuda
           MAVEN_OPTS: -Xmx2g
-          CUDA_PATH: /usr/local/cuda-11.6
-          CUDNN_ROOT_DIR: /usr/local/cuda-11.6/
+          CUDA_PATH: /usr/local/cuda
+          CUDNN_ROOT_DIR: /usr/local/cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
         run: |
