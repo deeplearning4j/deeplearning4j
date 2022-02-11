@@ -1383,10 +1383,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (y != null) {
             Pointer yShapeInfo = allocator.getPointer(y.shapeInfoDataBuffer(), context);
-
-            if (x.length() != y.length() || x.length() != z.length())
-                throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform");
-
+            
             switch (op.getOpType()) {
                 case TRANSFORM_BOOL:
                 case PAIRWISE_BOOL:

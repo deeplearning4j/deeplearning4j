@@ -53,7 +53,7 @@ on:
         required: false
         default: false
 jobs:
-  linux-x86_64-cuda-11-2:
+  linux-x86_64-cuda-11-6:
     strategy:
       fail-fast: false
       matrix:
