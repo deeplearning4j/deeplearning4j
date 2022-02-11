@@ -229,7 +229,6 @@ jobs:
           Rem Note: we need this for the cudnn helpers, our cmake can't find it otherwise.
           Rem See here: https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/CMakeLists.txt#L298
           set CUDNN_ROOT_DIR=%CUDA_PATH%
-          mvn -Pcuda dependency:tree
           if "%PERFORM_RELEASE%"=="1" (
               echo "Running release"
               bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
