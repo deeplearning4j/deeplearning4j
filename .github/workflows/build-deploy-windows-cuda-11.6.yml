@@ -150,7 +150,9 @@ jobs:
       - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
         env:
           cuda: 11.6.0
-
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && matrix.debug_enabled  }}
       - name: Cache Maven packages
         uses: actions/cache@v2
         with:
@@ -245,7 +247,5 @@ jobs:
               )
           )
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && matrix.debug_enabled  }}
+
 
