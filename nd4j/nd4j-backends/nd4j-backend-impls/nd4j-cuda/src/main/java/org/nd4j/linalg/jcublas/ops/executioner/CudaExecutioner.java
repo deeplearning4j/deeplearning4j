@@ -983,7 +983,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val yDevTadShapeInfo = y == null ? null : AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
         val yOffsets = y == null ? null : yTadBuffers.getSecond();
-        val yDevTadOffsets = yOffsets == null ? null : AtomicAllocator.getInstance().getPointer(yOffsets, context);
+        val yDevTadOffsets = yOffsets == null ? null : (Pointer) AtomicAllocator.getInstance().getPointer(yOffsets, context);
 
         if (y != null) {
             xShapeInfoHostPointer.put(12L, (Pointer) yDevTadShapeInfo);
@@ -1383,7 +1383,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (y != null) {
             Pointer yShapeInfo = allocator.getPointer(y.shapeInfoDataBuffer(), context);
-            
+
             switch (op.getOpType()) {
                 case TRANSFORM_BOOL:
                 case PAIRWISE_BOOL:
