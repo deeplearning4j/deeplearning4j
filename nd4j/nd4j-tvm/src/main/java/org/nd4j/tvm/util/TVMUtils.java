@@ -140,13 +140,13 @@ public class TVMUtils {
     /**
      * Get an tvm tensor from an ndarray.
      * @param ndArray the ndarray to get the value from
-     * @param ctx the {@link DLContext} to use.
+     * @param ctx the {@link DLDevice} to use.
      * @return
      */
-    public static DLTensor getTensor(INDArray ndArray, DLContext ctx) {
+    public static DLTensor getTensor(INDArray ndArray, DLDevice ctx) {
         DLTensor ret = new DLTensor();
         ret.data(ndArray.data().pointer());
-        ret.ctx(ctx);
+        ret.device(ctx);
         ret.ndim(ndArray.rank());
         ret.dtype(tvmTypeForDataType(ndArray.dataType()));
         ret.shape(new LongPointer(ndArray.shape()));
