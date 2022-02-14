@@ -34,7 +34,7 @@ import static org.nd4j.tvm.util.TVMUtils.*;
 
 @Slf4j
 public class TvmRunner implements Closeable  {
-    private static DLContext ctx;
+    private static DLDevice ctx;
     private  org.bytedeco.tvm.Module modFactory;
     private TVMValue values;
     private IntPointer codes;
@@ -50,7 +50,7 @@ public class TvmRunner implements Closeable  {
     @Builder
     public TvmRunner(String modelUri) {
         if (ctx == null) {
-            ctx = new DLContext().device_type(kDLCPU).device_id(0);
+            ctx = new DLDevice().device_type(kDLCPU).device_id(0);
             ctx.retainReference();
         }
 

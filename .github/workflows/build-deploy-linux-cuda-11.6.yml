@@ -53,7 +53,7 @@ on:
         required: false
         default: false
 jobs:
-  linux-x86_64-cuda-11-2:
+  linux-x86_64-cuda-11-6:
     strategy:
       fail-fast: false
       matrix:
@@ -116,7 +116,7 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
-            command="mvn ${{ matrix.mvn_ext }} --also-make  -pl ':nd4j-cuda-11.6-preset,:nd4j-cuda-11.6,:libnd4j' -Dlibnd4j.compute='3.7 5.0 5.2 6.0 6.1 7.0 7.5 8.0 8.6' -Dlibnd4j.cpu.compile.skip=true -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ matrix.build_threads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda --also-make -Pcuda clean --batch-mode package deploy -DskipTests"
+            command="mvn ${{ matrix.mvn_ext }} -Pcuda --also-make  -pl ':nd4j-cuda-11.6-preset,:nd4j-cuda-11.6,:libnd4j' -Dlibnd4j.compute='3.7 5.0 5.2 6.0 6.1 7.0 7.5 8.0 8.6' -Dlibnd4j.cpu.compile.skip=true -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ matrix.build_threads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda --also-make -Pcuda clean --batch-mode package deploy -DskipTests"
             libnd4j_download_file_url=""
             if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-cuda-11.6-${{ matrix.helper }}-${{matrix.extension}}"
@@ -205,8 +205,8 @@ jobs:
           MODULES: ${{ matrix.mvn_flags }}
           LIBND4J_HOME_SUFFIX: cuda
           MAVEN_OPTS: -Xmx2g
-          CUDA_PATH: /usr/local/cuda-11.6
-          CUDNN_ROOT_DIR: /usr/local/cuda-11.6/cuda
+          CUDA_PATH: /usr/local/cuda
+          CUDNN_ROOT_DIR: /usr/local/cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
         run: |
@@ -235,7 +235,6 @@ jobs:
           bash ./bootstrap-libnd4j-from-url.sh
           # Note: we need this for the cudnn helpers, our cmake can't find it otherwise.
           # See here: https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/CMakeLists.txt#L298
-          export CUDNN_ROOT_DIR="${CUDA_PATH}/cuda"
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release"
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"

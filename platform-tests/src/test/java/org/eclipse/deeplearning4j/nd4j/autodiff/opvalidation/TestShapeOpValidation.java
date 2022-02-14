@@ -20,7 +20,6 @@
 
 package org.eclipse.deeplearning4j.nd4j.autodiff.opvalidation;
 
-import com.google.common.collect.Lists;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +62,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.primitives.Triple;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.shade.guava.collect.Lists;
 
 import java.util.*;
 

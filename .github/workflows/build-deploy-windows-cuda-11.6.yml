@@ -52,7 +52,7 @@ on:
         default: false
 
 jobs:
-  windows-x86_64-cuda-11-2:
+  windows-x86_64-cuda-11-6:
     strategy:
       fail-fast: false
       matrix:
@@ -116,7 +116,7 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: powershell
         run: |
-              $command="mvn  ${{ matrix.mvn_ext }} --also-make -pl ':nd4j-cuda-11.6-preset,:nd4j-cuda-11.6,:libnd4j' -Dlibnd4j.compute='5.0 5.2 6.1 7.5 8.6' -Dlibnd4j.cpu.compile.skip=true -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh  -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Djavacpp.platform=windows-x86_64    -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
+              $command='mvn  ${{ matrix.mvn_ext }}   --also-make -pl :nd4j-cuda-11.6-preset,:nd4j-cuda-11.6,:libnd4j -Dlibnd4j.compute="5.0 5.2 6.1 7.5 8.6" -Dlibnd4j.cpu.compile.skip=true -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh  -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Djavacpp.platform=windows-x86_64    -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests'
               if ( "${{ matrix.helper }}" -ne "" -And "${{ matrix.extension }}" -ne "" ) {
                  $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-11.6-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}   -Dlibnd4j.helper=${{ matrix.helper }}   -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
                  $libnd4j_download_file_url="windows-cuda-11.6-${{ matrix.extension }}-${{ matrix.helper }}"
@@ -150,7 +150,9 @@ jobs:
       - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
         env:
           cuda: 11.6.0
-
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && matrix.debug_enabled  }}
       - name: Cache Maven packages
         uses: actions/cache@v2
         with:
@@ -220,7 +222,7 @@ jobs:
           echo "snapshot version ${{ matrix.snapshot_version }}"
           echo "server id ${{ matrix.server_id }}"
           echo "release repo id ${{ matrix.release_repo_id }}"
-
+          
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set MSYSTEM=MINGW64
           echo "Running cuda build"
@@ -245,7 +247,5 @@ jobs:
               )
           )
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && matrix.debug_enabled  }}
+
 

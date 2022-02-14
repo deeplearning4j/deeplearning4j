@@ -74,7 +74,11 @@
     </properties>
 
     <dependencies>
-
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>5.3.15</version>
+        </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>python4j-numpy</artifactId>
