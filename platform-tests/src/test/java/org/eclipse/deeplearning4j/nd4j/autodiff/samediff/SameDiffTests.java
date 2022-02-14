@@ -3306,6 +3306,21 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     }
 
+    @Test
+    public void testBroadcastingOr() {
+        SameDiff sd = SameDiff.create();
+        SDVariable a = sd.constant(Nd4j.createFromArray(true, false, false, true).reshape(2, 2));
+        sd.constant(42); // added statement
+        SDVariable b = sd.constant(Nd4j.createFromArray(false, false).reshape(1, 2));
+        SDVariable result = sd.math().or(a, b);
+        INDArray eval = result.eval();
+        INDArray assertion = Nd4j.createFromArray(new boolean[][]{
+                {true,false},
+                {false,true}
+        });
+        System.out.println(eval);
+    }
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIf() throws IOException {
