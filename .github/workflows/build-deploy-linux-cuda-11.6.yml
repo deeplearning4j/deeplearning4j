@@ -159,7 +159,7 @@ jobs:
         if: steps.cache-cmake.outputs.cache-hit != 'true'
       - name: Cache cuda install
         uses: actions/cache@v2
-        id:  cache-${{ matrix.runs_on }}-cuda-11.6-${{ matrix.helper }}
+        id:  cache-cuda-116
         with:
           path: /usr/local/cuda/11.6
           key:  ${{ matrix.runs_on }}-cuda-11.6-${{ matrix.helper }}
@@ -180,7 +180,7 @@ jobs:
         env:
           cuda: 11.6.0
           GCC:  7
-        if: steps.cache-cuda-11.6-${{ runner.os }}-${{ matrix.helper }}.outputs.cache-hit != 'true'
+        if: steps.cache-cuda-116.outputs.cache-hit != 'true'
             
       - name: Setup libnd4j home if a download url is specified
         shell: bash
