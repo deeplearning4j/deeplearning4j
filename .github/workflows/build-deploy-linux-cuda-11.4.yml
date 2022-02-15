@@ -144,22 +144,22 @@ jobs:
         id: cache-cmake
         with:
           path: /opt/cmake
-          key: ${{ runner.os }}-cmake
-          restore-keys: ${{ runner.os }}-cmake
+          key: ${{ matrix.runs_on }}-cmake
+          restore-keys: ${{ matrix.runs_on }}-cmake
       - name: Cache cuda install
         uses: actions/cache@v2
-        id: cache-cuda-11.4-${{ runner.os }}
+        id: cache-${{ matrix.runs_on }}-cuda-11.4-${{ matrix.helper }}
         with:
           path: /usr/local/cuda/11.4
-          key: ${{ runner.os }}-cuda-11.4
-          restore-keys: ${{ runner.os }}-cuda-11.4-${{ matrix.helper }}
+          key: ${{ matrix.runs_on }}-cuda-11.4-${{ matrix.helper }}
+          restore-keys: ${{ matrix.runs_on }}-cuda-11.4-${{ matrix.helper }}
       - name: Cache protobuf install
         uses: actions/cache@v2
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf
-          restore-keys: ${{ runner.os }}-protobuf
+          key: ${{ matrix.runs_on }}-protobuf
+          restore-keys: ${{ matrix.runs_on }}-protobuf
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
