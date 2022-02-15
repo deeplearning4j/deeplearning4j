@@ -52,12 +52,14 @@ jobs:
   linux-x86_64:
     strategy:
       fail-fast: false
-    runs-on: ${{ matrix.runs_on }}
+    runs-on: self-hosted
     steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
-          cd ${GITHUB_WORKSPACE}/platform-tests && mvn -Dsurefire.forks=${{ github.event.inputs.surefireForks }} -Dsurefire.threads=${{ github.event.inputs.surefireThreads }} -Dbackend.artifactId=${{ github.event.inputs.backendToTest }} -DexcludedTests=${{ github.event.inputs.testExcludeTags }}  -Dtests=${{ github.event.inputs.testTags }} -Dtest.nogc=${{ github.event.inputs.javacppNoPointerGc }} -Dtest.offheap.size=${{ github.event.inputs.testOffHeapSize }} -Dtest.heap.size=${{ github.event.inputs.testHeapSize }} -Ddl4j.version=${{ github.event.inputs.versionToTest }}  -Djavacpp.platform=linux-x86_64 clean test
+      - uses: actions/checkout@v2
+      - name: Run cpu tests
+        shell: bash
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+            cd ${GITHUB_WORKSPACE}/platform-tests && mvn -Dsurefire.forks=${{ github.event.inputs.surefireForks }} -Dsurefire.threads=${{ github.event.inputs.surefireThreads }} -Dbackend.artifactId=${{ github.event.inputs.backendToTest }} -DexcludedTests=${{ github.event.inputs.testExcludeTags }}  -Dtests=${{ github.event.inputs.testTags }} -Dtest.nogc=${{ github.event.inputs.javacppNoPointerGc }} -Dtest.offheap.size=${{ github.event.inputs.testOffHeapSize }} -Dtest.heap.size=${{ github.event.inputs.testHeapSize }} -Ddl4j.version=${{ github.event.inputs.versionToTest }}  -Djavacpp.platform=linux-x86_64 clean test
 
 
