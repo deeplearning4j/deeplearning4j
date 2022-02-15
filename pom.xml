@@ -35,6 +35,8 @@
     <description>Deeplearning4j Monorepo</description>
     <url>http://deeplearning4j.konduit.ai/</url>
 
+
+
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
@@ -490,6 +492,14 @@
     </dependencies>
 
     <build>
+        <extensions>
+            <!-- Google mirror-->
+            <extension>
+                <groupId>com.github.gzm55.maven</groupId>
+                <artifactId>project-settings-extension</artifactId>
+                <version>0.2.3</version>
+            </extension>
+        </extensions>
         <pluginManagement>
             <plugins>
 
