@@ -2,27 +2,51 @@ on:
   workflow_dispatch:
     inputs:
 
-      releaseVersion:
-        description: 'Release version target'
-        required: false
-        default: 1.0.0-M2
-
-      snapshotVersion:
-        description: 'Snapshot version target'
+      versionToTest:
+        description: 'Version of dl4j to test'
         required: false
         default: 1.0.0-SNAPSHOT
 
-      releaseRepoId:
-        description: 'Release repository id'
+
+      backendToTest:
+        description: "The artifactId of the nd4j backend to test"
         required: false
-        default:
+        default: nd4j-native
 
+      testHeapSize:
+          description: "The java heap size to run tests at"
+          required: false
+          default: 4g
 
-      mvnFlags:
-        description: "Extra maven flags (must escape input yourself if used)"
+      testOffHeapSize:
+        description: "The off heap size to run tests at"
         required: false
-        default:
+        default: 4g
 
+      testTags:
+        description: "The tags of the tests to run"
+        required: false
+        default: samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx
+
+      testExcludeTags:
+        description: "The tags of the tests to exclude"
+        required: false
+        default: large-resources,downloads,long-running-test
+
+      javacppNoPointerGc:
+        description: "Whether to turn off pointer gc in javacpp"
+        required: false
+        default: true
+
+      surefireForks:
+        description: "Number of java processes to run for tests"
+        required: false
+        default: 1
+
+      surefireThreads:
+        description: "Number of threads to use for each fork for tests"
+        required: false
+        default: 1
 
 jobs:
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
