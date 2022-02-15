@@ -147,9 +147,9 @@ jobs:
           key: ${{ runner.os }}-cmake
           restore-keys: ${{ runner.os }}-cmake
       - name: Cache cuda install
-          uses: actions/cache@v2
-          id: cache-cuda-11.4-${{ runner.os }}
-          with:
+        uses: actions/cache@v2
+        id: cache-cuda-11.4-${{ runner.os }}
+        with:
             path: /usr/local/cuda/11.4
             key: ${{ runner.os }}-cuda-11.4
             restore-keys: ${{ runner.os }}-cuda-11.4-${{ matrix.helper }}

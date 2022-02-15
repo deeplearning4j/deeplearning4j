@@ -182,7 +182,7 @@ jobs:
           GCC:  7
         if: steps.cache-cuda-11.6-${{ runner.os }}-${{ matrix.helper }}.outputs.cache-hit != 'true'
             
-            - name: Setup libnd4j home if a download url is specified
+      - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |
             echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
