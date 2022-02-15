@@ -492,14 +492,6 @@
     </dependencies>
 
     <build>
-        <extensions>
-            <!-- Google mirror-->
-            <extension>
-                <groupId>com.github.gzm55.maven</groupId>
-                <artifactId>project-settings-extension</artifactId>
-                <version>0.2.3</version>
-            </extension>
-        </extensions>
         <pluginManagement>
             <plugins>
 
