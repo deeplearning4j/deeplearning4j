@@ -146,16 +146,16 @@ jobs:
           install: base-devel  git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch   mingw-w64-x86_64-make --noconfirm mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc  mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
       - name: Cache cuda install
         uses: actions/cache@v2
-        id: cache-cuda-11.4-${{ runner.os }}-${{ matrix.helper }}
+        id: cache-${{ matrix.runs_on }}-cuda-11.4-${{ matrix.helper }}
         with:
           path: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
-          key: ${{ runner.os }}-cuda-11.4
-          restore-keys: ${{ runner.os }}-cuda-11.4-${{ matrix.helper }}
+          key: ${{ matrix.runs_on }}-cuda-11.4-${{ matrix.helper }}
+          restore-keys: ${{ matrix.runs_on }}-cuda-11.4-${{ matrix.helper }}
 
       - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
         env:
           cuda: 11.4.1
-        if: steps.cache-cuda-11.4-${{ runner.os }}-${{ matrix.helper }}.outputs.cache-hit != 'true'
+        if: steps. cache-${{ matrix.runs_on }}-cuda-11.4-${{ matrix.helper }}.outputs.cache-hit != 'true'
 
       - name: Set up Java for publishing to GitHub Packages
         uses: konduitai/setup-java@main
