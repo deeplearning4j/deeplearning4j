@@ -1,298 +1,65 @@
 on:
   workflow_dispatch:
     inputs:
-
-      releaseVersion:
-        description: 'Release version target'
-        required: false
-        default: 1.0.0-M2
-
-      snapshotVersion:
-        description: 'Snapshot version target'
+      versionToTest:
+        description: 'Version of dl4j to test'
         required: false
         default: 1.0.0-SNAPSHOT
 
-      releaseRepoId:
-        description: 'Release repository id'
+
+      backendToTest:
+        description: "The artifactId of the nd4j backend to test"
         required: false
-        default:
+        default: nd4j-native
 
+      testHeapSize:
+          description: "The java heap size to run tests at"
+          required: false
+          default: 4g
 
-      mvnFlags:
-        description: "Extra maven flags (must escape input yourself if used)"
+      testOffHeapSize:
+        description: "The off heap size to run tests at"
         required: false
-        default:
+        default: 4g
 
+      testTags:
+        description: "The tags of the tests to run"
+        required: false
+        default: samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx
+
+      testExcludeTags:
+        description: "The tags of the tests to exclude"
+        required: false
+        default: large-resources,downloads,long-running-test
+
+      javacppNoPointerGc:
+        description: "Whether to turn off pointer gc in javacpp"
+        required: false
+        default: true
+
+      surefireForks:
+        description: "Number of java processes to run for tests"
+        required: false
+        default: 1
+
+      surefireThreads:
+        description: "Number of threads to use for each fork for tests"
+        required: false
+        default: 1
 
 jobs:
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
   linux-x86_64:
     strategy:
       fail-fast: false
-      matrix:
-        helper: [onednn,""]
-        extension: [avx2,avx512,""]
-        include:
-          - mvn_ext: ${{ github.event.inputs.mvnFlags }}
-            experimental: true
-            name: Extra maven flags
-
-          - runs_on: ubuntu-18.04
-            experimental: true
-            name: OS to run on
-
-
-          - mvn_flags: ${{ github.event.inputs.mvnFlags }}
-            experimental: true
-            name: Extra maven flags to use as part of the build
-
-
-
-
-    runs-on: ${{ matrix.runs_on }}
+    runs-on: self-hosted
     steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/set-linux-distro-version
-      - uses: ./.github/actions/update-deps-linux
-      - name: Cache cmake install
-        uses: actions/cache@v2
-        id: cache-cmake
-        with:
-          path: /opt/cmake
-          key: ${{ runner.os }}-cmake
-          restore-keys: ${{ runner.os }}-cmake
-      - name: Cache protobuf install
-        uses: actions/cache@v2
-        id: cache-protobuf
-        with:
-          path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf
-          restore-keys: ${{ runner.os }}-protobuf
-      - uses: ./.github/actions/install-protobuf-linux
-        if: steps.cache-protobuf.outputs.cache-hit != 'true'
-      - uses: ./.github/actions/install-cmake-linux
-        if: steps.cache-cmake.outputs.cache-hit != 'true'
-
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-
-      - name: Set up Java for publishing to GitHub Packages
-        uses: actions/setup-java@v2
-        with:
-          java-version: 8
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Setup libnd4j home if a download url is specified
-        shell: bash
-        run: |
-          echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
-          mkdir "${GITHUB_WORKSPACE}/openblas_home"
-          cd "${GITHUB_WORKSPACE}/openblas_home"
-          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-linux-x86_64.jar
-          unzip openblas-0.3.19-1.5.7-linux-x86_64.jar
-          cd ..
-          echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64" >> "$GITHUB_ENV"
-          cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so
-        if: ${{ github.event.inputs.libnd4jUrl != '' }}
-      - name: Download dl4j-test-resources
-        uses: ./.github/actions/download-dl4j-test-resources-linux
-      - name: Build on  linux-x86_64
+      - name: Run cpu tests
         shell: bash
         env:
           DEBIAN_FRONTEND: noninteractive
-          MODULES: ${{ matrix.mvn_flags }}
-          HELPER: ${{ matrix.helper }}
-          EXTENSION: ${{ matrix.extension }}
-          MAVEN_OPTS: -Xmx2g
         run: |
-    
-          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          mvn --version
-          cmake --version
-          protoc --version
-          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/5.5.0/libgomp.so
-          if [ -z "${EXTENSION}" ] || [ -n "${EXTENSION}" ]; then
-              export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/7.5.0/libgomp.so
-              echo "Extensions specified. This needs a newer version of gcc."
-              sudo apt-get install gcc-7 g++-7
-              echo "Using newer version of libgomp."
-              ls /usr/bin | grep gcc
-              ls /usr/bin | grep g++
-              sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 90
-              sudo update-alternatives --install  /usr/bin/g++ g++ /usr/bin/g++-7  90
-              gcc --version
-          fi
-          if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-                  mvn_ext=" -Dplatform.classifier=linux-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
-          elif [ "${{ matrix.helper }}" != '' ]; then
-                  mvn_ext="-Dplatform.classifier=linux-x86_64-${{ matrix.helper }}"
-          elif [ "${{ matrix.extension }}" != '' ]; then
-                 mvn_ext=" -Dplatform.classifier=linux-x86_64-${{matrix.extension}}"
-          else
-                  mvn_ext=" -Dplatform.classifier=linux-x86_64"
-          fi
-          cd ${GITHUB_WORKSPACE}/platform-tests && mvn ${mvn_ext} -Djavacpp.platform=linux-x86_64 clean test 
-
-
-  windows-x86_64:
-    strategy:
-      fail-fast: false
-      matrix:
-        helper: [ onednn,"" ]
-        extension: [ avx2,avx512,"" ]
-        include:
-          - mvn_ext: ${{ github.event.inputs.mvnFlags }}
-            experimental: true
-            name: Extra maven flags
-
-          - runs_on: ${{ github.event.inputs.runsOn }}
-            experimental: true
-            name: OS to run on
-
-          - mvn_flags: ${{ github.event.inputs.mvnFlags }}
-            experimental: true
-            name: Extra maven flags to use as part of the build
-
-
-
-    runs-on: windows-2019
-    steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
-      - uses: actions/checkout@v2
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-      - name: Set up Java for publishing to GitHub Packages
-        uses: konduitai/setup-java@main
-        with:
-          java-version: 8
-          distribution: 'temurin'
-          cache: 'maven'
-
-
-      - uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: true
-          install: base-devel  git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch mingw-w64-x86_64-gnupg  mingw-w64-x86_64-make --noconfirm mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc  mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
-      - name: Setup windows path
-        shell: powershell
-        run: echo "C:\msys64\mingw64\bin;C:\msys64\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      - name: Setup libnd4j home if a download url is specified
-        shell: powershell
-        run: |
-          echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
-          mkdir "%GITHUB_WORKSPACE%/openblas_home"
-          cd "%GITHUB_WORKSPACE%/openblas_home"
-          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-windows-x86_64.jar
-          unzip openblas-0.3.19-1.5.7-windows-x86_64.jar
-          cd ..
-          echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/windows-x86_64/" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
-        if: ${{ matrix.libnd4j_file_download != '' }}
-      - name: Download dl4j-test-resources
-        uses: ./.github/actions/download-dl4j-test-resources-windows
-      - name: Run windows cpu build
-        shell: cmd
-        run: |
-              if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
-                 $mvn_ext=" -platform.classifier=windows-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
-              } elseif ( "${{ matrix.helper }}" -ne "" ) {
-                  $mvn_ext=" -Dplatform.classifier=windows-x86_64-${{ matrix.helper }}"
-              }  elseif ( "${{ matrix.extension }}" -ne "" ) {
-                   $mvn_ext=" -Dplatform.classifier=windows-x86_64-${{matrix.extension}} "
-              } else {
-                 $mvn_ext=" -Dplatform.classifier=windows-x86_64"
-              }
-              cd "%GITHUB_WORKSPACE%\platform-tests"
-              mvn "%mvn_ext%"  -Djavacpp.platform=windows-x86_64 clean test
-
-        env:
-          MODULES: ${{ matrix.mvn_flags }}
-          HELPER: ${{ matrix.helper }}
-          EXTENSION: ${{ matrix.extension }}
-
-
-  mac-x86_64:
-    strategy:
-      fail-fast: false
-      matrix:
-        helper: [ onednn,"" ]
-        extension: [ avx2,avx512,"" ]
-        include:
-          - mvn_ext: ${{ github.event.inputs.mvnFlags }}
-            experimental: true
-            name: Extra maven flags
-          - debug_enabled:  ${{ github.event.inputs.debug_enabled }}
-            experimental: true
-            name: Debug enabled
-
-          - runs_on: ${{ github.event.inputs.runsOn }}
-            experimental: true
-            name: OS to run on
-
-          - mvn_flags: ${{ github.event.inputs.mvnFlags }}
-            experimental: true
-            name: Extra maven flags to use as part of the build
-
-    runs-on: macos-10.15
-    steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
-      - uses: actions/checkout@v2
-
-      - name: Set up Java for publishing to OSSRH
-        uses: actions/setup-java@v2
-        with:
-          java-version: 8
-          distribution: 'temurin'
-          cache: 'maven'
-
-
-      - name: Update path for gnu sed
-        shell: bash
-        run: |
-          brew install gpg1 gnu-sed unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
-          echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
-      - name: Download dl4j-test-resources
-        uses: ./.github/actions/download-dl4j-test-resources-linux
-      - name: Build and install
-        shell: bash
-        env:
-          MODULES: ${{ matrix.mvn_flags }}
-          MAVEN_OPTS: "-Xmx2g"
-          HELPER: ${{ matrix.helper }}
-          EXTENSION: ${{ matrix.extension }}
-
-
-        run: |
-           if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-                  mvn_ext=" -Dplatform.classifier=macosx-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
-           elif [ "${{ matrix.helper }}" != '' ]; then
-                  mvn_ext="-Dplatform.classifier=macosx-x86_64-${{ matrix.helper }}"
-           elif [ "${{ matrix.extension }}" != '' ]; then
-                 mvn_ext=" -Dplatform.classifier=macosx-x86_64-${{matrix.extension}}"
-           else
-                  mvn_ext=" -Dlibnd4j.classifier=macosx-x86_64"
-            fi
-            cd ${GITHUB_WORKSPACE}/platform-tests && mvn  -Djavacpp.platform=macosx-x86_64 ${mvn_ext} clean test 
-
+            cd ${GITHUB_WORKSPACE}/platform-tests && mvn -Dsurefire.forks=${{ github.event.inputs.surefireForks }} -Dsurefire.threads=${{ github.event.inputs.surefireThreads }} -Dbackend.artifactId=${{ github.event.inputs.backendToTest }} -DexcludedTests=${{ github.event.inputs.testExcludeTags }}  -Dtests=${{ github.event.inputs.testTags }} -Dtest.nogc=${{ github.event.inputs.javacppNoPointerGc }} -Dtest.offheap.size=${{ github.event.inputs.testOffHeapSize }} -Dtest.heap.size=${{ github.event.inputs.testHeapSize }} -Ddl4j.version=${{ github.event.inputs.versionToTest }}  -Djavacpp.platform=linux-x86_64 clean test
 
 
