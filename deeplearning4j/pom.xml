@@ -224,7 +224,6 @@
                         <directory>deeplearning4j-scaleout</directory>
                         <directory>deeplearning4j-ui-parent</directory>
                         <directory>deeplearning4j-graph</directory>
-                        <directory>deeplearning4j-cuda</directory>
                         <directory>deeplearning4j-nlp-parent</directory>
                         <directory>deeplearning4j-nn</directory>
                         <directory>deeplearning4j-dataimport-solrj</directory>
@@ -257,21 +256,8 @@
                     <value>cuda</value>
                 </property>
             </activation>
-            <modules>
-                <module>deeplearning4j-cuda</module>
-            </modules>
         </profile>
-        <profile>
-            <id>libnd4j-cuda</id>
-            <activation>
-                <property>
-                    <name>libnd4j.cuda</name>
-                </property>
-            </activation>
-            <modules>
-                <module>deeplearning4j-cuda</module>
-            </modules>
-        </profile>
+
         <!-- For running unit tests with nd4j-native: "mvn clean test -P nd4j-tests-cpu"
              Note that this excludes DL4J-cuda -->
         <profile>

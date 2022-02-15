@@ -147,12 +147,6 @@ jobs:
       - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
         env:
           cuda: 11.4.1
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-            path: ~/.m2
-            key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-            restore-keys: ${{ runner.os }}-m2
 
       - name: Set up Java for publishing to GitHub Packages
         uses: konduitai/setup-java@main
