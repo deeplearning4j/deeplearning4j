@@ -180,7 +180,7 @@ jobs:
         env:
           cuda: 11.6.0
           GCC:  7
-      if: steps.cache-cuda-11.6-${{ runner.os }}-${{ matrix.helper }}.outputs.cache-hit != 'true'
+        if: steps.cache-cuda-11.6-${{ runner.os }}-${{ matrix.helper }}.outputs.cache-hit != 'true'
             
             - name: Setup libnd4j home if a download url is specified
         shell: bash
