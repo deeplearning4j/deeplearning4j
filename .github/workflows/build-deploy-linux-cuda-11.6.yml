@@ -157,7 +157,13 @@ jobs:
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
-
+      - name: Cache cuda install
+          uses: actions/cache@v2
+          id: cache-cuda-11.4-${{ runner.os }}
+          with:
+            path: /usr/local/cuda/11.6
+            key: ${{ runner.os }}-cuda-11.6
+            restore-keys: ${{ runner.os }}-cuda-11.6-${{ matrix.helper }}
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v2
         with:
@@ -174,8 +180,9 @@ jobs:
         env:
           cuda: 11.6.0
           GCC:  7
-
-      - name: Setup libnd4j home if a download url is specified
+      if: steps.cache-cuda-11.6-${{ runner.os }}-${{ matrix.helper }}.outputs.cache-hit != 'true'
+            
+            - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |
             echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
