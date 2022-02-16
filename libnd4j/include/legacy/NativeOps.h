@@ -1363,6 +1363,7 @@ SD_LIB_EXPORT sd::Status execCustomOp(sd::Pointer* extraPointers, sd::LongType h
 SD_LIB_EXPORT sd::Status execCustomOp2(sd::Pointer* extraPointers, sd::LongType hash, sd::Pointer opContext);
 
 typedef sd::ShapeList OpaqueShapeList;
+typedef sd::graph::Context OpaqueContext;
 
 SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapes(sd::Pointer* extraPointers, sd::LongType hash,
                                                      sd::Pointer* inputShapes, int numInputShapes, double* tArgs,
@@ -1372,7 +1373,9 @@ SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapes2(sd::Pointer* extraPointers
                                                       int numInputShapes, double* tArgs, int numTArgs,
                                                       sd::LongType* iArgs, int numIArgs, bool* bArgs, int numBArgs,
                                                       int* dArgs, int numDArgs);
-
+#ifdef __NEC__
+SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapesNec(OpaqueContext* ctx, sd::LongType hash, sd::Pointer *inputShapes, int numInputShapes);
+#endif
 SD_LIB_EXPORT sd::LongType getShapeListSize(OpaqueShapeList* list);
 SD_LIB_EXPORT sd::LongType const* getShape(OpaqueShapeList* list, sd::LongType i);
 
@@ -1461,7 +1464,6 @@ SD_LIB_EXPORT sd::Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffe
 SD_LIB_EXPORT void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer* ptr);
 SD_LIB_EXPORT void deleteConstantDataBuffer(OpaqueConstantDataBuffer* ptr);
 
-typedef sd::graph::Context OpaqueContext;
 typedef sd::graph::RandomGenerator OpaqueRandomGenerator;
 
 SD_LIB_EXPORT OpaqueContext* createGraphContext(int nodeId);

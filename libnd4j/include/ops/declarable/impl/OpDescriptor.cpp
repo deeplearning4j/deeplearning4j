@@ -231,7 +231,7 @@ bool OpDescriptor::checkInputMatch(int index, sd::DataType dataType) {
     return checkDataTypesMatch(dataType, _allowedIns);
   } else {
     // checking data type for specified input
-    auto allowed = _inputTypes[index];
+    auto& allowed = _inputTypes[index];
     return checkDataTypesMatch(dataType, allowed);
   }
   return true;

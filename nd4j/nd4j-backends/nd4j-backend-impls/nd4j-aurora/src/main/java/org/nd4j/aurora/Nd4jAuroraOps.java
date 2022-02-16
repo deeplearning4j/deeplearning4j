@@ -1053,6 +1053,10 @@ public class Nd4jAuroraOps implements NativeOps {
         return new OpaqueShapeList(callPointer("calculateOutputShapes2", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12));
     }
 
+    public OpaqueShapeList calculateOutputShapesNec(OpaqueContext arg0, long arg1,  PointerPointer arg2, int arg3) {
+        return new OpaqueShapeList(callPointer("calculateOutputShapesNec", arg0, arg1, arg2, arg3));
+    }
+
     @Override
     public long getShapeListSize(OpaqueShapeList arg0) {
         return callLong("getShapeListSize", arg0);

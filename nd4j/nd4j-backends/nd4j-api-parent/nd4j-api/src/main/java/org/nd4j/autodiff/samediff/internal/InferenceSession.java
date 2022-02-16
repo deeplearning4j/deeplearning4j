@@ -73,7 +73,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      */
     @Getter
     @Setter
-    private IdentityDependencyTracker<INDArray, Dep> arrayUseTracker = new IdentityDependencyTracker<>();
+    private AbstractDependencyTracker<INDArray, Dep> arrayUseTracker = new IdentityDependencyTracker<>();
 
 
     private Map<String,OpContext> opContexts = new HashMap<>();

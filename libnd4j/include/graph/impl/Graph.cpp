@@ -93,7 +93,8 @@ sd::LongType Graph::estimateRequiredMemory() {
         auto outSha = op->calculateOutputShape(&inSha, ctx);
 
         int cnt = 0;
-        for (auto newShape : *outSha->asVector()) {
+        for (int jj = 0; jj < outSha->size(); jj++) {
+          auto newShape = outSha->at(jj);
           std::pair<int, int> pairAddr(node->id(), cnt++);
           std::pair<std::pair<int, int>, sd::LongType const *> pairShape(pairAddr, newShape);
 
