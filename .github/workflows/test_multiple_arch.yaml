@@ -13,7 +13,7 @@ jobs:
         uses: actions/cache@v2
         id: cache-cuda-116
         with:
-            path: /usr/local/cuda/11.6
+            path: /usr/local/cuda-11.6
             key: ubuntu-18.04-cuda-11.6
             restore-keys: ubuntu-18.04-cuda-11.6
       - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
@@ -24,7 +24,7 @@ jobs:
         uses: actions/cache@v2
         id: cache-cuda-114
         with:
-            path: /usr/local/cuda/11.4
+            path: /usr/local/cuda-11.4
             key: ubuntu-18.04-cuda-11.4
             restore-keys: ubuntu-18.04-cuda-11.4
 
