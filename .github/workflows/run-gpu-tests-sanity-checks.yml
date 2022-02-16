@@ -25,10 +25,7 @@ jobs:
           path: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.6
           key: windows-2019-cuda-11.6
           restore-keys: windows-2019-cuda-11.6
-      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
-        env:
-          cuda: 11.4
-          GCC: 7
+
 
 
 
