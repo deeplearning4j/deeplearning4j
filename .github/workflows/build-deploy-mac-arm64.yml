@@ -134,13 +134,6 @@ jobs:
               echo "COMMAND=${command}" >> $GITHUB_ENV
               sudo rm -Rf /Library/Developer/CommandLineTools/SDKs/MacOSX10*
 
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-
       - name: Import GPG Key
         uses: crazy-max/ghaction-import-gpg@v1
         env:

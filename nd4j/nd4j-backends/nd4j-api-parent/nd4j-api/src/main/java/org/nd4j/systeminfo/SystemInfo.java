@@ -428,7 +428,7 @@ public class SystemInfo {
                     dl4jVersion = version + " (" + v.getCommitIdAbbrev() + ")";
                 }
                 dl4jVersion = version;
-            } else if("org.deeplearning4j".equals(v.getGroupId()) && v.getArtifactId() != null && v.getArtifactId().contains("deeplearning4j-cuda")){
+            } else if("org.deeplearning4j".equals(v.getGroupId()) && v.getArtifactId() != null){
                 dl4jCudaArtifact = v.getArtifactId();
             }
 

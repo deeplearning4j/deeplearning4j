@@ -144,27 +144,26 @@ jobs:
         id: cache-cmake
         with:
           path: /opt/cmake
-          key: ${{ runner.os }}-cmake
-          restore-keys: ${{ runner.os }}-cmake
+          key: ${{ matrix.runs_on }}-cmake
+          restore-keys: ${{ matrix.runs_on }}-cmake
+      - name: Cache cuda install
+        uses: actions/cache@v2
+        id: cache-cuda-114
+        with:
+          path: /usr/local/cuda-11.4
+          key: ${{ matrix.runs_on }}-cuda-11.4-${{ matrix.helper }}
+          restore-keys: ${{ matrix.runs_on }}-cuda-11.4-${{ matrix.helper }}
       - name: Cache protobuf install
         uses: actions/cache@v2
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf
-          restore-keys: ${{ runner.os }}-protobuf
+          key: ${{ matrix.runs_on }}-protobuf
+          restore-keys: ${{ matrix.runs_on }}-protobuf
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
-
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-            path: ~/.m2
-            key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-            restore-keys: ${{ runner.os }}-m2
-
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v2
         with:
@@ -183,7 +182,9 @@ jobs:
         env:
           cuda: 11.4
           GCC:  7
-
+        if: steps.cache-cuda-114.outputs.cache-hit != 'true'
+            
+            
       - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |

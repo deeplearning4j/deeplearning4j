@@ -393,7 +393,7 @@ else
          message  "jetson cuda build "
         cuda_cross_setup ${CUDA_VER}
         XTRA_ARGS="${XTRA_ARGS} -c cuda  -h cudnn  "
-        XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -pl !\":nd4j-cuda-${CUDA_VER}-platform\",!\":deeplearning4j-cuda-${CUDA_VER}\" -Pcuda -Dlibnd4j.cpu.compile.skip=true -Djavacpp.version=1.5.6 -Dcuda.version=${CUDA_VER} -Dlibnd4j.cuda=${CUDA_VER} -Dlibnd4j.chip=cuda -Dlibnd4j.compute=5.3 "
+        XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -pl !\":nd4j-cuda-${CUDA_VER}-platform\" -Pcuda -Dlibnd4j.cpu.compile.skip=true -Djavacpp.version=1.5.6 -Dcuda.version=${CUDA_VER} -Dlibnd4j.cuda=${CUDA_VER} -Dlibnd4j.chip=cuda -Dlibnd4j.compute=5.3 "
         # need to be in base directory to exec contrib folder
         cd "${BASE_DIR}/.."
         bash "${BASE_DIR}/../change-cuda-versions.sh" "${CUDA_VER}"

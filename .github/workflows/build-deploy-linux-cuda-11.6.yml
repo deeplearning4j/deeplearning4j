@@ -151,19 +151,19 @@ jobs:
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf
-          restore-keys: ${{ runner.os }}-protobuf
+          key: ${{ matrix.runs_on }}-protobuf
+          restore-keys: ${{ matrix.runs_on }}-protobuf
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
-
-      - name: Cache Maven packages
+      - name: Cache cuda install
         uses: actions/cache@v2
+        id:  cache-cuda-116
         with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+          path: /usr/local/cuda-11.6
+          key:  ${{ matrix.runs_on }}-cuda-11.6-${{ matrix.helper }}
+          restore-keys: ${{ matrix.runs_on }}-cuda-11.6-${{ matrix.helper }}
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v2
         with:
@@ -180,7 +180,8 @@ jobs:
         env:
           cuda: 11.6.0
           GCC:  7
-
+        if: steps.cache-cuda-116.outputs.cache-hit != 'true'
+            
       - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |
