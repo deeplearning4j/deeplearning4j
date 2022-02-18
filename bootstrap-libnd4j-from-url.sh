@@ -13,7 +13,13 @@ if ! [[ -z "$LIBND4J_URL" ]]; then
               if [ -z "${LIBND4J_HOME_SUFFIX}" ]; then export LIBND4J_HOME_SUFFIX="cpu"; fi
               wget "${LIBND4J_URL}" -O libnd4j.zip
               unzip libnd4j.zip
+              echo "Files in directory $(pwd) are "
+              ls
+              echo "Copying files to libnd4j directory"
               # Note: for builds, the whole source directory is uploaded, but a valid libnd4j home is actually only the compiled output
-              cp -rf ${GITHUB_WORKSPACE}/libnd4j_home/libnd4j/blasbuild/ "${GITHUB_WORKSPACE}/libnd4j"
+              cp -rf libnd4j/blasbuild/ "../libnd4j"
+              echo "Files in ${GITHUB_WORKSPACE} are"
+              ls "$GITHUB_WORKSPACE"
+              echo "Files in libnd4j directory are ${GITHUB_WORKSPACE}/libnd4j"
               cd ..
 fi
