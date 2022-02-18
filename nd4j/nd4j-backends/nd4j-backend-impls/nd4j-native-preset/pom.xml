@@ -264,7 +264,7 @@
             </properties>
         </profile>
 
-        
+
         <profile>
             <id>testresources</id>
         </profile>
