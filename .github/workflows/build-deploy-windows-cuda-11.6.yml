@@ -36,7 +36,7 @@ on:
         required: false
         default:
 
-      libnd4jDownload:
+      libnd4jUrl:
         description: 'Whether to download libnd4j using  https://github.com/KonduitAI/gh-actions-libnd4j-urls/ for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
         required: false
         default:
@@ -71,7 +71,7 @@ jobs:
             experimental: true
             name: OS to run on
 
-          - libnd4j_file_download: ${{ github.event.inputs.libnd4jDownload }}
+          - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl }}
             experimental: true
             name: OS to run on
 
