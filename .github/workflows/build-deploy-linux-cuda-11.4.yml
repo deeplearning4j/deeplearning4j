@@ -124,7 +124,7 @@ jobs:
                   libnd4j_download_file_url="linux-cuda-11-${{ matrix.helper }}"
 
               else
-                  echo "LIBND4J_FILE_NAME=linux-cuda-11" >> $GITHUB_ENV
+                  echo "LIBND4J_URL=linux-cuda-11" >> $GITHUB_ENV
                   libnd4j_download_file_url="linux-cuda-11"
                   mvn_ext=" -Dlibnd4j.classifier=linux-x86_64-cuda-11.4"
               fi
@@ -132,7 +132,7 @@ jobs:
               command="${command} ${mvn_ext}"
               if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
                   echo "Adding libnd4j download"
-                  echo "LIBND4J_FILE_NAME=${libnd4j_download_file_url}" >> $GITHUB_ENV
+                  echo "LIBND4J_URL=${libnd4j_download_file_url}" >> $GITHUB_ENV
               fi
               echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command} and libnd4j download file to ${libnd4j_download_file_url}"
               echo "COMMAND=${command}" >> $GITHUB_ENV
@@ -245,7 +245,7 @@ jobs:
           nvcc --version
           sudo apt-get autoremove
           sudo apt-get clean
-          # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
+          # download libnd4j from a url and set it up if LIBND4J_URL is defined
           bash ./bootstrap-libnd4j-from-url.sh
           if [ "$PERFORM_RELEASE" == 1 ]; then
                echo "Performing release"

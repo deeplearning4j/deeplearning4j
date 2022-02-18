@@ -166,7 +166,7 @@ jobs:
           cd ..
           export PATH=/opt/protobuf/bin:$PATH
           export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/x86_64/
-          # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
+          # download libnd4j from a url and set it up if LIBND4J_URL is defined
           bash ./bootstrap-libnd4j-from-url.sh
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 

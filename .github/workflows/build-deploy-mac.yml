@@ -127,7 +127,7 @@ jobs:
               fi
               if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
                 echo "Adding libnd4j download"
-                echo "LIBND4J_FILE_NAME=${libnd4j_download_file_url}" >> $GITHUB_ENV
+                echo "LIBND4J_URL=${libnd4j_download_file_url}" >> $GITHUB_ENV
               fi
               command="${command} ${mvn_ext}"
               echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
@@ -209,7 +209,7 @@ jobs:
           gpg1 --version
           brew list
           brew list --cask
-          # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
+          # download libnd4j from a url and set it up if LIBND4J_URL is defined
           bash ./bootstrap-libnd4j-from-url.sh
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release with command ${COMMAND}"
