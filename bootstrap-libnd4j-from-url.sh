@@ -11,7 +11,7 @@ if ! [[ -z "$LIBND4J_URL" ]]; then
               cd libnd4j_home
               # Set a suffix for the downloaded libnd4j directory
               if [ -z "${LIBND4J_HOME_SUFFIX}" ]; then export LIBND4J_HOME_SUFFIX="cpu"; fi
-              curl "${LIBND4J_URL}" -O libnd4j.zip
+              wget "${LIBND4J_URL}" -O libnd4j.zip
               unzip libnd4j.zip
               echo "Files in directory $(pwd) are "
               ls
