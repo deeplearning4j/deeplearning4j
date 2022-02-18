@@ -118,6 +118,7 @@ jobs:
                  echo "LIBND4J_FILE_NAME=${base_url}/${libnd4j_download_file_url}" >> $GITHUB_ENV
                  modules=':nd4j-native-preset,:nd4j-native'
                 else 
+                    echo "Building libnd4j from source"
                     modules=':nd4j-native-preset,:libnd4j,:nd4j-native'
               fi
           
