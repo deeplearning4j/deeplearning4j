@@ -120,6 +120,8 @@ jobs:
                 else 
                     modules=':nd4j-native-preset,:libnd4j,:nd4j-native'
               fi
+          
+              echo "Libnd4j download bootstrap url ${{ matrix.libnd4j_file_download }}"
               command="mvn  -pl $modules ${{ matrix.mvn_ext }}  -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64  -Pcpu  --also-make  --batch-mode  -DskipTests"
               mvn_ext=""  
               command="${command} ${mvn_ext}"
