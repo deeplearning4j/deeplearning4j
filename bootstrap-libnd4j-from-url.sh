@@ -1,4 +1,10 @@
 #!/bin/bash
+if ! [[ -z "$LIBND4J_FILE_NAME" ]]; then
+    echo "Downloading file with url at $LIBND4J_FILE_NAME"
+    export LIBND4J_URL=`curl  $LIBND4J_FILE_NAME`
+    echo "Setup LIBND4J_URL to $LIBND4J_URL"
+fi
+
 if ! [[ -z "$LIBND4J_URL" ]]; then
               mkdir libnd4j_home
               cd libnd4j_home
