@@ -1,7 +1,8 @@
 #!/bin/bash
 if ! [[ -z "$LIBND4J_FILE_NAME" ]]; then
     echo "Downloading file with url at $LIBND4J_FILE_NAME"
-    export LIBND4J_URL=`curl  $LIBND4J_FILE_NAME`
+    curl  "$LIBND4J_FILE_NAME" -o file_url.txt
+    export LIBND4J_URL=`cat  file_url.txt`
     echo "Setup LIBND4J_URL to $LIBND4J_URL"
 fi
 
