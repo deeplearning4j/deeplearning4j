@@ -23,4 +23,7 @@ if ! [[ -z "$LIBND4J_URL" ]]; then
               echo "Files in libnd4j directory are ${GITHUB_WORKSPACE}/libnd4j"
               ls "${GITHUB_WORKSPACE}/libnd4j"
               cd ..
+              # generated files may not exist, use in javacpp compilation
+              mkdir -p ${GITHUB_WORKSPACE}/libnd4j/include/generated
+              touch ${GITHUB_WORKSPACE}/libnd4j/include/generated/include_ops.h
 fi
