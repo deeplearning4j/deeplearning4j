@@ -28,6 +28,6 @@ if ! [[ -z "$LIBND4J_URL" ]]; then
               touch ${GITHUB_WORKSPACE}/libnd4j/include/generated/include_ops.h
               # Add flatbuffers include files to libnd4j directory
               git clone https://github.com/KonduitAI/flatbuffers.git
-              mkdir -p ${GITHUB_WORKSPACE}/libnd4j/graph/generated/flatbuffers
+              mkdir -p ${GITHUB_WORKSPACE}/libnd4j/include/graph/generated/flatbuffers
               cp -rf flatbuffers/include/* ${GITHUB_WORKSPACE}/libnd4j/graph/generated/flatbuffers/
 fi
