@@ -162,7 +162,6 @@ jobs:
       - name: Setup libnd4j home if a download url is specified
         shell: powershell
         run: |
-            echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
             mkdir "%GITHUB_WORKSPACE%/openblas_home"
             cd "%GITHUB_WORKSPACE%/openblas_home"
             wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-windows-x86_64.jar

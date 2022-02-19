@@ -98,7 +98,6 @@ jobs:
       - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |
-             echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
              mkdir "${GITHUB_WORKSPACE}/openblas_home"
              cd "${GITHUB_WORKSPACE}/openblas_home"
              wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-linux-arm64.jar
@@ -106,7 +105,6 @@ jobs:
              cd ..
              echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-arm64" >> "$GITHUB_ENV"
              cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-arm64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-arm64/libopenblas.so
-             echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
       - name: Build on  linux-arm64
         shell: bash

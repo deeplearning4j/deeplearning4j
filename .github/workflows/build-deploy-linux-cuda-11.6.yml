@@ -181,12 +181,6 @@ jobs:
           cuda: 11.6.0
           GCC:  7
         if: steps.cache-cuda-116.outputs.cache-hit != 'true'
-            
-      - name: Setup libnd4j home if a download url is specified
-        shell: bash
-        run: |
-            echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
-        if: ${{ github.event.inputs.libnd4jUrl != '' }}
 
 
       - name: Run cuda compilation on linux-x86_64
