@@ -150,11 +150,11 @@ jobs:
           protoc --version
           # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
           bash ./bootstrap-libnd4j-from-url.sh
-          if [ "${{ matrix.libnd4jUrl }}" != '' ]; then
+          if [ "${{  github.event.inputs.libnd4jUrl }}" != '' ]; then
                   echo "Building only java modules using a pre existing libnd4j home"
                   export MODULES="${MODULES} -pl :nd4j-native,:nd4j-native-preset --also-make"
               else
-                  "Building all modules"
+                  echo "Building all modules"
                   export MODULES="${MODULES} -pl :libnd4j,:nd4j-native,:nd4j-native-preset --also-make"
           fi
           
