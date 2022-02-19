@@ -30,10 +30,12 @@ if ! [[ -z "$LIBND4J_URL" ]]; then
               git clone https://github.com/KonduitAI/flatbuffers.git
               mv flatbuffers flatbuffers-src
               mkdir -p ${GITHUB_WORKSPACE}/libnd4j/blasbuild/cpu
-              cp -rf flatbuffers-src/ ${GITHUB_WORKSPACE}/libnd4j/blasbuild/cpu/
+              cp -rf flatbuffers-src/include ${GITHUB_WORKSPACE}/libnd4j/blasbuild/cpu/
               mkdir -p ${GITHUB_WORKSPACE}/libnd4j/blasbuild/cuda
-              cp -rf flatbuffers-src/ ${GITHUB_WORKSPACE}/libnd4j/blasbuild/cuda/flatbuffers-src
+              cp -rf flatbuffers-src/include ${GITHUB_WORKSPACE}/libnd4j/blasbuild/cuda/flatbuffers-src
               mkdir -p ${GITHUB_WORKSPACE}/libnd4j/blasbuild/aurora
-              cp -rf flatbuffers-src/ ${GITHUB_WORKSPACE}/libnd4j/blasbuild/aurora/flatbuffers-src
-                          
+              cp -rf flatbuffers-src/include ${GITHUB_WORKSPACE}/libnd4j/blasbuild/aurora/flatbuffers-src/
+              echo "Copied flatbuffers to ${GITHUB_WORKSPACE}/libnd4j/blasbuild/cpu/flatbuffers-src"
+              ls ${GITHUB_WORKSPACE}/libnd4j/blasbuild/cpu/flatbuffers-src
+
 fi
