@@ -29,7 +29,7 @@ function create_config {
     if   test -f "${config}"; then
       rm -f "${config}"
     fi
-    
+
     print_config "${config_copy}" "${engine}"
     print_config "${config}" "${engine}"
 
@@ -43,7 +43,7 @@ function print_config {
   echo "#define DEFAULT_ENGINE samediff::$2" >> "$1"
   echo "#endif" >> "$1"
   echo "Generated config.h at $1"
-  cat "$$1"
+  cat "$1"
 }
 
 
