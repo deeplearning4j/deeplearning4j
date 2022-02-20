@@ -12,7 +12,7 @@ function append_args {
 
 for var in "$@"
 do
-  append_args var
+  append_args "${var}"
 done
 
 if ! [[ -z "$LIBND4J_FILE_NAME" ]]; then
