@@ -129,7 +129,7 @@ jobs:
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           MODULES: ${{ github.event.inputs.mvnFlags }}
-          LIBND4J_FILE_NAME: ${{ github.events.inputs.libnd4jUrl }}
+          LIBND4J_FILE_NAME: ${{ github.event.inputs.libnd4jUrl }}
 
         run: |
           echo "libnd4j build threads ${{ github.event.inputs.buildThreads }}"
@@ -141,6 +141,7 @@ jobs:
           echo "snapshot version ${{ github.event.inputs.snapshotVersion }}"
           echo "server id ${{ github.event.inputs.serverId }}"
           echo "release repo id ${{ github.event.inputs.releaseRepoId }}"
+          echo "libnd4j file url ${{ github.event.inputs.libnd4jUrl }}"
 
           sudo sysctl vm.overcommit_memory=2
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
