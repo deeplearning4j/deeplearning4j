@@ -21,16 +21,25 @@ function create_config {
     fi
 
     config="${GITHUB_WORKSPACE}/libnd4j/blasbuild/$1/include/config.h"
-
-    if ! [ test -f "${config}" ]; then
-        echo "Generating config.h ${config}"
-        echo "#ifndef LIBND4J_CONFIG_H" >> "$config"
-        echo "#define LIBND4J_CONFIG_H" >> "$config"
-        echo "#define DEFAULT_ENGINE samediff::${engine}" >> "$config"
-        echo "#endif" >> "$config"
-        echo "Generated config.h at ${config}"
-        cat "${config}"
+    config_copy="${GITHUB_WORKSPACE}/libnd4j/include/config.h"
+    if  [ test -f "${config_copy}" ]; then
+        rm -f "${config_copy}"
+        print_config "${config_copy}" "${engine}"
     fi
+    if ! [ test -f "${config}" ]; then
+       print_config "${config}" "${engine}"
+    fi
+
+}
+
+fun print_config {
+  echo "Generating config.h $1"
+  echo "#ifndef LIBND4J_CONFIG_H" >> "$1"
+  echo "#define LIBND4J_CONFIG_H" >> "$1"
+  echo "#define DEFAULT_ENGINE samediff::$2" >> "$1"
+  echo "#endif" >> "$1"
+  echo "Generated config.h at $1"
+  cat "$$1"
 }
 
 
