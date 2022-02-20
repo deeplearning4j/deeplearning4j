@@ -50,13 +50,8 @@ if ! [[ -z "$LIBND4J_URL" ]]; then
               # Add flatbuffers include files to libnd4j directory
               git clone https://github.com/KonduitAI/flatbuffers.git
               mv flatbuffers flatbuffers-src
-              mkdir -p ${GITHUB_WORKSPACE}/libnd4j/blasbuild/cpu
-              cp -rf flatbuffers-src/include ${GITHUB_WORKSPACE}/libnd4j/blasbuild/cpu/
-              mkdir -p ${GITHUB_WORKSPACE}/libnd4j/blasbuild/cuda
-              cp -rf flatbuffers-src/include ${GITHUB_WORKSPACE}/libnd4j/blasbuild/cuda/flatbuffers-src
-              mkdir -p ${GITHUB_WORKSPACE}/libnd4j/blasbuild/aurora
-              cp -rf flatbuffers-src/include ${GITHUB_WORKSPACE}/libnd4j/blasbuild/aurora/flatbuffers-src/
-              echo "Copied flatbuffers to ${GITHUB_WORKSPACE}/libnd4j/blasbuild/cpu/flatbuffers-src"
-              ls ${GITHUB_WORKSPACE}/libnd4j/blasbuild/cpu/flatbuffers-src
+              cp -rf flatbuffers-src/include ${GITHUB_WORKSPACE}/libnd4j/
+              echo "Copied flatbuffers to ${GITHUB_WORKSPACE}/libnd4j/include"
+              ls ${GITHUB_WORKSPACE}/libnd4j/include
 
 fi
