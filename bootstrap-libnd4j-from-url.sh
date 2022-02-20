@@ -22,13 +22,17 @@ function create_config {
 
     config="${GITHUB_WORKSPACE}/libnd4j/blasbuild/$1/include/config.h"
     config_copy="${GITHUB_WORKSPACE}/libnd4j/include/config.h"
-    if  [ test -f "${config_copy}" ]; then
+    if   test -f "${config_copy}"; then
         rm -f "${config_copy}"
-        print_config "${config_copy}" "${engine}"
     fi
-    if ! [ test -f "${config}" ]; then
-       print_config "${config}" "${engine}"
+
+    if   test -f "${config}"; then
+      rm -f "${config}"
     fi
+    
+    print_config "${config_copy}" "${engine}"
+    print_config "${config}" "${engine}"
+
 
 }
 
