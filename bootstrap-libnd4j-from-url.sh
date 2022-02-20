@@ -16,7 +16,7 @@ do
 done
 
 if ! [[ -z "$LIBND4J_FILE_NAME" ]]; then
-    echo "Downloading file with url at $LIBND4J_FILE_NAME"
+    echo "Downloading file with url at $LIBND4J_FILE_NAME/${file_name}"
     curl  "${LIBND4J_FILE_NAME}/${file_name}" -o file_url.txt
     # shellcheck disable=SC2006
     export LIBND4J_URL=`cat  file_url.txt`
