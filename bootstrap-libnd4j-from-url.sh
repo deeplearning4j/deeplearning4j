@@ -46,6 +46,17 @@ function print_config {
   cat "$1"
 }
 
+function copy_lib {
+   cp -rf  "libnd4j/blasbuild/*" "${GITHUB_WORKSPACE}/libnd4j/blasbuild/"
+   echo "Copied libraries in libnd4j/blasbuild to ${GITHUB_WORKSPACE}/libnd4j/blasbuild"
+   echo "libraries in libnd4j/blasbuild were"
+   ls "libnd4j/blasbuild"
+   echo "libraries in target ${GITHUB_WORKSPACE}/libnd4j/blasbuild were"
+   ls "${GITHUB_WORKSPACE}/libnd4j/blasbuild"
+   echo "libraries in device directory ${GITHUB_WORKSPACE}/libnd4j/blasbuild/$1 were"
+   ls "${GITHUB_WORKSPACE}/libnd4j/blasbuild/$1"
+}
+
 
 for var in "$@"
 do
@@ -92,10 +103,13 @@ if ! [[ -z "$LIBND4J_URL" ]]; then
               if [ "$#" -gt 1 ]; then
                  if [ "$2" == "cuda" ]; then
                         create_config "cuda"
+                        copy_lib "cuda"
                     elif [ "$2" == "aurora" ]; then
                         create_config "aurora"
+                        copy_lib "aurora"
                     else
                        create_config "cpu"
+                       copy_lib "cpu"
 
                 fi
               fi
