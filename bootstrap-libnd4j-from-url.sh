@@ -10,6 +10,30 @@ function append_args {
    fi
 }
 
+function create_config {
+    if [ "$1" == "cuda" ]; then
+         engine="ENGINE_CUDA"
+    elif [ "$1" == "aurora" ]; then
+           engine="ENGINE_AURORA"
+    else
+            engine="ENGINE_CPU"
+
+    fi
+
+    config="${GITHUB_WORKSPACE}/libnd4j/blasbuild/$1/include/config.h"
+
+    if ! [ test -f "${config}" ]; then
+        echo "Generating config.h ${config}"
+        echo "#ifndef LIBND4J_CONFIG_H" >> "$config"
+        echo "#define LIBND4J_CONFIG_H" >> "$config"
+        echo "#define DEFAULT_ENGINE samediff::${engine}" >> "$config"
+        echo "#endif" >> "$config"
+        echo "Generated config.h at ${config}"
+        cat "${config}"
+    fi
+}
+
+
 for var in "$@"
 do
   append_args "${var}"
@@ -52,6 +76,14 @@ if ! [[ -z "$LIBND4J_URL" ]]; then
               mv flatbuffers flatbuffers-src
               cp -rf flatbuffers-src/include ${GITHUB_WORKSPACE}/libnd4j/
               echo "Copied flatbuffers to ${GITHUB_WORKSPACE}/libnd4j/include"
-              ls ${GITHUB_WORKSPACE}/libnd4j/include
+              if [ "$#" -gt 1 ]; then
+                 if [ "$2" == "cuda" ]; then
+                        create_config "cuda"
+                    elif [ "$2" == "aurora" ]; then
+                        create_config "aurora"
+                    else
+                       create_config "cpu"
 
+                fi
+              fi
 fi
