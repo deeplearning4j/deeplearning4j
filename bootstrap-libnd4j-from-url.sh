@@ -32,7 +32,7 @@ function create_config {
 
 }
 
-fun print_config {
+function print_config {
   echo "Generating config.h $1"
   echo "#ifndef LIBND4J_CONFIG_H" >> "$1"
   echo "#define LIBND4J_CONFIG_H" >> "$1"
