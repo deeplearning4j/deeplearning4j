@@ -153,10 +153,10 @@ jobs:
           bash ./bootstrap-libnd4j-from-url.sh linux arm64
           if [ "${{  github.event.inputs.libnd4jUrl }}" != '' ]; then
                   echo "Building only java modules using a pre existing libnd4j home"
-                  export MODULES="${MODULES} -pl :nd4j-native,:nd4j-native-preset --also-make"
+                  export MODULES="${MODULES} -pl :nd4j-native,:nd4j-native-preset --also-make -Dlibnd4jhome=${GITHUB_WORKSPACE}/libnd4j"
               else
                   echo "Building all modules"
-                  export MODULES="${MODULES} -pl :libnd4j,:nd4j-native,:nd4j-native-preset --also-make"
+                  export MODULES="${MODULES} -pl :libnd4j,:nd4j-native,:nd4j-native-preset --also-make -Dlibnd4jhome=${GITHUB_WORKSPACE}/libnd4j"
           fi
           
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
