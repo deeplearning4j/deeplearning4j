@@ -5,8 +5,8 @@ file_name=""
 
 
 function append_args {
-   if [ "$1" != '' ]; then
-       file_name="${file_name}_$1"
+   if [ -n "$1"  ]; then
+       file_name="${file_name}-$1"
    fi
 }
 
