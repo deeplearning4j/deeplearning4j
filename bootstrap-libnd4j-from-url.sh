@@ -16,12 +16,12 @@ do
 done
 
 # Get rid of the first character
-file_name= ${file_name:1:${#file_name}}
+file_name_2= ${file_name:1:${#file_name}}
 
 
 if ! [[ -z "$LIBND4J_FILE_NAME" ]]; then
-    echo "Downloading file with url at $LIBND4J_FILE_NAME/${file_name}"
-    curl  "${LIBND4J_FILE_NAME}/${file_name}" -o file_url.txt
+    echo "Downloading file with url at $LIBND4J_FILE_NAME/${file_name_2}"
+    curl  "${LIBND4J_FILE_NAME}/${file_name_2}" -o file_url.txt
     # shellcheck disable=SC2006
     export LIBND4J_URL=`cat  file_url.txt`
     echo "Setup LIBND4J_URL to $LIBND4J_URL"
