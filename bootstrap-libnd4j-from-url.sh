@@ -1,8 +1,24 @@
 #!/bin/bash
+
+file_name=""
+
+
+
+function append_args {
+   if [ "$1" != '' ]; then
+       file_name="${file_name}_$1"
+   fi
+}
+
+for var in "$@"
+do
+  append_args var
+done
+
 if ! [[ -z "$LIBND4J_FILE_NAME" ]]; then
     echo "Downloading file with url at $LIBND4J_FILE_NAME"
     curl  "$LIBND4J_FILE_NAME" -o file_url.txt
-    export LIBND4J_URL=`cat  file_url.txt`
+    export LIBND4J_URL=`cat  file_url.txt`/"${file_name}"
     echo "Setup LIBND4J_URL to $LIBND4J_URL"
 fi
 

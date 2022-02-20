@@ -164,7 +164,7 @@ jobs:
           cd ..
           export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/arm64-v8a/
           # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
-          bash ./bootstrap-libnd4j-from-url.sh
+          bash ./bootstrap-libnd4j-from-url.sh android arm64
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 
       - name: Setup tmate session

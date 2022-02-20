@@ -227,7 +227,7 @@ jobs:
           sudo apt-get clean
           bash ./change-cuda-versions.sh 11.6
           # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
-          bash ./bootstrap-libnd4j-from-url.sh
+          bash ./bootstrap-libnd4j-from-url.sh linux cuda 11.6 "${{ matrix.helper }}"
           # Note: we need this for the cudnn helpers, our cmake can't find it otherwise.
           # See here: https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/CMakeLists.txt#L298
           if [ "$PERFORM_RELEASE" == 1 ]; then

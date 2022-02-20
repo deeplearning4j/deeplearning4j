@@ -129,7 +129,6 @@ jobs:
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           MODULES: ${{ github.event.inputs.mvnFlags }}
-          LIBND4J_FILE_NAME:  ${{ github.event.inputs.libnd4jUrl }}
 
         run: |
           echo "libnd4j build threads ${{ github.event.inputs.buildThreads }}"
@@ -148,7 +147,7 @@ jobs:
           cmake --version
           protoc --version
           # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
-          bash ./bootstrap-libnd4j-from-url.sh
+          bash ./bootstrap-libnd4j-from-url.sh linux arm64
           if [ "${{  github.event.inputs.libnd4jUrl }}" != '' ]; then
                   echo "Building only java modules using a pre existing libnd4j home"
                   export MODULES="${MODULES} -pl :nd4j-native,:nd4j-native-preset --also-make"
