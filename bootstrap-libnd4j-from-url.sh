@@ -15,6 +15,10 @@ do
   append_args "${var}"
 done
 
+# Get rid of the first character
+file_name= ${file_name:1:${#file_name}}
+
+
 if ! [[ -z "$LIBND4J_FILE_NAME" ]]; then
     echo "Downloading file with url at $LIBND4J_FILE_NAME/${file_name}"
     curl  "${LIBND4J_FILE_NAME}/${file_name}" -o file_url.txt
