@@ -31,7 +31,7 @@ import org.nd4j.presets.OpExclusionUtils;
  * @author saudet
  */
 @Properties(inherit = openblas.class, target = "org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu", helper = "org.nd4j.presets.cpu.Nd4jCpuHelper",
-        value = {@Platform(define = {"SD_ALL_OPS","__STANDALONE_BUILD__"}, include = {
+        value = {@Platform(define = {"SD_ALL_OPS"}, include = {
                 //note, order matters here
                 //this particular header file is either
                 //going to be the source of ops, see also:
@@ -210,7 +210,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                         "short[]"));
 
         infoMap.put(new Info("__CUDACC__", "MAX_UINT", "HAVE_ONEDNN", "__CUDABLAS__").define(false))
-                .put(new Info("__JAVACPP_HACK__", "SD_ALL_OPS","__STANDALONE_BUILD__").define(true))
+                .put(new Info("__JAVACPP_HACK__", "SD_ALL_OPS").define(true))
                 .put(new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
                         "sd::graph::FlatResult", "sd::graph::FlatVariable", "sd::NDArray::subarray", "std::shared_ptr", "sd::PointerWrapper", "sd::PointerDeallocator").skip())
                 .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
