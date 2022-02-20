@@ -47,7 +47,7 @@ function print_config {
 }
 
 function copy_lib {
-   cp -rf  "libnd4j/blasbuild/*" "${GITHUB_WORKSPACE}/libnd4j/blasbuild/"
+   cp -rf  "libnd4j/blasbuild/"* "${GITHUB_WORKSPACE}/libnd4j/blasbuild/"
    echo "Copied libraries in libnd4j/blasbuild to ${GITHUB_WORKSPACE}/libnd4j/blasbuild"
    echo "libraries in libnd4j/blasbuild were"
    ls "libnd4j/blasbuild"
