@@ -16,7 +16,7 @@ do
 done
 
 # Get rid of the first character
-file_name_2= ${file_name:1:${#file_name}}
+file_name_2="${file_name:1:${#file_name}}"
 
 
 if ! [[ -z "$LIBND4J_FILE_NAME" ]]; then
