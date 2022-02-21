@@ -110,7 +110,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     private static final AtomicLong arrayCounter = new AtomicLong(0);
-    protected transient final long arrayId = arrayCounter.getAndIncrement();
+    protected transient long arrayId = arrayCounter.getAndIncrement();
 
 
     //Precalculate these arrays (like [3,2,1,0], [2,1,0], [1,0], [0] etc) for use in TAD, to avoid creating same int[]s over and over
@@ -5634,5 +5634,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public long getId(){
         return arrayId;
+    }
+
+    public void assignNewId(){
+        arrayId = arrayCounter.incrementAndGet();
     }
 }

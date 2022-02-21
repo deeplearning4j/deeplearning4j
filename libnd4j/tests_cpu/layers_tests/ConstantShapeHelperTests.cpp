@@ -314,25 +314,27 @@ TEST_F(ConstantShapeHelperTests, ShapeDescriptor_paddedBuffer) {
     ASSERT_TRUE(shapeDesc5.validate() == SHAPE_DESC_OK);
     ASSERT_TRUE(shapeDesc6.validate() == SHAPE_DESC_OK);
 
-    ASSERT_TRUE(shapeDesc1.allocLength() == shapeDesc2.allocLength());
-    ASSERT_TRUE(shapeDesc3.allocLength() == shapeDesc4.allocLength());
-    ASSERT_TRUE(shapeDesc5.allocLength() == shapeDesc6.allocLength());
+    ASSERT_EQ(shapeDesc1.allocLength(), shapeDesc2.allocLength());
+    ASSERT_EQ(shapeDesc3.allocLength(), shapeDesc4.allocLength());
+    ASSERT_EQ(shapeDesc5.allocLength(), shapeDesc6.allocLength());
 
-    const auto& v1 = shapeDesc1.strides();
-    const auto& v2 = shapeDesc2.strides();
-    const auto& v3 = shapeDesc3.strides();
-    const auto& v4 = shapeDesc4.strides();
-    const auto& v5 = shapeDesc5.strides();
-    const auto& v6 = shapeDesc6.strides();
+    const auto& v1 = shapeDesc1.stridesPtr();
+    const auto& v2 = shapeDesc2.stridesPtr();
+    const auto& v3 = shapeDesc3.stridesPtr();
+    const auto& v4 = shapeDesc4.stridesPtr();
+    const auto& v5 = shapeDesc5.stridesPtr();
+    const auto& v6 = shapeDesc6.stridesPtr();
 
-    for (int i = 0; i < v1.size(); i++) {
-      ASSERT_TRUE(v1[i] == v2[i]);
+    for (int i = 0; i < shapeDesc1.rank(); i++) {
+
+      ASSERT_EQ(v1[i], v2[i]);
+
     }
-    for (int i = 0; i < v3.size(); i++) {
-      ASSERT_TRUE(v3[i] == v4[i]);
+    for (int i = 0; i < shapeDesc3.rank(); i++) {
+      ASSERT_EQ(v3[i], v4[i]);
     }
-    for (int i = 0; i < v5.size(); i++) {
-      ASSERT_TRUE(v5[i] == v6[i]);
+    for (int i = 0; i < shapeDesc5.rank(); i++) {
+      ASSERT_EQ(v5[i], v6[i]);
     }
   }
 }

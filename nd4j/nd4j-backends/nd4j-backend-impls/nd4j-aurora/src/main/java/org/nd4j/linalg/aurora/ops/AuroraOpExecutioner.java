@@ -86,6 +86,7 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
     @Getter
     private AuroraTADManager tadManager = new AuroraTADManager();
     private boolean timeAuroraCalls = false;
+
     //thread locals for custom op inputs and outputs to prevent allocations
     //every time exec(CustomOp) is called
     private ThreadLocal<Map<Integer,PointerPointer>> inputShapes = new ThreadLocal<>();
@@ -115,7 +116,6 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
     public AuroraOpExecutioner() {
         tadManager.init(loop, constantHandler);
         timeAuroraCalls = Boolean.parseBoolean(System.getenv().getOrDefault("TIME_AURORA_CALLS","false"));
-
         experimentalMode.set(loop.isExperimentalEnabled());
 /*
         // filling vars for possible overrides
@@ -1623,12 +1623,84 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
         return calculateOutputShape(op, null);
     }
 
-    @Override
-    public List<LongShapeDescriptor> calculateOutputShape(@NonNull CustomOp op, OpContext opContext) {
+    public List<LongShapeDescriptor> calculateOutputShapesNec(@NonNull CustomOp op, OpContext opContext) {
         val lc = op.opName().toLowerCase();
         val hash = op.opHash();
 
         val result = new ArrayList<LongShapeDescriptor>();
+
+        int nIn = opContext != null ? opContext.numInputArguments() : op.numInputArguments();
+        if(nIn == 0 && op.getDescriptor().getNumInputs() >= 1) {
+            if(log.isTraceEnabled()){
+                log.trace("Could not calculate output shape for op {}: number of input args was 0",
+                        op.getClass().getName());
+            }
+            return Collections.emptyList();
+        }
+
+        val inputShapes = new PointerPointer<>(nIn);
+        val inputArgs = opContext != null ? opContext.getInputArrays() : op.inputArguments();
+        int cnt= 0;
+        for (val in: inputArgs) {
+            inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
+        }
+
+        OpaqueShapeList ptrptr;
+        try {
+            ptrptr = ((org.nd4j.aurora.Nd4jAuroraOps)loop).calculateOutputShapesNec((OpaqueContext)opContext.contextPointer(),  hash,  inputShapes, nIn );
+
+            if (loop.lastErrorCode() != 0)
+                throw new RuntimeException(loop.lastErrorMessage());
+        } catch (Throwable t){
+            StringBuilder sb = new StringBuilder();
+            sb.append("Inputs: [(");
+            for( int i=0; i<inputArgs.size(); i++ ){
+                if(i > 0)
+                    sb.append("), (");
+                sb.append(Shape.shapeToStringShort(inputArgs.get(i)));
+            }
+            sb.append(")]");
+            if(op instanceof DifferentialFunction && ((DifferentialFunction)op).getSameDiff() != null){
+                appendSameDiffInfo(sb, (DifferentialFunction) op);
+            }
+
+            int nOut = opContext != null ? opContext.numOutputArguments() : op.numOutputArguments();
+            log.error("Failed to calculate output shapes for op {}.Please see above message (printed out from c++) for a possible cause of error.",
+                    op.opName() );
+            throw t;
+        }
+
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
+
+        if (ptrptr == null)
+            throw new RuntimeException();
+
+        for (int e = 0; e < loop.getShapeListSize(ptrptr); e++ )
+            result.add(getShapeFromPointer(new PagedPointer(loop.getShape(ptrptr, e)).asLongPointer()));
+
+        loop.deleteShapeList(ptrptr);
+
+        if(log.isTraceEnabled()){
+            String[] arr = new String[result.size()];
+            for( int i=0; i<result.size(); i++ ){
+                arr[i] = result.get(i).toString();
+            }
+            log.trace("Calculated output shapes for op {} - {}", op.getClass().getName(), Arrays.toString(arr));
+        }
+        return result;
+    }
+
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(@NonNull CustomOp op, OpContext opContext) {
+        //redirect output shape calculation to simplified direct version if possible
+        if(opContext != null) return calculateOutputShapesNec( op, opContext);
+        val lc = op.opName().toLowerCase();
+        val hash = op.opHash();
+
+        val result = new ArrayList<LongShapeDescriptor>();
+
         int nIn = opContext != null ? opContext.numInputArguments() : op.numInputArguments();
         if(nIn == 0 && op.getDescriptor().getNumInputs() >= 1) {
             if(log.isTraceEnabled()){

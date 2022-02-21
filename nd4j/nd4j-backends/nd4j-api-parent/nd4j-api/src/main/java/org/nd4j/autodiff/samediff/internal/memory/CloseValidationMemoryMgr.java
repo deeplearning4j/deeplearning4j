@@ -26,7 +26,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.DependencyList;
-import org.nd4j.autodiff.samediff.internal.IdentityDependencyTracker;
+import org.nd4j.autodiff.samediff.internal.AbstractDependencyTracker;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
 import org.nd4j.common.base.Preconditions;
@@ -70,7 +70,7 @@ public class CloseValidationMemoryMgr extends AbstractMemoryMgr implements Sessi
         if (released.get(array)) {
             //Already released
             InferenceSession is = sd.getSessions().get(Thread.currentThread().getId());
-            IdentityDependencyTracker<INDArray, InferenceSession.Dep> arrayUseTracker = is.getArrayUseTracker();
+            AbstractDependencyTracker<INDArray, InferenceSession.Dep> arrayUseTracker = is.getArrayUseTracker();
             DependencyList<INDArray, InferenceSession.Dep> dl = arrayUseTracker.getDependencies(array);
             System.out.println(dl);
             if (dl.getDependencies() != null) {
@@ -126,7 +126,7 @@ public class CloseValidationMemoryMgr extends AbstractMemoryMgr implements Sessi
         int numNotClosed = 0;
         Set<INDArray> notReleased = Collections.newSetFromMap(new IdentityHashMap<INDArray, Boolean>());
         InferenceSession is = sd.getSessions().get(Thread.currentThread().getId());
-        IdentityDependencyTracker<INDArray, InferenceSession.Dep> arrayUseTracker = is.getArrayUseTracker();
+        AbstractDependencyTracker<INDArray, InferenceSession.Dep> arrayUseTracker = is.getArrayUseTracker();
         for (Map.Entry<INDArray, Boolean> e : released.entrySet()) {
             INDArray a = e.getKey();
             if (!exceptSet.contains(a)) {

@@ -120,6 +120,9 @@ const sd::LongType* ConstantShapeHelper::createShapeInfo(const ShapeDescriptor& 
 }
 
 const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, bool destroyOriginal) {
+#if defined(__NEC__)
+  if(!_cache_existing_pointers) return shapeInfo;
+#endif
   ShapeDescriptor descriptor(shapeInfo);
   auto result = createShapeInfo(descriptor);
 
@@ -129,6 +132,9 @@ const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeI
 }
 
 const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, sd::memory::Workspace* workspace) {
+#if defined(__NEC__)
+  if(!_cache_existing_pointers) return shapeInfo;
+#endif
   ShapeDescriptor descriptor(shapeInfo);
   auto result = createShapeInfo(descriptor);
 

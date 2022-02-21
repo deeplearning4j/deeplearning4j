@@ -277,8 +277,8 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
     }
 
     int cnt = 0;
-
-    for (auto out : *outSha->asVector()) {
+    for (int jj = 0; jj < outSha->size(); jj++) {
+      auto out = outSha->at(jj);
       if (!fp) {
         // we need to check, if Z is really needed
         std::pair<int, int> pair(ctx.nodeId(), cnt++);
@@ -445,7 +445,12 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
 
   // rolling over inputs first
   int cnt = 0, inT = 0;
+#if defined(__NEC__)
+  assert(block.width() < 100);
+  sd::DataType inputTypes[100];
+#else
   std::vector<sd::DataType> inputTypes(block.width());
+#endif
   if (block.isFastPath()) {
     for (auto array : block.fastpath_in()) {
       if (array == nullptr) continue;
@@ -516,7 +521,7 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
         }
       } else if (_descriptor->isInherit(index)) {
         // in inherit mode, output type must be the same as one of input types
-        if (std::find(inputTypes.begin(), inputTypes.end(), cType) == inputTypes.end()) {
+        if (std::find(std::begin(inputTypes), std::end(inputTypes), cType) == std::end(inputTypes)) {
           auto t = DataTypeUtils::asString(cType);
           sd_printf("Op [%s] failed check for output [%i], DataType: [%s].\n", _descriptor->getOpName()->data(), index,
                     t.c_str());
@@ -568,7 +573,7 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
             }
           } else if (_descriptor->isInherit(index)) {
             // in inherit mode, output type must be the same as one of input types
-            if (std::find(inputTypes.begin(), inputTypes.end(), cType) == inputTypes.end()) {
+            if (std::find(std::begin(inputTypes), std::end(inputTypes), cType) == std::end(inputTypes)) {
               auto t = DataTypeUtils::asString(cType);
               sd_printf("Op [%s] failed check for output [%i], DataType: [%s].\n", _descriptor->getOpName()->data(),
                         index, t.c_str());
