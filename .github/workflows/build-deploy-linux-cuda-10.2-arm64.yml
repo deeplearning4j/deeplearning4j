@@ -140,6 +140,12 @@ jobs:
           mvn --version
           cmake --version
           protoc --version
+          if ! [[ -z "$LIBND4J_FILE_NAME" ]]; then
+              export MODULES="$MODULES -pl :nd4j-cuda-10.2-preset,:nd4j-cuda-10.2"
+             else
+                 export MODULES="$MODULES -pl :nd4j-cuda-10.2-preset,:nd4j-cuda-10.2,libnd4j"
+          fi
+          
           # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
           bash ./bootstrap-libnd4j-from-url.sh linux cuda 10.2 arm64
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
