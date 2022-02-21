@@ -24,12 +24,12 @@
 #define DEV_TESTS_SHAPEDESCRIPTOR_H
 #include <array/ArrayOptions.h>
 #include <array/DataType.h>
+#include <helpers/shape.h>
 #include <system/common.h>
 
 #include <initializer_list>
 #include <unordered_map>
 #include <vector>
-
 namespace sd {
 
 #define SHAPE_DESC_OK 0
@@ -40,13 +40,38 @@ namespace sd {
 class SD_LIB_EXPORT ShapeDescriptor {
  private:
   int _rank = 0;
-  std::vector<sd::LongType> _shape;
-  std::vector<sd::LongType> _strides;
+  std::vector<sd::LongType> _shape_strides;
+  // std::vector<sd::LongType> _strides;
   sd::LongType _ews = 1;
   char _order = 'c';
   DataType _dataType;
   sd::LongType _extraProperties = 0;
   sd::LongType _paddedAllocSize = 0;
+
+  SD_INLINE void fillStrides() {
+    // double checks if the _rank and _shape_strides are set correctly before filling strides
+    if (_rank + _rank == _shape_strides.size()) {
+      auto _shape = _shape_strides.data();
+      auto _strides = _shape_strides.data() + _rank;
+      for (int i = 0; i < _rank; i++) {
+        if (_shape[i] == 0) {
+          _extraProperties |= ARRAY_EMPTY;
+          break;
+        }
+      }
+      if (_rank > 0 && !isEmpty()) {
+        if (_order == 'c')
+          shape::calcStrides(_shape, _rank, _strides);
+        else
+          shape::calcStridesFortran(_shape, _rank, _strides);
+
+      } else {
+        for (int i = 0; i < _rank; i++) {
+          _strides[i] = 0;
+        }
+      }
+    }
+  }
 
  public:
   ShapeDescriptor(const ShapeDescriptor &other);
@@ -75,8 +100,8 @@ class SD_LIB_EXPORT ShapeDescriptor {
   char order() const;
   DataType dataType() const;
   bool isEmpty() const;
-  std::vector<sd::LongType> &shape();
-  std::vector<sd::LongType> &strides();
+  std::vector<sd::LongType> &shape_strides();
+  const sd::LongType *stridesPtr() const;
 
   // returns minimal allocation length
   sd::LongType allocLength() const;

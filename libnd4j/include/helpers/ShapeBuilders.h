@@ -71,6 +71,9 @@ class SD_LIB_EXPORT ShapeBuilders {
 
   static sd::LongType* emptyShapeInfo(const sd::DataType dataType, const char order,
                                       const std::vector<sd::LongType>& shape, memory::Workspace* workspace = nullptr);
+
+  static sd::LongType* emptyShapeInfo(const sd::DataType dataType, const char order, int rank,
+                                       const sd::LongType* shapeOnly, memory::Workspace* workspace = nullptr);
 };
 }  // namespace sd
 

@@ -77,7 +77,7 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector
     }
   }
 
-  sd::LongType offset = offset_from_coords(shapeDescriptor.strides().data(), paddingOffsets.data(), check_size);
+  sd::LongType offset = offset_from_coords(shapeDescriptor.stridesPtr(), paddingOffsets.data(), check_size);
 
   NDArray result(buffer, shapeDescriptor, context, offset);
   result.nullify();

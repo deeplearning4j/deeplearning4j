@@ -106,6 +106,10 @@ import java.util.stream.Collectors;
 import static org.nd4j.autodiff.util.SameDiffUtils.stackOutputs;
 import static org.nd4j.imports.VariableUtils.stripVarSuffix;
 
+import org.nd4j.context.Nd4jContext;
+import org.nd4j.common.tools.PropertyParser;
+import org.nd4j.common.config.ND4JClassLoading;
+
 @Slf4j
 public class SameDiff extends SDBaseOps {
     protected static final String GRAD_FN_KEY = "grad";
@@ -201,6 +205,9 @@ public class SameDiff extends SDBaseOps {
      */
     public final SDLinalg linalg = new SDLinalg(this);
 
+    public final static String INFERENCE_FACTORY_CLASS = "inferencefactory.class";
+    private static InferenceFactory INFERENCE_FACTORY;
+
     /**
      * Op creator object for math operations
      */
@@ -291,6 +298,68 @@ public class SameDiff extends SDBaseOps {
 
     @Getter
     private SameDiff child;
+
+    /**
+     * Get the inference factory
+     *
+     * @return the inference Factory
+     */
+    public static InferenceFactory getInferenceFactory() {
+        if (INFERENCE_FACTORY == null){
+
+            synchronized(SameDiff.class){
+                if(INFERENCE_FACTORY == null) {
+                    //bind default one
+                    INFERENCE_FACTORY = new DefaultInferenceFactory();
+                }
+            }
+
+        }
+        return INFERENCE_FACTORY;
+    }
+
+    /**
+     * Bind the inferenceFactory.
+     *
+     * @implNote it will work when neither default
+     *           nor the one from the config is bound
+     * @param inferenceFactory
+     * @return true if the provided inferenceFactory is bound successfully
+     */
+    public static boolean bindInferenceFactory(InferenceFactory inferenceFactory) {
+        boolean success = false;
+        synchronized (SameDiff.class) {
+            if (inferenceFactory != null) {
+                INFERENCE_FACTORY = inferenceFactory;
+                success = true;
+            }
+        }
+        return success;
+    }
+
+    public static class DefaultInferenceFactory implements InferenceFactory {
+        public InferenceSession create(SameDiff sameDiff) {
+            return new InferenceSession(sameDiff);
+        }
+    };
+
+    static {
+        // try to set the inferenceFactory using the config
+        Properties props = Nd4jContext.getInstance().getConf();
+        PropertyParser pp = new PropertyParser(props);
+        String clazzNameInferenceFactory = pp.toString(INFERENCE_FACTORY_CLASS, "");
+        if (!clazzNameInferenceFactory.isEmpty()) {
+            try {
+                Class<? extends InferenceFactory> inferenceClazz = ND4JClassLoading
+                        .loadClassByName(clazzNameInferenceFactory);
+                INFERENCE_FACTORY = inferenceClazz.newInstance();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+    }
+
 
 
     /**
@@ -894,7 +963,7 @@ public class SameDiff extends SDBaseOps {
                 variable.name(), variable.dataType(), arr.dataType());
 
         if (sessions.get(Thread.currentThread().getId()) == null) {
-            sessions.put(Thread.currentThread().getId(), new InferenceSession(this));
+            sessions.put(Thread.currentThread().getId(), getInferenceFactory().create(this));
         }
 
         if (arr.isAttached()) {
@@ -2669,8 +2738,8 @@ public class SameDiff extends SDBaseOps {
         Preconditions.checkState(outputs != null && outputs.length > 0, "No outputs were specified");
         long threadId = Thread.currentThread().getId();
         if (!sessions.containsKey(threadId)) {
-            log.info("Creating new InferenceSession for thread {}", threadId);
-            sessions.put(threadId, new InferenceSession(this));
+            log.info("Creating getInferenceFactory().create for thread {}", threadId);
+            sessions.put(threadId, getInferenceFactory().create(this));
         }
 
         List<String> phNames = inputs();
