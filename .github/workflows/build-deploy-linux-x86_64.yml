@@ -133,7 +133,6 @@ jobs:
               fi
               if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
                  echo "Adding libnd4j download"
-                 echo "LIBND4J_FILE_NAME=${libnd4j_download_file_url}" >> $GITHUB_ENV
               fi
               command="${command} ${mvn_ext}"
               echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
@@ -200,6 +199,7 @@ jobs:
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
           MAVEN_OPTS: -Xmx2g
+          LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
 
 
         run: |

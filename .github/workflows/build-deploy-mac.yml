@@ -196,6 +196,7 @@ jobs:
           MAVEN_OPTS: "-Xmx2g"
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
+          LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
 
 
         run: |

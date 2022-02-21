@@ -225,6 +225,7 @@ jobs:
           MODULES: ${{ matrix.mvn_flags }}
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
+          LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3

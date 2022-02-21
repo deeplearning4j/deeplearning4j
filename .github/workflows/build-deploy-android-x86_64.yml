@@ -139,6 +139,7 @@ jobs:
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           MODULES: ${{ github.event.inputs.mvnFlags }}
+          LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
 
         run: |
           echo "libnd4j build threads ${{ github.event.inputs.buildThreads }}"

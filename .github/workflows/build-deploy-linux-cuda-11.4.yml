@@ -130,7 +130,6 @@ jobs:
                   libnd4j_download_file_url="linux-cuda-11-${{ matrix.helper }}"
 
               else
-                  echo "LIBND4J_FILE_NAME=linux-cuda-11" >> $GITHUB_ENV
                   libnd4j_download_file_url="linux-cuda-11"
                   mvn_ext=" -Dlibnd4j.classifier=linux-x86_64-cuda-11.4"
               fi
@@ -206,6 +205,7 @@ jobs:
           LIBND4J_HOME_SUFFIX: cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
+          LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
         run: |
           echo "libnd4j build threads ${{ matrix.build_threads }}"
           echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
