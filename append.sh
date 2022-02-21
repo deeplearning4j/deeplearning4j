@@ -1,10 +1,15 @@
-var_1="hello"
+file_name=""
+
 function append_args {
-   if [ "$1" != '' ]; then
-       var_1="${var_1}_$1"
+   if [ -n "$1"  ]; then
+       file_name="${file_name}-$1"
    fi
 }
+for var in "$@"
+do
+  append_args "${var}"
+done
 
-append_args "hello2"
-append_args ""
-echo "$var_1"
+# Get rid of the first character
+file_name_2="${file_name:1:${#file_name}}"
+echo "${file_name_2}"

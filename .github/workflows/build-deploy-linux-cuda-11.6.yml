@@ -130,10 +130,6 @@ jobs:
 
             fi
             command="${command} ${mvn_ext}"
-            if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
-                echo "Adding libnd4j download"
-                echo "LIBND4J_FILE_NAME=${{ matrix.libnd4j_file_download }}/${libnd4j_download_file_url}" >> $GITHUB_ENV
-            fi
             echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
             echo "COMMAND=${command}" >> $GITHUB_ENV
       - uses: ./.github/actions/set-linux-distro-version
