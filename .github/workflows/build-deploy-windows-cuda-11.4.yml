@@ -116,7 +116,7 @@ jobs:
         run: |
               if ( "${{ matrix.libnd4j_file_download }}" -ne "" ) {
                   $modules=" :nd4j-cuda-11.4-preset,:nd4j-cuda-11.4"
-              } else  if ( "${{ matrix.libnd4j_file_download }}" -ne "" ) {
+              } elseif ( "${{ matrix.libnd4j_file_download }}" -ne "" ) {
                   $modules=":nd4j-cuda-11.4-preset,:nd4j-cuda-11.4,libnd4j"
               }
               
