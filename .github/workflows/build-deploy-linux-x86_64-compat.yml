@@ -113,9 +113,6 @@ jobs:
         run: |
               libnd4j_download_file_url='linux-cpu-compat'
               if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
-                 base_url="${{ matrix.libnd4j_file_download }}"
-                 echo "Adding libnd4j download for url ${base_url}"
-                 echo "LIBND4J_FILE_NAME=${base_url}/${libnd4j_download_file_url}" >> $GITHUB_ENV
                  modules=':nd4j-native-preset,:nd4j-native'
                 else 
                     echo "Building libnd4j from source"
