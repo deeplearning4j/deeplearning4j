@@ -57,7 +57,7 @@ function copy_lib {
    ls "${GITHUB_WORKSPACE}/libnd4j/blasbuild/$1"
    if [ "$1" == "cpu" ]; then
         echo "Copying libnd4j cpu to ${OPENBLAS_PATH}/lib"
-        cp -rf  "${GITHUB_WORKSPACE}/libnd4j/blasbuild/$1/"* "${OPENBLAS_PATH}/lib"
+        cp -rf  "${GITHUB_WORKSPACE}/libnd4j/blasbuild/$1/blas/"* "${OPENBLAS_PATH}/lib"
         echo "Contents of  ${OPENBLAS_PATH}/lib are"
         ls  "${OPENBLAS_PATH}/lib"
    fi
