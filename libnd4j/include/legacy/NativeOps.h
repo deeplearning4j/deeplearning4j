@@ -1373,7 +1373,7 @@ SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapes2(sd::Pointer* extraPointers
                                                       int numInputShapes, double* tArgs, int numTArgs,
                                                       sd::LongType* iArgs, int numIArgs, bool* bArgs, int numBArgs,
                                                       int* dArgs, int numDArgs);
-#ifdef __NEC__
+#if defined(__NEC__)
 SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapesNec(OpaqueContext* ctx, sd::LongType hash, sd::Pointer *inputShapes, int numInputShapes);
 #endif
 SD_LIB_EXPORT sd::LongType getShapeListSize(OpaqueShapeList* list);
