@@ -228,6 +228,9 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
 
         OpExclusionUtils.processOps(logger, properties, infoMap);
         infoMap.put(new Info("sd::ops::OpRegistrator::updateMSVC").skip());
+        //skip in case header definition not working
+        infoMap.put(new Info("calculateOutputShapesNec").skip());
+
     }
 
 
