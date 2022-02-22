@@ -62,7 +62,10 @@ __constant__ char deviceConstantMemory[49152];
 
 // this method just does type conversion in fancy way
 int getDeviceId(sd::Pointer ptrToDeviceId) { return (int)(sd::LongType)ptrToDeviceId; }
-
+#if defined(__NEC__)
+sd::ShapeList *calculateOutputShapesNec(sd::graph::Context *ctx, sd::LongType hash, sd::Pointer *inputShapes,
+                                        int numInputShapes) {}
+#endif
 /*
  * Basic CUDA constants here: number of blocks per MP
  */

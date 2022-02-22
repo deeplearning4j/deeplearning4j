@@ -42,14 +42,7 @@
         <nd4j.backend>nd4j-cuda-${cuda.version}</nd4j.backend>
     </properties>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.moditect</groupId>
-                <artifactId>moditect-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
+
 
     <dependencies>
         <dependency>

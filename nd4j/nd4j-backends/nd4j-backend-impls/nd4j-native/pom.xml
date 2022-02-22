@@ -549,6 +549,20 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>libnd4j-set</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>env.LIBND4J_HOME</name>
+                </property>
+            </activation>
+            <properties>
+                 <libnd4jhome>${env.LIBND4J_HOME}</libnd4jhome>
+            </properties>
+        </profile>
+
         <profile>
             <id>libnd4j-assembly</id>
             <activation>
