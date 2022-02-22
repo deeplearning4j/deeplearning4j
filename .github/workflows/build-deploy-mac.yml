@@ -40,7 +40,7 @@ on:
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
-        default: -pl \":nd4j-native-preset,:libnd4j,:nd4j-native\"
+        default:
 
       libnd4jUrl:
         description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
