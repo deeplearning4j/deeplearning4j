@@ -28,43 +28,74 @@ namespace sd {
 //    }
 
 ShapeList::ShapeList(const sd::LongType* shape) {
-  if (shape != nullptr) _shapes.push_back(shape);
+  if (shape != nullptr) push_back(shape);
 }
 
 ShapeList::~ShapeList() {
   if (_autoremovable) destroy();
 }
 
-ShapeList::ShapeList(const std::vector<const sd::LongType*>& shapes, bool isWorkspace) : ShapeList(shapes) {
+ShapeList::ShapeList(const std::vector<const sd::LongType*>& shapes, bool isWorkspace)
+#if !defined(__NEC__)
+    : ShapeList(shapes) {
+#else
+{
+  for (int i = 0; i < shapes.size(); i++) {
+    push_back(shapes[i]);
+  }
+#endif
   _workspace = isWorkspace;
 }
 
-ShapeList::ShapeList(const std::vector<const sd::LongType*>& shapes) { _shapes = shapes; }
-
-std::vector<const sd::LongType*>* ShapeList::asVector() { return &_shapes; }
+ShapeList::ShapeList(const std::vector<const sd::LongType*>& shapes) {
+#if defined(__NEC__)
+  for (int i = 0; i < shapes.size(); i++) {
+    push_back(shapes[i]);
+  }
+#else
+  _shapes = shapes;
+#endif
+}
 
 void ShapeList::destroy() {
   if (_destroyed) return;
 
   if (!_workspace)
-    for (auto v : _shapes)
-      if (v != nullptr) delete[] v;
+    for (int i = 0; i < size(); i++)
+      if (_shapes[i] != nullptr) delete[] _shapes[i];
 
   _destroyed = true;
 }
 
-int ShapeList::size() const { return (int)_shapes.size(); }
-
-const sd::LongType* ShapeList::at(int idx) {
-  if (_shapes.size() <= idx) throw std::runtime_error("Can't find requested variable by index");
-
-  return _shapes.at(idx);
+int ShapeList::size() const {
+#if defined(__NEC__)
+  return size_x;
+#else
+  return (int)_shapes.size();
+#endif
 }
 
-void ShapeList::push_back(const sd::LongType* shape) { _shapes.push_back(shape); }
+const sd::LongType* ShapeList::at(int idx) {
+  if (size() <= idx || idx < 0) throw std::runtime_error("Can't find requested variable by index");
+
+  return _shapes[idx];
+}
+
+void ShapeList::push_back(const sd::LongType* shape) {
+#if defined(__NEC__)
+  if (size_x + 1 >= NEC_MAX_SHAPE_LIST) {
+    sd_printf("current %d > ShapeList limit %d \n", size_x, NEC_MAX_SHAPE_LIST);
+    throw std::runtime_error("ShapeList for Nec is limited");
+  }
+  _shapes[size_x] = shape;
+  ++size_x;
+#else
+  _shapes.push_back(shape);
+#endif
+}
 
 void ShapeList::detach() {
-  for (int e = 0; e < _shapes.size(); e++) {
+  for (int e = 0; e < size(); e++) {
     _shapes[e] = shape::detachShape(_shapes[e]);
   }
 

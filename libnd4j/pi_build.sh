@@ -423,12 +423,12 @@ message "keep blasbuild folder"
 fi
 
 if [ -z "${BUILD_USING_MAVEN}" ] ;then
-message "lets build just library"
+message "Building using bash script"
 bash ./buildnativeoperations.sh -o ${LIBND4J_PLATFORM} -t -j $(nproc) ${XTRA_ARGS} 
 else
 message "cd $BASE_DIR/.. "
 cd "$BASE_DIR/.."
-message "lets build jars"
+message "Building using maven"
 if [ "${DEPLOY-}" != "" ]; then
   message "Deploying to maven"
   command="mvn  -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  $MODULES  -Dmaven.javadoc.failOnError=false -Dlibnd4j.buildthreads=${LIBND4J_BUILD_THREADS}  -P${PUBLISH_TO}  --batch-mode     -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS}  -DprotocCommand=${PROTO_EXEC}  -DprotocExecutable=${PROTO_EXEC} -Djavacpp.platform.compiler=${COMPILER} -Djava.library.path=${JAVA_LIBRARY_PATH}  -DskipTests -Dmaven.test.skip=true deploy"

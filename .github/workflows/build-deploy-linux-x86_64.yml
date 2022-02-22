@@ -71,7 +71,7 @@ jobs:
             experimental: true
             name: OS to run on
 
-          - libnd4j_file_download: ${{ github.event.inputs.libnd4jDownload }}
+          - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl }}
             experimental: true
             name: OS to run on
 
@@ -115,7 +115,13 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
-              command="mvn  ${{ matrix.mvn_ext }} -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+              if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
+                 modules=':nd4j-native,:nd4j-native-preset'
+              else 
+               echo "Building libnd4j from source"
+               modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
+              fi
+              command="mvn  ${{ matrix.mvn_ext }} $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
               if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                      mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
               elif [ "${{ matrix.helper }}" != '' ]; then
@@ -127,7 +133,6 @@ jobs:
               fi
               if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
                  echo "Adding libnd4j download"
-                 echo "LIBND4J_FILE_NAME=${libnd4j_download_file_url}" >> $GITHUB_ENV
               fi
               command="${command} ${mvn_ext}"
               echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
@@ -167,7 +172,6 @@ jobs:
       - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |
-              echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
               mkdir "${GITHUB_WORKSPACE}/openblas_home"
               cd "${GITHUB_WORKSPACE}/openblas_home"
               wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-linux-x86_64.jar
@@ -195,6 +199,7 @@ jobs:
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
           MAVEN_OPTS: -Xmx2g
+          LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
 
 
         run: |
@@ -232,8 +237,8 @@ jobs:
           sudo cp "${LIBGOMP_PATH}" /usr/lib
           sudo apt-get -y autoremove
           sudo apt-get -y clean
-          # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
-          bash ./bootstrap-libnd4j-from-url.sh
+          # download libnd4j from a url and set it up if LIBND4J_URL is defined
+          bash ./bootstrap-libnd4j-from-url.sh linux x86_64 "${{ matrix.helper }}" "${{ matrix.extension }}"
           export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
