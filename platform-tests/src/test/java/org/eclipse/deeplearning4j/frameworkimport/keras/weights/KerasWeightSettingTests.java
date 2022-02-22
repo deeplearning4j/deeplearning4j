@@ -24,10 +24,10 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.frameworkimport.keras.keras.KerasLayer;
-import org.deeplearning4j.frameworkimport.keras.keras.KerasModel;
-import org.deeplearning4j.frameworkimport.keras.keras.KerasModelImport;
-import org.deeplearning4j.frameworkimport.keras.keras.layers.convolutional.KerasSpaceToDepth;
+import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
+import org.deeplearning4j.nn.modelimport.keras.KerasModel;
+import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
+import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceToDepth;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import org.junit.jupiter.api.Tag;

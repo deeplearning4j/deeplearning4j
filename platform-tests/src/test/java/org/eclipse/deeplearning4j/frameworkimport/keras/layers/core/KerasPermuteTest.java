@@ -19,14 +19,14 @@
  */
 package org.eclipse.deeplearning4j.frameworkimport.keras.layers.core;
 
-import org.deeplearning4j.frameworkimport.keras.keras.layers.core.KerasPermute;
+import org.deeplearning4j.nn.modelimport.keras.layers.core.KerasPermute;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.frameworkimport.keras.keras.config.Keras1LayerConfiguration;
-import org.deeplearning4j.frameworkimport.keras.keras.config.Keras2LayerConfiguration;
-import org.deeplearning4j.frameworkimport.keras.keras.config.KerasLayerConfiguration;
-import org.deeplearning4j.frameworkimport.keras.keras.exceptions.InvalidKerasConfigurationException;
-import org.deeplearning4j.frameworkimport.keras.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.preprocessors.PermutePreprocessor;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

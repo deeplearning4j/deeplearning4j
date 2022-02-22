@@ -2,7 +2,7 @@ package org.eclipse.deeplearning4j.frameworkimport.keras.layers.pooling;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.frameworkimport.keras.keras.KerasModelImport;
+import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

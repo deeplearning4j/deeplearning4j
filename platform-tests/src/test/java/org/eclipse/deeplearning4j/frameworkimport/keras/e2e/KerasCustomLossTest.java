@@ -20,8 +20,8 @@
 package org.eclipse.deeplearning4j.frameworkimport.keras.e2e;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.frameworkimport.keras.keras.KerasSequentialModel;
-import org.deeplearning4j.frameworkimport.keras.keras.utils.KerasLossUtils;
+import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasLossUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 import org.junit.jupiter.api.Tag;

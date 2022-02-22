@@ -21,9 +21,9 @@
 package org.eclipse.deeplearning4j.frameworkimport.keras.optimizers;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.frameworkimport.keras.keras.KerasModel;
-import org.deeplearning4j.frameworkimport.keras.keras.KerasSequentialModel;
-import org.deeplearning4j.frameworkimport.keras.keras.utils.KerasModelBuilder;
+import org.deeplearning4j.nn.modelimport.keras.KerasModel;
+import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.common.util.ND4JFileUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

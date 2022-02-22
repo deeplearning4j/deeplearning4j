@@ -22,11 +22,11 @@ package org.deeplearning4j.spark.parameterserver.modelimport.elephas;
 
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.frameworkimport.keras.keras.Hdf5Archive;
-import org.deeplearning4j.frameworkimport.keras.keras.KerasModelImport;
-import org.deeplearning4j.frameworkimport.keras.keras.exceptions.InvalidKerasConfigurationException;
-import org.deeplearning4j.frameworkimport.keras.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.deeplearning4j.frameworkimport.keras.keras.utils.KerasModelUtils;
+import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
+import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.FixedThresholdAlgorithm;
