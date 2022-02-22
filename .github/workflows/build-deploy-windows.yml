@@ -116,7 +116,7 @@ jobs:
         run: |
             if ( "${{ matrix.libnd4j_file_download }}" -ne "" ) {
               $modules=" :nd4j-native-preset,:nd4j-native"
-            } elseif ( "${{ matrix.libnd4j_file_download }}" -ne "" ) {
+            } else {
               $modules=":nd4j-native-preset,:nd4j-native,libnd4j"
             }
           
