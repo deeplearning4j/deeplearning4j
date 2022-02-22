@@ -29,8 +29,8 @@
 
 namespace sd {
 ConstantShapeHelper::ConstantShapeHelper() {
-  _cache.resize(32);
-  for (int e = 0; e < 32; e++) {
+  _cache.resize(1);
+  for (int e = 0; e < 1; e++) {
     SD_MAP_IMPL<ShapeDescriptor, ConstantShapeBuffer> cache;
     _cache[e] = cache;
   }
@@ -120,9 +120,6 @@ const sd::LongType* ConstantShapeHelper::createShapeInfo(const ShapeDescriptor& 
 }
 
 const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, bool destroyOriginal) {
-#if defined(__NEC__)
-  if(!_cache_existing_pointers) return shapeInfo;
-#endif
   ShapeDescriptor descriptor(shapeInfo);
   auto result = createShapeInfo(descriptor);
 
@@ -132,9 +129,6 @@ const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeI
 }
 
 const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, sd::memory::Workspace* workspace) {
-#if defined(__NEC__)
-  if(!_cache_existing_pointers) return shapeInfo;
-#endif
   ShapeDescriptor descriptor(shapeInfo);
   auto result = createShapeInfo(descriptor);
 

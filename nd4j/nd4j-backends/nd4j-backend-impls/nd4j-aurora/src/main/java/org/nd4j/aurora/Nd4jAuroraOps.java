@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.Arrays;
-
+import java.util.function.Consumer;
 import static org.nd4j.aurora.Aurora.*;
 
 /**
@@ -1053,8 +1053,90 @@ public class Nd4jAuroraOps implements NativeOps {
         return new OpaqueShapeList(callPointer("calculateOutputShapes2", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12));
     }
 
-    public OpaqueShapeList calculateOutputShapesNec(OpaqueContext arg0, long arg1,  PointerPointer arg2, int arg3) {
-        return new OpaqueShapeList(callPointer("calculateOutputShapesNec", arg0, arg1, arg2, arg3));
+    public OpaqueShapeList calculateOutputShapesFromContext(OpaqueContext arg0, long arg1) {
+        return new OpaqueShapeList(callPointer("calculateOutputShapesFromContext", arg0, arg1));
+    }
+
+    public int calculateOutputShapesAndFill(OpaqueContext opaqueContext, long hash, Consumer<long[]> shapeConsumer) {
+        LongPointer handleState = new LongPointer(1);
+        LongPointer bufferForShapes = new LongPointer(16 * (32 * 2 + 4));
+        //zero handleState before usage
+        handleState.put(0);
+        while (true) {
+            int offset = 0;
+            bufferForShapes.position(0);
+            int count = calculateOutputShapesAndFill(opaqueContext, hash, handleState, bufferForShapes);
+            if (count <= 0)
+                return count;
+            //System.out.println("count "+count);
+            for (int i = 0; i < count; i++) {
+                int rank = (int)bufferForShapes.get();
+                long[] oneShape = new long[rank * 2 + 4];
+                bufferForShapes.get(oneShape);
+                shapeConsumer.accept(oneShape);
+                offset += rank * 2 + 4;
+                bufferForShapes.position(offset);
+            }
+            long state = handleState.get();
+            //System.out.println("state "+ state);
+            // for non zero state we have to call again
+            if(state == 0) break;
+        }
+        //System.out.println("end ");
+        return 0;
+    }
+
+    private int calculateOutputShapesAndFill(OpaqueContext opaqueContext, long hash, LongPointer handleState, LongPointer outConcatenatedShapesBuffer ) {
+        //calculateOutputShapesAndFill(OpaqueContext *opaqueContext, sd::LongType hash, void **handleState, int outBufferSize, sd::LongType *outConcatenatedShapesBuffer)
+        String symname = "calculateOutputShapesAndFill";
+        BytePointer handleStateByte = new BytePointer(handleState);
+        long handleStateSize = handleState.limit() * handleState.sizeof();
+        BytePointer outByte = new BytePointer(outConcatenatedShapesBuffer);
+        long outByteSize = outConcatenatedShapesBuffer.limit() * outConcatenatedShapesBuffer.sizeof();
+        log.debug("call(" + symname + ", " + Arrays.deepToString(new Object[]{opaqueContext, hash}) + ")");
+        long sym = veo_get_sym(proc, handle, symname);
+        if (sym == 0) {
+            throw new RuntimeException("veo_get_sym(): failed to find symbol " + symname);
+        }
+        veo_args argp = veo_args_alloc();
+        if (argp == null) {
+            throw new RuntimeException("veo_args_alloc(): allocation of veo_args failed");
+        }
+        
+        int error = veo_args_set_i64(argp, 0, opaqueContext.address() + opaqueContext.position() * opaqueContext.sizeof());
+        if (error != 0) {
+                    throw new RuntimeException("veo_args_set_i64(): error " + error);
+        }
+        error = veo_args_set_i64(argp, 1, (Long)hash);
+        if (error != 0) {
+                    throw new RuntimeException("veo_args_set_i64(): error " + error);
+        }
+        // veo_args_set_stack(veo_args arg0, @Cast("veo_args_intent") int arg1, int arg2, @Cast("char*") BytePointer arg3, @Cast("size_t") long arg4);
+        //1 -is in out
+        error = veo_args_set_stack(argp, VEO_INTENT_INOUT, 2, handleStateByte, (long)handleStateByte.limit());
+        if (error != 0) {
+                    throw new RuntimeException("veo_args_set_stack(): error " + error);
+        }
+        error = veo_args_set_i32(argp, 3, (int)outByteSize);
+        if (error != 0) {
+                    throw new RuntimeException("veo_args_set_i64(): error " + error);
+        }
+        error = veo_args_set_stack(argp, VEO_INTENT_OUT, 4, outByte, (long)outByteSize);
+        if (error != 0) {
+                    throw new RuntimeException("veo_args_set_stack(): error " + error);
+        }
+        long id = veo_call_async(ctx, sym, argp);
+        if (id == VEO_REQUEST_ID_INVALID) {
+            throw new RuntimeException("veo_call_async(): request failed");
+        }
+        long[] retval = {0};
+        error = veo_call_wait_result(ctx, id, retval);
+        if (error != 0) {
+            throw new RuntimeException("veo_call_wait_result(): error " + error);
+        }
+
+        veo_args_free(argp);
+        return (int)retval[0];
     }
 
     @Override

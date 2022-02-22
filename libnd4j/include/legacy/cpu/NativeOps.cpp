@@ -1559,22 +1559,22 @@ sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType h
 }
 
 #if defined(__NEC__)
-sd::ShapeList *calculateOutputShapesNec(sd::graph::Context *ctx, sd::LongType hash, sd::Pointer *inputShapes,
-                                        int numInputShapes) {
+sd::ShapeList *calculateOutputShapesFromContext(sd::graph::Context *ctx, sd::LongType hash) {
   try {
+
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
     auto status = op->validateDataTypes(*ctx);
     if (status != sd::Status::OK) throw std::runtime_error("Data types validation failed");
     sd::ShapeList inShapes;
-    for (int e = 0; e < numInputShapes; e++) {
-      auto shape_ = reinterpret_cast<sd::LongType *>(inputShapes[e]);
+
+    for (int e = 0; e < ctx->width() ; e++) {
+      auto arr = ctx->array(e);
+      auto shape_ = arr->shapeInfo();
       inShapes.push_back(shape_);
     }
-    // lets inform that we dont need the pointer to be cached
-    ConstantShapeHelper::getInstance().disableExistingPointerCaching();
+
     auto shapeList = op->calculateOutputShape(&inShapes, *ctx);
-    // restoring for the other cases
-    ConstantShapeHelper::getInstance().enableExistingPointerCaching();
+
     return shapeList;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1582,6 +1582,94 @@ sd::ShapeList *calculateOutputShapesNec(sd::graph::Context *ctx, sd::LongType ha
     return nullptr;
   }
 }
+
+
+/**
+ * @brief Calculate output shapes for the given operation and context and fills the buffer with shape information
+ * @note The caller is responsible for setting the handle state nullptr/zeroes before calling and
+ * calling the function until it gets nullptr/zeroes in handleState
+ *
+ * @param ctx  Graph operation context
+ * @param hash , it it the hash of the operation
+ * @param handleState  the state value to be checked
+   @note It should be nullptr for the first time, if the returned handle state
+ * is nullptr as well, it means all shapes were filled, if not the caller should call the function to consume all shapes
+ until the handle state is nullptr
+ * @param outBufferSizeInBytes size of the Buffer for shapes in bytes. @Note It should be enough to fill shape of the
+ biggest possible NDArray
+ * @param outConcatenatedShapesBuffer pointer to the buffer
+ * @return int  returns number of full shapes that was copied into buffer, negative value means there was an error and
+ the error can be obtained using  lastErrorCode/lastErrorMessage
+ */
+int calculateOutputShapesAndFill(sd::graph::Context *ctx, sd::LongType hash, void **handleState,
+                                 int outBufferSizeInBytes, sd::LongType *outConcatenatedShapesBuffer) {
+
+  struct ShapeFillerHandle {
+    sd::ShapeList *shapeList = nullptr;
+    size_t last_index = 0;
+  };
+
+  ShapeFillerHandle *sHandle = nullptr;
+  sd::ShapeList *shapeList = nullptr;
+  if (!handleState) {
+    sd_printf("%s\n", "handleState can not be null");
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(2);
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("handleState can not be null");
+    return -1;
+  }
+  int requiredMem = shape::shapeInfoLength(SD_MAX_RANK) * sizeof(sd::LongType);
+  if (outBufferSizeInBytes < requiredMem) {
+    sd_printf("Buffersize (%d bytes ) should be enough (%d bytes ) to fill shape of the biggest possible NDArray (max-rank: %d )\n",
+              outBufferSizeInBytes, requiredMem, SD_MAX_RANK);
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(4);
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(
+        "Buffersize should enough to fill shape of the biggest possible NDArray");
+    return -1;
+  }
+
+  if (*handleState != nullptr) {
+    // sd_printf("%s\n","handle");
+    sHandle = reinterpret_cast<ShapeFillerHandle *>(*handleState);
+    shapeList = sHandle->shapeList;
+  } else {
+    sHandle = new ShapeFillerHandle();
+    shapeList = calculateOutputShapesFromContext(ctx, hash);
+    sHandle->shapeList = shapeList;
+    if (!shapeList) return -1;
+  }
+
+  size_t total = shapeList->size();
+  size_t old_index = sHandle->last_index;
+  size_t i = sHandle->last_index;
+  sd::LongType *p = outConcatenatedShapesBuffer;
+  sd::LongType *endp = outConcatenatedShapesBuffer + outBufferSizeInBytes / sizeof(sd::LongType);
+  while (i < total) {
+    const sd::LongType *shape = shapeList->at(i);
+    // copy shape buffer
+    int len = shape::shapeInfoLength(shape);
+    if (p + len > endp) break;
+    for (int j = 0; j < len; j++) {
+      p[j] = shape[j];
+    }
+    p += len;
+    sHandle->last_index = ++i;
+  }
+
+  int count = (sHandle->last_index - old_index);
+  // destroy everything in case filling is completed
+  if (sHandle->last_index >= shapeList->size()) {
+
+    delete shapeList;
+    delete sHandle;
+    // reset handle
+    sHandle = nullptr;
+  }
+
+  // pass handle back to be called again as the buffer was not enough to store all shapes
+  *handleState = sHandle;
+  return count;
+}
+
 #endif
 
 sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::DeclarableOp *op, sd::Pointer *inputShapes,
