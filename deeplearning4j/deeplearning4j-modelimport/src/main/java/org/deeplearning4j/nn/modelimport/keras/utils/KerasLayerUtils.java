@@ -28,9 +28,6 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasTFOpLayer;
-import org.deeplearning4j.frameworkimport.keras.keras.layers.advanced.activations.*;
-import org.deeplearning4j.frameworkimport.keras.keras.layers.convolutional.*;
-import org.deeplearning4j.frameworkimport.keras.keras.layers.core.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
