@@ -19,15 +19,15 @@
  */
 package org.eclipse.deeplearning4j.frameworkimport.keras.layers.recurrent;
 
-import org.deeplearning4j.frameworkimport.keras.keras.layers.recurrent.KerasSimpleRnn;
+import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.BaseDL4JTest;
 import org.eclipse.deeplearning4j.frameworkimport.keras.KerasTestUtils;
-import org.deeplearning4j.frameworkimport.keras.keras.config.Keras1LayerConfiguration;
-import org.deeplearning4j.frameworkimport.keras.keras.config.Keras2LayerConfiguration;
-import org.deeplearning4j.frameworkimport.keras.keras.config.KerasLayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.junit.jupiter.api.Assertions;

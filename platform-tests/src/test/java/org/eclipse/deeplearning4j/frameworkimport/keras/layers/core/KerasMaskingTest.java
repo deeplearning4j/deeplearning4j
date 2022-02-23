@@ -19,12 +19,12 @@
  */
 package org.eclipse.deeplearning4j.frameworkimport.keras.layers.core;
 
-import org.deeplearning4j.frameworkimport.keras.keras.layers.core.KerasMasking;
+import org.deeplearning4j.nn.modelimport.keras.layers.core.KerasMasking;
 import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.frameworkimport.keras.keras.config.Keras1LayerConfiguration;
-import org.deeplearning4j.frameworkimport.keras.keras.config.Keras2LayerConfiguration;
-import org.deeplearning4j.frameworkimport.keras.keras.config.KerasLayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import java.util.HashMap;
