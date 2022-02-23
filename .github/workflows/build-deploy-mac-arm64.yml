@@ -40,7 +40,7 @@ on:
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
-        default: -pl \":nd4j-native-preset,:libnd4j,:nd4j-native\"
+        default:
 
       libnd4jUrl:
         description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
@@ -53,7 +53,7 @@ on:
         default: false
 
 jobs:
-  mac-x86_64:
+  mac-arm64:
     strategy:
       fail-fast: false
       matrix:
@@ -71,7 +71,7 @@ jobs:
             experimental: true
             name: OS to run on
 
-          - libnd4j_file_download: ${{ github.event.inputs.libnd4jDownload }}
+          - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl }}
             experimental: true
             name: OS to run on
 
@@ -115,7 +115,13 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
-              command="mvn ${{ matrix.mvn_ext }}  -Dlibnd4j.arch=armv8-a  -Dlibnd4j.platform=macosx-arm64 -Djavacpp.platform=macosx-arm64 -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh   -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-arm64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+              if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
+                   modules=':nd4j-native,:nd4j-native-preset'
+              else 
+                 echo "Building libnd4j from source"
+                 modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
+              fi
+              command="mvn ${{ matrix.mvn_ext }} -pl  $modules  -Dlibnd4j.arch=armv8-a  -Dlibnd4j.platform=macosx-arm64 -Djavacpp.platform=macosx-arm64 -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh   -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-arm64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
               if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                   mvn_ext=" -Dlibnd4j.classifier=macosx-arm64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
               elif [ "${{ matrix.helper }}" != '' ]; then
@@ -162,7 +168,6 @@ jobs:
       - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |
-            echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j/" >> "$GITHUB_ENV"
             mkdir "${GITHUB_WORKSPACE}/openblas_home"
             cd "${GITHUB_WORKSPACE}/openblas_home"
             wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-macosx-arm64.jar
@@ -190,6 +195,7 @@ jobs:
           MAVEN_OPTS: "-Xmx2g"
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
+          LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
 
 
         run: |
@@ -209,7 +215,7 @@ jobs:
           brew list
           brew list --cask
           # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
-          bash ./bootstrap-libnd4j-from-url.sh
+          bash ./bootstrap-libnd4j-from-url.sh macosx arm64 "${{ matrix.helper }}" "${{ matrix.extension }}"
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release with command ${COMMAND}"
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
