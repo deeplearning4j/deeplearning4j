@@ -347,11 +347,11 @@
                                         <argument>-h</argument>
                                         <argument>${libnd4j.helper}</argument>
                                         <argument>--operations</argument>
-                                        <argument>"${libnd4j.operations}"</argument>
+                                        <argument>${libnd4j.operations}</argument>
                                         <argument>--datatypes</argument>
-                                        <argument>"${libnd4j.datatypes}"</argument>
+                                        <argument>${libnd4j.datatypes}</argument>
                                         <argument>--sanitize</argument>
-                                        <argument>"${libnd4j.sanitize}"</argument>
+                                        <argument>${libnd4j.sanitize}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
