@@ -13,6 +13,20 @@
 
 
     <repositories>
+        <repository>
+            <id>M2</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/orgdeeplearning4j-1019</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
+        <repository>
+            <id>M2-1</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/orgdeeplearning4j-1030</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
         <!-- Mainly for dokka/kotlinx. Not used outside of releases for kotlin related modules-->
         <repository>
             <id>jetbrains-kotlinx</id>
