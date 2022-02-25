@@ -60,7 +60,7 @@ public class SparkADSI extends AsyncDataSetIterator {
 
     public SparkADSI(DataSetIterator baseIterator, int queueSize, boolean useWorkspace, Integer deviceId) {
         this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, new DefaultCallback(),
-                        deviceId);
+                deviceId);
     }
 
     public SparkADSI(DataSetIterator baseIterator, int queueSize, boolean useWorkspace, DataSetCallback callback) {
@@ -72,12 +72,12 @@ public class SparkADSI extends AsyncDataSetIterator {
     }
 
     public SparkADSI(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace,
-                    DataSetCallback callback) {
+                     DataSetCallback callback) {
         this(iterator, queueSize, queue, useWorkspace, callback, Nd4j.getAffinityManager().getDeviceForCurrentThread());
     }
 
     public SparkADSI(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace,
-                    DataSetCallback callback, Integer deviceId) {
+                     DataSetCallback callback, Integer deviceId) {
         this();
 
         if (queueSize < 2)

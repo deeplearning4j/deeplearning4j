@@ -120,7 +120,7 @@ jobs:
                   $modules=":nd4j-cuda-11.4-preset,:nd4j-cuda-11.4,libnd4j"
               }
               
-              $command="mvn ${{ matrix.mvn_ext }}  -Pcuda --also-make -pl  $modules -Dlibnd4j.compute='5.0 5.2 6.1 7.5 8.6' -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.compute=auto -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh  -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64    -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
+              $command="mvn ${{ matrix.mvn_ext }}  -Pcuda --also-make -pl  $modules -Dlibnd4j.compute='5.0 5.2 6.1 7.5 8.6' -Dlibnd4j.cpu.compile.skip=true  -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh  -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64    -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
     
               if ( "${{ matrix.helper }}" -ne "" -And "${{ matrix.extension }}" -ne "" ) {
                     $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-11.4-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}   -Dlibnd4j.helper=${{ matrix.helper }}   -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"

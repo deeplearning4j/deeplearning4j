@@ -174,7 +174,7 @@ public abstract class Pooling3D extends DynamicCustomOp {
     }
 
     protected void createConfigFromArgs(Pooling3DType type) {
-        if(config == null && !iArguments.isEmpty())
+        if(!iArguments.isEmpty())
             config = Pooling3DConfig.builder()
                     .kD(getIArgument(0))
                     .kW(getIArgument(1))
@@ -190,7 +190,7 @@ public abstract class Pooling3D extends DynamicCustomOp {
                     .dH(getIArgument(11))
                     .isSameMode(getIArgument(12) > 0)
                     .type(type)
-                    .isNCDHW(getIArgument(14) > 0)
+                    .isNCDHW(getIArgument(14) == 0)
                     .build();
     }
 

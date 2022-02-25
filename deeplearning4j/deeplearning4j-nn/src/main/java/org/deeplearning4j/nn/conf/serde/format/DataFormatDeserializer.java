@@ -22,6 +22,7 @@ package org.deeplearning4j.nn.conf.serde.format;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.DataFormat;
 import org.deeplearning4j.nn.conf.RNNFormat;
+import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.nd4j.shade.jackson.core.JsonParser;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
@@ -44,6 +45,10 @@ public class DataFormatDeserializer extends JsonDeserializer<DataFormat> {
                 return RNNFormat.NCW;
             case "NWC":
                 return RNNFormat.NWC;
+            case "NCDHW":
+                return Convolution3D.DataFormat.NCDHW;
+            case "NDHWC":
+                return Convolution3D.DataFormat.NDHWC;
             default:
                 return null;
         }
