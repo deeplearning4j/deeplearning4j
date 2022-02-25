@@ -22,6 +22,7 @@ package org.deeplearning4j.spark.iterator;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.TaskContext;
+import org.apache.spark.TaskContextHelper;
 import org.nd4j.linalg.dataset.AsyncDataSetIterator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.dataset.DataSet;
@@ -59,7 +60,7 @@ public class SparkADSI extends AsyncDataSetIterator {
 
     public SparkADSI(DataSetIterator baseIterator, int queueSize, boolean useWorkspace, Integer deviceId) {
         this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, new DefaultCallback(),
-                        deviceId);
+                deviceId);
     }
 
     public SparkADSI(DataSetIterator baseIterator, int queueSize, boolean useWorkspace, DataSetCallback callback) {
@@ -71,12 +72,12 @@ public class SparkADSI extends AsyncDataSetIterator {
     }
 
     public SparkADSI(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace,
-                    DataSetCallback callback) {
+                     DataSetCallback callback) {
         this(iterator, queueSize, queue, useWorkspace, callback, Nd4j.getAffinityManager().getDeviceForCurrentThread());
     }
 
     public SparkADSI(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace,
-                    DataSetCallback callback, Integer deviceId) {
+                     DataSetCallback callback, Integer deviceId) {
         this();
 
         if (queueSize < 2)
@@ -107,7 +108,7 @@ public class SparkADSI extends AsyncDataSetIterator {
 
     @Override
     protected void externalCall() {
-
+        TaskContextHelper.setTaskContext(context);
 
     }
 
