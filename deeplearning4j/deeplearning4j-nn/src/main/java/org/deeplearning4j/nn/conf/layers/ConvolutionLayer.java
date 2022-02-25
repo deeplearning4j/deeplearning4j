@@ -54,7 +54,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
     protected boolean cudnnAllowFallback = true;
-    @Getter
     protected CNN2DFormat cnn2dDataFormat = CNN2DFormat.NCHW; //default value for legacy serialization reasons
     @JsonIgnore
     @EqualsAndHashCode.Exclude
