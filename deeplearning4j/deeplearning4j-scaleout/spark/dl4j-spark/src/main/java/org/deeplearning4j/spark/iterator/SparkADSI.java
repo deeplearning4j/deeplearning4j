@@ -22,7 +22,6 @@ package org.deeplearning4j.spark.iterator;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.TaskContext;
-import org.apache.spark.TaskContextHelper;
 import org.nd4j.linalg.dataset.AsyncDataSetIterator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.dataset.DataSet;
@@ -108,7 +107,7 @@ public class SparkADSI extends AsyncDataSetIterator {
 
     @Override
     protected void externalCall() {
-        TaskContextHelper.setTaskContext(context);
+
 
     }
 

@@ -43,6 +43,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling3D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
@@ -505,7 +506,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
 
                 for (int i = 0; i < 5; i++) {
                     SameDiff sd = SameDiff.create();
-                    SDVariable in = sd.var("in", shape);
+                    SDVariable in = sd.var("in", DataType.DOUBLE,shape);
 
                     SDVariable out;
                     String msg;
@@ -513,8 +514,8 @@ public class TestLayerOpValidation extends BaseOpValidation {
                         case 0:
                             //Conv3d, with bias, same
                             msg = "0 - conv3d+bias+same, ncdhw=" + ncdhw + " - input " + Arrays.toString(shape);
-                            SDVariable w0 = sd.var("w0", Nd4j.rand(new int[]{2, 2, 2, nIn, 3}).muli(10));  //[kD, kH, kW, iC, oC]
-                            SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
+                            SDVariable w0 = sd.var("w0", Nd4j.rand(new int[]{2, 2, 2, nIn, 3}).muli(10).castTo(DataType.DOUBLE));  //[kD, kH, kW, iC, oC]
+                            SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10).castTo(DataType.DOUBLE));
                             out = sd.cnn().conv3d(in, w0, b0, Conv3DConfig.builder()
                                     .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
                                     .paddingMode(PaddingMode.SAME)
@@ -525,7 +526,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
                         case 1:
                             //Conv3d, no bias, no same
                             msg = "1 - conv3d+no bias+no same, ncdhw=" + ncdhw + " - input " + Arrays.toString(shape);
-                            SDVariable w1 = sd.var("w1", Nd4j.rand(new int[]{2, 2, 2, nIn, 3}).muli(10));  //[kD, kH, kW, iC, oC]
+                            SDVariable w1 = sd.var("w1", Nd4j.rand(new int[]{2, 2, 2, nIn, 3}).muli(10).castTo(DataType.DOUBLE));  //[kD, kH, kW, iC, oC]
                             out = sd.cnn().conv3d(in, w1, Conv3DConfig.builder()
                                     .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
                                     .paddingMode(PaddingMode.VALID)
@@ -556,8 +557,8 @@ public class TestLayerOpValidation extends BaseOpValidation {
                         case 4:
                             //Deconv3d
                             msg = "4 - deconv3d, ncdhw=" + ncdhw;
-                            SDVariable wDeconv = sd.var(Nd4j.rand(new int[]{2, 2, 2, 3, nIn}));  //[kD, kH, kW, oC, iC]
-                            SDVariable bDeconv = sd.var(Nd4j.rand(new int[]{3}));
+                            SDVariable wDeconv = sd.var(Nd4j.rand(new int[]{2, 2, 2, 3, nIn}).castTo(DataType.DOUBLE));  //[kD, kH, kW, oC, iC]
+                            SDVariable bDeconv = sd.var(Nd4j.rand(new int[]{3}).castTo(DataType.DOUBLE));
                             out = sd.cnn().deconv3d("Deconv3d", in, wDeconv, bDeconv, DeConv3DConfig.builder()
                                     .kD(2).kH(2).kW(2)
                                     .isSameMode(true)
@@ -571,9 +572,9 @@ public class TestLayerOpValidation extends BaseOpValidation {
                             throw new RuntimeException();
                     }
 
-                    INDArray inArr = Nd4j.rand(shape).muli(10);
+                    INDArray inArr = Nd4j.rand(shape).muli(10).castTo(DataType.DOUBLE);
                     in.setArray(inArr);
-                    SDVariable loss = sd.standardDeviation("loss", out, true);
+                    SDVariable loss = sd.loss.l2Loss("loss", out);
 
                     log.info("Starting test: " + msg);
                     TestCase tc = new TestCase(sd).gradientCheck(true);
@@ -604,10 +605,10 @@ public class TestLayerOpValidation extends BaseOpValidation {
 
 
         SameDiff sd = SameDiff.create();
-        INDArray depthWeightArr = Nd4j.create(kH, kW, nIn, depthWise);
+        INDArray depthWeightArr = Nd4j.create(kH, kW, nIn, depthWise).castTo(DataType.DOUBLE);
 
-        INDArray bArr = Nd4j.create(1, depthWise * nIn);
-        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
+        INDArray bArr = Nd4j.create(1, depthWise * nIn).castTo(DataType.DOUBLE);
+        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW).castTo(DataType.DOUBLE);
 
         SDVariable in = sd.var("in", inArr);
         SDVariable dW = sd.var("dW", depthWeightArr);
