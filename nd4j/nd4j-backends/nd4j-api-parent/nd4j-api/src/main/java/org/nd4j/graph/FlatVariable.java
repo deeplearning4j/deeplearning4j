@@ -19,7 +19,7 @@
  */
 
 package org.nd4j.graph;
-import java.nio.ByteOrder;
+
 import java.nio.*;
 import java.lang.*;
 import java.util.*;
@@ -27,9 +27,10 @@ import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class FlatVariable extends Table {
+  public static void ValidateVersion() { Constants.FLATBUFFERS_1_12_0(); }
   public static FlatVariable getRootAsFlatVariable(ByteBuffer _bb) { return getRootAsFlatVariable(_bb, new FlatVariable()); }
-  public static FlatVariable getRootAsFlatVariable(ByteBuffer _bb, FlatVariable obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
-  public void __init(int _i, ByteBuffer _bb) { bb_pos = _i; bb = _bb; vtable_start = bb_pos - bb.getInt(bb_pos); vtable_size = bb.getShort(vtable_start); }
+  public static FlatVariable getRootAsFlatVariable(ByteBuffer _bb, FlatVariable obj) { _bb.order(java.nio.ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
+  public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public FlatVariable __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public IntPair id() { return id(new IntPair()); }
@@ -40,6 +41,8 @@ public final class FlatVariable extends Table {
   public byte dtype() { int o = __offset(8); return o != 0 ? bb.get(o + bb_pos) : 0; }
   public long shape(int j) { int o = __offset(10); return o != 0 ? bb.getLong(__vector(o) + j * 8) : 0; }
   public int shapeLength() { int o = __offset(10); return o != 0 ? __vector_len(o) : 0; }
+  public LongVector shapeVector() { return shapeVector(new LongVector()); }
+  public LongVector shapeVector(LongVector obj) { int o = __offset(10); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer shapeAsByteBuffer() { return __vector_as_bytebuffer(10, 8); }
   public ByteBuffer shapeInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 10, 8); }
   public FlatArray ndarray() { return ndarray(new FlatArray()); }
@@ -48,10 +51,16 @@ public final class FlatVariable extends Table {
   public byte variabletype() { int o = __offset(16); return o != 0 ? bb.get(o + bb_pos) : 0; }
   public String controlDeps(int j) { int o = __offset(18); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int controlDepsLength() { int o = __offset(18); return o != 0 ? __vector_len(o) : 0; }
+  public StringVector controlDepsVector() { return controlDepsVector(new StringVector()); }
+  public StringVector controlDepsVector(StringVector obj) { int o = __offset(18); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public String controlDepForOp(int j) { int o = __offset(20); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int controlDepForOpLength() { int o = __offset(20); return o != 0 ? __vector_len(o) : 0; }
+  public StringVector controlDepForOpVector() { return controlDepForOpVector(new StringVector()); }
+  public StringVector controlDepForOpVector(StringVector obj) { int o = __offset(20); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public String controlDepsForVar(int j) { int o = __offset(22); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int controlDepsForVarLength() { int o = __offset(22); return o != 0 ? __vector_len(o) : 0; }
+  public StringVector controlDepsForVarVector() { return controlDepsForVarVector(new StringVector()); }
+  public StringVector controlDepsForVarVector(StringVector obj) { int o = __offset(22); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
 
   public static int createFlatVariable(FlatBufferBuilder builder,
       int idOffset,
@@ -64,7 +73,7 @@ public final class FlatVariable extends Table {
       int controlDepsOffset,
       int controlDepForOpOffset,
       int controlDepsForVarOffset) {
-    builder.startObject(10);
+    builder.startTable(10);
     FlatVariable.addControlDepsForVar(builder, controlDepsForVarOffset);
     FlatVariable.addControlDepForOp(builder, controlDepForOpOffset);
     FlatVariable.addControlDeps(builder, controlDepsOffset);
@@ -78,7 +87,7 @@ public final class FlatVariable extends Table {
     return FlatVariable.endFlatVariable(builder);
   }
 
-  public static void startFlatVariable(FlatBufferBuilder builder) { builder.startObject(10); }
+  public static void startFlatVariable(FlatBufferBuilder builder) { builder.startTable(10); }
   public static void addId(FlatBufferBuilder builder, int idOffset) { builder.addOffset(0, idOffset, 0); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(1, nameOffset, 0); }
   public static void addDtype(FlatBufferBuilder builder, byte dtype) { builder.addByte(2, dtype, 0); }
@@ -98,10 +107,17 @@ public final class FlatVariable extends Table {
   public static int createControlDepsForVarVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startControlDepsForVarVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static int endFlatVariable(FlatBufferBuilder builder) {
-    int o = builder.endObject();
+    int o = builder.endTable();
     return o;
   }
   public static void finishFlatVariableBuffer(FlatBufferBuilder builder, int offset) { builder.finish(offset); }
   public static void finishSizePrefixedFlatVariableBuffer(FlatBufferBuilder builder, int offset) { builder.finishSizePrefixed(offset); }
+
+  public static final class Vector extends BaseVector {
+    public Vector __assign(int _vector, int _element_size, ByteBuffer _bb) { __reset(_vector, _element_size, _bb); return this; }
+
+    public FlatVariable get(int j) { return get(new FlatVariable(), j); }
+    public FlatVariable get(FlatVariable obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
+  }
 }
 

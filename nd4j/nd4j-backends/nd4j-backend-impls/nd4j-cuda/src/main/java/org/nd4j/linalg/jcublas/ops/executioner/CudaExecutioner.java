@@ -29,7 +29,6 @@ import lombok.var;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.common.base.Preconditions;
-import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.tad.DeviceTADManager;
@@ -60,6 +59,7 @@ import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.bindings.Nd4jCuda;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaLongDataBuffer;
@@ -983,7 +983,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val yDevTadShapeInfo = y == null ? null : AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
         val yOffsets = y == null ? null : yTadBuffers.getSecond();
-        val yDevTadOffsets = yOffsets == null ? null : AtomicAllocator.getInstance().getPointer(yOffsets, context);
+        val yDevTadOffsets = yOffsets == null ? null : (Pointer) AtomicAllocator.getInstance().getPointer(yOffsets, context);
 
         if (y != null) {
             xShapeInfoHostPointer.put(12L, (Pointer) yDevTadShapeInfo);
@@ -1383,9 +1383,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (y != null) {
             Pointer yShapeInfo = allocator.getPointer(y.shapeInfoDataBuffer(), context);
-
-            if (x.length() != y.length() || x.length() != z.length())
-                throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform");
 
             switch (op.getOpType()) {
                 case TRANSFORM_BOOL:

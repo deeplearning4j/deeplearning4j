@@ -35,8 +35,18 @@
 
     <name>nd4j-parameter-server-model</name>
 
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <module.name>nd4j.parameter.server.model</module.name>
     </properties>
 
 

@@ -26,12 +26,18 @@
 #include <system/common.h>
 
 #include <vector>
-
+#if defined(__NEC__)
+#define NEC_MAX_SHAPE_LIST 12
+#endif
 namespace sd {
 class SD_LIB_EXPORT ShapeList {
  protected:
+#if defined(__NEC__)
+  const sd::LongType *_shapes[NEC_MAX_SHAPE_LIST];
+  int size_x = 0;
+#else
   std::vector<const sd::LongType *> _shapes;
-
+#endif
   bool _destroyed = false;
   bool _autoremovable = false;
   bool _workspace = false;
@@ -44,7 +50,7 @@ class SD_LIB_EXPORT ShapeList {
 
   ~ShapeList();
 
-  std::vector<const sd::LongType *> *asVector();
+  // std::vector<const sd::LongType *> *asVector();
   void destroy();
   int size() const;
   const sd::LongType *at(int idx);

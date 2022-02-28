@@ -16,10 +16,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <commonsio.version>2.5</commonsio.version>
         <commons.lang.version>3.12.0</commons.lang.version>
         <commons.dbutils.version>1.7</commons.dbutils.version>
@@ -30,7 +26,10 @@
         <maven-shade-plugin.version>3.1.1</maven-shade-plugin.version>
         <kotlin.compiler.jvmTarget>1.8</kotlin.compiler.jvmTarget>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
+        <module.name>omnihub</module.name>
     </properties>
+
+
 
     <dependencies>
 
@@ -162,6 +161,12 @@
 
     <build>
         <plugins>
+
+      <!--      <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>-->
+
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>

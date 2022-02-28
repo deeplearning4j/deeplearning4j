@@ -39,15 +39,24 @@
     <commonsio.version>2.5</commonsio.version>
     <commons.lang.version>3.6</commons.lang.version>
     <commons.dbutils.version>1.7</commons.dbutils.version>
-    <lombok.version>1.18.8</lombok.version>
+    <lombok.version>1.18.22</lombok.version>
     <logback.version>1.1.7</logback.version>
     <protobuf.version>3.8.0</protobuf.version>
     <classgraph.version>4.8.90</classgraph.version>
     <commons-collections4.version>4.1</commons-collections4.version>
+    <module.name>samediff.modelimport.api</module.name>
   </properties>
+
+
+
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.moditect</groupId>
+        <artifactId>moditect-maven-plugin</artifactId>
+      </plugin>
+
       <plugin>
         <groupId>org.jetbrains.kotlin</groupId>
         <artifactId>kotlin-maven-plugin</artifactId>
@@ -88,12 +97,6 @@
       <version>1.7.28</version>
     </dependency>
 
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
-      <scope>test</scope>
-    </dependency>
 
     <dependency>
       <groupId>commons-io</groupId>

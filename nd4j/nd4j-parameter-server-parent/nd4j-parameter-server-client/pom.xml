@@ -35,6 +35,19 @@
 
     <name>nd4j-parameter-server-client</name>
 
+    <properties>
+        <module.name>nd4j.parameter.server.client</module.name>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>com.mashape.unirest</groupId>

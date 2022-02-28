@@ -33,6 +33,19 @@
 
     <artifactId>datavec-api</artifactId>
 
+    <properties>
+        <module.name>datavec.api</module.name>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

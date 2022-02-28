@@ -33,6 +33,20 @@
 
     <artifactId>python4j-numpy</artifactId>
 
+    <properties>
+        <module.name>python4j.numpy</module.name>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+
     <dependencies>
         <dependency>
             <groupId>org.bytedeco</groupId>

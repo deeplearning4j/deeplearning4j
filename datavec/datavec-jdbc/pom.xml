@@ -37,7 +37,18 @@
         <dbutils.version>1.7</dbutils.version>
         <hikaricp.version>2.4.12</hikaricp.version>
         <derby.version>10.13.1.1</derby.version>
+        <module.name>datavec.jdbc</module.name>
     </properties>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>

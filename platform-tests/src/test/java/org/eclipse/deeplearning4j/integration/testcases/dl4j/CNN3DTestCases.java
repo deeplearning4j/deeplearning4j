@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.integration.testcases.dl4j;
 
-import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
+import org.deeplearning4j.datasets.iterator.utilty.SingletonMultiDataSetIterator;
 import org.eclipse.deeplearning4j.integration.ModelType;
 import org.eclipse.deeplearning4j.integration.TestCase;
 import org.deeplearning4j.nn.conf.ConvolutionMode;

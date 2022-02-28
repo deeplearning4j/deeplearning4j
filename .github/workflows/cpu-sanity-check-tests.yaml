@@ -77,12 +77,6 @@ jobs:
       - uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
 
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
 
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v2
@@ -94,11 +88,10 @@ jobs:
       - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |
-          echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
           mkdir "${GITHUB_WORKSPACE}/openblas_home"
           cd "${GITHUB_WORKSPACE}/openblas_home"
-          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-linux-x86_64.jar
-          unzip openblas-0.3.13-1.5.5-linux-x86_64.jar
+          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-linux-x86_64.jar
+          unzip openblas-0.3.19-1.5.7-linux-x86_64.jar
           cd ..
           echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64" >> "$GITHUB_ENV"
           cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so
@@ -172,12 +165,7 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+
       - name: Set up Java for publishing to GitHub Packages
         uses: konduitai/setup-java@main
         with:
@@ -197,11 +185,10 @@ jobs:
       - name: Setup libnd4j home if a download url is specified
         shell: powershell
         run: |
-          echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
           mkdir "%GITHUB_WORKSPACE%/openblas_home"
           cd "%GITHUB_WORKSPACE%/openblas_home"
-          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-windows-x86_64.jar
-          unzip openblas-0.3.13-1.5.5-windows-x86_64.jar
+          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-windows-x86_64.jar
+          unzip openblas-0.3.19-1.5.7-windows-x86_64.jar
           cd ..
           echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/windows-x86_64/" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
         if: ${{ matrix.libnd4j_file_download != '' }}

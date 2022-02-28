@@ -38,6 +38,7 @@
     <jgit.version>5.10.0.202012080955-r</jgit.version>
     <test.offheap.size>12g</test.offheap.size>
     <test.heap.size>12g</test.heap.size>
+    <module.name>samediff.modelimport.onnx</module.name>
   </properties>
 
   <build>
@@ -46,9 +47,12 @@
         <groupId>org.jetbrains.kotlin</groupId>
         <artifactId>kotlin-maven-plugin</artifactId>
       </plugin>
+      <plugin>
+        <groupId>org.moditect</groupId>
+        <artifactId>moditect-maven-plugin</artifactId>
+      </plugin>
     </plugins>
   </build>
-
 
 
   <dependencies>

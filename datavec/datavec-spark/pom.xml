@@ -38,21 +38,11 @@
         <!-- Default scala versions, may be overwritten by build profiles -->
         <scala.version>2.12.14</scala.version>
         <scala.binary.version>2.12</scala.binary.version>
+        <module.name>datavec.spark</module.name>
     </properties>
 
+
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <configuration>
-                        <source>1.8</source>
-                        <target>1.8</target>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
 
     <dependencyManagement>

@@ -20,6 +20,7 @@
 
 package org.datavec.api.records.reader.impl.csv;
 
+import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.datavec.api.records.SequenceRecord;
@@ -77,6 +78,7 @@ public class CSVSequenceRecordReader extends FileRecordReader implements Sequenc
         return new org.datavec.api.records.impl.SequenceRecord(out, new RecordMetaDataURI(next));
     }
 
+    @SneakyThrows
     private List<List<Writable>> loadAndClose(InputStream inputStream) {
         LineIterator lineIter = null;
         try {

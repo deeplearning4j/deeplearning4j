@@ -35,6 +35,19 @@
 
     <name>datavec-excel</name>
 
+    <properties>
+        <module.name>datavec.excel</module.name>
+    </properties>
+
+    <build>
+        <plugins>
+         <!--   <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>-->
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>org.datavec</groupId>

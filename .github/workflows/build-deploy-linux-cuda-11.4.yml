@@ -34,9 +34,9 @@ on:
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
-        default: '-pl \":nd4j-cuda-11.4-preset,:nd4j-cuda-11.4,:deeplearning4j-cuda-11.4,:libnd4j\"'
+        default:
 
-      libnd4jDownload:
+      libnd4jUrl:
         description: 'Whether to download libnd4j using  https://github.com/KonduitAI/gh-actions-libnd4j-urls/ for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
         required: false
         default:
@@ -52,7 +52,7 @@ on:
         default: false
 
 jobs:
-  linux-x86_64-cuda_11-0:
+  linux-x86_64-cuda_11-4:
     strategy:
       fail-fast: false
       matrix:
@@ -70,7 +70,7 @@ jobs:
             experimental: true
             name: OS to run on
 
-          - libnd4j_file_download: ${{ github.event.inputs.libnd4jDownload }}
+          - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl }}
             experimental: true
             name: OS to run on
 
@@ -114,7 +114,13 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
-              command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.compute=auto -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh -Dlibnd4j.buildThreads=${{ matrix.build_threads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda  -Pcuda clean --batch-mode package deploy -DskipTests"
+              if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
+                 modules=':nd4j-cuda-11.4,:nd4j-cuda-11.4-preset'
+                else 
+                    echo "Building libnd4j from source"
+                    modules=':nd4j-cuda-11.4,:nd4j-cuda-11.4-preset,:libnd4j'
+              fi
+              command="mvn ${{ matrix.mvn_ext }} --also-make  -pl ${modules}  -Dlibnd4j.compute='3.7 5.0 5.2 6.0 6.1 7.0 7.5 8.0 8.6' -Dlibnd4j.cpu.compile.skip=true  -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh -Dlibnd4j.buildthreads=${{ matrix.build_threads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda  -Pcuda clean --batch-mode package deploy -DskipTests"
               libnd4j_download_file_url=""
               if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                   mvn_ext= "-Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-cuda-11.4-${{ matrix.helper }}-${{matrix.extension}}"
@@ -124,16 +130,11 @@ jobs:
                   libnd4j_download_file_url="linux-cuda-11-${{ matrix.helper }}"
 
               else
-                  echo "LIBND4J_FILE_NAME=linux-cuda-11" >> $GITHUB_ENV
                   libnd4j_download_file_url="linux-cuda-11"
                   mvn_ext=" -Dlibnd4j.classifier=linux-x86_64-cuda-11.4"
               fi
 
               command="${command} ${mvn_ext}"
-              if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
-                  echo "Adding libnd4j download"
-                  echo "LIBND4J_FILE_NAME=${libnd4j_download_file_url}" >> $GITHUB_ENV
-              fi
               echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command} and libnd4j download file to ${libnd4j_download_file_url}"
               echo "COMMAND=${command}" >> $GITHUB_ENV
 
@@ -144,27 +145,26 @@ jobs:
         id: cache-cmake
         with:
           path: /opt/cmake
-          key: ${{ runner.os }}-cmake
-          restore-keys: ${{ runner.os }}-cmake
+          key: ${{ matrix.runs_on }}-cmake
+          restore-keys: ${{ matrix.runs_on }}-cmake
+      - name: Cache cuda install
+        uses: actions/cache@v2
+        id: cache-cuda-114
+        with:
+          path: /usr/local/cuda-11.4
+          key: ${{ matrix.runs_on }}-cuda-11.4-${{ matrix.helper }}
+          restore-keys: ${{ matrix.runs_on }}-cuda-11.4-${{ matrix.helper }}
       - name: Cache protobuf install
         uses: actions/cache@v2
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf
-          restore-keys: ${{ runner.os }}-protobuf
+          key: ${{ matrix.runs_on }}-protobuf
+          restore-keys: ${{ matrix.runs_on }}-protobuf
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
-
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-            path: ~/.m2
-            key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-            restore-keys: ${{ runner.os }}-m2
-
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v2
         with:
@@ -183,12 +183,7 @@ jobs:
         env:
           cuda: 11.4
           GCC:  7
-
-      - name: Setup libnd4j home if a download url is specified
-        shell: bash
-        run: |
-            echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
-        if: ${{ matrix.libnd4j_file_download != '' }}
+        if: steps.cache-cuda-114.outputs.cache-hit != 'true'
 
       - name: Build cuda
         shell: bash
@@ -210,6 +205,7 @@ jobs:
           LIBND4J_HOME_SUFFIX: cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
+          LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
         run: |
           echo "libnd4j build threads ${{ matrix.build_threads }}"
           echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
@@ -245,7 +241,7 @@ jobs:
           sudo apt-get autoremove
           sudo apt-get clean
           # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
-          bash ./bootstrap-libnd4j-from-url.sh
+          bash ./bootstrap-libnd4j-from-url.sh linux cuda 11.4 "${{ matrix.helper }}"
           if [ "$PERFORM_RELEASE" == 1 ]; then
                echo "Performing release"
                bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"

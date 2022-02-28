@@ -325,7 +325,7 @@ if [ -z "${BUILD_USING_MAVEN}" ] ;then
 #lets build OpenBlas 
 if [ ! -d "${OPENBLAS_DIR}" ]; then
     message "download OpenBLAS"
-    git_check "${OPENBLAS_GIT_URL}" "${OPENBLAS_DIR}" "v0.3.10"
+    git_check "${OPENBLAS_GIT_URL}" "${OPENBLAS_DIR}" "v0.3.19"
 fi
 
 if [ ! -f "${THIRD_PARTY}/lib/libopenblas.so" ]; then
@@ -393,7 +393,7 @@ else
          message  "jetson cuda build "
         cuda_cross_setup ${CUDA_VER}
         XTRA_ARGS="${XTRA_ARGS} -c cuda  -h cudnn  "
-        XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -pl !\":nd4j-cuda-${CUDA_VER}-platform\",!\":deeplearning4j-cuda-${CUDA_VER}\" -Pcuda -Dlibnd4j.cpu.compile.skip=true -Djavacpp.version=1.5.6 -Dcuda.version=${CUDA_VER} -Dlibnd4j.cuda=${CUDA_VER} -Dlibnd4j.chip=cuda -Dlibnd4j.compute=5.3 "
+        XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -pl !\":nd4j-cuda-${CUDA_VER}-platform\" -Pcuda -Dlibnd4j.cpu.compile.skip=true -Djavacpp.version=1.5.6 -Dcuda.version=${CUDA_VER} -Dlibnd4j.cuda=${CUDA_VER} -Dlibnd4j.chip=cuda -Dlibnd4j.compute=5.3 "
         # need to be in base directory to exec contrib folder
         cd "${BASE_DIR}/.."
         bash "${BASE_DIR}/../change-cuda-versions.sh" "${CUDA_VER}"
@@ -423,12 +423,12 @@ message "keep blasbuild folder"
 fi
 
 if [ -z "${BUILD_USING_MAVEN}" ] ;then
-message "lets build just library"
+message "Building using bash script"
 bash ./buildnativeoperations.sh -o ${LIBND4J_PLATFORM} -t -j $(nproc) ${XTRA_ARGS} 
 else
 message "cd $BASE_DIR/.. "
 cd "$BASE_DIR/.."
-message "lets build jars"
+message "Building using maven"
 if [ "${DEPLOY-}" != "" ]; then
   message "Deploying to maven"
   command="mvn  -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  $MODULES  -Dmaven.javadoc.failOnError=false -Dlibnd4j.buildthreads=${LIBND4J_BUILD_THREADS}  -P${PUBLISH_TO}  --batch-mode     -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS}  -DprotocCommand=${PROTO_EXEC}  -DprotocExecutable=${PROTO_EXEC} -Djavacpp.platform.compiler=${COMPILER} -Djava.library.path=${JAVA_LIBRARY_PATH}  -DskipTests -Dmaven.test.skip=true deploy"

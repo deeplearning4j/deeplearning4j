@@ -19,17 +19,18 @@
  */
 
 package org.nd4j.graph;
-import java.nio.ByteOrder;
+
 import java.nio.*;
 import java.lang.*;
 import java.util.*;
 import com.google.flatbuffers.*;
-import java.nio.ByteOrder;
+
 @SuppressWarnings("unused")
 public final class FlatNode extends Table {
+  public static void ValidateVersion() { Constants.FLATBUFFERS_1_12_0(); }
   public static FlatNode getRootAsFlatNode(ByteBuffer _bb) { return getRootAsFlatNode(_bb, new FlatNode()); }
-  public static FlatNode getRootAsFlatNode(ByteBuffer _bb, FlatNode obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
-  public void __init(int _i, ByteBuffer _bb) { bb_pos = _i; bb = _bb; vtable_start = bb_pos - bb.getInt(bb_pos); vtable_size = bb.getShort(vtable_start); }
+  public static FlatNode getRootAsFlatNode(ByteBuffer _bb, FlatNode obj) { _bb.order(java.nio.ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
+  public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public FlatNode __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public int id() { int o = __offset(4); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
@@ -41,31 +42,47 @@ public final class FlatNode extends Table {
   public FlatProperties properties(int j) { return properties(new FlatProperties(), j); }
   public FlatProperties properties(FlatProperties obj, int j) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int propertiesLength() { int o = __offset(12); return o != 0 ? __vector_len(o) : 0; }
+  public FlatProperties.Vector propertiesVector() { return propertiesVector(new FlatProperties.Vector()); }
+  public FlatProperties.Vector propertiesVector(FlatProperties.Vector obj) { int o = __offset(12); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public int input(int j) { int o = __offset(14); return o != 0 ? bb.getInt(__vector(o) + j * 4) : 0; }
   public int inputLength() { int o = __offset(14); return o != 0 ? __vector_len(o) : 0; }
+  public IntVector inputVector() { return inputVector(new IntVector()); }
+  public IntVector inputVector(IntVector obj) { int o = __offset(14); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer inputAsByteBuffer() { return __vector_as_bytebuffer(14, 4); }
   public ByteBuffer inputInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 14, 4); }
   public IntPair inputPaired(int j) { return inputPaired(new IntPair(), j); }
   public IntPair inputPaired(IntPair obj, int j) { int o = __offset(16); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int inputPairedLength() { int o = __offset(16); return o != 0 ? __vector_len(o) : 0; }
+  public IntPair.Vector inputPairedVector() { return inputPairedVector(new IntPair.Vector()); }
+  public IntPair.Vector inputPairedVector(IntPair.Vector obj) { int o = __offset(16); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public int output(int j) { int o = __offset(18); return o != 0 ? bb.getInt(__vector(o) + j * 4) : 0; }
   public int outputLength() { int o = __offset(18); return o != 0 ? __vector_len(o) : 0; }
+  public IntVector outputVector() { return outputVector(new IntVector()); }
+  public IntVector outputVector(IntVector obj) { int o = __offset(18); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer outputAsByteBuffer() { return __vector_as_bytebuffer(18, 4); }
   public ByteBuffer outputInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 18, 4); }
   public double extraParams(int j) { int o = __offset(20); return o != 0 ? bb.getDouble(__vector(o) + j * 8) : 0; }
   public int extraParamsLength() { int o = __offset(20); return o != 0 ? __vector_len(o) : 0; }
+  public DoubleVector extraParamsVector() { return extraParamsVector(new DoubleVector()); }
+  public DoubleVector extraParamsVector(DoubleVector obj) { int o = __offset(20); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer extraParamsAsByteBuffer() { return __vector_as_bytebuffer(20, 8); }
   public ByteBuffer extraParamsInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 20, 8); }
   public long extraInteger(int j) { int o = __offset(22); return o != 0 ? bb.getLong(__vector(o) + j * 8) : 0; }
   public int extraIntegerLength() { int o = __offset(22); return o != 0 ? __vector_len(o) : 0; }
+  public LongVector extraIntegerVector() { return extraIntegerVector(new LongVector()); }
+  public LongVector extraIntegerVector(LongVector obj) { int o = __offset(22); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer extraIntegerAsByteBuffer() { return __vector_as_bytebuffer(22, 8); }
   public ByteBuffer extraIntegerInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 22, 8); }
   public boolean extraBools(int j) { int o = __offset(24); return o != 0 ? 0!=bb.get(__vector(o) + j * 1) : false; }
   public int extraBoolsLength() { int o = __offset(24); return o != 0 ? __vector_len(o) : 0; }
+  public BooleanVector extraBoolsVector() { return extraBoolsVector(new BooleanVector()); }
+  public BooleanVector extraBoolsVector(BooleanVector obj) { int o = __offset(24); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer extraBoolsAsByteBuffer() { return __vector_as_bytebuffer(24, 1); }
   public ByteBuffer extraBoolsInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 24, 1); }
   public int dimensions(int j) { int o = __offset(26); return o != 0 ? bb.getInt(__vector(o) + j * 4) : 0; }
   public int dimensionsLength() { int o = __offset(26); return o != 0 ? __vector_len(o) : 0; }
+  public IntVector dimensionsVector() { return dimensionsVector(new IntVector()); }
+  public IntVector dimensionsVector(IntVector obj) { int o = __offset(26); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer dimensionsAsByteBuffer() { return __vector_as_bytebuffer(26, 4); }
   public ByteBuffer dimensionsInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 26, 4); }
   public int device() { int o = __offset(28); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
@@ -75,27 +92,41 @@ public final class FlatNode extends Table {
   public ByteBuffer scopeNameInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 32, 1); }
   public String outputNames(int j) { int o = __offset(34); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int outputNamesLength() { int o = __offset(34); return o != 0 ? __vector_len(o) : 0; }
+  public StringVector outputNamesVector() { return outputNamesVector(new StringVector()); }
+  public StringVector outputNamesVector(StringVector obj) { int o = __offset(34); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public String opName() { int o = __offset(36); return o != 0 ? __string(o + bb_pos) : null; }
   public ByteBuffer opNameAsByteBuffer() { return __vector_as_bytebuffer(36, 1); }
   public ByteBuffer opNameInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 36, 1); }
   public byte outputTypes(int j) { int o = __offset(38); return o != 0 ? bb.get(__vector(o) + j * 1) : 0; }
   public int outputTypesLength() { int o = __offset(38); return o != 0 ? __vector_len(o) : 0; }
+  public ByteVector outputTypesVector() { return outputTypesVector(new ByteVector()); }
+  public ByteVector outputTypesVector(ByteVector obj) { int o = __offset(38); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer outputTypesAsByteBuffer() { return __vector_as_bytebuffer(38, 1); }
   public ByteBuffer outputTypesInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 38, 1); }
   public FlatArray scalar() { return scalar(new FlatArray()); }
   public FlatArray scalar(FlatArray obj) { int o = __offset(40); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public String controlDeps(int j) { int o = __offset(42); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int controlDepsLength() { int o = __offset(42); return o != 0 ? __vector_len(o) : 0; }
+  public StringVector controlDepsVector() { return controlDepsVector(new StringVector()); }
+  public StringVector controlDepsVector(StringVector obj) { int o = __offset(42); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public String varControlDeps(int j) { int o = __offset(44); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int varControlDepsLength() { int o = __offset(44); return o != 0 ? __vector_len(o) : 0; }
+  public StringVector varControlDepsVector() { return varControlDepsVector(new StringVector()); }
+  public StringVector varControlDepsVector(StringVector obj) { int o = __offset(44); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public String controlDepFor(int j) { int o = __offset(46); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int controlDepForLength() { int o = __offset(46); return o != 0 ? __vector_len(o) : 0; }
+  public StringVector controlDepForVector() { return controlDepForVector(new StringVector()); }
+  public StringVector controlDepForVector(StringVector obj) { int o = __offset(46); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public byte extraTypes(int j) { int o = __offset(48); return o != 0 ? bb.get(__vector(o) + j * 1) : 0; }
   public int extraTypesLength() { int o = __offset(48); return o != 0 ? __vector_len(o) : 0; }
+  public ByteVector extraTypesVector() { return extraTypesVector(new ByteVector()); }
+  public ByteVector extraTypesVector(ByteVector obj) { int o = __offset(48); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer extraTypesAsByteBuffer() { return __vector_as_bytebuffer(48, 1); }
   public ByteBuffer extraTypesInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 48, 1); }
   public String extraStrings(int j) { int o = __offset(50); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int extraStringsLength() { int o = __offset(50); return o != 0 ? __vector_len(o) : 0; }
+  public StringVector extraStringsVector() { return extraStringsVector(new StringVector()); }
+  public StringVector extraStringsVector(StringVector obj) { int o = __offset(50); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
 
   public static int createFlatNode(FlatBufferBuilder builder,
       int id,
@@ -122,7 +153,7 @@ public final class FlatNode extends Table {
       int controlDepForOffset,
       int extraTypesOffset,
       int extraStringsOffset) {
-    builder.startObject(24);
+    builder.startTable(24);
     FlatNode.addOpNum(builder, opNum);
     FlatNode.addExtraStrings(builder, extraStringsOffset);
     FlatNode.addExtraTypes(builder, extraTypesOffset);
@@ -150,7 +181,7 @@ public final class FlatNode extends Table {
     return FlatNode.endFlatNode(builder);
   }
 
-  public static void startFlatNode(FlatBufferBuilder builder) { builder.startObject(24); }
+  public static void startFlatNode(FlatBufferBuilder builder) { builder.startTable(24); }
   public static void addId(FlatBufferBuilder builder, int id) { builder.addInt(0, id, 0); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(1, nameOffset, 0); }
   public static void addOpType(FlatBufferBuilder builder, byte opType) { builder.addByte(2, opType, 0); }
@@ -187,7 +218,8 @@ public final class FlatNode extends Table {
   public static void startOutputNamesVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static void addOpName(FlatBufferBuilder builder, int opNameOffset) { builder.addOffset(16, opNameOffset, 0); }
   public static void addOutputTypes(FlatBufferBuilder builder, int outputTypesOffset) { builder.addOffset(17, outputTypesOffset, 0); }
-  public static int createOutputTypesVector(FlatBufferBuilder builder, byte[] data) { builder.startVector(1, data.length, 1); for (int i = data.length - 1; i >= 0; i--) builder.addByte(data[i]); return builder.endVector(); }
+  public static int createOutputTypesVector(FlatBufferBuilder builder, byte[] data) { return builder.createByteVector(data); }
+  public static int createOutputTypesVector(FlatBufferBuilder builder, ByteBuffer data) { return builder.createByteVector(data); }
   public static void startOutputTypesVector(FlatBufferBuilder builder, int numElems) { builder.startVector(1, numElems, 1); }
   public static void addScalar(FlatBufferBuilder builder, int scalarOffset) { builder.addOffset(18, scalarOffset, 0); }
   public static void addControlDeps(FlatBufferBuilder builder, int controlDepsOffset) { builder.addOffset(19, controlDepsOffset, 0); }
@@ -200,16 +232,24 @@ public final class FlatNode extends Table {
   public static int createControlDepForVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startControlDepForVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static void addExtraTypes(FlatBufferBuilder builder, int extraTypesOffset) { builder.addOffset(22, extraTypesOffset, 0); }
-  public static int createExtraTypesVector(FlatBufferBuilder builder, byte[] data) { builder.startVector(1, data.length, 1); for (int i = data.length - 1; i >= 0; i--) builder.addByte(data[i]); return builder.endVector(); }
+  public static int createExtraTypesVector(FlatBufferBuilder builder, byte[] data) { return builder.createByteVector(data); }
+  public static int createExtraTypesVector(FlatBufferBuilder builder, ByteBuffer data) { return builder.createByteVector(data); }
   public static void startExtraTypesVector(FlatBufferBuilder builder, int numElems) { builder.startVector(1, numElems, 1); }
   public static void addExtraStrings(FlatBufferBuilder builder, int extraStringsOffset) { builder.addOffset(23, extraStringsOffset, 0); }
   public static int createExtraStringsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startExtraStringsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static int endFlatNode(FlatBufferBuilder builder) {
-    int o = builder.endObject();
+    int o = builder.endTable();
     return o;
   }
   public static void finishFlatNodeBuffer(FlatBufferBuilder builder, int offset) { builder.finish(offset); }
   public static void finishSizePrefixedFlatNodeBuffer(FlatBufferBuilder builder, int offset) { builder.finishSizePrefixed(offset); }
+
+  public static final class Vector extends BaseVector {
+    public Vector __assign(int _vector, int _element_size, ByteBuffer _bb) { __reset(_vector, _element_size, _bb); return this; }
+
+    public FlatNode get(int j) { return get(new FlatNode(), j); }
+    public FlatNode get(FlatNode obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
+  }
 }
 

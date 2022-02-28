@@ -36,13 +36,18 @@
     <name>deeplearning4j-scaleout-parallelwrapper-parameter-server</name>
 
     <properties>
-        <!-- Default scala versions, may be overwritten by build profiles -->
-        <scala.version>2.11.12</scala.version>
-        <scala.binary.version>2.11</scala.binary.version>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
         <rxjava.version>2.2.21</rxjava.version>
+        <module.name>deeplearning4j.scaleout.parallelwrapper.parameter.server</module.name>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>
@@ -89,11 +94,7 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>${scala.version}</version>
-        </dependency>
+
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
@@ -138,12 +139,6 @@
                     <groupId>org.nd4j</groupId>
                     <artifactId>nd4j-cuda-11.4</artifactId>
                     <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                    <artifactId>deeplearning4j-cuda-11.4</artifactId>
-                    <version>${nd4j.version}</version>
                     <scope>test</scope>
                 </dependency>
                 <dependency>

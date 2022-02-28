@@ -51,8 +51,8 @@
     <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
     <junit.version>5.8.0-M1</junit.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
+
+
     <java.version>1.8</java.version>
     <maven-shade-plugin.version>3.1.1</maven-shade-plugin.version>
     <test.heap.size>2g</test.heap.size>

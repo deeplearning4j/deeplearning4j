@@ -17,9 +17,10 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
+
+
   </properties>
+
 
   <dependencies>
 
@@ -54,6 +55,10 @@
     <plugins>
 
       <plugin>
+        <groupId>org.moditect</groupId>
+        <artifactId>moditect-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <executions>
           <execution>
@@ -63,6 +68,11 @@
               <goal>jar</goal>
             </goals>
             <configuration>
+              <archive>
+                <manifestEntries>
+                  <Automatic-Module-Name>${module.name}</Automatic-Module-Name>
+                </manifestEntries>
+              </archive>
               <excludes>
                 <exclude>
                   org/nd4j/aurora/${javacpp.platform}${javacpp.platform.extension}/*
@@ -82,6 +92,11 @@
               <goal>jar</goal>
             </goals>
             <configuration>
+              <archive>
+                <manifestEntries>
+                  <Automatic-Module-Name>${module.name}.binary</Automatic-Module-Name>
+                </manifestEntries>
+              </archive>
               <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
               <skipIfEmpty>true</skipIfEmpty>
               <includes>

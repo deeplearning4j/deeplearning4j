@@ -36,11 +36,14 @@
     <name>nd4j-api</name>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+
+
         <byteunits.version>0.9.1</byteunits.version>
         <neoitertools.version>1.0.0</neoitertools.version>
+        <module.name>nd4j.api</module.name>
     </properties>
+
+
 
     <dependencies>
         <dependency>
@@ -127,6 +130,11 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+
             <!-- AB 2019/08/24 This plugin is to be added TEMPORARILY due to a change in the filenames of the generated ONNX -->
             <!-- Normal "mvn clean" etc won't delete these files, and any users who have built ND4J even once before the
                  change will run into a compilation error. This can be removed after a few weeks.-->
@@ -203,27 +211,6 @@
                         <phase>generate-sources</phase>
                         <goals>
                             <goal>replace</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.2.0</version>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <addDefaultImplementationEntries>
-                                true
-                            </addDefaultImplementationEntries>
-                        </manifest>
-                    </archive>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test-jar</goal>
                         </goals>
                     </execution>
                 </executions>

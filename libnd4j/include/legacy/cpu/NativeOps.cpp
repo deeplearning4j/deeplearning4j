@@ -1558,6 +1558,32 @@ sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType h
   }
 }
 
+#if defined(__NEC__)
+sd::ShapeList *calculateOutputShapesNec(sd::graph::Context *ctx, sd::LongType hash, sd::Pointer *inputShapes,
+                                        int numInputShapes) {
+  try {
+    auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+    auto status = op->validateDataTypes(*ctx);
+    if (status != sd::Status::OK) throw std::runtime_error("Data types validation failed");
+    sd::ShapeList inShapes;
+    for (int e = 0; e < numInputShapes; e++) {
+      auto shape_ = reinterpret_cast<sd::LongType *>(inputShapes[e]);
+      inShapes.push_back(shape_);
+    }
+    // lets inform that we dont need the pointer to be cached
+    ConstantShapeHelper::getInstance().disableExistingPointerCaching();
+    auto shapeList = op->calculateOutputShape(&inShapes, *ctx);
+    // restoring for the other cases
+    ConstantShapeHelper::getInstance().enableExistingPointerCaching();
+    return shapeList;
+  } catch (std::exception &e) {
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    return nullptr;
+  }
+}
+#endif
+
 sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::DeclarableOp *op, sd::Pointer *inputShapes,
                                       int numInputShapes, double *tArgs, int numTArgs, sd::LongType *iArgs,
                                       int numIArgs) {

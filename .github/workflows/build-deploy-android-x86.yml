@@ -81,13 +81,6 @@ jobs:
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-
       - name: Set up Java for publishing to OSSRH
         uses: actions/setup-java@v2
         with:
@@ -107,15 +100,13 @@ jobs:
       - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |
-              echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
               mkdir "${GITHUB_WORKSPACE}/openblas_home"
               cd "${GITHUB_WORKSPACE}/openblas_home"
-              wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-android-x86.jar
-              unzip openblas-0.3.13-1.5.5-android-x86.jar
+              wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-android-x86.jar
+              unzip openblas-0.3.19-1.5.7-android-x86.jar
               cd ..
               echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/x86" >> "$GITHUB_ENV"
               cp ${GITHUB_WORKSPACE}/openblas_home/lib/x86/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/lib/x86/libopenblas.so
-              echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
 
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
       - name: Build on  android-x86
@@ -144,6 +135,7 @@ jobs:
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           MODULES: ${{ github.event.inputs.mvnFlags }}
+          LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
 
 
         run: |
@@ -165,13 +157,13 @@ jobs:
           sudo apt install -y unzip wget
           mkdir "${GITHUB_WORKSPACE}/openblas_home"
           cd "${GITHUB_WORKSPACE}/openblas_home"
-          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-android-x86.jar
-          unzip openblas-0.3.13-1.5.5-android-x86.jar
+          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-android-x86.jar
+          unzip openblas-0.3.19-1.5.7-android-x86.jar
           cd ..
           export PATH=/opt/protobuf/bin:$PATH
           export OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/x86/
           # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
-          bash ./bootstrap-libnd4j-from-url.sh
+          bash ./bootstrap-libnd4j-from-url.sh android x86
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 
       - name: Setup tmate session

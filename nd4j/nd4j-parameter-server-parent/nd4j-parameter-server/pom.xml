@@ -35,6 +35,19 @@
 
     <name>nd4j-parameter-server</name>
 
+    <properties>
+        <module.name>nd4j.parameter.server</module.name>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>

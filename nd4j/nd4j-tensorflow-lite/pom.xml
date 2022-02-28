@@ -35,11 +35,21 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <tensorflow-lite.version>2.5.0</tensorflow-lite.version>
+
+
+        <tensorflow-lite.version>2.8.0</tensorflow-lite.version>
         <tensorflow-lite.javacpp.version>${tensorflow-lite.version}-${javacpp.version}</tensorflow-lite.javacpp.version>
+        <module.name>nd4j.tensorflow.lite</module.name>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>

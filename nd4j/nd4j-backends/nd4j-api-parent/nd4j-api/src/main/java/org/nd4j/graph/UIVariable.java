@@ -19,17 +19,18 @@
  */
 
 package org.nd4j.graph;
-import java.nio.ByteOrder;
-import java.nio.*;
-import java.lang.*;
-import java.util.*;
+
 import com.google.flatbuffers.*;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 @SuppressWarnings("unused")
 public final class UIVariable extends Table {
+  public static void ValidateVersion() { Constants.FLATBUFFERS_1_12_0(); }
   public static UIVariable getRootAsUIVariable(ByteBuffer _bb) { return getRootAsUIVariable(_bb, new UIVariable()); }
   public static UIVariable getRootAsUIVariable(ByteBuffer _bb, UIVariable obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
-  public void __init(int _i, ByteBuffer _bb) { bb_pos = _i; bb = _bb; vtable_start = bb_pos - bb.getInt(bb_pos); vtable_size = bb.getShort(vtable_start); }
+  public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public UIVariable __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public IntPair id() { return id(new IntPair()); }
@@ -41,19 +42,29 @@ public final class UIVariable extends Table {
   public byte datatype() { int o = __offset(10); return o != 0 ? bb.get(o + bb_pos) : 0; }
   public long shape(int j) { int o = __offset(12); return o != 0 ? bb.getLong(__vector(o) + j * 8) : 0; }
   public int shapeLength() { int o = __offset(12); return o != 0 ? __vector_len(o) : 0; }
+  public LongVector shapeVector() { return shapeVector(new LongVector()); }
+  public LongVector shapeVector(LongVector obj) { int o = __offset(12); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer shapeAsByteBuffer() { return __vector_as_bytebuffer(12, 8); }
   public ByteBuffer shapeInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 12, 8); }
   public String controlDeps(int j) { int o = __offset(14); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int controlDepsLength() { int o = __offset(14); return o != 0 ? __vector_len(o) : 0; }
+  public StringVector controlDepsVector() { return controlDepsVector(new StringVector()); }
+  public StringVector controlDepsVector(StringVector obj) { int o = __offset(14); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public String outputOfOp() { int o = __offset(16); return o != 0 ? __string(o + bb_pos) : null; }
   public ByteBuffer outputOfOpAsByteBuffer() { return __vector_as_bytebuffer(16, 1); }
   public ByteBuffer outputOfOpInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 16, 1); }
   public String inputsForOp(int j) { int o = __offset(18); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int inputsForOpLength() { int o = __offset(18); return o != 0 ? __vector_len(o) : 0; }
+  public StringVector inputsForOpVector() { return inputsForOpVector(new StringVector()); }
+  public StringVector inputsForOpVector(StringVector obj) { int o = __offset(18); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public String controlDepsForOp(int j) { int o = __offset(20); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int controlDepsForOpLength() { int o = __offset(20); return o != 0 ? __vector_len(o) : 0; }
+  public StringVector controlDepsForOpVector() { return controlDepsForOpVector(new StringVector()); }
+  public StringVector controlDepsForOpVector(StringVector obj) { int o = __offset(20); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public String controlDepsForVar(int j) { int o = __offset(22); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int controlDepsForVarLength() { int o = __offset(22); return o != 0 ? __vector_len(o) : 0; }
+  public StringVector controlDepsForVarVector() { return controlDepsForVarVector(new StringVector()); }
+  public StringVector controlDepsForVarVector(StringVector obj) { int o = __offset(22); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public String gradientVariable() { int o = __offset(24); return o != 0 ? __string(o + bb_pos) : null; }
   public ByteBuffer gradientVariableAsByteBuffer() { return __vector_as_bytebuffer(24, 1); }
   public ByteBuffer gradientVariableInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 24, 1); }
@@ -77,7 +88,7 @@ public final class UIVariable extends Table {
       int gradientVariableOffset,
       int uiLabelExtraOffset,
       int constantValueOffset) {
-    builder.startObject(13);
+    builder.startTable(13);
     UIVariable.addConstantValue(builder, constantValueOffset);
     UIVariable.addUiLabelExtra(builder, uiLabelExtraOffset);
     UIVariable.addGradientVariable(builder, gradientVariableOffset);
@@ -94,7 +105,7 @@ public final class UIVariable extends Table {
     return UIVariable.endUIVariable(builder);
   }
 
-  public static void startUIVariable(FlatBufferBuilder builder) { builder.startObject(13); }
+  public static void startUIVariable(FlatBufferBuilder builder) { builder.startTable(13); }
   public static void addId(FlatBufferBuilder builder, int idOffset) { builder.addOffset(0, idOffset, 0); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(1, nameOffset, 0); }
   public static void addType(FlatBufferBuilder builder, byte type) { builder.addByte(2, type, 0); }
@@ -119,8 +130,15 @@ public final class UIVariable extends Table {
   public static void addUiLabelExtra(FlatBufferBuilder builder, int uiLabelExtraOffset) { builder.addOffset(11, uiLabelExtraOffset, 0); }
   public static void addConstantValue(FlatBufferBuilder builder, int constantValueOffset) { builder.addOffset(12, constantValueOffset, 0); }
   public static int endUIVariable(FlatBufferBuilder builder) {
-    int o = builder.endObject();
+    int o = builder.endTable();
     return o;
+  }
+
+  public static final class Vector extends BaseVector {
+    public Vector __assign(int _vector, int _element_size, ByteBuffer _bb) { __reset(_vector, _element_size, _bb); return this; }
+
+    public UIVariable get(int j) { return get(new UIVariable(), j); }
+    public UIVariable get(UIVariable obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
   }
 }
 

@@ -98,6 +98,15 @@ sd::LongType* ShapeBuilders::emptyShapeInfo(const sd::DataType dataType, const c
   return shapeInfo;
 }
 
+sd::LongType* ShapeBuilders::emptyShapeInfo(const sd::DataType dataType, const char order, int rank,
+                                       const sd::LongType* shapeOnly, memory::Workspace* workspace){
+
+  auto shapeInfo = createShapeInfo(dataType, order, rank, shapeOnly, workspace);
+  memset(shape::stride(shapeInfo), 0, rank * sizeof(sd::LongType));
+  ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
+  return shapeInfo;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 sd::LongType* ShapeBuilders::createShapeInfo(const sd::DataType dataType, const char order,
                                              const std::vector<sd::LongType>& shapeOnly, memory::Workspace* workspace) {

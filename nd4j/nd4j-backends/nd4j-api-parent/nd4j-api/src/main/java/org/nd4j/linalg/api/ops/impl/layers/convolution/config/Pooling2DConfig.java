@@ -48,7 +48,8 @@ public class Pooling2DConfig extends BaseConvolutionConfig {
     private Pooling2DType type = Pooling2DType.MAX;
     @Builder.Default
     private Divisor divisor = Divisor.EXCLUDE_PADDING;
-    private PaddingMode paddingMode;
+    @Builder.Default
+    private PaddingMode paddingMode = PaddingMode.VALID;
     @Builder.Default
     private long dH = 1;
     @Builder.Default

@@ -23,7 +23,6 @@ package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 
-import com.google.common.collect.Maps;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
@@ -87,6 +86,7 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.shade.guava.collect.Maps;
 import org.nd4j.weightinit.impl.UniformInitScheme;
 
 @Slf4j
@@ -3304,6 +3304,21 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
 
 
+    }
+
+    @Test
+    public void testBroadcastingOr() {
+        SameDiff sd = SameDiff.create();
+        SDVariable a = sd.constant(Nd4j.createFromArray(true, false, false, true).reshape(2, 2));
+        sd.constant(42); // added statement
+        SDVariable b = sd.constant(Nd4j.createFromArray(false, false).reshape(1, 2));
+        SDVariable result = sd.math().or(a, b);
+        INDArray eval = result.eval();
+        INDArray assertion = Nd4j.createFromArray(new boolean[][]{
+                {true,false},
+                {false,true}
+        });
+        System.out.println(eval);
     }
 
     @ParameterizedTest

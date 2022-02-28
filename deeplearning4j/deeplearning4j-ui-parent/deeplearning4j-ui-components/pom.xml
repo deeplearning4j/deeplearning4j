@@ -33,6 +33,19 @@
 
     <artifactId>deeplearning4j-ui-components</artifactId>
 
+    <properties>
+        <module.name>deeplearning4j.ui.components</module.name>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <!-- ND4J Shaded Jackson Dependency -->
         <dependency>

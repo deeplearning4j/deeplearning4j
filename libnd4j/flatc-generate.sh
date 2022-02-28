@@ -5,7 +5,7 @@ flatc  -o ./include/graph/generated -I ./include/graph/scheme -j -b  -t -c  ./in
 flatc -o ./include/graph/generated -I ./include/graph/scheme -j -b  -t -c ./include/graph/scheme/node.fbs ./include/graph/scheme/graph.fbs ./include/graph/scheme/result.fbs ./include/graph/scheme/config.fbs ./include/graph/scheme/array.fbs ./include/graph/scheme/utils.fbs ./include/graph/scheme/variable.fbs
 
 
-flatc -o ./include/graph/generated -I ./include/graph/scheme -j -b -t -c -n --js --grpc -p \
+flatc -o ./include/graph/generated -I ./include/graph/scheme -j -b  \
     ./include/graph/scheme/node.fbs \
     ./include/graph/scheme/graph.fbs \
     ./include/graph/scheme/result.fbs \
@@ -16,6 +16,6 @@ flatc -o ./include/graph/generated -I ./include/graph/scheme -j -b -t -c -n --js
     ./include/graph/scheme/variable.fbs \
     ./include/graph/scheme/properties.fbs
 	
-flatc -o ./include/graph/generated -I ./include/graph/scheme -j -b -t -c -n --js --grpc -p \
+flatc -o ./include/graph/generated -I ./include/graph/scheme -j -b  --grpc  \
     ./include/graph/scheme/uigraphstatic.fbs \
     ./include/graph/scheme/uigraphevents.fbs

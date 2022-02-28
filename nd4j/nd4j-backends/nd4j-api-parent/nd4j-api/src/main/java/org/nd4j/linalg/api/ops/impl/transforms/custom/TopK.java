@@ -43,18 +43,23 @@ public class TopK extends DynamicCustomOp {
 
     public TopK(){ }
 
-    public TopK(SameDiff sd, SDVariable in, int k, boolean sorted){
+    public TopK(SameDiff sd, SDVariable in, int k, boolean sorted) {
         super(sd, new SDVariable[]{in}, false);
         this.k = k;
         this.sorted = sorted;
         addIArgument(ArrayUtil.fromBoolean(sorted), k);
     }
 
+
     public TopK(INDArray input, double k, boolean sorted) {
         super(null,new INDArray[]{input},null);
         this.k = (int) k;
         this.sorted = sorted;
         addIArgument(ArrayUtil.fromBoolean(sorted),this.k);
+    }
+
+    public TopK(SameDiff sd, SDVariable input, double k, boolean sorted) {
+        this(sd,input,(int) k,sorted);
     }
 
     @Override

@@ -41,7 +41,10 @@
         <cuda.version>11.4</cuda.version>
         <cudnn.version>8.2</cudnn.version>
         <javacpp-presets.cuda.version>1.5.6</javacpp-presets.cuda.version>
+        <module.name>nd4j.cuda.preset</module.name>
     </properties>
+
+
 
     <dependencies>
         <dependency>
@@ -56,12 +59,7 @@
             <type>${dependency.packaging}</type>
             <classifier>${dependency.classifier}</classifier>
         </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>5.0.2.RELEASE</version>
-            <scope>test</scope>
-        </dependency>
+
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
@@ -83,14 +81,6 @@
             <classifier>${dependency.platform}</classifier>
         </dependency>
 
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
@@ -99,39 +89,15 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native-api</artifactId>
         </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <!-- Reflections: required in one of the tests -->
-        <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
-            <version>${reflections.version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.code.findbugs</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-common-tests</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -145,7 +111,7 @@
                         <configuration>
                             <skipMain>${javacpp.parser.skip}</skipMain>
                             <includes>
-                                <include>org/nd4j/nativeblas/**.java</include>
+                                <include>org/nd4j/presets/cuda/**.java</include>
                             </includes>
                         </configuration>
                     </execution>
@@ -191,9 +157,14 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
+                            <archive>
+                                <manifestEntries>
+                                    <Automatic-Module-Name>${module.name}</Automatic-Module-Name>
+                                </manifestEntries>
+                            </archive>
                             <excludes>
                                 <exclude>
-                                    org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
+                                    org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}/*
                                 </exclude>
                                 <exclude>lib/**</exclude>
                                 <exclude>*.dll</exclude>
@@ -211,10 +182,15 @@
                         </goals>
                         <configuration>
                             <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+                            <archive>
+                                <manifestEntries>
+                                    <Automatic-Module-Name>${module.name}.binary</Automatic-Module-Name>
+                                </manifestEntries>
+                            </archive>
                             <skipIfEmpty>true</skipIfEmpty>
                             <includes>
                                 <include>
-                                    org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
+                                    org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}/*
                                 </include>
                                 <include>lib/**</include>
                                 <include>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</include>

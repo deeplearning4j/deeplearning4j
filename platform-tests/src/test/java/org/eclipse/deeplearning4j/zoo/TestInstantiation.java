@@ -23,7 +23,7 @@ package org.eclipse.deeplearning4j.zoo;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.BenchmarkDataSetIterator;
+import org.deeplearning4j.datasets.iterator.utilty.BenchmarkDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.LossLayer;

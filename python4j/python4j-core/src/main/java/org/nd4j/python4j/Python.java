@@ -212,7 +212,7 @@ public class Python {
      */
     public static PythonObject list(PythonObject pythonObject) {
         PythonGIL.assertThreadSafe();
-        try (PythonGC _ = PythonGC.watch()) {
+        try (PythonGC gc = PythonGC.watch()) {
             PythonObject listF = attr("list");
             PythonObject ret = listF.call(pythonObject);
             if (ret.isNone()) {

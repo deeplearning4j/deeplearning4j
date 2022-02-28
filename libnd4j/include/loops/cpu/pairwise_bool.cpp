@@ -105,11 +105,11 @@ void PairWiseBoolTransform<X, Z>::exec(const void *vx, const sd::LongType *xShap
 
   const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo);
   const bool sameShapesXY = shape::shapeEquals(xShapeInfo, yShapeInfo);
-
+  const bool isSameLength = shape::length(xShapeInfo) == shape::length(yShapeInfo);
   if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) && sameShapesXY) {
     exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop);
   } else if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) &&
-             !sameShapesXY) {  // not same shape
+             !sameShapesXY && isSameLength) {  // not same shape, same length array
     exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, shape::length(yShapeInfo), start, stop);
   } else {
     if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) &&

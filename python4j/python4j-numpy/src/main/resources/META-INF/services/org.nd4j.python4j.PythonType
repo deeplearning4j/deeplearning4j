@@ -214,4 +214,4 @@
 #  ******************************************************************************/
 #
 
-org.nd4j.python4j.NumpyArray
+org.nd4j.python4j.numpy.NumpyArray

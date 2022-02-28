@@ -89,6 +89,12 @@ class TensorflowFrameworkImporter: FrameworkImporter {
         val irGraph = irGraph as TensorflowIRGraph
         val ret = HashMap<String,INDArray>()
         for(i in 0 until irGraph.inputs.size) {
+            if(irGraph.shapeOfInput(irGraph.inputs[i]) == null) {
+                throw IllegalArgumentException("Unable to suggest dynamic variables. No shape found for input $i named ${irGraph.inputs[i]}")
+            }
+        }
+
+        for(i in 0 until irGraph.inputs.size) {
             val shape = irGraph.shapeOfInput(irGraph.inputs[i])!!.map { input -> if(input < 0) 1 else input }.toLongArray()
             if(shape != null) {
                 val dtype = irGraph.dataTypeForVariable(irGraph.inputAt(i))

@@ -37,6 +37,9 @@
         <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
     </properties>
 
+
+
+
     <dependencies>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -155,6 +158,8 @@
 
     <build>
         <plugins>
+
+
             <!--
             Use Maven Shade plugin to add a shaded version of the Jackson dependencies, that can be imported by
             including this module (org.nd4j.jackson) as a dependency.
@@ -190,6 +195,9 @@
                             <include>org.yaml*:*</include>
                             <include>org.codehaus*:*</include>
                         </includes>
+                        <excludes>
+                            <exclude>module-info.java</exclude>
+                        </excludes>
                     </artifactSet>
                     <relocations>
                         <!-- Jackson dependencies -->

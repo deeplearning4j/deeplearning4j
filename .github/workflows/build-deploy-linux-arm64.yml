@@ -83,14 +83,6 @@ jobs:
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
-
-      - name: Cache Maven packages
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-
       - name: Set up Java for publishing to OSSRH
         uses: actions/setup-java@v2
         with:
@@ -106,15 +98,13 @@ jobs:
       - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |
-             echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
              mkdir "${GITHUB_WORKSPACE}/openblas_home"
              cd "${GITHUB_WORKSPACE}/openblas_home"
-             wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.13-1.5.5/openblas-0.3.13-1.5.5-linux-arm64.jar
-             unzip openblas-0.3.13-1.5.5-linux-arm64.jar
+             wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-linux-arm64.jar
+             unzip openblas-0.3.19-1.5.7-linux-arm64.jar
              cd ..
              echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-arm64" >> "$GITHUB_ENV"
              cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-arm64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-arm64/libopenblas.so
-             echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" >> "$GITHUB_ENV"
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
       - name: Build on  linux-arm64
         shell: bash
@@ -139,6 +129,7 @@ jobs:
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           MODULES: ${{ github.event.inputs.mvnFlags }}
+          LIBND4J_FILE_NAME: ${{ github.event.inputs.libnd4jUrl }}
 
         run: |
           echo "libnd4j build threads ${{ github.event.inputs.buildThreads }}"
@@ -150,6 +141,7 @@ jobs:
           echo "snapshot version ${{ github.event.inputs.snapshotVersion }}"
           echo "server id ${{ github.event.inputs.serverId }}"
           echo "release repo id ${{ github.event.inputs.releaseRepoId }}"
+          echo "libnd4j file url ${{ github.event.inputs.libnd4jUrl }}"
 
           sudo sysctl vm.overcommit_memory=2
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
@@ -157,7 +149,16 @@ jobs:
           cmake --version
           protoc --version
           # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
-          bash ./bootstrap-libnd4j-from-url.sh
+          echo "Executing bootstrap if exists"
+          bash ./bootstrap-libnd4j-from-url.sh linux arm64
+          if [ "${{  github.event.inputs.libnd4jUrl }}" != '' ]; then
+                  echo "Building only java modules using a pre existing libnd4j home"
+                  export MODULES="${MODULES} -pl :nd4j-native,:nd4j-native-preset --also-make -Dlibnd4jhome=${GITHUB_WORKSPACE}/libnd4j"
+              else
+                  echo "Building all modules"
+                  export MODULES="${MODULES} -pl :libnd4j,:nd4j-native,:nd4j-native-preset --also-make -Dlibnd4jhome=${GITHUB_WORKSPACE}/libnd4j"
+          fi
+          
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 
       - name: Setup tmate session

@@ -46,7 +46,7 @@
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
         <backend.artifactId>nd4j-native</backend.artifactId>
-        <lombok.version>1.18.16</lombok.version>
+        <lombok.version>1.18.22</lombok.version>
 
         <logback.version>1.1.7</logback.version>
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
@@ -56,8 +56,8 @@
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
         <junit.version>5.8.0-M1</junit.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+
+
         <java.version>1.8</java.version>
         <maven-shade-plugin.version>3.1.1</maven-shade-plugin.version>
         <test.heap.size>4g</test.heap.size>
@@ -74,7 +74,11 @@
     </properties>
 
     <dependencies>
-
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>5.3.15</version>
+        </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>python4j-numpy</artifactId>
@@ -560,7 +564,7 @@
                         </classpathDependencyExclude>
                     </classpathDependencyExcludes>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
-                    <argLine>-Dorg.nd4j.arraynogc=true -Dorg.bytedeco.javacpp.logger.debug=true -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                    <argLine>-Dorg.nd4j.arraynogc=${test.nogc} -Dorg.bytedeco.javacpp.logger.debug=true -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
                     <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
                     <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
                     <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
