@@ -792,6 +792,14 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
                 val yb = ((BaseAuroraDataBuffer) y.data()).getOpaqueDataBuffer();
                 val zb = ((BaseAuroraDataBuffer) z.data()).getOpaqueDataBuffer();
 
+                LongPointer xShapePtr = new LongPointer(x.shapeInfoDataBuffer().pointer());
+                LongPointer yShapePtr = new LongPointer(y.shapeInfoDataBuffer().pointer());
+                LongPointer zShapePtr = new LongPointer(z.shapeInfoDataBuffer().pointer());
+                // we set limit to 0 so that it could be treated as pointer argument and also without using addressPointer
+                // there will not be veo call overhead
+                xShapePtr.limit(0);
+                yShapePtr.limit(0);
+                zShapePtr.limit(0);
                 switch (op.getOpType()) {
                     case TRANSFORM_ANY:
                     case TRANSFORM_FLOAT:
@@ -802,22 +810,22 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
                                     "Op.X and Op.Y must have the same data type, but got %s vs. %s", x.dataType(), y.dataType());
 
                         loop.execPairwiseTransform(dummy, op.opNum(),
-                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                            yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
-                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                            xb, xShapePtr, null,
+                            yb, yShapePtr, null,
+                            zb, zShapePtr, null,
                             getPointerForExtraArgs(op, z.dataType()));
                         break;
                     case TRANSFORM_BOOL:
                         loop.execTransformBool(dummy, op.opNum(),
-                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                xb, xShapePtr, null,
+                                zb, zShapePtr, null,
                                 getPointerForExtraArgs(op, x.dataType()));
                         break;
                     case PAIRWISE_BOOL:
                         loop.execPairwiseTransformBool(dummy, op.opNum(),
-                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                                yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
-                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                xb, xShapePtr, null,
+                                yb, yShapePtr, null,
+                                zb, zShapePtr, null,
                                 getPointerForExtraArgs(op, x.dataType()));
                         break;
                 }
@@ -832,42 +840,47 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
 
                 val xb = ((BaseAuroraDataBuffer) x.data()).getOpaqueDataBuffer();
                 val zb = ((BaseAuroraDataBuffer) z.data()).getOpaqueDataBuffer();
+                LongPointer xShapePtr = new LongPointer(x.shapeInfoDataBuffer().pointer());
+                LongPointer zShapePtr = new LongPointer(z.shapeInfoDataBuffer().pointer());
+                // we set limit to 0 so that it could be treated as pointer argument and also without using addressPointer
+                // there will not be veo call overhead
+                xShapePtr.limit(0);
+                zShapePtr.limit(0);
 
                 switch (op.getOpType()) {
                     case TRANSFORM_FLOAT: {
                         val xtraz = getPointerForExtraArgs(op, z.dataType());
 
                         loop.execTransformFloat(dummy, op.opNum(),
-                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(),
-                                null, xtraz);
+                                xb, xShapePtr, null,
+                                zb, zShapePtr, null, xtraz);
                         break;
-                        }
+                    }
                     case TRANSFORM_STRICT: {
                         val xtraz = getPointerForExtraArgs(op, z.dataType());
 
                         loop.execTransformStrict(dummy, op.opNum(),
-                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                xb, xShapePtr, null,
+                                zb, zShapePtr, null,
                                 xtraz);
                         break;
-                        }
+                    }
                     case TRANSFORM_SAME: {
                         val xtraz = getPointerForExtraArgs(op, z.dataType());
 
                         loop.execTransformSame(dummy, op.opNum(),
-                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                xb, xShapePtr, null,
+                                zb, zShapePtr, null,
                                 xtraz);
                         break;
-                        }
+                    }
                     case TRANSFORM_ANY: {
                         val xtraz = getPointerForExtraArgs(op, x.dataType());
                         val opNum = op.opNum();
 
                         loop.execTransformAny(dummy, opNum,
-                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                xb, xShapePtr, null,
+                                zb, zShapePtr, null,
                                 xtraz);
                         break;
                     }
@@ -876,11 +889,11 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
                         val opNum = op.opNum();
 
                         loop.execTransformBool(dummy, opNum,
-                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                xb, xShapePtr, null,
+                                zb, zShapePtr, null,
                                 xtraz);
                         break;
-                        }
+                    }
                     default:
                         throw new UnsupportedOperationException("Unknown transform type: [" + op.getOpType() + "]");
                 }
@@ -945,22 +958,33 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
         val xb = ((BaseAuroraDataBuffer) x.data()).getOpaqueDataBuffer();
         val yb = ((BaseAuroraDataBuffer) y.data()).getOpaqueDataBuffer();
         val zb = ((BaseAuroraDataBuffer) z.data()).getOpaqueDataBuffer();
+        LongPointer xShapePtr = new LongPointer(x.shapeInfoDataBuffer().pointer());
+        LongPointer yShapePtr = new LongPointer(y.shapeInfoDataBuffer().pointer());
+        LongPointer zShapePtr = new LongPointer(z.shapeInfoDataBuffer().pointer());
+        // we set limit to 0 so that it could be treated as pointer argument and also without using addressPointer
+        // there will not be veo call overhead
+        xShapePtr.limit(0);
+        yShapePtr.limit(0);
+        zShapePtr.limit(0);
+
+        LongPointer opDimShapePtr = new LongPointer( op.dimensions().shapeInfoDataBuffer().pointer());
+        opDimShapePtr.limit(0);
 
         switch (op.getOpType()) {
             case BROADCAST:
                 loop.execBroadcast(dummy, op.opNum(),
-                    xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                    yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
-                    zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                    ((BaseAuroraDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
+                    xb, (LongPointer) xShapePtr, null,
+                    yb, (LongPointer) yShapePtr, null,
+                    zb, (LongPointer) zShapePtr, null,
+                    ((BaseAuroraDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) opDimShapePtr, null);
                 break;
             case BROADCAST_BOOL:
                 loop.execBroadcastBool(dummy, op.opNum(),
-                        xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                        yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
-                        zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                        xb, (LongPointer) xShapePtr, null,
+                        yb, (LongPointer) yShapePtr, null,
+                        zb, (LongPointer) zShapePtr, null,
                         null,
-                        ((BaseAuroraDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
+                        ((BaseAuroraDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) opDimShapePtr, null);
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown operation type: [" + op.getOpType() + "]");

@@ -1559,6 +1559,44 @@ sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType h
 }
 
 #if defined(__NEC__)
+void setGraphContextArgs(OpaqueContext *ctx, int numArr, sd::Pointer* inputArrDataShapePairs, int numIArgs, sd::LongType* iArgsPtr,
+                                      int numDArgs, int *dArgsPtr, int numTArgs, double *tArgsPtr, int numBArgs, bool *bArgsPtr){
+
+
+  if(numIArgs> 0 ) {
+    auto vecPtr = ctx->getIArguments();
+    vecPtr->resize(numIArgs);
+    auto vecData = vecPtr->data();
+    for (int e = 0; e < numIArgs; e++) vecData[e] = iArgsPtr[e];
+  }
+
+  if(numDArgs> 0 ) {
+    auto vecPtr = ctx->getDArguments();
+    vecPtr->resize(numDArgs);
+    auto vecData = vecPtr->data();
+    for (int e = 0; e < numDArgs; e++) vecData[e] =(sd::DataType)dArgsPtr[e];
+  }
+
+  if(numTArgs> 0 ) {
+    auto vecPtr = ctx->getTArguments();
+    vecPtr->resize(numTArgs);
+    auto vecData = vecPtr->data();
+    for (int e = 0; e < numTArgs; e++) vecData[e] = tArgsPtr[e];
+  }
+
+  if(numBArgs> 0 ) {
+    auto vecPtr = ctx->getBArguments();
+    vecPtr->clear();
+    for (int e = 0; e < numBArgs; e++) vecPtr->push_back(bArgsPtr[e]);
+  }
+
+  int i = 0;
+  for (int e = 0; e < numArr; e+=2) {
+      ctx->setInputArray(i, inputArrDataShapePairs[e], inputArrDataShapePairs[e + 1], nullptr);
+      ++i;
+  }
+}
+
 sd::ShapeList *calculateOutputShapesFromContext(sd::graph::Context *ctx, sd::LongType hash) {
   try {
 

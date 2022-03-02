@@ -1713,4 +1713,56 @@ public class Nd4jAuroraOps implements NativeOps {
         return callString("buildInfo");
     }
 
+    private int setStackArg(veo_args argp, int argIntent, int index, Pointer p) {
+
+        int error = veo_args_set_i32(argp, index, p != null ? (int)p.limit() : 0);
+        if (error != 0) {
+            throw new RuntimeException("veo_args_set_i32(): error " + error);
+        }
+        long size = p == null ? 0 : (long) (p.limit() * p.sizeof());
+        error = veo_args_set_stack(argp, argIntent, index + 1, new BytePointer(p), size);
+        if (error != 0) {
+            throw new RuntimeException("veo_args_set_stack(): error " + error);
+        }
+        return index + 2;
+    }
+
+    public void setGraphContextArgs(OpaqueContext opaqueContext, LongPointer inputPairArr, LongPointer iArgsPtr,
+            IntPointer dArgsPtr,
+            DoublePointer tArgsPtr, BooleanPointer bArgsPtr) {
+        String symname = "setGraphContextArgs";
+        log.debug("call(" + symname + ", ... )");
+        long sym = veo_get_sym(proc, handle, symname);
+        if (sym == 0) {
+            throw new RuntimeException("veo_get_sym(): failed to find symbol " + symname);
+        }
+        veo_args argp = veo_args_alloc();
+        if (argp == null) {
+            throw new RuntimeException("veo_args_alloc(): allocation of veo_args failed");
+        }
+        int index = 0;
+        int error = veo_args_set_i64(argp, index, opaqueContext.address());
+        if (error != 0) {
+            throw new RuntimeException("veo_args_set_i64(): error " + error);
+        }
+        index++;
+        index = setStackArg(argp, VEO_INTENT_IN, index, inputPairArr);
+        index = setStackArg(argp, VEO_INTENT_IN, index, iArgsPtr);
+        index = setStackArg(argp, VEO_INTENT_IN, index, dArgsPtr);
+        index = setStackArg(argp, VEO_INTENT_IN, index, tArgsPtr);
+        index = setStackArg(argp, VEO_INTENT_IN, index, bArgsPtr);
+
+        long id = veo_call_async(ctx, sym, argp);
+        if (id == VEO_REQUEST_ID_INVALID) {
+            throw new RuntimeException("veo_call_async(): request failed");
+        }
+        long[] retval = { 0 };
+        error = veo_call_wait_result(ctx, id, retval);
+        if (error != 0) {
+            throw new RuntimeException("veo_call_wait_result(): error " + error);
+        }
+
+        veo_args_free(argp);
+    }
+
 }

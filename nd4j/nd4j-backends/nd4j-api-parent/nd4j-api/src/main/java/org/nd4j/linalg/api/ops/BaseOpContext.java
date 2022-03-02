@@ -197,4 +197,19 @@ public abstract class BaseOpContext implements OpContext {
         fastpath_in.clear();
         fastpath_out.clear();
     }
+
+    @Override
+    public void setArgs(INDArray[] inputArrs, long[] iArgs, DataType[] dArgs, double[] tArgs, boolean[] bArgs) {
+        if (inputArrs != null) {
+            setInputArrays(inputArrs);
+        }
+        if (iArgs != null)
+            setIArguments(iArgs);
+        if (dArgs != null)
+            setDArguments(dArgs);
+        if (tArgs != null)
+            setTArguments(tArgs);
+        if (bArgs != null)
+            setBArguments(bArgs);
+    }
 }

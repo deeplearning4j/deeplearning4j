@@ -62,9 +62,10 @@ ConstantShapeBuffer& ConstantShapeHelper::bufferForShapeInfo(const ShapeDescript
     auto hPtr =
         std::make_shared<PointerWrapper>(descriptor.toShapeInfo(), std::make_shared<PrimaryPointerDeallocator>());
     ConstantShapeBuffer buffer(hPtr);
-    ShapeDescriptor descriptor1(descriptor);
-    _cache[deviceId][descriptor1] = buffer;
-    return _cache[deviceId][descriptor1];
+
+    //ShapeDescriptor descriptor1(descriptor);
+    _cache[deviceId][descriptor] = buffer;
+    return _cache[deviceId][descriptor];
   } else {
     return _cache[deviceId].at(descriptor);
   }
