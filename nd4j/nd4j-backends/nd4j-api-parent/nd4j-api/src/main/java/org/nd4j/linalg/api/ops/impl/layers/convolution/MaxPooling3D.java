@@ -84,6 +84,11 @@ public class MaxPooling3D extends Pooling3D {
     }
 
     @Override
+    public void configureFromArguments() {
+        createConfigFromArgs(Pooling3DType.MAX);
+    }
+
+    @Override
     public String getPoolingPrefix() {
         return "max";
     }

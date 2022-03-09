@@ -25,9 +25,9 @@ import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
-import org.deeplearning4j.frameworkimport.keras.keras.KerasModelImport;
-import org.deeplearning4j.frameworkimport.keras.keras.exceptions.InvalidKerasConfigurationException;
-import org.deeplearning4j.frameworkimport.keras.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
@@ -55,6 +55,7 @@ class KerasModelImportTest extends BaseDL4JTest {
     public long getTimeoutMilliseconds() {
         return 9999999999999L;
     }
+    
 
     @Test
     @DisplayName("Test H 5 Without Tensorflow Scope")

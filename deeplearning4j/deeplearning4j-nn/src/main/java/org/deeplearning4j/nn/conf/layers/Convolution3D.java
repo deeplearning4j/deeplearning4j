@@ -36,6 +36,7 @@ import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Collection;
 import java.util.Map;
@@ -56,9 +57,10 @@ public class Convolution3D extends ConvolutionLayer {
         NCDHW, NDHWC
     }
 
-    private ConvolutionMode mode = ConvolutionMode.Same; // in libnd4j: 0 - same mode, 1 - valid mode
-    @Getter
-    private DataFormat dataFormat = DataFormat.NCDHW; // in libnd4j: 1 - NCDHW, 0 - NDHWC
+    @JsonProperty("mode")
+    protected ConvolutionMode mode = ConvolutionMode.Same; // in libnd4j: 0 - same mode, 1 - valid mode
+    @JsonProperty("dataFormat")
+    protected DataFormat dataFormat = DataFormat.NCDHW; // in libnd4j: 1 - NCDHW, 0 - NDHWC
 
     /**
      * 3-dimensional convolutional layer configuration nIn in the input layer is the number of channels nOut is the
@@ -118,17 +120,17 @@ public class Convolution3D extends ConvolutionLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN3D) {
             throw new IllegalStateException("Invalid input for Convolution3D layer (layer name=\"" + getLayerName()
-                            + "\"): Expected CNN3D input, got " + inputType);
+                    + "\"): Expected CNN3D input, got " + inputType);
         }
         return InputTypeUtil.getOutputTypeCnn3DLayers(inputType, dataFormat, kernelSize, stride, padding, dilation, convolutionMode,
-                        nOut, layerIndex, getLayerName(), Convolution3DLayer.class);
+                nOut, layerIndex, getLayerName(), Convolution3DLayer.class);
     }
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Convolution3D layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+                    + "\"): input is null");
         }
 
         return InputTypeUtil.getPreProcessorForInputTypeCnn3DLayers(inputType, getLayerName());
@@ -139,7 +141,7 @@ public class Convolution3D extends ConvolutionLayer {
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN3D) {
             throw new IllegalStateException("Invalid input for Convolution 3D layer (layer name=\"" + getLayerName()
-                            + "\"): Expected CNN3D input, got " + inputType);
+                    + "\"): Expected CNN3D input, got " + inputType);
         }
 
         if (nIn <= 0 || override) {
