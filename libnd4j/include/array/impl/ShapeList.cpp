@@ -58,12 +58,13 @@ ShapeList::ShapeList(const std::vector<const sd::LongType*>& shapes) {
 }
 
 void ShapeList::destroy() {
+
   if (_destroyed) return;
-
-  if (!_workspace)
-    for (int i = 0; i < size(); i++)
+  if (!_workspace){
+    for (int i = 0; i < size(); i++){
       if (_shapes[i] != nullptr) delete[] _shapes[i];
-
+    }
+  }
   _destroyed = true;
 }
 
@@ -83,9 +84,9 @@ const sd::LongType* ShapeList::at(int idx) {
 
 void ShapeList::push_back(const sd::LongType* shape) {
 #if defined(__NEC__)
-  if (size_x + 1 >= NEC_MAX_SHAPE_LIST) {
-    sd_printf("current %d > ShapeList limit %d \n", size_x, NEC_MAX_SHAPE_LIST);
-    throw std::runtime_error("ShapeList for Nec is limited");
+  if (size_x + 1 >= SHAPE_LIST_MAX_SIZE) {
+    sd_printf("%s:%d Exceeded allowed limit of shapes.  ShapeList max size is (%d) \n", __FILE__, __LINE__,  SHAPE_LIST_MAX_SIZE);
+    throw std::runtime_error("Exceeded allowed limit of shapes. ShapeList container for Nec has fixed size");
   }
   _shapes[size_x] = shape;
   ++size_x;

@@ -177,4 +177,15 @@ public interface OpContext extends AutoCloseable {
      * This method removes all in/out arrays from this OpContext
      */
     void purge();
+
+
+    /**
+     * set context arguments
+     * @param inputArrs
+     * @param iArgs
+     * @param dArgs
+     * @param tArgs
+     * @param bArgs
+     */
+    void setArgs(INDArray[] inputArrs, long[] iArgs, DataType[] dArgs, double[] tArgs, boolean[] bArgs);
 }

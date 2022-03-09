@@ -27,13 +27,13 @@
 
 #include <vector>
 #if defined(__NEC__)
-#define NEC_MAX_SHAPE_LIST 12
+#define SHAPE_LIST_MAX_SIZE 64
 #endif
 namespace sd {
 class SD_LIB_EXPORT ShapeList {
  protected:
 #if defined(__NEC__)
-  const sd::LongType *_shapes[NEC_MAX_SHAPE_LIST];
+  const sd::LongType *_shapes[SHAPE_LIST_MAX_SIZE];
   int size_x = 0;
 #else
   std::vector<const sd::LongType *> _shapes;

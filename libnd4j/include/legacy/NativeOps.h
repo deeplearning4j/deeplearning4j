@@ -1373,8 +1373,11 @@ SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapes2(sd::Pointer* extraPointers
                                                       int numInputShapes, double* tArgs, int numTArgs,
                                                       sd::LongType* iArgs, int numIArgs, bool* bArgs, int numBArgs,
                                                       int* dArgs, int numDArgs);
-#if defined(__NEC__)
-SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapesNec(OpaqueContext* ctx, sd::LongType hash, sd::Pointer *inputShapes, int numInputShapes);
+#ifdef __NEC__
+SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapesFromContext(OpaqueContext* ctx, sd::LongType hash);
+SD_LIB_EXPORT int calculateOutputShapesAndFill(OpaqueContext *ctx, sd::LongType hash, void **handleState, int outBufferSizeInBytes, sd::LongType *outConcatenatedShapesBuffer);
+SD_LIB_EXPORT void setGraphContextArgs(OpaqueContext *ctx, int numArr, sd::Pointer* inputArrDataShapePairs, int numIArgs, sd::LongType* iArgsPtr,
+                                      int numDArgs, int *dArgsPtr, int numTArgs, double *tArgsPtr, int numBArgs, bool *bArgsPtr);
 #endif
 SD_LIB_EXPORT sd::LongType getShapeListSize(OpaqueShapeList* list);
 SD_LIB_EXPORT sd::LongType const* getShape(OpaqueShapeList* list, sd::LongType i);
