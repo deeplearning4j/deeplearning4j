@@ -45,6 +45,14 @@ NDArrayList::~NDArrayList() {
   _chunks.clear();
 }
 
+
+NDArray* NDArrayList::remove(int idx) {
+  auto ret =  new NDArray(readRaw(idx)->dup());
+  _chunks.erase(idx);
+  return ret;
+}
+
+
 NDArray* NDArrayList::read(int idx) { return new NDArray(readRaw(idx)->dup()); }
 
 sd::DataType NDArrayList::dataType() { return _dtype; }

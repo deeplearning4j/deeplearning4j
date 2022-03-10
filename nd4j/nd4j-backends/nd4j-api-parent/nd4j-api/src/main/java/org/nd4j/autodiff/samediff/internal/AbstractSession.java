@@ -260,7 +260,7 @@ public abstract class AbstractSession<T, O> {
                 break;
             }
 
-            //G et variable in the current frame/iteration and execute it's corresponding op
+            //Get variable in the current frame/iteration and execute it's corresponding op
             //If no more ops exist for the current frame/iter, we'll switch to the next frame/iter
             //The idea is to not mix the order of execution of ops in different frames/iters - i.e., finish the current
             // frame/iter before starting the next one
@@ -329,7 +329,7 @@ public abstract class AbstractSession<T, O> {
                     FrameIter outParentFrame = es.getFrameIter().getParentFrame().getParentFrame();
                     outFrameIter = new FrameIter(outFrame, outIter, outParentFrame);
                 } else if (o instanceof NextIteration) {
-                    //NextIteration op: forwards its single input to its output varible in the current frame, but increments the iteration number
+                    //NextIteration op: forwards its single input to its output variable in the current frame, but increments the iteration number
                     outFrameIter = es.getFrameIter().clone();
                     outFrameIter.setIteration(outFrameIter.getIteration());
                 } else {

@@ -54,7 +54,7 @@ public class TensorArray extends  BaseTensorOp {
         this.tensorArrayDataType = dataType;
     }
 
-    public TensorArray(TensorArray ta){
+    public TensorArray(TensorArray ta) {
         super(ta.sameDiff, new SDVariable[]{});
         this.tensorArrayDataType = ta.tensorArrayDataType;
     }
@@ -109,7 +109,7 @@ public class TensorArray extends  BaseTensorOp {
     }
 
 
-    private SDVariable getVar(){
+    public SDVariable getVar(){
         return outputVariable();
     }
 
@@ -128,10 +128,10 @@ public class TensorArray extends  BaseTensorOp {
 
 
     //----------- read ops-----------------\\
-    public SDVariable read(int index){
+    public SDVariable read(int index) {
         return new TensorArrayRead(getSameDiff(), new SDVariable[]{getVar(), intToVar(index)}).outputVariable();
     }
-    public SDVariable read(SDVariable index){
+    public SDVariable read(SDVariable index) {
         return new TensorArrayRead(getSameDiff(), new SDVariable[]{getVar(), index}).outputVariable();
     }
     public SDVariable gather(SDVariable flow, int... indices){
@@ -144,7 +144,7 @@ public class TensorArray extends  BaseTensorOp {
         return new TensorArrayGather(getSameDiff(), new SDVariable[]{getVar(), intToVar(-1), flow}).outputVariable();
     }
 
-    public SDVariable concat(SDVariable flow){
+    public SDVariable concat(SDVariable flow) {
         return new TensorArrayConcat(getSameDiff(), new SDVariable[]{getVar()}).outputVariable();
     }
 
@@ -173,11 +173,26 @@ public class TensorArray extends  BaseTensorOp {
                         value, flow}).outputVariable();
     }
 
-    public SDVariable unstack(SDVariable flow, SDVariable value){
+    public SDVariable unstack(SDVariable flow, SDVariable value) {
         return new TensorArrayScatter(getSameDiff(),
                 new SDVariable[]{getVar(),
                         intToVar(-1),
                         value, flow}).outputVariable();
+    }
+
+    public SDVariable size( SDVariable value) {
+        return new TensorArraySize(getSameDiff(),value).outputVariable();
+    }
+
+    public SDVariable remove( SDVariable value,SDVariable idx) {
+        return new TensorArrayRemove(getSameDiff(),value,idx).outputVariable();
+    }
+
+    public SDVariable remove( SDVariable value,int idx) {
+        return new TensorArrayRemove(getSameDiff(),value,idx).outputVariable();
+    }
+    public SDVariable remove( SDVariable value) {
+        return remove(value,-1);
     }
 
 

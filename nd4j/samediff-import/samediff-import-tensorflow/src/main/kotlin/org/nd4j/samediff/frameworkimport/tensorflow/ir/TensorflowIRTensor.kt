@@ -28,13 +28,23 @@ import org.nd4j.samediff.frameworkimport.ndarrayFromNameSpaceTensor
 import org.tensorflow.framework.DataType
 import org.tensorflow.framework.TensorProto
 
-class TensorflowIRTensor(input: TensorProto): IRTensor<TensorProto, DataType> {
+class TensorflowIRTensor: IRTensor<TensorProto, DataType> {
 
-    val tensor = input
 
+    constructor(input: TensorProto) {
+        tensors  = arrayOf(input)
+    }
+
+    constructor(inputs: Array<TensorProto>) {
+        tensors = inputs
+    }
+
+
+
+    var tensors: Array<TensorProto> = arrayOf()
 
     override fun shape(): List<Long> {
-        return  tensor.tensorShape.dimList.map { it.size }
+        return  tensors[0].tensorShape.dimList.map { it.size }
 
     }
 
@@ -43,10 +53,37 @@ class TensorflowIRTensor(input: TensorProto): IRTensor<TensorProto, DataType> {
     }
 
     override fun dataType(): IRDataType<DataType> {
-        return TensorflowIRDataType(tensor.dtype)
+        return TensorflowIRDataType(tensors[0].dtype)
     }
 
     override fun toArgTensor(): TensorNamespace.TensorProto {
+        return createArgTensorFrom(tensors[0])
+    }
+
+    override fun rawValue(): TensorProto {
+        return tensors[0]
+    }
+
+    override fun toNd4jNDArray(): INDArray {
+        if(tensors[0].dtype == DataType.UNRECOGNIZED || tensors[0].dtype == DataType.DT_INVALID)
+            return Nd4j.empty()
+        return ndarrayFromNameSpaceTensor(toArgTensor())
+    }
+
+    override fun rawValues(): Array<TensorProto> {
+        return tensors
+    }
+
+    override fun toArgTensors(): Array<TensorNamespace.TensorProto> {
+        return tensors.map { input -> createArgTensorFrom(input) }.toTypedArray()
+    }
+
+    override fun toNd4jNdarrays(): Array<INDArray> {
+        return tensors.map { input -> ndarrayFromNameSpaceTensor(createArgTensorFrom(input)) }.toTypedArray()
+    }
+
+
+    private fun createArgTensorFrom(tensor: TensorProto): TensorNamespace.TensorProto {
         val builder = TensorNamespace.TensorProto.newBuilder()
             .setDataLocation(TensorNamespace.TensorProto.DataLocation.DEFAULT)
 
@@ -115,15 +152,7 @@ class TensorflowIRTensor(input: TensorProto): IRTensor<TensorProto, DataType> {
 
 
         return builder.build()
+
     }
 
-    override fun rawValue(): TensorProto {
-        return tensor
-    }
-
-    override fun toNd4jNDArray(): INDArray {
-        if(tensor.dtype == DataType.UNRECOGNIZED || tensor.dtype == DataType.DT_INVALID)
-            return Nd4j.empty()
-         return ndarrayFromNameSpaceTensor(toArgTensor())
-    }
 }

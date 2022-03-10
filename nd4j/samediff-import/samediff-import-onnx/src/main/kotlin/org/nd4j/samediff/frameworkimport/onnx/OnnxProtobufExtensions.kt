@@ -173,7 +173,7 @@ fun OnnxTensorProto(block: Onnx.TensorProto.Builder.() -> Unit): Onnx.TensorProt
 }
 
 fun Onnx.TensorProto.Builder.OnnxDataType(value: Onnx.TensorProto.DataType) {
-    this.dataType = value
+    this.dataType = value.ordinal
 }
 
 fun Onnx.TensorProto.Builder.OnnxRawData(byteArray: ByteArray) {
@@ -210,28 +210,43 @@ fun Onnx.TensorProto.Builder.BoolData(boolData: List<Boolean>) {
 }
 
 
+fun createSequenceValueInfoFromTensors(arrs: Array<INDArray>,valueInfoName: String,useShape: Boolean = false) : Onnx.ValueInfoProto {
+    val sequence = Onnx.TypeProto.Sequence.newBuilder()
+        .setElemType(Onnx.TypeProto
+            .newBuilder().setTensorType(Onnx.TypeProto.Tensor
+                .newBuilder().setElemType(
+                    convertToOnnxDataType(arrs[0].dataType()).ordinal)))
+
+        .build()
+
+    return Onnx.ValueInfoProto.newBuilder()
+        .setName(valueInfoName)
+        .setType(Onnx.TypeProto.newBuilder()
+            .setSequenceType(sequence))
+        .build()
+
+}
+
 fun createValueInfoFromTensor(arr: INDArray,valueInfoName: String,useShape: Boolean = true): Onnx.ValueInfoProto {
     if(useShape)
-        return ValueInfoProto {
-            name = valueInfoName
-            type = TypeProto {
-                tensorType =  TensorDefinition {
-                    elemType = convertToOnnxDataType(arr.dataType())
-                    shape = OnnxShapeProto {
-                        OnnxShape(arr.shape().toList())
-                    }
-                }
+       return Onnx.ValueInfoProto.newBuilder()
+           .setName(valueInfoName)
+           .setType(Onnx.TypeProto.newBuilder()
+               .setTensorType(Onnx.TypeProto.Tensor.newBuilder()
+                   .setShape(OnnxShapeProto {
+                       OnnxShape(arr.shape().toList())
+                   })
+                   .setElemType(convertToOnnxDataType(arr.dataType()).ordinal))
+               .build()).build()
 
-            }
-        }
+
+
     else
-        return ValueInfoProto {
-            name = valueInfoName
-            type = TypeProto {
-                tensorType =  TensorDefinition {
-                    elemType = convertToOnnxDataType(arr.dataType())
-                }
+        return Onnx.ValueInfoProto.newBuilder()
+            .setName(valueInfoName)
+            .setType(Onnx.TypeProto.newBuilder()
+                .setTensorType(Onnx.TypeProto.Tensor.newBuilder()
+                    .setElemType(convertToOnnxDataType(arr.dataType()).ordinal))
+                .build()).build()
 
-            }
-        }
 }

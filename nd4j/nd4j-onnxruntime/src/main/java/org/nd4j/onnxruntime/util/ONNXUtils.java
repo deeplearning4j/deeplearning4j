@@ -19,10 +19,13 @@
  */
 package org.nd4j.onnxruntime.util;
 
+import ai.onnxruntime.ValueInfo;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.bytedeco.onnxruntime.MemoryInfo;
+import org.bytedeco.onnxruntime.OrtAllocator;
 import org.bytedeco.onnxruntime.Value;
+import org.bytedeco.onnxruntime.ValueVector;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -173,6 +176,27 @@ public class ONNXUtils {
 
     }
 
+
+
+    /**
+     * Get an sequence from  an array of {@link INDArray}
+     * @param ndArray the ndarray to get the value from
+     * @param memoryInfo the {@link MemoryInfo} to use.
+     *                   Can be created with:
+     *                   MemoryInfo memoryInfo = MemoryInfo.CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+     * @return
+     */
+    public static ValueVector getSequence(INDArray[] ndArray, MemoryInfo memoryInfo) {
+        ValueVector valueVector = new ValueVector(ndArray.length);
+        for(int i = 0; i < ndArray.length; i++) {
+            Value tensorInfo = getTensor(ndArray[i],memoryInfo);
+            valueVector.put(i,tensorInfo);
+        }
+
+        return valueVector;
+    }
+
+
     /**
      * Get an onnx tensor from an ndarray.
      * @param ndArray the ndarray to get the value from
@@ -186,7 +210,6 @@ public class ONNXUtils {
         Pointer inputTensorValues = inputTensorValuesPtr;
         long sizeInBytes = ndArray.length() * ndArray.data().getElementSize();
 
-        //        public static native Value CreateTensor(@Const OrtMemoryInfo var0, Pointer var1, @Cast({"size_t"}) long var2, @Cast({"const int64_t*"}) LongPointer var4, @Cast({"size_t"}) long var5, @Cast({"ONNXTensorElementDataType"}) int var7);
         /**
          *   static Value CreateTensor(const OrtMemoryInfo* info, void* p_data, size_t p_data_byte_count, const int64_t* shape, size_t shape_len,
          *                             ONNXTensorElementDataType type)
@@ -208,8 +231,8 @@ public class ONNXUtils {
      * @return the equivalent data buffer
      */
     public static DataBuffer getDataBuffer(Value tens) {
-       if(tens.isNull())
-           throw new IllegalArgumentException("Native underlying tensor value was null!");
+        if(tens.isNull())
+            throw new IllegalArgumentException("Native underlying tensor value was null!");
         try (PointerScope scope = new PointerScope()) {
             DataBuffer buffer = null;
             int type = tens.GetTensorTypeAndShapeInfo().GetElementType();
@@ -292,4 +315,35 @@ public class ONNXUtils {
         }
     }
 
+    public static INDArray ndarrayFromValue(Value outValue, OrtAllocator allocator) {
+        DataBuffer buffer = getDataBuffer(outValue);
+        LongPointer longPointer = outValue.GetTensorTypeAndShapeInfo().GetShape();
+        INDArray arr = null;
+        //shape info can be null
+        if(longPointer != null) {
+            long[] shape = new long[(int) longPointer.capacity()];
+            longPointer.get(shape);
+            arr = Nd4j.create(buffer).reshape(shape);
+        } else {
+            arr = Nd4j.create(buffer);
+        }
+        return arr;
+    }
+
+    public static INDArray[] ndarraysFromSequence(Value inputValue,OrtAllocator allocator) {
+        INDArray[] ret = new INDArray[(int) inputValue.GetCount()];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = ndarrayFromValue(inputValue.GetValue(i,allocator),allocator);
+        }
+        return ret;
+    }
+
+
+    public static INDArray[] ndarraysFromSequence(ValueVector inputValue,OrtAllocator allocator) {
+        INDArray[] ret = new INDArray[(int) inputValue.size()];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = ndarrayFromValue(inputValue.get(i),allocator);
+        }
+        return ret;
+    }
 }

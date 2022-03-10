@@ -92,6 +92,8 @@ DECLARE_LOGIC_OP(Return);
 #if NOT_EXCLUDED(OP_expose)
 DECLARE_CUSTOM_OP(expose, -2, -2, true, 0, 0);
 #endif
+
+
 }  // namespace ops
 }  // namespace sd
 

@@ -3,7 +3,7 @@
 //
 
 
-// Copyright (c) Facebook Inc. and Microsoft Corporation.
+// Copyright (c) ONNX Project Contributors.
 // Licensed under the MIT license.
 
 syntax = "proto3";
@@ -46,11 +46,6 @@ import "onnx.proto";
 //      this operator was initially declared in.
 //
 message OperatorProto {
-  enum OperatorStatus {
-    EXPERIMENTAL = 0;
-    STABLE = 1;
-  }
-
   // The name of the operator within a domain.
   // This field MUST be present in this version of the IR.
   string op_type = 1;
@@ -104,7 +99,7 @@ message OperatorSetProto {
   // All OperatorSetProtos indicate the version of the IR syntax and semantics
   // they adhere to. It is always IR_VERSION.
   // This field MUST be present in this version of the IR
-  int32 ir_version = 2;
+  int64 ir_version = 2;
 
   // The prerelease component of the SemVer of the IR.
   // This field MAY be absent in this version of the IR
@@ -118,9 +113,9 @@ message OperatorSetProto {
   string domain = 4;
 
   // The version of the set of operators. This is a simple int value
-  // that is monotonically increasing as new versions of operator set
-  // are published. All operators in this set MUST have version
-  // numbers no greater than opset_version.
+  // that is monotonically increasing as new versions of the operator set
+  // are published. All operators in this set MUST have since_version
+  // <= opset_version.
   int64 opset_version = 5;
 
   // A human-readable documentation for this set of operators. Markdown is allowed.
@@ -129,4 +124,12 @@ message OperatorSetProto {
   // The operators specified by this operator set.
   // The (name, version) MUST be unique across all OperatorProtos in operator
   repeated OperatorProto operator = 8;
+
+  // The functions specified by this operator set.
+  // The (name, version) MUST be unique across all OperatorProtos/FunctionProtos in operator/functions
+  repeated FunctionProto functions = 9;
 }
+
+
+// For using protobuf-lite
+option optimize_for = LITE_RUNTIME;

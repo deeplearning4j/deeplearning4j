@@ -315,6 +315,56 @@ val softmax = OnnxMappingProcess(
 )
 
 
+val sequenceConstruct = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SequenceConstruct",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+val sequenceAt = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SequenceAt",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+
+val sequenceEmpty = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SequenceEmpty",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+val sequenceErase = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SequenceErase",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+val sequenceinsert = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SequenceInsert",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+
+val sequenceLength = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SequenceLength",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
 //TODO: DynamicQuantizeLinear
 //TODO: Einsum
 //TODO: EyeLike
@@ -357,6 +407,14 @@ val ifOp = OnnxMappingProcess(
         inputFrameworkOpName = "If",
         opMappingRegistry = onnxOpRegistry
 )
+
+val loop = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Loop",
+        opMappingRegistry = onnxOpRegistry
+)
+
+
 
 val clip = OnnxMappingProcess(
         opName = "noop",
@@ -513,7 +571,6 @@ val xor = OnnxMappingProcess(
 
 
 //TODO: Hardmax
-//TODO: If
 //TODO: Imputer
 //TODO: InstanceNormalization
 val lrn = OnnxMappingProcess(

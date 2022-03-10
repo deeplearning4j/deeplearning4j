@@ -1497,6 +1497,11 @@ mappings {
 mappings {
   frameworkName: "onnx"
   opName: "noop"
+  inputFrameworkOpName: "SequenceInsert"
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
   inputFrameworkOpName: "Clip"
 }
 mappings {
@@ -1994,6 +1999,16 @@ mappings {
     }
     inputFrameworkOpName: "AveragePool"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "SequenceConstruct"
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "SequenceLength"
 }
 mappings {
   frameworkName: "onnx"
@@ -5103,6 +5118,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "SequenceErase"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "add"
   inputFrameworkOpName: "Add"
   rule {
@@ -6276,6 +6296,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "SequenceEmpty"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "sigmoid"
   inputFrameworkOpName: "Sigmoid"
   rule {
@@ -6340,6 +6365,11 @@ mappings {
     }
     inputFrameworkOpName: "Atan"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Loop"
 }
 mappings {
   frameworkName: "onnx"
@@ -6617,6 +6647,11 @@ mappings {
     }
     inputFrameworkOpName: "Det"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "SequenceAt"
 }
 mappings {
   frameworkName: "onnx"

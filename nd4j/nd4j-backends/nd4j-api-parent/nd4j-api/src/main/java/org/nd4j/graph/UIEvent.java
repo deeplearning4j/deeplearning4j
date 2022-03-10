@@ -17,22 +17,19 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.nd4j.graph;
 
-import com.google.flatbuffers.BaseVector;
-import com.google.flatbuffers.Constants;
-import com.google.flatbuffers.FlatBufferBuilder;
-import com.google.flatbuffers.Table;
-
-import java.nio.ByteBuffer;
+import java.nio.*;
+import java.lang.*;
 import java.nio.ByteOrder;
+import java.util.*;
+import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class UIEvent extends Table {
   public static void ValidateVersion() { Constants.FLATBUFFERS_1_12_0(); }
   public static UIEvent getRootAsUIEvent(ByteBuffer _bb) { return getRootAsUIEvent(_bb, new UIEvent()); }
-  public static UIEvent getRootAsUIEvent(ByteBuffer _bb, UIEvent obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
+  public static UIEvent getRootAsUIEvent(ByteBuffer _bb, UIEvent obj) { _bb.order(java.nio.ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public UIEvent __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
@@ -43,8 +40,8 @@ public final class UIEvent extends Table {
   public int iteration() { int o = __offset(12); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
   public int epoch() { int o = __offset(14); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
   public short variableId() { int o = __offset(16); return o != 0 ? bb.getShort(o + bb_pos) : 0; }
-  public FrameIteration frameIter() { return frameIter(new FrameIteration()); }
-  public FrameIteration frameIter(FrameIteration obj) { int o = __offset(18); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public org.nd4j.graph.FrameIteration frameIter() { return frameIter(new org.nd4j.graph.FrameIteration()); }
+  public org.nd4j.graph.FrameIteration frameIter(org.nd4j.graph.FrameIteration obj) { int o = __offset(18); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public int plugin() { int o = __offset(20); return o != 0 ? bb.getShort(o + bb_pos) & 0xFFFF : 0; }
 
   public static int createUIEvent(FlatBufferBuilder builder,

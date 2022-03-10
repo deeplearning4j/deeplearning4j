@@ -17,30 +17,27 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.nd4j.graph;
 
-import com.google.flatbuffers.BaseVector;
-import com.google.flatbuffers.Constants;
-import com.google.flatbuffers.FlatBufferBuilder;
-import com.google.flatbuffers.Table;
-
-import java.nio.ByteBuffer;
+import java.nio.*;
+import java.lang.*;
 import java.nio.ByteOrder;
+import java.util.*;
+import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class UISummaryStatistics extends Table {
   public static void ValidateVersion() { Constants.FLATBUFFERS_1_12_0(); }
   public static UISummaryStatistics getRootAsUISummaryStatistics(ByteBuffer _bb) { return getRootAsUISummaryStatistics(_bb, new UISummaryStatistics()); }
-  public static UISummaryStatistics getRootAsUISummaryStatistics(ByteBuffer _bb, UISummaryStatistics obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
+  public static UISummaryStatistics getRootAsUISummaryStatistics(ByteBuffer _bb, UISummaryStatistics obj) { _bb.order(java.nio.ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public UISummaryStatistics __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public long bitmask() { int o = __offset(4); return o != 0 ? (long)bb.getInt(o + bb_pos) & 0xFFFFFFFFL : 0L; }
-  public FlatArray min() { return min(new FlatArray()); }
-  public FlatArray min(FlatArray obj) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public FlatArray max() { return max(new FlatArray()); }
-  public FlatArray max(FlatArray obj) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public org.nd4j.graph.FlatArray min() { return min(new org.nd4j.graph.FlatArray()); }
+  public org.nd4j.graph.FlatArray min(org.nd4j.graph.FlatArray obj) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public org.nd4j.graph.FlatArray max() { return max(new org.nd4j.graph.FlatArray()); }
+  public org.nd4j.graph.FlatArray max(org.nd4j.graph.FlatArray obj) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public double mean() { int o = __offset(10); return o != 0 ? bb.getDouble(o + bb_pos) : 0.0; }
   public double stdev() { int o = __offset(12); return o != 0 ? bb.getDouble(o + bb_pos) : 0.0; }
   public long countzero() { int o = __offset(14); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }

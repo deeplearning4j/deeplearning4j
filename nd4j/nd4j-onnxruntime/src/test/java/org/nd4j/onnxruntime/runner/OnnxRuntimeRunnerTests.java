@@ -19,6 +19,7 @@
  */
 package org.nd4j.onnxruntime.runner;
 
+import org.bytedeco.onnxruntime.ValueVector;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -27,11 +28,13 @@ import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.onnxruntime.util.ONNXUtils;
 
 import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Tag(TagNames.FILE_IO)
@@ -40,6 +43,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class OnnxRuntimeRunnerTests {
 
 
+
+
+    @Test
+    public void testNDArrayGet() {
+        OnnxRuntimeRunner runtimeRunner = new OnnxRuntimeRunner(null);
+        INDArray[] arr = {Nd4j.ones(1),Nd4j.ones(2).add(1)};
+        ValueVector sequence = ONNXUtils.getSequence(arr, runtimeRunner.getMemoryInfo());
+        assertEquals(2,sequence.size());
+        INDArray[] indArrays = ONNXUtils.ndarraysFromSequence(sequence, runtimeRunner.getAllocator().asOrtAllocator());
+        assertArrayEquals(arr,indArrays);
+
+
+    }
 
     @Test
     @Disabled

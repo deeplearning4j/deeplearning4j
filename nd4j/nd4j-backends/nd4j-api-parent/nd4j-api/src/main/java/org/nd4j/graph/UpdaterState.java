@@ -17,11 +17,11 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.nd4j.graph;
 
 import java.nio.*;
 import java.lang.*;
+import java.nio.ByteOrder;
 import java.util.*;
 import com.google.flatbuffers.*;
 
@@ -40,11 +40,11 @@ public final class UpdaterState extends Table {
   public int updaterStateKeysLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
   public StringVector updaterStateKeysVector() { return updaterStateKeysVector(new StringVector()); }
   public StringVector updaterStateKeysVector(StringVector obj) { int o = __offset(6); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
-  public FlatArray updaterStateValues(int j) { return updaterStateValues(new FlatArray(), j); }
-  public FlatArray updaterStateValues(FlatArray obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public org.nd4j.graph.FlatArray updaterStateValues(int j) { return updaterStateValues(new org.nd4j.graph.FlatArray(), j); }
+  public org.nd4j.graph.FlatArray updaterStateValues(org.nd4j.graph.FlatArray obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int updaterStateValuesLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
-  public FlatArray.Vector updaterStateValuesVector() { return updaterStateValuesVector(new FlatArray.Vector()); }
-  public FlatArray.Vector updaterStateValuesVector(FlatArray.Vector obj) { int o = __offset(8); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
+  public org.nd4j.graph.FlatArray.Vector updaterStateValuesVector() { return updaterStateValuesVector(new org.nd4j.graph.FlatArray.Vector()); }
+  public org.nd4j.graph.FlatArray.Vector updaterStateValuesVector(org.nd4j.graph.FlatArray.Vector obj) { int o = __offset(8); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
 
   public static int createUpdaterState(FlatBufferBuilder builder,
       int paramNameOffset,

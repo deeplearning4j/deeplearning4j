@@ -123,6 +123,11 @@ public class SameDiff extends SDBaseOps {
     private final Map<String, SameDiffOp> ops = new LinkedHashMap<>();
     @Getter
     private final Map<Long, InferenceSession> sessions = new ConcurrentHashMap<>();      //Key: thread ID
+
+    @Getter
+    @Setter
+    private Map<String,INDArray[]> sequences = new ConcurrentHashMap<>(); //sequence items
+
     @Getter
     @Setter
     private ArrayHolder constantArrays = new ThreadSafeArrayHolder(true);
@@ -851,6 +856,8 @@ public class SameDiff extends SDBaseOps {
     public boolean arrayAlreadyExistsForVarName(String varName) {
         SDVariable var = getVariable(varName);
         switch (var.getVariableType()) {
+            case SEQUENCE:
+                return sequences.containsKey(varName);
             case VARIABLE:
                 return variablesArrays.hasArray(varName);
             case ARRAY:
@@ -925,6 +932,8 @@ public class SameDiff extends SDBaseOps {
                 if (placeholdersPerThread.get(tid) == null || !placeholdersPerThread.get(tid).containsKey(varName))
                     return null;
                 return placeholdersPerThread.get(tid).get(varName);
+            case SEQUENCE:
+                return null;
             default:
                 throw new RuntimeException("Unknown variable type: " + v.getVariableType());
         }
@@ -3094,10 +3103,158 @@ public class SameDiff extends SDBaseOps {
                 return constant(v.name(), v.getArr());
             case PLACEHOLDER:
                 return placeHolder(v.name(), v.dataType(), v.placeholderShape());
+            case SEQUENCE:
+                return createSequence(v.name(),v.getSameDiff().getSequences().getOrDefault(v.name(),null));
             default:
                 throw new RuntimeException("Unknown/not supported variable type: " + vt);
         }
     }
+
+    /**
+     * Create a new sequence variable using
+     * {@link #createSequence(String, INDArray[])}
+     * @param arrays the input arrays to group as 1 variable
+     * @return the created variable
+     */
+    public SDVariable createSequence(INDArray[] arrays) {
+        return createSequence(generateNewVarName("sequence",0),arrays);
+    }
+
+    /**
+     * Creates a sequence variable based on the input arrays.
+     * Note that all input arrays must be the same data type.
+     * @param name the name of the variable
+     * @param arrays the arrays
+     * @return the new sequence variable
+     */
+    public SDVariable createSequence(String name, INDArray[] arrays) {
+        Preconditions.checkNotNull(arrays,"Sequence must not have null input.");
+        Preconditions.checkState(arrays != null && arrays.length > 0,"No empty sequences allowed!");
+        DataType first = arrays[0].dataType();
+        for(int i = 0; i < arrays.length; i++) {
+            if(arrays[i].dataType() != first)
+                throw new IllegalArgumentException("Unable to create sequence of different data  types!");
+        }
+
+        SDVariable sdVariable = new SDVariable();
+        sdVariable.setSameDiff(this);
+        sdVariable.setVariableType(VariableType.SEQUENCE);
+        sdVariable.setVarName(name);
+        sdVariable.setDataType(arrays[0].dataType());
+        sequences.put(name,arrays);
+        return addVariable(sdVariable);
+    }
+
+    /**
+     * Removes the item from the sequence for name at the specified index.
+     * @param varName the variable name of the sequence
+     * @param indexOfItem the index to insert the item at. Index should be -n to n- 1 where is the length of the sequence
+     *                    atIndex is < 0, the index will be treated as counting backwards from the end.
+     */
+    public void removeItemFromSequence(String varName,int indexOfItem) {
+        Preconditions.checkState(sequences.containsKey(varName),"No sequence found with name " + varName);
+        INDArray[] items = sequences.get(varName);
+        Preconditions.checkState(indexOfItem < items.length,"Invalid index " + indexOfItem + " length of index is " + items.length);
+        if(indexOfItem < 0) {
+            indexOfItem += items.length;
+        }
+
+        INDArray[] newItems = new INDArray[items.length - 1];
+        if(items.length - 1 > 0) {
+            int newIdx = 0;
+            for (int i = 0; i < items.length; i++) {
+                if (i != indexOfItem) {
+                    newItems[newIdx++] = items[i];
+                }
+            }
+
+            sequences.put(varName, newItems);
+        } else {
+            variables.remove(varName);
+            sequences.remove(varName);
+        }
+    }
+
+
+    /**
+     * Add an item to the sequence
+     * @param varName the variable name to
+     * @param item the item to add
+     * @param atIndex the index to insert the item at. Index should be -n to n- 1 where is the length of the sequence
+     *                atIndex is < 0, the index will be treated as counting backwards from the end.
+     */
+    public void addItemToSequence(String varName,INDArray item,int atIndex) {
+        Preconditions.checkNotNull(item,"Items must n ot be null!");
+        Preconditions.checkState(sequences.containsKey(varName),"No sequence found with name " + varName);
+        INDArray[] items = sequences.get(varName);
+        if(atIndex < 0) {
+            //note we need to add 1 to the end to reflect the new length of the array due to adding an item
+            atIndex += items.length + 1;
+        }
+
+        INDArray[] newSeq = new INDArray[items.length + 1];
+        int addFromIndex = 0;
+        for(int i = 0; i < newSeq.length; i++) {
+            if(i != atIndex) {
+                newSeq[i] = items[addFromIndex++];
+            } else {
+                newSeq[i] = item;
+            }
+        }
+
+        sequences.put(varName,newSeq);
+
+    }
+
+
+    /**
+     * Returns the length of the sequence for the given variable name
+     * @param varName the name of the sequence to get the length
+     * @return the length of the sequence for the given variable name
+     */
+    public long sequenceLength(String varName) {
+        Preconditions.checkState(sequences.containsKey(varName),"No sequence found with name " + varName);
+        return sequences.get(varName).length;
+    }
+
+    /**
+     * Sets the item at the particular index in the sequence to the
+     * passed in item.
+     * @param varName the name of the sequence
+     * @param item the item to set
+     * @param index the index to insert the item at. Index should be -n to n- 1 where is the length of the sequence
+     *             index is < 0, the index will be treated as counting backwards from the end.
+     */
+    public void setItemForSequenceAtIndex(String varName,INDArray item,int index) {
+        Preconditions.checkNotNull(item,"Items must n ot be null!");
+        Preconditions.checkState(sequences.containsKey(varName),"No sequence found with name " + varName);
+        INDArray[] items = sequences.get(varName);
+        if(index < 0)
+            index += items.length;
+        items[index] = item;
+    }
+
+
+
+    /**
+     * Get the {@link INDArray} at a particular sequence.
+     * @param varName the name of the variable to get the sequence for
+     * @param atIndex the index to get the item for
+     * @return the array at the sequence
+     */
+    public INDArray itemForSequence(String varName,int atIndex) {
+        Preconditions.checkState(sequences.containsKey(varName),"No sequence found with name " + varName);
+        INDArray[] items = sequences.get(varName);
+        if(atIndex < 0) {
+            atIndex += items.length;
+        }
+        Preconditions.checkState(atIndex < items.length,"Invalid index " + atIndex + " length of index is " + items.length);
+        return items[atIndex];
+    }
+
+
+
+
 
     private String getNewVarName() {
         return generateNewVarName("sd_var", 0, false);
@@ -3445,7 +3602,7 @@ public class SameDiff extends SDBaseOps {
             Set<String> allSeenOps = new HashSet<>();
             Queue<String> queueOps = new LinkedList<>();
 
-            for(String s : dataTypeMap.keySet()){
+            for(String s : dataTypeMap.keySet()) {
                 Variable v = variables.get(s);
                 v.getVariable().setDataType(dataTypeMap.get(s));
                 List<String> inToOp = v.getInputsForOp();
@@ -3459,7 +3616,7 @@ public class SameDiff extends SDBaseOps {
                 }
             }
 
-            while(!queueOps.isEmpty()){
+            while(!queueOps.isEmpty()) {
                 String op = queueOps.remove();
                 SameDiffOp o = ops.get(op);
                 List<String> inVars = o.getInputsToOp();
@@ -3472,7 +3629,7 @@ public class SameDiff extends SDBaseOps {
                 }
                 List<DataType> outDtypes = o.getOp().calculateOutputDataTypes(inDTypes);
                 List<String> outVars = o.getOutputsOfOp();
-                for( int i=0; i<outVars.size(); i++ ){
+                for( int i = 0; i < outVars.size(); i++) {
                     String varName = outVars.get(i);
                     Variable var = variables.get(varName);
                     SDVariable v = var.getVariable();
@@ -3780,7 +3937,6 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Get the gradient for the variable with the specified variable name.
-     * Note that in order to run this function, {@link #execBackwards(Map, Operation, MultiDataSet, Collection, List)} must be executed first.
      * All gradient functions are obtained from the results of the execBackwards call.
      *
      * @param varName the variable name to get the gradient variable for.
@@ -3928,6 +4084,29 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable constant(String name, int value) {
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            return constant(name, Nd4j.scalar(value));
+        }
+    }
+
+
+
+    /**
+     * Create a new long scalar constant (rank 0) with the specified value
+     *
+     * @param value Value to initialize the constant with
+     */
+    public SDVariable constant(boolean value) {
+        return constant(null, value);
+    }
+
+    /**
+     * Create a new long scalar constant (rank 0) with the specified value
+     *
+     * @param name  Name of the SDVariable
+     * @param value Value to initialize the constant with
+     */
+    public SDVariable constant(String name, boolean value) {
         try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             return constant(name, Nd4j.scalar(value));
         }
@@ -5059,6 +5238,31 @@ public class SameDiff extends SDBaseOps {
         val forwardMap = new LinkedHashMap<String, Integer>();
         val framesMap = new LinkedHashMap<String, Integer>();
 
+
+
+        //add the sequences
+        int[] sequenceItems = new int[sequences.size()];
+        int sequenceItemsOffset = -1;
+
+        if(!sequences.isEmpty()) {
+            int sequenceIdx = 0;
+            for(Map.Entry<String,INDArray[]> sequence : sequences.entrySet()) {
+                int sequenceName = bufferBuilder.createString(sequence.getKey());
+                int[] arrays = new int[sequence.getValue().length];
+                for(int i = 0; i < arrays.length; i++) {
+                    arrays[i] = sequence.getValue()[i].toFlatArray(bufferBuilder);
+                }
+
+                int associatedVariables = SequenceItem.createAssociatedVariableVector(bufferBuilder,arrays);
+                sequenceItems[sequenceIdx++] = SequenceItem.createSequenceItem(bufferBuilder,sequenceName,associatedVariables);
+            }
+        }
+
+
+
+        sequenceItemsOffset = SequenceItemRoot.createSequenceItemsVector(bufferBuilder,sequenceItems);
+
+
         int idx = 0;
         val idxForOps = new IdentityHashMap<DifferentialFunction, Integer>();
         List<SDVariable> allVars = variables();
@@ -5110,6 +5314,7 @@ public class SameDiff extends SDBaseOps {
                 }
             }
 
+
             int controlDeps = 0;
             int controlDepsForOp = 0;
             int controlDepsForVar = 0;
@@ -5128,8 +5333,20 @@ public class SameDiff extends SDBaseOps {
                 controlDepsForVar = FlatVariable.createControlDepsForVarVector(bufferBuilder, cdsForVar);
 
 
-            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, FlatBuffersMapper.getDataTypeAsByte(variable.dataType()), shape,
-                    array, -1, varType, controlDeps, controlDepsForOp, controlDepsForVar);
+
+
+
+            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder,
+                    id,
+                    name,
+                    FlatBuffersMapper.getDataTypeAsByte(variable.dataType()),
+                    shape,
+                    array,
+                    -1,
+                    varType,
+                    controlDeps,
+                    controlDepsForOp,
+                    controlDepsForVar);
             flatVariables.add(flatVariable);
         }
 
@@ -5202,8 +5419,17 @@ public class SameDiff extends SDBaseOps {
             updaterStateOffset = FlatGraph.createUpdaterStateVector(bufferBuilder, updaterOffsets);
         }
 
-        int fg = FlatGraph.createFlatGraph(bufferBuilder, graphId, variablesOffset, nodesOffset, outputsOffset,
-                configuration.getFlatConfiguration(bufferBuilder), placeholdersOffset, lossVarOffset, trainingConfigOffset, updaterStateOffset);
+        int fg = FlatGraph.createFlatGraph(bufferBuilder,
+                graphId,
+                variablesOffset,
+                nodesOffset,
+                outputsOffset,
+                configuration.getFlatConfiguration(bufferBuilder),
+                placeholdersOffset,
+                lossVarOffset,
+                trainingConfigOffset,
+                updaterStateOffset,
+                sequenceItemsOffset);
         bufferBuilder.finish(fg);
 
         synchronized (this) {
@@ -6404,7 +6630,7 @@ public class SameDiff extends SDBaseOps {
 
         NameScope loopScope = this.withNameScope(frameName);
 
-        //SDVariable counter = SD.scalar(SD.generateNewVarName("counter", 0), 0);
+        SDVariable counter = scalar(generateNewVarName("counter", 0), 0);
 
         SDVariable[] entered = new SDVariable[loopVars.length];
         for(int i = 0 ; i < loopVars.length ; i++){
@@ -6420,8 +6646,8 @@ public class SameDiff extends SDBaseOps {
             merged[i] = mergeOps[i].outputVariable();
         }
 
-        //Merge counterMerge = new Merge(SD, counter, counter);
-        //counter = counterMerge.outputVariable();
+        Merge counterMerge = new Merge(this, counter, counter);
+        counter = counterMerge.outputVariable();
 
         NameScope condScope = this.withNameScope("cond");
         SDVariable cond_result = cond.define(this, merged);
@@ -6469,14 +6695,14 @@ public class SameDiff extends SDBaseOps {
         bodyScope.close();
         this.removeArgumentInterceptor();
 
-        //counter.add(1);
+        counter.add(1);
 
-        for(int i = 0 ; i < loopVars.length ; i++){
+        for(int i = 0 ; i < outs.length ; i++) {
             SDVariable n = new NextIteration(this, outs[i]).outputVariable();
             mergeOps[i].replaceArg(1,n);
         }
 
-        //counterMerge.replaceArg(1, counter);
+        counterMerge.replaceArg(1, counter);
 
         loopScope.close();
         return updateVariableNamesAndReferences(exits, outputNames);

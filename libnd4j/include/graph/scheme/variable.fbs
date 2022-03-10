@@ -26,7 +26,8 @@ enum VarType:byte {
     VARIABLE,
     CONSTANT,
     ARRAY,
-    PLACEHOLDER
+    PLACEHOLDER,
+    SEQUENCE
 }
 
 table FlatVariable {

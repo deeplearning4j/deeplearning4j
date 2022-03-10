@@ -103,6 +103,12 @@ IRGraph<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto,
         val castedGraph = graph as OnnxIRGraph
         val graphDef = castedGraph.graphDef()
         var foundIndex = opDef.inputList.map { input -> input.toString() }.indexOf(name)
+
+        /**
+         * TODO: Support sequences of inputs in both abstraction and
+         * at onnx level.
+         */
+
         //optional or unknown tensors
         if(foundIndex < 0 || foundIndex >= node.inputCount) {
             println("Node with name ${nodeName()} for opdef with name ${opDef.name} did not contain a tensor with name ${name}, returning empty tensor")

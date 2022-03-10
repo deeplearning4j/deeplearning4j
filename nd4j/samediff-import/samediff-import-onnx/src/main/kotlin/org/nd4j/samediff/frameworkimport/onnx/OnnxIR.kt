@@ -60,6 +60,30 @@ fun isOnnxAttributeName(name: String, opDef: Onnx.NodeProto): Boolean {
     return opDef.attributeList.map { attrDef -> attrDef.name }.contains(name)
 }
 
+fun prepareGraphForExecAndExport(graphDef: Onnx.GraphProto,outputNames: List<String>,opset: Long = 13L,ir: Long = 7): Onnx.ModelProto {
+    val graphDefBuilder = graphDef.toBuilder()
+    //onnx runtime doesn't allow any outputs that aren't defined
+    //already in the model, we need to dynamically modify the model at runtime
+    //to allow things like intermediate results
+ /*   outputNames.forEach {
+        if(!graphDef.outputList.contains(it))
+            graphDefBuilder.addOutput(ValueInfoProto {
+                name = it
+            })
+    }*/
+
+    val modelProto = ModelProto {
+        OpSetImport(OperatorSetIdProto {
+            version = opset
+        })
+
+        irVersion = ir
+        graph = graphDefBuilder.build()
+    }
+
+    return modelProto
+}
+
 
 fun convertToOnnxDataType(dataType: DataType): Onnx.TensorProto.DataType {
     return when (dataType) {
@@ -68,13 +92,13 @@ fun convertToOnnxDataType(dataType: DataType): Onnx.TensorProto.DataType {
         DataType.UINT64 ->  Onnx.TensorProto.DataType.UINT64
         DataType.BOOL ->  Onnx.TensorProto.DataType.BOOL
         DataType.FLOAT ->  Onnx.TensorProto.DataType.FLOAT
-        DataType.INT ->  Onnx.TensorProto.DataType.INT32
-        DataType.LONG ->  Onnx.TensorProto.DataType.INT64
-        DataType.BYTE ->  Onnx.TensorProto.DataType.INT8
-        DataType.SHORT -> Onnx.TensorProto.DataType.INT16
+        DataType.INT,DataType.INT32 ->  Onnx.TensorProto.DataType.INT32
+        DataType.LONG,DataType.INT64 ->  Onnx.TensorProto.DataType.INT64
+        DataType.BYTE,DataType.INT8 ->  Onnx.TensorProto.DataType.INT8
+        DataType.SHORT,DataType.INT16 -> Onnx.TensorProto.DataType.INT16
         DataType.DOUBLE -> Onnx.TensorProto.DataType.DOUBLE
-        DataType.UBYTE ->  Onnx.TensorProto.DataType.UINT8
-        DataType.HALF ->  Onnx.TensorProto.DataType.FLOAT16
+        DataType.UBYTE,DataType.UINT8 ->  Onnx.TensorProto.DataType.UINT8
+        DataType.HALF,DataType.FLOAT16 ->  Onnx.TensorProto.DataType.FLOAT16
         DataType.UTF8 ->  Onnx.TensorProto.DataType.STRING
         else -> throw UnsupportedOperationException("Unknown Onnx data type: [" + dataType.name + "]")
     }
@@ -84,7 +108,7 @@ fun convertToOnnxDataType(dataType: DataType): Onnx.TensorProto.DataType {
 fun convertToOnnxTensor(inputArray: INDArray, name: String): Onnx.TensorProto {
     val dtype = convertToOnnxDataType(inputArray.dataType())
     val newBuilder = Onnx.TensorProto.newBuilder()
-    newBuilder.dataType = dtype
+    newBuilder.dataType = dtype.ordinal
     newBuilder.addAllDims(inputArray.shape().toList())
     newBuilder.name = name
     when(dtype) {
@@ -114,6 +138,7 @@ fun convertToOnnxTensor(inputArray: INDArray, name: String): Onnx.TensorProto {
         Onnx.TensorProto.DataType.INT64 -> {
             newBuilder.addAllInt64Data(inputArray.data().asLong().asList())
         }
+
 
         else -> {
             newBuilder.rawData = ByteString.copyFrom(inputArray.data().asBytes())

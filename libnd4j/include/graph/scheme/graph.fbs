@@ -42,6 +42,17 @@ table FlatGraph {
 	lossVariables:[string];				//Variables that are marked as losses. Used for training.
 	trainingConfig:string;				//JSON representation of training configuration. JSON used for custom functionality
 	updaterState:[UpdaterState];		//Updater state
+	sequenceItems:SequenceItemRoot;
+}
+
+
+table SequenceItem {
+   name:string;
+   associatedVariable:[FlatArray];
+}
+
+table SequenceItemRoot {
+   sequenceItems:[SequenceItem];
 }
 
 

@@ -22,7 +22,9 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import onnx.Onnx
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
+import org.nd4j.autodiff.samediff.SameDiffLambda
 import org.nd4j.autodiff.samediff.SameDiffNoArgSingleLambda
+import org.nd4j.autodiff.samediff.SameDiffSingleLambda
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.ir.OpNamespace
 import org.nd4j.samediff.frameworkimport.ImportGraph
@@ -33,15 +35,16 @@ import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
+import java.lang.IllegalArgumentException
 
 /**
  * A port of if.py from onnx tensorflow for samediff:
- * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/if.py
+ * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/loop.py
  *
  * @author Adam Gibson
  */
-@PreHookRule(nodeNames = [],opNames = ["If"],frameworkName = "onnx")
-class If : PreImportHook  {
+@PreHookRule(nodeNames = [],opNames = ["Loop"],frameworkName = "onnx")
+class Loop : PreImportHook  {
 
     override fun doImport(
         sd: SameDiff,
@@ -56,37 +59,73 @@ class If : PreImportHook  {
 
         val registryCast = mappingRegistry as OpMappingRegistry<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.TensorProto.DataType,Onnx.AttributeProto,Onnx.AttributeProto>
         val importGraphCast = importGraph as ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>
-        val wrappedThenBranch = attributes["then_branch"] as OnnxIRGraph
-        val wrappedElseBranch = attributes["else_branch"] as OnnxIRGraph
-        val thenBranchSubGraph = importGraphCast.importGraph(
-            wrappedThenBranch,
+        val importedBody = attributes["body"] as OnnxIRGraph
+        val body = importGraphCast.importGraph(
+            importedBody,
             null,
             null, mutableMapOf(),
             registryCast)
 
-        sd.putSubFunction("${op.name}_then_branch",thenBranchSubGraph)
-        val elseBranchSubGraph = importGraphCast.importGraph(
-            wrappedElseBranch,
-            null,
-            null, mutableMapOf(),
-            registryCast)
-        sd.putSubFunction("${op.name}_else_branch",elseBranchSubGraph)
+        sd.putSubFunction("${op.name}_loop_body",body)
+        val inputTensors = ArrayList<SDVariable>()
+        val cond: SDVariable? = if(op.inputsToOp.size > 1 && op.inputsToOp[1] != "") sd.getVariable(op.inputsToOp[1]) else null
+        val condBody: SameDiffSingleLambda? = if(cond != null) {
+            SameDiffSingleLambda { sameDiff, inputs ->
+                inputs[0]
+            }
+        } else {
+            null
+        }
+        for(i in 2 until op.inputsToOp.size) {
+            inputTensors.add(sd.getVariable(op.inputsToOp[i]))
+        }
 
-        val outputVarName = outputNames[0]
 
-        val outputVar = sd.ifCond(outputVarName,outputVarName,SameDiffNoArgSingleLambda {
-            sd.getVariable(op.inputsToOp[0])
-        }, SameDiffNoArgSingleLambda {
-            val definedFunction = sd.getFunction("${op.name}_then_branch")
-            definedFunction.invokeGraphOn(sd)
-        }, SameDiffNoArgSingleLambda {
-            val definedFunction = sd.getFunction("${op.name}_else_branch")
-            definedFunction.invokeGraphOn(sd)
+        val terminationIterations: SDVariable? = if(op.inputsToOp.size > 0 && op.inputsToOp[0] != "") sd.getVariable(op.inputsToOp[0]) else null
+        //  for loop:  if M is not None and cond_init is None
+        if(terminationIterations != null && cond == null) {
+            val condBody =  SameDiffSingleLambda { sameDiff, inputs ->
+                inputs[0].lt(inputs[1])
+            }
 
-        })
+            //ensure first variable is loop termination variable with body
+            //being a variable update + the intended body
+            val loopVars = ArrayList<SDVariable>()
+            loopVars.add(terminationIterations)
+            loopVars.addAll(inputTensors)
 
-        return mapOf(outputVar.name() to listOf(outputVar))
+            val ret = sd.whileLoop(loopVars.toTypedArray(),
+                condBody
+            ) { sameDiff, inputs ->
+                inputs[0].add(1.0)
+                arrayOf(body.invokeGraphOn(sameDiff))
+
+            }
+
+            return ret.associate{ input -> input.name() to listOf(input) }
+
+        } else if(terminationIterations == null && cond != null) {
+            // # while and do-while loop
+            val ret = sd.whileLoop(inputTensors.toTypedArray(),
+                condBody!!) { sameDiff, inputs ->
+                arrayOf(sameDiff.invokeGraphOn(sd))
+            }
+
+            return ret.associate{ input -> input.name() to listOf(input) }
+        } else if(cond != null && terminationIterations != null) {
+            // # combine for loop and while loop together
+            val ret = sd.whileLoop(inputTensors.toTypedArray(),
+                condBody!!
+            ) { sameDiff, inputs ->
+                inputs[0].add(1.0)
+                arrayOf(sameDiff.invokeGraphOn(sd))
+            }
+
+            return ret.associate{ input -> input.name() to listOf(input) }
+
+        } else {
+            //both are null
+            throw IllegalArgumentException("Unable to support infinite loops")
+        }
     }
-
-
 }

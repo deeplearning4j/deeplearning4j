@@ -58,6 +58,10 @@ fun TensorProto.Builder.Shape(shape: List<Long>) {
     }
 }
 
+
+
+
+
 fun TensorProto.Builder.DataType(value: DataType) {
     this.dtype = value
 }

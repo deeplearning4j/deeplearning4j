@@ -41,5 +41,10 @@ interface IRGraphRunner<
             ATTRIBUTE_VALUE_TYPE,
             DATA_TYPE>
 
+
+
+    fun runSequence(inputs: Map<String, Array<INDArray>>): Map<String, Array<INDArray>>
+
+
     fun run(inputs: Map<String, INDArray>): Map<String, INDArray>
 }

@@ -31,6 +31,10 @@ interface IRTensor<TENSOR_TYPE: GeneratedMessageV3, DATA_TYPE>
     fun dataType(): IRDataType<DATA_TYPE>
     fun toArgTensor(): TensorNamespace.TensorProto
     fun rawValue(): TENSOR_TYPE
+    fun rawValues(): Array<TENSOR_TYPE>
     fun toNd4jNDArray(): INDArray
+    //sequences
+    fun toArgTensors(): Array<TensorNamespace.TensorProto>
+    fun toNd4jNdarrays(): Array<INDArray>
 
 }

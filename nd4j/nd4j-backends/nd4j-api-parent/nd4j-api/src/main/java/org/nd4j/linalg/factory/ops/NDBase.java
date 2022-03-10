@@ -157,6 +157,16 @@ public class NDBase {
   }
 
   /**
+   * Asserts the input array is true for all elements. <br>
+   *
+   * @param x A boolean array to assert the state of (NDARRAY type)
+   * @return output The state to assert (NUMERIC type)
+   */
+  public INDArray assertOp(INDArray x) {
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Assert(x))[0];
+  }
+
+  /**
    * Assign the contents of y to x.<br>
    * Y must be broadcastable to x or the same shape.<br>
    *

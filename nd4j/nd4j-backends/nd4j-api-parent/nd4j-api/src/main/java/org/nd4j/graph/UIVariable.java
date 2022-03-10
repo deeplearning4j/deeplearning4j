@@ -17,24 +17,24 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.nd4j.graph;
 
-import com.google.flatbuffers.*;
-
-import java.nio.ByteBuffer;
+import java.nio.*;
+import java.lang.*;
 import java.nio.ByteOrder;
+import java.util.*;
+import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class UIVariable extends Table {
   public static void ValidateVersion() { Constants.FLATBUFFERS_1_12_0(); }
   public static UIVariable getRootAsUIVariable(ByteBuffer _bb) { return getRootAsUIVariable(_bb, new UIVariable()); }
-  public static UIVariable getRootAsUIVariable(ByteBuffer _bb, UIVariable obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
+  public static UIVariable getRootAsUIVariable(ByteBuffer _bb, UIVariable obj) { _bb.order(java.nio.ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public UIVariable __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public IntPair id() { return id(new IntPair()); }
-  public IntPair id(IntPair obj) { int o = __offset(4); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public org.nd4j.graph.IntPair id() { return id(new org.nd4j.graph.IntPair()); }
+  public org.nd4j.graph.IntPair id(org.nd4j.graph.IntPair obj) { int o = __offset(4); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public String name() { int o = __offset(6); return o != 0 ? __string(o + bb_pos) : null; }
   public ByteBuffer nameAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
   public ByteBuffer nameInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 6, 1); }
@@ -71,8 +71,8 @@ public final class UIVariable extends Table {
   public String uiLabelExtra() { int o = __offset(26); return o != 0 ? __string(o + bb_pos) : null; }
   public ByteBuffer uiLabelExtraAsByteBuffer() { return __vector_as_bytebuffer(26, 1); }
   public ByteBuffer uiLabelExtraInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 26, 1); }
-  public FlatArray constantValue() { return constantValue(new FlatArray()); }
-  public FlatArray constantValue(FlatArray obj) { int o = __offset(28); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public org.nd4j.graph.FlatArray constantValue() { return constantValue(new org.nd4j.graph.FlatArray()); }
+  public org.nd4j.graph.FlatArray constantValue(org.nd4j.graph.FlatArray obj) { int o = __offset(28); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
 
   public static int createUIVariable(FlatBufferBuilder builder,
       int idOffset,

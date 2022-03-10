@@ -291,6 +291,28 @@ public class SDBaseOps {
   }
 
   /**
+   * Asserts the input array is true for all elements. <br>
+   *
+   * @param x A boolean array to assert the state of (NDARRAY type)
+   * @return output The state to assert (NUMERIC type)
+   */
+  public SDVariable assertOp(SDVariable x) {
+    return new org.nd4j.linalg.api.ops.impl.transforms.Assert(sd,x).outputVariable();
+  }
+
+  /**
+   * Asserts the input array is true for all elements. <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x A boolean array to assert the state of (NDARRAY type)
+   * @return output The state to assert (NUMERIC type)
+   */
+  public SDVariable assertOp(String name, SDVariable x) {
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.Assert(sd,x).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Assign the contents of y to x.<br>
    * Y must be broadcastable to x or the same shape.<br>
    *

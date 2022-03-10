@@ -20,6 +20,8 @@
 package org.nd4j.onnxruntime.runner;
 
 import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.onnxruntime.*;
@@ -31,15 +33,14 @@ import org.nd4j.onnxruntime.util.ONNXUtils;
 
 import java.io.Closeable;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.bytedeco.onnxruntime.global.onnxruntime.*;
-import static org.nd4j.onnxruntime.util.ONNXUtils.getDataBuffer;
-import static org.nd4j.onnxruntime.util.ONNXUtils.getTensor;
+import static org.nd4j.onnxruntime.util.ONNXUtils.*;
 
 @Slf4j
+@Getter
 public class OnnxRuntimeRunner implements Closeable  {
 
     private Session session;
@@ -54,7 +55,7 @@ public class OnnxRuntimeRunner implements Closeable  {
     @Builder
     public OnnxRuntimeRunner(String modelUri) {
         if(env == null) {
-            env = new Env(ONNXUtils.getOnnxLogLevelFromLogger(log), new BytePointer("nd4j-serving-onnx-session-" + UUID.randomUUID().toString()));
+            env = new Env(ONNXUtils.getOnnxLogLevelFromLogger(log), new BytePointer("nd4j-serving-onnx-session-" + UUID.randomUUID()));
             env.retainReference();
         }
 
@@ -64,12 +65,15 @@ public class OnnxRuntimeRunner implements Closeable  {
         sessionOptions.retainReference();
         allocator = new AllocatorWithDefaultOptions();
         allocator.retainReference();
-        bp = Loader.getPlatform().toLowerCase().startsWith("windows") ? new CharPointer(modelUri) : new BytePointer(modelUri);
+        if(modelUri != null) {
+            bp = Loader.getPlatform().toLowerCase().startsWith("windows") ? new CharPointer(modelUri) : new BytePointer(modelUri);
+            session = new Session(env, bp, sessionOptions);
+            //retain the session reference to prevent pre emptive release of the session.
+            session.retainReference();
+        }
         runOptions = new RunOptions();
         memoryInfo = MemoryInfo.CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-        session = new Session(env, bp, sessionOptions);
-        //retain the session reference to prevent pre emptive release of the session.
-        session.retainReference();
+
 
     }
 
@@ -84,6 +88,71 @@ public class OnnxRuntimeRunner implements Closeable  {
         sessionOptions.releaseReference();
         allocator.releaseReference();
         runOptions.releaseReference();
+    }
+
+
+    /**
+     * Execute the {@link #session}
+     * using the given input {@link Map}
+     * input
+     * @param input the input map
+     * @return a map of the names of the ndarrays
+     */
+    public Map<String,INDArray[]> execSequence(Map<String,INDArray[]> input) {
+        long numInputNodes = session.GetInputCount();
+        long numOutputNodes = session.GetOutputCount();
+
+        PointerPointer<BytePointer> inputNodeNames = new PointerPointer<>(numInputNodes);
+        PointerPointer<BytePointer> outputNodeNames = new PointerPointer<>(numOutputNodes);
+
+        Value inputVal = new Value(numInputNodes);
+
+        for (int i = 0; i < numInputNodes; i++) {
+            BytePointer inputName = session.GetInputName(i, allocator.asOrtAllocator());
+            inputNodeNames.put(i, inputName);
+            INDArray[] arr = input.get(inputName.getString());
+            ValueVector inputTensor = getSequence(arr, memoryInfo);
+            inputVal.position(i).put(inputTensor);
+        }
+
+        //reset position after iterating
+        inputVal.position(0);
+
+
+
+        for (int i = 0; i < numOutputNodes; i++) {
+            BytePointer outputName = session.GetOutputName(i, allocator.asOrtAllocator());
+            outputNodeNames.put(i, outputName);
+        }
+
+        ;
+        ValueVector outputVector = session.Run(
+                runOptions,
+                inputNodeNames,
+                inputVal,
+                numInputNodes,
+                outputNodeNames,
+                numOutputNodes);
+
+        outputVector.retainReference();
+        Map<String, INDArray[]> ret = new LinkedHashMap<>();
+
+        for (int i = 0; i < numOutputNodes; i++) {
+            Value outValue = outputVector.get(i);
+            outValue.retainReference();
+            if(outValue.IsTensor() && outValue.GetCount() < 2) {
+                INDArray arr = ndarrayFromValue(outValue,allocator.asOrtAllocator());
+                ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), new INDArray[]{arr});
+            } else {
+                INDArray[] seq = ndarraysFromSequence(outValue,allocator.asOrtAllocator());
+                ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), seq);
+            }
+
+        }
+
+        return ret;
+
+
     }
 
 

@@ -57,7 +57,7 @@ DECLARE_LIST_OP(read_list, 1, 1, 0, 0);
 #endif
 
 /**
- * This operations selects specified indices fron NDArrayList and returns them as NDArray
+ * This operations selects specified indices from NDArrayList and returns them as NDArray
  * Expected arguments:
  * x: non-empty list
  * indices: optional, vector with indices
@@ -93,7 +93,7 @@ DECLARE_LIST_OP(scatter_list, 1, 1, 0, -2);
 #endif
 
 /**
- * This operation splits given NDArray into chunks, and stores them into given NDArrayList wert sizes
+ * This operation splits given NDArray into chunks, and stores them into given NDArrayList wrt sizes
  * Expected arguments:
  * list: optional, NDArrayList. if not available - new NDArrayList will be created
  * array: array to be split
@@ -126,6 +126,14 @@ DECLARE_LIST_OP(clone_list, 1, 1, 0, 0);
 #if NOT_EXCLUDED(OP_unstack_list)
 DECLARE_LIST_OP(unstack_list, 1, 1, 0, 0);
 #endif
+
+/**
+ * This operation deletes an item a given position in the list, defaulting to the last element.
+ */
+#if NOT_EXCLUDED(OP_delete_list)
+DECLARE_LIST_OP(delete_list, -2, 1, 0, -2);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

@@ -272,7 +272,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             if (inputsForOps != null) {
                 for (String opName : inputsForOps) {
                     //Only add dependencies if we actually need the op this feeds into, otherwise the dependency
-                    // will will never be marked as satisfied
+                    // will never be marked as satisfied
                     if (!subgraphOps.contains(opName))
                         continue;
 
@@ -283,7 +283,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         Enter e = (Enter) forOp.getOp();
                         if (e.isConstant()) {
                         /*
-                        Contant enter case: Need to keep this array around for the entire duration of the frame, including
+                        Constant enter case: Need to keep this array around for the entire duration of the frame, including
                         any nested frames, and all iterations.
                         Unfortunately, we don't know exactly when we're done with a frame for good
                         This isn't a great solution, but other possibilities (frame close, trying to detect all exit ops,
@@ -513,7 +513,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             //Create a TensorArray
             VarId vid = outputFrameIter.toVarId(op.outputVariable().name());
             Preconditions.checkState(!tensorArrays.containsKey(vid), "TensorArray already exists for %s when executing TensorArrayV3", vid);
-            tensorArrays.put(vid, new ArrayList<INDArray>());
+            tensorArrays.put(vid, new ArrayList<>());
 
             // Note that TensorArray has 2 outputs - a 'dummy' SDVariable that represents it, and a second output (return a scalar 0.0)
             INDArray dummy = mmgr.allocate(false, DataType.BOOL).assign(true);
@@ -768,6 +768,18 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
 
             //Return dummy array
+            INDArray scalar = mmgr.allocate(false, DataType.FLOAT).assign(0.0);
+            return new INDArray[]{scalar};
+        } else if (op instanceof TensorArrayRemove) {
+            SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+            SDVariable index = op.arg(1);
+            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.name(), opInputs, false));
+            if (tArr == null && allIterInputs != null) {
+                tArr = lookup(inTensorArray.name(), allIterInputs, false);
+            }
+
+            List<INDArray> l = tensorArrays.get(tArr);
+            l.remove(index.eval().getInt(0));
             INDArray scalar = mmgr.allocate(false, DataType.FLOAT).assign(0.0);
             return new INDArray[]{scalar};
         } else {

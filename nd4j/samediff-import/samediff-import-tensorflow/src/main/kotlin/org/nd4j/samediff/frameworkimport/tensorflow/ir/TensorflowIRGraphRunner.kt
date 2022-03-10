@@ -47,4 +47,8 @@ class TensorflowIRGraphRunner(irGraph: TensorflowIRGraph, inputNames: List<Strin
         return graphRunner.run(inputs)
     }
 
+    override fun runSequence(inputs: Map<String, Array<INDArray>>): Map<String, Array<INDArray>> {
+        TODO("Not yet implemented")
+    }
+
 }

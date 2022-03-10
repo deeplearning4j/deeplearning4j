@@ -629,6 +629,51 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSequenceAdd(Nd4jBackend backend) throws IOException {
+        assertThrows(NullPointerException.class,() -> {
+            SameDiff sd = SameDiff.create();
+            sd.addItemToSequence("dummy",null,0);
+        });
+
+        assertThrows(IllegalStateException.class,() -> {
+            SameDiff sd = SameDiff.create();
+            sd.addItemToSequence("dummy",Nd4j.ones(1),0);
+        });
+
+
+        SameDiff sd = SameDiff.create();
+        sd.createSequence("x",new INDArray[]{Nd4j.ones(1)});
+        assertTrue(sd.hasVariable("x"));
+        assertEquals(VariableType.SEQUENCE,sd.getVariable("x").getVariableType());
+        assertEquals(Nd4j.ones(1),sd.itemForSequence("x",0));
+        sd.setItemForSequenceAtIndex("x",Nd4j.ones(2),0);
+        assertEquals(Nd4j.ones(2),sd.itemForSequence("x",0));
+        assertEquals(1,sd.sequenceLength("x"));
+        sd.removeItemFromSequence("x",0);
+        assertFalse(sd.hasVariable("x"));
+        assertThrows(IllegalStateException.class,() -> {
+            SameDiff sd2 = SameDiff.create();
+            sd2.itemForSequence("x",1);
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSequenceNegativeIndex(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+        INDArray[] sequence = {Nd4j.ones(1),Nd4j.ones(2)};
+        sd.createSequence("x",sequence);
+        //adds the item at the last index
+        sd.addItemToSequence("x",Nd4j.ones(3),-1);
+        assertEquals(Nd4j.ones(3),sd.itemForSequence("x",-1));
+        sd.removeItemFromSequence("x",-1);
+        assertEquals(Nd4j.ones(2),sd.itemForSequence("x",-1));
+    }
+
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSequentialMeansPlaceholder(Nd4jBackend backend) {
@@ -3420,6 +3465,29 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         assertEquals(35, sd.output(Collections.emptyMap(), outName).get(outName).getInt(0));
 
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testForLoop() {
+        SameDiff sd = SameDiff.create();
+        SDVariable start = sd.var("loopiter",Nd4j.scalar(1.0));
+        SDVariable end = sd.var("end",Nd4j.scalar(6.0));
+        SameDiffSingleLambda sameDiffSingleLambda = (sameDiff, inputs) ->  {
+            return inputs[0].lt(inputs[1]);
+        };
+
+        SDVariable[] sdVariables = sd.whileLoop(new SDVariable[]{start, end}, sameDiffSingleLambda, (sameDiff, inputs) -> {
+            SDVariable add = inputs[0].add(1.0);
+            return new SDVariable[]{
+                    add,inputs[1]
+            };
+        });
+        System.out.println(sd.summary());
+        Map<String, INDArray> outputs = sd.outputAll(null);
+        assertEquals(Nd4j.scalar(6.0),outputs.get(sdVariables[0].name()));
+        assertEquals(Nd4j.scalar(6.0),outputs.get(sdVariables[1].name()));
     }
 
     @ParameterizedTest

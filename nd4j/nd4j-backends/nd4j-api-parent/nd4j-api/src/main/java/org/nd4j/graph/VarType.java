@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.nd4j.graph;
 
 public final class VarType {
@@ -26,8 +25,9 @@ public final class VarType {
   public static final byte CONSTANT = 1;
   public static final byte ARRAY = 2;
   public static final byte PLACEHOLDER = 3;
+  public static final byte SEQUENCE = 4;
 
-  public static final String[] names = { "VARIABLE", "CONSTANT", "ARRAY", "PLACEHOLDER", };
+  public static final String[] names = { "VARIABLE", "CONSTANT", "ARRAY", "PLACEHOLDER", "SEQUENCE", };
 
   public static String name(int e) { return names[e]; }
 }

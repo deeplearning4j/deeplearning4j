@@ -80,6 +80,8 @@ class SD_LIB_EXPORT NDArrayList {
 
   std::vector<sd::LongType> &shape();
 
+  NDArray *remove(int idx);
+
   NDArray *stack();
   void unstack(NDArray *array, int axis);
 

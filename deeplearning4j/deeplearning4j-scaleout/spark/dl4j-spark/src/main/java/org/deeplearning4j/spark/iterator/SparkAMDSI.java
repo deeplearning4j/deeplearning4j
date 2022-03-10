@@ -23,7 +23,6 @@ package org.deeplearning4j.spark.iterator;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.TaskContext;
-import org.apache.spark.TaskContextHelper;
 import org.nd4j.linalg.dataset.AsyncMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -106,7 +105,6 @@ public class SparkAMDSI extends AsyncMultiDataSetIterator {
 
     @Override
     protected void externalCall() {
-        TaskContextHelper.setTaskContext(context);
     }
 
     protected class SparkPrefetchThread extends AsyncPrefetchThread {

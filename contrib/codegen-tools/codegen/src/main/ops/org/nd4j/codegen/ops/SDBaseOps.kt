@@ -252,6 +252,20 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
     }
 
+    Op("assertOp") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms"
+        javaOpClass = "Assert"
+        Input(NDARRAY, "x") { description = "A boolean array to assert the state of" }
+        Output(NUMERIC, "output"){  description = "The state to assert" }
+
+        Doc(Language.ANY, DocScope.ALL){
+            """
+             Asserts the input array is true for all elements. 
+            """.trimIndent()
+        }
+    }
+
+
 
 
     Op("dynamicStitch") {
@@ -1748,6 +1762,9 @@ fun SDBaseOps() =  Namespace("BaseOps"){
             """.trimIndent()
         }
     }
+
+
+
 
     Op("tensorMmul") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.reduce"
