@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.frameworkimport.frameworkimport.onnx
 
 import onnx.Onnx
 import org.apache.commons.io.FileUtils
+import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Tag
@@ -55,7 +56,7 @@ class TestOnnxIR {
     val declarations = OnnxOpDeclarations
 
     @Test
-    fun testSequenceInsert() {
+    fun testSequenceConstruct() {
         Nd4j.getExecutioner().enableVerboseMode(true)
         Nd4j.getExecutioner().enableDebugMode(true)
         val onnxOpRegistry = registry()
@@ -82,10 +83,61 @@ class TestOnnxIR {
         val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("y"))
         val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(mutableMapOf("W" to w,"x" to inputTensor)),onnxOpRegistry)
-        val inputs = mapOf("x" to inputTensor,"W" to w)
-        val assertion = onnxGraphRunner
-        val result = importedGraph.output(inputs,"y")
-        assertEquals(assertion,result)
+        val inputs = mapOf("x" to arrayOf(inputTensor),"W" to arrayOf(w))
+        val inputs2 = mapOf("x" to inputTensor,"W" to w)
+        val assertion = onnxGraphRunner.runSequence(inputs)
+        val result = importedGraph.outputSequences(inputs2,"y")
+        //assert equals doesn't know how to deal with arrays within maps
+        assertArrayEquals(assertion["y"],result["y"])
+    }
+
+
+
+    @Test
+    fun testSequenceAt() {
+        Nd4j.getExecutioner().enableVerboseMode(true)
+        Nd4j.getExecutioner().enableDebugMode(true)
+        val onnxOpRegistry = registry()
+        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+        val inputTensor = Nd4j.linspace(0,25,25).reshape(1,1,5,5).castTo(DataType.FLOAT)
+        val w = Nd4j.ones(1,1,3,3).castTo(DataType.FLOAT)
+        val index = Nd4j.ones(1).castTo(DataType.INT32)
+        val graphToRun = GraphProto {
+            Input(createValueInfoFromTensor(inputTensor,"x",true))
+            Input(createValueInfoFromTensor(w,"W",true))
+            Input(createValueInfoFromTensor(index,"index",true))
+            Node(NodeProto {
+                Input("x")
+                Input("W")
+                Output("y")
+                name = "y"
+                opType = "SequenceConstruct"
+
+            })
+
+            Node(NodeProto {
+                Input("y")
+                Input("index")
+                Output("sequenceAt")
+                name = "sequenceAt"
+                opType = "SequenceAt"
+
+            })
+
+            Output(createValueInfoFromTensor(inputTensor,"sequenceAt",false))
+        }
+
+
+        val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("sequenceAt"))
+        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(mutableMapOf("W" to w,"x" to inputTensor,"index" to index)),onnxOpRegistry)
+        println(importedGraph.summary())
+        val inputs = mapOf("x" to arrayOf(inputTensor),"W" to arrayOf(w),"index" to arrayOf(index))
+        val inputs2 = mapOf("x" to inputTensor,"W" to w,"index" to index)
+        val assertion = onnxGraphRunner.runSequence(inputs)
+        val result = importedGraph.outputSequences(inputs2,"sequenceAt")
+        //assert equals doesn't know how to deal with arrays within maps
+        assertArrayEquals(assertion["sequenceAt"],result["sequenceAt"])
     }
 
 

@@ -51,6 +51,8 @@ class SequenceEmpty : PreImportHook  {
     ): Map<String, List<SDVariable>> {
         val outputVarName = outputNames[0]
         val outputVar = sd.tensorArray(sd.getVariable(op.inputsToOp[0]).dataType())
+        outputVar.`var`.addControlDependency(sd.getVariable(op.inputsToOp[0]))
+        outputVar.`var`.rename(outputNames[0])
         return mapOf(outputVarName to listOf(outputVar.`var`))
     }
 

@@ -22,15 +22,13 @@ package org.nd4j.onnxruntime.util;
 import ai.onnxruntime.ValueInfo;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
-import org.bytedeco.onnxruntime.MemoryInfo;
-import org.bytedeco.onnxruntime.OrtAllocator;
-import org.bytedeco.onnxruntime.Value;
-import org.bytedeco.onnxruntime.ValueVector;
+import org.bytedeco.onnxruntime.*;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.onnxruntime.runner.enums.ONNXType;
 import org.slf4j.Logger;
 
 import static org.bytedeco.onnxruntime.global.onnxruntime.*;
@@ -176,6 +174,19 @@ public class ONNXUtils {
 
     }
 
+
+    /**
+     * Return the {@link ONNXType}
+     * for the output of the {@link Session}
+     * at the specified index.
+     * This is used for after a session has been run
+     * @param session the session to get the output of
+     * @param index the index of the output to get the type for
+     * @return the specified type based on the integer output
+     */
+    public static ONNXType getTypeForOutput(Session session,int index) {
+        return ONNXType.values()[session.GetOutputTypeInfo(index).GetONNXType()];
+    }
 
 
     /**

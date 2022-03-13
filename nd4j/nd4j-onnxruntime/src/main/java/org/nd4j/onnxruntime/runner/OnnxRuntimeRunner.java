@@ -20,7 +20,6 @@
 package org.nd4j.onnxruntime.runner;
 
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.*;
@@ -29,6 +28,7 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.onnxruntime.runner.enums.ONNXType;
 import org.nd4j.onnxruntime.util.ONNXUtils;
 
 import java.io.Closeable;
@@ -111,8 +111,16 @@ public class OnnxRuntimeRunner implements Closeable  {
             BytePointer inputName = session.GetInputName(i, allocator.asOrtAllocator());
             inputNodeNames.put(i, inputName);
             INDArray[] arr = input.get(inputName.getString());
-            ValueVector inputTensor = getSequence(arr, memoryInfo);
-            inputVal.position(i).put(inputTensor);
+            if(arr.length < 2) {
+                INDArray arr2 = arr[0];
+                Value inputTensor = getTensor(arr2, memoryInfo);
+                Preconditions.checkState(inputTensor.IsTensor(),"Input must be a tensor.");
+                inputVal.position(i).put(inputTensor);
+            } else {
+                ValueVector inputTensor = getSequence(arr, memoryInfo);
+                inputVal.position(i).put(inputTensor);
+            }
+
         }
 
         //reset position after iterating
@@ -125,7 +133,7 @@ public class OnnxRuntimeRunner implements Closeable  {
             outputNodeNames.put(i, outputName);
         }
 
-        ;
+
         ValueVector outputVector = session.Run(
                 runOptions,
                 inputNodeNames,
@@ -140,10 +148,10 @@ public class OnnxRuntimeRunner implements Closeable  {
         for (int i = 0; i < numOutputNodes; i++) {
             Value outValue = outputVector.get(i);
             outValue.retainReference();
-            if(outValue.IsTensor() && outValue.GetCount() < 2) {
+            if(outValue.IsTensor()) {
                 INDArray arr = ndarrayFromValue(outValue,allocator.asOrtAllocator());
                 ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), new INDArray[]{arr});
-            } else {
+            } else  {
                 INDArray[] seq = ndarraysFromSequence(outValue,allocator.asOrtAllocator());
                 ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), seq);
             }
@@ -205,18 +213,33 @@ public class OnnxRuntimeRunner implements Closeable  {
         for (int i = 0; i < numOutputNodes; i++) {
             Value outValue = outputVector.get(i);
             outValue.retainReference();
-            TypeInfo typeInfo = session.GetOutputTypeInfo(i);
-            DataBuffer buffer = getDataBuffer(outValue);
-            LongPointer longPointer = outValue.GetTensorTypeAndShapeInfo().GetShape();
-            //shape info can be null
-            if(longPointer != null) {
-                long[] shape = new long[(int) longPointer.capacity()];
-                longPointer.get(shape);
-                ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), Nd4j.create(buffer).reshape(shape));
-            } else {
-                ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), Nd4j.create(buffer));
+            ONNXType typeForOutput = getTypeForOutput(session, i);
+            switch(typeForOutput) {
+                case ONNX_TYPE_SEQUENCE:
+                    long count = outValue.GetCount();
+                    break;
+                case ONNX_TYPE_TENSOR:
+                    DataBuffer buffer = getDataBuffer(outValue);
+                    LongPointer longPointer = outValue.GetTensorTypeAndShapeInfo().GetShape();
+                    //shape info can be null
+                    if(longPointer != null) {
+                        long[] shape = new long[(int) longPointer.capacity()];
+                        longPointer.get(shape);
+                        ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), Nd4j.create(buffer).reshape(shape));
+                    } else {
+                        ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), Nd4j.create(buffer));
 
+                    }
+                    break;
+                case ONNX_TYPE_MAP:
+                case ONNX_TYPE_OPAQUE:
+                case ONNX_TYPE_UNKNOWN:
+                case ONNX_TYPE_OPTIONAL:
+                case ONNX_TYPE_SPARSE_TENSOR:
+                default:
+                    throw new IllegalStateException("Unable to get type " + typeForOutput + " only accepts tensors and sequences.");
             }
+
         }
 
         return ret;

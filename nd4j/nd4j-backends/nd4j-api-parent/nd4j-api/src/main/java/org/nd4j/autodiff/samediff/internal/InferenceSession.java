@@ -545,7 +545,16 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 v = v.getParentFrame().toVarId(inTensorArray.name());
             }
 
-            List<INDArray> list = getTensorArrays().get(v);
+            List<INDArray> list = null;
+            if(!getTensorArrays().containsKey(v)) {
+                TensorArray tensorArray = TensorArray.getTensorArray(sameDiff,inTensorArray);
+                SDVariable output = tensorArray.getVar();
+                list = getTensorArraysInSession(output.name());
+
+            } else {
+                list = getTensorArrays().get(v);
+            }
+
             Preconditions.checkState(list != null, "Could not find TensorList for %s", v);
             Preconditions.checkState(list.size() > i, "Cannot get index %s from TensorList of size %s (array not present?) - VarId=%s", i, list.size(), v);
 

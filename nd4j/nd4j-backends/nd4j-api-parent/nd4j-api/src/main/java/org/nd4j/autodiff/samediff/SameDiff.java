@@ -713,7 +713,8 @@ public class SameDiff extends SDBaseOps {
      * @return The differential function that this variable is an output of, or null if it is not the output of a function
      */
     public DifferentialFunction getVariableOutputOp(String variableName) {
-        Preconditions.checkState(variables.containsKey(variableName), "No variable with name \"%s\" found in graph", variableName);
+        if(!variables.containsKey(variableName))
+            return null;
         if (variables.get(variableName).getOutputOfOp() == null || ops.get(stripVarSuffix(variables.get(variableName).getOutputOfOp())) == null)
             return null;
         return ops.get(stripVarSuffix(variables.get(variableName).getOutputOfOp())).getOp();
@@ -2691,6 +2692,49 @@ public class SameDiff extends SDBaseOps {
     public Map<String, INDArray> output(Map<String, INDArray> placeholders, String... outputs) {
         return batchOutput().output(outputs).inputs(placeholders).output();
     }
+
+
+    /**
+     * Do inference for the given variables for a single batch.
+     * <p>
+     * See {@link #output(Map, List, String...)}.
+     * <p>
+     * Special case of {@link #batchOutput()}.
+     */
+    public Map<String, INDArray[]> outputSequences(Map<String, INDArray> placeholders, @NonNull List<String> outputs) {
+        Map<String,INDArray> initialRet =  batchOutput().output(outputs.toArray(new String[0])).inputs(placeholders).output();
+        return convertMultiOutputs(outputs, initialRet);
+    }
+
+    private Map<String, INDArray[]> convertMultiOutputs(List<String> outputs, Map<String, INDArray> initialRet) {
+        long threadId = Thread.currentThread().getId();
+        InferenceSession session = sessions.get(threadId);
+        Map<String,INDArray[]> ret = new LinkedHashMap<>();
+        for(String s : outputs) {
+            List<INDArray> tensorArraysInSession = session.getTensorArraysInSession(s);
+            if(tensorArraysInSession != null) {
+                INDArray[] convert = tensorArraysInSession.toArray(new INDArray[tensorArraysInSession.size()]);
+                ret.put(s,convert);
+            } else {
+                ret.put(s,new INDArray[]{initialRet.get(s)});
+            }
+        }
+
+        return ret;
+    }
+
+    /**
+     * Do inference for the given variables for a single batch.
+     * <p>
+     * See {@link #output(Map, List, String...)}.
+     * <p>
+     * Special case of {@link #batchOutput()}.
+     */
+    public Map<String, INDArray[]> outputSequences(Map<String, INDArray> placeholders, String... outputs) {
+        Map<String,INDArray> initialRet =  batchOutput().output(outputs).inputs(placeholders).output();
+        return convertMultiOutputs(Arrays.asList(outputs),initialRet);
+    }
+
 
 
     /**

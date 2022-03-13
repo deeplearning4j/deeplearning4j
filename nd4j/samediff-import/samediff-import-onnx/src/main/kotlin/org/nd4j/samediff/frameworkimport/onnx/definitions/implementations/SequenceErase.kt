@@ -54,6 +54,9 @@ class SequenceErase : PreImportHook  {
             sd.constant(-1)
         val ta = sd.tensorArray(inputSequence.dataType())
         val outputVar = ta.remove(inputSequence,position)
+        outputVar.addControlDependency(inputSequence)
+        outputVar.addControlDependency(position)
+        outputVar.rename(outputNames[0])
         return mapOf(outputVar.name() to listOf(outputVar))
     }
 

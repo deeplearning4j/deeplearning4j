@@ -52,6 +52,8 @@ class SequenceLength : PreImportHook  {
         val inputSequence = sd.getVariable(op.inputsToOp[0])
         val size = sd.tensorArray(inputSequence.dataType())
         val outputVar = size.size(inputSequence)
+        outputVar.addControlDependency(inputSequence)
+        outputVar.rename(outputNames[0])
         return mapOf(outputVar.name() to listOf(outputVar))
     }
 

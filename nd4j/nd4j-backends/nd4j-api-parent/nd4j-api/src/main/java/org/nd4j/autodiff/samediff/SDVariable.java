@@ -210,10 +210,12 @@ public class SDVariable implements Serializable {
     }
 
     public DataType dataType() {
-        if(this.dataType == null){
+        if(this.dataType == null) {
             //Try to infer datatype instead of returning null
-            if(variableType != VariableType.ARRAY && getArr() != null){
+            if(variableType != VariableType.ARRAY && getArr() != null) {
                 this.dataType = getArr().dataType();
+            }  else {
+                this.dataType = DataType.UNKNOWN;
             }
         }
 
@@ -1470,12 +1472,12 @@ public class SDVariable implements Serializable {
             SameDiffOp oCD = sameDiff.getOps().get(vCD.getOutputOfOp());
 
             if(oThis.getControlDeps() == null)
-                oThis.setControlDeps(new ArrayList<String>());
+                oThis.setControlDeps(new ArrayList<>());
             if(!oThis.getControlDeps().contains(oCD.getName()))
                 oThis.getControlDeps().add(oCD.getName());
 
             if(oCD.getControlDepFor() == null)
-                oCD.setControlDepFor(new ArrayList<String>());
+                oCD.setControlDepFor(new ArrayList<>());
             if(!oCD.getControlDepFor().contains(oThis.getName()))
                 oCD.getControlDepFor().add(oThis.getName());
         } else {
@@ -1484,24 +1486,24 @@ public class SDVariable implements Serializable {
                 SameDiffOp oThis = sameDiff.getOps().get(vThis.getOutputOfOp());
 
                 if(oThis.getVarControlDeps() == null)
-                    oThis.setVarControlDeps(new ArrayList<String>());
+                    oThis.setVarControlDeps(new ArrayList<>());
 
                 if(!oThis.getVarControlDeps().contains(vCD.getName()))
                     oThis.getVarControlDeps().add(vCD.getName());
 
                 if(vCD.getControlDepsForOp() == null)
-                    vCD.setControlDepsForOp(new ArrayList<String>());
+                    vCD.setControlDepsForOp(new ArrayList<>());
                 if(!vCD.getControlDepsForOp().contains(oThis.getName()))
                     vCD.getControlDepsForOp().add(oThis.getName());
             } else {
                 //const/ph -> const/ph case
                 if(vThis.getControlDeps() == null)
-                    vThis.setControlDeps(new ArrayList<String>());
+                    vThis.setControlDeps(new ArrayList<>());
                 if(!vThis.getControlDeps().contains(vCD.getName()))
                     vThis.getControlDeps().add(vCD.getName());
 
                 if(vCD.getControlDepsForVar() == null)
-                    vCD.setControlDepsForVar(new ArrayList<String>());
+                    vCD.setControlDepsForVar(new ArrayList<>());
                 if(!vCD.getControlDepsForVar().contains(vThis.getName()))
                     vCD.getControlDepsForVar().add(vThis.getName());
             }

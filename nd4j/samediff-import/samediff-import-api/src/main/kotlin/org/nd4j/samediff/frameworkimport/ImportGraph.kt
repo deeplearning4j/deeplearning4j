@@ -53,6 +53,7 @@ import java.io.File
 import java.util.*
 
 import mu.KotlinLogging
+import kotlin.collections.HashMap
 
 /**
  * Core import class for running model import for any framework.
@@ -297,7 +298,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             val nd = irGraph.nodeList()[i]
             val name = nd.nodeName()
             if(name.isEmpty()) {
-               println("Skipping node $i due to empty name.")
+                println("Skipping node $i due to empty name.")
                 continue
             }
             val op = nd.opName()
@@ -381,6 +382,8 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                  */
 
             var df = funcContextResult?.dfInstance ?: Identity()
+
+
             val mappingContext = funcContextResult?.mappingContext
             val nd4jOpName = df.opName()
 
@@ -907,7 +910,69 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             remainingNodes.keys
         )
 
+        val opByOutputName = HashMap<String,MutableList<SameDiffOp>>()
+        sd.ops.forEach { (opName, op) ->
+            val opOutput = op.outputsOfOp[0]
+            if(!opByOutputName.containsKey(opOutput)) {
+                opByOutputName[opOutput] = ArrayList()
+            }
+
+            val list = opByOutputName[opOutput]!!
+            list.add(op)
+        }
+
+        println(sd.summary())
+
+        /*
+        opByOutputName.forEach { opOutput, ops ->
+            if (ops.size == 2) {
+                val firstOp = ops[0]
+                val secondOp = ops[1]
+                if (firstOp.op is NoOp) {
+                    renameOp(secondOp, firstOp, sd)
+
+                } else if (secondOp.op is NoOp) {
+                    renameOp(firstOp, secondOp, sd)
+                }
+            }
+        }
+
+        println(sd.summary())
+*/
         return sd
+    }
+
+    private fun renameOp(
+        secondOp: SameDiffOp,
+        firstOp: SameDiffOp,
+        sd: SameDiff
+    ) {
+        val realOp = secondOp.op
+        val realName = firstOp.op.ownName
+        val oldOp = firstOp.op
+        val realControlDeps = secondOp.controlDeps
+        val realVarControlDeps = secondOp.varControlDeps
+        val realInputs = secondOp.inputsToOp
+        val oldName = secondOp.op.ownName
+        firstOp.op = realOp
+        //firstOp.inputsToOp = realInputs
+        firstOp.op.ownName = realName
+        firstOp.controlDeps = realControlDeps
+        firstOp.varControlDeps = realVarControlDeps
+        sd.ops.forEach { opName, op ->
+            if (op.inputsToOp != null && op.inputsToOp.contains(oldName)) {
+                op.inputsToOp[op.inputsToOp.indexOf(oldName)] = realName
+            }
+
+            if (op.controlDepFor != null && op.controlDepFor.contains(oldName)) {
+                op.controlDepFor[op.controlDepFor.indexOf(oldName)] = realName
+            }
+
+            if (op.controlDeps != null && op.controlDeps.contains(oldName)) {
+                op.controlDeps[op.controlDeps.indexOf(oldName)] = realName
+            }
+        }
+        sd.ops.remove(secondOp.name)
     }
 }
 

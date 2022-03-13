@@ -29,6 +29,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.common.function.Predicate;
@@ -696,6 +697,15 @@ public abstract class AbstractSession<T, O> {
      */
     protected ExecStep getExecStepForVar(String varName, FrameIter frameIter) {
         Variable v = sameDiff.getVariables().get(varName);
+        if(v == null) {
+            SameDiffOp op = sameDiff.getOps().get(varName);
+            if(op != null) {
+                //redirect because of rename
+                v = sameDiff.getVariables().get(op.getOutputsOfOp().get(0));
+            } else {
+                throw new IllegalArgumentException("Variable name " + varName + " not found! Renamed?");
+            }
+        }
         VariableType vt = v.getVariable().getVariableType();
         if (vt == VariableType.VARIABLE) {
             return new ExecStep(ExecType.VARIABLE, v.getVariable().name(), new FrameIter(OUTER_FRAME, 0, null));
@@ -796,6 +806,14 @@ public abstract class AbstractSession<T, O> {
                 String[] opInputs = opName == null ? null : sameDiff.getInputsForOp(sameDiff.getOpById(opName));
                 Variable currVar = sameDiff.getVariables().get(varName);
                 log.trace("Adding " + varName + " to subgraph for output.");
+                //probably renamed, redirect to new name
+                if(currVar == null && opName == null) {
+                    SameDiffOp op2 = sameDiff.getOps().get(varName);
+                    currVar = sameDiff.getVariables().get(op2.outputsOfOp.get(0));
+                    if(currVar == null) {
+                        throw new IllegalStateException("No variable found with name " + varName + "!");
+                    }
+                }
                 List<String> opInputsFor = currVar.getInputsForOp();
                 List<String> controlDeps = currVar.getControlDeps();
                 String output = currVar.getOutputOfOp();
@@ -924,6 +942,38 @@ public abstract class AbstractSession<T, O> {
             throw new RuntimeException("Could not find VarId for input \"" + name + "\"");
         }
         return vid;
+    }
+
+
+    /**
+     * Get the {@link INDArray}
+     * associated with the given variable name
+     * @param name the variable name
+     * @return the list of {@link INDArray}
+     */
+    public List<INDArray> getTensorArraysInSession(String name) {
+        DifferentialFunction op = sameDiff.getVariableOutputOp(name);
+        if(op == null)
+            return null;
+        String[] inputs = sameDiff.getInputsForOp(op);
+        String[] outputs = sameDiff.getOutputsForOp(op);
+        Set<VarId> varIds = new LinkedHashSet<>();
+        for(String input : inputs) {
+            VarId varId = new VarId(input, OUTER_FRAME, 0, null);
+            varIds.add(varId);
+        }
+
+        varIds.addAll(tensorArrays.keySet());
+
+        VarId lookup = lookup(op.getOwnName(), varIds, false);
+        if(lookup == null) {
+            SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+            lookup = lookup(inTensorArray.name(), varIds, false);
+            if(lookup != null)
+                return (List<INDArray>) tensorArrays.get(lookup);
+            return null;
+        }
+        return (List<INDArray>) tensorArrays.get(lookup);
     }
 
     /**

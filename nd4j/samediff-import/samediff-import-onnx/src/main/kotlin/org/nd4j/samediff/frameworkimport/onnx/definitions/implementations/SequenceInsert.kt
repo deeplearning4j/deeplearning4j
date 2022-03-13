@@ -54,7 +54,10 @@ class SequenceInsert : PreImportHook  {
             sd.getVariable(op.inputsToOp[1])
         }
         val outputVar = sd.tensorArray(input.dataType())
-        outputVar.write(outputVar.`var`,position,input)
+        val written = outputVar.write(outputVar.`var`,position,input)
+        written.addControlDependency(position)
+        written.addControlDependency(input)
+        outputVar.`var`.rename(outputNames[0])
         return mapOf(outputVar.`var`!!.name() to listOf(outputVar.`var`!!))
     }
 
