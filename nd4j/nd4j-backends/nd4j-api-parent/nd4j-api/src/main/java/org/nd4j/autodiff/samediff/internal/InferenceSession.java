@@ -612,14 +612,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         } else if (op instanceof TensorArraySize) {
             //Index 0 is the TensorArray (or dummy variable that represents it)
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
-            //Work out the varid (frame/iteration) of the tensor array:
-            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.name(), opInputs, false));
-            if (tArr == null && allIterInputs != null) {
-                tArr = lookup(inTensorArray.name(), allIterInputs, false);
-            }
-            List<INDArray> l = tensorArrays.get(tArr);
-            Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
-
+            TensorArray tensorArray = TensorArray.getTensorArray(sameDiff,inTensorArray);
+            List<INDArray> l = getTensorArraysInSession(tensorArray.getVar().name());
             INDArray scalar = mmgr.allocate(false, DataType.INT).assign(l.size());
             return new INDArray[]{scalar};
         } else if (op instanceof TensorArrayConcat) {
@@ -782,14 +776,16 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         } else if (op instanceof TensorArrayRemove) {
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
             SDVariable index = op.arg(1);
+            List<INDArray> l = getTensorArraysInSession(inTensorArray.name());
+            l.remove(index.getArr(true).getInt(0));
+            INDArray scalar = mmgr.allocate(false, DataType.FLOAT).assign(0.0);
             VarId tArr = (opInputs == null ? null : lookup(inTensorArray.name(), opInputs, false));
             if (tArr == null && allIterInputs != null) {
                 tArr = lookup(inTensorArray.name(), allIterInputs, false);
             }
 
-            List<INDArray> l = tensorArrays.get(tArr);
-            l.remove(index.eval().getInt(0));
-            INDArray scalar = mmgr.allocate(false, DataType.FLOAT).assign(0.0);
+            //setup an extra reference to the removed list
+            tensorArrays.put(tArr,l);
             return new INDArray[]{scalar};
         } else {
             throw new IllegalStateException("Execution support not yet implemented for: " + op.getClass().getName());

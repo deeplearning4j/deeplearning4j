@@ -22,13 +22,13 @@ package org.eclipse.deeplearning4j.frameworkimport.frameworkimport.onnx
 
 
 import onnx.Onnx
-import org.apache.commons.io.FileUtils
-import org.junit.jupiter.api.Assertions.assertArrayEquals
+import org.eclipse.deeplearning4j.modelimport.onnx.OnnxTestUtils
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.nd4j.autodiff.samediff.SameDiff
+import org.nd4j.autodiff.samediff.config.SDValue
 import org.nd4j.common.tests.tags.TagNames
 import org.nd4j.common.util.ArrayUtil
 import org.nd4j.linalg.api.buffer.DataType
@@ -40,9 +40,6 @@ import org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarations
 import org.nd4j.samediff.frameworkimport.onnx.definitions.registry
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraphRunner
-import org.nd4j.samediff.frameworkimport.tensorflow.TensorProto
-import java.io.File
-import java.util.*
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
 import kotlin.test.assertTrue
@@ -84,13 +81,200 @@ class TestOnnxIR {
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("y"))
         val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(mutableMapOf("W" to w,"x" to inputTensor)),onnxOpRegistry)
         val inputs = mapOf("x" to arrayOf(inputTensor),"W" to arrayOf(w))
-        val inputs2 = mapOf("x" to inputTensor,"W" to w)
-        val assertion = onnxGraphRunner.runSequence(inputs)
-        val result = importedGraph.outputSequences(inputs2,"y")
+        val inputs2 = mapOf("x" to SDValue.create(inputTensor),"W" to SDValue.create(w))
+        val assertion = onnxGraphRunner.runSequence(inputs2)
+        val result = importedGraph.outputValues(inputs2,listOf("y"))
         //assert equals doesn't know how to deal with arrays within maps
-        assertArrayEquals(assertion["y"],result["y"])
+        assertEquals(assertion["y"],result["y"])
     }
 
+
+
+
+    @Test
+    fun testSequenceErase() {
+        Nd4j.getExecutioner().enableVerboseMode(true)
+        Nd4j.getExecutioner().enableDebugMode(true)
+        val onnxOpRegistry = registry()
+        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+        val inputTensor = Nd4j.linspace(0,25,25).reshape(1,1,5,5).castTo(DataType.FLOAT)
+        val insert = Nd4j.ones(DataType.FLOAT,1)
+        val w = Nd4j.ones(1,1,3,3).castTo(DataType.FLOAT)
+        val index = Nd4j.ones(1).castTo(DataType.INT32)
+        val indexTwo = Nd4j.ones(1).castTo(DataType.INT32)
+
+        val graphToRun = GraphProto {
+            Input(createValueInfoFromTensor(inputTensor,"x",true))
+            Input(createValueInfoFromTensor(w,"W",true))
+            Input(createValueInfoFromTensor(insert,"insert",true))
+            Input(createValueInfoFromTensor(index,"index",true))
+            Input(createValueInfoFromTensor(indexTwo,"indexTwo",true))
+
+            Node(NodeProto {
+                Input("x")
+                Input("W")
+                Output("y")
+                name = "y"
+                opType = "SequenceConstruct"
+
+            })
+
+            Node(NodeProto {
+                Input("y")
+                Input("indexTwo")
+                Output("sequenceInsert")
+                name = "sequenceInsert"
+                opType = "SequenceErase"
+
+            })
+
+            Node(NodeProto {
+                Input("y")
+                Input("index")
+                Output("sequenceAt")
+                name = "sequenceAt"
+                opType = "SequenceAt"
+
+            })
+
+            Output(createValueInfoFromTensor(inputTensor,"sequenceAt",false))
+        }
+
+
+        val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W","index","indexTwo","insert"),listOf("sequenceAt"))
+        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(mutableMapOf(
+            "W" to w,"x" to inputTensor,"index" to index,"indexTwo" to indexTwo,"insert" to insert)),onnxOpRegistry)
+        println(importedGraph.summary())
+        val inputs = mapOf("x" to arrayOf(inputTensor),"W" to arrayOf(w),"index" to arrayOf(index),"indexTwo" to arrayOf(indexTwo),"insert" to arrayOf(insert))
+        val inputs2 = mapOf("x" to SDValue.create(inputTensor)
+            ,"W" to SDValue.create(w),
+            "index" to SDValue.create(index),
+            "indexTwo" to SDValue.create(indexTwo),"insert" to SDValue.create(insert))
+        val assertion = onnxGraphRunner.runSequence(inputs2)
+        val result = importedGraph.outputValues(inputs2,listOf("sequenceAt"))
+        //assert equals doesn't know how to deal with arrays within maps
+        assertEquals(assertion["sequenceAt"],result["sequenceAt"])
+    }
+
+
+
+    @Test
+    fun testSequenceInsert() {
+        Nd4j.getExecutioner().enableVerboseMode(true)
+        Nd4j.getExecutioner().enableDebugMode(true)
+        val onnxOpRegistry = registry()
+        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+        val inputTensor = Nd4j.linspace(0,25,25).reshape(1,1,5,5).castTo(DataType.FLOAT)
+        val insert = Nd4j.ones(DataType.FLOAT,1)
+        val w = Nd4j.ones(1,1,3,3).castTo(DataType.FLOAT)
+        val index = Nd4j.ones(1).castTo(DataType.INT32)
+        val indexTwo = Nd4j.ones(1).castTo(DataType.INT32).addi(1)
+
+        val graphToRun = GraphProto {
+            Input(createValueInfoFromTensor(inputTensor,"x",true))
+            Input(createValueInfoFromTensor(w,"W",true))
+            Input(createValueInfoFromTensor(insert,"insert",true))
+            Input(createValueInfoFromTensor(index,"index",true))
+            Input(createValueInfoFromTensor(indexTwo,"indexTwo",true))
+
+            Node(NodeProto {
+                Input("x")
+                Input("W")
+                Output("y")
+                name = "y"
+                opType = "SequenceConstruct"
+
+            })
+
+            Node(NodeProto {
+                Input("y")
+                Input("insert")
+                Input("indexTwo")
+                Output("sequenceInsert")
+                name = "sequenceInsert"
+                opType = "SequenceInsert"
+
+            })
+
+            Node(NodeProto {
+                Input("y")
+                Input("index")
+                Output("sequenceAt")
+                name = "sequenceAt"
+                opType = "SequenceAt"
+
+            })
+
+            Output(createValueInfoFromTensor(inputTensor,"sequenceAt",false))
+        }
+
+
+        val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W","index","indexTwo","insert"),listOf("sequenceAt"))
+        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(mutableMapOf(
+            "W" to w,"x" to inputTensor,"index" to index,"indexTwo" to indexTwo,"insert" to insert)),onnxOpRegistry)
+        println(importedGraph.summary())
+        val inputs = mapOf("x" to arrayOf(inputTensor),"W" to arrayOf(w),"index" to arrayOf(index),"indexTwo" to arrayOf(indexTwo),"insert" to arrayOf(insert))
+        val inputs2 = mapOf("x" to SDValue.create(inputTensor),"W" to
+                SDValue.create(w),"index" to SDValue.create(index),"indexTwo" to SDValue.create(indexTwo),
+            "insert" to SDValue.create(insert))
+        val assertion = onnxGraphRunner.runSequence(inputs2)
+        val result = importedGraph.outputValues(inputs2,listOf("sequenceAt"))
+        //assert equals doesn't know how to deal with arrays within maps
+        assertEquals(assertion["sequenceAt"],result["sequenceAt"])
+    }
+
+
+
+    @Test
+    fun testSequenceLength() {
+        Nd4j.getExecutioner().enableVerboseMode(true)
+        Nd4j.getExecutioner().enableDebugMode(true)
+        val onnxOpRegistry = registry()
+        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+        val inputTensor = Nd4j.linspace(0,25,25).reshape(1,1,5,5).castTo(DataType.FLOAT)
+        val w = Nd4j.ones(1,1,3,3).castTo(DataType.FLOAT)
+
+        val graphToRun = GraphProto {
+            Input(createValueInfoFromTensor(inputTensor,"x",true))
+            Input(createValueInfoFromTensor(w,"W",true))
+
+            Node(NodeProto {
+                Input("x")
+                Input("W")
+                Output("y")
+                name = "y"
+                opType = "SequenceConstruct"
+
+            })
+
+            Node(NodeProto {
+                Input("y")
+                Output("sequenceLength")
+                name = "sequenceLength"
+                opType = "SequenceLength"
+
+            })
+
+            Output(createValueInfoFromTensor(inputTensor.castTo(DataType.INT64),"sequenceLength",false))
+        }
+
+
+        val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("sequenceLength"))
+        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(mutableMapOf(
+            "W" to w,"x" to inputTensor)),onnxOpRegistry)
+        println(importedGraph.summary())
+        val inputs = mapOf("x" to arrayOf(inputTensor),"W" to arrayOf(w))
+        val inputs2 = mapOf("x" to SDValue.create(inputTensor),"W" to SDValue.create(w))
+        val assertion = onnxGraphRunner.runSequence(inputs2)
+        val result = importedGraph.outputValues(inputs2,listOf("sequenceLength"))
+        val assertionArr = assertion["sequenceLength"]!!
+        val resultArr = assertion["sequenceLength"]!!
+        //assert equals doesn't know how to deal with arrays within maps
+        assertEquals(assertionArr,resultArr)
+    }
 
 
     @Test
@@ -133,12 +317,63 @@ class TestOnnxIR {
         val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(mutableMapOf("W" to w,"x" to inputTensor,"index" to index)),onnxOpRegistry)
         println(importedGraph.summary())
         val inputs = mapOf("x" to arrayOf(inputTensor),"W" to arrayOf(w),"index" to arrayOf(index))
-        val inputs2 = mapOf("x" to inputTensor,"W" to w,"index" to index)
-        val assertion = onnxGraphRunner.runSequence(inputs)
-        val result = importedGraph.outputSequences(inputs2,"sequenceAt")
+        val inputs2 = mapOf("x" to SDValue.create(inputTensor),"W" to SDValue.create(w),"index" to SDValue.create(index))
+        val assertion = onnxGraphRunner.runSequence(inputs2)
+        val result = importedGraph.outputValues(inputs2,listOf("sequenceAt"))
         //assert equals doesn't know how to deal with arrays within maps
-        assertArrayEquals(assertion["sequenceAt"],result["sequenceAt"])
+        assertEquals(assertion["sequenceAt"],result["sequenceAt"])
     }
+
+
+
+
+    @Test
+    fun testSequenceRemove() {
+        Nd4j.getExecutioner().enableVerboseMode(true)
+        Nd4j.getExecutioner().enableDebugMode(true)
+        val onnxOpRegistry = registry()
+        val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+        val inputTensor = Nd4j.linspace(0,25,25).reshape(1,1,5,5).castTo(DataType.FLOAT)
+        val w = Nd4j.ones(1,1,3,3).castTo(DataType.FLOAT)
+        val index = Nd4j.ones(1).castTo(DataType.INT32)
+        val graphToRun = GraphProto {
+            Input(createValueInfoFromTensor(inputTensor,"x",true))
+            Input(createValueInfoFromTensor(w,"W",true))
+            Input(createValueInfoFromTensor(index,"index",true))
+            Node(NodeProto {
+                Input("x")
+                Input("W")
+                Output("y")
+                name = "y"
+                opType = "SequenceConstruct"
+
+            })
+
+            Node(NodeProto {
+                Input("y")
+                Input("index")
+                Output("sequenceRemove")
+                name = "sequenceRemove"
+                opType = "SequenceErase"
+
+            })
+
+            Output(createEmptySequence(convertToOnnxDataType( inputTensor.dataType()),"sequenceRemove"))
+        }
+
+
+        val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("sequenceRemove"))
+        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(mutableMapOf("W" to w,"x" to inputTensor,"index" to index)),onnxOpRegistry)
+        println(importedGraph.summary())
+        val inputs = mapOf("x" to arrayOf(inputTensor),"W" to arrayOf(w),"index" to arrayOf(index))
+        val inputs2 = mapOf("x" to SDValue.create(inputTensor),"W" to SDValue.create(w),"index" to SDValue.create(index))
+        val assertion = onnxGraphRunner.runSequence(inputs2)
+        val result = importedGraph.outputValues(inputs2 ,listOf("sequenceRemove"))
+        //assert equals doesn't know how to deal with arrays within maps
+        assertEquals(assertion["sequenceRemove"],result["sequenceRemove"])
+    }
+
 
 
     @Test
@@ -203,16 +438,14 @@ class TestOnnxIR {
 
     @Test
     fun testLoop() {
-        val yIn = createValueInfoFromTensor(Nd4j.create(floatArrayOf(1.0f)),"seq_in",true)
-        val yOut = createValueInfoFromTensor(Nd4j.create(floatArrayOf(1.0f)),"seq_out",true)
+        val seqIn = createEmptySequence(Onnx.TensorProto.DataType.FLOAT,"seq_in")
+        val seqOut = createEmptySequence(Onnx.TensorProto.DataType.FLOAT,"seq_out")
         val condIn = createValueInfoFromTensor(Nd4j.create(booleanArrayOf(false)),"cond_in",true)
         val condOut = createValueInfoFromTensor(Nd4j.create(booleanArrayOf(false)),"cond_out",true)
         val iterCount = createValueInfoFromTensor(Nd4j.create(Nd4j.createBuffer(longArrayOf(1))),"iter_count",true)
 
 
         val axes = Nd4j.createFromArray(0L)
-        val beginAxes = createValueInfoFromTensor(axes,"begin_axes")
-        val endAxes = createValueInfoFromTensor(axes,"end_axes")
 
 
         val inputArr = Nd4j.create(floatArrayOf(1.0f,2.0f,3.0f,4.0f,5.0f))
@@ -221,156 +454,254 @@ class TestOnnxIR {
         val inputOnnx = convertToOnnxTensor(inputArr,"const_tensor_x")
         val zero = convertToOnnxTensor(Nd4j.ones(DataType.INT64,0),"one")
         val inputOne = convertToOnnxTensor(Nd4j.ones(DataType.INT64,1),"one")
-        val xNode = NodeProto {
-            Output("x")
-            opType = "Constant"
-            name = "const_tensor_x"
-            Attribute(AttributeProto {
-                name = "value"
-                type = Onnx.AttributeProto.AttributeType.TENSOR
-                t = inputOnnx
-            })
-        }
+        val inputZero = convertToOnnxTensor(Nd4j.zeros(DataType.INT64,1),"zero")
 
 
-        val oneConstNode = NodeProto {
-            Output("one")
-            opType = "Constant"
-            name = "one"
-            Attribute(AttributeProto {
-                type = Onnx.AttributeProto.AttributeType.TENSOR
-                name = "value"
-                t = inputOne
-            })
-        }
+        val onnxOpRegistry = registry()
 
-        val zeroConstNode = NodeProto {
-            Output("slice_start")
-            opType = "Constant"
-            name = "one"
-            Attribute(AttributeProto {
-                type = Onnx.AttributeProto.AttributeType.TENSOR
-                name = "value"
-                t = inputOne
-            })
-        }
-
-        val axesNode = NodeProto {
-            Output("axes")
-            opType = "Constant"
-            name = "one"
-            Attribute(AttributeProto {
-                type = Onnx.AttributeProto.AttributeType.TENSOR
-                name = "value"
-                t = zero
-            })
-        }
-
-
-
-        val add = NodeProto {
-            opType = "Add"
-            Input("iter_count")
-            Input("one")
-            Output("end")
-
-        }
-
-        val unsqueezeEnd = NodeProto {
-            opType = "Unsqueeze"
-            Input("end")
-            Input("end_axes")
-            Output("slice_end")
-        }
-
-
-        val sliceNode = NodeProto {
-            opType = "Slice"
-            Input("x")
-            Input("slice_start")
-            Input("slice_end")
-            Output("slice_out")
-        }
-
-
-        val insertNode = NodeProto {
-            opType = "SequenceInsert"
-            Input("x")
-            Input("seq_in")
-            Input("slice_out")
-            Output("seq_out")
-        }
-
-        val identityNode =  NodeProto {
-            opType = "Identity"
-            Input("cond_in")
-            Output("cond_out")
-        }
-
-
-        val loopBody = GraphProto {
-            name = "loop_body"
-            Node(identityNode)
-            Node(xNode)
-            Node(oneConstNode)
-            Node(zeroConstNode)
-            Node(add)
-            Node(axesNode)
-            Node(unsqueezeEnd)
-            Node(sliceNode)
-            Node(insertNode)
-            Input(iterCount)
-            Input(condIn)
-            Input(yIn)
-            Output(condOut)
-            Output(yOut)
-        }
-
-        val modelProto =  prepareGraphForExecAndExport(loopBody,listOf())
-        val uuid = UUID.randomUUID().toString()
-        val tempFile = File("tempFile-$uuid.proto")
-        FileUtils.writeByteArrayToFile(tempFile, modelProto.toByteArray())
-
-        val node = NodeProto {
-            opType = "Loop"
-            name = "loop"
-            Input("trip_count")
-            Input("cond")
-            Input("seq_empty")
-            Output("seq_res")
-            Attribute(AttributeProto {
-                name = "body"
-                type = Onnx.AttributeProto.AttributeType.GRAPH
-                g = loopBody
-            })
-        }
 
         val tripCount = Nd4j.createFromArray(1).castTo(DataType.INT64)
         val resY = Nd4j.createFromArray(13f)
         val cond = Nd4j.createFromArray(true)
         val resScan = Nd4j.createFromArray(-1,1,4,8,13).castTo(DataType.FLOAT).reshape(5,1)
-        val graph = GraphProto {
-            name = "input_graph"
-            Node(node)
-            Input(createValueInfoFromTensor(tripCount,"trip_count",true))
-            Input(createValueInfoFromTensor(cond,"cond",true))
-            Input(createValueInfoFromTensor(y,"seq_empty",true))
-            Output(createValueInfoFromTensor(resY,"seq_res",true))
-        }
 
-        val onnxOpRegistry = registry()
 
-        val onnxIRGraph = OnnxIRGraph(graph,onnxOpRegistry)
-        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("trip_count","cond","y","begin_axes","end_axes"),listOf("res_y","res_scan"))
+        val modelLoad = """
+            ir_version: 8
+            producer_name: "backend-test"
+            graph {
+              node {
+                input: "trip_count"
+                input: "cond"
+                input: "seq_empty"
+                output: "seq_res"
+                op_type: "Loop"
+                name: "loop_body"
+                attribute {
+                  name: "body"
+                  g {
+                    node {
+                      input: "cond_in"
+                      output: "cond_out"
+                      op_type: "Identity"
+                    }
+                    node {
+                      output: "x"
+                      op_type: "Constant"
+                      attribute {
+                        name: "value"
+                        t {
+                          dims: 5
+                          data_type: 1
+                          float_data: 1.0
+                          float_data: 2.0
+                          float_data: 3.0
+                          float_data: 4.0
+                          float_data: 5.0
+                          name: "const_tensor_x"
+                        }
+                        type: TENSOR
+                      }
+                    }
+                    node {
+                      output: "one"
+                      op_type: "Constant"
+                      attribute {
+                        name: "value"
+                        t {
+                          data_type: 7
+                          int64_data: 1
+                          name: "const_tensor_one"
+                        }
+                        type: TENSOR
+                      }
+                    }
+                    node {
+                      output: "slice_start"
+                      op_type: "Constant"
+                      attribute {
+                        name: "value"
+                        t {
+                          dims: 1
+                          data_type: 7
+                          int64_data: 0
+                          name: "const_tensor_zero"
+                        }
+                        type: TENSOR
+                      }
+                    }
+                    node {
+                      input: "iter_count"
+                      input: "one"
+                      output: "end"
+                      op_type: "Add"
+                    }
+                    node {
+                      output: "axes"
+                      op_type: "Constant"
+                      attribute {
+                        name: "value"
+                        t {
+                          data_type: 7
+                          int64_data: 0
+                          name: "const_tensor_axes"
+                        }
+                        type: TENSOR
+                      }
+                    }
+                    node {
+                      input: "end"
+                      input: "axes"
+                      output: "slice_end"
+                      op_type: "Unsqueeze"
+                    }
+                    node {
+                      input: "x"
+                      input: "slice_start"
+                      input: "slice_end"
+                      output: "slice_out"
+                      op_type: "Slice"
+                    }
+                    node {
+                      input: "seq_in"
+                      input: "slice_out"
+                      output: "seq_out"
+                      op_type: "SequenceInsert"
+                    }
+                    name: "loop_body"
+                    input {
+                      name: "iter_count"
+                      type {
+                        tensor_type {
+                          elem_type: 7
+                          shape {
+                          }
+                        }
+                      }
+                    }
+                    input {
+                      name: "cond_in"
+                      type {
+                        tensor_type {
+                          elem_type: 9
+                          shape {
+                          }
+                        }
+                      }
+                    }
+                    input {
+                      name: "seq_in"
+                      type {
+                        sequence_type {
+                          elem_type {
+                            tensor_type {
+                              elem_type: 1
+                            }
+                          }
+                        }
+                      }
+                    }
+                    output {
+                      name: "cond_out"
+                      type {
+                        tensor_type {
+                          elem_type: 9
+                          shape {
+                          }
+                        }
+                      }
+                    }
+                    output {
+                      name: "seq_out"
+                      type {
+                        sequence_type {
+                          elem_type {
+                            tensor_type {
+                              elem_type: 1
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  type: GRAPH
+                }
+              }
+              name: "test_loop13_seq"
+              input {
+                name: "trip_count"
+                type {
+                  tensor_type {
+                    elem_type: 7
+                    shape {
+                    }
+                  }
+                }
+              }
+              input {
+                name: "cond"
+                type {
+                  tensor_type {
+                    elem_type: 9
+                    shape {
+                    }
+                  }
+                }
+              }
+              input {
+                name: "seq_empty"
+                type {
+                  sequence_type {
+                    elem_type {
+                      tensor_type {
+                        elem_type: 1
+                        shape {
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              output {
+                name: "seq_res"
+                type {
+                  sequence_type {
+                    elem_type {
+                      tensor_type {
+                        elem_type: 1
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            opset_import {
+              domain: ""
+              version: 13
+            }
+
+        """.trimIndent()
+
+        val graph = OnnxTestUtils.loadFromString(modelLoad)
+        val onnxIRGraph = OnnxIRGraph(graph.graph,onnxOpRegistry)
+        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("trip_count","cond","seq_empty"),listOf("res_y","res_scan"))
         val inputs = mapOf("trip_count" to tripCount,"cond" to cond,"y" to y,"begin_axes" to axes,"end_axes" to axes)
+        val sequenceInputs = mapOf("trip_count" to arrayOf(tripCount),
+            "cond" to arrayOf(cond),
+            "y" to arrayOf(y),
+            "begin_axes" to arrayOf(axes),"end_axes" to arrayOf(axes),
+            "seq_empty" to arrayOf(Nd4j.ones(DataType.FLOAT,1)))
+
+        val sequenceInputValues = mutableMapOf<String,SDValue>()
+        sequenceInputs.forEach { (key,value) -> sequenceInputValues[key] = SDValue.create(value) }
         val inputsOnnx = convertToOnnxTensors(inputs)
 
         val outputs = mapOf("res_y" to resY,"res_scan" to resScan)
-        val convertedOutputs = convertToOnnxTensors(outputs)
         val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
         val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,inputsOnnx,onnxOpRegistry)
-        val assertion = onnxGraphRunner.run(inputs)
-        val result = importedGraph.output(inputs,"res_y","res_scan")
+
+        val assertion = onnxGraphRunner.runSequence(sequenceInputValues)
+        val result = importedGraph.outputValues(sequenceInputValues,listOf("res_y","res_scan"))
         assertEquals(assertion,result)
 
     }

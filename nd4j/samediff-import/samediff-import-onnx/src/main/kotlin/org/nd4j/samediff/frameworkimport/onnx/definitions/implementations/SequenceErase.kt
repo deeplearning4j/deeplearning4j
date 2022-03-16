@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -52,11 +53,7 @@ class SequenceErase : PreImportHook  {
         val inputSequence = sd.getVariable(op.inputsToOp[0])
         val position = if(op.inputsToOp.size > 1) sd.getVariable(op.inputsToOp[1]) else
             sd.constant(-1)
-        val ta = sd.tensorArray(inputSequence.dataType())
-        val outputVar = ta.remove(inputSequence,position)
-        outputVar.addControlDependency(inputSequence)
-        outputVar.addControlDependency(position)
-        outputVar.rename(outputNames[0])
+        val outputVar = TensorArray.removeFromTensorArray(sd,inputSequence,position,outputNames[0])
         return mapOf(outputVar.name() to listOf(outputVar))
     }
 

@@ -19,6 +19,7 @@
  */
 package org.nd4j.samediff.frameworkimport.runner
 
+import org.nd4j.autodiff.samediff.config.SDValue
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.samediff.frameworkimport.ir.IRGraph
 import org.nd4j.shade.protobuf.GeneratedMessageV3
@@ -43,7 +44,7 @@ interface IRGraphRunner<
 
 
 
-    fun runSequence(inputs: Map<String, Array<INDArray>>): Map<String, Array<INDArray>>
+    fun runSequence(inputs: Map<String, SDValue>): Map<String, SDValue>
 
 
     fun run(inputs: Map<String, INDArray>): Map<String, INDArray>

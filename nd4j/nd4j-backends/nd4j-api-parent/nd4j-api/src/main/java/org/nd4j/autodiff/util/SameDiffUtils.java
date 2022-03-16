@@ -27,6 +27,7 @@ import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.config.ExecutionResult;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
@@ -42,13 +43,13 @@ public class SameDiffUtils {
     /**
      * Stack batch outputs, like an output from {@link SameDiff#output(MultiDataSetIterator, String...)}
      */
-    public static Map<String, INDArray> stackOutputs(List<Map<String, INDArray>> outputs){
+    public static Map<String, INDArray> stackOutputs(List<ExecutionResult<INDArray>> outputs){
         Map<String, List<INDArray>> outs = new HashMap<>();
-        for(Map<String, INDArray> batch : outputs){
-            for(String k : batch.keySet()){
+        for(ExecutionResult<INDArray> batch : outputs){
+            for(String k : batch.getOutputs().keySet()) {
                 if(!outs.containsKey(k))
-                    outs.put(k, new ArrayList<INDArray>());
-                outs.get(k).add(batch.get(k));
+                    outs.put(k, new ArrayList<>());
+                outs.get(k).add(batch.getOutputs().get(k));
             }
         }
 

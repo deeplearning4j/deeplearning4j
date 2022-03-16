@@ -39,10 +39,7 @@ import org.nd4j.autodiff.listeners.records.LossCurve;
 import org.nd4j.autodiff.samediff.api.OutAndGrad;
 import org.nd4j.autodiff.samediff.array.SingleThreadArrayHolder;
 import org.nd4j.autodiff.samediff.array.ThreadSafeArrayHolder;
-import org.nd4j.autodiff.samediff.config.BatchOutputConfig;
-import org.nd4j.autodiff.samediff.config.EvaluationConfig;
-import org.nd4j.autodiff.samediff.config.FitConfig;
-import org.nd4j.autodiff.samediff.config.OutputConfig;
+import org.nd4j.autodiff.samediff.config.*;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.TrainingSession;
@@ -138,6 +135,7 @@ public class SameDiff extends SDBaseOps {
     @Setter
     private ArrayHolder eagerArrays = new ThreadSafeArrayHolder(true);
 
+    private final Map<Long, Map<String, SDValue>> otherPlaceHoldersPerThread = new ConcurrentHashMap<>(); //Placeholders for each thread - if the user sets them
 
     private final Map<Long, Map<String, INDArray>> placeholdersPerThread = new ConcurrentHashMap<>(); //Placeholders for each thread - if the user sets them
 
@@ -2303,7 +2301,8 @@ public class SameDiff extends SDBaseOps {
      * Helper method for evaluations.  Should only be called from the above evaluate method
      */
     private void evaluateHelper(MultiDataSetIterator iterator,
-                                Map<String, List<IEvaluation>> variableEvals, Map<String, Integer> predictionLabelMapping, At at, @NonNull Listener... listeners) {
+                                Map<String, List<IEvaluation>> variableEvals,
+                                Map<String, Integer> predictionLabelMapping, At at, @NonNull Listener... listeners) {
         Preconditions.checkState(trainingConfig != null, "Training config has not been set");
 
         Preconditions.checkState(variableEvals.keySet().equals(predictionLabelMapping.keySet()), "Keysets for variable evaluations" +
@@ -2345,13 +2344,11 @@ public class SameDiff extends SDBaseOps {
             MultiDataSet ds = iterator.next();
             Map<String, INDArray> placeholderMap = toPlaceholderMap(ds);
 
-            Map<String, INDArray> m = directExecHelper(placeholderMap, at, ds, Collections.<String>emptyList(), activeListeners, requiredVarsArr);
+            ExecutionResult<INDArray> m = directExecHelper(placeholderMap, at, ds, Collections.<String>emptyList(), activeListeners, requiredVarsArr);
 
             for (Map.Entry<String, List<IEvaluation>> e : variableEvals.entrySet()) {
-                INDArray prediction = m.get(e.getKey());
+                INDArray prediction = m.getOutputs().get(e.getKey());
                 for (IEvaluation eval : e.getValue()) {
-                    //TODO time series, etc
-
                     INDArray label = ds.getLabels(predictionLabelMapping.get(e.getKey()));
                     INDArray mask = ds.getLabelsMaskArray(predictionLabelMapping.get(e.getKey()));
                     eval.eval(label, prediction, mask);
@@ -2505,7 +2502,7 @@ public class SameDiff extends SDBaseOps {
      * @param outputs   The set of outputs to report.  If null, defaults to all outputs of this SameDiff.
      */
     public List<Map<String, INDArray>> outputBatches(MultiDataSetIterator iterator, List<Listener> listeners, String... outputs) {
-        return outputHelper(iterator, At.defaultAt(Operation.INFERENCE), listeners, outputs);
+        return outputHelper(iterator, At.defaultAt(Operation.INFERENCE), listeners, outputs).stream().map(input -> input.getOutputs()).collect(Collectors.toList());
     }
 
     /**
@@ -2547,7 +2544,7 @@ public class SameDiff extends SDBaseOps {
     /**
      * Helper method to run inference.  Also used for validation
      */
-    private List<Map<String, INDArray>> outputHelper(MultiDataSetIterator iterator, At at, @NonNull List<Listener> listeners, @NonNull String... outputs) {
+    private List<ExecutionResult<INDArray>> outputHelper(MultiDataSetIterator iterator, At at, @NonNull List<Listener> listeners, @NonNull String... outputs) {
         Preconditions.checkState(trainingConfig != null, "Training config has not been set");
 
         List<Listener> activeListeners = new ArrayList<>();
@@ -2577,7 +2574,7 @@ public class SameDiff extends SDBaseOps {
 
         String[] neededOutputsArr = neededOutputs.toArray(new String[0]);
 
-        List<Map<String, INDArray>> predictions = new ArrayList<>();
+        List<ExecutionResult<INDArray>> predictions = new ArrayList<>();
 
         if (!iterator.hasNext() && iterator.resetSupported())
             iterator.reset();
@@ -2603,7 +2600,7 @@ public class SameDiff extends SDBaseOps {
                     l.iterationStart(this, at, ds, (dataEnd - dataStart));
                 }
 
-                Map<String, INDArray> outs = directExecHelper(placeholderMap, at, ds, requiredVars, activeListeners, neededOutputsArr);
+                ExecutionResult<INDArray> outs = directExecHelper(placeholderMap, at, ds, requiredVars, activeListeners, neededOutputsArr);
 
                 for (Listener l : activeListeners) {
                     l.iterationDone(this, at, ds, null);
@@ -2701,27 +2698,10 @@ public class SameDiff extends SDBaseOps {
      * <p>
      * Special case of {@link #batchOutput()}.
      */
-    public Map<String, INDArray[]> outputSequences(Map<String, INDArray> placeholders, @NonNull List<String> outputs) {
-        Map<String,INDArray> initialRet =  batchOutput().output(outputs.toArray(new String[0])).inputs(placeholders).output();
-        return convertMultiOutputs(outputs, initialRet);
+    public Map<String, SDValue> outputValues(Map<String, SDValue> placeholders, @NonNull List<String> outputs) {
+        return batchOutput().output(outputs.toArray(new String[0])).valueInputs(placeholders).outputValue();
     }
 
-    private Map<String, INDArray[]> convertMultiOutputs(List<String> outputs, Map<String, INDArray> initialRet) {
-        long threadId = Thread.currentThread().getId();
-        InferenceSession session = sessions.get(threadId);
-        Map<String,INDArray[]> ret = new LinkedHashMap<>();
-        for(String s : outputs) {
-            List<INDArray> tensorArraysInSession = session.getTensorArraysInSession(s);
-            if(tensorArraysInSession != null) {
-                INDArray[] convert = tensorArraysInSession.toArray(new INDArray[tensorArraysInSession.size()]);
-                ret.put(s,convert);
-            } else {
-                ret.put(s,new INDArray[]{initialRet.get(s)});
-            }
-        }
-
-        return ret;
-    }
 
     /**
      * Do inference for the given variables for a single batch.
@@ -2730,10 +2710,14 @@ public class SameDiff extends SDBaseOps {
      * <p>
      * Special case of {@link #batchOutput()}.
      */
-    public Map<String, INDArray[]> outputSequences(Map<String, INDArray> placeholders, String... outputs) {
-        Map<String,INDArray> initialRet =  batchOutput().output(outputs).inputs(placeholders).output();
-        return convertMultiOutputs(Arrays.asList(outputs),initialRet);
+    public Map<String, SDValue> outputValues(Map<String, SDValue> placeholders, List<Listener> listeners,@NonNull List<String> outputs) {
+        return  batchOutputHelper(Collections.emptyMap(),
+                placeholders, listeners,
+                Operation.INFERENCE,
+                outputs.toArray(new String[outputs.size()])).getValueOutputs();
+
     }
+
 
 
 
@@ -2747,10 +2731,35 @@ public class SameDiff extends SDBaseOps {
      * @param outputs      The variables to output and return.
      */
     public Map<String, INDArray> output(Map<String, INDArray> placeholders, List<Listener> listeners, String... outputs) {
-        return batchOutputHelper(placeholders, listeners, Operation.INFERENCE, outputs);
+        return output(placeholders,Collections.emptyMap(), listeners,outputs).getOutputs();
     }
 
-    protected Map<String, INDArray> batchOutputHelper(Map<String, INDArray> placeholders, List<Listener> listeners, Operation operation, String... outputs) {
+
+    /**
+     * Do inference for the given variables for a single batch.
+     * <p>
+     * Special case of {@link #batchOutput()}.
+     *
+     * @param placeholders The values to use for placeholders.
+     * @param sequencePlaceHolders the placeholders involving an array of arrays
+     * @param listeners    Additional listeners to use during this operation.
+     * @param outputs      The variables to output and return.
+     */
+    public ExecutionResult<INDArray> output(Map<String, INDArray> placeholders,Map<String,SDValue> sequencePlaceHolders, List<Listener> listeners, String... outputs) {
+        return batchOutputHelper(placeholders,sequencePlaceHolders, listeners, Operation.INFERENCE, outputs);
+    }
+
+
+
+    protected ExecutionResult<INDArray> batchOutputHelper(Map<String, INDArray> placeholders, List<Listener> listeners, Operation operation, String... outputs) {
+        return batchOutputHelper(placeholders,Collections.emptyMap(),listeners,operation,outputs);
+    }
+
+    protected ExecutionResult<INDArray> batchOutputHelper(Map<String, INDArray> placeholders,
+                                                          Map<String, SDValue> otherPlaceholders,
+                                                          List<Listener> listeners,
+                                                          Operation operation,
+                                                          String... outputs) {
         List<Listener> activeListeners = new ArrayList<>();
 
         if(operation == null)
@@ -2772,7 +2781,12 @@ public class SameDiff extends SDBaseOps {
 
         validateListenerActivations(activeListeners, operation);
 
-        Map<String, INDArray> ret = directExecHelper(placeholders, At.defaultAt(operation), null, Collections.emptyList(), activeListeners, outputs);
+        ExecutionResult<INDArray> ret = directExecHelper(placeholders,
+                otherPlaceholders,
+                At.defaultAt(operation),
+                null, Collections.emptyList(),
+                activeListeners,
+                outputs);
 
         for (Listener l : activeListeners) {
             l.operationEnd(this, operation);
@@ -2780,11 +2794,26 @@ public class SameDiff extends SDBaseOps {
         return ret;
     }
 
+
+
     /**
      * Do inference for the given variables for a single batch, with training information
      */
-    protected Map<String, INDArray> directExecHelper(Map<String, INDArray> placeholders, At at, MultiDataSet batch,
-                                                     Collection<String> requiredActivations, List<Listener> activeListeners, String... outputs) {
+    protected ExecutionResult<INDArray> directExecHelper(Map<String, INDArray> placeholders, At at, MultiDataSet batch,
+                                                         Collection<String> requiredActivations, List<Listener> activeListeners, String... outputs) {
+        return directExecHelper(placeholders,Collections.emptyMap(),at,batch,requiredActivations,activeListeners,outputs);
+    }
+
+
+    /**
+     * Do inference for the given variables for a single batch, with training information
+     */
+    protected ExecutionResult<INDArray> directExecHelper(Map<String, INDArray> placeholders,
+                                                         Map<String, SDValue> otherPlaceHolders,
+                                                         At at, MultiDataSet batch,
+                                                         Collection<String> requiredActivations,
+                                                         List<Listener> activeListeners,
+                                                         String... outputs) {
         if (at == null)
             at = At.defaultAt();
 
@@ -2801,12 +2830,24 @@ public class SameDiff extends SDBaseOps {
             placeholders = placeholdersPerThread.get(Thread.currentThread().getId());
         }
 
+        if (otherPlaceHolders == null && phNames != null) {
+            //Maybe user set placeholders before calling exec method?
+            otherPlaceHolders = otherPlaceHoldersPerThread.get(Thread.currentThread().getId());
+        }
+
         //Placeholder validation is performed in InferenceSession
 
         InferenceSession is = sessions.get(threadId);
         return is.output(outputs == null ? Collections.emptyList() : Arrays.asList(outputs),
-                placeholders, batch, requiredActivations, activeListeners, at);
+                placeholders,
+                otherPlaceHolders,
+                batch,
+                requiredActivations,
+                activeListeners,
+                at);
     }
+
+
 
     /**
      * See {@link #one(String, DataType, int...)}.
@@ -4468,8 +4509,8 @@ public class SameDiff extends SDBaseOps {
         //Key is gradient variable name
         SameDiff gradFn = getFunction(GRAD_FN_KEY);
         gradFn.setListeners(listeners);
-        Map<String, INDArray> grads = gradFn.batchOutputHelper(placeholderVals, null, Operation.TRAINING, varNames.toArray(new String[0]));
-
+        ExecutionResult<INDArray> gradExecResult = gradFn.batchOutputHelper(placeholderVals, null, Operation.TRAINING, varNames.toArray(new String[0]));
+        Map<String,INDArray> grads = gradExecResult.getOutputs();
         Map<String, INDArray> outOutputs = outputVars == null ? null : new HashMap<>();
         Map<String, INDArray> outGrads = gradientVars == null ? null : new HashMap<>();
         if(outputVars != null){

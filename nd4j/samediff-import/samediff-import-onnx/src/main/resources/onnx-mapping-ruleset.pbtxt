@@ -1358,6 +1358,11 @@ mappings {
 mappings {
   frameworkName: "onnx"
   opName: "noop"
+  inputFrameworkOpName: "SequenceRemove"
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
   inputFrameworkOpName: "Placeholder"
 }
 mappings {

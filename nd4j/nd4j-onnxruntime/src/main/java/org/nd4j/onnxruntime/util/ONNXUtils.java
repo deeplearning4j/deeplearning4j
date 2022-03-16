@@ -36,6 +36,9 @@ import static org.nd4j.linalg.api.buffer.DataType.*;
 
 public class ONNXUtils {
 
+
+
+
     /**
      *
      * @param expected
@@ -184,8 +187,34 @@ public class ONNXUtils {
      * @param index the index of the output to get the type for
      * @return the specified type based on the integer output
      */
+    public static ONNXType getTypeForInput(Session session,int index) {
+        int type = session.GetInputTypeInfo(index).GetONNXType();
+        for(ONNXType onnxType : ONNXType.values()) {
+            if(onnxType.ordinal() == type)
+                return onnxType;
+        }
+
+        throw new IllegalArgumentException("No type found for input " + index);
+    }
+
+
+    /**
+     * Return the {@link ONNXType}
+     * for the output of the {@link Session}
+     * at the specified index.
+     * This is used for after a session has been run
+     * @param session the session to get the output of
+     * @param index the index of the output to get the type for
+     * @return the specified type based on the integer output
+     */
     public static ONNXType getTypeForOutput(Session session,int index) {
-        return ONNXType.values()[session.GetOutputTypeInfo(index).GetONNXType()];
+        int type = session.GetOutputTypeInfo(index).GetONNXType();
+        for(ONNXType onnxType : ONNXType.values()) {
+           if(onnxType.ordinal() == type)
+               return onnxType;
+       }
+
+       throw new IllegalArgumentException("No type found for input " + index);
     }
 
 
@@ -204,6 +233,7 @@ public class ONNXUtils {
             valueVector.put(i,tensorInfo);
         }
 
+        valueVector.retainReference();
         return valueVector;
     }
 
@@ -233,6 +263,7 @@ public class ONNXUtils {
                 dims,
                 ndArray.rank(),
                 onnxTypeForDataType(ndArray.dataType()));
+        ret.retainReference();
         return  ret;
     }
 

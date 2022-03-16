@@ -21,13 +21,13 @@ package org.nd4j.samediff.frameworkimport.onnx.ir
 
 import onnx.Onnx
 import org.apache.commons.io.FileUtils
+import org.nd4j.autodiff.samediff.config.SDValue
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.onnxruntime.runner.OnnxRuntimeRunner
 import org.nd4j.samediff.frameworkimport.ir.IRGraph
 import org.nd4j.samediff.frameworkimport.onnx.*
 import org.nd4j.samediff.frameworkimport.runner.IRGraphRunner
 import java.io.File
-import java.util.*
 
 class OnnxIRGraphRunner(graphDef: OnnxIRGraph, inputNames: List<String>, outputNames: List<String>,opSet: Long = 13L,irVersion: Long = 7L): IRGraphRunner<
         Onnx.GraphProto,
@@ -40,19 +40,10 @@ class OnnxIRGraphRunner(graphDef: OnnxIRGraph, inputNames: List<String>, outputN
     val graphRunner: OnnxRuntimeRunner
 
     init {
-        val uuid = UUID.randomUUID().toString()
-        val tempFile = File("tempFile-$uuid.proto")
-        val graphDefBuilder = graphDef.graphDef.toBuilder()
+        val tempFile = File("tempFile.onnx")
         //onnx runtime doesn't allow any outputs that aren't defined
         //already in the model, we need to dynamically modify the model at runtime
         //to allow things like intermediate results
- /*       outputNames.forEach {
-            if(!graphDef.outputList.contains(it))
-                graphDefBuilder.addOutput(ValueInfoProto {
-                    name = it
-                })
-        }*/
-
         val modelProto =  prepareGraphForExecAndExport(graphDef.graphDef,outputNames,opSet,irVersion)
         FileUtils.writeByteArrayToFile(tempFile, modelProto.toByteArray())
         graphRunner = OnnxRuntimeRunner.builder()
@@ -69,8 +60,8 @@ class OnnxIRGraphRunner(graphDef: OnnxIRGraph, inputNames: List<String>, outputN
         return graphRunner.exec(inputs)
     }
 
-    override fun runSequence(inputs: Map<String, Array<INDArray>>): Map<String, Array<INDArray>> {
-        return graphRunner.execSequence(inputs)
+    override fun runSequence(inputs: Map<String, SDValue>): Map<String, SDValue> {
+        return graphRunner.execValues(inputs)
     }
 
 }

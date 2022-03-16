@@ -61,16 +61,9 @@ fun isOnnxAttributeName(name: String, opDef: Onnx.NodeProto): Boolean {
 }
 
 fun prepareGraphForExecAndExport(graphDef: Onnx.GraphProto,outputNames: List<String>,opset: Long = 13L,ir: Long = 7): Onnx.ModelProto {
-    val graphDefBuilder = graphDef.toBuilder()
     //onnx runtime doesn't allow any outputs that aren't defined
     //already in the model, we need to dynamically modify the model at runtime
     //to allow things like intermediate results
- /*   outputNames.forEach {
-        if(!graphDef.outputList.contains(it))
-            graphDefBuilder.addOutput(ValueInfoProto {
-                name = it
-            })
-    }*/
 
     val modelProto = ModelProto {
         OpSetImport(OperatorSetIdProto {
@@ -78,7 +71,7 @@ fun prepareGraphForExecAndExport(graphDef: Onnx.GraphProto,outputNames: List<Str
         })
 
         irVersion = ir
-        graph = graphDefBuilder.build()
+        graph = graphDef
     }
 
     return modelProto
@@ -103,6 +96,9 @@ fun convertToOnnxDataType(dataType: DataType): Onnx.TensorProto.DataType {
         else -> throw UnsupportedOperationException("Unknown Onnx data type: [" + dataType.name + "]")
     }
 }
+
+
+
 
 
 fun convertToOnnxTensor(inputArray: INDArray, name: String): Onnx.TensorProto {

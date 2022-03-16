@@ -259,6 +259,19 @@ public class TensorArray extends  BaseTensorOp {
         return read;
     }
 
+    /**
+     * Get the associated {@link TensorArray} instance
+     * related to this op.
+     * Sometimes when a TensorArray op is returned
+     * it can be renamed or may not directly be the associated
+     * {@link TensorArray} instance. This helps discover the underlying
+     * {@link TensorArray} op for use to declare other operations to manipulate
+     * that instance such as {@link TensorArray#read(int)}
+     * @param sd the input instance
+     * @param sequenceVar the relevant variable to discover the {@link TensorArray}
+     *                    for
+     * @return
+     */
     public static TensorArray getTensorArray(SameDiff sd, SDVariable sequenceVar) {
         BaseTensorOp baseTensorOp = (BaseTensorOp) sd.getVariableOutputOp(sequenceVar.name());
         TensorArray ta =  null;
@@ -270,6 +283,110 @@ public class TensorArray extends  BaseTensorOp {
         }
         return ta;
     }
+
+    /**
+     * Remove the last element from the relevant
+     * {@link  TensorArray}
+     * @param sameDiff the samediff instance to use
+     * @param inputSequence the relevant variable for the associated
+     *                      {@link TensorArray}
+     * @return
+     */
+    public static SDVariable removeFromTensorArray(SameDiff sameDiff,SDVariable inputSequence) {
+        return removeFromTensorArray(sameDiff,inputSequence, sameDiff.constant(-1),null);
+    }
+
+    /**
+     * Remove an element from the relevant
+     * {@link  TensorArray}
+     * @param sameDiff the samediff sinstance to use
+     * @param inputSequence the relevant variable for the associated
+     *                      {@link TensorArray}
+     * @param position the position to remove
+     * @return
+     */
+    public static SDVariable removeFromTensorArray(SameDiff sameDiff,SDVariable inputSequence,SDVariable position) {
+        return removeFromTensorArray(sameDiff,inputSequence,position,null);
+    }
+
+    /**
+     * Remove an element from the relevant
+     * {@link  TensorArray}
+     * @param sameDiff the samediff instance to use
+     * @param inputSequence the relevant variable for the associated
+     *                      {@link TensorArray}
+     * @param position the position to remove
+     * @param outputVarName the name of the output variable
+     * @return
+     */
+    public static SDVariable removeFromTensorArray(SameDiff sameDiff,SDVariable inputSequence,SDVariable position,String outputVarName) {
+        TensorArray ta = TensorArray.getTensorArray(sameDiff,inputSequence);
+        SDVariable outputVar = ta.remove(inputSequence,position);
+        outputVar.addControlDependency(inputSequence);
+        outputVar.addControlDependency(position);
+        if(outputVarName != null)
+            return outputVar.rename(outputVarName);
+        return outputVar;
+    }
+
+
+    /**
+     * Create an empty sequence with the specified data type.
+     * An output variable name will be generated.
+     * @param sd the samediff instance to use
+     * @param sequence the output variable of the sequence to get the size of
+     * @return the output variable of the created sequence
+     */
+    public static SDVariable sizeOfTensorArray(SameDiff sd,SDVariable sequence) {
+        return sizeOfTensorArray(sd,sequence,null);
+    }
+
+
+    /**
+     * Create an empty sequence with the specified data type.
+     * An output variable name will be generated.
+     * @param sd the samediff instance to use
+     * @param sequence the output variable of the sequence to get the size of
+     * @param outputVarName the output name of the size variable
+     * @return the output variable of the created sequence
+     */
+    public static SDVariable sizeOfTensorArray(SameDiff sd,SDVariable sequence,String outputVarName) {
+        TensorArray tensorArray = TensorArray.getTensorArray(sd,sequence);
+        SDVariable outputVar = tensorArray.size(sequence);
+        outputVar.addControlDependency(sequence);
+        if(outputVarName != null)
+            outputVar = outputVar.rename(outputVarName);
+        return outputVar;
+    }
+
+
+    /**
+     * Create an empty sequence with the specified data type.
+     * An output variable name will be generated.
+     * @param sd the samediff instance to use
+     * @param dataType the data type of the sequence
+     * @return the output variable of the created sequence
+     */
+    public static SDVariable createEmpty(SameDiff sd,DataType dataType) {
+        return createEmpty(sd,dataType,null);
+    }
+
+
+    /**
+     * Create an empty sequence with the specified data type.
+     * @param sd the samediff instance to use
+     * @param dataType the data type of the sequence
+     * @param outputVarName the output variable name of the sequence
+     * @return the output variable of the created sequence
+     */
+    public static SDVariable createEmpty(SameDiff sd,DataType dataType,String outputVarName) {
+        TensorArray ta = sd.tensorArray(dataType);
+        SDVariable outputVar = ta.outputVariable();
+        if(outputVar.name() != null)
+            return outputVar.rename(outputVarName);
+        return outputVar;
+    }
+
 
     /**
      * Create an {@link TensorArray} op from the given inputs,

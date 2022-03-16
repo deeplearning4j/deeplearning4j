@@ -22,8 +22,11 @@ package org.nd4j.onnxruntime.runner;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import onnx.Onnx;
+import org.apache.commons.io.FileUtils;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.onnxruntime.*;
+import org.nd4j.autodiff.samediff.config.SDValue;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -32,6 +35,8 @@ import org.nd4j.onnxruntime.runner.enums.ONNXType;
 import org.nd4j.onnxruntime.util.ONNXUtils;
 
 import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -50,7 +55,7 @@ public class OnnxRuntimeRunner implements Closeable  {
     private SessionOptions sessionOptions;
     private   static Env env;
     private Pointer bp;
-
+    private Onnx.ModelProto modelProto;
 
     @Builder
     public OnnxRuntimeRunner(String modelUri) {
@@ -62,6 +67,7 @@ public class OnnxRuntimeRunner implements Closeable  {
         sessionOptions = new SessionOptions();
         sessionOptions.SetGraphOptimizationLevel(ORT_ENABLE_EXTENDED);
         sessionOptions.SetIntraOpNumThreads(1);
+        sessionOptions.SetLogSeverityLevel(ORT_LOGGING_LEVEL_VERBOSE);
         sessionOptions.retainReference();
         allocator = new AllocatorWithDefaultOptions();
         allocator.retainReference();
@@ -70,6 +76,11 @@ public class OnnxRuntimeRunner implements Closeable  {
             session = new Session(env, bp, sessionOptions);
             //retain the session reference to prevent pre emptive release of the session.
             session.retainReference();
+            try {
+                modelProto = Onnx.ModelProto.parseFrom(FileUtils.readFileToByteArray(new File(modelUri)));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         runOptions = new RunOptions();
         memoryInfo = MemoryInfo.CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
@@ -98,7 +109,7 @@ public class OnnxRuntimeRunner implements Closeable  {
      * @param input the input map
      * @return a map of the names of the ndarrays
      */
-    public Map<String,INDArray[]> execSequence(Map<String,INDArray[]> input) {
+    public Map<String,SDValue> execValues(Map<String, SDValue> input) {
         long numInputNodes = session.GetInputCount();
         long numOutputNodes = session.GetOutputCount();
 
@@ -106,19 +117,23 @@ public class OnnxRuntimeRunner implements Closeable  {
         PointerPointer<BytePointer> outputNodeNames = new PointerPointer<>(numOutputNodes);
 
         Value inputVal = new Value(numInputNodes);
-
         for (int i = 0; i < numInputNodes; i++) {
             BytePointer inputName = session.GetInputName(i, allocator.asOrtAllocator());
             inputNodeNames.put(i, inputName);
-            INDArray[] arr = input.get(inputName.getString());
-            if(arr.length < 2) {
+            ONNXType typeForInput = getTypeForInput(session, i);
+            INDArray[] arr = input.get(inputName.getString()).getListValue();
+            if(arr.length == 1 && typeForInput == ONNXType.ONNX_TYPE_TENSOR) {
                 INDArray arr2 = arr[0];
                 Value inputTensor = getTensor(arr2, memoryInfo);
                 Preconditions.checkState(inputTensor.IsTensor(),"Input must be a tensor.");
                 inputVal.position(i).put(inputTensor);
-            } else {
+            }
+            //empty sequence
+            else if(arr.length == 0) {
+                    throw new IllegalArgumentException("Onnx Runtime does not support empty sequences! Found at input name " + inputName.getString());
+            } else if(arr.length > 1 || typeForInput == ONNXType.ONNX_TYPE_SEQUENCE) {
                 ValueVector inputTensor = getSequence(arr, memoryInfo);
-                inputVal.position(i).put(inputTensor);
+                inputVal.position(i).put(Value.CreateSequence(inputTensor));
             }
 
         }
@@ -143,17 +158,17 @@ public class OnnxRuntimeRunner implements Closeable  {
                 numOutputNodes);
 
         outputVector.retainReference();
-        Map<String, INDArray[]> ret = new LinkedHashMap<>();
+        Map<String, SDValue> ret = new LinkedHashMap<>();
 
         for (int i = 0; i < numOutputNodes; i++) {
             Value outValue = outputVector.get(i);
             outValue.retainReference();
             if(outValue.IsTensor()) {
                 INDArray arr = ndarrayFromValue(outValue,allocator.asOrtAllocator());
-                ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), new INDArray[]{arr});
+                ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), SDValue.create(arr));
             } else  {
                 INDArray[] seq = ndarraysFromSequence(outValue,allocator.asOrtAllocator());
-                ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), seq);
+                ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), SDValue.create(seq));
             }
 
         }

@@ -24,9 +24,11 @@ import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
+import org.nd4j.samediff.frameworkimport.onnx.TensorDefinition
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
@@ -50,10 +52,7 @@ class SequenceLength : PreImportHook  {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
     ): Map<String, List<SDVariable>> {
         val inputSequence = sd.getVariable(op.inputsToOp[0])
-        val size = sd.tensorArray(inputSequence.dataType())
-        val outputVar = size.size(inputSequence)
-        outputVar.addControlDependency(inputSequence)
-        outputVar.rename(outputNames[0])
+        val outputVar = TensorArray.sizeOfTensorArray(sd,inputSequence,outputNames[0])
         return mapOf(outputVar.name() to listOf(outputVar))
     }
 

@@ -356,6 +356,14 @@ val sequenceinsert = OnnxMappingProcess(
         attributeMappingRules = listOf()
 )
 
+val sequenceRemove = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SequenceRemove",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
 
 val sequenceLength = OnnxMappingProcess(
         opName = "noop",

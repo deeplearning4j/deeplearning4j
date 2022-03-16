@@ -19,14 +19,18 @@
  */
 package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 
+import onnx.Onnx
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
+import org.nd4j.samediff.frameworkimport.onnx.convertToOnnxDataType
+import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRDataType
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
@@ -50,10 +54,13 @@ class SequenceEmpty : PreImportHook  {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
     ): Map<String, List<SDVariable>> {
         val outputVarName = outputNames[0]
-        val outputVar = sd.tensorArray(sd.getVariable(op.inputsToOp[0]).dataType())
-        outputVar.`var`.addControlDependency(sd.getVariable(op.inputsToOp[0]))
-        outputVar.`var`.rename(outputNames[0])
-        return mapOf(outputVarName to listOf(outputVar.`var`))
+        val dataType = if(attributes.containsKey("dtype")) attributes["dtype"] as Int else {
+            onnx.Onnx.TensorProto.DataType.FLOAT.ordinal
+        }
+
+        val convertOnnxDataType = OnnxIRDataType(Onnx.TensorProto.DataType.forNumber(dataType)).nd4jDataType()
+        val outputVar = TensorArray.createEmpty(sd,convertOnnxDataType,outputVarName)
+        return mapOf(outputVarName to listOf(outputVar))
     }
 
 
