@@ -2820,7 +2820,7 @@ public class SameDiff extends SDBaseOps {
         Preconditions.checkState(outputs != null && outputs.length > 0, "No outputs were specified");
         long threadId = Thread.currentThread().getId();
         if (!sessions.containsKey(threadId)) {
-            log.info("Creating getInferenceFactory().create for thread {}", threadId);
+            log.info("Creating new InferenceSession for thread {}", threadId);
             sessions.put(threadId, getInferenceFactory().create(this));
         }
 

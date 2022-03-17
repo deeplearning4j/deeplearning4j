@@ -405,9 +405,9 @@ size_t hash<sd::ShapeDescriptor>::operator()(const sd::ShapeDescriptor &k) const
 #if defined(__NEC__)
  //simplified
    auto res = std::hash<char>()(k.order());
-  res ^= k.dataType() + 0x9e3779b9 + (res << 6) + (res >> 2);
-  res ^= std::hash<int>()(k.rank()) + 0x9e3779b9 + (res << 6) + (res >> 2);
-  res ^= std::hash<sd::LongType>()(k.ews()) + 0x9e3779b9 + (res << 6) + (res >> 2);
+  res ^= std::hash<int>()((int)k.dataType()) + 0x9e3779b9 + (res << 6) + (res >> 2);
+  // res ^= std::hash<int>()(k.rank()) + 0x9e3779b9 + (res << 6) + (res >> 2);
+  // res ^= std::hash<sd::LongType>()(k.ews()) + 0x9e3779b9 + (res << 6) + (res >> 2);
   auto shape_strides = const_cast<sd::ShapeDescriptor &>(k).shape_strides();
   auto ptr = shape_strides.data();
   // auto strides = const_cast<sd::ShapeDescriptor &>(k).strides();

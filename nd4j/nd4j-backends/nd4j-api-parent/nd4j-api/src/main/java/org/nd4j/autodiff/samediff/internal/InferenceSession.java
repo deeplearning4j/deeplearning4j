@@ -884,23 +884,16 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         if (df instanceof CustomOp) {
             DynamicCustomOp customOp = (DynamicCustomOp) df;
-            if (args != null) {
-                oc.setInputArrays(args);
-            }
 
             if (df instanceof Identity) {
+                if (args != null) {
+                    oc.setInputArrays(args);
+                }
                 //We don't need to allocate an output array for Identity, we pass through the input array without copying
                 return new Pair<>(sdo, oc);
             }
 
-            if(customOp.numIArguments() > 0)
-                oc.setIArguments(customOp.iArgs());
-            if(customOp.numDArguments() > 0)
-                oc.setDArguments(customOp.dArgs());
-            if(customOp.numTArguments() > 0)
-                oc.setTArguments(customOp.tArgs());
-            if(customOp.numBArguments() > 0)
-                oc.setBArguments(customOp.bArgs());
+            oc.setArgs(args, customOp.iArgs(), customOp.dArgs() , customOp.tArgs(), customOp.bArgs() );
 
 
             List<LongShapeDescriptor> outShape = customOp.calculateOutputShape(oc);

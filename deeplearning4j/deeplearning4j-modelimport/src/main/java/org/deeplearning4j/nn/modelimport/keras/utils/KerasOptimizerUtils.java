@@ -113,7 +113,7 @@ public class KerasOptimizerUtils {
                 double beta1 = (double) optimizerParameters.get(BETA_1);
                 double beta2 = (double) optimizerParameters.get(BETA_2);
                 double epsilon = (double) optimizerParameters.get(EPSILON);
-                double scheduleDecay = (double) optimizerParameters.get(SCHEDULE_DECAY);
+                double scheduleDecay = (double) optimizerParameters.getOrDefault(SCHEDULE_DECAY,0.0);
 
                 dl4jOptimizer = new Nadam.Builder()
                         .beta1(beta1).beta2(beta2)

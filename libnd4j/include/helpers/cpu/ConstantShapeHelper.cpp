@@ -29,8 +29,8 @@
 
 namespace sd {
 ConstantShapeHelper::ConstantShapeHelper() {
-  _cache.resize(32);
-  for (int e = 0; e < 32; e++) {
+  _cache.resize(1);
+  for (int e = 0; e < 1; e++) {
     SD_MAP_IMPL<ShapeDescriptor, ConstantShapeBuffer> cache;
     _cache[e] = cache;
   }
@@ -62,9 +62,10 @@ ConstantShapeBuffer& ConstantShapeHelper::bufferForShapeInfo(const ShapeDescript
     auto hPtr =
         std::make_shared<PointerWrapper>(descriptor.toShapeInfo(), std::make_shared<PrimaryPointerDeallocator>());
     ConstantShapeBuffer buffer(hPtr);
-    ShapeDescriptor descriptor1(descriptor);
-    _cache[deviceId][descriptor1] = buffer;
-    return _cache[deviceId][descriptor1];
+
+    //ShapeDescriptor descriptor1(descriptor);
+    _cache[deviceId][descriptor] = buffer;
+    return _cache[deviceId][descriptor];
   } else {
     return _cache[deviceId].at(descriptor);
   }
@@ -120,9 +121,6 @@ const sd::LongType* ConstantShapeHelper::createShapeInfo(const ShapeDescriptor& 
 }
 
 const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, bool destroyOriginal) {
-#if defined(__NEC__)
-  if(!_cache_existing_pointers) return shapeInfo;
-#endif
   ShapeDescriptor descriptor(shapeInfo);
   auto result = createShapeInfo(descriptor);
 
@@ -132,9 +130,6 @@ const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeI
 }
 
 const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, sd::memory::Workspace* workspace) {
-#if defined(__NEC__)
-  if(!_cache_existing_pointers) return shapeInfo;
-#endif
   ShapeDescriptor descriptor(shapeInfo);
   auto result = createShapeInfo(descriptor);
 

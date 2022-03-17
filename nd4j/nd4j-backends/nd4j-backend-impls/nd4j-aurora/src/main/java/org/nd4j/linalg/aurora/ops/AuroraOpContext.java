@@ -23,6 +23,9 @@ package org.nd4j.linalg.aurora.ops;
 
 import lombok.NonNull;
 import lombok.val;
+
+import java.util.Arrays;
+
 import org.bytedeco.javacpp.*;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.Deallocatable;
@@ -33,6 +36,7 @@ import org.nd4j.linalg.api.ops.ExecutionMode;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.aurora.buffer.BaseAuroraDataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.aurora.Nd4jAuroraOps;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -109,15 +113,21 @@ public class AuroraOpContext extends BaseOpContext implements OpContext, Dealloc
     @Override
     public void setInputArray(int index, @NonNull INDArray array) {
         //nativeOps.setGraphContextInputArray(context, index, array.isEmpty() ? null : array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), null, null);
-        nativeOps.setGraphContextInputBuffer(context, index, array.isEmpty() ? null : ((BaseAuroraDataBuffer) array.data()).getOpaqueDataBuffer(), array.shapeInfoDataBuffer().addressPointer(), null);
+        //pointer and addressPointer is the same 
+        //but addressPointer calls veo
+        //so we will use the pointer instead, but we need set limit<=0 to make sure that Nd4jAuroraOps.call will treat it as input pointer
+        Pointer p = new LongPointer(array.shapeInfoDataBuffer().pointer());
+        p.limit(0);
+        nativeOps.setGraphContextInputBuffer(context, index, array.isEmpty() ? null : ((BaseAuroraDataBuffer) array.data()).getOpaqueDataBuffer(), p, null);
 
         super.setInputArray(index, array);
     }
 
     @Override
     public void setOutputArray(int index, @NonNull INDArray array) {
-        //nativeOps.setGraphContextOutputArray(context, index, array.isEmpty() ? null : array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), null, null);
-        nativeOps.setGraphContextOutputBuffer(context, index, array.isEmpty() ? null : ((BaseAuroraDataBuffer) array.data()).getOpaqueDataBuffer(), array.shapeInfoDataBuffer().addressPointer(), null);
+        Pointer p = new LongPointer(array.shapeInfoDataBuffer().pointer());
+        p.limit(0);
+        nativeOps.setGraphContextOutputBuffer(context, index, array.isEmpty() ? null : ((BaseAuroraDataBuffer) array.data()).getOpaqueDataBuffer(), p, null);
 
         super.setOutputArray(index, array);
     }
@@ -167,5 +177,68 @@ public class AuroraOpContext extends BaseOpContext implements OpContext, Dealloc
     @Override
     public int targetDevice() {
         return 0;
+    }
+
+    @Override
+    public void setArgs(INDArray[] inputArrs, long[] iArgs, DataType[] dArgs, double[] tArgs, boolean[] bArgs) {
+        Nd4jAuroraOps ops = (Nd4jAuroraOps) nativeOps;
+        int size = inputArrs == null ? 0 : inputArrs.length;
+        LongPointer inputPairArr = null;
+        LongPointer iArgsPtr = null;
+        IntPointer dArgsPtr = null;
+        DoublePointer tArgsPtr = null;
+        BooleanPointer bArgsPtr = null;
+        if (size > 0) {
+            inputPairArr = new LongPointer(2 * size);
+
+            int i = 0;
+            for (int j=0; j< size; j++) {
+                INDArray arr = inputArrs[j];
+                long buffer = arr.isEmpty() ? null
+                        : ((BaseAuroraDataBuffer) arr.data()).getOpaqueDataBuffer().address();
+                long shapeInfo = arr.shapeInfoDataBuffer().pointer().address();
+                inputPairArr.put(i, buffer);
+                inputPairArr.put(i + 1, shapeInfo);
+                i += 2;
+                //set internal
+                super.setInputArray(j, arr);
+            }
+
+        }
+
+        if (iArgs != null && iArgs.length > 0) {
+            iArgsPtr = new LongPointer(iArgs.length);
+            for (int i = 0; i < iArgs.length; i++) {
+                iArgsPtr.put(i, iArgs[i]);
+            }
+            //this will call internal one, so it will not cause veo calls
+            super.setIArguments(iArgs);
+        }
+
+        if (dArgs != null && dArgs.length > 0) {
+            dArgsPtr = new IntPointer(dArgs.length);
+            for (int i = 0; i < dArgs.length; i++) {
+                dArgsPtr.put(i, dArgs[i].toInt());
+            }
+            super.setDArguments(dArgs);
+        }
+
+        if (tArgs != null && tArgs.length > 0) {
+            tArgsPtr = new DoublePointer(tArgs.length);
+            for (int i = 0; i < tArgs.length; i++) {
+                tArgsPtr.put(i, tArgs[i]);
+            }
+            super.setTArguments(tArgs);
+        }
+
+        if (bArgs != null && bArgs.length > 0) {
+            bArgsPtr = new BooleanPointer(bArgs.length);
+            for (int i = 0; i < bArgs.length; i++) {
+                bArgsPtr.put(i, bArgs[i]);
+            }
+            super.setBArguments(bArgs);
+        }
+        ops.setGraphContextArgs(context, inputPairArr, iArgsPtr, dArgsPtr, tArgsPtr, bArgsPtr);
+
     }
 }
