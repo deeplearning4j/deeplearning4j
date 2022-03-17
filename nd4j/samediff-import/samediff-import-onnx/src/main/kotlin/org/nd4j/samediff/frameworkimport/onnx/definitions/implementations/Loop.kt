@@ -27,6 +27,7 @@ import org.nd4j.autodiff.samediff.SameDiffNoArgSingleLambda
 import org.nd4j.autodiff.samediff.SameDiffSingleLambda
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.ir.OpNamespace
+import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
@@ -65,13 +66,14 @@ class Loop : PreImportHook  {
             null,
             null, mutableMapOf(),
             registryCast)
-
+        body.isEagerMode = false
         sd.putSubFunction("${op.name}_loop_body",body)
+        sd.isEagerMode = false
         val inputTensors = ArrayList<SDVariable>()
         val cond: SDVariable? = if(op.inputsToOp.size > 1 && op.inputsToOp[1] != "") sd.getVariable(op.inputsToOp[1]) else null
         val condBody: SameDiffSingleLambda? = if(cond != null) {
             SameDiffSingleLambda { sameDiff, inputs ->
-                inputs[0]
+                inputs[0].castTo(DataType.BOOL)
             }
         } else {
             null
@@ -85,7 +87,7 @@ class Loop : PreImportHook  {
         //  for loop:  if M is not None and cond_init is None
         if(terminationIterations != null && cond == null) {
             val condBody =  SameDiffSingleLambda { sameDiff, inputs ->
-                inputs[0].lt(inputs[1])
+                inputs[0].lt(inputs[1]).castTo(DataType.BOOL)
             }
 
             //ensure first variable is loop termination variable with body
@@ -97,9 +99,15 @@ class Loop : PreImportHook  {
             val ret = sd.whileLoop(loopVars.toTypedArray(),
                 condBody
             ) { sameDiff, inputs ->
-                inputs[0].add(1.0)
-                arrayOf(body.invokeGraphOn(sameDiff))
+               arrayOf(inputs[0].add(1.0))
+            }
 
+
+            if(ret.size != outputNames.size)
+                throw IllegalArgumentException("Unable to set name variable s${outputNames}, output variable names was size ${ret.size}, specified names was size ${outputNames.size}")
+
+            ret.forEachIndexed { index, sdVariable ->
+                sdVariable.rename(outputNames[index])
             }
 
             return ret.associate{ input -> input.name() to listOf(input) }
@@ -111,15 +119,37 @@ class Loop : PreImportHook  {
                 arrayOf(sameDiff.invokeGraphOn(sd))
             }
 
+
+            if(ret.size != outputNames.size)
+                throw IllegalArgumentException("Unable to set name variable s${outputNames}, output variable names was size ${ret.size}, specified names was size ${outputNames.size}")
+
+            ret.forEachIndexed { index, sdVariable ->
+                sdVariable.rename(outputNames[index])
+            }
+
             return ret.associate{ input -> input.name() to listOf(input) }
         } else if(cond != null && terminationIterations != null) {
             // # combine for loop and while loop together
-            val ret = sd.whileLoop(inputTensors.toTypedArray(),
-                condBody!!
-            ) { sameDiff, inputs ->
-                inputs[0].add(1.0)
-                arrayOf(sameDiff.invokeGraphOn(sd))
+            val forCondBody: SameDiffSingleLambda? = if(cond != null) {
+                SameDiffSingleLambda { sameDiff, inputs ->
+                    sd.bitwise().and(inputs[0].castTo(DataType.INT64),cond.castTo(DataType.INT64)).castTo(DataType.BOOL)
+                }
+            } else {
+                null
             }
+            val ret = sd.whileLoop(inputTensors.toTypedArray(),
+                forCondBody!!
+            ) { sameDiff, inputs ->
+                arrayOf(inputs[0].add(1.0))
+            }
+
+            if(ret.size != outputNames.size)
+                throw IllegalArgumentException("Unable to set name variable s${outputNames}, output variable names was size ${ret.size}, specified names was size ${outputNames.size}")
+
+            ret.forEachIndexed { index, sdVariable ->
+                sdVariable.rename(outputNames[index])
+            }
+
 
             return ret.associate{ input -> input.name() to listOf(input) }
 

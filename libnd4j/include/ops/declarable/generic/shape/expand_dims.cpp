@@ -32,6 +32,7 @@ CUSTOM_OP_IMPL(expand_dims, 1, 1, false, 0, -2) {
   auto output = OUTPUT_VARIABLE(0);
 
   if (input->isScalar()) {
+    sd_debug("expand_dims: Assigning output\n",0);
     output->assign(input);
     return sd::Status::OK;
   }

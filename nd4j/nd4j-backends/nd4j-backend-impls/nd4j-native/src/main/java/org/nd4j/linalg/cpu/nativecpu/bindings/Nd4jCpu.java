@@ -2930,7 +2930,7 @@ public native org.nd4j.nativeblas.OpaqueShapeList calculateOutputShapes2(@Cast("
                                                       @Cast("sd::LongType*") long[] iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs,
                                                       int[] dArgs, int numDArgs);
 // #if defined(__NEC__)
-
+public native org.nd4j.nativeblas.OpaqueShapeList calculateOutputShapesNec(org.nd4j.nativeblas.OpaqueContext ctx, @Cast("sd::LongType") long hash, @Cast("sd::Pointer*") PointerPointer inputShapes, int numInputShapes);
 // #endif
 public native @Cast("sd::LongType") long getShapeListSize(org.nd4j.nativeblas.OpaqueShapeList list);
 public native @Cast("const sd::LongType*") LongPointer getShape(org.nd4j.nativeblas.OpaqueShapeList list, @Cast("sd::LongType") long i);

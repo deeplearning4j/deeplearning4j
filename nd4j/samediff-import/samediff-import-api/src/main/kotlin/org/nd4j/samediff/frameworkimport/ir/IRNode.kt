@@ -43,6 +43,8 @@ interface IRNode<NODE_TYPE : GeneratedMessageV3,
         tensorInputMappings: Map<String, String>
     ): Int
 
+    fun isControlflowOp(): Boolean
+
     /**
      * Get the list of inputs from the node that represent a particular
      * [OpDef] input list name.

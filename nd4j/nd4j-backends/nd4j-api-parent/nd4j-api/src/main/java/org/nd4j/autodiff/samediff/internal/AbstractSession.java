@@ -456,7 +456,7 @@ public abstract class AbstractSession<T, O> {
                 // Do execution of the op, in 2 steps
                 // (a) "Parameterize" the op - i.e., find and set the arrays on the op, allocate outputs, etc ready for execution
                 // (b) actually execute the operation
-                O parameterizedOp = getAndParameterizeOp(opName, outFrameIter, inputs, allIterInputs, constAndPhInputs, placeholderValues, reqOutputVariablesSet);
+                O parameterizedOp = getAndParameterizeOp(opName, outFrameIter, inputs, allIterInputs, constAndPhInputs, placeholderValues, reqOutputVariablesSet,otherPlaceHolderValues);
                 T[] opOutputValues = getOutputs(parameterizedOp, outFrameIter, inputs, allIterInputs, constAndPhInputs, listeners, at, batch, reqOutputVariablesSet);
                 List<String> opOutVarNames = op.getOutputsOfOp();
 
@@ -1025,10 +1025,11 @@ public abstract class AbstractSession<T, O> {
      * @param allIterInputs    The inputs - those that are not iteration-specific (mainly Enter op vars, which might be used in all iterations but are only executed once on iter 0)
      * @param constAndPhInputs The constant and placeholder inputs - used for all frames/iterations
      * @param allReqVariables  All required variables requested for the current session execution (not just the current op outputs)
+     * @param otherPlaceholders
      * @return The parameterized op
      */
     public abstract O getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs,
-                                           Map<String, T> placeholderValues, Set<String> allReqVariables);
+                                           Map<String, T> placeholderValues, Set<String> allReqVariables, Map<String, SDValue> otherPlaceholders);
 
     /**
      * Execute the op - calculate INDArrays, or shape info, etc

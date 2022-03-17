@@ -438,6 +438,8 @@ class TestOnnxIR {
 
     @Test
     fun testLoop() {
+        Nd4j.getExecutioner().enableDebugMode(true)
+        Nd4j.getExecutioner().enableVerboseMode(true)
         val seqIn = createEmptySequence(Onnx.TensorProto.DataType.FLOAT,"seq_in")
         val seqOut = createEmptySequence(Onnx.TensorProto.DataType.FLOAT,"seq_out")
         val condIn = createValueInfoFromTensor(Nd4j.create(booleanArrayOf(false)),"cond_in",true)
@@ -481,11 +483,13 @@ class TestOnnxIR {
                   name: "body"
                   g {
                     node {
+                      name: "cond_out"
                       input: "cond_in"
                       output: "cond_out"
                       op_type: "Identity"
                     }
                     node {
+                      name: "x"
                       output: "x"
                       op_type: "Constant"
                       attribute {
@@ -504,6 +508,7 @@ class TestOnnxIR {
                       }
                     }
                     node {
+                      name: "one"
                       output: "one"
                       op_type: "Constant"
                       attribute {
@@ -517,6 +522,7 @@ class TestOnnxIR {
                       }
                     }
                     node {
+                      name: "slice_start"
                       output: "slice_start"
                       op_type: "Constant"
                       attribute {
@@ -531,12 +537,14 @@ class TestOnnxIR {
                       }
                     }
                     node {
+                      name: "add"
                       input: "iter_count"
                       input: "one"
                       output: "end"
                       op_type: "Add"
                     }
                     node {
+                      name: "axes"
                       output: "axes"
                       op_type: "Constant"
                       attribute {
@@ -550,12 +558,14 @@ class TestOnnxIR {
                       }
                     }
                     node {
+                      name: "slice_end"
                       input: "end"
                       input: "axes"
                       output: "slice_end"
                       op_type: "Unsqueeze"
                     }
                     node {
+                      name: "slice_out"
                       input: "x"
                       input: "slice_start"
                       input: "slice_end"
@@ -563,6 +573,7 @@ class TestOnnxIR {
                       op_type: "Slice"
                     }
                     node {
+                      name: "seq_out"
                       input: "seq_in"
                       input: "slice_out"
                       output: "seq_out"
@@ -686,14 +697,13 @@ class TestOnnxIR {
         val onnxIRGraph = OnnxIRGraph(graph.graph,onnxOpRegistry)
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("trip_count","cond","seq_empty"),listOf("res_y","res_scan"))
         val inputs = mapOf("trip_count" to tripCount,"cond" to cond,"y" to y,"begin_axes" to axes,"end_axes" to axes)
-        val sequenceInputs = mapOf("trip_count" to arrayOf(tripCount),
-            "cond" to arrayOf(cond),
-            "y" to arrayOf(y),
-            "begin_axes" to arrayOf(axes),"end_axes" to arrayOf(axes),
-            "seq_empty" to arrayOf(Nd4j.ones(DataType.FLOAT,1)))
+        val sequenceInputValues = mapOf("trip_count" to SDValue.create(tripCount),
+            "cond" to SDValue.create(cond),
+            "y" to SDValue.create(y),
+            "begin_axes" to SDValue.create(axes),"end_axes" to SDValue.create(axes),
+            "seq_empty" to SDValue.create(arrayOf(Nd4j.ones(DataType.FLOAT,1))))
 
-        val sequenceInputValues = mutableMapOf<String,SDValue>()
-        sequenceInputs.forEach { (key,value) -> sequenceInputValues[key] = SDValue.create(value) }
+
         val inputsOnnx = convertToOnnxTensors(inputs)
 
         val outputs = mapOf("res_y" to resY,"res_scan" to resScan)
@@ -701,7 +711,7 @@ class TestOnnxIR {
         val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,inputsOnnx,onnxOpRegistry)
 
         val assertion = onnxGraphRunner.runSequence(sequenceInputValues)
-        val result = importedGraph.outputValues(sequenceInputValues,listOf("res_y","res_scan"))
+        val result = importedGraph.outputValues(sequenceInputValues,listOf("seq_res"))
         assertEquals(assertion,result)
 
     }

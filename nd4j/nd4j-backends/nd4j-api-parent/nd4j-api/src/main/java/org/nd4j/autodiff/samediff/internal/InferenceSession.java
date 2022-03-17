@@ -28,6 +28,8 @@ import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.config.SDValue;
+import org.nd4j.autodiff.samediff.config.SDValueType;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -54,8 +56,6 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.ArrayUtil;
 
 import java.util.*;
-
-import static org.nd4j.imports.VariableUtils.stripVarSuffix;
 
 @Slf4j
 public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,OpContext>> {
@@ -395,7 +395,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 inputVarId = opInputs.iterator().next();
             }
             INDArray enterInput = this.nodeOutputs.get(inputVarId);
-
+            if(enterInput == null && tensorArrays != null) {
+                if(tensorArrays.containsKey(inputVarId)) {
+                    enterInput = tensorArrays.get(inputVarId).get(0);
+                }
+            }
             Preconditions.checkNotNull(enterInput, "Could not get enter op \"%s\" input: output variable %s - %s", e.getOwnName(), e.outputVariablesNames(), outputFrameIter);
             return new INDArray[]{enterInput};
         } else if (op instanceof Exit) {
@@ -803,7 +807,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
     @Override
     public Pair<SameDiffOp,OpContext> getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
-                                                           Set<String> constAndPhInputs, Map<String, INDArray> placeholderValues, Set<String> allReqVariables) {
+                                                           Set<String> constAndPhInputs, Map<String, INDArray> placeholderValues, Set<String> allReqVariables, Map<String, SDValue> otherPlaceholders) {
         SameDiffOp sdo = sameDiff.getOps().get(opName);
         DifferentialFunction df = sdo.getOp();
 
@@ -850,8 +854,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 } else if (v.getVariableType() == VariableType.VARIABLE) {
                     args[i] = v.getArr();
                 } else if (v.isPlaceHolder()) {
-                    Preconditions.checkState(placeholderValues != null && placeholderValues.containsKey(s), "No array was provided for required placeholder variable \"%s\"", s);
-                    args[i] = placeholderValues.get(s);
+                    if(placeholderValues != null && placeholderValues.containsKey(s))
+                        args[i] = placeholderValues.get(s);
+                    else if(otherPlaceholders != null && otherPlaceholders.containsKey(s)) {
+                        args[i] = otherPlaceholders.get(s).getTensorValue();
+                    }
+                    else
+                        throw new IllegalArgumentException("No array was provided for required placeholder variable \"%s\"".format(s));
                 } else {
                     VarId vid = lookup(s, opInputs, allIterInputs, true);
                     args[i] = nodeOutputs.get(vid);

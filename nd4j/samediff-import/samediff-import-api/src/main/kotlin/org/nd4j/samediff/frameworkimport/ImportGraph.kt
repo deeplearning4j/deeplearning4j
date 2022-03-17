@@ -249,7 +249,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         var containsControlflow = false
         val controlflowOps = setOf("select","while","enter","if","switch","next_iteration","merge","exit","loop_cond")
         for (it in importInfo.values) {
-            if (controlflowOps.contains(it.second.name)) {
+            if (controlflowOps.contains(it.second.name) || it.first.irNode().isControlflowOp()) {
                 containsControlflow = true
                 break
 

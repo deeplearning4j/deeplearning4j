@@ -240,4 +240,12 @@ class TensorflowIRNode(inputNode: NodeDef, inputOpDef: OpDef,tensorflowOpMapping
         return AttrValue.getDefaultInstance()
     }
 
+    override fun isControlflowOp(): Boolean {
+        return nodeDef.op == "While" ||
+                nodeDef.op == "Where" ||
+                nodeDef.op == "NextIteration" ||
+                nodeDef.op == "TensorArrayV3" ||
+                nodeDef.op == "If"
+    }
+
 }
