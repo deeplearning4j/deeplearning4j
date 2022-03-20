@@ -23,7 +23,9 @@
 #include <execution/AffinityManager.h>
 #include <execution/LaunchContext.h>
 #include <helpers/logger.h>
-
+#if defined(HAVE_VEDA)
+#include <ops/declarable/platform/vednn/veda_helper.h>
+#endif
 #include <thread>
 
 #if defined(SD_IOS_BUILD) || defined(SD_APPLE_BUILD) || defined(SD_ANDROID_BUILD) || defined(__NEC__)
@@ -53,7 +55,9 @@ LaunchContext::LaunchContext() {
   // default constructor, just to make clang/ranlib happy
   _workspace = nullptr;
   _deviceID = 0;
-
+#if defined(HAVE_VEDA)
+   VEDA_HANDLE::getInstance();
+#endif
 #if defined(HAVE_ONEDNN)
   _engine = new dnnl::engine(dnnl::engine::kind::cpu, 0);
 #endif

@@ -35,10 +35,36 @@ PLATFORM_IMPL(softmax, ENGINE_CPU) {
 
   const int rank = input->rankOf();
 
-  const int64_t inner_dim = input->sizeAt(rank-1);
-  const int64_t outer_dim = input->lengthOf() / inner_dim;
+  const unsigned long inner_dim = input->sizeAt(rank-1);
+  const unsigned long outer_dim = input->lengthOf() / inner_dim;
+
+#if !defined(HAVE_VEDA)
   auto ret = vednnSoftmaxForward( VEDNN_SOFTMAX_ACCURATE, input->buffer(), output->buffer(), outer_dim, inner_dim);
   return ret == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
+#else
+  VEDA_HANDLE &handle = VEDA_HANDLE::getInstance();
+
+  auto func = handle.getFunctionByConstPtrName("vedaVednnSoftmaxForward");
+
+  VEDAdeviceptr vIn, vO;
+  size_t sizeIn = input->lengthOf() * input->sizeOfT();
+  size_t sizeO = output->lengthOf() * output->sizeOfT();
+
+  VEDA(vedaMemAllocAsync(&vIn, sizeIn, 0));
+  VEDA(vedaMemAllocAsync(&vO, sizeO, 0));
+
+  VEDA(vedaMemcpyHtoDAsync(vIn, input->buffer(), sizeIn, 0));
+
+  VEDA(vedaLaunchKernel(func, 0, VEDNN_SOFTMAX_ACCURATE, vIn, vO, outer_dim, inner_dim));
+
+  VEDA(vedaMemcpyDtoHAsync(output->buffer(), vO, sizeO, 0));
+
+  VEDA(vedaCtxSynchronize());
+
+  VEDA(vedaMemFreeAsync(vIn, 0));
+  VEDA(vedaMemFreeAsync(vO, 0));
+  return sd::Status::OK;
+#endif
 }
 
 PLATFORM_CHECK(softmax, ENGINE_CPU) {

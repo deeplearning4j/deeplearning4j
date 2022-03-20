@@ -26,7 +26,7 @@
 namespace samediff {
 enum Engine {
   ENGINE_CPU = 0,
-  ENGINE_CUDA = 1,
+  ENGINE_CUDA = 1
 };
 }
 

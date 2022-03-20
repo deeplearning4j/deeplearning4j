@@ -36,18 +36,18 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
 
   if (x->isEmpty() || y->isEmpty()) return sd::Status::OK;
 
-  int bGemm = 1;
+  unsigned long bGemm = 1;
   for(int i=0; i< x->rankOf()-2;i++){
       bGemm = bGemm * x->sizeAt(i);
   }
-  int outDim = z->sizeAt(-1);
-  int nBatch = z->sizeAt(-2);
-  int inDim = x->sizeAt(-1);
-
+  const unsigned long outDim = z->sizeAt(-1);
+  const unsigned long nBatch = z->sizeAt(-2);
+  const unsigned long inDim = x->sizeAt(-1);
+#if !defined(HAVE_VEDA)
   if(bGemm == 1){
     vednnLinearForward(inDim, outDim, nBatch, 1, x->buffer(), y->buffer(), z->buffer());
   }else{
-    //as bgemm did not work as expected we manually parallelize over bGemm
+    //because of the bgemm did not work as expected, we will manually parallelize over bGemm
     int xStride = x->rankOf()>2 ? x->sizeAt(-1) * x->sizeAt(-2) : 0;
     int yStride = y->rankOf()>2 ? y->sizeAt(-1) * y->sizeAt(-2) : 0;
     int zStride = z->rankOf()>2 ? z->sizeAt(-1) * z->sizeAt(-2) : 0;
@@ -60,7 +60,29 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
         vednnLinearForward(inDim, outDim, nBatch, 1, xPtr, yPtr, zPtr );
     }
   }
+#else
+  VEDA_HANDLE &handle = VEDA_HANDLE::getInstance();
 
+  auto func = handle.getFunctionByConstPtrName("vedaVednnLinearForwardExF32");
+
+  VEDAdeviceptr vX, vY, vZ;
+  const unsigned long xStride = x->rankOf()>2 ? x->sizeAt(-1) * x->sizeAt(-2) : 0;
+  const unsigned long yStride = y->rankOf()>2 ? y->sizeAt(-1) * y->sizeAt(-2) : 0;
+  const unsigned long zStride = z->rankOf()>2 ? z->sizeAt(-1) * z->sizeAt(-2) : 0;
+  VEDA(vedaMemAllocAsync(&vX, x->lengthOf() * x->sizeOfT(), 0));
+  VEDA(vedaMemAllocAsync(&vY, y->lengthOf() * y->sizeOfT(), 0));
+  VEDA(vedaMemAllocAsync(&vZ, z->lengthOf() * z->sizeOfT(), 0));
+  VEDA(vedaMemcpyHtoDAsync(vX, x->buffer(), x->lengthOf() * x->sizeOfT(), 0));
+  VEDA(vedaMemcpyHtoDAsync(vY, y->buffer(), y->lengthOf() * y->sizeOfT(), 0));
+
+  VEDA(vedaLaunchKernel(func, 0, bGemm, inDim, outDim, nBatch, vX, xStride, vY, yStride, vZ, zStride));
+  VEDA(vedaMemcpyDtoHAsync(z->buffer(), vZ, z->lengthOf() * z->sizeOfT(), 0));
+  VEDA(vedaCtxSynchronize());
+
+  VEDA(vedaMemFreeAsync(vX, 0));
+  VEDA(vedaMemFreeAsync(vY, 0));
+  VEDA(vedaMemFreeAsync(vZ, 0));
+#endif
   return sd::Status::OK;
 }
 
