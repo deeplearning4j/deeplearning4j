@@ -1,0 +1,160 @@
+#include <stdio.h>
+#include <veda_device.h>
+#include <vednn.h>
+
+#if !defined(SHOW_ON_FUNC_ENTRY)
+#define LOG_FUNC()
+#else
+#define LOG_FUNC() printf("%s in [%s %d]\n", __PRETTY_FUNCTION__, __FILE__, __LINE__);
+#endif
+
+extern "C" {
+
+vednnError_t vedaVednnConvolutionForwardAddBias(const vednnTensorParam_t *paramIn, VEDAdeviceptr vDataIn,
+                                                const vednnFilterParam_t *paramFilter, VEDAdeviceptr vDataKernel,
+                                                const vednnBiasParam_t *paramBias, VEDAdeviceptr vDataBias,
+                                                const vednnTensorParam_t *paramOut, VEDAdeviceptr vDataOut,
+                                                const vednnConvolutionParam_t *paramConv,
+                                                vednnConvolutionAlgorithm_t algo) {
+  LOG_FUNC();
+  vednnError_t res;
+  void *pDataIn, *pDataBias = nullptr, *pDataKernel;
+  void *pDataOut;
+  vedaMemPtr((void **)&pDataIn, vDataIn);
+  vedaMemPtr((void **)&pDataKernel, vDataKernel);
+  vedaMemPtr((void **)&pDataBias, vDataBias);
+  vedaMemPtr((void **)&pDataOut, vDataOut);
+  // printf("inside ve %p %p %p %p\n", pDataIn, pDataKernel, pDataBias, pDataOut);
+  if (pDataBias) {
+    res = vednnConvolutionForwardAddBias(paramIn, pDataIn, paramFilter, pDataKernel, paramBias, pDataBias, paramOut,
+                                         pDataOut, paramConv, algo);
+  } else {
+    res = vednnConvolutionForward(paramIn, pDataIn, paramFilter, pDataKernel, paramOut, pDataOut, paramConv, algo);
+  }
+  // printf("res %d \n", res);
+  return res;
+}
+
+vednnError_t vedaVednnConvolutionBackwardDataAndFilter(
+    const vednnTensorParam_t *paramGradOut, VEDAdeviceptr vGradOutData, const vednnFilterParam_t *paramFilter,
+    VEDAdeviceptr vWeightData, VEDAdeviceptr vGradWeightData, const vednnTensorParam_t *paramGradIn,
+    VEDAdeviceptr vInData, VEDAdeviceptr vGradInData, const vednnConvolutionParam_t *paramConv,
+    vednnConvolutionAlgorithm_t algo) {
+  LOG_FUNC();
+  void *gradOutData, *weightData, *gradWeightsData, *inData, *gradInData;
+  vedaMemPtr((void **)&gradOutData, vGradOutData);
+  vedaMemPtr((void **)&weightData, vWeightData);
+  vedaMemPtr((void **)&gradWeightsData, vGradWeightData);
+  vedaMemPtr((void **)&inData, vInData);
+  vedaMemPtr((void **)&gradInData, vGradInData);
+
+  vednnError_t res = vednnConvolutionBackwardData(paramGradOut, gradOutData, paramFilter, weightData, paramGradIn,
+                                                  gradInData, paramConv, algo);
+
+  if (res != VEDNN_SUCCESS) return res;
+
+  // paramGradIn could be used for "in"
+  // paramFilter could be used for "gradWeights"
+  res = vednnConvolutionBackwardFilter(paramGradIn, inData, paramGradOut, gradOutData, paramFilter, gradWeightsData,
+                                       paramConv, algo);
+
+  return res;
+}
+
+vednnError_t vedaVednnActivationForward(const vednnActivationMode_t mode, VEDAdeviceptr vDataIn, VEDAdeviceptr vDataOut,
+                                        const unsigned long nElements) {
+  LOG_FUNC();
+  void *pDataIn;
+  void *pDataOut;
+  vedaMemPtr((void **)&pDataIn, vDataIn);
+  vedaMemPtr((void **)&pDataOut, vDataOut);
+
+  return vednnActivationForward(mode, pDataIn, pDataOut, nElements);
+}
+
+vednnError_t vedaVednnActivationBackward(const vednnActivationMode_t mode, VEDAdeviceptr vDataGradOut,
+                                         VEDAdeviceptr vDataIn, VEDAdeviceptr vDataGradIn,
+                                         const unsigned long nElements) {
+  LOG_FUNC();
+  void *pDataGradOut;
+  void *pDataIn;
+  void *pDataGradIn;
+  vedaMemPtr((void **)&pDataGradOut, vDataGradOut);
+  vedaMemPtr((void **)&pDataIn, vDataIn);
+  vedaMemPtr((void **)&pDataGradIn, vDataGradIn);
+
+  return vednnActivationBackward(mode, pDataGradOut, pDataIn, pDataGradIn, nElements);
+}
+
+vednnError_t vedaVednnSoftmaxForward(const vednnSoftmaxMode_t mode, VEDAdeviceptr vDataIn, VEDAdeviceptr vDataOut,
+                                     const unsigned long nBatch, const unsigned long nClass) {
+  LOG_FUNC();
+  void *pDataIn;
+  void *pDataOut;
+  vedaMemPtr((void **)&pDataIn, vDataIn);
+  vedaMemPtr((void **)&pDataOut, vDataOut);
+
+  return vednnSoftmaxForward(mode, pDataIn, pDataOut, nBatch, nClass);
+}
+
+vednnError_t vedaVednnLinearForwardExF32(unsigned long bGemm, const unsigned long inDim, const unsigned long outDim,
+                                         const unsigned long nBatch, VEDAdeviceptr vX, const unsigned long xStride,
+                                         VEDAdeviceptr vY, const unsigned long yStride, VEDAdeviceptr vZ,
+                                         const unsigned long zStride) {
+  LOG_FUNC();
+  vednnError_t res;
+  float *x, *y;
+  float *z;
+  vedaMemPtr((void **)&x, vX);
+  vedaMemPtr((void **)&y, vY);
+  vedaMemPtr((void **)&z, vZ);
+
+  if (bGemm == 1) {
+    return vednnLinearForward(inDim, outDim, nBatch, 1, x, y, z);
+  } else {
+    // because of the bgemm did not work as expected, we will manually parallelize over bGemm
+
+#pragma omp parallel for
+    for (int i = 0; i < bGemm; i++) {
+      float *xPtr = x + i * xStride;
+      float *yPtr = y + i * yStride;
+      float *zPtr = z + i * zStride;
+      vednnLinearForward(inDim, outDim, nBatch, 1, xPtr, yPtr, zPtr);
+    }
+    // WARNING: we will silently return success
+    return VEDNN_SUCCESS;
+  }
+}
+
+vednnError_t vedaVednnMaxPoolingForward(const vednnTensorParam_t *pParamIn, VEDAdeviceptr vDataIn,
+                                        const vednnTensorParam_t *pParamOut, VEDAdeviceptr vDataOut,
+                                        const vednnPoolingParam_t *pParamPool) {
+  LOG_FUNC();
+  void *pDataIn;
+  void *pDataOut;
+  vedaMemPtr((void **)&pDataIn, vDataIn);
+  vedaMemPtr((void **)&pDataOut, vDataOut);
+  return vednnMaxPoolingForward(pParamIn, pDataIn, pParamOut, pDataOut, pParamPool);
+}
+
+vednnError_t vedaVednnMaxPoolingBackwardEx(const vednnTensorParam_t *pParamGradOut, VEDAdeviceptr vDataGradOut,
+                                           const vednnTensorParam_t *pParamOut, VEDAdeviceptr vDataOut,
+                                           const vednnTensorParam_t *pParamIn, VEDAdeviceptr vDataIn,
+                                           const vednnTensorParam_t *pParamGradIn, VEDAdeviceptr vDataGradIn,
+                                           const vednnPoolingParam_t *pParamPool) {
+  LOG_FUNC();
+  void *pDataGradOut, *pDataIn, *pDataGradIn, *pDataOut;
+  vedaMemPtr((void **)&pDataGradOut, vDataGradOut);
+  vedaMemPtr((void **)&pDataIn, vDataIn);
+  vedaMemPtr((void **)&pDataOut, vDataOut);
+  vedaMemPtr((void **)&pDataGradIn, vDataGradIn);
+
+  vednnError_t res = vednnMaxPoolingForward(pParamIn, pDataIn, pParamOut, pDataOut, pParamPool);
+
+  if (res == VEDNN_SUCCESS) {
+    vednnMaxPoolingBackward(pParamGradOut, pDataGradOut, pParamOut, pDataOut, pParamIn, pDataIn, pParamGradIn,
+                            pDataGradIn, pParamPool);
+  }
+  return res;
+}
+}

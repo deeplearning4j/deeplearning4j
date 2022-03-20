@@ -363,19 +363,40 @@ if(${HELPERS_armcompute})
 
 endif()
 
-if (${HELPERS_vednn})
-find_package(VEDNN REQUIRED)
 
-if(VEDNN_FOUND)
-   message("Found VEDNN: ${VEDNN_LIBRARIES}")
-   set(HAVE_VEDNN 1)
-   include_directories(${VEDNN_INCLUDE})
-   message("----${VEDNN_INCLUDE}---")
-else()
-    message( FATAL_ERROR "could not locate necessary VEDNN files")
+if (${HELPERS_vednn})
+    find_package(VEDNN REQUIRED)
+
+    if(VEDNN_FOUND)
+    message("Found VEDNN: ${VEDNN_LIBRARIES}")
+    set(HAVE_VEDNN 1)
+    list(APPEND EXTERNAL_INCLUDE_DIRS ${VEDNN_INCLUDE})
+    message("----${VEDNN_INCLUDE}---")
+    else()
+        message( FATAL_ERROR "could not locate necessary VEDNN files")
+    endif()
+
+    if (SD_AURORA)
+        list(APPEND EXTERNAL_DEPENDENCY_LIBS ${VEDNN_LIBRARIES} )
+    endif()
+
 endif()
 
-list(APPEND EXTERNAL_DEPENDENCY_LIBS  ${VEDNN_LIBRARIES} )
+
+
+if ( (NOT SD_AURORA) AND HAVE_VEDNN )
+    SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/ve/veda/cmake /opt/nec/ve/share/veda/cmake)
+
+    message("--VEDA--")
+    FIND_PACKAGE(VE)
+    ENABLE_LANGUAGE(VEDA_C VEDA_CXX)
+    message("---${VEDA_INCLUDES}--${VEDA_LIBRARY}-----")
+    list(APPEND EXTERNAL_INCLUDE_DIRS ${VEDA_INCLUDES} )
+    list(APPEND EXTERNAL_DEPENDENCY_LIBS ${VEDA_LIBRARY} )
+
+    list(APPEND VEDA_INCLUDE_DIRS ${VEDNN_INCLUDE} ${VEDA_INCLUDES} )
+    list(APPEND VEDA_DEPENDENCY_LIBS ${VEDNN_LIBRARIES} ${VEDA_DEVICE_LIBRARY})
+    set(HAVE_VEDA 1)
 endif()
 
 if (${HELPERS_onednn})

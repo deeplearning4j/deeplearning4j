@@ -32,9 +32,35 @@ namespace platforms {
 PLATFORM_IMPL(relu, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-
+#if !defined(HAVE_VEDA)
   auto ret = vednnActivationForward(VEDNN_ACTIVATION_RELU, input->buffer(), output->buffer(), input->lengthOf());
   return ret == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
+#else
+  VEDA_HANDLE &handle = VEDA_HANDLE::getInstance();
+
+  auto func = handle.getFunctionByConstPtrName("vedaVednnActivationForward");
+
+  VEDAdeviceptr vIn, vO;
+  size_t sizeIn = input->lengthOf() * input->sizeOfT();
+  size_t sizeO = output->lengthOf() * output->sizeOfT();
+
+  VEDA(vedaMemAllocAsync(&vIn, sizeIn, 0));
+  VEDA(vedaMemAllocAsync(&vO, sizeO, 0));
+
+  VEDA(vedaMemcpyHtoDAsync(vIn, input->buffer(), sizeIn, 0));
+
+  const unsigned long nElements = input->lengthOf();
+
+  VEDA(vedaLaunchKernel(func, 0, VEDNN_ACTIVATION_RELU, vIn, vO, nElements));
+
+  VEDA(vedaMemcpyDtoHAsync(output->buffer(), vO, sizeO, 0));
+
+  VEDA(vedaCtxSynchronize());
+
+  VEDA(vedaMemFreeAsync(vIn, 0));
+  VEDA(vedaMemFreeAsync(vO, 0));
+  return sd::Status::OK;
+#endif
 }
 
 PLATFORM_CHECK(relu, ENGINE_CPU) {
@@ -61,9 +87,33 @@ PLATFORM_IMPL(relu_bp, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
-
+#if !defined(HAVE_VEDA)
   auto ret = vednnActivationBackward(VEDNN_ACTIVATION_RELU, gradO->buffer(), input->buffer(), gradI->buffer(), input->lengthOf());
   return ret == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
+#else
+  VEDA_HANDLE &handle = VEDA_HANDLE::getInstance();
+
+  auto func = handle.getFunctionByConstPtrName("vedaVednnActivationBackward");
+
+  VEDAdeviceptr vGradOut, vIn, vGradIn;
+
+  VEDA(vedaMemAllocAsync(&vGradOut, gradO->lengthOf() * gradO->sizeOfT(), 0));
+  VEDA(vedaMemAllocAsync(&vIn, input->lengthOf() * input->sizeOfT(), 0));
+  VEDA(vedaMemAllocAsync(&vGradIn, gradI->lengthOf() * gradI->sizeOfT(), 0));
+  VEDA(vedaMemcpyHtoDAsync(vGradOut, gradO->buffer(), gradO->lengthOf() * gradO->sizeOfT(), 0));
+  VEDA(vedaMemcpyHtoDAsync(vIn, input->buffer(), input->lengthOf() * input->sizeOfT(), 0));
+
+  const unsigned long nElements = input->lengthOf();
+
+  VEDA(vedaLaunchKernel(func, 0, VEDNN_ACTIVATION_RELU, vGradOut, vIn, vGradIn, nElements));
+  VEDA(vedaMemcpyDtoHAsync(gradI->buffer(), vGradIn, gradI->lengthOf() * gradI->sizeOfT(), 0));
+  VEDA(vedaCtxSynchronize());
+
+  VEDA(vedaMemFreeAsync(vGradOut, 0));
+  VEDA(vedaMemFreeAsync(vIn, 0));
+  VEDA(vedaMemFreeAsync(vGradIn, 0));
+  return sd::Status::OK;
+#endif
 }
 
 PLATFORM_CHECK(relu_bp, ENGINE_CPU) {
