@@ -24,7 +24,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.frameworkimport.keras.keras.KerasModel;
+import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

@@ -28,7 +28,7 @@ import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.frameworkimport.keras.keras.KerasModelImport;
+import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.dataset.api.preprocessor.Normalizer;
 

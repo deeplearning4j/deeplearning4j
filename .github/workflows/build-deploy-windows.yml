@@ -70,7 +70,7 @@ jobs:
             experimental: true
             name: OS to run on
 
-          - libnd4j_file_download: ${{ github.event.inputs.libnd4jDownload }}
+          - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl }}
             experimental: true
             name: OS to run on
 
@@ -114,7 +114,13 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: powershell
         run: |
-            $command="mvn  ${{ matrix.mvn_ext }} -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64 deploy -DskipTests"
+            if ( "${{ matrix.libnd4j_file_download }}" -ne "" ) {
+              $modules=" :nd4j-native-preset,:nd4j-native"
+            } else {
+              $modules=":nd4j-native-preset,:nd4j-native,libnd4j"
+            }
+          
+            $command="mvn  ${{ matrix.mvn_ext }} -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64 deploy -DskipTests"
             if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
                $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
             } elseif ( "${{ matrix.helper }}" -ne "" ) {
@@ -127,7 +133,7 @@ jobs:
 
             if  (  "${{ matrix.libnd4j_file_download }}" -ne  "")  {
                    echo "Adding libnd4j download"
-                   $libnd4j_url_to_write = -join("LIBND4J_FILE_NAME=","$($libnd4j_download_file_url)");
+                   $libnd4j_url_to_write = -join("LIBND4J_FILE_NAME=","$(${{ matrix.libnd4j_file_download }}/$libnd4j_download_file_url)");
                    echo $libnd4j_url_to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
             }
 
@@ -162,7 +168,6 @@ jobs:
       - name: Setup libnd4j home if a download url is specified
         shell: powershell
         run: |
-            echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j_home/libnd4j" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
             mkdir "%GITHUB_WORKSPACE%/openblas_home"
             cd "%GITHUB_WORKSPACE%/openblas_home"
             wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-windows-x86_64.jar
@@ -191,8 +196,7 @@ jobs:
 
               if "%PERFORM_RELEASE%"=="1" (
                    echo "Running release"
-                   # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
-                   bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
+                   bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows x86_64 "${{ matrix.helper }}" "${{ matrix.extension }}"
                    bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "%COMMAND%"
               ) else (
                   if "%PERFORM_RELEASE%"==1 (
@@ -221,6 +225,7 @@ jobs:
           MODULES: ${{ matrix.mvn_flags }}
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
+          LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3

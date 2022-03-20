@@ -91,6 +91,10 @@ public class OpExclusionUtils {
         try (Scanner scanner = new Scanner(opFile, "UTF-8")) {
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine().trim();
+                if(line.contains("#ifndef") || line.contains("#endif")) {
+                    break;
+                }
+
                 if(line.contains("SD_ALL_OPS")) {
                     allOps = true;
                     System.out.println("All ops found.");
@@ -112,6 +116,11 @@ public class OpExclusionUtils {
             throw new RuntimeException("Could not parse CustomOperations.h and headers", e);
         }
 
+
+        if(opsToExclude.isEmpty()) {
+            System.out.println("No ops found for exclusion setting all ops to true");
+             allOps = true;
+        }
 
         List<File> files = new ArrayList<>();
         List<String> opTemplates = new ArrayList<>();

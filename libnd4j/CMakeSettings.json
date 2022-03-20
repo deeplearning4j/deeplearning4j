@@ -9,7 +9,20 @@
       ],
       "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
       "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
-      "cmakeCommandArgs": " -DSD_CUDA=true -DLIBND4J_NAME=nd4jcuda -DMSVC_DEV=true -DCOMPUTE=61 -DBUILD_TESTS=true",
+      "cmakeCommandArgs": " -DSD_CUDA=true -DSD_LIBRARY_NAME=nd4jcuda -DMSVC_DEV=true -DCOMPUTE=61 -DBUILD_TESTS=true",
+      "buildCommandArgs": "-v",
+      "ctestCommandArgs": ""
+    },
+    {
+      "name": "x64-Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "inheritEnvironments": [
+        "msvc_x64_x64"
+      ],
+      "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
+      "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
+      "cmakeCommandArgs": " -DSD_CUDA=true -DSD_LIBRARY_NAME=nd4jcuda -DMSVC_DEV=true -DCOMPUTE=61 -DBUILD_TESTS=true",
       "buildCommandArgs": "-v",
       "ctestCommandArgs": ""
     },

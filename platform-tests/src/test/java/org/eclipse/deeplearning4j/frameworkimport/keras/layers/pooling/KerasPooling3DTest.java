@@ -19,16 +19,16 @@
  */
 package org.eclipse.deeplearning4j.frameworkimport.keras.layers.pooling;
 
-import org.deeplearning4j.frameworkimport.keras.keras.layers.pooling.KerasPooling3D;
+import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling3D;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.conf.layers.Subsampling3DLayer;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.frameworkimport.keras.keras.KerasLayer;
-import org.deeplearning4j.frameworkimport.keras.keras.config.Keras1LayerConfiguration;
-import org.deeplearning4j.frameworkimport.keras.keras.config.Keras2LayerConfiguration;
-import org.deeplearning4j.frameworkimport.keras.keras.config.KerasLayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
+import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import java.util.ArrayList;

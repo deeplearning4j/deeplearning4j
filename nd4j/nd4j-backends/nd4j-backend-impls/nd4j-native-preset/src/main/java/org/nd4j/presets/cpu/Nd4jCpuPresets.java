@@ -31,7 +31,7 @@ import org.nd4j.presets.OpExclusionUtils;
  * @author saudet
  */
 @Properties(inherit = openblas.class, target = "org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu", helper = "org.nd4j.presets.cpu.Nd4jCpuHelper",
-        value = {@Platform(define = "SD_ALL_OPS", include = {
+        value = {@Platform(define = {"SD_ALL_OPS"}, include = {
                 //note, order matters here
                 //this particular header file is either
                 //going to be the source of ops, see also:
@@ -228,6 +228,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 
 
         infoMap.put(new Info("sd::ops::OpRegistrator::updateMSVC").skip());
+
     }
 
 
