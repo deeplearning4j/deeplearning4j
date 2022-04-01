@@ -21,31 +21,115 @@
 #ifndef DEV_VEDAHELPERS_H
 #define DEV_VEDAHELPERS_H
 
-#include <veda.h>
 #include <helpers/logger.h>
+#include <system/Environment.h>
+#include <veda.h>
 
-#define VEDA(err) veda_check(err, __FILE__, __LINE__)
+#include <mutex>
 
-SD_INLINE void veda_check(VEDAresult err, const char* file, const int line) {
+#define MAX_DEVICE_USAGE 1
+#define VEDA_CALL(err) veda_check(err, __FILE__, __LINE__)
+
+#define VEDA_CALL_THROW(err) veda_throw(veda_check(err, __FILE__, __LINE__))
+
+struct VEDA_STATUS {
+  const char* file = nullptr;
+  int line = -1;
+  VEDAresult status = VEDA_SUCCESS;
+  operator bool() const { return status == VEDA_SUCCESS; }
+
+  VEDA_STATUS() = default;
+
+  VEDA_STATUS(VEDAresult result, const char* err_file, int err_line) {
+    status = result;
+    file = err_file;
+    line = err_line;
+  }
+
+  std::string getErrorMsg() {
+    if (status != VEDA_SUCCESS) {
+      const char *name, *str;
+      vedaGetErrorName(status, &name);
+      vedaGetErrorString(status, &str);
+      std::string err;
+      if (file) {
+        err = std::string(name) + ": " + str + " " + file + ":" + std::to_string(line);
+      } else {
+        err = std::string(name) + ": " + str;
+      }
+      return err;
+    }
+    return std::string{};
+  }
+
+  void printTheLatestError() {
+    if (status != VEDA_SUCCESS) {
+      const char *name, *str;
+      vedaGetErrorName(status, &name);
+      vedaGetErrorString(status, &str);
+      if (file) {
+        sd_printf("%s: %s @ %s:%i\n", name, str, file, line);
+      } else {
+        sd_printf("%s: %s \n", name, str);
+      }
+    }
+  }
+};
+
+SD_INLINE VEDA_STATUS veda_check(VEDAresult err, const char* file, const int line) {
   if (err != VEDA_SUCCESS) {
-    const char *name, *str;
-    vedaGetErrorName(err, &name);
-    vedaGetErrorString(err, &str);
-    sd_printf("%s: %s @ %s:%i\n", name, str, file, line);
-    exit(1);
+    return VEDA_STATUS(err, file, line);
+  }
+  return VEDA_STATUS{};
+}
+
+SD_INLINE void veda_throw(VEDA_STATUS status) {
+  if (!status) {
+    throw std::runtime_error(status.getErrorMsg());
   }
 }
 
+// Scope to Set context to the current thread
+struct SCOPED_VEDA_CONTEXT {
+  VEDAcontext ctx;
+  SCOPED_VEDA_CONTEXT(VEDAdevice device) {
+    vedaDevicePrimaryCtxRetain(&ctx, device);
+    vedaCtxPushCurrent(ctx);
+  }
+
+  ~SCOPED_VEDA_CONTEXT() { vedaCtxPopCurrent(&ctx); }
+};
+
 struct VEDA_HANDLE {
+  using FUNC_NAME_PTR = const char*;
+  SD_MAP_IMPL<FUNC_NAME_PTR, VEDAfunction> functionsLookUp;
   VEDAcontext ctx;
   VEDAmodule mod;
-  using FUNC_NAME_PTR = const char*;
+  VEDA_STATUS status;
+  VEDAdevice device;
 
-  SD_MAP_IMPL<FUNC_NAME_PTR, VEDAfunction> functionsLookUp;
-
-  static VEDA_HANDLE& getInstance() {
-    static VEDA_HANDLE instance(VEDA_VEDNN_LIBRARY);
-    return instance;
+  VEDA_HANDLE(const char* library_name, VEDAdevice device_index, const char* dir_name = nullptr)
+      : device(device_index) {
+    sd_printf("%s \n", "loadddd vednn library if it was not");
+    auto status = VEDA_CALL(vedaCtxCreate(&ctx, VEDA_CONTEXT_MODE_OMP, 0));
+    if (status) {
+      if (const char* env_p = std::getenv("DEVICE_LIB_LOADPATH")) {
+        std::string path_lib = std::string(env_p) + "/" + library_name;
+        status = VEDA_CALL(vedaModuleLoad(&mod, path_lib.c_str()));
+      } else if (dir_name) {
+        std::string path_lib = std::string(dir_name) + "/" + library_name;
+        status = VEDA_CALL(vedaModuleLoad(&mod, path_lib.c_str()));
+      } else {
+        status = VEDA_CALL(vedaModuleLoad(&mod, library_name));
+      }
+      if (status) {
+        // lets just pop  thecontext from the current thread
+        vedaCtxPopCurrent(&ctx);
+      } else {
+        // lets destroy context as well
+        vedaCtxDestroy(ctx);
+      }
+    }
   }
 
   VEDAfunction getFunctionByConstPtrName(FUNC_NAME_PTR namePtr) {
@@ -53,34 +137,67 @@ struct VEDA_HANDLE {
     if (searchIter != functionsLookUp.end()) return searchIter->second;
     // insert to our lookUp
     VEDAfunction func;
-    VEDA(vedaModuleGetFunction(&func, mod, namePtr));
-    functionsLookUp.emplace(namePtr, func);
+    auto local_status = VEDA_CALL(vedaModuleGetFunction(&func, mod, namePtr));
+    if (local_status) functionsLookUp.emplace(namePtr, func);
     return func;
   }
 
- private:
-  VEDA_HANDLE(const char* library_name) {
+  VEDAdevice getDevice() { return device; }
 
-    VEDA(vedaInit(0));
-    VEDA(vedaCtxCreate(&ctx, 0, 0));
-    if(const char* env_p = std::getenv("DEVICE_LIB_LOADPATH")){
-        std::string path_lib = std::string(env_p) + "/" + library_name;
-        VEDA(vedaModuleLoad(&mod, path_lib.c_str()));
-    }else{
-        VEDA(vedaModuleLoad(&mod, library_name));
+  VEDA_STATUS sync() {
+    if (status) {
+      return VEDA_CALL(vedaCtxSynchronize());
+    } else {
+      return VEDA_STATUS{};
     }
   }
-  VEDA_HANDLE() = delete;
-  VEDA_HANDLE(const VEDA_HANDLE&) = delete;
-  VEDA_HANDLE(VEDA_HANDLE&&) = delete;
-  VEDA_HANDLE& operator=(const VEDA_HANDLE&) = delete;
-  VEDA_HANDLE& operator=(VEDA_HANDLE&&) = delete;
+};
+
+struct VEDA {
+  std::vector<VEDA_HANDLE> ve_handles;
+
+  static VEDA& getInstance() {
+    static VEDA instance(VEDA_VEDNN_LIBRARY);
+    return instance;
+  }
+
+  VEDA_HANDLE& getVEDA_HANDLE(int device_index) {
+    // we will let to throw out of range error
+    return ve_handles[device_index];
+  }
+
+ private:
+  VEDA(const char* library_name) {
+    int devcnt = 0;
+    auto status = VEDA_CALL(vedaInit(0));
+    if (status) {
+      status = VEDA_CALL(vedaDeviceGetCount(&devcnt));
+    }
+    const char* dir_name = sd::Environment::getInstance().getVedaDeviceDir();
+    int use = (devcnt > MAX_DEVICE_USAGE) ? MAX_DEVICE_USAGE : devcnt;
+    sd_printf("Veda devices: available %d \t will be in use %d\n", devcnt, use);
+    for (int i = 0; i < use; i++) {
+      VEDAdevice device;
+      vedaDeviceGet(&device, i);
+      VEDA_HANDLE v(library_name, device, dir_name);
+      ve_handles.emplace_back(std::move(v));
+    }
+  }
+
+  VEDA() = delete;
+  VEDA(const VEDA&) = delete;
+  VEDA(VEDA&&) = delete;
+  VEDA& operator=(const VEDA&) = delete;
+  VEDA& operator=(VEDA&&) = delete;
 
  protected:
-  virtual ~VEDA_HANDLE() {
-    //we are doing nothing ,for now
-    //https://github.com/SX-Aurora/veda/issues/16
-    //VEDA(vedaExit());
+  virtual ~VEDA() {
+    // https://github.com/SX-Aurora/veda/issues/16
+    // to solve the issue above we will use SCOPED_VEDA_CONTEXT each time before using veda
+    // thus it should help with gracefull shutdown
+    sd_printf("%s %d\n", __FILE__, __LINE__);
+    VEDA_CALL(vedaExit());
+    sd_printf("%s %d\n", __FILE__, __LINE__);
   }
 };
 

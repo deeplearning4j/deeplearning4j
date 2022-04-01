@@ -56,7 +56,7 @@ LaunchContext::LaunchContext() {
   _workspace = nullptr;
   _deviceID = 0;
 #if defined(HAVE_VEDA)
-   VEDA_HANDLE::getInstance();
+   VEDA::getInstance();
 #endif
 #if defined(HAVE_ONEDNN)
   _engine = new dnnl::engine(dnnl::engine::kind::cpu, 0);

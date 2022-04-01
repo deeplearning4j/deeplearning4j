@@ -494,6 +494,7 @@ elseif(SD_CPU OR SD_AURORA)
         ADD_LIBRARY (${SD_LIBRARY_NAME}_device SHARED ${VEDA_SOURCES})
         target_link_libraries(${SD_LIBRARY_NAME}_device PRIVATE ${VEDA_DEPENDENCY_LIBS})
         target_include_directories(${SD_LIBRARY_NAME}_device PRIVATE ${VEDA_INCLUDE_DIRS})
+        target_compile_options(${SD_LIBRARY_NAME}_device PRIVATE -O4 -fPIC -fno-defer-inline-template-instantiation  -msched-block -finline-functions -finline-max-times=64 -finline-max-depth=64 -fno-inline-copy-arguments -fdiag-inline=2 -fdiag-parallel=2 -fdiag-vector=2)
     endif()
 
     if ("${SD_ALL_OPS}" AND "${SD_BUILD_MINIFIER}")

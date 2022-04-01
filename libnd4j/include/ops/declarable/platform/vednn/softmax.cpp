@@ -35,14 +35,15 @@ PLATFORM_IMPL(softmax, ENGINE_CPU) {
 
   const int rank = input->rankOf();
 
-  const unsigned long inner_dim = input->sizeAt(rank-1);
+  const unsigned long inner_dim = input->sizeAt(rank - 1);
   const unsigned long outer_dim = input->lengthOf() / inner_dim;
 
 #if !defined(HAVE_VEDA)
-  auto ret = vednnSoftmaxForward( VEDNN_SOFTMAX_ACCURATE, input->buffer(), output->buffer(), outer_dim, inner_dim);
+  auto ret = vednnSoftmaxForward(VEDNN_SOFTMAX_ACCURATE, input->buffer(), output->buffer(), outer_dim, inner_dim);
   return ret == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
-  VEDA_HANDLE &handle = VEDA_HANDLE::getInstance();
+  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
+  SCOPED_VEDA_CONTEXT scopeContext(handle.getDevice());
 
   auto func = handle.getFunctionByConstPtrName("vedaVednnSoftmaxForward");
 
@@ -50,19 +51,19 @@ PLATFORM_IMPL(softmax, ENGINE_CPU) {
   size_t sizeIn = input->lengthOf() * input->sizeOfT();
   size_t sizeO = output->lengthOf() * output->sizeOfT();
 
-  VEDA(vedaMemAllocAsync(&vIn, sizeIn, 0));
-  VEDA(vedaMemAllocAsync(&vO, sizeO, 0));
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vIn, sizeIn, 0));
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vO, sizeO, 0));
 
-  VEDA(vedaMemcpyHtoDAsync(vIn, input->buffer(), sizeIn, 0));
+  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vIn, input->buffer(), sizeIn, 0));
 
-  VEDA(vedaLaunchKernel(func, 0, VEDNN_SOFTMAX_ACCURATE, vIn, vO, outer_dim, inner_dim));
+  VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDNN_SOFTMAX_ACCURATE, vIn, vO, outer_dim, inner_dim));
 
-  VEDA(vedaMemcpyDtoHAsync(output->buffer(), vO, sizeO, 0));
+  VEDA_CALL_THROW(vedaMemcpyDtoHAsync(output->buffer(), vO, sizeO, 0));
 
-  VEDA(vedaCtxSynchronize());
+  VEDA_CALL_THROW(vedaCtxSynchronize());
 
-  VEDA(vedaMemFreeAsync(vIn, 0));
-  VEDA(vedaMemFreeAsync(vO, 0));
+  VEDA_CALL_THROW(vedaMemFreeAsync(vIn, 0));
+  VEDA_CALL_THROW(vedaMemFreeAsync(vO, 0));
   return sd::Status::OK;
 #endif
 }
@@ -78,7 +79,7 @@ PLATFORM_CHECK(softmax, ENGINE_CPU) {
   req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
       req.expectFalse(makeInfoVariable(input->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
-      req.expectIn(makeInfoVariable(dim, "The dimension would be performed on"),  {-1, rank - 1} ) &&
+      req.expectIn(makeInfoVariable(dim, "The dimension would be performed on"), {-1, rank - 1}) &&
       req.expectEq(makeInfoVariable(input->ordering(), ORDERING_MSG_INPUT), 'c') &&
       req.expectEq(makeInfoVariable(output->ordering(), ORDERING_MSG_OUTPUT), 'c') &&
       req.expectEq(makeInfoVariable(input->ews(), EWS_MSG_INPUT), 1) &&
@@ -86,7 +87,6 @@ PLATFORM_CHECK(softmax, ENGINE_CPU) {
   req.logTheSuccess();
   return req;
 }
-
 
 }  // namespace platforms
 }  // namespace ops

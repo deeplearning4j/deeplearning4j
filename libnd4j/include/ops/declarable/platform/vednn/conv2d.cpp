@@ -23,6 +23,9 @@
 #include <ops/declarable/helpers/convolutions.h>
 #include <system/platform_boilerplate.h>
 
+// #include <chrono>
+// #include <iostream>
+
 #include "vednnUtils.h"
 
 namespace sd {
@@ -98,8 +101,10 @@ std::unique_ptr<NDArray> newWeight_3x3(const NDArray &w, int weightFormat) {
 
   return arr;
 }
+
 //////////////////////////////////////////////////////////////////////
 PLATFORM_IMPL(conv2d, ENGINE_CPU) {
+  // auto start = std::chrono::high_resolution_clock::now();
   auto input = INPUT_VARIABLE(0);                               // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
   auto weights = INPUT_VARIABLE(1);                             // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
   auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;  // [oC]
@@ -152,8 +157,11 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
   vednnTensorParam_t paramOut;
 
   vednnConvolutionParam_t paramConv;
-  std::unique_ptr<NDArray> wTemp, inTemp, outTemp;
   NDArray *w = weights, *in = input, *out = output;
+
+#if !defined(HAVE_VEDA)
+  std::unique_ptr<NDArray> wTemp, inTemp, outTemp;
+
   if (0 == weightFormat) {
     // [kH, kW, iC, oC] -> [oC, iC, kH, kW]
     if (weights->ordering() == 'c' && weights->ews() == 1 && weights->sizeAt(0) == 3 && weights->sizeAt(1) == 3) {
@@ -175,29 +183,18 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
     outTemp.reset(new NDArray(output->permute({0, 3, 1, 2}).ulike()));
     out = outTemp.get();
   }
-
+#endif
+  // auto end1 = std::chrono::high_resolution_clock::now();
   if (bias) {
     paramBias.dtype = DTYPE_FLOAT;
     paramBias.channel = bias->lengthOf();
   }
 
-  paramIn.dtype = DTYPE_FLOAT;
-  paramIn.batch = (int)in->sizeAt(0);
-  paramIn.channel = (int)in->sizeAt(1);
-  paramIn.height = (int)in->sizeAt(2);
-  paramIn.width = (int)in->sizeAt(3);
+  paramIn = getTensorFormat(*in, isNCHW);
   //// 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
-  paramFilter.dtype = DTYPE_FLOAT;
-  paramFilter.inChannel = (int)in->sizeAt(1);
-  paramFilter.outChannel = (int)out->sizeAt(1);
-  paramFilter.height = (int)w->sizeAt(2);
-  paramFilter.width = (int)w->sizeAt(3);
+  paramFilter = getFilterParam(*w, weightFormat);
 
-  paramOut.dtype = DTYPE_FLOAT;
-  paramOut.batch = (int)out->sizeAt(0);
-  paramOut.channel = (int)out->sizeAt(1);
-  paramOut.height = (int)out->sizeAt(2);
-  paramOut.width = (int)out->sizeAt(3);
+  paramOut = getTensorFormat(*out, isNCHW);
 
   paramConv.group = 1;
   paramConv.strideWidth = sW;     // col stride    W
@@ -221,7 +218,8 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
   auto status = res == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
 
-  VEDA_HANDLE &handle = VEDA_HANDLE::getInstance();
+  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
+  SCOPED_VEDA_CONTEXT scopeContext(handle.getDevice());
 
   auto func = handle.getFunctionByConstPtrName("vedaVednnConvolutionForwardAddBias");
 
@@ -231,36 +229,44 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
   size_t sizeW = w->lengthOf() * w->sizeOfT();
   size_t sizeB = bias ? bias->lengthOf() * bias->sizeOfT() : 0;
   size_t sizeO = out->lengthOf() * out->sizeOfT();
+  // auto end2 = std::chrono::high_resolution_clock::now();
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vIn, sizeIn, 0));
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vW, sizeW, 0));
+  if (bias) VEDA_CALL_THROW(vedaMemAllocAsync(&vB, sizeB, 0));
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vO, sizeO, 0));
 
-  VEDA(vedaMemAllocAsync(&vIn, sizeIn, 0));
-  VEDA(vedaMemAllocAsync(&vW, sizeW, 0));
-  if (bias) VEDA(vedaMemAllocAsync(&vB, sizeB, 0));
-  VEDA(vedaMemAllocAsync(&vO, sizeO, 0));
-
-  VEDA(vedaMemcpyHtoDAsync(vIn, in->buffer(), sizeIn, 0));
-  VEDA(vedaMemcpyHtoDAsync(vW, w->buffer(), sizeW, 0));
-  if (bias) VEDA(vedaMemcpyHtoDAsync(vB, bias->buffer(), sizeB, 0));
+  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vIn, in->buffer(), sizeIn, 0));
+  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vW, w->buffer(), sizeW, 0));
+  if (bias) VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vB, bias->buffer(), sizeB, 0));
 
   // uint64_t res;
-  VEDA(vedaLaunchKernel(func, 0, VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn,
-                        VEDAstack(&paramFilter, VEDA_ARGS_INTENT_IN, sizeof(paramFilter)), vW,
-                        VEDAstack(&paramBias, VEDA_ARGS_INTENT_IN, sizeof(paramBias)), vB,
-                        VEDAstack(&paramOut, VEDA_ARGS_INTENT_IN, sizeof(paramOut)), vO,
-                        VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv)), VEDNN_CONV_ALGORITHM_DIRECT));
+  VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn, isNCHW,
+                             VEDAstack(&paramFilter, VEDA_ARGS_INTENT_IN, sizeof(paramFilter)), vW, weightFormat,
+                             VEDAstack(&paramBias, VEDA_ARGS_INTENT_IN, sizeof(paramBias)), vB,
+                             VEDAstack(&paramOut, VEDA_ARGS_INTENT_IN, sizeof(paramOut)), vO, isNCHW,
+                             VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv)),
+                             VEDNN_CONV_ALGORITHM_DIRECT));
 
-  VEDA(vedaMemcpyDtoHAsync(out->buffer(), vO, sizeO, 0));
+  VEDA_CALL_THROW(vedaMemcpyDtoHAsync(out->buffer(), vO, sizeO, 0));
 
-  VEDA(vedaCtxSynchronize());
+  VEDA_CALL_THROW(vedaCtxSynchronize());
 
-  VEDA(vedaMemFreeAsync(vIn, 0));
-  VEDA(vedaMemFreeAsync(vW, 0));
-  if (bias) VEDA(vedaMemFreeAsync(vB, 0));
-  VEDA(vedaMemFreeAsync(vO, 0));
+  VEDA_CALL_THROW(vedaMemFreeAsync(vIn, 0));
+  VEDA_CALL_THROW(vedaMemFreeAsync(vW, 0));
+  if (bias) VEDA_CALL_THROW(vedaMemFreeAsync(vB, 0));
+  VEDA_CALL_THROW(vedaMemFreeAsync(vO, 0));
+  // auto end = std::chrono::high_resolution_clock::now();
+  // std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(end1 - start).count() << "ns\t"
+  //           << std::chrono::duration_cast<std::chrono::nanoseconds>(end2 - end1).count() << "ns\t"
+  //           << std::chrono::duration_cast<std::chrono::nanoseconds>(end - end2).count() << std::endl;
   auto status = sd::Status::OK;
 #endif
+
+#if !defined(HAVE_VEDA)
   if (out != nullptr && out != output) {
     output->assign(out->permute({0, 2, 3, 1}));
   }
+#endif
   return status;
 }
 
@@ -283,6 +289,7 @@ PLATFORM_CHECK(conv2d, ENGINE_CPU) {
       req.expectEq(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(weights->rankOf(), RANK_MSG_INPUT1), 4) &&
       req.expectEq(makeInfoVariable(weights->ordering(), ORDERING_MSG_INPUT1), 'c') &&
+      req.expectEq(makeInfoVariable(weights->ews(), EWS_MSG_INPUT1), 1) &&
       req.expectEq(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(output->rankOf(), RANK_MSG_OUTPUT), 4) &&
       req.expectEq(makeInfoVariable(output->ordering(), ORDERING_MSG_OUTPUT), 'c') &&
@@ -375,23 +382,11 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CPU) {
     gradInPtr = gradInTemp.get();
   }
 
-  paramGradOut.dtype = DTYPE_FLOAT;
-  paramGradOut.batch = (int)gradOutPtr->sizeAt(0);
-  paramGradOut.channel = (int)gradOutPtr->sizeAt(1);
-  paramGradOut.height = (int)gradOutPtr->sizeAt(2);
-  paramGradOut.width = (int)gradOutPtr->sizeAt(3);
-  //// 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
-  paramFilter.dtype = DTYPE_FLOAT;
-  paramFilter.inChannel = (int)gradInPtr->sizeAt(1);
-  paramFilter.outChannel = (int)gradOutPtr->sizeAt(1);
-  paramFilter.height = (int)weightPtr->sizeAt(2);
-  paramFilter.width = (int)weightPtr->sizeAt(3);
+  paramGradOut = getTensorFormat(*gradOutPtr);
 
-  paramGradIn.dtype = DTYPE_FLOAT;
-  paramGradIn.batch = (int)gradInPtr->sizeAt(0);
-  paramGradIn.channel = (int)gradInPtr->sizeAt(1);
-  paramGradIn.height = (int)gradInPtr->sizeAt(2);
-  paramGradIn.width = (int)gradInPtr->sizeAt(3);
+  paramFilter = getFilterParam(*weightPtr, 1);
+
+  paramGradIn = getTensorFormat(*gradInPtr);
 
   paramConv.group = 1;
   paramConv.strideWidth = sW;     // col stride    W
@@ -412,40 +407,42 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CPU) {
                                      gradWeightsPtr->buffer(), &paramConv, VEDNN_CONV_ALGORITHM_DIRECT);
   auto status = (resData == VEDNN_SUCCESS && resFilter == VEDNN_SUCCESS) ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
-  VEDA_HANDLE &handle = VEDA_HANDLE::getInstance();
+  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
+  SCOPED_VEDA_CONTEXT scopeContext(handle.getDevice());
 
   auto func = handle.getFunctionByConstPtrName("vedaVednnConvolutionBackwardDataAndFilter");
   VEDAdeviceptr vGradOut, vW, vGradW, vIn, vGradIn;
 
-  VEDA(vedaMemAllocAsync(&vGradOut, gradOutPtr->lengthOf() * gradOutPtr->sizeOfT(), 0));
-  VEDA(vedaMemAllocAsync(&vW, weightPtr->lengthOf() * weightPtr->sizeOfT(), 0));
-  VEDA(vedaMemAllocAsync(&vGradW, gradWeightsPtr->lengthOf() * gradWeightsPtr->sizeOfT(), 0));
-  VEDA(vedaMemAllocAsync(&vIn, in->lengthOf() * in->sizeOfT(), 0));
-  VEDA(vedaMemAllocAsync(&vGradIn, gradInPtr->lengthOf() * gradInPtr->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vGradOut, gradOutPtr->lengthOf() * gradOutPtr->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vW, weightPtr->lengthOf() * weightPtr->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vGradW, gradWeightsPtr->lengthOf() * gradWeightsPtr->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vIn, in->lengthOf() * in->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vGradIn, gradInPtr->lengthOf() * gradInPtr->sizeOfT(), 0));
 
-  VEDA(vedaMemcpyHtoDAsync(vGradOut, gradOutPtr->buffer(), gradOutPtr->lengthOf() * gradOutPtr->sizeOfT(), 0));
-  VEDA(vedaMemcpyHtoDAsync(vW, weightPtr->buffer(), weightPtr->lengthOf() * weightPtr->sizeOfT(), 0));
-  // VEDA(
+  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vGradOut, gradOutPtr->buffer(), gradOutPtr->lengthOf() * gradOutPtr->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vW, weightPtr->buffer(), weightPtr->lengthOf() * weightPtr->sizeOfT(), 0));
+  // VEDA_CALL_THROW(
   //     vedaMemcpyHtoDAsync(vGradW, gradWeightsPtr->buffer(), gradWeightsPtr->lengthOf() * gradWeightsPtr->sizeOfT(),
   //     0));
-  VEDA(vedaMemcpyHtoDAsync(vIn, in->buffer(), in->lengthOf() * in->sizeOfT(), 0));
-  // VEDA(vedaMemcpyHtoDAsync(vGradIn, gradInPtr->buffer(), gradInPtr->lengthOf() * gradInPtr->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vIn, in->buffer(), in->lengthOf() * in->sizeOfT(), 0));
+  // VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vGradIn, gradInPtr->buffer(), gradInPtr->lengthOf() * gradInPtr->sizeOfT(), 0));
 
-  VEDA(vedaLaunchKernel(func, 0, VEDAstack(&paramGradOut, VEDA_ARGS_INTENT_IN, sizeof(paramGradOut)), vGradOut,
-                        VEDAstack(&paramFilter, VEDA_ARGS_INTENT_IN, sizeof(paramFilter)), vW, vGradW,
-                        VEDAstack(&paramGradIn, VEDA_ARGS_INTENT_IN, sizeof(paramGradIn)), vIn, vGradIn,
-                        VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv)), VEDNN_CONV_ALGORITHM_DIRECT));
+  VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDAstack(&paramGradOut, VEDA_ARGS_INTENT_IN, sizeof(paramGradOut)), vGradOut,
+                             VEDAstack(&paramFilter, VEDA_ARGS_INTENT_IN, sizeof(paramFilter)), vW, vGradW,
+                             VEDAstack(&paramGradIn, VEDA_ARGS_INTENT_IN, sizeof(paramGradIn)), vIn, vGradIn,
+                             VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv)),
+                             VEDNN_CONV_ALGORITHM_DIRECT));
 
-  VEDA(vedaMemcpyDtoHAsync(gradInPtr->buffer(), vGradIn, gradInPtr->lengthOf() * gradInPtr->sizeOfT(), 0));
-  VEDA(
+  VEDA_CALL_THROW(vedaMemcpyDtoHAsync(gradInPtr->buffer(), vGradIn, gradInPtr->lengthOf() * gradInPtr->sizeOfT(), 0));
+  VEDA_CALL_THROW(
       vedaMemcpyDtoHAsync(gradWeightsPtr->buffer(), vGradW, gradWeightsPtr->lengthOf() * gradWeightsPtr->sizeOfT(), 0));
-  VEDA(vedaCtxSynchronize());
+  VEDA_CALL_THROW(vedaCtxSynchronize());
 
-  VEDA(vedaMemFreeAsync(vGradOut, 0));
-  VEDA(vedaMemFreeAsync(vW, 0));
-  VEDA(vedaMemFreeAsync(vGradW, 0));
-  VEDA(vedaMemFreeAsync(vIn, 0));
-  VEDA(vedaMemFreeAsync(vGradIn, 0));
+  VEDA_CALL_THROW(vedaMemFreeAsync(vGradOut, 0));
+  VEDA_CALL_THROW(vedaMemFreeAsync(vW, 0));
+  VEDA_CALL_THROW(vedaMemFreeAsync(vGradW, 0));
+  VEDA_CALL_THROW(vedaMemFreeAsync(vIn, 0));
+  VEDA_CALL_THROW(vedaMemFreeAsync(vGradIn, 0));
   // TODO: after replacing it with vedaLaunchKernelEx we will return result based on vednn veda call
   auto status = sd::Status::OK;
 #endif
