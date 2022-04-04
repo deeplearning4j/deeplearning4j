@@ -661,6 +661,8 @@ public interface NativeOps {
 
     String getDeviceName(int ptrToDeviceId);
 
+    void setVedaDeviceLibFolder(String path);
+
     int memcpySync(Pointer dst, Pointer src, long size, int flags, Pointer reserved);
 
     int memcpyAsync(Pointer dst, Pointer src, long size, int flags, Pointer reserved);

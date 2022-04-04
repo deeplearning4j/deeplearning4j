@@ -21,6 +21,7 @@
 package org.nd4j.nativeblas;
 
 import java.util.Properties;
+import java.io.File;
 import lombok.Getter;
 import org.bytedeco.javacpp.Loader;
 import org.nd4j.common.config.ND4JClassLoading;
@@ -50,7 +51,8 @@ public class NativeOpsHolder {
 
         if (ht_off > 24) {
             int rounds = 0;
-            while (ht_off > 24) { // we loop until final value gets below 24 cores, since that's reasonable threshold as of 2016
+            while (ht_off > 24) { // we loop until final value gets below 24 cores, since that's reasonable
+                                  // threshold as of 2016
                 if (ht_off > 24) {
                     ht_off /= 2; // we dont' have any cpus that has higher number then 24 physical cores
                     rounds++;
@@ -67,7 +69,8 @@ public class NativeOpsHolder {
                 if (isOdd(ht_off)) // if that's odd number, it's final result
                     return ht_off;
 
-                // 20 threads & 16 threads are special case in this branch, where we go min value
+                // 20 threads & 16 threads are special case in this branch, where we go min
+                // value
                 if (ht_off == 20 || ht_off == 16)
                     ht_off /= 2;
             }
@@ -102,20 +105,39 @@ public class NativeOpsHolder {
                     deviceNativeOps.setOmpNumThreads(Math.max(1, cores / chips));
                 } else
                     deviceNativeOps.setOmpNumThreads(
-                                    getCores(Runtime.getRuntime().availableProcessors()));
+                            getCores(Runtime.getRuntime().availableProcessors()));
             }
-            deviceNativeOps.setOmpNumThreads(4);
+            // deviceNativeOps.setOmpNumThreads(4);
 
             String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
             boolean logInit = Boolean.parseBoolean(logInitProperty);
 
-            if(logInit) {
+            try {
+                String pPath = Loader.load(nativeOpsClass);
+                pPath = pPath.replace(File.separatorChar, '/');
+                String matchString = "org/nd4j/linalg/cpu/nativecpu/bindings/" + Loader.getPlatform();
+                int start = pPath.indexOf(matchString);
+                int end = pPath.lastIndexOf("/");
+                String bindingsFolder = pPath.substring(start, end);
+                if (bindingsFolder.startsWith(matchString + "-vednn")) {
+                    File file = Loader.cacheResource(bindingsFolder + "/libnd4jcpu_device.vso");
+                    if (file != null) {
+                        String path = file.getAbsoluteFile().getParent();
+                        System.out.println("--- " + path);
+                        deviceNativeOps.setVedaDeviceLibFolder(path);
+                    }
+                }
+            } catch (java.io.IOException exception) {
+
+            }
+
+            if (logInit) {
                 log.info("Number of threads used for linear algebra: {}", deviceNativeOps.ompGetMaxThreads());
             }
         } catch (Exception | Error e) {
             throw new RuntimeException(
-                            "ND4J is probably missing dependencies. For more information, please refer to: https://deeplearning4j.konduit.ai/nd4j/backend",
-                            e);
+                    "ND4J is probably missing dependencies. For more information, please refer to: https://deeplearning4j.konduit.ai/nd4j/backend",
+                    e);
         }
     }
 

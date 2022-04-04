@@ -156,6 +156,7 @@
                                 <exclude>*.dll</exclude>
                                 <exclude>*.dylib</exclude>
                                 <exclude>*.so</exclude>
+                                <exclude>*.vso</exclude>
                                 <exclude>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</exclude>
                                 <exclude>module-info.java</exclude>
                             </excludes>

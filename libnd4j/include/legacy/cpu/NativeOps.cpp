@@ -2801,6 +2801,10 @@ int dbDeviceId(OpaqueDataBuffer *dataBuffer) { return dataBuffer->deviceId(); }
 
 void dbClose(OpaqueDataBuffer *dataBuffer) { dataBuffer->getDataBuffer()->close(); }
 
+void setVedaDeviceLibFolder(std::string path){
+  sd::Environment::getInstance().setVedaDeviceDir(path);
+}
+
 BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric,
                       (void *, sd::LongType const *, void *, sd::LongType const *, const int, sd::LongType const *,
                        sd::LongType const *, sd::LongType const *, sd::LongType const *, sd::LongType const *),

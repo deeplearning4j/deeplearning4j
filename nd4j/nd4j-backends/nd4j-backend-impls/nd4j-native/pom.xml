@@ -118,6 +118,7 @@
                                 <exclude>*.dll</exclude>
                                 <exclude>*.dylib</exclude>
                                 <exclude>*.so</exclude>
+                                <exclude>*.vso</exclude>
                                 <exclude>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</exclude>
                             </excludes>
                         </configuration>
@@ -244,12 +245,13 @@
                         <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
                         <linkPath>${env.OPENBLAS_PATH}/</linkPath>
                     </linkPaths>
-
+                    <resourcePath>${libnd4jhome}/blasbuild/cpu/blas</resourcePath>
                     <buildResources>
                         <buildResource>/${javacpp.platform.library.path}/</buildResource>
                         <buildResource>/org/bytedeco/openblas/${javacpp.platform}/</buildResource>
                         <buildResource>/lib/</buildResource>
                         <buildResource>/</buildResource>
+                        <buildResource>${libnd4jhome}/blasbuild/cpu/blas</buildResource>
                     </buildResources>
                     <includeResources>
                         <includeResource>/${javacpp.platform.library.path}/include/
@@ -295,6 +297,7 @@
                             <skip>${javacpp.compiler.skip}</skip>
                             <classOrPackageName>org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu</classOrPackageName>
                             <copyLibs>true</copyLibs>
+                            <copyResources>true</copyResources>
                             <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
                             <outputDirectory>${javacpp.build.output.path}</outputDirectory>
                         </configuration>

@@ -1548,6 +1548,9 @@ SD_LIB_EXPORT int optimalLevel();
 
 SD_LIB_EXPORT bool isMinimalRequirementsMet();
 SD_LIB_EXPORT bool isOptimalRequirementsMet();
+
+SD_LIB_EXPORT void setVedaDeviceLibFolder(std::string path);
+
 }
 
 #endif  // NATIVEOPERATIONS_NATIVEOPS_H
