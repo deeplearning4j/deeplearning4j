@@ -47,9 +47,10 @@ interface PreImportHook {
         outputNames: List<String>,
         isFinalOutput: Boolean,
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
-        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
+        dynamicVariables: Map<String, GeneratedMessageV3>
     ): HookResult {
-        return HookResult(outputVariables = handleOutputs(outputNames, sd, op, attributes,mappingRegistry,importGraph),
+        return HookResult(outputVariables = handleOutputs(outputNames, sd, op, attributes,mappingRegistry,importGraph,dynamicVariables),
             proceedWithInit = false)
     }
 
@@ -59,7 +60,8 @@ interface PreImportHook {
         op: SameDiffOp,
         attributes: Map<String, Any>,
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
-        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
+        dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String,List<SDVariable>> {
         outputNames.forEach { outputVarName ->
             if(outputVarName != null && sd.hasVariable(outputVarName)) {
@@ -70,7 +72,7 @@ interface PreImportHook {
 
         op.outputsOfOp = outputNames
 
-        return doImport(sd, attributes, outputNames, op,mappingRegistry,importGraph)
+        return doImport(sd, attributes, outputNames, op, mappingRegistry, importGraph,dynamicVariables)
     }
 
     fun doImport(
@@ -79,7 +81,8 @@ interface PreImportHook {
         outputNames: List<String>,
         op: SameDiffOp,
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
-        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
+        dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String,List<SDVariable>>
 
 

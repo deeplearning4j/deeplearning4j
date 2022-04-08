@@ -104,7 +104,8 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         this.inputList.addAll(inputList)
         this.variableList.addAll(inputList)
         initializerSet.addAll(initializers)
-        outputList.addAll(this.graphDef.outputList.map { input -> input.name.replace(":0","") })
+        outputList.addAll(this.graphDef.outputList.filter { valueInfo -> !valueInfo.name.contains(valueInfo.name) }
+            .map { input -> input.name.replace(":0","") })
     }
 
     /**
@@ -184,7 +185,7 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
 
         //add inputs and outputs for use cases like placeholder detection
         inputList.addAll(graphDef.inputList.filter { input -> !initializerListNames.contains(input.name) }.map { input -> input.name })
-        outputList.addAll(graphDef.outputList.map { input -> input.name })
+        outputList.addAll(graphDef.outputList.filter { valueInfo -> !outputList.contains(valueInfo.name) }.map { input -> input.name })
         val frameworkList =  OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")
         graphDef.nodeList.forEach {
 

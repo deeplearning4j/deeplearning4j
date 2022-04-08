@@ -1538,9 +1538,24 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
     }
 
+
+
+    Op("flatten") {
+        javaPackage = "org.nd4j.linalg.api.ops.custom"
+        javaOpClass = "Flatten"
+        Input(NDARRAY, "input") { description = "Input variable" }
+        Arg(STRING,"order") {description = "ordering of the array"}
+        Output(NDARRAY, "output"){ description = "outputs the 1d array with a length equal to the input's length" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Returns a flattened 1d array with the length of the input.
+            """.trimIndent()
+        }
+    }
+
     Op("shape") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "input") { description = "Input variable" }
+        Input(NDARRAY, "input") { description = "Input variable" }
         Output(NUMERIC, "output"){ description = "1D output variable with contents equal to the shape of the input" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -1551,7 +1566,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("size") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "in") { description = "Input variable" }
+        Input(NDARRAY, "in") { description = "Input variable" }
         Output(NUMERIC, "output"){ description = "0D (scalar) output variable with value equal to the number of elements in the specified array" }
         Doc(Language.ANY, DocScope.ALL){
             """ 
@@ -1562,7 +1577,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("sizeAt") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "in") { description = "Input variable" }
+        Input(NDARRAY, "in") { description = "Input variable" }
         Arg(INT, "dimension") { description = "Dimension to get size of" }
         Output(NUMERIC, "output"){ description = "Scalar INDArray  for size at specified variable" }
         Doc(Language.ANY, DocScope.ALL){

@@ -43,9 +43,9 @@ public class SameDiffUtils {
     /**
      * Stack batch outputs, like an output from {@link SameDiff#output(MultiDataSetIterator, String...)}
      */
-    public static Map<String, INDArray> stackOutputs(List<ExecutionResult<INDArray>> outputs){
+    public static Map<String, INDArray> stackOutputs(List<ExecutionResult> outputs){
         Map<String, List<INDArray>> outs = new HashMap<>();
-        for(ExecutionResult<INDArray> batch : outputs){
+        for(ExecutionResult batch : outputs){
             for(String k : batch.getOutputs().keySet()) {
                 if(!outs.containsKey(k))
                     outs.put(k, new ArrayList<>());

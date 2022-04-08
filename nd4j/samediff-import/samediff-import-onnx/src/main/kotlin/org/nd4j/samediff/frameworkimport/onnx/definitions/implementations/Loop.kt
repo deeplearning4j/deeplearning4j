@@ -20,26 +20,24 @@
 package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 
 import onnx.Onnx
+import org.nd4j.autodiff.samediff.ControlFlow
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.SameDiffLambda
-import org.nd4j.autodiff.samediff.SameDiffNoArgSingleLambda
-import org.nd4j.autodiff.samediff.SameDiffSingleLambda
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
-import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
-import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
+import org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxInputTensors
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
-import java.lang.IllegalArgumentException
+
 
 /**
- * A port of if.py from onnx tensorflow for samediff:
+ * A port of loop.py from onnx tensorflow for samediff:
  * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/loop.py
  *
  * @author Adam Gibson
@@ -53,109 +51,108 @@ class Loop : PreImportHook  {
         outputNames: List<String>,
         op: SameDiffOp,
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
-        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
+        dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
         // Parameter docs below are from the onnx operator docs:
         // https://github.com/onnx/onnx/blob/master/docs/Operators.md#non
 
+        val funcName = "${op.name}"
+        val importedBody = attributes["body"] as OnnxIRGraph
+        val body = importAndValidateGraph(
+            importedBody = importedBody,
+            dynamicVariables = dynamicVariables,sd = sd,
+            funcName = funcName,mappingRegistry = mappingRegistry,
+            importGraph = importGraph
+        )
+
+
+        val tensors = OnnxInputTensors(importedBody = importedBody,op = op,sd = sd)
+        val inputTensors = tensors.toInputTensors()
+        val outputs = ArrayList<String>()
+        outputs.addAll(inputTensors.map { input -> input.name() })
+
+        //  combine for loop and while loop together
+        val forCondBody = ControlFlow.condBody()
+
+        /**
+         * inputs here:
+         * condition
+         * trip_count
+         * curr_iteration
+         * seq_empty
+         */
+        val loopBody  = loopBody(
+            importedBody = importedBody,
+            funcName = funcName,
+            parent =  sd, funcBody = body)
+
+        val outputNames = inputTensors.map { input -> "${funcName}_${input.name()}_output" }.toMutableList()
+        for(i in 0 until op.outputsOfOp.size) {
+            outputNames[outputNames.size - i - 1] = op.outputsOfOp[i]
+        }
+
+        val loopRet = sd.whileLoop(
+            outputNames.toTypedArray(),
+            funcName,
+            inputTensors.toTypedArray(),
+            forCondBody,loopBody)
+
+
+
+
+
+        val ret2 = loopRet.associate { input -> input.name() to listOf(input) }.toMutableMap()
+        return ret2
+
+    }
+
+
+
+    fun loopBody(importedBody: OnnxIRGraph,parent: SameDiff,funcBody: SameDiff,funcName: String): SameDiffLambda {
+        return ControlFlow.loopBody(parent,
+            funcBody,
+            funcName,
+            importedBody.inputList.toTypedArray(),
+            importedBody.outputList.toTypedArray())
+    }
+
+
+    fun importAndValidateGraph(importedBody: OnnxIRGraph,
+                               dynamicVariables: Map<String, GeneratedMessageV3>,
+                               sd: SameDiff,
+                               funcName: String,
+                               mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
+                               importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
+    ): SameDiff {
         val registryCast = mappingRegistry as OpMappingRegistry<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.TensorProto.DataType,Onnx.AttributeProto,Onnx.AttributeProto>
         val importGraphCast = importGraph as ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>
-        val importedBody = attributes["body"] as OnnxIRGraph
+
         val body = importGraphCast.importGraph(
             importedBody,
             null,
-            null, mutableMapOf(),
+            null, dynamicVariables as MutableMap<String,Onnx.TensorProto>,
             registryCast)
         body.isEagerMode = false
-        sd.putSubFunction("${op.name}_loop_body",body)
+        sd.putSubFunction(funcName,body)
         sd.isEagerMode = false
-        val inputTensors = ArrayList<SDVariable>()
-        val cond: SDVariable? = if(op.inputsToOp.size > 1 && op.inputsToOp[1] != "") sd.getVariable(op.inputsToOp[1]) else null
-        val condBody: SameDiffSingleLambda? = if(cond != null) {
-            SameDiffSingleLambda { sameDiff, inputs ->
-                inputs[0].castTo(DataType.BOOL)
-            }
-        } else {
-            null
-        }
-        for(i in 2 until op.inputsToOp.size) {
-            inputTensors.add(sd.getVariable(op.inputsToOp[i]))
+
+        //only validate if present
+        //all graphs must have iteration number, condition (2 + N inputs) and extra deps
+        val iterCountVar = importedBody.inputList[0]
+        val iterCountVarImported = body.getVariable(iterCountVar)
+        if(!iterCountVarImported.dataType().isNumerical) {
+            throw IllegalArgumentException("Attribute trip count on graph is invalid data type. Must be numerical.")
         }
 
 
-        val terminationIterations: SDVariable? = if(op.inputsToOp.size > 0 && op.inputsToOp[0] != "") sd.getVariable(op.inputsToOp[0]) else null
-        //  for loop:  if M is not None and cond_init is None
-        if(terminationIterations != null && cond == null) {
-            val condBody =  SameDiffSingleLambda { sameDiff, inputs ->
-                inputs[0].lt(inputs[1]).castTo(DataType.BOOL)
-            }
-
-            //ensure first variable is loop termination variable with body
-            //being a variable update + the intended body
-            val loopVars = ArrayList<SDVariable>()
-            loopVars.add(terminationIterations)
-            loopVars.addAll(inputTensors)
-
-            val ret = sd.whileLoop(loopVars.toTypedArray(),
-                condBody
-            ) { sameDiff, inputs ->
-               arrayOf(inputs[0].add(1.0))
-            }
-
-
-            if(ret.size != outputNames.size)
-                throw IllegalArgumentException("Unable to set name variable s${outputNames}, output variable names was size ${ret.size}, specified names was size ${outputNames.size}")
-
-            ret.forEachIndexed { index, sdVariable ->
-                sdVariable.rename(outputNames[index])
-            }
-
-            return ret.associate{ input -> input.name() to listOf(input) }
-
-        } else if(terminationIterations == null && cond != null) {
-            // # while and do-while loop
-            val ret = sd.whileLoop(inputTensors.toTypedArray(),
-                condBody!!) { sameDiff, inputs ->
-                arrayOf(sameDiff.invokeGraphOn(sd))
-            }
-
-
-            if(ret.size != outputNames.size)
-                throw IllegalArgumentException("Unable to set name variable s${outputNames}, output variable names was size ${ret.size}, specified names was size ${outputNames.size}")
-
-            ret.forEachIndexed { index, sdVariable ->
-                sdVariable.rename(outputNames[index])
-            }
-
-            return ret.associate{ input -> input.name() to listOf(input) }
-        } else if(cond != null && terminationIterations != null) {
-            // # combine for loop and while loop together
-            val forCondBody: SameDiffSingleLambda? = if(cond != null) {
-                SameDiffSingleLambda { sameDiff, inputs ->
-                    sd.bitwise().and(inputs[0].castTo(DataType.INT64),cond.castTo(DataType.INT64)).castTo(DataType.BOOL)
-                }
-            } else {
-                null
-            }
-            val ret = sd.whileLoop(inputTensors.toTypedArray(),
-                forCondBody!!
-            ) { sameDiff, inputs ->
-                arrayOf(inputs[0].add(1.0))
-            }
-
-            if(ret.size != outputNames.size)
-                throw IllegalArgumentException("Unable to set name variable s${outputNames}, output variable names was size ${ret.size}, specified names was size ${outputNames.size}")
-
-            ret.forEachIndexed { index, sdVariable ->
-                sdVariable.rename(outputNames[index])
-            }
-
-
-            return ret.associate{ input -> input.name() to listOf(input) }
-
-        } else {
-            //both are null
-            throw IllegalArgumentException("Unable to support infinite loops")
+        val condInVar = importedBody.inputList[1]
+        val condInVarImported = body.getVariable(condInVar)
+        if(condInVarImported.dataType() != DataType.BOOL) {
+            throw IllegalArgumentException("Attribute cond on graph is invalid data type. Must be boolean.")
         }
+
+        return body
     }
+
 }

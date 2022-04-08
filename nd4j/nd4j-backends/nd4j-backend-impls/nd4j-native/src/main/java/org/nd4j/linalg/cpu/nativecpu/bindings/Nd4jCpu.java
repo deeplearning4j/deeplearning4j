@@ -2929,8 +2929,7 @@ public native org.nd4j.nativeblas.OpaqueShapeList calculateOutputShapes2(@Cast("
                                                       int numInputShapes, double[] tArgs, int numTArgs,
                                                       @Cast("sd::LongType*") long[] iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs,
                                                       int[] dArgs, int numDArgs);
-// #if defined(__NEC__)
-public native org.nd4j.nativeblas.OpaqueShapeList calculateOutputShapesNec(org.nd4j.nativeblas.OpaqueContext ctx, @Cast("sd::LongType") long hash, @Cast("sd::Pointer*") PointerPointer inputShapes, int numInputShapes);
+// #ifdef __NEC__
 // #endif
 public native @Cast("sd::LongType") long getShapeListSize(org.nd4j.nativeblas.OpaqueShapeList list);
 public native @Cast("const sd::LongType*") LongPointer getShape(org.nd4j.nativeblas.OpaqueShapeList list, @Cast("sd::LongType") long i);
@@ -9035,7 +9034,7 @@ public static final int
 
 // #include <vector>
 // #if defined(__NEC__)
-public static final int NEC_MAX_SHAPE_LIST = 12;
+public static final int SHAPE_LIST_MAX_SIZE = 64;
 // #endif
 @Namespace("sd") @NoOffset public static class ShapeList extends Pointer {
     static { Loader.load(); }
@@ -14289,6 +14288,28 @@ public static final int
     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
   }
 // #endif
+
+// #if NOT_EXCLUDED(OP_invoke)
+@Namespace("sd::ops") public static class invoke extends DeclarableCustomOp {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public invoke(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public invoke(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public invoke position(long position) {
+        return (invoke)super.position(position);
+    }
+    @Override public invoke getPointer(long i) {
+        return new invoke((Pointer)this).offsetAddress(i);
+    }
+
+    public invoke() { super((Pointer)null); allocate(); }
+    private native void allocate();
+    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+  }
+// #endif
+
 
 
   // namespace ops

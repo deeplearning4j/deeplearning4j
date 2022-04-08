@@ -37,9 +37,7 @@ import org.nd4j.onnxruntime.util.ONNXUtils;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static org.bytedeco.onnxruntime.global.onnxruntime.*;
 import static org.nd4j.onnxruntime.util.ONNXUtils.*;
@@ -121,17 +119,17 @@ public class OnnxRuntimeRunner implements Closeable  {
             BytePointer inputName = session.GetInputName(i, allocator.asOrtAllocator());
             inputNodeNames.put(i, inputName);
             ONNXType typeForInput = getTypeForInput(session, i);
-            INDArray[] arr = input.get(inputName.getString()).getListValue();
-            if(arr.length == 1 && typeForInput == ONNXType.ONNX_TYPE_TENSOR) {
-                INDArray arr2 = arr[0];
+            List<INDArray> arr = input.get(inputName.getString()).getListValue();
+            if(arr.size() == 1 && typeForInput == ONNXType.ONNX_TYPE_TENSOR) {
+                INDArray arr2 = arr.get(0);
                 Value inputTensor = getTensor(arr2, memoryInfo);
                 Preconditions.checkState(inputTensor.IsTensor(),"Input must be a tensor.");
                 inputVal.position(i).put(inputTensor);
             }
             //empty sequence
-            else if(arr.length == 0) {
+            else if(arr.size() == 0) {
                     throw new IllegalArgumentException("Onnx Runtime does not support empty sequences! Found at input name " + inputName.getString());
-            } else if(arr.length > 1 || typeForInput == ONNXType.ONNX_TYPE_SEQUENCE) {
+            } else if(arr.size() > 1 || typeForInput == ONNXType.ONNX_TYPE_SEQUENCE) {
                 ValueVector inputTensor = getSequence(arr, memoryInfo);
                 inputVal.position(i).put(Value.CreateSequence(inputTensor));
             }
@@ -168,7 +166,7 @@ public class OnnxRuntimeRunner implements Closeable  {
                 ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), SDValue.create(arr));
             } else  {
                 INDArray[] seq = ndarraysFromSequence(outValue,allocator.asOrtAllocator());
-                ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), SDValue.create(seq));
+                ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), SDValue.create(Arrays.asList(seq)));
             }
 
         }

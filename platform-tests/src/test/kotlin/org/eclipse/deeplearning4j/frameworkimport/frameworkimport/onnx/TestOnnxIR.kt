@@ -34,14 +34,13 @@ import org.nd4j.common.util.ArrayUtil
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
+import org.nd4j.linalg.factory.ops.NDBitwise
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.onnx.*
 import org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarations
 import org.nd4j.samediff.frameworkimport.onnx.definitions.registry
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraphRunner
-import kotlin.collections.HashMap
-import kotlin.collections.HashSet
 import kotlin.test.assertTrue
 
 data class OnnxGraphInput(val graphDef: Onnx.GraphProto, val inputNames: List<String>, val outputNames: List<String>,
@@ -440,12 +439,9 @@ class TestOnnxIR {
     fun testLoop() {
         Nd4j.getExecutioner().enableDebugMode(true)
         Nd4j.getExecutioner().enableVerboseMode(true)
-        val seqIn = createEmptySequence(Onnx.TensorProto.DataType.FLOAT,"seq_in")
-        val seqOut = createEmptySequence(Onnx.TensorProto.DataType.FLOAT,"seq_out")
-        val condIn = createValueInfoFromTensor(Nd4j.create(booleanArrayOf(false)),"cond_in",true)
-        val condOut = createValueInfoFromTensor(Nd4j.create(booleanArrayOf(false)),"cond_out",true)
-        val iterCount = createValueInfoFromTensor(Nd4j.create(Nd4j.createBuffer(longArrayOf(1))),"iter_count",true)
 
+        val bitWise = NDBitwise()
+        val and = bitWise.and(Nd4j.ones(DataType.INT64,1),Nd4j.ones(DataType.INT64,1))
 
         val axes = Nd4j.createFromArray(0L)
 
@@ -453,16 +449,12 @@ class TestOnnxIR {
         val inputArr = Nd4j.create(floatArrayOf(1.0f,2.0f,3.0f,4.0f,5.0f))
         val y = Nd4j.create(floatArrayOf(-2.0f))
 
-        val inputOnnx = convertToOnnxTensor(inputArr,"const_tensor_x")
-        val zero = convertToOnnxTensor(Nd4j.ones(DataType.INT64,0),"one")
-        val inputOne = convertToOnnxTensor(Nd4j.ones(DataType.INT64,1),"one")
-        val inputZero = convertToOnnxTensor(Nd4j.zeros(DataType.INT64,1),"zero")
 
 
         val onnxOpRegistry = registry()
 
 
-        val tripCount = Nd4j.createFromArray(1).castTo(DataType.INT64)
+        val tripCount = Nd4j.createFromArray(2).castTo(DataType.INT64)
         val resY = Nd4j.createFromArray(13f)
         val cond = Nd4j.createFromArray(true)
         val resScan = Nd4j.createFromArray(-1,1,4,8,13).castTo(DataType.FLOAT).reshape(5,1)
@@ -696,22 +688,25 @@ class TestOnnxIR {
         val graph = OnnxTestUtils.loadFromString(modelLoad)
         val onnxIRGraph = OnnxIRGraph(graph.graph,onnxOpRegistry)
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("trip_count","cond","seq_empty"),listOf("res_y","res_scan"))
-        val inputs = mapOf("trip_count" to tripCount,"cond" to cond,"y" to y,"begin_axes" to axes,"end_axes" to axes)
+        val inputs = mapOf("trip_count" to tripCount,"cond" to cond,"y" to y,"begin_axes" to axes,"end_axes" to axes,"iter_count" to Nd4j.create(Nd4j.createBuffer(longArrayOf(1))))
         val sequenceInputValues = mapOf("trip_count" to SDValue.create(tripCount),
             "cond" to SDValue.create(cond),
             "y" to SDValue.create(y),
             "begin_axes" to SDValue.create(axes),"end_axes" to SDValue.create(axes),
-            "seq_empty" to SDValue.create(arrayOf(Nd4j.ones(DataType.FLOAT,1))))
+            "seq_empty" to SDValue.create(mutableListOf(Nd4j.ones(DataType.FLOAT,1))))
 
 
         val inputsOnnx = convertToOnnxTensors(inputs)
 
-        val outputs = mapOf("res_y" to resY,"res_scan" to resScan)
         val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
         val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,inputsOnnx,onnxOpRegistry)
-
         val assertion = onnxGraphRunner.runSequence(sequenceInputValues)
-        val result = importedGraph.outputValues(sequenceInputValues,listOf("seq_res"))
+
+
+
+        println(importedGraph.summary())
+
+        val result = importedGraph.outputValues(sequenceInputValues,mutableListOf("seq_res"))
         assertEquals(assertion,result)
 
     }

@@ -26,8 +26,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 
 /**
  * An SDValue represents a value that can be passed in
@@ -43,7 +42,7 @@ public class SDValue {
     private SDValueType sdValueType;
     private INDArray tensorValue;
     private Map<String,INDArray> dictValue;
-    private INDArray[] listValue;
+    private List<INDArray> listValue;
 
 
     private SDValue(){}
@@ -59,11 +58,11 @@ public class SDValue {
     public static SDValue empty(SDValueType valueType, DataType dataType) {
         switch(valueType) {
             case LIST:
-                return SDValue.create(new INDArray[0]);
+                return SDValue.create(Arrays.asList());
             case DICT:
                 return SDValue.create(Collections.emptyMap());
             case TENSOR:
-                return SDValue.create(Nd4j.empty(dataType));
+                return SDValue.create(Nd4j.zeros(1).castTo(dataType));
             default:
                 throw new IllegalArgumentException("Unable to create empty value, unknown value type " + valueType);
         }
@@ -78,8 +77,8 @@ public class SDValue {
      * @return
      */
     public INDArray getTensorValue() {
-        if(listValue != null && listValue.length == 1)
-            return listValue[0];
+        if(listValue != null && listValue.size() == 1)
+            return listValue.get(0);
         return tensorValue;
     }
 
@@ -89,9 +88,9 @@ public class SDValue {
      * else return the list type
      * @return
      */
-    public INDArray[] getListValue() {
+    public List<INDArray> getListValue() {
        if(tensorValue != null)
-           return new INDArray[]{tensorValue};
+           return Arrays.asList(tensorValue);
         return listValue;
     }
 
@@ -108,13 +107,27 @@ public class SDValue {
         return sdValue;
     }
 
+
     /**
      * Wrap an {@link INDArray[]} in a value
      * with an {@link SDValueType#LIST} type
      * @param inputValue the input value
      * @return the created value
      */
-    public static SDValue create(INDArray[] inputValue) {
+    public static SDValue create(Collection<INDArray> inputValue) {
+        SDValue sdValue = new SDValue();
+        sdValue.listValue = (List<INDArray>) inputValue;
+        sdValue.sdValueType = SDValueType.LIST;
+        return sdValue;
+    }
+
+    /**
+     * Wrap an {@link INDArray[]} in a value
+     * with an {@link SDValueType#LIST} type
+     * @param inputValue the input value
+     * @return the created value
+     */
+    public static SDValue create(List<INDArray> inputValue) {
         SDValue sdValue = new SDValue();
         sdValue.listValue = inputValue;
         sdValue.sdValueType = SDValueType.LIST;

@@ -26,11 +26,9 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.*;
@@ -59,6 +57,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.custom.Invoke;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
@@ -3474,9 +3473,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SameDiff sd = SameDiff.create();
         SDVariable start = sd.var("loopiter",Nd4j.scalar(1.0));
         SDVariable end = sd.var("end",Nd4j.scalar(6.0));
-        SameDiffSingleLambda sameDiffSingleLambda = (sameDiff, inputs) ->  {
-            return inputs[0].lt(inputs[1]);
-        };
+        SameDiffSingleLambda sameDiffSingleLambda = (sameDiff, inputs) -> inputs[0].lt(inputs[1]);
 
         SDVariable[] sdVariables = sd.whileLoop(new SDVariable[]{start, end}, sameDiffSingleLambda, (sameDiff, inputs) -> {
             SDVariable add = inputs[0].add(1.0);
@@ -3488,6 +3485,63 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         Map<String, INDArray> outputs = sd.outputAll(null);
         assertEquals(Nd4j.scalar(6.0),outputs.get(sdVariables[0].name()));
         assertEquals(Nd4j.scalar(6.0),outputs.get(sdVariables[1].name()));
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLooping() {
+        SameDiff parent = SameDiff.create();
+        SDVariable input = parent.placeHolder("input",DataType.FLOAT);
+        SameDiff loopBody = SameDiff.create();
+        SDVariable loopInput = loopBody.placeHolder("input", DataType.FLOAT);
+        SDVariable output = loopBody.math().add("output",loopInput,1.0);
+        SDVariable[] args = ControlFlow.initializeLoopBody(new String[]{"curr_iteration", "max_iterations", "cond_in"}, parent, 5, true);
+        SDVariable[] childArgs = ControlFlow.initializeLoopBody(new String[]{"curr_iteration", "max_iterations", "cond_in"}, loopBody, 5, true);
+
+        String[] inputNames = {
+                "curr_iteration",
+                "max_iterations",
+                "cond_in",
+                "input"
+        };
+
+        String[] outputNames = {
+                "curr_iteration",
+                "max_iterations",
+                "cond_in",
+                "output"
+        };
+
+
+
+        SDVariable[] finalArgs = new SDVariable[args.length + 1];
+        for(int i = 0; i < args.length; i++) {
+            finalArgs[i] = args[i];
+        }
+        finalArgs[3] = input;
+
+        ControlFlow.LoopParams loopParams = ControlFlow.LoopParams.builder()
+                .parent(parent)
+                .functionBody(loopBody)
+                .functionBodyInputs(inputNames)
+                .functionBodyOutputs(outputNames)
+                .loopVars(finalArgs)
+                .loopName("loop")
+                .functionName("func")
+                .build();
+
+        String[] finalOutputNames = new String[outputNames.length];
+        for(int i = 0; i < finalOutputNames.length; i++) {
+            finalOutputNames[i] = outputNames[i] + "_final";
+        }
+
+        SDVariable[] loopWithConditions = parent.loopWithConditions(finalOutputNames,loopParams);
+
+        INDArray assertion = Nd4j.ones(5).addi(5);
+        Map<String, INDArray> output2 = parent.output(Collections.singletonMap("input", Nd4j.ones(5)), "output_final");
+        assertEquals(assertion,output2.get("output_final").reshape(assertion.shape()).castTo(assertion.dataType()));
+        System.out.println(output2);
     }
 
     @ParameterizedTest

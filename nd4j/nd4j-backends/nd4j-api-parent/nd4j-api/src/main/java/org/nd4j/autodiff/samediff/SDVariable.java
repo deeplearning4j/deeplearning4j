@@ -66,8 +66,8 @@ public class SDVariable implements Serializable {
     public SDVariable(@NonNull String varName, @NonNull VariableType varType, @NonNull SameDiff sameDiff, long[] shape, DataType dataType){
         if(varType != VariableType.PLACEHOLDER)
             Preconditions.checkState(dataType != DataType.UNKNOWN, "Unknown datatype is not allowed for SDVariables (variable name: %s)", varName);
-
-        varName = sameDiff.generateNewVarName(varName, 0, true);
+        if(varName == null)
+            varName = sameDiff.generateNewVarName(varName, 0, true);
 
         this.sameDiff = sameDiff;
         this.varName = varName;
@@ -1646,7 +1646,18 @@ public class SDVariable implements Serializable {
         return result;
     }
 
-    public SDVariable clone(SameDiff sd){
+
+    public SDVariable clone(String name,SameDiff sd) {
+        SDVariable v = new SDVariable();
+        v.varName = name;
+        v.variableType = variableType;
+        v.shape = shape == null ? null : shape.clone();
+        v.dataType = dataType;
+        v.sameDiff = sd;
+        return v;
+    }
+
+    public SDVariable clone(SameDiff sd) {
         SDVariable v = new SDVariable();
         v.varName = varName;
         v.variableType = variableType;

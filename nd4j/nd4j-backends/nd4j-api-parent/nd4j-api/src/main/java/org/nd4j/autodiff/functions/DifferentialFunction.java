@@ -566,7 +566,7 @@ public abstract class DifferentialFunction {
     }
 
     /**
-     * Replace argument at the specfied index
+     * Replace argument at the specified index
      * @param i the index
      * @param newArg the new argument
      */

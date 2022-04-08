@@ -21,6 +21,7 @@
 package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -44,7 +45,13 @@ import java.util.Map;
 public class TensorArray extends  BaseTensorOp {
 
     @Getter
+    @Setter
     protected DataType tensorArrayDataType;
+
+    @Getter
+    @Setter
+    protected SDVariable flow;
+
     @Override
     public String tensorflowName() {
         return "TensorArrayV3";
@@ -54,6 +61,7 @@ public class TensorArray extends  BaseTensorOp {
         super(name, sameDiff, new SDVariable[]{});
         this.tensorArrayDataType = dataType;
     }
+
     public TensorArray(SameDiff sameDiff, DataType dataType){
         super(sameDiff, new SDVariable[]{});
         this.tensorArrayDataType = dataType;
@@ -114,8 +122,10 @@ public class TensorArray extends  BaseTensorOp {
     }
 
 
-    public SDVariable getVar(){
-        return outputVariable();
+    public SDVariable getVar() {
+        if(flow != null)
+            return flow;
+        return outputVariables()[0];
     }
 
     @Override

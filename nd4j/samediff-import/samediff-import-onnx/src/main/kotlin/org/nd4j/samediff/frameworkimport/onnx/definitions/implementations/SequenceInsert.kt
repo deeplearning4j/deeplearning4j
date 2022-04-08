@@ -22,8 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
-import org.nd4j.linalg.api.buffer.DataType
-import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -47,18 +46,24 @@ class SequenceInsert : PreImportHook  {
         outputNames: List<String>,
         op: SameDiffOp,
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
-        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
+        dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
         val input = sd.getVariable(op.inputsToOp[0])
-        val position = if(op.inputsToOp.size < 2) sd.constant(-1) else {
-            sd.getVariable(op.inputsToOp[1])
+        val tensorToInsert = sd.getVariable(op.inputsToOp[1])
+        val position = if(op.inputsToOp.size < 3) sd.constant(-1) else {
+            sd.getVariable(op.inputsToOp[2])
         }
-        val outputVar = sd.tensorArray(input.dataType())
-        val written = outputVar.write(outputVar.`var`,position,input)
+
+        val tensorArrayOp = sd.tensorArray(input)
+        val written = tensorArrayOp.write(input,position,tensorToInsert)
         written.addControlDependency(position)
         written.addControlDependency(input)
-        outputVar.`var`.rename(outputNames[0])
-        return mapOf(outputVar.`var`!!.name() to listOf(outputVar.`var`!!))
+        var outputVars = written
+        outputVars = sd.updateVariableNameAndReference(outputVars,outputNames[0])
+        val ret = mutableMapOf<String,List<SDVariable>>()
+        ret[outputNames[0]] = listOf(outputVars)
+        return ret
     }
 
 

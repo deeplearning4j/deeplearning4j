@@ -20,7 +20,6 @@
 package org.nd4j.samediff.frameworkimport
 
 import org.apache.commons.collections4.set.ListOrderedSet
-import org.apache.commons.io.FileUtils
 import org.nd4j.autodiff.functions.DifferentialFunction
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
@@ -36,7 +35,6 @@ import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ops.BaseOp
 import org.nd4j.linalg.api.ops.DynamicCustomOp
-import org.nd4j.linalg.api.ops.NoOp
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.BaseCompatOp
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge
 import org.nd4j.linalg.api.ops.impl.transforms.same.Identity
@@ -49,10 +47,10 @@ import org.nd4j.samediff.frameworkimport.runner.DefaultImportRunner
 import org.nd4j.samediff.frameworkimport.runner.ImportRunner
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
-import java.io.File
 import java.util.*
 
 import mu.KotlinLogging
+import org.nd4j.linalg.api.ndarray.INDArray
 import kotlin.collections.HashMap
 
 /**
@@ -258,6 +256,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         //First, add any constants, placeholders, and zero-input ops
         //note: we enable eager mode here for dynamic variable resolution
         val sd = SameDiff.create().enableEagerMode()
+        val convertedDynamic = HashMap<String,INDArray>()
 
         if(dynamicVariables != null) {
             //declare as variables
@@ -270,6 +269,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                 if(!sd.hasVariable(name))
                     sd.`var`(name,converted)
                 sd.setEagerArrForVarName(name,converted)
+                convertedDynamic[name] = converted
             }
         }
 
@@ -635,8 +635,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             //we want the default names used for no op or other situations
                         } else
                             op.inputsToOp = inNames
-                        //add nodes/other pre processing in order for this node to work
-                        sd.ops[name] = op
 
 
                         //cache attributes just in case we have any rules so we don't create the rules more than once
@@ -651,9 +649,14 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 nd.outputs(),
                                 availableToAdd.isEmpty(),
                                 opMappingRegistry as OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
-                                this as ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+                                this as ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
+                                dynamicVariables as Map<String,GeneratedMessageV3>
                             ).proceedWithInit
                         }
+
+                        if(proceedWithInit)
+                        //add nodes/other pre processing in order for this node to work
+                            sd.ops[name] = op
 
                         if(proceedWithInit)
                             defaultRunner.initAttributes(df, sd, importInfo[name]!!)

@@ -29,6 +29,7 @@ import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.config.SDValue;
 import org.nd4j.autodiff.samediff.internal.AbstractSession;
 import org.nd4j.autodiff.samediff.internal.FrameIter;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
@@ -303,14 +304,14 @@ public class TestSessions extends BaseNd4jTestWithBackends {
             assertEquals(exp, m.get(n));
             assertEquals(exp, m.get(n2));
 
-            Map<AbstractSession.VarId,INDArray> outputs = is.getNodeOutputs();
+            Map<AbstractSession.VarId, SDValue> outputs = is.getNodeValueOutputs();
             //Some sanity checks on the internal state:
             //Check 1: "while/Less" should be executed numIter+1 times... i.e., numIter times through the loop, plus once to exit
             for( int i = 0; i < numIter + 1; i++) {
                 AbstractSession.VarId expVarId = new AbstractSession.VarId("while/Less","while/while_context", i, new FrameIter(AbstractSession.OUTER_FRAME, 0, null));
                 INDArray expLessVal = Nd4j.scalar(i != numIter);
                 assertTrue(outputs.containsKey(expVarId));
-                assertEquals(expLessVal, outputs.get(expVarId));
+                assertEquals(expLessVal, outputs.get(expVarId).getTensorValue());
             }
             AbstractSession.VarId expVarId = new AbstractSession.VarId("while/Less","while/while_context", numIter+1, new FrameIter(AbstractSession.OUTER_FRAME, 0, null));
             assertFalse(outputs.containsKey(expVarId));

@@ -119,12 +119,17 @@ fun convertToOnnxTensor(inputArray: INDArray, name: String): Onnx.TensorProto {
             }
         }
 
+
         Onnx.TensorProto.DataType.DOUBLE -> {
             newBuilder.addAllDoubleData(inputArray.data().asDouble().asList())
         }
 
         Onnx.TensorProto.DataType.FLOAT -> {
             newBuilder.addAllFloatData(inputArray.data().asFloat().asList())
+        }
+
+        Onnx.TensorProto.DataType.BOOL -> {
+            newBuilder.addAllInt32Data(inputArray.castTo(DataType.INT32).data().asInt().asList())
         }
 
         Onnx.TensorProto.DataType.INT32 -> {

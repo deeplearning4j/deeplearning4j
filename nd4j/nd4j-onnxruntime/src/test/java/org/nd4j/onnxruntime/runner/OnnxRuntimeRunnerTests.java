@@ -31,7 +31,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.onnxruntime.util.ONNXUtils;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -48,11 +50,11 @@ public class OnnxRuntimeRunnerTests {
     @Test
     public void testNDArrayGet() {
         OnnxRuntimeRunner runtimeRunner = new OnnxRuntimeRunner(null);
-        INDArray[] arr = {Nd4j.ones(1),Nd4j.ones(2).add(1)};
+        List<INDArray> arr = Arrays.asList(Nd4j.ones(1),Nd4j.ones(2).add(1));
         ValueVector sequence = ONNXUtils.getSequence(arr, runtimeRunner.getMemoryInfo());
         assertEquals(2,sequence.size());
-        INDArray[] indArrays = ONNXUtils.ndarraysFromSequence(sequence, runtimeRunner.getAllocator().asOrtAllocator());
-        assertArrayEquals(arr,indArrays);
+        List<INDArray> indArrays = Arrays.asList(ONNXUtils.ndarraysFromSequence(sequence, runtimeRunner.getAllocator().asOrtAllocator()));
+        assertEquals(arr,indArrays);
 
 
     }

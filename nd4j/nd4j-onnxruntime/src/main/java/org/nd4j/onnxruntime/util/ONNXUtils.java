@@ -19,7 +19,6 @@
  */
 package org.nd4j.onnxruntime.util;
 
-import ai.onnxruntime.ValueInfo;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.bytedeco.onnxruntime.*;
@@ -30,6 +29,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.onnxruntime.runner.enums.ONNXType;
 import org.slf4j.Logger;
+
+import java.util.List;
 
 import static org.bytedeco.onnxruntime.global.onnxruntime.*;
 import static org.nd4j.linalg.api.buffer.DataType.*;
@@ -226,10 +227,10 @@ public class ONNXUtils {
      *                   MemoryInfo memoryInfo = MemoryInfo.CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
      * @return
      */
-    public static ValueVector getSequence(INDArray[] ndArray, MemoryInfo memoryInfo) {
-        ValueVector valueVector = new ValueVector(ndArray.length);
-        for(int i = 0; i < ndArray.length; i++) {
-            Value tensorInfo = getTensor(ndArray[i],memoryInfo);
+    public static ValueVector getSequence(List<INDArray> ndArray, MemoryInfo memoryInfo) {
+        ValueVector valueVector = new ValueVector(ndArray.size());
+        for(int i = 0; i < ndArray.size(); i++) {
+            Value tensorInfo = getTensor(ndArray.get(i),memoryInfo);
             valueVector.put(i,tensorInfo);
         }
 
