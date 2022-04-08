@@ -20,7 +20,6 @@
 package org.nd4j.samediff.frameworkimport
 
 import org.apache.commons.collections4.set.ListOrderedSet
-import org.apache.commons.io.FileUtils
 import org.nd4j.autodiff.functions.DifferentialFunction
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
@@ -36,7 +35,6 @@ import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ops.BaseOp
 import org.nd4j.linalg.api.ops.DynamicCustomOp
-import org.nd4j.linalg.api.ops.NoOp
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.BaseCompatOp
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge
 import org.nd4j.linalg.api.ops.impl.transforms.same.Identity
@@ -49,10 +47,11 @@ import org.nd4j.samediff.frameworkimport.runner.DefaultImportRunner
 import org.nd4j.samediff.frameworkimport.runner.ImportRunner
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
-import java.io.File
 import java.util.*
 
 import mu.KotlinLogging
+import org.nd4j.linalg.api.ndarray.INDArray
+import kotlin.collections.HashMap
 
 /**
  * Core import class for running model import for any framework.
@@ -248,7 +247,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         var containsControlflow = false
         val controlflowOps = setOf("select","while","enter","if","switch","next_iteration","merge","exit","loop_cond")
         for (it in importInfo.values) {
-            if (controlflowOps.contains(it.second.name)) {
+            if (controlflowOps.contains(it.second.name) || it.first.irNode().isControlflowOp()) {
                 containsControlflow = true
                 break
 
@@ -257,6 +256,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         //First, add any constants, placeholders, and zero-input ops
         //note: we enable eager mode here for dynamic variable resolution
         val sd = SameDiff.create().enableEagerMode()
+        val convertedDynamic = HashMap<String,INDArray>()
 
         if(dynamicVariables != null) {
             //declare as variables
@@ -269,6 +269,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                 if(!sd.hasVariable(name))
                     sd.`var`(name,converted)
                 sd.setEagerArrForVarName(name,converted)
+                convertedDynamic[name] = converted
             }
         }
 
@@ -297,7 +298,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             val nd = irGraph.nodeList()[i]
             val name = nd.nodeName()
             if(name.isEmpty()) {
-               println("Skipping node $i due to empty name.")
+                println("Skipping node $i due to empty name.")
                 continue
             }
             val op = nd.opName()
@@ -381,6 +382,8 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                  */
 
             var df = funcContextResult?.dfInstance ?: Identity()
+
+
             val mappingContext = funcContextResult?.mappingContext
             val nd4jOpName = df.opName()
 
@@ -632,8 +635,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             //we want the default names used for no op or other situations
                         } else
                             op.inputsToOp = inNames
-                        //add nodes/other pre processing in order for this node to work
-                        sd.ops[name] = op
 
 
                         //cache attributes just in case we have any rules so we don't create the rules more than once
@@ -648,9 +649,14 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 nd.outputs(),
                                 availableToAdd.isEmpty(),
                                 opMappingRegistry as OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
-                                this as ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+                                this as ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
+                                dynamicVariables as Map<String,GeneratedMessageV3>
                             ).proceedWithInit
                         }
+
+                        if(proceedWithInit)
+                        //add nodes/other pre processing in order for this node to work
+                            sd.ops[name] = op
 
                         if(proceedWithInit)
                             defaultRunner.initAttributes(df, sd, importInfo[name]!!)
@@ -907,7 +913,69 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             remainingNodes.keys
         )
 
+        val opByOutputName = HashMap<String,MutableList<SameDiffOp>>()
+        sd.ops.forEach { (opName, op) ->
+            val opOutput = op.outputsOfOp[0]
+            if(!opByOutputName.containsKey(opOutput)) {
+                opByOutputName[opOutput] = ArrayList()
+            }
+
+            val list = opByOutputName[opOutput]!!
+            list.add(op)
+        }
+
+        println(sd.summary())
+
+        /*
+        opByOutputName.forEach { opOutput, ops ->
+            if (ops.size == 2) {
+                val firstOp = ops[0]
+                val secondOp = ops[1]
+                if (firstOp.op is NoOp) {
+                    renameOp(secondOp, firstOp, sd)
+
+                } else if (secondOp.op is NoOp) {
+                    renameOp(firstOp, secondOp, sd)
+                }
+            }
+        }
+
+        println(sd.summary())
+*/
         return sd
+    }
+
+    private fun renameOp(
+        secondOp: SameDiffOp,
+        firstOp: SameDiffOp,
+        sd: SameDiff
+    ) {
+        val realOp = secondOp.op
+        val realName = firstOp.op.ownName
+        val oldOp = firstOp.op
+        val realControlDeps = secondOp.controlDeps
+        val realVarControlDeps = secondOp.varControlDeps
+        val realInputs = secondOp.inputsToOp
+        val oldName = secondOp.op.ownName
+        firstOp.op = realOp
+        //firstOp.inputsToOp = realInputs
+        firstOp.op.ownName = realName
+        firstOp.controlDeps = realControlDeps
+        firstOp.varControlDeps = realVarControlDeps
+        sd.ops.forEach { opName, op ->
+            if (op.inputsToOp != null && op.inputsToOp.contains(oldName)) {
+                op.inputsToOp[op.inputsToOp.indexOf(oldName)] = realName
+            }
+
+            if (op.controlDepFor != null && op.controlDepFor.contains(oldName)) {
+                op.controlDepFor[op.controlDepFor.indexOf(oldName)] = realName
+            }
+
+            if (op.controlDeps != null && op.controlDeps.contains(oldName)) {
+                op.controlDeps[op.controlDeps.indexOf(oldName)] = realName
+            }
+        }
+        sd.ops.remove(secondOp.name)
     }
 }
 

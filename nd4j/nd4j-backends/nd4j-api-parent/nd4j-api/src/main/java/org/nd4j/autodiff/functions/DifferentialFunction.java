@@ -566,7 +566,7 @@ public abstract class DifferentialFunction {
     }
 
     /**
-     * Replace argument at the specfied index
+     * Replace argument at the specified index
      * @param i the index
      * @param newArg the new argument
      */
@@ -603,7 +603,7 @@ public abstract class DifferentialFunction {
         SDVariable[] outputVars = outputVariables();
         String[] out = new String[outputVars.length];
         for( int i = 0; i < out.length; i++) {
-            out[i] = outputVars[i].name();
+            out[i] = outputVars[i] == null ? "" : outputVars[i].name();
         }
         return out;
     }

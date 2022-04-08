@@ -28,7 +28,10 @@ import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.config.ExecutionResult;
+import org.nd4j.autodiff.samediff.config.SDValue;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.common.function.Predicate;
@@ -48,13 +51,14 @@ public abstract class AbstractSession<T, O> {
 
     protected final SameDiff sameDiff;
     @Getter
-    protected final Map<VarId, T> nodeOutputs = new LinkedHashMap<>();        //Key: variable (at a given frame + iteration). Value: the calculated output for that variable
+    protected final Map<VarId, SDValue> nodeValueOutputs = new LinkedHashMap<>();        //Key: variable (at a given frame + iteration). Value: the calculated output for that variable
+
     @Getter
     protected final Map<VarId, List<T>> tensorArrays = new LinkedHashMap<>(); //Stores the underlying arrays for TensorArray ops
     /*
     The dependency tracker is responsible for determining what ops (at what frame/iteration) can be executed next, given
     what has been executed so far.
-    For static graphs, such as abstraction would not be necessary; for dynamic graphs (i.e., nested loops, of arbitary
+    For static graphs, such as abstraction would not be necessary; for dynamic graphs (i.e., nested loops, of arbitrary
     number of iterations and depth - and also switch ops which can cause whole subgraphs to not be executed) this is necessary
     Note: the ExecStep represents one step for execution - some steps are as simple as "execute an op (at the given frame/iter)"
     It works by adding dependencies (X -> Y - such as "op Y depends on the output of op X") and then marking them as
@@ -69,14 +73,14 @@ public abstract class AbstractSession<T, O> {
      * Variables not in this set are definitely not needed to get the requested output variables, but variables that are
      * in this set may not be executed depending on the graph structure - i.e., switch ops, etc
      */
-    protected final Set<String> subgraph = new HashSet<>();
+    protected final Set<String> subgraph = new LinkedHashSet<>();
     /**
      * As per subgraph set, but for ops instead
      */
-    protected final Set<String> subgraphOps = new HashSet<>();
+    protected final Set<String> subgraphOps = new LinkedHashSet<>();
 
     /**
-     * Constains the names of ops that don't have any inputs. Kept because normally ops are triggered for execution when
+     * Contains the names of ops that don't have any inputs. Kept because normally ops are triggered for execution when
      * their all their inputs have been calculated; we'll trigger that step manually during execution initialization
      */
     protected final Set<String> zeroInputOpsInSubgraph = new HashSet<>();
@@ -87,13 +91,13 @@ public abstract class AbstractSession<T, O> {
 
     public boolean contains(String variable, String frame, int iteration, FrameIter parentFrameIter) {
         VarId varId = new VarId(variable, frame, iteration, parentFrameIter);
-        return nodeOutputs.containsKey(varId);
+        return nodeValueOutputs.containsKey(varId);
     }
 
     /**
      * Get a previously calculated output; throws an exception if the output does not exist
      */
-    public T get(String variable, String frame, int iteration, FrameIter parentFrameIter) {
+    public SDValue get(String variable, String frame, int iteration, FrameIter parentFrameIter) {
         return get(variable, frame, iteration, parentFrameIter, true);
     }
 
@@ -102,15 +106,16 @@ public abstract class AbstractSession<T, O> {
      *
      * @param enforceExistence If true: throw an exception if the array does not exist
      */
-    public T get(String variable, String frame, int iteration, FrameIter parentFrameIter, boolean enforceExistence) {
+    public SDValue get(String variable, String frame, int iteration, FrameIter parentFrameIter, boolean enforceExistence) {
         //TODO eventually we'll cache and reuse VarId objects here to avoid garbage generation on lookup etc
         VarId varId = new VarId(variable, frame, iteration, parentFrameIter);
-        T out = nodeOutputs.get(varId);
+        SDValue out = nodeValueOutputs.get(varId);
         if (enforceExistence) {
             Preconditions.checkNotNull(out, "No output found for variable %s (frame %s, iteration %s)", variable, frame, iteration);
         }
         return out;
     }
+
 
     /**
      * Get the output of the session - i.e., perform inference/forward pass and return the outputs for the specified variables
@@ -123,6 +128,24 @@ public abstract class AbstractSession<T, O> {
      */
     public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues,
                                  MultiDataSet batch, Collection<String> requiredActivations, List<Listener> listeners, At at) {
+        return (Map<String, T>) output(variables, placeholderValues,Collections.emptyMap(), batch, requiredActivations, listeners, at).getOutputs();
+    }
+    /**
+     * Get the output of the session - i.e., perform inference/forward pass and return the outputs for the specified variables
+     *
+     * @param variables           Name of the variables we want the arrays/activations for
+     * @param placeholderValues   The placeholder values (if any). May be null.
+     * @param otherPlaceHolderValues other placeholder values that may not be ndarrays.
+     * @param batch               The batch data, used to call Listener.opExecution
+     * @param requiredActivations Additional activations that are required.  Won't be output, but opExecution will be called.  May be null.
+     * @return The specified variable values, optionally in the specified workspace
+     */
+    public ExecutionResult output(@NonNull List<String> variables,
+                                  Map<String, T> placeholderValues,
+                                  Map<String, SDValue> otherPlaceHolderValues,
+                                  MultiDataSet batch,
+                                  Collection<String> requiredActivations,
+                                  List<Listener> listeners, At at) {
         Preconditions.checkState(!variables.isEmpty() || !requiredActivations.isEmpty(), "Variables to perform forward pass for must not be empty");
 
         if (requiredActivations == null)
@@ -139,12 +162,13 @@ public abstract class AbstractSession<T, O> {
         Set<String> reqOutputVariablesSet = new LinkedHashSet<>(variables);
 
         placeholderValues = preprocessPlaceholders(placeholderValues, at);
+        otherPlaceHolderValues = preprocessValuePlaceholders(otherPlaceHolderValues,at);
+
 
         //Clear state from past iterations, if any
         dt.clear();
         subgraph.clear();
         subgraphOps.clear();
-        nodeOutputs.clear();            //TODO eventually we'll have (optional) cache here for later execs... main challenge is detecting in-place array modifications and invalidating old results. And overall memory use...
         tensorArrays.clear();
 
         //Step 1: determine subgraph structure we actually need to execute
@@ -158,7 +182,14 @@ public abstract class AbstractSession<T, O> {
 
         //Step 2: Check that we have required placeholders
         List<String> phNames = sameDiff.inputs();
-        if (placeholderValues == null || !placeholderValues.keySet().containsAll(phNames)) {
+        Set<String> presentPlaceholders = new HashSet<>();
+        //add all placeholder values together
+        if(placeholderValues != null && !placeholderValues.isEmpty())
+            presentPlaceholders.addAll(placeholderValues.keySet());
+        if(otherPlaceHolderValues != null && !otherPlaceHolderValues.isEmpty())
+            presentPlaceholders.addAll(otherPlaceHolderValues.keySet());
+
+        if (presentPlaceholders.isEmpty() || !presentPlaceholders.containsAll(phNames)) {
             /* We only have a subset of all placeholders
             Validate that we have all *required* placeholder values. Some might not be needed to calculate the requested outputs
             A placeholder is required if:
@@ -184,13 +215,15 @@ public abstract class AbstractSession<T, O> {
                     }
                 }
 
-                if (required && (placeholderValues == null || !placeholderValues.containsKey(s))) {
+                if (required && (presentPlaceholders.isEmpty() || !presentPlaceholders.contains(s))) {
                     throw new IllegalStateException(
                             "An input placeholder \"" + s + "\" is required to calculate the requested outputs," +
                                     " but a placeholder value was not provided");
                 }
             }
         }
+
+
 
         //Step 3: Mark the (required) variables, constants and placeholders as available via dependency tracker
         //And also any "zero dependency" ops - i.e., those without any inputs
@@ -208,6 +241,7 @@ public abstract class AbstractSession<T, O> {
                 }
             }
         }
+
         for (String s : phNames) {
             ExecStep es = new ExecStep(ExecType.PLACEHOLDER, s, new FrameIter(OUTER_FRAME, 0, null));
             dt.addDependency(es, start);
@@ -217,6 +251,7 @@ public abstract class AbstractSession<T, O> {
                 addVarControlDeps(es, var);     //Before this variable can be considered available for use, we need specified op to be executed
             }
         }
+
         for (String s : zeroInputOpsInSubgraph) {
             ExecStep es = new ExecStep(ExecType.OP, s, new FrameIter(OUTER_FRAME, 0, null));
             dt.addDependency(es, start);
@@ -242,7 +277,7 @@ public abstract class AbstractSession<T, O> {
         switch ops may cause entire branches of the graph to be skipped.
          */
 
-        Map<String, T> out = new LinkedHashMap<>();       //Outputs, returned to the user
+        Map<String,SDValue> outValues =new LinkedHashMap<>();
         Set<String> allExecuted = new LinkedHashSet<>();
         int step = 0;                               //Number of execution steps
         //Next 3: current execution frame
@@ -252,15 +287,16 @@ public abstract class AbstractSession<T, O> {
         ExecStepPredicate predicate = new ExecStepPredicate();
         while (allExecuted.size() < allRequired.size()) {
             if (!dt.hasNewAllSatisfied()) {
-                //Haven't got all of the outputs the user requested, but there's nothing left that we can execute. Should not happen.
-                execFailed(userRequestedUnique, out, allRequired, allExecuted, step);
+                execFailed(userRequestedUnique, outValues, allRequired, allExecuted, step);
                 //note execFailed will not always throw an exception if a user required all variables from
                 //outputAll. A common case is conditional paths not being executed. This will just ensure that
                 //no other exceptions are thrown.
                 break;
+
+
             }
 
-            //G et variable in the current frame/iteration and execute it's corresponding op
+            //Get variable in the current frame/iteration and execute it's corresponding op
             //If no more ops exist for the current frame/iter, we'll switch to the next frame/iter
             //The idea is to not mix the order of execution of ops in different frames/iters - i.e., finish the current
             // frame/iter before starting the next one
@@ -273,6 +309,7 @@ public abstract class AbstractSession<T, O> {
                 //We must have finished the current frame/iter, and are switching to the next one
                 es = dt.getNewAllSatisfied();
             }
+
 
             currentFrame = es.getFrameIter().getFrame();
             currentFrameIter = es.getFrameIter().getIteration();
@@ -287,28 +324,53 @@ public abstract class AbstractSession<T, O> {
                 VarId vid = new VarId(es.getName(), OUTER_FRAME, 0, null);
                 T arr = getConstantOrVariable(es.getName());
                 Preconditions.checkNotNull(arr, "Encountered null placeholder array for constant: %s", vid);
-                nodeOutputs.put(vid, arr);
+                nodeValueOutputs.put(vid,SDValue.create((INDArray) arr));
                 outFrameIter = new FrameIter(OUTER_FRAME, 0, null);
                 if (userRequestedUnique.contains(es.getName())) {
                     //User requested const/variable as one of the outputs
-                    out.put(es.getName(), arr);
+                    outValues.put(es.getName(),SDValue.create((INDArray) arr));
                 }
-                if(allRequired.contains(es.getName())){
+
+
+                if(allRequired.contains(es.getName())) {
                     allExecuted.add(es.getName());
                 }
             } else if (es.getType() == ExecType.PLACEHOLDER) {
                 VarId vid = new VarId(es.getName(), OUTER_FRAME, 0, null);
-                T phVal = placeholderValues == null ? null : placeholderValues.get(es.getName());
+                if(placeholderValues != null && placeholderValues.containsKey(es.getName())) {
+                    T phVal = placeholderValues == null ? null : placeholderValues.get(es.getName());
+                    SDValue valueCreate = SDValue.create((INDArray) phVal);
+                    nodeValueOutputs.put(vid, valueCreate);
+                } else if(otherPlaceHolderValues != null && otherPlaceHolderValues.containsKey(es.getName())) {
+                    SDValue value = otherPlaceHolderValues.get(es.getName());
+                    switch(value.getSdValueType()) {
+                        default:
+                            nodeValueOutputs.put(vid,value);
+                            break;
+                        case DICT:
+                            throw new UnsupportedOperationException("Unable to process dictionary types.");
+                    }
+                } else {
+                    nodeValueOutputs.put(vid,null);
+                }
 
-                nodeOutputs.put(vid, phVal);
                 outFrameIter = new FrameIter(OUTER_FRAME, 0, null);
                 if (allRequired.contains(es.getName())) {
-                    Preconditions.checkState(placeholderValues != null && placeholderValues.containsKey(es.getName()),
+                    Preconditions.checkState(placeholderValues != null
+                                    && !placeholderValues.containsKey(es.getName())
+                                    || otherPlaceHolderValues != null &&
+                                    otherPlaceHolderValues.containsKey(es.getName()),
                             "No array was provided for the placeholder variable \"%s\" that is required for execution", es.getName());
                     //User requested placeholder value as one of the outputs
-                    out.put(es.getName(), placeholderValues.get(es.getName()));
+                    if(placeholderValues.containsKey(es.getName()))
+                        outValues.put(es.getName(), SDValue.create((INDArray)placeholderValues.get(es.getName())));
+                    else if(otherPlaceHolderValues.containsKey(es.getName())) {
+                        outValues.put(es.getName(),otherPlaceHolderValues.get(es.getName()));
+                    }
                 }
-                if(allRequired.contains(es.getName())){
+
+
+                if(allRequired.contains(es.getName())) {
                     allExecuted.add(es.getName());
                 }
             } else if (es.getType() == ExecType.OP) {
@@ -323,13 +385,9 @@ public abstract class AbstractSession<T, O> {
                     outFrameIter = new FrameIter(outFrame, 0, es.getFrameIter());
 
                 } else if (o instanceof Exit) {
-                    //Exit node forwards input to parent frame
-                    String outFrame = es.getFrameIter().getParentFrame().getFrame();
-                    int outIter = es.getFrameIter().getParentFrame().getIteration();
-                    FrameIter outParentFrame = es.getFrameIter().getParentFrame().getParentFrame();
-                    outFrameIter = new FrameIter(outFrame, outIter, outParentFrame);
+                    outFrameIter = getExitIter(es);
                 } else if (o instanceof NextIteration) {
-                    //NextIteration op: forwards its single input to its output varible in the current frame, but increments the iteration number
+                    //NextIteration op: forwards its single input to its output variable in the current frame, but increments the iteration number
                     outFrameIter = es.getFrameIter().clone();
                     outFrameIter.setIteration(outFrameIter.getIteration());
                 } else {
@@ -370,7 +428,7 @@ public abstract class AbstractSession<T, O> {
                                     }
                                     break;
                                 case VARIABLE:
-                                    inputs.add(new VarId(dep.getName(), OUTER_FRAME, 0, null));
+                                    inputs.add(new VarId(dep.getName(),dep.getFrameIter().getFrame(), dep.getFrameIter().getIteration(), dep.getFrameIter().getParentFrame()));
                                     break;
                                 case CONSTANT:
                                 case PLACEHOLDER:
@@ -387,29 +445,65 @@ public abstract class AbstractSession<T, O> {
                 // Do execution of the op, in 2 steps
                 // (a) "Parameterize" the op - i.e., find and set the arrays on the op, allocate outputs, etc ready for execution
                 // (b) actually execute the operation
-                O parameterizedOp = getAndParameterizeOp(opName, outFrameIter, inputs, allIterInputs, constAndPhInputs, placeholderValues, reqOutputVariablesSet);
-                T[] opOutputValues = getOutputs(parameterizedOp, outFrameIter, inputs, allIterInputs, constAndPhInputs, listeners, at, batch, reqOutputVariablesSet);
+                O parameterizedOp = getAndParameterizeOp(opName, outFrameIter, inputs, allIterInputs, constAndPhInputs, placeholderValues, reqOutputVariablesSet,otherPlaceHolderValues);
+                ExecutionResult opOutputValues = getOutputs(parameterizedOp, outFrameIter, inputs, allIterInputs, constAndPhInputs, listeners, at, batch, reqOutputVariablesSet, otherPlaceHolderValues);
                 List<String> opOutVarNames = op.getOutputsOfOp();
 
-                Preconditions.checkState(opOutputValues.length == opOutVarNames.size(), "Unexpected number of outputs from executed op %s:" +
-                                " got %s outputs when %s outputs were expected (%s)", parameterizedOp.getClass().getSimpleName(), opOutputValues.length,
-                        opOutVarNames.size(), opOutVarNames);
 
+                int lengthToCheck = opOutputValues.numResults();
+                if(!opOutVarNames.isEmpty() && opOutputValues.hasSingle()) {
+                    Preconditions.checkState(lengthToCheck == opOutVarNames.size(), "Unexpected number of outputs from executed op %s:" +
+                                    " got %s outputs when %s outputs were expected (%s)", parameterizedOp.getClass().getSimpleName(), opOutputValues.numResults(),
+                            opOutVarNames.size(), opOutVarNames);
+                }
                 //Store the op outputs
-                for (int i = 0; i < opOutputValues.length; i++) {
-                    if (opOutputValues[i] == null && op.getOp() instanceof Switch) {
+                for (int i = 0; i < lengthToCheck; i++) {
+                    if (opOutputValues.hasSingle() && opOutputValues.resultAt(i) == null
+                            || opOutputValues.hasValues() && !opOutputValues.valueExistsAtIndex(i) && op.getOp() instanceof Switch) {
                         //Switch op only forwards the input to one of the outputs
                         continue;
                     }
 
+                    //control flow ops are actually variables from the input forwarding to the next frame
                     String n = opOutVarNames.get(i);
-                    VarId vid = new VarId(n, outFrameIter.getFrame(), outFrameIter.getIteration(), outFrameIter.getParentFrame());
-                    nodeOutputs.put(vid, opOutputValues[i]);
 
-                    if (userRequestedUnique.contains(n)) {
-                        out.put(n, opOutputValues[i]);
+                    VarId vid = new VarId(n, outFrameIter.getFrame(), outFrameIter.getIteration(), outFrameIter.getParentFrame());
+                    if(opOutputValues.hasValues()) {
+                        SDValue sdValue = opOutputValues.valueWithKeyAtIndex(i, false);
+                        //values can be null
+                        if(sdValue != null)
+                            switch(sdValue.getSdValueType()) {
+                                case LIST:
+                                    //tensor array op
+                                    List<INDArray> tensorArraysInSession = tensorArrays.containsKey(vid) ? (List<INDArray>) tensorArrays.get(vid) :
+                                            getTensorArraysInSession(n,vid.getFrame(),vid.getIteration(),vid.getParentFrame());
+                                    //return the tensor array list as the result rather than the dummy variable
+                                    if(tensorArraysInSession != null) {
+                                        tensorArraysInSession.addAll(sdValue.getListValue());
+                                    } else {
+                                        tensorArrays.put(vid, (List<T>) sdValue.getListValue());
+                                    }
+                                    //note: we omit break on purpose
+                                case TENSOR:
+                                    nodeValueOutputs.put(vid, sdValue);
+                                    break;
+                            }
+
+                        if(userRequestedUnique.contains(n)) {
+                            outValues.put(n,sdValue);
+                        }
+
+                    } else {
+                        SDValue currValueOutput = SDValue.create(opOutputValues.resultAt(i));
+                        nodeValueOutputs.put(vid,currValueOutput);
+                        //ensure a singular value is populated in case the user uses the node value outputs
+                        if (userRequestedUnique.contains(n)) {
+                            outValues.put(n, currValueOutput);
+                        }
+
                     }
-                    if(allRequired.contains(n)){
+
+                    if(allRequired.contains(n)) {
                         allExecuted.add(n);
                     }
                 }
@@ -426,9 +520,18 @@ public abstract class AbstractSession<T, O> {
                      */
                     skipDepUpdate = true;
                     skipMarkSatisfied = true;
-                    int nullCount = (opOutputValues[0] == null ? 1 : 0) + (opOutputValues[1] == null ? 1 : 0);
+                    int nullCount = (opOutputValues.valueExistsAtIndex(0) ? 1 : 0) + (opOutputValues.valueExistsAtIndex(1) ? 1 : 0);
                     Preconditions.checkState(nullCount == 1, "Expected exactly one output to be present for switch ops, got %s", nullCount);
-                    boolean left = opOutputValues[0] != null;
+                    /**
+                     * TODO: investigate why the final branch is still SWITCH_R on the list dependency only.
+                     * This is what's causing the loop to not exit.
+                     * You can debug this with:
+                     * opName: loop_body/switch_3
+                     * iteration 2
+                     * execution step name: loop_body/switch_3
+                     *
+                     */
+                    boolean left = opOutputValues.valueExistsAtIndex(0);
                     ExecStep branch;
                     if (left) {
                         branch = new ExecStep(ExecType.SWITCH_L, es.getName(), es.getFrameIter());
@@ -490,8 +593,20 @@ public abstract class AbstractSession<T, O> {
 
         //TODO we should clear the node outputs map to get rid of the invalid (closed, out of workspace, etc) arrays
 
-        out = postProcessOutput(out);   //Hook-in for subclass sessions, if needed
-        return out;
+        outValues = postProcessOutputValues(outValues);
+        return ExecutionResult.builder()
+                .valueOutputs(outValues).
+                build();
+    }
+
+    private FrameIter getExitIter(ExecStep es) {
+        FrameIter outFrameIter;
+        //Exit node forwards input to parent frame
+        String outFrame = es.getFrameIter().getParentFrame().getFrame();
+        int outIter = es.getFrameIter().getParentFrame().getIteration();
+        FrameIter outParentFrame = es.getFrameIter().getParentFrame().getParentFrame();
+        outFrameIter = new FrameIter(outFrame, outIter, outParentFrame);
+        return outFrameIter;
     }
 
     /**
@@ -518,7 +633,7 @@ public abstract class AbstractSession<T, O> {
      * @param out                 Current outputs
      * @param step                Execution step
      */
-    protected void execFailed(Set<String> userRequestedUnique, Map<String, T> out, Set<String> allRequired, Set<String> allExecuted, int step) {
+    protected void execFailed(Set<String> userRequestedUnique, Map<String,SDValue> out, Set<String> allRequired, Set<String> allExecuted, int step) {
         int missingCount = userRequestedUnique.size() - out.size();
         StringBuilder sb = new StringBuilder();
         sb.append("No variable are available for execution at step ")
@@ -543,13 +658,8 @@ public abstract class AbstractSession<T, O> {
                 sb.append(iter.next());
             }
         }
-        if(allRequired.size() <  sameDiff.variables().size()) {
-            String s = sb.toString();
-            throw new IllegalStateException(s);
-        } else {
-            log.warn("Not all required variables were executed. This may be due to conditionals. Missing variables include: " + sb.toString());
-            return;
-        }
+
+        log.warn("Not all required variables were executed. This may be due to conditionals. Missing variables include: " + sb.toString());
 
     }
 
@@ -684,11 +794,7 @@ public abstract class AbstractSession<T, O> {
             }
         }
 
-        if (cdVars != null) {
-            for (String s : cdVars) {
 
-            }
-        }
     }
 
     /**
@@ -696,6 +802,15 @@ public abstract class AbstractSession<T, O> {
      */
     protected ExecStep getExecStepForVar(String varName, FrameIter frameIter) {
         Variable v = sameDiff.getVariables().get(varName);
+        if(v == null) {
+            SameDiffOp op = sameDiff.getOps().get(varName);
+            if(op != null) {
+                //redirect because of rename
+                v = sameDiff.getVariables().get(op.getOutputsOfOp().get(0));
+            } else {
+                throw new IllegalArgumentException("Variable name " + varName + " not found! Renamed?");
+            }
+        }
         VariableType vt = v.getVariable().getVariableType();
         if (vt == VariableType.VARIABLE) {
             return new ExecStep(ExecType.VARIABLE, v.getVariable().name(), new FrameIter(OUTER_FRAME, 0, null));
@@ -796,6 +911,14 @@ public abstract class AbstractSession<T, O> {
                 String[] opInputs = opName == null ? null : sameDiff.getInputsForOp(sameDiff.getOpById(opName));
                 Variable currVar = sameDiff.getVariables().get(varName);
                 log.trace("Adding " + varName + " to subgraph for output.");
+                //probably renamed, redirect to new name
+                if(currVar == null && opName == null) {
+                    SameDiffOp op2 = sameDiff.getOps().get(varName);
+                    currVar = sameDiff.getVariables().get(op2.outputsOfOp.get(0));
+                    if(currVar == null) {
+                        throw new IllegalStateException("No variable found with name " + varName + "!");
+                    }
+                }
                 List<String> opInputsFor = currVar.getInputsForOp();
                 List<String> controlDeps = currVar.getControlDeps();
                 String output = currVar.getOutputOfOp();
@@ -853,6 +976,21 @@ public abstract class AbstractSession<T, O> {
         }
     }
 
+
+
+
+    /**
+     * Preprocess the placeholder values, if required.
+     * Mainly reserved for casting in the case of InferenceSession
+     *
+     * @param placeholders Placeholders to preprocess.
+     * @return Preprocessed placeholders
+     */
+    protected Map<String, SDValue> preprocessValuePlaceholders(Map<String, SDValue> placeholders, At at) {
+        return placeholders;
+    }
+
+
     /**
      * Preprocess the placeholder values, if required.
      * Mainly reserved for casting in the case of InferenceSession
@@ -862,6 +1000,18 @@ public abstract class AbstractSession<T, O> {
      */
     protected Map<String, T> preprocessPlaceholders(Map<String, T> placeholders, At at) {
         return placeholders;
+    }
+
+
+    /**
+     * Post process the session output values, if required.
+     * Override if required in session subclasses
+     *
+     * @param output Output to be returned to the user
+     * @return Post processed output
+     */
+    protected Map<String, SDValue> postProcessOutputValues(Map<String, SDValue> output) {
+        return output;
     }
 
     /**
@@ -894,10 +1044,11 @@ public abstract class AbstractSession<T, O> {
      * @param allIterInputs    The inputs - those that are not iteration-specific (mainly Enter op vars, which might be used in all iterations but are only executed once on iter 0)
      * @param constAndPhInputs The constant and placeholder inputs - used for all frames/iterations
      * @param allReqVariables  All required variables requested for the current session execution (not just the current op outputs)
+     * @param otherPlaceholders
      * @return The parameterized op
      */
     public abstract O getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs,
-                                           Map<String, T> placeholderValues, Set<String> allReqVariables);
+                                           Map<String, T> placeholderValues, Set<String> allReqVariables, Map<String, SDValue> otherPlaceholders);
 
     /**
      * Execute the op - calculate INDArrays, or shape info, etc
@@ -906,10 +1057,11 @@ public abstract class AbstractSession<T, O> {
      * @param outputFrameIter The frame and iteration of the outputs
      * @param inputs          The specific input arrays for the op
      * @param allReqVariables All required variables requested for the current session execution (not just the current op outputs)
+     * @param otherPlaceHolders
      * @return The outputs of the op
      */
-    public abstract T[] getOutputs(O op, FrameIter outputFrameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs,
-                                   List<Listener> listeners, At at, MultiDataSet batch, Set<String> allReqVariables);
+    public abstract ExecutionResult getOutputs(O op, FrameIter outputFrameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs,
+                                               List<Listener> listeners, At at, MultiDataSet batch, Set<String> allReqVariables, Map<String, SDValue> otherPlaceHolders);
 
     /**
      * Get the VarId from the specified name. The VarId should be in one or the other of the collections,
@@ -924,6 +1076,55 @@ public abstract class AbstractSession<T, O> {
             throw new RuntimeException("Could not find VarId for input \"" + name + "\"");
         }
         return vid;
+    }
+
+
+
+    /**
+     * Get the {@link INDArray}
+     * associated with the given variable name
+     * @param name the variable name
+     * @return the list of {@link INDArray}
+     */
+    public List<INDArray> getTensorArraysInSession(String name,String frame,int iteration,FrameIter parentFrame) {
+        DifferentialFunction op = sameDiff.getVariableOutputOp(name);
+        if(op == null)
+            return null;
+        String[] inputs = sameDiff.getInputsForOp(op);
+        String[] outputs = sameDiff.getOutputsForOp(op);
+        Set<VarId> varIds = new LinkedHashSet<>();
+        for(String input : inputs) {
+            VarId varId = new VarId(input, frame, iteration, parentFrame);
+            varIds.add(varId);
+        }
+
+        varIds.addAll(tensorArrays.keySet());
+
+        VarId lookup = lookup(op.getOwnName(), varIds, false);
+        if(lookup == null && op.args().length > 0) {
+            SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+            lookup = lookup(inTensorArray.name(), varIds, false);
+            if(lookup != null) {
+                List<INDArray> ret = (List<INDArray>) tensorArrays.get(lookup);
+                if(ret == null && parentFrame != null)
+                    return getTensorArraysInSession(name);
+            }
+            return null;
+        }
+        List<INDArray> ret =  (List<INDArray>) tensorArrays.get(lookup);
+        if(ret == null && parentFrame != null)
+            return getTensorArraysInSession(name);
+        return null;
+    }
+
+    /**
+     * Get the {@link INDArray}
+     * associated with the given variable name
+     * @param name the variable name
+     * @return the list of {@link INDArray}
+     */
+    public List<INDArray> getTensorArraysInSession(String name) {
+        return getTensorArraysInSession(name,OUTER_FRAME,0,null);
     }
 
     /**
@@ -950,12 +1151,27 @@ public abstract class AbstractSession<T, O> {
      * (b) to store results<br>
      */
     @Data
-    @AllArgsConstructor
     public static class VarId {
         private String variable;
         private String frame;
         private int iteration;
         private FrameIter parentFrame;
+
+        public VarId(String variable, String frame, int iteration, FrameIter parentFrame) {
+            this.variable = variable;
+            this.frame = frame;
+            this.iteration = iteration;
+            this.parentFrame = parentFrame;
+        }
+
+        /**
+         * Creates the default outer frame
+         * @param name the name of the variable ot create an id for
+         * @return
+         */
+        public static VarId createDefault(String name) {
+            return new VarId(name,OUTER_FRAME,0,null);
+        }
 
         @Override
         public String toString() {

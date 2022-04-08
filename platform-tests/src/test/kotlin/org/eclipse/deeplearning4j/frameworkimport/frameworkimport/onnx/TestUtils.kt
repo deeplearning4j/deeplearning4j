@@ -1,14 +1,14 @@
-package org.nd4j.samediff.frameworkimport.onnx
+package org.eclipse.deeplearning4j.frameworkimport.frameworkimport.onnx
 
 import onnx.Onnx
 import org.junit.jupiter.api.Assertions
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.samediff.frameworkimport.ImportGraph
+import org.nd4j.samediff.frameworkimport.onnx.*
 import org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarations
 import org.nd4j.samediff.frameworkimport.onnx.definitions.registry
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph
 import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraphRunner
-import org.nd4j.samediff.frameworkimport.rule.attribute.AttributeValueType
 import org.nd4j.shade.protobuf.ByteString
 import java.nio.charset.Charset
 
@@ -44,7 +44,7 @@ fun createSingleNodeGraph(inputs: Map<String, INDArray>, op: String, attributes:
             }
             val toBuilder = attr.toBuilder()
             when(u) {
-                is onnx.Onnx.TensorProto-> {
+                is Onnx.TensorProto-> {
                     toBuilder.t = u
                     toBuilder.type = Onnx.AttributeProto.AttributeType.TENSOR
                 }
@@ -56,7 +56,7 @@ fun createSingleNodeGraph(inputs: Map<String, INDArray>, op: String, attributes:
                     toBuilder.f = u as Float
                     toBuilder.type = Onnx.AttributeProto.AttributeType.FLOAT
                 }
-                is java.lang.Integer -> {
+                is Integer -> {
                     toBuilder.i = (u as Integer).toLong()
                     toBuilder.type = Onnx.AttributeProto.AttributeType.INT
                 }
@@ -85,7 +85,7 @@ fun createSingleNodeGraph(inputs: Map<String, INDArray>, op: String, attributes:
 
                         }
 
-                        is java.lang.Integer -> {
+                        is Integer -> {
                             val intsCast = u as List<Integer>
                             toBuilder.addAllInts(intsCast.map { input -> input.toLong() })
                             toBuilder.type = Onnx.AttributeProto.AttributeType.INTS

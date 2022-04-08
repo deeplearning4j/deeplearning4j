@@ -24,5 +24,6 @@ public enum VariableType {
     VARIABLE,
     CONSTANT,
     ARRAY,
-    PLACEHOLDER
+    PLACEHOLDER,
+    SEQUENCE
 }
