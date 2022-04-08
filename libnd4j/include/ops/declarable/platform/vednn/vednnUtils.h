@@ -27,7 +27,9 @@
 #include <legacy/NativeOps.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
-
+#if defined(HAVE_VEDA)
+#include "veda_helper.h"
+#endif
 using namespace samediff;
 
 namespace sd {

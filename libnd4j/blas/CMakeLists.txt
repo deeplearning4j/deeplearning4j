@@ -172,8 +172,8 @@ endif()
 
 
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    include_directories("/usr/include")
-    include_directories("/usr/local/include")
+    list(APPEND EXTERNAL_INCLUDE_DIRS "/usr/include")
+    list(APPEND EXTERNAL_INCLUDE_DIRS "/usr/local/include")
 ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 if(!SD_CUDA)
     if(!SD_CPU)
@@ -189,6 +189,9 @@ endif()
 
 if (HAVE_VEDNN)
     file(GLOB_RECURSE CUSTOMOPS_VEDNN_SOURCES false ../include/ops/declarable/platform/vednn/*.cpp ../include/ops/declarable/platform/vednn/*.h)
+    if (HAVE_VEDA)
+        file(GLOB_RECURSE VEDA_SOURCES false ../include/ops/declarable/platform/vednn/*.vc ../include/ops/declarable/platform/vednn/*.vcpp ../include/ops/declarable/platform/vednn/*.h)
+    endif()
 endif()
 
 if(HAVE_ARMCOMPUTE)
@@ -323,6 +326,7 @@ if(SD_CUDA)
                 ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES}
                 ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
                 )
+        target_include_directories(samediff_obj PUBLIC ${EXTERNAL_INCLUDE_DIRS})
 
         if (WIN32)
             message("MSVC runtime for library: ${MSVC_RT_LIB}")
@@ -433,6 +437,8 @@ elseif(SD_CPU OR SD_AURORA)
             ${CUSTOMOPS_VEDNN_SOURCES}
             ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES})
 
+    target_include_directories(samediff_obj PUBLIC ${EXTERNAL_INCLUDE_DIRS})
+
     foreach(external_dependency ${EXTERNAL_DEPENDENCY_PROJECTS})
         message("@external ${external_dependency}")
         add_dependencies(samediff_obj ${external_dependency})
@@ -480,12 +486,21 @@ elseif(SD_CPU OR SD_AURORA)
     #This breaks the build. Normally you want to run tests anyways.
     if(NOT "$ENV{CLION_IDE}")
         target_link_libraries(${SD_LIBRARY_NAME} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN}  ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
+        target_include_directories (${SD_LIBRARY_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
+    endif()
+
+    if (HAVE_VEDA)
+        message("----${VEDA_SOURCES}---${VEDA_LIBRARY}")
+        ADD_LIBRARY (${SD_LIBRARY_NAME}_device SHARED ${VEDA_SOURCES})
+        target_link_libraries(${SD_LIBRARY_NAME}_device PRIVATE ${VEDA_DEPENDENCY_LIBS})
+        target_include_directories(${SD_LIBRARY_NAME}_device PRIVATE ${VEDA_INCLUDE_DIRS})
     endif()
 
     if ("${SD_ALL_OPS}" AND "${SD_BUILD_MINIFIER}")
         message(STATUS "Building minifier...")
         add_executable(minifier ../minifier/minifier.cpp ../minifier/graphopt.cpp)
         target_link_libraries(minifier samediff_obj ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN} ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
+
     endif()
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
