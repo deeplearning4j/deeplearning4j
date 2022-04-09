@@ -72,7 +72,7 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
   auto status = res == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
   VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopeContext(handle.getDevice());
+  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
   auto func = handle.getFunctionByConstPtrName("vedaVednnMaxPoolingForward");
   VEDAdeviceptr vIn, vOut;
@@ -88,11 +88,11 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
                              VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv))));
 
   VEDA_CALL_THROW(vedaMemcpyDtoHAsync(out->buffer(), vOut, out->lengthOf() * out->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaCtxSynchronize());
+
 
   VEDA_CALL_THROW(vedaMemFreeAsync(vOut, 0));
   VEDA_CALL_THROW(vedaMemFreeAsync(vIn, 0));
-
+  scopedContext.sync();
   auto status = sd::Status::OK;
 #endif
 #if defined(ALLOW_NHWC_FORMAT)
@@ -193,7 +193,7 @@ PLATFORM_IMPL(maxpool2d_bp, ENGINE_CPU) {
   auto status = res == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
   VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopeContext(handle.getDevice());
+  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
   auto func = handle.getFunctionByConstPtrName("vedaVednnMaxPoolingBackwardEx");
   VEDAdeviceptr vGradOut, vOut, vIn, vGradIn;
@@ -213,12 +213,12 @@ PLATFORM_IMPL(maxpool2d_bp, ENGINE_CPU) {
                              VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv))));
 
   VEDA_CALL_THROW(vedaMemcpyDtoHAsync(gradInPtr->buffer(), vGradIn, gradInPtr->lengthOf() * gradInPtr->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaCtxSynchronize());
 
   VEDA_CALL_THROW(vedaMemFreeAsync(vGradOut, 0));
   VEDA_CALL_THROW(vedaMemFreeAsync(vOut, 0));
   VEDA_CALL_THROW(vedaMemFreeAsync(vIn, 0));
   VEDA_CALL_THROW(vedaMemFreeAsync(vGradIn, 0));
+  scopedContext.sync();
   auto status = sd::Status::OK;
 #endif
 #if defined(ALLOW_NHWC_FORMAT)

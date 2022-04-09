@@ -22,6 +22,7 @@
 #define DEV_VEDAHELPERS_H
 
 #include <helpers/logger.h>
+#include <stdint.h>
 #include <system/Environment.h>
 #include <veda.h>
 
@@ -97,6 +98,8 @@ struct SCOPED_VEDA_CONTEXT {
     vedaCtxPushCurrent(ctx);
   }
 
+  void sync() { VEDA_CALL_THROW(vedaCtxSynchronize()); }
+
   ~SCOPED_VEDA_CONTEXT() { vedaCtxPopCurrent(&ctx); }
 };
 
@@ -110,7 +113,7 @@ struct VEDA_HANDLE {
 
   VEDA_HANDLE(const char* library_name, VEDAdevice device_index, const char* dir_name = nullptr)
       : device(device_index) {
-    sd_printf("%s \n", "loadddd vednn library if it was not");
+    sd_debug("it's loading veda device library: %s\n", library_name);
     auto status = VEDA_CALL(vedaCtxCreate(&ctx, VEDA_CONTEXT_MODE_OMP, 0));
     if (status) {
       if (const char* env_p = std::getenv("DEVICE_LIB_LOADPATH")) {
@@ -143,14 +146,6 @@ struct VEDA_HANDLE {
   }
 
   VEDAdevice getDevice() { return device; }
-
-  VEDA_STATUS sync() {
-    if (status) {
-      return VEDA_CALL(vedaCtxSynchronize());
-    } else {
-      return VEDA_STATUS{};
-    }
-  }
 };
 
 struct VEDA {
@@ -167,22 +162,7 @@ struct VEDA {
   }
 
  private:
-  VEDA(const char* library_name) {
-    int devcnt = 0;
-    auto status = VEDA_CALL(vedaInit(0));
-    if (status) {
-      status = VEDA_CALL(vedaDeviceGetCount(&devcnt));
-    }
-    const char* dir_name = sd::Environment::getInstance().getVedaDeviceDir();
-    int use = (devcnt > MAX_DEVICE_USAGE) ? MAX_DEVICE_USAGE : devcnt;
-    sd_printf("Veda devices: available %d \t will be in use %d\n", devcnt, use);
-    for (int i = 0; i < use; i++) {
-      VEDAdevice device;
-      vedaDeviceGet(&device, i);
-      VEDA_HANDLE v(library_name, device, dir_name);
-      ve_handles.emplace_back(std::move(v));
-    }
-  }
+  VEDA(const char* library_name);
 
   VEDA() = delete;
   VEDA(const VEDA&) = delete;
@@ -191,14 +171,7 @@ struct VEDA {
   VEDA& operator=(VEDA&&) = delete;
 
  protected:
-  virtual ~VEDA() {
-    // https://github.com/SX-Aurora/veda/issues/16
-    // to solve the issue above we will use SCOPED_VEDA_CONTEXT each time before using veda
-    // thus it should help with gracefull shutdown
-    sd_printf("%s %d\n", __FILE__, __LINE__);
-    VEDA_CALL(vedaExit());
-    sd_printf("%s %d\n", __FILE__, __LINE__);
-  }
+  virtual ~VEDA() {}
 };
 
 #endif

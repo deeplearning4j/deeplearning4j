@@ -35,15 +35,15 @@ PLATFORM_IMPL(log_softmax, ENGINE_CPU) {
 
   const int rank = input->rankOf();
 
-  const unsigned long inner_dim = input->sizeAt(rank - 1);
-  const unsigned long outer_dim = input->lengthOf() / inner_dim;
+  const uint64_t inner_dim = input->sizeAt(rank - 1);
+  const uint64_t outer_dim = input->lengthOf() / inner_dim;
 #if !defined(HAVE_VEDA)
   auto ret = vednnSoftmaxForward(VEDNN_SOFTMAX_LOG, input->buffer(), output->buffer(), outer_dim, inner_dim);
 
   return ret == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
   VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopeContext(handle.getDevice());
+  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
   auto func = handle.getFunctionByConstPtrName("vedaVednnSoftmaxForward");
 
@@ -60,10 +60,9 @@ PLATFORM_IMPL(log_softmax, ENGINE_CPU) {
 
   VEDA_CALL_THROW(vedaMemcpyDtoHAsync(output->buffer(), vO, sizeO, 0));
 
-  VEDA_CALL_THROW(vedaCtxSynchronize());
-
   VEDA_CALL_THROW(vedaMemFreeAsync(vIn, 0));
   VEDA_CALL_THROW(vedaMemFreeAsync(vO, 0));
+  scopedContext.sync();
   return sd::Status::OK;
 
 #endif

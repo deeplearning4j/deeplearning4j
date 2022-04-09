@@ -219,17 +219,17 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
 #else
 
   VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopeContext(handle.getDevice());
+  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
   auto func = handle.getFunctionByConstPtrName("vedaVednnConvolutionForwardAddBias");
 
   VEDAdeviceptr vIn, vW, vO;
-  VEDAdeviceptr vB;
+  VEDAdeviceptr vB = nullptr;
   size_t sizeIn = in->lengthOf() * in->sizeOfT();
   size_t sizeW = w->lengthOf() * w->sizeOfT();
   size_t sizeB = bias ? bias->lengthOf() * bias->sizeOfT() : 0;
   size_t sizeO = out->lengthOf() * out->sizeOfT();
-  // auto end2 = std::chrono::high_resolution_clock::now();
+
   VEDA_CALL_THROW(vedaMemAllocAsync(&vIn, sizeIn, 0));
   VEDA_CALL_THROW(vedaMemAllocAsync(&vW, sizeW, 0));
   if (bias) VEDA_CALL_THROW(vedaMemAllocAsync(&vB, sizeB, 0));
@@ -239,26 +239,23 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
   VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vW, w->buffer(), sizeW, 0));
   if (bias) VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vB, bias->buffer(), sizeB, 0));
 
-  // uint64_t res;
-  VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn, isNCHW,
-                             VEDAstack(&paramFilter, VEDA_ARGS_INTENT_IN, sizeof(paramFilter)), vW, weightFormat,
+  // if(bias) sd_printf("%s\n","--------bias case--------");
+
+  VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn, (uint8_t)isNCHW,
+                             VEDAstack(&paramFilter, VEDA_ARGS_INTENT_IN, sizeof(paramFilter)), vW, (int32_t)weightFormat,
                              VEDAstack(&paramBias, VEDA_ARGS_INTENT_IN, sizeof(paramBias)), vB,
-                             VEDAstack(&paramOut, VEDA_ARGS_INTENT_IN, sizeof(paramOut)), vO, isNCHW,
+                             VEDAstack(&paramOut, VEDA_ARGS_INTENT_IN, sizeof(paramOut)), vO,  (uint8_t)isNCHW,
                              VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv)),
-                             VEDNN_CONV_ALGORITHM_DIRECT));
+                             (int)VEDNN_CONV_ALGORITHM_DIRECT));
 
   VEDA_CALL_THROW(vedaMemcpyDtoHAsync(out->buffer(), vO, sizeO, 0));
-
-  VEDA_CALL_THROW(vedaCtxSynchronize());
 
   VEDA_CALL_THROW(vedaMemFreeAsync(vIn, 0));
   VEDA_CALL_THROW(vedaMemFreeAsync(vW, 0));
   if (bias) VEDA_CALL_THROW(vedaMemFreeAsync(vB, 0));
   VEDA_CALL_THROW(vedaMemFreeAsync(vO, 0));
-  // auto end = std::chrono::high_resolution_clock::now();
-  // std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(end1 - start).count() << "ns\t"
-  //           << std::chrono::duration_cast<std::chrono::nanoseconds>(end2 - end1).count() << "ns\t"
-  //           << std::chrono::duration_cast<std::chrono::nanoseconds>(end - end2).count() << std::endl;
+  scopedContext.sync();
+
   auto status = sd::Status::OK;
 #endif
 
@@ -408,7 +405,7 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CPU) {
   auto status = (resData == VEDNN_SUCCESS && resFilter == VEDNN_SUCCESS) ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
   VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopeContext(handle.getDevice());
+  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
   auto func = handle.getFunctionByConstPtrName("vedaVednnConvolutionBackwardDataAndFilter");
   VEDAdeviceptr vGradOut, vW, vGradW, vIn, vGradIn;
@@ -436,13 +433,15 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CPU) {
   VEDA_CALL_THROW(vedaMemcpyDtoHAsync(gradInPtr->buffer(), vGradIn, gradInPtr->lengthOf() * gradInPtr->sizeOfT(), 0));
   VEDA_CALL_THROW(
       vedaMemcpyDtoHAsync(gradWeightsPtr->buffer(), vGradW, gradWeightsPtr->lengthOf() * gradWeightsPtr->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaCtxSynchronize());
 
   VEDA_CALL_THROW(vedaMemFreeAsync(vGradOut, 0));
   VEDA_CALL_THROW(vedaMemFreeAsync(vW, 0));
   VEDA_CALL_THROW(vedaMemFreeAsync(vGradW, 0));
   VEDA_CALL_THROW(vedaMemFreeAsync(vIn, 0));
   VEDA_CALL_THROW(vedaMemFreeAsync(vGradIn, 0));
+
+  scopedContext.sync();
+
   // TODO: after replacing it with vedaLaunchKernelEx we will return result based on vednn veda call
   auto status = sd::Status::OK;
 #endif

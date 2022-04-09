@@ -50,7 +50,9 @@
 #include <errno.h>
 #include <ops/declarable/CustomOperations.h>
 #include <sys/types.h>
-
+#if defined(HAVE_VEDA)
+#include <ops/declarable/platform/vednn/veda_helper.h>
+#endif
 char *name;
 bool nameSet = false;
 
@@ -2803,6 +2805,9 @@ void dbClose(OpaqueDataBuffer *dataBuffer) { dataBuffer->getDataBuffer()->close(
 
 void setVedaDeviceLibFolder(std::string path){
   sd::Environment::getInstance().setVedaDeviceDir(path);
+#if defined(HAVE_VEDA)
+   VEDA::getInstance();
+#endif
 }
 
 BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric,

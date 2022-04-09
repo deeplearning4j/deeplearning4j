@@ -36,13 +36,13 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
 
   if (x->isEmpty() || y->isEmpty()) return sd::Status::OK;
 
-  unsigned long bGemm = 1;
+  uint64_t bGemm = 1;
   for (int i = 0; i < x->rankOf() - 2; i++) {
     bGemm = bGemm * x->sizeAt(i);
   }
-  const unsigned long outDim = z->sizeAt(-1);
-  const unsigned long nBatch = z->sizeAt(-2);
-  const unsigned long inDim = x->sizeAt(-1);
+  const uint64_t outDim = z->sizeAt(-1);
+  const uint64_t nBatch = z->sizeAt(-2);
+  const uint64_t inDim = x->sizeAt(-1);
 #if !defined(HAVE_VEDA)
   if (bGemm == 1) {
     vednnLinearForward(inDim, outDim, nBatch, 1, x->buffer(), y->buffer(), z->buffer());
@@ -62,14 +62,14 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
   }
 #else
   VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopeContext(handle.getDevice());
+  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
   auto func = handle.getFunctionByConstPtrName("vedaVednnLinearForwardExF32");
 
   VEDAdeviceptr vX, vY, vZ;
-  const unsigned long xStride = x->rankOf() > 2 ? x->sizeAt(-1) * x->sizeAt(-2) : 0;
-  const unsigned long yStride = y->rankOf() > 2 ? y->sizeAt(-1) * y->sizeAt(-2) : 0;
-  const unsigned long zStride = z->rankOf() > 2 ? z->sizeAt(-1) * z->sizeAt(-2) : 0;
+  const uint64_t xStride = x->rankOf() > 2 ? x->sizeAt(-1) * x->sizeAt(-2) : 0;
+  const uint64_t yStride = y->rankOf() > 2 ? y->sizeAt(-1) * y->sizeAt(-2) : 0;
+  const uint64_t zStride = z->rankOf() > 2 ? z->sizeAt(-1) * z->sizeAt(-2) : 0;
   VEDA_CALL_THROW(vedaMemAllocAsync(&vX, x->lengthOf() * x->sizeOfT(), 0));
   VEDA_CALL_THROW(vedaMemAllocAsync(&vY, y->lengthOf() * y->sizeOfT(), 0));
   VEDA_CALL_THROW(vedaMemAllocAsync(&vZ, z->lengthOf() * z->sizeOfT(), 0));
@@ -78,11 +78,12 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
 
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, bGemm, inDim, outDim, nBatch, vX, xStride, vY, yStride, vZ, zStride));
   VEDA_CALL_THROW(vedaMemcpyDtoHAsync(z->buffer(), vZ, z->lengthOf() * z->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaCtxSynchronize());
+
 
   VEDA_CALL_THROW(vedaMemFreeAsync(vX, 0));
   VEDA_CALL_THROW(vedaMemFreeAsync(vY, 0));
   VEDA_CALL_THROW(vedaMemFreeAsync(vZ, 0));
+  scopedContext.sync();
 #endif
   return sd::Status::OK;
 }
