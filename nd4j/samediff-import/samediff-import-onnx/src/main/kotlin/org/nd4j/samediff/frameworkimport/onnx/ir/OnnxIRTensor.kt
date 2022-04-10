@@ -27,22 +27,13 @@ import org.nd4j.samediff.frameworkimport.ir.IRDataType
 import org.nd4j.samediff.frameworkimport.ir.IRTensor
 import org.nd4j.samediff.frameworkimport.ndarrayFromNameSpaceTensor
 
-class OnnxIRTensor: IRTensor<Onnx.TensorProto, Onnx.TensorProto.DataType> {
+class OnnxIRTensor(input: Onnx.TensorProto): IRTensor<Onnx.TensorProto, Onnx.TensorProto.DataType> {
 
-    constructor(input: Onnx.TensorProto) {
-        tensors = arrayOf(input)
-    }
-
-    constructor(inputs: Array<Onnx.TensorProto>) {
-        tensors = inputs
-
-    }
-
-    var tensors: Array<Onnx.TensorProto> = arrayOf()
+    val tensor = input
 
 
     override fun shape(): List<Long> {
-        return tensors[0].dimsList
+        return tensor.dimsList
     }
 
     override fun stride(): List<Long> {
@@ -50,44 +41,18 @@ class OnnxIRTensor: IRTensor<Onnx.TensorProto, Onnx.TensorProto.DataType> {
     }
 
     override fun dataType(): IRDataType<Onnx.TensorProto.DataType> {
-        return OnnxIRDataType(Onnx.TensorProto.DataType.values()[tensors[0].dataType])
+        return OnnxIRDataType(Onnx.TensorProto.DataType.values()[tensor.dataType])
     }
 
     override fun toArgTensor(): TensorNamespace.TensorProto {
-        return createArgTensorFrom(tensors[0])
-    }
-
-
-    override fun rawValue(): Onnx.TensorProto {
-        return tensors[0]
-    }
-
-    override fun toNd4jNDArray(): INDArray {
-        return ndarrayFromNameSpaceTensor(toArgTensor())
-    }
-
-    override fun rawValues(): Array<Onnx.TensorProto> {
-        return tensors
-    }
-
-    override fun toArgTensors(): Array<TensorNamespace.TensorProto> {
-       return tensors.map { input -> createArgTensorFrom(input) }.toTypedArray()
-    }
-
-    override fun toNd4jNdarrays(): Array<INDArray> {
-       return tensors.map { input -> ndarrayFromNameSpaceTensor(createArgTensorFrom(input))}.toTypedArray()
-
-    }
-
-    private fun createArgTensorFrom(tensorProto: Onnx.TensorProto): TensorNamespace.TensorProto {
         val builder = TensorNamespace.TensorProto.newBuilder()
             .setDataLocation(TensorNamespace.TensorProto.DataLocation.DEFAULT)
 
-        for(i in 0 until tensorProto.dimsCount) {
-            builder.addDims(tensorProto.getDims(i))
+        for(i in 0 until tensor.dimsCount) {
+            builder.addDims(tensor.getDims(i))
         }
 
-        when(tensorProto.dataType) {
+        when(tensor.dataType) {
             Onnx.TensorProto.DataType.UINT64.ordinal -> builder.dataType = TensorNamespace.DataType.UINT64.ordinal
             Onnx.TensorProto.DataType.UINT32.ordinal -> builder.dataType = TensorNamespace.DataType.UINT32.ordinal
             Onnx.TensorProto.DataType.UINT16.ordinal -> builder.dataType = TensorNamespace.DataType.UINT16.ordinal
@@ -106,37 +71,45 @@ class OnnxIRTensor: IRTensor<Onnx.TensorProto, Onnx.TensorProto.DataType> {
         }
 
 
-        if(tensorProto.doubleDataList != null && tensorProto.doubleDataCount > 0) {
-            builder.addAllDoubleData(tensorProto.doubleDataList)
+        if(tensor.doubleDataList != null && tensor.doubleDataCount > 0) {
+            builder.addAllDoubleData(tensor.doubleDataList)
         }
 
-        if(tensorProto.stringDataList != null && tensorProto.stringDataCount > 0) {
-            builder.addAllStringData(tensorProto.stringDataList)
+        if(tensor.stringDataList != null && tensor.stringDataCount > 0) {
+            builder.addAllStringData(tensor.stringDataList)
         }
 
-        if(tensorProto.floatDataList != null && tensorProto.floatDataCount > 0) {
-            builder.addAllFloatData(tensorProto.floatDataList)
+        if(tensor.floatDataList != null && tensor.floatDataCount > 0) {
+            builder.addAllFloatData(tensor.floatDataList)
         }
 
-        if(tensorProto.int32DataList != null && tensorProto.int32DataCount > 0) {
-            builder.addAllInt32Data(tensorProto.int32DataList)
+        if(tensor.int32DataList != null && tensor.int32DataCount > 0) {
+            builder.addAllInt32Data(tensor.int32DataList)
         }
 
-        if(tensorProto.int64DataCount != null && tensorProto.int64DataCount > 0) {
-            builder.addAllInt64Data(tensorProto.int64DataList)
+        if(tensor.int64DataCount != null && tensor.int64DataCount > 0) {
+            builder.addAllInt64Data(tensor.int64DataList)
         }
 
-        if(tensorProto.uint64DataList != null && tensorProto.uint64DataCount > 0) {
-            builder.addAllInt64Data(tensorProto.uint64DataList)
+        if(tensor.uint64DataList != null && tensor.uint64DataCount > 0) {
+            builder.addAllInt64Data(tensor.uint64DataList)
         }
 
-        if(tensorProto.rawData != null) {
-            builder.rawData = tensorProto.rawData
+        if(tensor.rawData != null) {
+            builder.rawData = tensor.rawData
         }
 
-        builder.dataType = tensorProto.dataType
+        builder.dataType = tensor.dataType
 
         return builder.build()
+    }
+
+    override fun rawValue(): Onnx.TensorProto {
+        return tensor
+    }
+
+    override fun toNd4jNDArray(): INDArray {
+        return ndarrayFromNameSpaceTensor(toArgTensor())
     }
 
 
