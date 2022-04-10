@@ -657,7 +657,6 @@ public class SameDiff extends SDBaseOps {
 
                 }
             }
-
             val outputsForFunction = function.outputVariables();
             for(SDVariable arg : outputsForFunction) {
                 if(!sameDiff.variables.containsKey(arg.name())) {
@@ -683,6 +682,8 @@ public class SameDiff extends SDBaseOps {
             }
 
             clone.configureWithSameDiff(sameDiff);
+            sameDiff.ops.put(function.getOwnName(), op);
+
 
 
         }
@@ -2130,7 +2131,7 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Evaluate the performance of a single variable's prediction.<br>
-     * For example, if the variable to evaluatate was called "softmax" you would use:
+     * For example, if the variable to evaluate was called "softmax" you would use:
      * <pre>
      * {@code Evaluation e = new Evaluation();
      * sameDiff.evaluate(iterator, "softmax", e);}
@@ -4168,7 +4169,7 @@ public class SameDiff extends SDBaseOps {
      * @param function
      */
     public void defineFunction(String function, SameDiffFunctionDefinition functionDefinition) {
-        defineFunction(function, functionDefinition, new LinkedHashMap<String, INDArray>());
+        defineFunction(function, functionDefinition, new LinkedHashMap<>());
     }
 
     /**
@@ -4388,7 +4389,6 @@ public class SameDiff extends SDBaseOps {
             }
 
             outer.invokeGraphOn(sameDiff);
-            outer.putSubFunction(GRAD_FN_KEY,sameDiff);
             if (debugMode) {
                 //Expect incoming args and outgoing args to be the same
                 Preconditions.checkState(sameDiff.ops.keySet().equals(ops.keySet()), "ops keysets not equal");
@@ -4416,12 +4416,13 @@ public class SameDiff extends SDBaseOps {
             for (String s : lossVariables) {
                 Preconditions.checkNotNull(s, "Encountered null value in loss variables. Null loss variables are not allowed." +
                         " Use SameDiff.setLossVariables with non-null array names to fix");
-                Preconditions.checkState(variables.containsKey(s), "Specified loss function variable \"%s\" does not exist", s);
-                SDVariable v = variables.get(s).getVariable();
+                Preconditions.checkState(sameDiff.variables.containsKey(s), "Specified loss function variable \"%s\" does not exist", s);
+                SDVariable v = sameDiff.variables.get(s).getVariable();
                 Preconditions.checkState(v.dataType().isFPType(), "Specified loss function variable \"%s\" is not a floating" +
                         "point variable (datatype: %s). Only floating point variables may be used as loss function variable", s, v.dataType());
 
 
+                v = v.sum();
                 if (v.dataType() == initialGrad.dataType()) {
                     sameDiff.setGradientForVariableName(v.name(), initialGrad);
                 } else {
@@ -4528,7 +4529,7 @@ public class SameDiff extends SDBaseOps {
                 List<String> inputsTo = v.getInputsForOp();
                 if (inputsTo != null && !inputsTo.isEmpty()) {
                     for (String opName : inputsTo) {
-                        SameDiffOp op = sameDiff.ops.get(opName);
+                        SameDiffOp op = ops.get(opName);
                         List<String> inputsToOp = op.getInputsToOp();
                         boolean anyPresent = false;
                         for (String s : inputsToOp) {
@@ -4583,7 +4584,7 @@ public class SameDiff extends SDBaseOps {
                         //Need to filter ops here
                         //For example, if we have: var -> Op1, and var -> Op2
                         //we might not need to differentiate Op2 if output of Op2 doesn't impact loss function
-                        SameDiffOp o = sameDiff.ops.get(opName);
+                        SameDiffOp o = ops.get(opName);
                         if(o == null) {
                             continue;
                         }
@@ -4641,15 +4642,8 @@ public class SameDiff extends SDBaseOps {
                             grads.add(null);
                         } else {
                             //See "Step 3: Differentiate ops in minimal subgraph" above for explanation on why this should be zerosLike here...
-                            if(sameDiff.hasVariable(s + "-grad")) {
-                                SDVariable gTemp = sameDiff.getVariable(s + "-grad");
-                                grads.add(gTemp);
-                            } else {
-                                SDVariable gTemp = sameDiff.zerosLike(s + "-grad",v);
-                                grads.add(gTemp);
-                                sameDiff.setGradientForVariableName(s,v);
-                            }
-
+                            SDVariable gTemp = sameDiff.zerosLike(v);
+                            grads.add(gTemp);
                         }
                     } else {
                         grads.add(g);
@@ -4660,7 +4654,7 @@ public class SameDiff extends SDBaseOps {
                 List<SDVariable> currFnGrads = df.diff(grads);
                 differentiatedOps.add(df.getOwnName());
 
-                //Check the inputs to this op, see if we can differentiate those ops now (and if so: add to queue)
+                 //Check the inputs to this op, see if we can differentiate those ops now (and if so: add to queue)
                 for (String s : inputsToOp) {
                     Variable v = sameDiff.variables.get(s);
                     String opName = v.getOutputOfOp();
@@ -4711,37 +4705,27 @@ public class SameDiff extends SDBaseOps {
                     for (String opOutput : o.getOutputsOfOp()) {
                         Variable outVar = variables.get(opOutput);
                         if (outVar.getVariable().dataType().isFPType()) {
-                            allAvailable = shouldAddAutoDiffCandidate(minimalSubgraphVars,outVar,prerequisites,differentiatedOps);
-                            if(!allAvailable) {
-                                //ensure we get pre requisites queued up for autodiff
-                                for(String input : o.getInputsToOp()) {
-                                    SameDiffOp opWithoutput = opWithOutput(input,ops.values());
-                                    if(opWithoutput != null && !availableForDiff.contains(o.getOp().getOwnName())) {
-                                        availableForDiff.add(opWithoutput.getOp().getOwnName());
-                                        // re enqueue for auto diff if an input is found
-                                        if(!availableForDiff.contains(opName)) {
-                                            availableForDiff.add(opName);
-                                        }
-                                    }
+                            if (minimalSubgraphVars.contains(outVar.getName())) {
+                                //Need gradient for this variable to be available before we can differentiate
+                                if (outVar.getVariable().gradient() == null) {
+                                    allAvailable = false;
+                                    break;
                                 }
-
+                                //However, when a variable is used multiple times, we need ALL gradient contributions available:
+                                List<String> prereqs = prerequisites.get(outVar.getName());
+                                if (prereqs != null) {
+                                    allAvailable &= differentiatedOps.containsAll(prereqs);
+                                    if (!allAvailable)
+                                        break;
+                                }
                             }
-
-                            //If isn't not in the minimal subgraph, loss doesn't depend on it, so we don't care about it
+                            //If it's not in the minimal subgraph, loss doesn't depend on it, so we don't care about it
                         }
                     }
 
+
                     if (allAvailable && !availableForDiff.contains(o.getOp().getOwnName())) {
                         availableForDiff.add(o.getOp().getOwnName());
-                    }  else if (availableForDiff.isEmpty()) {
-                        for (Map.Entry<String, SameDiffOp> sameDiffOpEntry : sameDiff.ops.entrySet()) {
-                            for (String opOutput : sameDiffOpEntry.getValue().getOutputsOfOp()) {
-                                Variable outVar = variables.get(opOutput);
-                                if (shouldAddAutoDiffCandidate(minimalSubgraphVars, outVar, prerequisites, differentiatedOps)) {
-                                    availableForDiff.add(sameDiffOpEntry.getValue().getOp().getOwnName());
-                                }
-                            }
-                        }
                     }
                 }
 
@@ -4770,38 +4754,6 @@ public class SameDiff extends SDBaseOps {
     }
 
 
-    private SameDiffOp opWithOutput(String opNameOutput,Collection<SameDiffOp> ops) {
-        for(SameDiffOp op : ops) {
-            if(op.getOutputsOfOp() != null) {
-                if(op.getOutputsOfOp().contains(opNameOutput)) {
-                    return op;
-                }
-            }
-        }
-
-        return null;
-    }
-
-
-    private boolean shouldAddAutoDiffCandidate(Set<String> minimalSubgraphVars, Variable outVar, Map<String, List<String>> prerequisites,Set<String> differentiatedOps) {
-        if(outVar == null) {
-            return false;
-        }
-
-        if (minimalSubgraphVars.contains(outVar.getName())) {
-            //Need gradient for this variable to be available before we can differentiate
-            if (outVar.getVariable().gradient() == null) {
-                return false;
-            }
-            //However, when a variable is used multiple times, we need ALL gradient contributions available:
-            List<String> prereqs = prerequisites.get(outVar.getName());
-            if (prereqs != null) {
-                return differentiatedOps.containsAll(prereqs);
-            }
-        }
-
-        return true;
-    }
 
     /**
      * Try to infer the loss variable/s (usually loss variables). Note that this is not reliable in general.

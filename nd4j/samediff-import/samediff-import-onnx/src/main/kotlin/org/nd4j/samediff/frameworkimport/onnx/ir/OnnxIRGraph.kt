@@ -283,13 +283,13 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
             input2.name == varNameStripped
         }
         if(firstOrNull != null)
-            return OnnxIRDataType(Onnx.TensorProto.DataType.values()[firstOrNull!!.dataType.ordinal])
+            return OnnxIRDataType(Onnx.TensorProto.DataType.values()[firstOrNull!!.dataType])
         else if(nodeIsPlaceHolder(varNameStripped)) {
             val placeHolder = irNodeByName(varNameStripped)
             return placeHolder.attributeMap()["value"]!!.tensorValue().dataType()
         }
         else if(input != null)
-            return OnnxIRDataType(input.type.tensorType.elemType)
+            return OnnxIRDataType(Onnx.TensorProto.DataType.forNumber(input.type.tensorType.elemType))
         else
             return OnnxIRDataType(Onnx.TensorProto.DataType.UNDEFINED)
     }

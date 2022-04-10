@@ -64,6 +64,7 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.Sgd;
+import org.nd4j.weightinit.impl.OneInitScheme;
 import org.nd4j.weightinit.impl.XavierInitScheme;
 
 @Slf4j
@@ -148,6 +149,29 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
             assertTrue( acc >= 0.75,u + " - " + acc);
         }
     }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testGradients() {
+        SameDiff sd = SameDiff.create();
+
+        SDVariable i0 = sd.placeHolder("i0", DataType.FLOAT, 2,5);
+        SDVariable w0 = sd.var("w0", new OneInitScheme('c'), DataType.FLOAT, 5, 3);
+        SDVariable b0 = sd.var("b0", new OneInitScheme('c'), DataType.FLOAT,3);
+
+        SDVariable w1 = sd.var("w1", new OneInitScheme('c'), DataType.FLOAT, 3,3);
+        SDVariable b1 = sd.var("b1", new OneInitScheme('c'), DataType.FLOAT,3);
+
+        SDVariable i1 = i0.mmul(w0).add(b0);
+        SDVariable i2 = i1.mmul(w1).add(b1).add(i1);
+        SDVariable l = i2.sum();
+
+        sd.setLossVariables(l);
+        INDArray gd = sd.calculateGradients(Collections.singletonMap("i0",Nd4j.rand(2,5)),"w0").get("w0");
+        assertTrue(gd.sumNumber().doubleValue() > 0.0);
+    }
+
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

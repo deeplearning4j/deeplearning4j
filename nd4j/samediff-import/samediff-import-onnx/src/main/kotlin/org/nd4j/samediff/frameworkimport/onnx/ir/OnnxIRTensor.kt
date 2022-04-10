@@ -41,7 +41,7 @@ class OnnxIRTensor(input: Onnx.TensorProto): IRTensor<Onnx.TensorProto, Onnx.Ten
     }
 
     override fun dataType(): IRDataType<Onnx.TensorProto.DataType> {
-        return OnnxIRDataType(Onnx.TensorProto.DataType.values()[tensor.dataType.ordinal])
+        return OnnxIRDataType(Onnx.TensorProto.DataType.values()[tensor.dataType])
     }
 
     override fun toArgTensor(): TensorNamespace.TensorProto {
@@ -53,20 +53,20 @@ class OnnxIRTensor(input: Onnx.TensorProto): IRTensor<Onnx.TensorProto, Onnx.Ten
         }
 
         when(tensor.dataType) {
-            Onnx.TensorProto.DataType.UINT64 -> builder.dataType = TensorNamespace.DataType.UINT64.ordinal
-            Onnx.TensorProto.DataType.UINT32 -> builder.dataType = TensorNamespace.DataType.UINT32.ordinal
-            Onnx.TensorProto.DataType.UINT16 -> builder.dataType = TensorNamespace.DataType.UINT16.ordinal
-            Onnx.TensorProto.DataType.FLOAT16 -> builder.dataType = TensorNamespace.DataType.FLOAT16.ordinal
-            Onnx.TensorProto.DataType.STRING -> builder.dataType = TensorNamespace.DataType.STRING.ordinal
-            Onnx.TensorProto.DataType.FLOAT -> builder.dataType  = TensorNamespace.DataType.FLOAT.ordinal
-            Onnx.TensorProto.DataType.DOUBLE -> builder.dataType = TensorNamespace.DataType.DOUBLE.ordinal
-            Onnx.TensorProto.DataType.BOOL -> builder.dataType = TensorNamespace.DataType.BOOL.ordinal
-            Onnx.TensorProto.DataType.INT64 -> builder.dataType = TensorNamespace.DataType.INT64.ordinal
-            Onnx.TensorProto.DataType.INT32 -> builder.dataType = TensorNamespace.DataType.INT32.ordinal
-            Onnx.TensorProto.DataType.INT16 -> builder.dataType = TensorNamespace.DataType.INT16.ordinal
-            Onnx.TensorProto.DataType.COMPLEX64 -> builder.dataType = TensorNamespace.DataType.COMPLEX64.ordinal
-            Onnx.TensorProto.DataType.COMPLEX128 -> builder.dataType = TensorNamespace.DataType.COMPLEX128.ordinal
-            Onnx.TensorProto.DataType.UNDEFINED, Onnx.TensorProto.DataType.UNRECOGNIZED ->  TensorNamespace.DataType.UNRECOGNIZED.ordinal
+            Onnx.TensorProto.DataType.UINT64.ordinal -> builder.dataType = TensorNamespace.DataType.UINT64.ordinal
+            Onnx.TensorProto.DataType.UINT32.ordinal -> builder.dataType = TensorNamespace.DataType.UINT32.ordinal
+            Onnx.TensorProto.DataType.UINT16.ordinal -> builder.dataType = TensorNamespace.DataType.UINT16.ordinal
+            Onnx.TensorProto.DataType.FLOAT16.ordinal -> builder.dataType = TensorNamespace.DataType.FLOAT16.ordinal
+            Onnx.TensorProto.DataType.STRING.ordinal -> builder.dataType = TensorNamespace.DataType.STRING.ordinal
+            Onnx.TensorProto.DataType.FLOAT.ordinal -> builder.dataType  = TensorNamespace.DataType.FLOAT.ordinal
+            Onnx.TensorProto.DataType.DOUBLE.ordinal -> builder.dataType = TensorNamespace.DataType.DOUBLE.ordinal
+            Onnx.TensorProto.DataType.BOOL.ordinal -> builder.dataType = TensorNamespace.DataType.BOOL.ordinal
+            Onnx.TensorProto.DataType.INT64.ordinal -> builder.dataType = TensorNamespace.DataType.INT64.ordinal
+            Onnx.TensorProto.DataType.INT32.ordinal -> builder.dataType = TensorNamespace.DataType.INT32.ordinal
+            Onnx.TensorProto.DataType.INT16.ordinal -> builder.dataType = TensorNamespace.DataType.INT16.ordinal
+            Onnx.TensorProto.DataType.COMPLEX64.ordinal -> builder.dataType = TensorNamespace.DataType.COMPLEX64.ordinal
+            Onnx.TensorProto.DataType.COMPLEX128.ordinal -> builder.dataType = TensorNamespace.DataType.COMPLEX128.ordinal
+            Onnx.TensorProto.DataType.UNDEFINED.ordinal, Onnx.TensorProto.DataType.UNRECOGNIZED.ordinal ->  TensorNamespace.DataType.UNRECOGNIZED.ordinal
 
         }
 
@@ -99,7 +99,7 @@ class OnnxIRTensor(input: Onnx.TensorProto): IRTensor<Onnx.TensorProto, Onnx.Ten
             builder.rawData = tensor.rawData
         }
 
-        builder.dataType = tensor.dataType.ordinal
+        builder.dataType = tensor.dataType
 
         return builder.build()
     }
