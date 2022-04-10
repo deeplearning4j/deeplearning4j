@@ -406,7 +406,7 @@ public class ControlFlow {
      * @param functionBody
      * @param functionName
      * @param subGraphInputNames  the subgraph input names for use to invoke the graph with
-     * @param subGraphOutputNames the subgraph output naems to expect to be returned from the subgraph invoke
+     * @param subGraphOutputNames the subgraph output names to expect to be returned from the subgraph invoke
      * @return
      */
     public static SameDiffLambda loopBody(SameDiff parent,

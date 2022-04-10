@@ -6773,7 +6773,7 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Loop with conditions.
-     * For more information see the underlyign class
+     * For more information see the underlying class
      * {@link ControlFlow#loopWithConditions(String[], String, SameDiff, SameDiff, String, SDVariable[], String[], String[])}
      * @param loopParams the loop parameters to loop with
      * @return
@@ -6784,7 +6784,7 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Loop with conditions.
-     * For more information see the underlyign class
+     * For more information see the underlying class
      * {@link ControlFlow#loopWithConditions(String[], String, SameDiff, SameDiff, String, SDVariable[], String[], String[])}
      * @param loopParams the loop parameters to loop with
      * @return

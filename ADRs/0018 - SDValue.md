@@ -43,7 +43,7 @@ The following types will be supported:
 3. TENSOR
 
 
-An SDValue will be passed around similar to placeholders and are utilized within InferenceSession to 
+An SDValue is passed around similar to placeholders and are utilized within InferenceSession to 
 execute operations within a graph.
 
 An SDValue's real underlying type will map to the following:
