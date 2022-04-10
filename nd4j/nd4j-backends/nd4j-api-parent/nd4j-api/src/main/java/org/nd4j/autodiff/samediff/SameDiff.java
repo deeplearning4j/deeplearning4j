@@ -646,7 +646,7 @@ public class SameDiff extends SDBaseOps {
             newFunctions.put(function.getOwnName(), clone);
 
             val argsForFunction = function.args();
-         /*   for(SDVariable arg : argsForFunction) {
+            for(SDVariable arg : argsForFunction) {
                 if(!sameDiff.variables.containsKey(arg.name())) {
                     SDVariable clone2 = arg.clone(this);
                     clone2.setSameDiff(sameDiff);
@@ -657,9 +657,8 @@ public class SameDiff extends SDBaseOps {
 
                 }
             }
-*/
             val outputsForFunction = function.outputVariables();
-      /*      for(SDVariable arg : outputsForFunction) {
+            for(SDVariable arg : outputsForFunction) {
                 if(!sameDiff.variables.containsKey(arg.name())) {
                     SDVariable clone2 = arg.clone(this);
                     clone2.setSameDiff(sameDiff);
@@ -669,7 +668,7 @@ public class SameDiff extends SDBaseOps {
                     }
 
                 }
-            }*/
+            }
             //note that these have the same variable names
             sameDiff.addArgsFor(argsForFunction, clone);
             sameDiff.addOutgoingFor(outputsForFunction, function);
@@ -4720,7 +4719,7 @@ public class SameDiff extends SDBaseOps {
                                         break;
                                 }
                             }
-                            //If in't not in the minimal subgraph, loss doesn't depend on it, so we don't care about it
+                            //If it's not in the minimal subgraph, loss doesn't depend on it, so we don't care about it
                         }
                     }
 
@@ -4755,39 +4754,6 @@ public class SameDiff extends SDBaseOps {
     }
 
 
-    private SameDiffOp opWithOutput(String opNameOutput,Collection<SameDiffOp> ops) {
-        for(SameDiffOp op : ops) {
-            if(op.getOutputsOfOp() != null) {
-                if(op.getOutputsOfOp().contains(opNameOutput)) {
-                    return op;
-                }
-            }
-        }
-
-        return null;
-    }
-
-
-    private boolean shouldAddAutoDiffCandidate(Set<String> minimalSubgraphVars, Variable outVar, Map<String, List<String>> prerequisites,Set<String> differentiatedOps) {
-      boolean allAvailable = true;
-        if(outVar == null) {
-            allAvailable = false;
-        }
-
-        if (minimalSubgraphVars.contains(outVar.getName())) {
-            //Need gradient for this variable to be available before we can differentiate
-            if (outVar.getVariable().gradient() == null) {
-                allAvailable = false;
-            }
-            //However, when a variable is used multiple times, we need ALL gradient contributions available:
-            List<String> prereqs = prerequisites.get(outVar.getName());
-            if (prereqs != null) {
-                allAvailable &= differentiatedOps.containsAll(prereqs);
-            }
-        }
-
-        return allAvailable;
-    }
 
     /**
      * Try to infer the loss variable/s (usually loss variables). Note that this is not reliable in general.
