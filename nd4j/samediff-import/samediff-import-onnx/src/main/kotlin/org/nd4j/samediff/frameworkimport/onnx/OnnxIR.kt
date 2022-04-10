@@ -84,7 +84,7 @@ fun convertToOnnxDataType(dataType: DataType): Onnx.TensorProto.DataType {
 fun convertToOnnxTensor(inputArray: INDArray, name: String): Onnx.TensorProto {
     val dtype = convertToOnnxDataType(inputArray.dataType())
     val newBuilder = Onnx.TensorProto.newBuilder()
-    newBuilder.dataType = dtype
+    newBuilder.dataType = dtype.ordinal
     newBuilder.addAllDims(inputArray.shape().toList())
     newBuilder.name = name
     when(dtype) {

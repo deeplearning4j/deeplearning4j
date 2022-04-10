@@ -173,7 +173,7 @@ fun OnnxTensorProto(block: Onnx.TensorProto.Builder.() -> Unit): Onnx.TensorProt
 }
 
 fun Onnx.TensorProto.Builder.OnnxDataType(value: Onnx.TensorProto.DataType) {
-    this.dataType = value
+    this.dataType = value.ordinal
 }
 
 fun Onnx.TensorProto.Builder.OnnxRawData(byteArray: ByteArray) {
@@ -216,7 +216,7 @@ fun createValueInfoFromTensor(arr: INDArray,valueInfoName: String,useShape: Bool
             name = valueInfoName
             type = TypeProto {
                 tensorType =  TensorDefinition {
-                    elemType = convertToOnnxDataType(arr.dataType())
+                    elemType = convertToOnnxDataType(arr.dataType()).ordinal
                     shape = OnnxShapeProto {
                         OnnxShape(arr.shape().toList())
                     }
@@ -229,7 +229,7 @@ fun createValueInfoFromTensor(arr: INDArray,valueInfoName: String,useShape: Bool
             name = valueInfoName
             type = TypeProto {
                 tensorType =  TensorDefinition {
-                    elemType = convertToOnnxDataType(arr.dataType())
+                    elemType = convertToOnnxDataType(arr.dataType()).ordinal
                 }
 
             }
