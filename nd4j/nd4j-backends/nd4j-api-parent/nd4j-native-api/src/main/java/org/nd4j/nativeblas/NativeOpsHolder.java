@@ -107,7 +107,7 @@ public class NativeOpsHolder {
                     deviceNativeOps.setOmpNumThreads(
                             getCores(Runtime.getRuntime().availableProcessors()));
             }
-            // deviceNativeOps.setOmpNumThreads(4);
+
 
             String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
             boolean logInit = Boolean.parseBoolean(logInitProperty);
@@ -123,7 +123,9 @@ public class NativeOpsHolder {
                     File file = Loader.cacheResource(bindingsFolder + "/libnd4jcpu_device.vso");
                     if (file != null) {
                         String path = file.getAbsoluteFile().getParent();
-                        System.out.println("--- " + path);
+                        if (logInit) {
+                            log.info("Veda device library cache path: {}", path);
+                        }
                         deviceNativeOps.setVedaDeviceLibFolder(path);
                     }
                 }
