@@ -41,7 +41,7 @@ class OnnxIRTensor(input: Onnx.TensorProto): IRTensor<Onnx.TensorProto, Onnx.Ten
     }
 
     override fun dataType(): IRDataType<Onnx.TensorProto.DataType> {
-        return OnnxIRDataType(Onnx.TensorProto.DataType.values()[tensor.dataType])
+        return OnnxIRDataType(Onnx.TensorProto.DataType.values()[tensor.dataType.ordinal])
     }
 
     override fun toArgTensor(): TensorNamespace.TensorProto {
@@ -52,7 +52,7 @@ class OnnxIRTensor(input: Onnx.TensorProto): IRTensor<Onnx.TensorProto, Onnx.Ten
             builder.addDims(tensor.getDims(i))
         }
 
-        when(tensor.dataType) {
+        when(tensor.dataType.ordinal) {
             Onnx.TensorProto.DataType.UINT64.ordinal -> builder.dataType = TensorNamespace.DataType.UINT64.ordinal
             Onnx.TensorProto.DataType.UINT32.ordinal -> builder.dataType = TensorNamespace.DataType.UINT32.ordinal
             Onnx.TensorProto.DataType.UINT16.ordinal -> builder.dataType = TensorNamespace.DataType.UINT16.ordinal
@@ -99,7 +99,7 @@ class OnnxIRTensor(input: Onnx.TensorProto): IRTensor<Onnx.TensorProto, Onnx.Ten
             builder.rawData = tensor.rawData
         }
 
-        builder.dataType = tensor.dataType
+        builder.dataType = tensor.dataType.ordinal
 
         return builder.build()
     }
