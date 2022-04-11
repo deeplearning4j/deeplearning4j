@@ -287,7 +287,7 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
             input2.name == varNameStripped
         }
         if(firstOrNull != null)
-            return OnnxIRDataType(Onnx.TensorProto.DataType.values()[firstOrNull!!.dataType])
+            return OnnxIRDataType(Onnx.TensorProto.DataType.values()[firstOrNull!!.dataType.ordinal])
         else if(nodeIsPlaceHolder(varNameStripped)) {
             if(input != null && input.type.hasTensorType()) {
                 return OnnxIRDataType(Onnx.TensorProto.DataType.forNumber(input.type.tensorType.elemType))
@@ -300,7 +300,7 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
             return placeHolder.attributeMap()["value"]!!.tensorValue().dataType()
         }
         else if(input != null)
-            return OnnxIRDataType(Onnx.TensorProto.DataType.forNumber(input.type.tensorType.elemType))
+            return OnnxIRDataType(Onnx.TensorProto.DataType.forNumber(input.type.tensorType.elemType.ordinal))
         else
             return OnnxIRDataType(Onnx.TensorProto.DataType.UNDEFINED)
     }
