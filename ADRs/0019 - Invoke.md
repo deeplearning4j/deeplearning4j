@@ -21,7 +21,7 @@ Invoke builds on the work from [SDValue](./0018%20-%20SDValue.md) and leverages 
 passing the result of the invoke function as an op output in a larger parent graph.
 
 
-###InvokeParams
+### InvokeParams
 Invoke takes node outputs from the parent graph and passes them through renamed to match the expected inputs and outputs from the sub graph.
 This takes the form of InvokeParams:
 ```java
@@ -40,7 +40,7 @@ This takes the form of InvokeParams:
 InvokeParams has the expected input and output names for the graph and matching subgraph input and output variable names.
 
 
-###Outputs
+### Outputs
 
 Invoke has a special outputVariables() method for returning output values that match the outputs of the subgraph.
 All outputs will have the same data types as the underlying result. 

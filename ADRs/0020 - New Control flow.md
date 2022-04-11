@@ -45,7 +45,7 @@ we provide a new loop that leverages invoke and some fixed conventions of the gr
 ```
 
 
-###LoopParams
+### LoopParams
 LoopParams looks like the following:
 ```java
  public static class LoopParams {
@@ -75,7 +75,7 @@ and the variableName represents the variable within the loop and frame.
 
 
 
-###Example Usage
+### Example Usage
 
 ```java
         //setup the parent graph to pass inputs to the lambda

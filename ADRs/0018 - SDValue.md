@@ -63,7 +63,7 @@ arrays of arrays or TensorArrays.
 The below describes how these operations will work:
 
 
-###Operations
+### Operations
 The following operations on sequences are supported:
 1. addItemToSequence(String varName,INDArray item,int atIndex): add an array at a particular index
 2. removeItemFromSequence(String varName,int indexOfItem): remove an item at a particular index, note that empty variables are removed
@@ -75,7 +75,7 @@ The following operations on sequences are supported:
 Note that all indices above also support negative indexing allowing you to index from the end of the list similar
 to python.
 
-###Model import
+### Model import
 For model import, this also extends the work in [0004-Mapping_IR.md](0004-Mapping_IR.md)
 to support sequences/lists of tensors. This means IRTensor and similar concepts will also support sequences.
 
