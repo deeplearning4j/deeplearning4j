@@ -221,9 +221,9 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
         private void add(@NonNull INDArray array) {
             //Resize arrays
-            if(size == sorted.length){
-                sorted = Arrays.copyOf(sorted, 2*sorted.length);
-                lengths = Arrays.copyOf(lengths, 2*lengths.length);
+            if(size == sorted.length) {
+                sorted = Arrays.copyOf(sorted, 2 * sorted.length);
+                lengths = Arrays.copyOf(lengths, 2 * lengths.length);
             }
 
             long length = array.data().length();
@@ -294,7 +294,13 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             removeIdx(i - 1);
         }
 
-        private INDArray removeIdx(int idx){
+        private INDArray removeIdx(int idx) {
+            //Resize arrays
+            if(size == sorted.length) {
+                sorted = Arrays.copyOf(sorted, 2 * sorted.length);
+                lengths = Arrays.copyOf(lengths, 2 * lengths.length);
+            }
+
             INDArray arr = sorted[idx];
             for (int i = idx; i < size; i++) {
                 sorted[i] = sorted[i + 1];
