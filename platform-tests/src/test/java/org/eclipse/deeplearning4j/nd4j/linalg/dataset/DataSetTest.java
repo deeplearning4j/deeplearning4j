@@ -1137,6 +1137,40 @@ public class DataSetTest extends BaseNd4jTestWithBackends {
         }
     }
 
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDataSetLabelNameSerialization(Nd4jBackend backend) throws IOException {
+
+        for(boolean withLabelNames : new boolean[]{false, true}) {
+            // create simple data set with meta data object
+            INDArray f = Nd4j.linspace(1, 3, 3, DataType.DOUBLE).reshape(3, 1);
+            INDArray l = Nd4j.linspace(10, 30, 3, DataType.DOUBLE).reshape(3, 1);
+            DataSet ds = new DataSet(f, l);
+
+            if(withLabelNames) {
+                List<String> metaData = Arrays.asList("1", "2", "3");
+                ds.setLabelNames(metaData);
+            }
+
+            // check if the meta data was serialized and deserialized
+            File dir = testDir.toFile();
+            File saved = new File(dir, "ds.bin");
+            ds.save(saved);
+            DataSet loaded = new DataSet();
+            loaded.load(saved);
+            if(withLabelNames) {
+                List<String> labelNames = Arrays.asList("1", "2", "3");
+                assertNotNull(loaded.getLabelNamesList());
+                assertEquals(labelNames, loaded.getLabelNamesList());
+            }
+            assertEquals(f, loaded.getFeatures());
+            assertEquals(l, loaded.getLabels());
+        }
+    }
+
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiDataSetMetaDataSerialization(Nd4jBackend nd4jBackend) throws IOException {
