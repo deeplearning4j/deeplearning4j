@@ -21,6 +21,7 @@
 package org.nd4j.autodiff.samediff.internal.memory;
 
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -33,6 +34,7 @@ import org.nd4j.common.util.ArrayUtil;
 import java.util.*;
 
 @Getter
+@Slf4j
 public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     private final double maxMemFrac;
@@ -56,7 +58,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     }
 
     /**
-     * @param maxMemFrac             Maximum memory fraciton to use as cache
+     * @param maxMemFrac             Maximum memory fraction to use as cache
      * @param smallArrayThreshold    Below this size (elements), don't apply the "largerArrayMaxMultiple" rule
      * @param largerArrayMaxMultiple Maximum multiple of the requested size to return from the cache. If an array of size
      *                               1024 is requested, and largerArrayMaxMultiple is 2.0, then we'll return from the cache
@@ -139,8 +141,10 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     public void release(@NonNull INDArray array) {
         //Check for multiple releases of the array
         long id = array.getId();
-        Preconditions.checkState(!lruCache.contains(id), "Array was released multiple times: id=%s, shape=%ndShape", id, array);
-
+        if(lruCache.contains(id)) {
+            log.trace("Array was released multiple times: id=%s, shape=%ndShape", id, array);
+            return;
+        }
 
         DataType dt = array.dataType();
         if(array.data() == null && array.closeable()) {
@@ -217,9 +221,9 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
         private void add(@NonNull INDArray array) {
             //Resize arrays
-            if(size == sorted.length){
-                sorted = Arrays.copyOf(sorted, 2*sorted.length);
-                lengths = Arrays.copyOf(lengths, 2*lengths.length);
+            if(size == sorted.length) {
+                sorted = Arrays.copyOf(sorted, 2 * sorted.length);
+                lengths = Arrays.copyOf(lengths, 2 * lengths.length);
             }
 
             long length = array.data().length();
@@ -290,7 +294,13 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             removeIdx(i - 1);
         }
 
-        private INDArray removeIdx(int idx){
+        private INDArray removeIdx(int idx) {
+            //Resize arrays
+            if(size == sorted.length) {
+                sorted = Arrays.copyOf(sorted, 2 * sorted.length);
+                lengths = Arrays.copyOf(lengths, 2 * lengths.length);
+            }
+
             INDArray arr = sorted[idx];
             for (int i = idx; i < size; i++) {
                 sorted[i] = sorted[i + 1];

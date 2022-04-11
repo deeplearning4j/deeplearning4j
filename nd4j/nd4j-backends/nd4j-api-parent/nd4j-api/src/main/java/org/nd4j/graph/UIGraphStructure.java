@@ -17,19 +17,19 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.nd4j.graph;
 
-import com.google.flatbuffers.*;
-
-import java.nio.ByteBuffer;
+import java.nio.*;
+import java.lang.*;
 import java.nio.ByteOrder;
+import java.util.*;
+import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class UIGraphStructure extends Table {
   public static void ValidateVersion() { Constants.FLATBUFFERS_1_12_0(); }
   public static UIGraphStructure getRootAsUIGraphStructure(ByteBuffer _bb) { return getRootAsUIGraphStructure(_bb, new UIGraphStructure()); }
-  public static UIGraphStructure getRootAsUIGraphStructure(ByteBuffer _bb, UIGraphStructure obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
+  public static UIGraphStructure getRootAsUIGraphStructure(ByteBuffer _bb, UIGraphStructure obj) { _bb.order(java.nio.ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public UIGraphStructure __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
@@ -37,25 +37,25 @@ public final class UIGraphStructure extends Table {
   public int inputsLength() { int o = __offset(4); return o != 0 ? __vector_len(o) : 0; }
   public StringVector inputsVector() { return inputsVector(new StringVector()); }
   public StringVector inputsVector(StringVector obj) { int o = __offset(4); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
-  public IntPair inputsPair(int j) { return inputsPair(new IntPair(), j); }
-  public IntPair inputsPair(IntPair obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public org.nd4j.graph.IntPair inputsPair(int j) { return inputsPair(new org.nd4j.graph.IntPair(), j); }
+  public org.nd4j.graph.IntPair inputsPair(org.nd4j.graph.IntPair obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int inputsPairLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
-  public IntPair.Vector inputsPairVector() { return inputsPairVector(new IntPair.Vector()); }
-  public IntPair.Vector inputsPairVector(IntPair.Vector obj) { int o = __offset(6); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
+  public org.nd4j.graph.IntPair.Vector inputsPairVector() { return inputsPairVector(new org.nd4j.graph.IntPair.Vector()); }
+  public org.nd4j.graph.IntPair.Vector inputsPairVector(org.nd4j.graph.IntPair.Vector obj) { int o = __offset(6); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public String outputs(int j) { int o = __offset(8); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int outputsLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
   public StringVector outputsVector() { return outputsVector(new StringVector()); }
   public StringVector outputsVector(StringVector obj) { int o = __offset(8); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
-  public UIVariable variables(int j) { return variables(new UIVariable(), j); }
-  public UIVariable variables(UIVariable obj, int j) { int o = __offset(10); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public org.nd4j.graph.UIVariable variables(int j) { return variables(new org.nd4j.graph.UIVariable(), j); }
+  public org.nd4j.graph.UIVariable variables(org.nd4j.graph.UIVariable obj, int j) { int o = __offset(10); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int variablesLength() { int o = __offset(10); return o != 0 ? __vector_len(o) : 0; }
-  public UIVariable.Vector variablesVector() { return variablesVector(new UIVariable.Vector()); }
-  public UIVariable.Vector variablesVector(UIVariable.Vector obj) { int o = __offset(10); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
-  public UIOp ops(int j) { return ops(new UIOp(), j); }
-  public UIOp ops(UIOp obj, int j) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public org.nd4j.graph.UIVariable.Vector variablesVector() { return variablesVector(new org.nd4j.graph.UIVariable.Vector()); }
+  public org.nd4j.graph.UIVariable.Vector variablesVector(org.nd4j.graph.UIVariable.Vector obj) { int o = __offset(10); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
+  public org.nd4j.graph.UIOp ops(int j) { return ops(new org.nd4j.graph.UIOp(), j); }
+  public org.nd4j.graph.UIOp ops(org.nd4j.graph.UIOp obj, int j) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int opsLength() { int o = __offset(12); return o != 0 ? __vector_len(o) : 0; }
-  public UIOp.Vector opsVector() { return opsVector(new UIOp.Vector()); }
-  public UIOp.Vector opsVector(UIOp.Vector obj) { int o = __offset(12); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
+  public org.nd4j.graph.UIOp.Vector opsVector() { return opsVector(new org.nd4j.graph.UIOp.Vector()); }
+  public org.nd4j.graph.UIOp.Vector opsVector(org.nd4j.graph.UIOp.Vector obj) { int o = __offset(12); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
 
   public static int createUIGraphStructure(FlatBufferBuilder builder,
       int inputsOffset,

@@ -17,11 +17,11 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.nd4j.graph;
 
 import java.nio.*;
 import java.lang.*;
+import java.nio.ByteOrder;
 import java.util.*;
 import com.google.flatbuffers.*;
 
@@ -39,22 +39,22 @@ public final class FlatNode extends Table {
   public ByteBuffer nameInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 6, 1); }
   public byte opType() { int o = __offset(8); return o != 0 ? bb.get(o + bb_pos) : 0; }
   public long opNum() { int o = __offset(10); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public FlatProperties properties(int j) { return properties(new FlatProperties(), j); }
-  public FlatProperties properties(FlatProperties obj, int j) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public org.nd4j.graph.FlatProperties properties(int j) { return properties(new org.nd4j.graph.FlatProperties(), j); }
+  public org.nd4j.graph.FlatProperties properties(org.nd4j.graph.FlatProperties obj, int j) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int propertiesLength() { int o = __offset(12); return o != 0 ? __vector_len(o) : 0; }
-  public FlatProperties.Vector propertiesVector() { return propertiesVector(new FlatProperties.Vector()); }
-  public FlatProperties.Vector propertiesVector(FlatProperties.Vector obj) { int o = __offset(12); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
+  public org.nd4j.graph.FlatProperties.Vector propertiesVector() { return propertiesVector(new org.nd4j.graph.FlatProperties.Vector()); }
+  public org.nd4j.graph.FlatProperties.Vector propertiesVector(org.nd4j.graph.FlatProperties.Vector obj) { int o = __offset(12); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public int input(int j) { int o = __offset(14); return o != 0 ? bb.getInt(__vector(o) + j * 4) : 0; }
   public int inputLength() { int o = __offset(14); return o != 0 ? __vector_len(o) : 0; }
   public IntVector inputVector() { return inputVector(new IntVector()); }
   public IntVector inputVector(IntVector obj) { int o = __offset(14); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer inputAsByteBuffer() { return __vector_as_bytebuffer(14, 4); }
   public ByteBuffer inputInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 14, 4); }
-  public IntPair inputPaired(int j) { return inputPaired(new IntPair(), j); }
-  public IntPair inputPaired(IntPair obj, int j) { int o = __offset(16); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public org.nd4j.graph.IntPair inputPaired(int j) { return inputPaired(new org.nd4j.graph.IntPair(), j); }
+  public org.nd4j.graph.IntPair inputPaired(org.nd4j.graph.IntPair obj, int j) { int o = __offset(16); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int inputPairedLength() { int o = __offset(16); return o != 0 ? __vector_len(o) : 0; }
-  public IntPair.Vector inputPairedVector() { return inputPairedVector(new IntPair.Vector()); }
-  public IntPair.Vector inputPairedVector(IntPair.Vector obj) { int o = __offset(16); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
+  public org.nd4j.graph.IntPair.Vector inputPairedVector() { return inputPairedVector(new org.nd4j.graph.IntPair.Vector()); }
+  public org.nd4j.graph.IntPair.Vector inputPairedVector(org.nd4j.graph.IntPair.Vector obj) { int o = __offset(16); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public int output(int j) { int o = __offset(18); return o != 0 ? bb.getInt(__vector(o) + j * 4) : 0; }
   public int outputLength() { int o = __offset(18); return o != 0 ? __vector_len(o) : 0; }
   public IntVector outputVector() { return outputVector(new IntVector()); }
@@ -103,8 +103,8 @@ public final class FlatNode extends Table {
   public ByteVector outputTypesVector(ByteVector obj) { int o = __offset(38); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer outputTypesAsByteBuffer() { return __vector_as_bytebuffer(38, 1); }
   public ByteBuffer outputTypesInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 38, 1); }
-  public FlatArray scalar() { return scalar(new FlatArray()); }
-  public FlatArray scalar(FlatArray obj) { int o = __offset(40); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public org.nd4j.graph.FlatArray scalar() { return scalar(new org.nd4j.graph.FlatArray()); }
+  public org.nd4j.graph.FlatArray scalar(org.nd4j.graph.FlatArray obj) { int o = __offset(40); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public String controlDeps(int j) { int o = __offset(42); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int controlDepsLength() { int o = __offset(42); return o != 0 ? __vector_len(o) : 0; }
   public StringVector controlDepsVector() { return controlDepsVector(new StringVector()); }

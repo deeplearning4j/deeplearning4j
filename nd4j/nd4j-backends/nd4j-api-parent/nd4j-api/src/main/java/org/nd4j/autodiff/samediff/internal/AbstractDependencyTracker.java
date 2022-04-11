@@ -36,11 +36,11 @@ public abstract class AbstractDependencyTracker<T, D> {
     @Getter
     private final Map<T, Set<Pair<D, D>>> orDependencies;                    //Key: the dependent. Value: the set of OR dependencies
     @Getter
-    private final Map<D, Set<T>> reverseDependencies = new HashMap<>();     //Key: the dependee. Value: The set of all dependents that depend on this value
+    private final Map<D, Set<T>> reverseDependencies = new LinkedHashMap<>();     //Key: the dependee. Value: The set of all dependents that depend on this value
     @Getter
     private final Map<D, Set<T>> reverseOrDependencies = new HashMap<>();
     @Getter
-    private final Set<D> satisfiedDependencies = new HashSet<>();           //Mark the dependency as satisfied. If not in set: assumed to not be satisfied
+    private final Set<D> satisfiedDependencies = new LinkedHashSet<>();           //Mark the dependency as satisfied. If not in set: assumed to not be satisfied
     @Getter
     private final Set<T> allSatisfied;                                      //Set of all dependent values (Ys) that have all dependencies satisfied
     @Getter
@@ -230,7 +230,7 @@ public abstract class AbstractDependencyTracker<T, D> {
      */
     public void addDependency(@NonNull T y, @NonNull D x) {
         if (!dependencies.containsKey(y))
-            dependencies.put(y, new HashSet<D>());
+            dependencies.put(y, new HashSet<>());
 
         if (!reverseDependencies.containsKey(x))
             reverseDependencies.put(x, newTSet());
