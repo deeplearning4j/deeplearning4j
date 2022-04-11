@@ -21,6 +21,7 @@
 package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
 import onnx.Onnx;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -33,6 +34,20 @@ import java.util.List;
 import java.util.Map;
 
 public class TensorArraySize extends BaseTensorOp {
+
+   public TensorArraySize(String name, SameDiff sameDiff, SDVariable[] args) {
+      super(name, sameDiff, args);
+   }
+   public TensorArraySize(SameDiff sameDiff, SDVariable input) {
+      this(sameDiff, new SDVariable[]{input});
+   }
+   public TensorArraySize(SameDiff sameDiff, SDVariable[] args) {
+      super(sameDiff, args);
+   }
+
+   public TensorArraySize() {
+   }
+
    @Override
    public String[] tensorflowNames() {
       return new String[]{"TensorArraySize", "TensorArraySizeV2", "TensorArraySizeV3"};

@@ -17,11 +17,11 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.nd4j.graph;
 
 import java.nio.*;
 import java.lang.*;
+import java.nio.ByteOrder;
 import java.util.*;
 import com.google.flatbuffers.*;
 
@@ -34,23 +34,23 @@ public final class FlatGraph extends Table {
   public FlatGraph __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public long id() { int o = __offset(4); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public FlatVariable variables(int j) { return variables(new FlatVariable(), j); }
-  public FlatVariable variables(FlatVariable obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public org.nd4j.graph.FlatVariable variables(int j) { return variables(new org.nd4j.graph.FlatVariable(), j); }
+  public org.nd4j.graph.FlatVariable variables(org.nd4j.graph.FlatVariable obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int variablesLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
-  public FlatVariable.Vector variablesVector() { return variablesVector(new FlatVariable.Vector()); }
-  public FlatVariable.Vector variablesVector(FlatVariable.Vector obj) { int o = __offset(6); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
-  public FlatNode nodes(int j) { return nodes(new FlatNode(), j); }
-  public FlatNode nodes(FlatNode obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public org.nd4j.graph.FlatVariable.Vector variablesVector() { return variablesVector(new org.nd4j.graph.FlatVariable.Vector()); }
+  public org.nd4j.graph.FlatVariable.Vector variablesVector(org.nd4j.graph.FlatVariable.Vector obj) { int o = __offset(6); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
+  public org.nd4j.graph.FlatNode nodes(int j) { return nodes(new org.nd4j.graph.FlatNode(), j); }
+  public org.nd4j.graph.FlatNode nodes(org.nd4j.graph.FlatNode obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int nodesLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
-  public FlatNode.Vector nodesVector() { return nodesVector(new FlatNode.Vector()); }
-  public FlatNode.Vector nodesVector(FlatNode.Vector obj) { int o = __offset(8); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
-  public IntPair outputs(int j) { return outputs(new IntPair(), j); }
-  public IntPair outputs(IntPair obj, int j) { int o = __offset(10); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public org.nd4j.graph.FlatNode.Vector nodesVector() { return nodesVector(new org.nd4j.graph.FlatNode.Vector()); }
+  public org.nd4j.graph.FlatNode.Vector nodesVector(org.nd4j.graph.FlatNode.Vector obj) { int o = __offset(8); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
+  public org.nd4j.graph.IntPair outputs(int j) { return outputs(new org.nd4j.graph.IntPair(), j); }
+  public org.nd4j.graph.IntPair outputs(org.nd4j.graph.IntPair obj, int j) { int o = __offset(10); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int outputsLength() { int o = __offset(10); return o != 0 ? __vector_len(o) : 0; }
-  public IntPair.Vector outputsVector() { return outputsVector(new IntPair.Vector()); }
-  public IntPair.Vector outputsVector(IntPair.Vector obj) { int o = __offset(10); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
-  public FlatConfiguration configuration() { return configuration(new FlatConfiguration()); }
-  public FlatConfiguration configuration(FlatConfiguration obj) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public org.nd4j.graph.IntPair.Vector outputsVector() { return outputsVector(new org.nd4j.graph.IntPair.Vector()); }
+  public org.nd4j.graph.IntPair.Vector outputsVector(org.nd4j.graph.IntPair.Vector obj) { int o = __offset(10); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
+  public org.nd4j.graph.FlatConfiguration configuration() { return configuration(new org.nd4j.graph.FlatConfiguration()); }
+  public org.nd4j.graph.FlatConfiguration configuration(org.nd4j.graph.FlatConfiguration obj) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public String placeholders(int j) { int o = __offset(14); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int placeholdersLength() { int o = __offset(14); return o != 0 ? __vector_len(o) : 0; }
   public StringVector placeholdersVector() { return placeholdersVector(new StringVector()); }
@@ -62,11 +62,13 @@ public final class FlatGraph extends Table {
   public String trainingConfig() { int o = __offset(18); return o != 0 ? __string(o + bb_pos) : null; }
   public ByteBuffer trainingConfigAsByteBuffer() { return __vector_as_bytebuffer(18, 1); }
   public ByteBuffer trainingConfigInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 18, 1); }
-  public UpdaterState updaterState(int j) { return updaterState(new UpdaterState(), j); }
-  public UpdaterState updaterState(UpdaterState obj, int j) { int o = __offset(20); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public org.nd4j.graph.UpdaterState updaterState(int j) { return updaterState(new org.nd4j.graph.UpdaterState(), j); }
+  public org.nd4j.graph.UpdaterState updaterState(org.nd4j.graph.UpdaterState obj, int j) { int o = __offset(20); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int updaterStateLength() { int o = __offset(20); return o != 0 ? __vector_len(o) : 0; }
-  public UpdaterState.Vector updaterStateVector() { return updaterStateVector(new UpdaterState.Vector()); }
-  public UpdaterState.Vector updaterStateVector(UpdaterState.Vector obj) { int o = __offset(20); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
+  public org.nd4j.graph.UpdaterState.Vector updaterStateVector() { return updaterStateVector(new org.nd4j.graph.UpdaterState.Vector()); }
+  public org.nd4j.graph.UpdaterState.Vector updaterStateVector(org.nd4j.graph.UpdaterState.Vector obj) { int o = __offset(20); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
+  public org.nd4j.graph.SequenceItemRoot sequenceItems() { return sequenceItems(new org.nd4j.graph.SequenceItemRoot()); }
+  public org.nd4j.graph.SequenceItemRoot sequenceItems(org.nd4j.graph.SequenceItemRoot obj) { int o = __offset(22); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
 
   public static int createFlatGraph(FlatBufferBuilder builder,
       long id,
@@ -77,9 +79,11 @@ public final class FlatGraph extends Table {
       int placeholdersOffset,
       int lossVariablesOffset,
       int trainingConfigOffset,
-      int updaterStateOffset) {
-    builder.startTable(9);
+      int updaterStateOffset,
+      int sequenceItemsOffset) {
+    builder.startTable(10);
     FlatGraph.addId(builder, id);
+    FlatGraph.addSequenceItems(builder, sequenceItemsOffset);
     FlatGraph.addUpdaterState(builder, updaterStateOffset);
     FlatGraph.addTrainingConfig(builder, trainingConfigOffset);
     FlatGraph.addLossVariables(builder, lossVariablesOffset);
@@ -91,7 +95,7 @@ public final class FlatGraph extends Table {
     return FlatGraph.endFlatGraph(builder);
   }
 
-  public static void startFlatGraph(FlatBufferBuilder builder) { builder.startTable(9); }
+  public static void startFlatGraph(FlatBufferBuilder builder) { builder.startTable(10); }
   public static void addId(FlatBufferBuilder builder, long id) { builder.addLong(0, id, 0L); }
   public static void addVariables(FlatBufferBuilder builder, int variablesOffset) { builder.addOffset(1, variablesOffset, 0); }
   public static int createVariablesVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
@@ -113,6 +117,7 @@ public final class FlatGraph extends Table {
   public static void addUpdaterState(FlatBufferBuilder builder, int updaterStateOffset) { builder.addOffset(8, updaterStateOffset, 0); }
   public static int createUpdaterStateVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startUpdaterStateVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static void addSequenceItems(FlatBufferBuilder builder, int sequenceItemsOffset) { builder.addOffset(9, sequenceItemsOffset, 0); }
   public static int endFlatGraph(FlatBufferBuilder builder) {
     int o = builder.endTable();
     return o;

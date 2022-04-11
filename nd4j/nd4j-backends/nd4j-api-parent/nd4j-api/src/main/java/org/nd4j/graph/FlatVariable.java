@@ -17,11 +17,11 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.nd4j.graph;
 
 import java.nio.*;
 import java.lang.*;
+import java.nio.ByteOrder;
 import java.util.*;
 import com.google.flatbuffers.*;
 
@@ -29,12 +29,12 @@ import com.google.flatbuffers.*;
 public final class FlatVariable extends Table {
   public static void ValidateVersion() { Constants.FLATBUFFERS_1_12_0(); }
   public static FlatVariable getRootAsFlatVariable(ByteBuffer _bb) { return getRootAsFlatVariable(_bb, new FlatVariable()); }
-  public static FlatVariable getRootAsFlatVariable(ByteBuffer _bb, FlatVariable obj) { _bb.order(java.nio.ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
+  public static FlatVariable getRootAsFlatVariable(ByteBuffer _bb, FlatVariable obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public FlatVariable __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public IntPair id() { return id(new IntPair()); }
-  public IntPair id(IntPair obj) { int o = __offset(4); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public org.nd4j.graph.IntPair id() { return id(new org.nd4j.graph.IntPair()); }
+  public org.nd4j.graph.IntPair id(org.nd4j.graph.IntPair obj) { int o = __offset(4); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public String name() { int o = __offset(6); return o != 0 ? __string(o + bb_pos) : null; }
   public ByteBuffer nameAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
   public ByteBuffer nameInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 6, 1); }
@@ -45,8 +45,8 @@ public final class FlatVariable extends Table {
   public LongVector shapeVector(LongVector obj) { int o = __offset(10); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer shapeAsByteBuffer() { return __vector_as_bytebuffer(10, 8); }
   public ByteBuffer shapeInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 10, 8); }
-  public FlatArray ndarray() { return ndarray(new FlatArray()); }
-  public FlatArray ndarray(FlatArray obj) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public org.nd4j.graph.FlatArray ndarray() { return ndarray(new org.nd4j.graph.FlatArray()); }
+  public org.nd4j.graph.FlatArray ndarray(org.nd4j.graph.FlatArray obj) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public int device() { int o = __offset(14); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
   public byte variabletype() { int o = __offset(16); return o != 0 ? bb.get(o + bb_pos) : 0; }
   public String controlDeps(int j) { int o = __offset(18); return o != 0 ? __string(__vector(o) + j * 4) : null; }
@@ -63,16 +63,16 @@ public final class FlatVariable extends Table {
   public StringVector controlDepsForVarVector(StringVector obj) { int o = __offset(22); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
 
   public static int createFlatVariable(FlatBufferBuilder builder,
-      int idOffset,
-      int nameOffset,
-      byte dtype,
-      int shapeOffset,
-      int ndarrayOffset,
-      int device,
-      byte variabletype,
-      int controlDepsOffset,
-      int controlDepForOpOffset,
-      int controlDepsForVarOffset) {
+                                       int idOffset,
+                                       int nameOffset,
+                                       byte dtype,
+                                       int shapeOffset,
+                                       int ndarrayOffset,
+                                       int device,
+                                       byte variabletype,
+                                       int controlDepsOffset,
+                                       int controlDepForOpOffset,
+                                       int controlDepsForVarOffset) {
     builder.startTable(10);
     FlatVariable.addControlDepsForVar(builder, controlDepsForVarOffset);
     FlatVariable.addControlDepForOp(builder, controlDepForOpOffset);

@@ -17,28 +17,28 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.nd4j.graph;
 
-import com.google.flatbuffers.*;
-
-import java.nio.ByteBuffer;
+import java.nio.*;
+import java.lang.*;
 import java.nio.ByteOrder;
+import java.util.*;
+import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class UIHistogram extends Table {
   public static void ValidateVersion() { Constants.FLATBUFFERS_1_12_0(); }
   public static UIHistogram getRootAsUIHistogram(ByteBuffer _bb) { return getRootAsUIHistogram(_bb, new UIHistogram()); }
-  public static UIHistogram getRootAsUIHistogram(ByteBuffer _bb, UIHistogram obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
+  public static UIHistogram getRootAsUIHistogram(ByteBuffer _bb, UIHistogram obj) { _bb.order(java.nio.ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public UIHistogram __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public byte type() { int o = __offset(4); return o != 0 ? bb.get(o + bb_pos) : 0; }
   public long numbins() { int o = __offset(6); return o != 0 ? (long)bb.getInt(o + bb_pos) & 0xFFFFFFFFL : 0L; }
-  public FlatArray binranges() { return binranges(new FlatArray()); }
-  public FlatArray binranges(FlatArray obj) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
-  public FlatArray y() { return y(new FlatArray()); }
-  public FlatArray y(FlatArray obj) { int o = __offset(10); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public org.nd4j.graph.FlatArray binranges() { return binranges(new org.nd4j.graph.FlatArray()); }
+  public org.nd4j.graph.FlatArray binranges(org.nd4j.graph.FlatArray obj) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
+  public org.nd4j.graph.FlatArray y() { return y(new org.nd4j.graph.FlatArray()); }
+  public org.nd4j.graph.FlatArray y(org.nd4j.graph.FlatArray obj) { int o = __offset(10); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public String binlabels(int j) { int o = __offset(12); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int binlabelsLength() { int o = __offset(12); return o != 0 ? __vector_len(o) : 0; }
   public StringVector binlabelsVector() { return binlabelsVector(new StringVector()); }

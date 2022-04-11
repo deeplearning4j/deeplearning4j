@@ -5933,11 +5933,6 @@ public class SameDiff extends SDBaseOps {
             } else {
                 sd.ops.put(name, SameDiffOp.builder().name(name).op(df).build());
             }
-            //note we configure the samediff instance for the function after we are sure the graph
-            //knows about this op. The goal would be to configure left over variables that aren't properties
-            //like LSTM weights, but maybe suitable in other circumstances as well.
-            df.configureWithSameDiff(sd);
-
 
             int outLength = fn.outputLength();
             int[] outs = new int[outLength];
@@ -6060,6 +6055,13 @@ public class SameDiff extends SDBaseOps {
                     variablesByNodeAndOutNum.put(p, sd.getVariable(varNames[i]));
                 }
             }
+
+
+            //note we configure the samediff instance for the function after we are sure the graph
+            //knows about this op. The goal would be to configure left over variables that aren't properties
+            //like LSTM weights, but maybe suitable in other circumstances as well.
+            df.configureWithSameDiff(sd);
+
         }
 
         //Reconstruct loss variables
