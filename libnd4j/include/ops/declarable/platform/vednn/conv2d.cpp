@@ -22,10 +22,6 @@
 #include <ops/declarable/PlatformHelper.h>
 #include <ops/declarable/helpers/convolutions.h>
 #include <system/platform_boilerplate.h>
-
-// #include <chrono>
-// #include <iostream>
-
 #include "vednnUtils.h"
 
 namespace sd {
@@ -104,7 +100,7 @@ std::unique_ptr<NDArray> newWeight_3x3(const NDArray &w, int weightFormat) {
 
 //////////////////////////////////////////////////////////////////////
 PLATFORM_IMPL(conv2d, ENGINE_CPU) {
-  // auto start = std::chrono::high_resolution_clock::now();
+
   auto input = INPUT_VARIABLE(0);                               // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
   auto weights = INPUT_VARIABLE(1);                             // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
   auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;  // [oC]
@@ -184,7 +180,7 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
     out = outTemp.get();
   }
 #endif
-  // auto end1 = std::chrono::high_resolution_clock::now();
+
   if (bias) {
     paramBias.dtype = DTYPE_FLOAT;
     paramBias.channel = bias->lengthOf();

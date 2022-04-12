@@ -80,10 +80,12 @@ it outputs:
 ./blasbuild/cpu/libnd4jcpu_device.so
 
 ##### Usage
-Veda Ve library should be either in the working directory or it's path should be set using *DEVICE_LIB_LOADPATH* environment variable
+Veda Ve library should be either in the working directory or it's path should be set using *DEVICE_LIB_LOADPATH* environment variable. If it was build using maven, dl4j/javacpp class loader will set the path to the cached device library.
 ```
 #example:
 #running conv2d tests:
 export DEVICE_LIB_LOADPATH=${PWD}/blasbuild/cpu/blas
 ${PWD}/blasbuild/cpu/tests_cpu/layers_tests/runtests --gtest_filter=*conv2*
 ```
+###### Notes
+   - vc/vcpp file extensions are used to diferentitate VE device files from c/cpp in cmake. Cmake will compile them using nec.
