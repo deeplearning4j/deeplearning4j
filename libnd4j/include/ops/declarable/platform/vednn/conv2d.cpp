@@ -235,8 +235,6 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
   VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vW, w->buffer(), sizeW, 0));
   if (bias) VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vB, bias->buffer(), sizeB, 0));
 
-  // if(bias) sd_printf("%s\n","--------bias case--------");
-
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn, (uint8_t)isNCHW,
                              VEDAstack(&paramFilter, VEDA_ARGS_INTENT_IN, sizeof(paramFilter)), vW, (int32_t)weightFormat,
                              VEDAstack(&paramBias, VEDA_ARGS_INTENT_IN, sizeof(paramBias)), vB,
