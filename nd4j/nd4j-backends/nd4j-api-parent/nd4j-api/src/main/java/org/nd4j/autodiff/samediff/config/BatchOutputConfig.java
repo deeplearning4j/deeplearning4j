@@ -47,6 +47,8 @@ public class BatchOutputConfig {
 
     private Map<String, INDArray> placeholders = new HashMap<>();
 
+    private Map<String,SDValue> sequenceInputs = new HashMap<>();
+
     @NonNull
     private List<Listener> listeners = new ArrayList<>();
 
@@ -84,7 +86,7 @@ public class BatchOutputConfig {
     /**
      * Add a placeholder value for a specified variable
      */
-    public BatchOutputConfig input(@NonNull String variable, @NonNull INDArray placeholder){
+    public BatchOutputConfig input(@NonNull String variable, @NonNull INDArray placeholder) {
         Preconditions.checkState(!placeholders.containsKey(variable),
                 "Placeholder for variable %s already specified", variable);
 
@@ -95,24 +97,56 @@ public class BatchOutputConfig {
         return this;
     }
 
+
+    /**
+     * Add a placeholder value for a specified variable
+     */
+    public BatchOutputConfig valueInput(@NonNull String variable, @NonNull SDValue placeholder) {
+        Preconditions.checkState(!sequenceInputs.containsKey(variable),
+                "Placeholder for variable %s already specified", variable);
+
+        Preconditions.checkNotNull(sd.getVariable(variable),
+                "Variable %s does not exist in this SameDiff graph", variable);
+
+        sequenceInputs.put(variable, placeholder);
+        return this;
+    }
+
     /**
      * See {@link #input(String, INDArray)}
      */
-    public BatchOutputConfig input(@NonNull SDVariable variable, @NonNull INDArray placeholder){
+    public BatchOutputConfig input(@NonNull SDVariable variable, @NonNull INDArray placeholder) {
         return input(variable.name(), placeholder);
+    }
+
+
+    /**
+     * Calls {@link #input(String, INDArray)} on each entry in the map.
+     */
+    public BatchOutputConfig valueInputs(Map<String, SDValue> placeholders) {
+        if(placeholders == null) {
+            this.placeholders = null;
+            return this;
+        }
+
+        for(Map.Entry<String, SDValue> e : placeholders.entrySet()) {
+            valueInput(e.getKey(), e.getValue());
+        }
+
+        return this;
     }
 
     /**
      * Calls {@link #input(String, INDArray)} on each entry in the map.
      */
-    public BatchOutputConfig inputs(Map<String, INDArray> placeholders){
+    public BatchOutputConfig inputs(Map<String, INDArray> placeholders) {
 
         if(placeholders == null) {
             this.placeholders = null;
             return this;
         }
 
-        for(Map.Entry<String, INDArray> e : placeholders.entrySet()){
+        for(Map.Entry<String, INDArray> e : placeholders.entrySet()) {
             input(e.getKey(), e.getValue());
         }
 
@@ -122,7 +156,7 @@ public class BatchOutputConfig {
     /**
      * Add listeners for this operation
      */
-    public BatchOutputConfig listeners(@NonNull Listener... listeners){
+    public BatchOutputConfig listeners(@NonNull Listener... listeners) {
         this.listeners.addAll(Arrays.asList(listeners));
         return this;
     }
@@ -133,6 +167,13 @@ public class BatchOutputConfig {
     @Deprecated
     public Map<String, INDArray> exec() {
         return output();
+    }
+
+    /**
+     * Do inference and return the results
+     */
+    public Map<String,SDValue> outputValue() {
+        return sd.outputValues(sequenceInputs, listeners, outputs);
     }
 
     /**

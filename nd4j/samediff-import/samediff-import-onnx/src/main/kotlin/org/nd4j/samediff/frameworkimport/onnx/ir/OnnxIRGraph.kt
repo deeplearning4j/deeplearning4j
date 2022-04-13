@@ -91,6 +91,7 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
             nodeNames.add(node.nodeName().replace(":0",""))
             opTypes[node.nodeName()] = node.opName()
 
+
         }
 
 
@@ -103,7 +104,8 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         this.inputList.addAll(inputList)
         this.variableList.addAll(inputList)
         initializerSet.addAll(initializers)
-        outputList.addAll(this.graphDef.outputList.map { input -> input.name.replace(":0","") })
+        outputList.addAll(this.graphDef.outputList.filter { valueInfo -> !valueInfo.name.contains(valueInfo.name) }
+            .map { input -> input.name.replace(":0","") })
     }
 
     /**
@@ -183,15 +185,17 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
 
         //add inputs and outputs for use cases like placeholder detection
         inputList.addAll(graphDef.inputList.filter { input -> !initializerListNames.contains(input.name) }.map { input -> input.name })
-        outputList.addAll(graphDef.outputList.map { input -> input.name })
+        outputList.addAll(graphDef.outputList.filter { valueInfo -> !outputList.contains(valueInfo.name) }.map { input -> input.name })
         val frameworkList =  OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")
         graphDef.nodeList.forEach {
 
-            if(!frameworkList.containsKey(it.opType)) {
-                throw IllegalArgumentException("Op def name ${it.opType} not found!")
-            }
 
-            val opDefOrNull = frameworkList[it.opType]!!
+            val opDefOrNull = if(!frameworkList.containsKey(it.opType)) {
+                //use Constant as a placeholder for any op that resolves to noop, this is probably an op handled by the custom implementation
+                frameworkList["Constant"]!!
+            } else {
+                frameworkList[it.opType]!!
+            }
             ret2.add(OnnxIRNode(it, opDefOrNull!!,opMappingRegistry))
         }
 
@@ -285,11 +289,18 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         if(firstOrNull != null)
             return OnnxIRDataType(Onnx.TensorProto.DataType.values()[firstOrNull!!.dataType.ordinal])
         else if(nodeIsPlaceHolder(varNameStripped)) {
+            if(input != null && input.type.hasTensorType()) {
+                return OnnxIRDataType(Onnx.TensorProto.DataType.forNumber(input.type.tensorType.elemType))
+            } else if(input != null && input.type.hasSequenceType()) {
+                return OnnxIRDataType(Onnx.TensorProto.DataType.forNumber(input.type.sequenceType.elemType.tensorType.elemType))
+
+            }
+
             val placeHolder = irNodeByName(varNameStripped)
             return placeHolder.attributeMap()["value"]!!.tensorValue().dataType()
         }
         else if(input != null)
-            return OnnxIRDataType(input.type.tensorType.elemType)
+            return OnnxIRDataType(Onnx.TensorProto.DataType.forNumber(input.type.tensorType.elemType.ordinal))
         else
             return OnnxIRDataType(Onnx.TensorProto.DataType.UNDEFINED)
     }

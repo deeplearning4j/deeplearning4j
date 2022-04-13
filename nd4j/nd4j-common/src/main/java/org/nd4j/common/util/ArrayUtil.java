@@ -3471,7 +3471,7 @@ public class ArrayUtil {
         }
 
         if(rank >= 2){
-            for( int i=1; i<arrayShape[0]; i++ ){
+            for( int i = 1; i < arrayShape[0]; i++) {
                 Object subArray = array[i];
                 int len = arrayLength(subArray);
                 Preconditions.checkState(arrayShape[1] == len, "Ragged array detected: array[0].length=%s does not match array[%s].length=%s", arrayShape[1], i, len);
@@ -3481,8 +3481,8 @@ public class ArrayUtil {
         }
         if(rank >= 3){
 
-            for( int i=0; i<arrayShape[0]; i++ ){
-                for( int j=0; j<arrayShape[1]; j++ ){
+            for( int i = 0; i < arrayShape[0]; i++) {
+                for( int j = 0; j < arrayShape[1]; j++) {
                     Object subArray = ((Object[][])array)[i][j];
                     int len = arrayLength(subArray);
                     Preconditions.checkState(arrayShape[2] == len, "Ragged array detected: array[0][0].length=%s does not match array[%s][%s].length=%s", arrayShape[2], i, j, len);
@@ -3493,9 +3493,9 @@ public class ArrayUtil {
                 return;
         }
         if(rank >= 4){
-            for( int i=0; i<arrayShape[0]; i++ ){
-                for( int j=0; j<arrayShape[1]; j++ ){
-                    for( int k=0; k<arrayShape[2]; k++ ){
+            for( int i = 0; i < arrayShape[0]; i++) {
+                for( int j = 0; j<arrayShape[1]; j++) {
+                    for( int k = 0; k < arrayShape[2]; k++) {
                         Object subArray = ((Object[][][])array)[i][j][k];
                         int len = arrayLength(subArray);
                         Preconditions.checkState(arrayShape[3] == len, "Ragged array detected: array[0][0][0].length=%s does not match array[%s][%s][%s].length=%s",

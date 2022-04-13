@@ -93,7 +93,7 @@ class OnnxConverter {
 
             val ttElem = vi.type.tensorType
             val ttDType = vi.type.tensorType.elemType
-            if(ttDType == Onnx.TensorProto.DataType.UNDEFINED) {
+            if(ttDType.ordinal == Onnx.TensorProto.DataType.UNDEFINED.ordinal) {
                 ttElem.toBuilder().elemType = ttElem.elemType
             }
 

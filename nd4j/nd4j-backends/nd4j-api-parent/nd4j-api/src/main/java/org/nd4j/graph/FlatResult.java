@@ -17,11 +17,11 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.nd4j.graph;
 
 import java.nio.*;
 import java.lang.*;
+import java.nio.ByteOrder;
 import java.util.*;
 import com.google.flatbuffers.*;
 
@@ -34,16 +34,16 @@ public final class FlatResult extends Table {
   public FlatResult __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public long id() { int o = __offset(4); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public FlatVariable variables(int j) { return variables(new FlatVariable(), j); }
-  public FlatVariable variables(FlatVariable obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public org.nd4j.graph.FlatVariable variables(int j) { return variables(new org.nd4j.graph.FlatVariable(), j); }
+  public org.nd4j.graph.FlatVariable variables(org.nd4j.graph.FlatVariable obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int variablesLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
-  public FlatVariable.Vector variablesVector() { return variablesVector(new FlatVariable.Vector()); }
-  public FlatVariable.Vector variablesVector(FlatVariable.Vector obj) { int o = __offset(6); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
-  public FlatTiming timing(int j) { return timing(new FlatTiming(), j); }
-  public FlatTiming timing(FlatTiming obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public org.nd4j.graph.FlatVariable.Vector variablesVector() { return variablesVector(new org.nd4j.graph.FlatVariable.Vector()); }
+  public org.nd4j.graph.FlatVariable.Vector variablesVector(org.nd4j.graph.FlatVariable.Vector obj) { int o = __offset(6); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
+  public org.nd4j.graph.FlatTiming timing(int j) { return timing(new org.nd4j.graph.FlatTiming(), j); }
+  public org.nd4j.graph.FlatTiming timing(org.nd4j.graph.FlatTiming obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int timingLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
-  public FlatTiming.Vector timingVector() { return timingVector(new FlatTiming.Vector()); }
-  public FlatTiming.Vector timingVector(FlatTiming.Vector obj) { int o = __offset(8); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
+  public org.nd4j.graph.FlatTiming.Vector timingVector() { return timingVector(new org.nd4j.graph.FlatTiming.Vector()); }
+  public org.nd4j.graph.FlatTiming.Vector timingVector(org.nd4j.graph.FlatTiming.Vector obj) { int o = __offset(8); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public long footprintForward() { int o = __offset(10); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
   public long footprintBackward() { int o = __offset(12); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
 

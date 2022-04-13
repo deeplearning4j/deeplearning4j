@@ -252,33 +252,42 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             }
 
             val newVars = sameDiff.generateOutputVariableForOp(this, baseName, false); //Also adds outgoing
-            if (isInplaceCall()) {
-                if (args().length >= 1) {
-                    val arr = args()[0].getArr();
-                    if (arr != null) {
-                        sameDiff.setArrayForVariable(newVars[0].name(), arr);
-                        addOutputArgument(arr);
-                    }
-                }
-
-                return newVars;
-            }
+            if (handleInPlaceOutputs(newVars)) return newVars;
 
             outputVariables = newVars;
 
-            computeArrays();
-            if (sameDiff.getOutputsForOp(this) == null)
-                sameDiff.addOutgoingFor(outputVariables, this);
+            addOutputsToOp();
             return newVars;
         }
 
         return outputVariables;
     }
 
+    private boolean handleInPlaceOutputs(SDVariable[] newVars) {
+        if (isInplaceCall()) {
+            if (args().length >= 1) {
+                val arr = args()[0].getArr();
+                if (arr != null) {
+                    sameDiff.setArrayForVariable(newVars[0].name(), arr);
+                    addOutputArgument(arr);
+                }
+            }
+
+            return true;
+        }
+        return false;
+    }
+
+    protected void addOutputsToOp() {
+        computeArrays();
+        if (sameDiff.getOutputsForOp(this) == null)
+            sameDiff.addOutgoingFor(outputVariables, this);
+    }
+
 
     /**
      * Generate fake data for {@link #computeArrays()}
-     * of the the given shape with the data type {@link Nd4j#defaultFloatingPointType()}
+     * of the  given shape with the data type {@link Nd4j#defaultFloatingPointType()}
      * @param shape the shape to use
      * @return the generated data
      */
@@ -332,7 +341,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                         }
                     }
                     else {
-                        INDArray add = Nd4j.scalar(1.0f);
+                        INDArray add = Nd4j.create(arg.dataType(),1);
                         sameDiff.setEagerArrForVarName(arg.name(),add);
                         addInputArgument(add);
                         log.warn("Variable name " + arg.name() + " from  op of type " + opName() + " with unique name of " + getOwnName() + " was not able to resolve an array for eager computation, inserting dummy array. This can happen with control flow ops. Please validate this if in error.");

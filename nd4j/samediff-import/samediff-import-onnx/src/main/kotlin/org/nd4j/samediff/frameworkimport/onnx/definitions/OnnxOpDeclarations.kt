@@ -200,6 +200,13 @@ val avgPool = OnnxMappingProcess(
                 listAttributeValueLookup(outputAttributeValue = "kW",inputAttributeValue = "kernel_shape",indexValue = 1,argumentIndex = 1),
                 listAttributeValueLookup(outputAttributeValue = "kH",inputAttributeValue = "kernel_shape",indexValue = 0,argumentIndex = 0)))
 
+
+val aliasWithName = OnnxMappingProcess(
+        opName = "noop",
+        opMappingRegistry = onnxOpRegistry,
+        inputFrameworkOpName = "AliasWithName"
+)
+
 //note: this is handled by the batchnorm class now
 val batchNorm = OnnxMappingProcess(
         opName = "noop",
@@ -228,11 +235,11 @@ val concat = OnnxMappingProcess(
 //TODO: ConvInteger
 //TODO: ConvTranspose
 val cumSum = OnnxMappingProcess(
-        opName = "cumsum",
+        opName = "noop",
         inputFrameworkOpName = "CumSum",
         opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "x","dimensions" to "axis"))),
-        attributeMappingRules = listOf(valueMappings(mapOf("exclusive" to "exclusive","reverse" to "reverse")))
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
 )
 
 val depthToSpace = OnnxMappingProcess(
@@ -308,6 +315,64 @@ val softmax = OnnxMappingProcess(
 )
 
 
+val sequenceConstruct = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SequenceConstruct",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+val sequenceAt = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SequenceAt",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+
+val sequenceEmpty = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SequenceEmpty",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+val sequenceErase = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SequenceErase",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+val sequenceinsert = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SequenceInsert",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+val sequenceRemove = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SequenceRemove",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+
+val sequenceLength = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SequenceLength",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
 //TODO: DynamicQuantizeLinear
 //TODO: Einsum
 //TODO: EyeLike
@@ -350,6 +415,14 @@ val ifOp = OnnxMappingProcess(
         inputFrameworkOpName = "If",
         opMappingRegistry = onnxOpRegistry
 )
+
+val loop = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Loop",
+        opMappingRegistry = onnxOpRegistry
+)
+
+
 
 val clip = OnnxMappingProcess(
         opName = "noop",
@@ -417,6 +490,13 @@ val dropout = OnnxMappingProcess(
 val resize = OnnxMappingProcess(
         opName = "noop",
         inputFrameworkOpName = "Resize",
+        opMappingRegistry = onnxOpRegistry
+)
+
+//pytorch op
+val resizeNearest = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "ResizeNearest",
         opMappingRegistry = onnxOpRegistry
 )
 
@@ -499,7 +579,6 @@ val xor = OnnxMappingProcess(
 
 
 //TODO: Hardmax
-//TODO: If
 //TODO: Imputer
 //TODO: InstanceNormalization
 val lrn = OnnxMappingProcess(

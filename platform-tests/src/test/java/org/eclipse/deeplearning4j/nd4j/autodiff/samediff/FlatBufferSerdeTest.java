@@ -24,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -89,6 +88,20 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
     public char ordering(){
         return 'c';
     }
+
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSequence(Nd4jBackend backend) throws IOException {
+        SameDiff sd = SameDiff.create();
+        INDArray[] inputs = new INDArray[]{Nd4j.ones(1),Nd4j.ones(2)};
+        sd.createSequence("input",inputs);
+        ByteBuffer byteBuffer = sd.asFlatBuffers(true);
+        SameDiff sameDiff = SameDiff.fromFlatBuffers(byteBuffer);
+        assertEquals(sd,sameDiff);
+    }
+
 
 
 

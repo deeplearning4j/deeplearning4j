@@ -77,7 +77,7 @@ class ModelSerializerTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).l1(0.01).l2(0.01).updater(new Sgd(0.1)).activation(Activation.TANH).weightInit(WeightInit.XAVIER).list().layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build()).layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build()).layer(2, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
-        File tempFile = tempDir.toFile();
+        File tempFile = new File(tempDir.toFile(),"new-model.zip");
         ModelSerializer.writeModel(net, tempFile, true);
         MultiLayerNetwork network = ModelSerializer.restoreMultiLayerNetwork(tempFile);
         assertEquals(network.getLayerWiseConfigurations().toJson(), net.getLayerWiseConfigurations().toJson());
@@ -93,7 +93,7 @@ class ModelSerializerTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).l1(0.01).l2(0.01).updater(new Sgd(0.1)).activation(Activation.TANH).weightInit(WeightInit.XAVIER).list().layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build()).layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build()).layer(2, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build()).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
-        File tempFile = tempDir.toFile();
+        File tempFile = new File(tempDir.toFile(),"new-model.zip");
         FileOutputStream fos = new FileOutputStream(tempFile);
         ModelSerializer.writeModel(net, fos, true);
         // checking adding of DataNormalization to the model file
@@ -118,7 +118,7 @@ class ModelSerializerTest extends BaseDL4JTest {
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new Sgd(0.1)).graphBuilder().addInputs("in").addLayer("dense", new DenseLayer.Builder().nIn(4).nOut(2).build(), "in").addLayer("out", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3).activation(Activation.SOFTMAX).build(), "dense").setOutputs("out").build();
         ComputationGraph cg = new ComputationGraph(config);
         cg.init();
-        File tempFile = tempDir.toFile();
+        File tempFile = new File(tempDir.toFile(),"new-model.zip");
         ModelSerializer.writeModel(cg, tempFile, true);
         ComputationGraph network = ModelSerializer.restoreComputationGraph(tempFile);
         assertEquals(network.getConfiguration().toJson(), cg.getConfiguration().toJson());
@@ -132,7 +132,7 @@ class ModelSerializerTest extends BaseDL4JTest {
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new Sgd(0.1)).graphBuilder().addInputs("in").addLayer("dense", new DenseLayer.Builder().nIn(4).nOut(2).build(), "in").addLayer("out", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3).activation(Activation.SOFTMAX).build(), "dense").setOutputs("out").build();
         ComputationGraph cg = new ComputationGraph(config);
         cg.init();
-        File tempFile = tempDir.toFile();
+        File tempFile = new File(tempDir.toFile(),"new-model.zip");
         ModelSerializer.writeModel(cg, tempFile, true);
         FileInputStream fis = new FileInputStream(tempFile);
         ComputationGraph network = ModelSerializer.restoreComputationGraph(fis);
@@ -160,7 +160,7 @@ class ModelSerializerTest extends BaseDL4JTest {
         norm.fit(dataSet);
         ComputationGraph cg = simpleComputationGraph();
         cg.init();
-        File tempFile = tempDir.toFile();
+        File tempFile = new File(tempDir.toFile(),"new-model.zip");
         ModelSerializer.writeModel(cg, tempFile, true);
         ModelSerializer.addNormalizerToModel(tempFile, norm);
         FileInputStream fis = new FileInputStream(tempFile);
@@ -181,7 +181,7 @@ class ModelSerializerTest extends BaseDL4JTest {
         norm.fit(dataSet);
         ComputationGraph cg = simpleComputationGraph();
         cg.init();
-        File tempFile = tempDir.toFile();
+        File tempFile = new File(tempDir.toFile(),"new-model.zip");
         ModelSerializer.writeModel(cg, tempFile, true);
         FileInputStream fis = new FileInputStream(tempFile);
         NormalizerStandardize restored = ModelSerializer.restoreNormalizerFromInputStream(fis);
@@ -235,7 +235,7 @@ class ModelSerializerTest extends BaseDL4JTest {
         DataSet dataSet = trivialDataSet();
         NormalizerStandardize norm = new NormalizerStandardize();
         norm.fit(dataSet);
-        File tempFile = tempDir.toFile();
+        File tempFile = new File(tempDir.toFile(),"new-model.zip");
         ModelSerializer.writeModel(net, tempFile, true);
         ModelSerializer.addNormalizerToModel(tempFile, norm);
         InputStream is = new FileInputStream(tempFile);
@@ -271,7 +271,7 @@ class ModelSerializerTest extends BaseDL4JTest {
         DataSet dataSet = trivialDataSet();
         NormalizerStandardize norm = new NormalizerStandardize();
         norm.fit(dataSet);
-        File tempFile = tempDir.toFile();
+        File tempFile = new File(tempDir.toFile(),"new-model.zip");
         ModelSerializer.writeModel(net, tempFile, true);
         ModelSerializer.addNormalizerToModel(tempFile, norm);
         InputStream is = new FileInputStream(tempFile);
@@ -336,7 +336,7 @@ class ModelSerializerTest extends BaseDL4JTest {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).l1(0.01).graphBuilder().addInputs("in").layer("0", new OutputLayer.Builder().nIn(nIn).nOut(nOut).activation(Activation.SOFTMAX).build(), "in").setOutputs("0").build();
         ComputationGraph net = new ComputationGraph(conf);
         net.init();
-        File tempFile = tempDir.toFile();
+        File tempFile = new File(tempDir.toFile(),"new-model.zip");
         ModelSerializer.writeModel(net, tempFile, true);
         List<String> toWrite = Arrays.asList("zero", "one", "two");
         ModelSerializer.addObjectToFile(tempFile, "myLabels", toWrite);

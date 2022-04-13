@@ -31,11 +31,16 @@ import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.custom.Invoke;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Sgd;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -43,6 +48,32 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag(TagNames.SAMEDIFF)
 public class SameDiffOutputTest extends BaseNd4jTestWithBackends {
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testInvoke(Nd4jBackend backend) {
+        SameDiff sameDiff = SameDiff.create();
+        SameDiff subGraph = SameDiff.create();
+        sameDiff.putSubFunction("add",subGraph);
+        SDVariable inputOne = subGraph.placeHolder("input1",DataType.DOUBLE,2,2);
+        SDVariable inputTwo = subGraph.placeHolder("input2",DataType.DOUBLE,2,2);
+        SDVariable inputOneParent = sameDiff.placeHolder("input1",DataType.DOUBLE,2,2);
+        SDVariable inputTwoParent = sameDiff.placeHolder("input2",DataType.DOUBLE,2,2);
+        subGraph.math().add("add",inputOne,inputTwo);
+        Invoke.InvokeParams invokeParams = Invoke.InvokeParams.builder()
+                .functionName("add")
+                .inputVarNames(new String[]{"input1","input2"})
+                .outputVarNames(new String[]{"add"})
+                .inputs(new SDVariable[]{inputOneParent,inputTwoParent})
+                .build();
+        sameDiff.invoke(invokeParams);
+        Map<String,INDArray> inputs = new LinkedHashMap<>();
+        inputs.put("input1",Nd4j.ones(2,2));
+        inputs.put("input2",Nd4j.ones(2,2).addi(1));
+        Map<String, INDArray> stringINDArrayMap = sameDiff.output(inputs,"add");
+        assertEquals(Nd4j.valueArrayOf(new int[]{2,2},3.0),stringINDArrayMap.get("add"));
+
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

@@ -17,11 +17,11 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.nd4j.graph;
 
 import java.nio.*;
 import java.lang.*;
+import java.nio.ByteOrder;
 import java.util.*;
 import com.google.flatbuffers.*;
 
@@ -54,11 +54,11 @@ public final class FlatProperties extends Table {
   public DoubleVector dVector(DoubleVector obj) { int o = __offset(10); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer dAsByteBuffer() { return __vector_as_bytebuffer(10, 8); }
   public ByteBuffer dInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 10, 8); }
-  public FlatArray a(int j) { return a(new FlatArray(), j); }
-  public FlatArray a(FlatArray obj, int j) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public org.nd4j.graph.FlatArray a(int j) { return a(new org.nd4j.graph.FlatArray(), j); }
+  public org.nd4j.graph.FlatArray a(org.nd4j.graph.FlatArray obj, int j) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int aLength() { int o = __offset(12); return o != 0 ? __vector_len(o) : 0; }
-  public FlatArray.Vector aVector() { return aVector(new FlatArray.Vector()); }
-  public FlatArray.Vector aVector(FlatArray.Vector obj) { int o = __offset(12); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
+  public org.nd4j.graph.FlatArray.Vector aVector() { return aVector(new org.nd4j.graph.FlatArray.Vector()); }
+  public org.nd4j.graph.FlatArray.Vector aVector(org.nd4j.graph.FlatArray.Vector obj) { int o = __offset(12); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public boolean b(int j) { int o = __offset(14); return o != 0 ? 0!=bb.get(__vector(o) + j * 1) : false; }
   public int bLength() { int o = __offset(14); return o != 0 ? __vector_len(o) : 0; }
   public BooleanVector bVector() { return bVector(new BooleanVector()); }
