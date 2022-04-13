@@ -17,7 +17,7 @@
  ******************************************************************************/
 
 //
-//  @author raver119@gmail.com
+//  @author Adam Gibson
 //
 
 #include <system/op_boilerplate.h>

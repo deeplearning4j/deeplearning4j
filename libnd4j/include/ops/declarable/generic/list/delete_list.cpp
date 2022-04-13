@@ -45,6 +45,7 @@ LIST_OP_IMPL(delete_list, -2, 1, 0, -2) {
     idx += list->elements();
   }
 
+
   list->remove(idx);
   auto result = list->remove(idx);
   output->assign(result);

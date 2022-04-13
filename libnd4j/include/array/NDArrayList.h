@@ -70,6 +70,7 @@ class SD_LIB_EXPORT NDArrayList {
 
   sd::DataType dataType();
 
+  NDArray *remove(int idx);
   NDArray *read(int idx);
   NDArray *readRaw(int idx);
   sd::Status write(int idx, NDArray *array);

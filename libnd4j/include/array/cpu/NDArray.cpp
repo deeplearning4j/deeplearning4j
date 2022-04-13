@@ -68,7 +68,7 @@ void NDArray::makeBothBuffersActual() const {}
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& target, const char direction) {
+void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& target, const char direction,const bool includeEdges) {
   if (isS()) throw std::runtime_error("NDArray::fillArrayAsTriangular: you can't use this method on String array!");
 
   if (!isSameShape(target) &&
@@ -91,25 +91,62 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
 
   auto func = PRAGMA_THREADS_FOR {
     int coords[SD_MAX_RANK], temp;
+    //track input vector coordinates, only used in specific cases
+    int vectorCoord[1];
+    vectorCoord[0] = 0;
+    int targetRank = target.rankOf();
+    int thisRank = this->rankOf();
+    bool notVectorScalar = targetRank == 2 && thisRank == 2;
+    bool thisNotVectorScalar = !shape::isScalar(this->shapeInfo()) && !shape::isVector(this->shapeInfo());
+    bool targetNotVectorScalar =  !shape::isScalar(target.shapeInfo()) && !shape::isVector(target.shapeInfo());
     for (auto i = start; i < stop; i++) {
       shape::index2coordsCPU(start, i, target.shapeInfo(), coords);
-      const auto zOffset = shape::getOffset(target.shapeInfo(), coords);
-      sd::LongType row = coords[0];
-      sd::LongType col = coords[1];
-      if (direction == 'l' && row + lower > col || direction == 'u' && row + upper < col) {
-        z[zOffset] = value;
+      sd::LongType row = targetNotVectorScalar ?  coords[zRank - 2] : 0;
+      sd::LongType col = targetNotVectorScalar ? coords[zRank - 1]: 1;
+      auto zOffset = 0;
+      auto xOffset = 0;
+      if(target.rankOf() < 2) {
+        zOffset = shape::getOffset(target.shapeInfo(),vectorCoord);
+      } else {
+        zOffset = shape::getOffset(target.shapeInfo(), coords);
       }
-      else if (this != &target) {  // when this and target are different arrays
+
+      if(!areSameOffsets && rankOf() < 2) {
+        sd_printf("X vector offset is %d\n",vectorCoord[0]);
+        //rotate count of elements based on how many times accessed
+        xOffset = shape::getOffset(shapeInfo(),vectorCoord);
+        sd_printf("X vector offset output is %d\n",xOffset);
+      } else if(areSameOffsets) {
+        xOffset = zOffset;
+      } else {
+        xOffset = shape::getOffset(shapeInfo(), coords);
+      }
+
+
+      bool rowExclusive = this->rankOf() == target.rankOf();
+      bool colExclusive = this->rankOf() == target.rankOf();
+      auto lCompare = includeEdges ? row <= (col - lower) : row < (col - lower);
+      auto uCompare = includeEdges ? row >= (col - upper): row > (col - upper);
+      if (direction == 'u' && lCompare  || direction == 'l' && uCompare ) {
+        z[zOffset] = value;
+      }  else  {
+        z[zOffset] = x[xOffset];
+      }
+
+      if(this != &target) {
         if (xRank != zRank) {
           temp = coords[0];
           coords[0] = coords[1];
         }
 
-        const auto xOffset = areSameOffsets ? zOffset : shape::getOffset(shapeInfo(), coords);
-        z[zOffset] = x[xOffset];
-
         if (xRank != zRank)  // restore first coordinate
           coords[0] = temp;
+      }
+
+      if(vectorCoord[0] == this->lengthOf() - 1) {
+        vectorCoord[0] = (int) 0;
+      } else {
+        vectorCoord[0] = vectorCoord[0] + 1;
       }
     }
   };
@@ -117,7 +154,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
   samediff::Threads::parallel_for(func, 0, zLen);
 }
 BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular,
-                      (const float val, int lower, int upper, NDArray& target, const char direction), SD_COMMON_TYPES);
+                      (const float val, int lower, int upper, NDArray& target, const char direction,const bool includeEdges), SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::setIdentity() {

@@ -39,7 +39,7 @@ NDArrayList::NDArrayList(int height, bool expandable) {
 }
 
 NDArrayList::~NDArrayList() {
-  // sd_printf("\nDeleting NDArrayList: [%i]\n", _chunks.size());
+  sd_debug("\nDeleting NDArrayList: [%i]\n", _chunks.size());
   for (auto const& v : _chunks) delete v.second;
 
   _chunks.clear();
@@ -51,12 +51,26 @@ sd::DataType NDArrayList::dataType() { return _dtype; }
 
 NDArray* NDArrayList::readRaw(int idx) {
   if (_chunks.count(idx) < 1) {
-    sd_printf("Non-existent chunk requested: [%i]\n", idx);
+    sd_debug("Non-existent chunk requested: [%i]\n", idx);
     throw std::invalid_argument("Bad index");
   }
 
   return _chunks[idx];
 }
+
+
+NDArray* NDArrayList::remove(int idx) {
+  if(!isWritten(idx)) {
+    sd_debug("Non-existent chunk requested: [%i]\n", idx);
+    throw std::invalid_argument("Bad index");
+  }
+
+  delete _chunks[idx];
+
+  _elements--;
+  return new NDArray(readRaw(idx)->dup());
+}
+
 
 sd::Status NDArrayList::write(int idx, NDArray* array) {
   if (_chunks.count(idx) == 0)

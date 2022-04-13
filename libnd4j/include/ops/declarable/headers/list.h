@@ -85,6 +85,14 @@ DECLARE_LIST_OP(size_list, 1, 1, 0, 0);
 DECLARE_LIST_OP(create_list, 1, 2, 0, -2);
 #endif
 
+
+/**
+ * This operation creates new empty NDArrayList
+ */
+#if NOT_EXCLUDED(OP_delete_list)
+DECLARE_LIST_OP(delete_list,-2, 1, 0, -2);
+#endif
+
 /**
  * This operation unpacks given NDArray into specified NDArrayList wrt specified indices
  */

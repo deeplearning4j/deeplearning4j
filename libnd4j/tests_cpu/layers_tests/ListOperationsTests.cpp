@@ -227,6 +227,17 @@ TEST_F(ListOperationsTests, BasicTest_Create_1) {
   ASSERT_EQ(1, result.size());
 }
 
+/*TEST_F(ListOperationsTests, BasicTest_Remove_1) {
+  auto matrix = NDArrayFactory::create<double>('c', {3, 2});
+  matrix.linspace(1);
+  //sd::ops::delete_list removeOp;
+  NDArrayList list(1, true);
+  list.write(0,&matrix);
+  list.remove(0);
+  ASSERT_EQ(0,list.elements());
+
+}*/
+
 TEST_F(ListOperationsTests, BasicTest_Split_1) {
   NDArrayList list(0, true);
 
