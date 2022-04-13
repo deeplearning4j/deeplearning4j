@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -35,12 +36,15 @@ import java.util.Map;
 
 public class TensorArraySize extends BaseTensorOp {
 
+   public TensorArraySize(SameDiff sd, SDVariable in) {
+      super(sd,new SDVariable[]{in});
+   }
+
+
    public TensorArraySize(String name, SameDiff sameDiff, SDVariable[] args) {
       super(name, sameDiff, args);
    }
-   public TensorArraySize(SameDiff sameDiff, SDVariable input) {
-      this(sameDiff, new SDVariable[]{input});
-   }
+
    public TensorArraySize(SameDiff sameDiff, SDVariable[] args) {
       super(sameDiff, args);
    }
@@ -74,7 +78,7 @@ public class TensorArraySize extends BaseTensorOp {
    }
 
    @Override
-   public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
+   public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType) {
       //Size is always int32
       return Collections.singletonList(DataType.INT);
    }

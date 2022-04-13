@@ -57,6 +57,8 @@ public class SameDiffOp {
         this.name = name;
     }
 
+
+
     public DifferentialFunction getOp() {
         return op;
     }

@@ -361,7 +361,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 //TODO: we could skil this but it's useful to know how to associate the step with
                 //the specific value here
                 addToArrayTracker(out,i,new ReqOutputDep(name));
-            } else if ((inputsForOps == null || inputsForOps.isEmpty()) && out.valueWithKeyAtIndex(i,false) != null && !arrayUseTracker.hasDependency(out.valueWithKeyAtIndex(i,false))) {
+            } else if ((inputsForOps == null || inputsForOps.isEmpty()) && !arrayUseTracker.hasDependency(out.valueWithKeyAtIndex(i,false))) {
                 //This particular array is not actually needed anywhere, so we can deallocate in immediately
                 //Possibly only a control dependency, or only one of the outputs of a multi-output op is used
                 SDValue array = out.valueWithKeyAtIndex(i, false);
@@ -371,18 +371,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 }
 
                 if(array != null && array.getTensorValue() != null)
-                    mmgr.release(array.getTensorValue());
-            } else if ((inputsForOps == null || inputsForOps.isEmpty()) && out.resultAt(i) != null  && !arrayUseTracker.hasDependency(SDValue.create(out.resultAt(i)))) {
-                //This particular array is not actually needed anywhere, so we can deallocate in immediately
-                //Possibly only a control dependency, or only one of the outputs of a multi-output op is used
-                INDArray array = out.resultAt(i);
-                if (log.isTraceEnabled()) {
-                    if(array != null && array != null)
-                        log.trace("Found array id {} (output of {}) not required anywhere, deallocating", array.getId(), o.getName());
-                }
-
-                if(array != null && array != null)
-                    mmgr.release(array);
+                    mmgr.release(array.getTensorValue() );
             }
         }
 

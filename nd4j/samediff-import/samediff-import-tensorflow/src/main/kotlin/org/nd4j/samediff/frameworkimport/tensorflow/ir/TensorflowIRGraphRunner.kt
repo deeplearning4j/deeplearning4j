@@ -19,6 +19,7 @@
  */
 package org.nd4j.samediff.frameworkimport.tensorflow.ir
 
+import org.nd4j.autodiff.samediff.config.SDValue
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.samediff.frameworkimport.ir.IRGraph
 import org.nd4j.samediff.frameworkimport.runner.IRGraphRunner
@@ -45,6 +46,10 @@ class TensorflowIRGraphRunner(irGraph: TensorflowIRGraph, inputNames: List<Strin
 
     override fun run(inputs: Map<String, INDArray>): Map<String, INDArray> {
         return graphRunner.run(inputs)
+    }
+
+    override fun runSequence(inputs: Map<String, SDValue>): Map<String, SDValue> {
+        TODO("Not yet implemented")
     }
 
 }

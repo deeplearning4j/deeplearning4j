@@ -24,6 +24,7 @@ import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collections;
 import java.util.List;
@@ -38,6 +39,13 @@ public class TensorArrayScatter extends BaseTensorOp {
     }
 
     public TensorArrayScatter(){}
+
+    public TensorArrayScatter(SameDiff sd, SDVariable input, SDVariable indices, SDVariable scatter) {
+        this(sd,new SDVariable[]{input,indices,scatter});
+    }
+
+    public TensorArrayScatter(INDArray input, INDArray indices, INDArray scatter) {
+    }
 
     @Override
     public String[] tensorflowNames() {
