@@ -19,7 +19,7 @@
 //
 // Created by raver119 on 06.10.2017.
 //
-#include "system/Environment.h"
+#include <system/Environment.h>
 
 #include <helpers/StringUtils.h>
 #include <helpers/logger.h>
@@ -321,4 +321,22 @@ sd::LongType Environment::getDeviceCounter(int deviceId) {
 uint64_t Environment::maxPrimaryMemory() { return _maxTotalPrimaryMemory.load(); }
 
 uint64_t Environment::maxSpecialMemory() { return _maxTotalSpecialMemory.load(); }
+
+const char* Environment::getVedaDeviceDir(){
+#if !defined(HAVE_VEDA)
+    return nullptr;
+#else
+    const std::lock_guard<std::mutex> lock(path_mutex);
+    if (veda_device_dir.empty()) return nullptr;
+    return veda_device_dir.c_str();
+#endif
+  }
+
+  void Environment::setVedaDeviceDir(const std::string &dir){
+#if defined(HAVE_VEDA)
+    const std::lock_guard<std::mutex> lock(path_mutex);
+    if (!dir.empty()) veda_device_dir=dir;
+#endif
+  }
+
 }  // namespace sd

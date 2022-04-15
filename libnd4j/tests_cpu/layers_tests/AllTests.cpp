@@ -41,7 +41,29 @@
 //#include "CyclicTests.h"
 // #include "ProtoBufTests.cpp"
 
+#if defined(HAVE_VEDA)
+#include <libgen.h>
+#include <linux/limits.h>
+#include <unistd.h>
+
+#include <string>
+#include <ops/declarable/platform/vednn/veda_helper.h>
+void load_device_lib() {
+  char result[PATH_MAX];
+  ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+  const char *path;
+  if (count != -1) {
+    path = dirname(result);
+    sd::Environment::getInstance().setVedaDeviceDir( std::string(path)+"/../../blas/");
+  }
+}
+
+#endif
+
 int main(int argc, char **argv) {
+#if defined(HAVE_VEDA)
+  load_device_lib();
+#endif
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
