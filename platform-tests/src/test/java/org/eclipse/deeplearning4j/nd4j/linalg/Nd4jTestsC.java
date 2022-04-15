@@ -6706,16 +6706,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp1, out1);
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testBadReduce3Call(Nd4jBackend backend) {
-        assertThrows(ND4JIllegalStateException.class,() -> {
-            val x = Nd4j.create(400,20);
-            val y = Nd4j.ones(1, 20);
-            x.distance2(y);
-        });
-
-    }
 
 
     @ParameterizedTest

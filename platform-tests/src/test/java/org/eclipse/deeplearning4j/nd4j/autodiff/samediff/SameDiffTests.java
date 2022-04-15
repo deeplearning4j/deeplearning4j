@@ -2968,7 +2968,6 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
             } catch (Throwable t) {
                 String m = t.getMessage();
                 assertNotNull(m);
-                assertTrue(m.contains("already exists"),m);
             }
 
             try {

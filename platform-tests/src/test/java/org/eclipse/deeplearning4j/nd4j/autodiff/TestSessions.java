@@ -321,7 +321,7 @@ public class TestSessions extends BaseNd4jTestWithBackends {
                 expVarId = new AbstractSession.VarId("while/add","while/while_context", i, new FrameIter(AbstractSession.OUTER_FRAME, 0, null));
                 INDArray expAddVal = Nd4j.scalar((float)(i + 1));  //Starts at 0, so post exec it's 1 higher than iter number
                 assertTrue(outputs.containsKey(expVarId));
-                assertEquals(expAddVal, outputs.get(expVarId));
+                assertEquals(expAddVal, outputs.get(expVarId).getTensorValue());
             }
         }
 

@@ -2546,7 +2546,29 @@ public class SameDiff extends SDBaseOps {
      * @param outputs   The set of outputs to report.  If null, defaults to all outputs of this SameDiff.
      */
     public List<Map<String, INDArray>> outputBatches(MultiDataSetIterator iterator, List<Listener> listeners, String... outputs) {
-        return outputHelper(iterator, At.defaultAt(Operation.INFERENCE), listeners, outputs).stream().map(input -> input.getOutputs()).collect(Collectors.toList());
+        List<ExecutionResult> executionResults = outputHelper(
+                iterator,
+                At.defaultAt(Operation.INFERENCE),
+                listeners,
+                outputs);
+        List<Map<String,INDArray>> ret = new ArrayList<>();
+        for(ExecutionResult executionResult : executionResults) {
+            if(executionResult.getOutputs() != null)
+                ret.add(executionResult.getOutputs());
+            else if(executionResult.getValueOutputs() != null) {
+                Map<String,INDArray> add = new HashMap<>();
+                for(Map.Entry<String,SDValue> entry : executionResult.getValueOutputs().entrySet()) {
+                    if(entry.getValue().getSdValueType() != SDValueType.TENSOR) {
+                        throw new IllegalArgumentException("Unable to process output value " + entry.getKey() + " with invalid type " + entry.getValue().getSdValueType() + " must be type tensor");
+                    }
+                    add.put(entry.getKey(),entry.getValue().getTensorValue());
+                }
+
+                ret.add(add);
+            }
+        }
+
+        return ret;
     }
 
     /**

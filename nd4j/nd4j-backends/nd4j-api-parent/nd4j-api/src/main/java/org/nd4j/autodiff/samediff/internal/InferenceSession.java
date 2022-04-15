@@ -35,6 +35,7 @@ import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.imports.VariableUtils;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -409,7 +410,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         break;
                     case LIST:
                         for(INDArray arr : value.getListValue())
-                            mmgr.release(arr);
+                            if(arr != null)
+                                mmgr.release(arr);
                         break;
                 }
 
@@ -494,6 +496,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             } else {
                 inputVarId = opInputs.iterator().next();
             }
+
+            inputVarId.setVariable(VariableUtils.stripVarSuffix(inputVarId.getVariable()));
 
             if(nodeValueOutputs.containsKey(inputVarId) && nodeValueOutputs.get(inputVarId) != null) {
                 SDValue value = nodeValueOutputs.get(inputVarId);
@@ -617,9 +621,16 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         } else if(op instanceof Assign) {
             List<VarId> orderedInputs = new ArrayList<>(opInputs);
-            SDValue sdValue = nodeValueOutputs.get(orderedInputs.get(0));
-            SDValue sdValue1 = nodeValueOutputs.get(orderedInputs.get(1));
-            return ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue1);
+            if(orderedInputs.size() > 1) {
+                SDValue sdValue = nodeValueOutputs.get(orderedInputs.get(0));
+                SDValue sdValue1 = nodeValueOutputs.get(orderedInputs.get(1));
+                return ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue1);
+
+            } else {
+                SDValue sdValue = nodeValueOutputs.get(orderedInputs.get(0));
+                return ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue);
+            }
+
 
 
         } else if (op instanceof GradientBackwardsMarker) {

@@ -52,6 +52,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     private static final byte BITMASK_FEATURE_MASK_PRESENT = 1 << 3;
     private static final byte BITMASK_LABELS_MASK_PRESENT = 1 << 4;
     private static final byte BITMASK_METADATA_PRESET = 1 << 5;
+    private static final byte BITMASK_LABEL_NAME_PRESET = 1 << 6;
 
     private List<String> columnNames = new ArrayList<>();
     private List<String> labelNames = new ArrayList<>();
@@ -226,7 +227,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             INDArray featureMaskHere = featuresMask != null ? featuresMask.get(interval(from, to)) : null;
             INDArray labelMaskHere = labelsMask != null ? labelsMask.get(interval(from, to)) : null;
             return new DataSet(features.get(interval(from, to)), labels.get(interval(from, to)), featureMaskHere,
-                            labelMaskHere);
+                    labelMaskHere);
         }
         return new DataSet(features.get(interval(from, to)), labels.get(interval(from, to)));
     }
@@ -237,7 +238,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         try {
 
             DataInputStream dis = from instanceof BufferedInputStream ? new DataInputStream(from)
-                            : new DataInputStream(new BufferedInputStream(from));
+                    : new DataInputStream(new BufferedInputStream(from));
 
             byte included = dis.readByte();
             boolean hasFeatures = (included & BITMASK_FEATURES_PRESENT) != 0;
@@ -246,6 +247,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             boolean hasFeaturesMask = (included & BITMASK_FEATURE_MASK_PRESENT) != 0;
             boolean hasLabelsMask = (included & BITMASK_LABELS_MASK_PRESENT) != 0;
             boolean hasMetaData = (included & BITMASK_METADATA_PRESET) != 0;
+            boolean hasLabelNames = (included & BITMASK_LABEL_NAME_PRESET) != 0;
 
             features = (hasFeatures ? Nd4j.read(dis) : null);
             if (hasLabels) {
@@ -264,6 +266,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
                 exampleMetaData = (List<Serializable>)ois.readObject();
             }
 
+            if(hasLabelNames) {
+                ObjectInputStream ois = new ObjectInputStream(dis);
+                labelNames = (List<String>)ois.readObject();
+            }
+
             dis.close();
         } catch (Exception e) {
             throw new RuntimeException("Error loading DataSet",e);
@@ -273,7 +280,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public void load(File from) {
         try (FileInputStream fis = new FileInputStream(from);
-                        BufferedInputStream bis = new BufferedInputStream(fis, 1024 * 1024)) {
+             BufferedInputStream bis = new BufferedInputStream(fis, 1024 * 1024)) {
             load(bis);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -301,6 +308,10 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             included |= BITMASK_LABELS_MASK_PRESENT;
         if (exampleMetaData != null && exampleMetaData.size() > 0)
             included |= BITMASK_METADATA_PRESET;
+        if(labelNames != null && !labelNames.isEmpty()) {
+            included |= BITMASK_LABEL_NAME_PRESET;
+        }
+
 
 
         try {
@@ -316,9 +327,15 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
                 Nd4j.write(featuresMask, dos);
             if (labelsMask != null)
                 Nd4j.write(labelsMask, dos);
-            if(exampleMetaData != null && exampleMetaData.size() > 0){
+            if(exampleMetaData != null && exampleMetaData.size() > 0) {
                 ObjectOutputStream oos = new ObjectOutputStream(bos);
                 oos.writeObject(exampleMetaData);
+                oos.flush();
+            }
+
+            if(labelNames != null && !labelNames.isEmpty()) {
+                ObjectOutputStream oos = new ObjectOutputStream(bos);
+                oos.writeObject(labelNames);
                 oos.flush();
             }
 
@@ -333,7 +350,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public void save(File to) {
         try (FileOutputStream fos = new FileOutputStream(to, false);
-                        BufferedOutputStream bos = new BufferedOutputStream(fos)) {
+             BufferedOutputStream bos = new BufferedOutputStream(fos)) {
             save(bos);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -373,7 +390,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             int maxIdxJava = Nd4j.getBlasWrapper().iamax(javaRow);
             if (maxIdx < 0)
                 throw new IllegalStateException("Please check the iamax implementation for "
-                                + Nd4j.getBlasWrapper().getClass().getName());
+                        + Nd4j.getBlasWrapper().getClass().getName());
             if (ret.get(maxIdx) == null)
                 ret.put(maxIdx, 1.0);
             else
@@ -846,11 +863,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         int numExamples = numExamples();
         if (numExamples <= 1)
             throw new IllegalStateException(
-                            "Cannot split DataSet with <= 1 rows (data set has " + numExamples + " example)");
+                    "Cannot split DataSet with <= 1 rows (data set has " + numExamples + " example)");
         if (numHoldout >= numExamples)
             throw new IllegalArgumentException(
-                            "Unable to split on size equal or larger than the number of rows (# numExamples="
-                                            + numExamples + ", numHoldout=" + numHoldout + ")");
+                    "Unable to split on size equal or larger than the number of rows (# numExamples="
+                            + numExamples + ", numHoldout=" + numHoldout + ")");
         DataSet first = new DataSet();
         DataSet second = new DataSet();
         switch (features.rank()) {
@@ -932,10 +949,10 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
                 return labelNames.get(idx);
             else
                 throw new IllegalStateException(
-                                "Index requested is longer than the number of labels used for classification.");
+                        "Index requested is longer than the number of labels used for classification.");
         } else
             throw new IllegalStateException(
-                            "Label names are not defined on this dataset. Add label names in order to use getLabelName with an id.");
+                    "Label names are not defined on this dataset. Add label names in order to use getLabelName with an id.");
 
     }
 
@@ -1148,16 +1165,16 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         StringBuilder builder = new StringBuilder();
         if (features != null && labels != null) {
             builder.append("===========INPUT===================\n")
-                            .append(getFeatures().toString().replaceAll(";", "\n"))
-                            .append("\n=================OUTPUT==================\n")
-                            .append(getLabels().toString().replaceAll(";", "\n"));
+                    .append(getFeatures().toString().replaceAll(";", "\n"))
+                    .append("\n=================OUTPUT==================\n")
+                    .append(getLabels().toString().replaceAll(";", "\n"));
             if (featuresMask != null) {
                 builder.append("\n===========INPUT MASK===================\n")
-                                .append(getFeaturesMaskArray().toString().replaceAll(";", "\n"));
+                        .append(getFeaturesMaskArray().toString().replaceAll(";", "\n"));
             }
             if (labelsMask != null) {
                 builder.append("\n===========OUTPUT MASK===================\n")
-                                .append(getLabelsMaskArray().toString().replaceAll(";", "\n"));
+                        .append(getLabelsMaskArray().toString().replaceAll(";", "\n"));
             }
             return builder.toString();
         } else {
@@ -1203,7 +1220,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     /**
      * Optional column names of the data transform, this is mainly used
-     * for interpeting what columns are in the dataset
+     * for interpreting what columns are in the dataset
      *
      * @return
      */

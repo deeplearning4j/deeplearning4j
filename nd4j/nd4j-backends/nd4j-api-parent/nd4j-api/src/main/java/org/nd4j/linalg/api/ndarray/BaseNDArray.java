@@ -3613,6 +3613,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray putColumn(int column, INDArray toPut) {
         Nd4j.getCompressor().autoDecompress(this);
 
+        if(toPut.length() > this.rows()) {
+            throw new IllegalArgumentException("Illegal row: Vector length of " + toPut.length() + " greater than columns " + columns());
+        }
+
         if (isColumnVector() && toPut.isVector()) {
             return assign(toPut);
         }
