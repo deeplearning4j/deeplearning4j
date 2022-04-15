@@ -61,6 +61,7 @@ class TestOnnxFrameworkImporter {
         trainingConfig.minimize("loss")
         result.trainingConfig = trainingConfig.build()
 
+        println(result.summary())
         val inputData = DataSet(arr,labels)
         result.fit(inputData)
     }

@@ -56,6 +56,8 @@ public class Invoke extends DynamicCustomOp {
     @Getter
     private String[] subGraphOutputVarNames;
 
+    public Invoke() {
+    }
 
     @Data
     @Builder

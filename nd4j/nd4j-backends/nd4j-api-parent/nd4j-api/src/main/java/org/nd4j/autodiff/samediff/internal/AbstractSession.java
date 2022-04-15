@@ -128,7 +128,20 @@ public abstract class AbstractSession<T, O> {
      */
     public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues,
                                  MultiDataSet batch, Collection<String> requiredActivations, List<Listener> listeners, At at) {
-        return (Map<String, T>) output(variables, placeholderValues,Collections.emptyMap(), batch, requiredActivations, listeners, at).getOutputs();
+        ExecutionResult output = output(variables, placeholderValues, Collections.emptyMap(), batch, requiredActivations, listeners, at);
+        if(output.hasSingle())
+            return (Map<String, T>) output.getOutputs();
+        else if(output.hasValues()) {
+            Map<String,SDValue> outputs = output.getValueOutputs();
+            Map<String,INDArray> ret = new LinkedHashMap<>();
+            for(Map.Entry<String,SDValue> value : outputs.entrySet()) {
+                ret.put(value.getKey(),value.getValue().getTensorValue());
+            }
+
+            return (Map<String,T>) ret;
+        }
+
+        throw new IllegalStateException("No result output! Expected values or tensors.");
     }
     /**
      * Get the output of the session - i.e., perform inference/forward pass and return the outputs for the specified variables
@@ -147,6 +160,22 @@ public abstract class AbstractSession<T, O> {
                                   Collection<String> requiredActivations,
                                   List<Listener> listeners, At at) {
         Preconditions.checkState(!variables.isEmpty() || !requiredActivations.isEmpty(), "Variables to perform forward pass for must not be empty");
+
+
+        //ensure all placeholders are in a mutable map
+        otherPlaceHolderValues = new LinkedHashMap<>(otherPlaceHolderValues);
+
+        //ensure all placeholders passed in are placed with the other placeholder values for consistency
+        //later in execution we only use other place holder values
+        if(placeholderValues != null && !placeholderValues.isEmpty()) {
+            for(Map.Entry<String,T> placeHolderValue : placeholderValues.entrySet()) {
+                if(otherPlaceHolderValues.containsKey(placeHolderValue.getKey())) {
+                    throw new IllegalArgumentException("Unable to determine which placeholder to use. Please ensure all names across both placeholders are unique");
+                }
+
+                otherPlaceHolderValues.put(placeHolderValue.getKey(),SDValue.create((INDArray) placeHolderValue.getValue()));
+            }
+        }
 
         if (requiredActivations == null)
             requiredActivations = Collections.emptySet();

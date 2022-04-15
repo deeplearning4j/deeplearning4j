@@ -8881,19 +8881,19 @@ mappings {
     inputTensorName: "max_output_size"
     outputTensorName: "boxes"
     outputTensorName: "scales"
-    outputTensorName: "iouThreshold"
+    outputTensorName: "overlayThreshold"
     outputTensorName: "maxOutputSize"
     inputToOutput {
       key: "boxes"
       value: "boxes"
     }
     inputToOutput {
-      key: "iouThreshold"
-      value: "iou_threshold"
-    }
-    inputToOutput {
       key: "maxOutputSize"
       value: "max_output_size"
+    }
+    inputToOutput {
+      key: "overlayThreshold"
+      value: "iou_threshold"
     }
     inputToOutput {
       key: "scales"
@@ -9662,8 +9662,9 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputFloatName: "iou_threshold"
+    outputTensorName: "outputs"
     inputToOutput {
-      key: "iouThreshold"
+      key: "outputs"
       value: "iou_threshold"
     }
     ruleType: "attribute"
@@ -12567,7 +12568,7 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "num_bits"
-    outputIntName: "numBits"
+    outputIntName: "num_bits"
     inputBooleanName: "narrow_range"
     outputBooleanName: "narrowed"
     inputToOutput {
@@ -12575,7 +12576,7 @@ mappings {
       value: "narrow_range"
     }
     inputToOutput {
-      key: "numBits"
+      key: "num_bits"
       value: "num_bits"
     }
     ruleType: "attribute"

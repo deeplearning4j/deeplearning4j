@@ -3540,7 +3540,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         INDArray assertion = Nd4j.ones(5).addi(5);
         Map<String, INDArray> output2 = parent.output(Collections.singletonMap("input", Nd4j.ones(5)), "output_final");
-        assertEquals(assertion,output2.get("loop/exit_3").reshape(assertion.shape()).castTo(assertion.dataType()));
+        assertEquals(assertion,output2.get("output_final").reshape(assertion.shape()).castTo(assertion.dataType()));
         System.out.println(output2);
     }
 
@@ -3782,25 +3782,27 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMissingPlaceholderError(Nd4jBackend backend) {
+        assertThrows(IllegalArgumentException.class,() -> {
+            SameDiff sd = SameDiff.create();
 
-        SameDiff sd = SameDiff.create();
+            int nOut = 4;
+            int minibatch = 10;
+            SDVariable predictions = sd.var("in", DataType.DOUBLE, minibatch, nOut);
+            SDVariable labels = sd.placeHolder("labels", DataType.DOUBLE, -1, nOut);
 
-        int nOut = 4;
-        int minibatch = 10;
-        SDVariable predictions = sd.var("in", DataType.DOUBLE, minibatch, nOut);
-        SDVariable labels = sd.placeHolder("labels", DataType.DOUBLE, -1, nOut);
+            LossReduce reduction = LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT;
 
-        LossReduce reduction = LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT;
+            SDVariable   loss = sd.loss().absoluteDifference("loss", labels, predictions, null, reduction);
 
-        SDVariable   loss = sd.loss().absoluteDifference("loss", labels, predictions, null, reduction);
+            try {
+                loss.eval();
+                fail("Exception should have been thrown");
+            } catch (IllegalStateException e) {
+                String msg = e.getMessage();
+                assertTrue(msg.contains("\"labels\"") && msg.contains("No array was provided"),msg);
+            }
+        });
 
-        try {
-            loss.eval();
-            fail("Exception should have been thrown");
-        } catch (IllegalStateException e) {
-            String msg = e.getMessage();
-            assertTrue(msg.contains("\"labels\"") && msg.contains("No array was provided"),msg);
-        }
     }
 
 

@@ -45,12 +45,21 @@ public class SameDiffUtils {
      */
     public static Map<String, INDArray> stackOutputs(List<ExecutionResult> outputs){
         Map<String, List<INDArray>> outs = new HashMap<>();
-        for(ExecutionResult batch : outputs){
-            for(String k : batch.getOutputs().keySet()) {
-                if(!outs.containsKey(k))
-                    outs.put(k, new ArrayList<>());
-                outs.get(k).add(batch.getOutputs().get(k));
+        for(ExecutionResult batch : outputs) {
+            if(batch.getOutputs() != null) {
+                for(String k : batch.getOutputs().keySet()) {
+                    if(!outs.containsKey(k))
+                        outs.put(k, new ArrayList<>());
+                    outs.get(k).add(batch.getOutputs().get(k));
+                }
+            } else if(batch.getValueOutputs() != null) {
+                for(String k : batch.getValueOutputs().keySet()) {
+                    if(!outs.containsKey(k))
+                        outs.put(k, new ArrayList<>());
+                    outs.get(k).add(batch.getValueOutputs().get(k).getTensorValue());
+                }
             }
+
         }
 
         Map<String, INDArray> ret = new HashMap<>();

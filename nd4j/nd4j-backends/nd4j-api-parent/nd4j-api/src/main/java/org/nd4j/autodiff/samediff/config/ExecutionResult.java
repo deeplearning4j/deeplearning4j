@@ -71,12 +71,25 @@ public class ExecutionResult {
     }
 
     public INDArray[] outputsToArray(List<String> inputs) {
-        INDArray[] ret =  new INDArray[inputs.size()];
-        for(int i = 0; i < inputs.size(); i++) {
-            ret[i] = outputs.get(inputs.get(i));
+        if(valueOutputs != null) {
+            INDArray[] ret =  new INDArray[valueOutputs.size()];
+            int count = 0;
+            for(Map.Entry<String,SDValue> entry : valueOutputs.entrySet()) {
+                if(entry.getValue() != null)
+                    ret[count++] = entry.getValue().getTensorValue();
+            }
+            return ret;
+        } else if(outputs != null) {
+            INDArray[] ret =  new INDArray[inputs.size()];
+            for(int i = 0; i < inputs.size(); i++) {
+                ret[i] = outputs.get(inputs.get(i));
+            }
+
+            return ret;
+        } else {
+            throw new IllegalStateException("No outputs to be converted.");
         }
 
-        return ret;
     }
 
 

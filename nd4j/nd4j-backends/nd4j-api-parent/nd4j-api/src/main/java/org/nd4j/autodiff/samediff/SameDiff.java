@@ -2381,12 +2381,22 @@ public class SameDiff extends SDBaseOps {
             ExecutionResult m = directExecHelper(placeholderMap, at, ds, Collections.<String>emptyList(), activeListeners, requiredVarsArr);
 
             for (Map.Entry<String, List<IEvaluation>> e : variableEvals.entrySet()) {
-                INDArray prediction = m.getOutputs().get(e.getKey());
-                for (IEvaluation eval : e.getValue()) {
-                    INDArray label = ds.getLabels(predictionLabelMapping.get(e.getKey()));
-                    INDArray mask = ds.getLabelsMaskArray(predictionLabelMapping.get(e.getKey()));
-                    eval.eval(label, prediction, mask);
+                if(m.hasSingle()) {
+                    INDArray prediction = m.getOutputs().get(e.getKey());
+                    for (IEvaluation eval : e.getValue()) {
+                        INDArray label = ds.getLabels(predictionLabelMapping.get(e.getKey()));
+                        INDArray mask = ds.getLabelsMaskArray(predictionLabelMapping.get(e.getKey()));
+                        eval.eval(label, prediction, mask);
+                    }
+                } else if(m.hasValues()) {
+                    INDArray prediction = m.getValueOutputs().get(e.getKey()).getTensorValue();
+                    for (IEvaluation eval : e.getValue()) {
+                        INDArray label = ds.getLabels(predictionLabelMapping.get(e.getKey()));
+                        INDArray mask = ds.getLabelsMaskArray(predictionLabelMapping.get(e.getKey()));
+                        eval.eval(label, prediction, mask);
+                    }
                 }
+
             }
 
             at.setIteration(at.iteration() + 1);
@@ -4580,7 +4590,15 @@ public class SameDiff extends SDBaseOps {
         SameDiff gradFn = getFunction(GRAD_FN_KEY);
         gradFn.setListeners(listeners);
         ExecutionResult gradExecResult = gradFn.batchOutputHelper(placeholderVals, null, Operation.TRAINING, varNames.toArray(new String[0]));
-        Map<String,INDArray> grads = gradExecResult.getOutputs();
+        Map<String,INDArray> grads = null;
+        if(gradExecResult.hasValues()) {
+            grads = new HashMap<>();
+            for(Map.Entry<String,SDValue> values : gradExecResult.getValueOutputs().entrySet()) {
+                grads.put(values.getKey(),values.getValue().getTensorValue());
+            }
+        } else if(gradExecResult.hasSingle()) {
+            grads = gradExecResult.getOutputs();
+        }
         Map<String, INDArray> outOutputs = outputVars == null ? null : new HashMap<>();
         Map<String, INDArray> outGrads = gradientVars == null ? null : new HashMap<>();
         if(outputVars != null){
@@ -4894,6 +4912,8 @@ public class SameDiff extends SDBaseOps {
 
             //At this point: we know the set of variables that are connected to the loss - these all (and only) need gradients
             Queue<String> availableForDiff = new LinkedList<>();
+            Set<String> differentiatedOps = new LinkedHashSet<>();
+
             for (SDVariable lossVar : finalOutputs) {
                 Variable v = sameDiff.variables.get(lossVar.name());
                 if (v.getOutputOfOp() != null) {
@@ -4940,7 +4960,7 @@ public class SameDiff extends SDBaseOps {
                 }
             }
 
-            Set<String> differentiatedOps = new HashSet<>();
+            Set<String> preReqCheckLater = new LinkedHashSet<>();
             while (!availableForDiff.isEmpty()) {
                 String dfName = availableForDiff.remove();
                 DifferentialFunction df = sameDiff.ops.get(dfName).getOp();
@@ -4993,7 +5013,7 @@ public class SameDiff extends SDBaseOps {
                 //Differentiate:
                 List<SDVariable> currFnGrads = df.diff(grads);
                 differentiatedOps.add(df.getOwnName());
-
+                System.out.println("Added differentiated op " + df.getOwnName());
                 //Check the inputs to this op, see if we can differentiate those ops now (and if so: add to queue)
                 for (String s : inputsToOp) {
                     Variable v = sameDiff.variables.get(s);
@@ -5041,48 +5061,48 @@ public class SameDiff extends SDBaseOps {
                     // contributions - i.e., we need to have differentiated both opY and opZ
 
                     boolean allAvailable = true;
-                    SameDiffOp o = sameDiff.ops.get(opName);
+                    SameDiffOp o = ops.get(opName);
                     for (String opOutput : o.getOutputsOfOp()) {
                         Variable outVar = variables.get(opOutput);
                         if (outVar.getVariable().dataType().isFPType()) {
-                            allAvailable = shouldAddAutoDiffCandidate(minimalSubgraphVars,outVar,prerequisites,differentiatedOps);
-                            if(!allAvailable) {
-                                //ensure we get pre requisites queued up for autodiff
-                                for(String input : o.getInputsToOp()) {
-                                    SameDiffOp opWithoutput = opWithOutput(input,ops.values());
-                                    if(opWithoutput != null && !availableForDiff.contains(o.getOp().getOwnName())) {
-                                        availableForDiff.add(opWithoutput.getOp().getOwnName());
-                                        // re enqueue for auto diff if an input is found
-                                        if(!availableForDiff.contains(opName)) {
-                                            availableForDiff.add(opName);
-                                        }
-                                    }
+                            if (minimalSubgraphVars.contains(outVar.getName())) {
+                                //Need gradient for this variable to be available before we can differentiate
+                                if (outVar.getVariable().gradient() == null) {
+                                    allAvailable = false;
+                                    break;
                                 }
 
-                            }
+                                //However, when a variable is used multiple times, we need ALL gradient contributions available:
+                                List<String> prereqs = prerequisites.get(outVar.getName());
+                                //constants may not have operations in the graph (sometimes happens with model import)
+                                //automatically differentiate those to allow proper processing of the graph
+                                for(String prereq : prereqs) {
+                                    String[] prereqOutput = sameDiff.getOutputsForOp(sameDiff.getOpById(prereq));
+                                    for(String prereq2 : prereqOutput) {
+                                        if(sameDiff.hasVariable(prereq2) && sameDiff.isPlaceHolder(prereq2) || sameDiff.isConstant(prereq2) && !differentiatedOps.contains(prereq2)) {
+                                            sameDiff.setGradientForVariableName(prereq2,sameDiff.one(prereq + "-grad",sameDiff.getVariable(prereq2).shape));
+                                            differentiatedOps.add(prereq);
+                                        }
+                                    }
 
-                            //If isn't not in the minimal subgraph, loss doesn't depend on it, so we don't care about it
+                                }
+                                if (prereqs != null) {
+                                    allAvailable &= differentiatedOps.containsAll(prereqs);
+                                    if (!allAvailable) {
+                                        preReqCheckLater.add(outVar.getName());
+                                        break;
+                                    }
+                                }
+                            }
+                            //If it's not in the minimal subgraph, loss doesn't depend on it, so we don't care about it
                         }
                     }
+
 
                     if (allAvailable && !availableForDiff.contains(o.getOp().getOwnName())) {
                         availableForDiff.add(o.getOp().getOwnName());
-                    }  else if (availableForDiff.isEmpty()) {
-                        for (Map.Entry<String, SameDiffOp> sameDiffOpEntry : sameDiff.ops.entrySet()) {
-                            for (String opOutput : sameDiffOpEntry.getValue().getOutputsOfOp()) {
-                                Variable outVar = variables.get(opOutput);
-                                if (shouldAddAutoDiffCandidate(minimalSubgraphVars, outVar, prerequisites, differentiatedOps)) {
-                                    availableForDiff.add(sameDiffOpEntry.getValue().getOp().getOwnName());
-                                }
-                            }
-                        }
                     }
                 }
-
-
-                //discover other potential additions
-
-
             }
 
             //Let's validate we actually differentiated everything correctly:
@@ -5173,18 +5193,37 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * Returns true if this vertex id is a place holder variable or not<br>
+     * Returns true if this vertex id is a placeholder variable or not<br>
      * A place holder variable is one where the array shape(s) are currently known and can't yet be calculated
      *
      * @param varName the vertex id to test
      * @return True if the variable is a placeholder, false otherwise
      */
     public boolean isPlaceHolder(String varName) {
+        if(!variables.containsKey(varName)) {
+            log.trace("No variable present in SameDiff instance with name {}", varName);
+            return false;
+        }
         Preconditions.checkState(variables.containsKey(varName), "No variable present in SameDiff instance with name \"%s\"", varName);
         return variables.get(varName).getVariable().isPlaceHolder();
     }
 
 
+
+    /**
+     * Returns true if this vertex id is a constant variable or not<br>
+     * A constant variable is one where the array's variable is predefined and can not be changed.
+     *
+     * @param varName the vertex id to test
+     * @return True if the variable is a placeholder, false otherwise
+     */
+    public boolean isConstant(String varName) {
+        if(!variables.containsKey(varName)) {
+            log.trace("No variable present in SameDiff instance with name {}", varName);
+            return false;
+        }
+        return variables.get(varName).getVariable().isConstant();
+    }
 
     /**
      * Updates the variable name property on the passed in variable, the reference in samediff, and returns the variable.

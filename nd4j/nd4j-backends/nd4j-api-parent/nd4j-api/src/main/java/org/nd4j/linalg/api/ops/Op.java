@@ -77,7 +77,8 @@ public interface Op {
     Buffer extraArgsBuff();
 
     /**
-     * An op number
+     * An op number. The operation numbers can be found here:
+     * deeplearning4j/libnd4jinclude/loops/legacy_ops.h
      * @return
      */
     int opNum();
