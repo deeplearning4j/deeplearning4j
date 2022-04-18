@@ -57,7 +57,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     }
 
     /**
-     * @param maxMemFrac             Maximum memory fraciton to use as cache
+     * @param maxMemFrac             Maximum memory fraction to use as cache
      * @param smallArrayThreshold    Below this size (elements), don't apply the "largerArrayMaxMultiple" rule
      * @param largerArrayMaxMultiple Maximum multiple of the requested size to return from the cache. If an array of size
      *                               1024 is requested, and largerArrayMaxMultiple is 2.0, then we'll return from the cache
