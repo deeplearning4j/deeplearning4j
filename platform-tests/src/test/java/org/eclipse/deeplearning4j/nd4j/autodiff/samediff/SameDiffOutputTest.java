@@ -64,6 +64,8 @@ public class SameDiffOutputTest extends BaseNd4jTestWithBackends {
                 .functionName("add")
                 .inputVarNames(new String[]{"input1","input2"})
                 .outputVarNames(new String[]{"add"})
+                .subGraphInputVarNames(new String[]{"input1","input2"})
+                .subGraphOutputVarNames(new String[]{"add"})
                 .inputs(new SDVariable[]{inputOneParent,inputTwoParent})
                 .build();
         sameDiff.invoke(invokeParams);

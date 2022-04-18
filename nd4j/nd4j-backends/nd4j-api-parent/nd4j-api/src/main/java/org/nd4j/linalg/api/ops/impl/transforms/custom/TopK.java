@@ -106,9 +106,21 @@ public class TopK extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        if(properties.containsKey("sorted")) {
+            this.sorted = getBooleanFromProperty("sorted",properties);
+        }
+
+        if(properties.containsKey("k")) {
+            this.k = getIntValueFromProperty("k",properties);
+        }
+
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         //2 outputs: values and indices
-        //TODO make thit configurable
+        //TODO make this configurable
         return Arrays.asList(dataTypes.get(0), DataType.INT);
     }
 }

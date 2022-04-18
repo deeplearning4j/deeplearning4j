@@ -21,19 +21,82 @@ package org.nd4j.onnxruntime.util;
 
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
-import org.bytedeco.onnxruntime.MemoryInfo;
-import org.bytedeco.onnxruntime.Value;
+import org.bytedeco.onnxruntime.*;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.onnxruntime.runner.enums.ONNXType;
 import org.slf4j.Logger;
+
+import java.util.List;
 
 import static org.bytedeco.onnxruntime.global.onnxruntime.*;
 import static org.nd4j.linalg.api.buffer.DataType.*;
 
 public class ONNXUtils {
+
+
+    /**
+     * Return the {@link INDArray} from a sequence
+     * @param outValue the input sequence to get the ndarrays from
+     * @param ortAllocator the allocator to use to retrieve relevant memory
+     * @return the equivalent arrays
+     */
+    public static INDArray[] ndarraysFromSequence(Value outValue,OrtAllocator ortAllocator) {
+        Preconditions.checkState(outValue.HasValue(),"No value found in specified value!");
+        INDArray[] ret = new INDArray[(int) outValue.GetCount()];
+        for(int i = 0; i < ret.length; i++) {
+            INDArray retValue = getArray(outValue.GetValue(i,ortAllocator));
+            ret[i] = retValue;
+        }
+
+        return ret;
+    }
+
+
+    /**
+     * Create a sequence from a list of tensors
+     * returning a {@link ValueVector} equivalent
+     * using {@link #getTensor(INDArray, MemoryInfo)}
+     *
+     * @param sequence the sequence to get
+     * @param memoryInfo the memory info to use for allocation
+     * @return
+     */
+    public static ValueVector getSequence(List<INDArray> sequence,MemoryInfo memoryInfo) {
+        ValueVector valueVector = new ValueVector(sequence.size());
+        for(int i = 0; i < sequence.size(); i++) {
+            valueVector.put(getTensor(sequence.get(i),memoryInfo));
+        }
+
+        return valueVector;
+    }
+
+
+    /**
+     * Get the onnx type of the output
+     * @param session the session to get the input for
+     * @param i the index of the output
+     * @return
+     */
+    public static ONNXType getTypeForOutput(Session session,int i) {
+        TypeInfo typeInfo = session.GetOutputTypeInfo(i);
+        return ONNXType.values()[typeInfo.GetONNXType()];
+    }
+
+
+    /**
+     * Get the onnx type of the input
+     * @param session the session to get the output type info from
+     * @param i the index of the input
+     * @return the relevant type information
+     */
+    public static ONNXType getTypeForInput(Session session,int i) {
+        TypeInfo typeInfo = session.GetInputTypeInfo(i);
+        return ONNXType.values()[typeInfo.GetONNXType()];
+    }
 
     /**
      *
@@ -208,8 +271,8 @@ public class ONNXUtils {
      * @return the equivalent data buffer
      */
     public static DataBuffer getDataBuffer(Value tens) {
-       if(tens.isNull())
-           throw new IllegalArgumentException("Native underlying tensor value was null!");
+        if(tens.isNull())
+            throw new IllegalArgumentException("Native underlying tensor value was null!");
         try (PointerScope scope = new PointerScope()) {
             DataBuffer buffer = null;
             int type = tens.GetTensorTypeAndShapeInfo().GetElementType();

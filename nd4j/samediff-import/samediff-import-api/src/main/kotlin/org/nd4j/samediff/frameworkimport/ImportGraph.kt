@@ -654,8 +654,8 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             ).proceedWithInit
                         }
 
-                        if(proceedWithInit)
                         //add nodes/other pre processing in order for this node to work
+                        if(proceedWithInit && !sd.ops.containsKey(name))
                             sd.ops[name] = op
 
                         if(proceedWithInit)
@@ -926,22 +926,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
         println(sd.summary())
 
-        /*
-        opByOutputName.forEach { opOutput, ops ->
-            if (ops.size == 2) {
-                val firstOp = ops[0]
-                val secondOp = ops[1]
-                if (firstOp.op is NoOp) {
-                    renameOp(secondOp, firstOp, sd)
 
-                } else if (secondOp.op is NoOp) {
-                    renameOp(firstOp, secondOp, sd)
-                }
-            }
-        }
-
-        println(sd.summary())
-*/
         return sd
     }
 

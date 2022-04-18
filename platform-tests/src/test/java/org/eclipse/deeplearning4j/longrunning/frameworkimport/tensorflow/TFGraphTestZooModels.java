@@ -58,6 +58,7 @@ import java.util.stream.Stream;
 @Tag(TagNames.LONG_TEST)
 @Tag(TagNames.LARGE_RESOURCES)
 @Tag(TagNames.DOWNLOADS)
+@Disabled
 public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
     @TempDir
     static Path classTestDir;

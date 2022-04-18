@@ -2158,14 +2158,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray put(INDArrayIndex[] indices, INDArray element) {
         Nd4j.getCompressor().autoDecompress(this);
         boolean isSpecifiedIndex = false;
-        for(INDArrayIndex idx : indices){
-            if(idx instanceof SpecifiedIndex){
+        for(INDArrayIndex idx : indices) {
+            if(idx instanceof SpecifiedIndex) {
                 isSpecifiedIndex = true;
                 break;
             }
         }
 
-        if(!isSpecifiedIndex){
+        if(!isSpecifiedIndex) {
             return get(indices).assign(element);
         } else {
             //Can't get a view, so we'll do it in subsets instead
@@ -3603,12 +3603,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (isRowVector() && toPut.isVector()) {
             return assign(toPut);
         }
+        if(toPut.length() > this.columns()) {
+            throw new IllegalArgumentException("Illegal row: Vector length of " + toPut.length() + " greater than columns " + columns());
+        }
         return put(new INDArrayIndex[] {NDArrayIndex.point(row), NDArrayIndex.all()}, toPut);
     }
 
     @Override
     public INDArray putColumn(int column, INDArray toPut) {
         Nd4j.getCompressor().autoDecompress(this);
+
+        if(toPut.length() > this.rows()) {
+            throw new IllegalArgumentException("Illegal row: Vector length of " + toPut.length() + " greater than columns " + columns());
+        }
 
         if (isColumnVector() && toPut.isVector()) {
             return assign(toPut);
@@ -4173,7 +4180,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         int outIdx = 0;     //Axis number counter for output array
         int inIdx = 0;      //Axis number counter for input array
-        for( int i=0; i<indexes.length; i++ ){
+        for( int i = 0; i < indexes.length; i++) {
             if(indexes[i] instanceof PointIndex){
                 //Point indexes don't appear in output
                 PointIndex pi = (PointIndex)indexes[i];

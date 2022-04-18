@@ -1124,8 +1124,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         INDArray expAllZeros = Nd4j.getExecutioner().exec(new Eps(first, second, Nd4j.create(DataType.BOOL, 10)));
         INDArray expAllOnes = Nd4j.getExecutioner().exec(new Eps(first, first, Nd4j.create(DataType.BOOL, 10)));
 
-//        System.out.println(expAllZeros);
-//        System.out.println(expAllOnes);
 
         val allones = Nd4j.getExecutioner().exec(new All(expAllOnes)).getDouble(0);
 
@@ -2293,11 +2291,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         INDArray expAllZeros1 = Nd4j.getExecutioner().exec(new Eps(first, second, Nd4j.create(DataType.BOOL, new long[] {1, 10}, 'f')));
         INDArray expAllZeros2 = Nd4j.getExecutioner().exec(new Eps(second, first, Nd4j.create(DataType.BOOL, new long[] {1, 10}, 'f')));
 
-//        System.out.println(expAllZeros1);
-//        System.out.println(expAllZeros2);
-
-        assertTrue(expAllZeros1.none());
-        assertTrue(expAllZeros2.none());
+        assertTrue(expAllZeros1.all());
+        assertTrue(expAllZeros2.all());
     }
 
     @ParameterizedTest
@@ -6709,16 +6704,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp1, out1);
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testBadReduce3Call(Nd4jBackend backend) {
-        assertThrows(ND4JIllegalStateException.class,() -> {
-            val x = Nd4j.create(400,20);
-            val y = Nd4j.ones(1, 20);
-            x.distance2(y);
-        });
-
-    }
 
 
     @ParameterizedTest
@@ -7854,18 +7839,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(arr1, arr2);
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testAssignInvalid(){
-        INDArray arr1 = Nd4j.linspace(1, 12, 12).reshape('c', 3, 4);
-        INDArray arr2 = Nd4j.create(4,3);
-        try {
-            arr2.assign(arr1);
-            fail("Expected exception");
-        } catch (IllegalStateException e){
-            assertTrue( e.getMessage().contains("shape"),e.getMessage());
-        }
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

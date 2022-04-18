@@ -685,10 +685,6 @@ public class FlatBuffersMapper {
                 for (int i = 0; i < shape.length; i++) {
                     shape[i] = p.shape(i);
                 }
-//                if(shape.length != 1){
-//
-//                    throw new IllegalStateException("Multi-dimensional arrays not yet implemented");
-//                }
 
                 if (p.iLength() > 0) {
                     int[] iArr = new int[p.iLength()];
@@ -1035,14 +1031,14 @@ public class FlatBuffersMapper {
         if(list == null)
             return null;
         int[] out = new int[list.size()];
-        int i=0;
-        for(String s : list){
+        int i = 0;
+        for(String s : list) {
             out[i++] = fbb.createString(s);
         }
         return out;
     }
 
-    public static DifferentialFunction cloneViaSerialize(SameDiff sd, DifferentialFunction df ){
+    public static DifferentialFunction cloneViaSerialize(SameDiff sd, DifferentialFunction df) {
         Map<String,Integer> nameToIdxMap = new HashMap<>();
         int count = 0;
         for( Variable v : sd.getVariables().values()){

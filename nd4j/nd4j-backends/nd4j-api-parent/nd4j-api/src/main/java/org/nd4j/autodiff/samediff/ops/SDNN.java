@@ -1265,4 +1265,30 @@ public class SDNN extends SDOps {
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.strict.Tanh(sd,x).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
+
+  /**
+   * Find values and indices for the largest k entries along the last dimension.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param k The number of values to return
+   * @param sorted Whether to return the values sorted or not
+   */
+  public SDVariable[] topK(SDVariable input, double k, boolean sorted) {
+    SDValidation.validateNumerical("topK", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.TopK(sd,input, k, sorted).outputVariables();
+  }
+
+  /**
+   * Find values and indices for the largest k entries along the last dimension.<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param input Input tensor (NUMERIC type)
+   * @param k The number of values to return
+   * @param sorted Whether to return the values sorted or not
+   */
+  public SDVariable[] topK(String[] names, SDVariable input, double k, boolean sorted) {
+    SDValidation.validateNumerical("topK", "input", input);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.TopK(sd,input, k, sorted).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
 }

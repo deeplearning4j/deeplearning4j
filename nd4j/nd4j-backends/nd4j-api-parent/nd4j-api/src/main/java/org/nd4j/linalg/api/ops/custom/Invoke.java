@@ -56,6 +56,8 @@ public class Invoke extends DynamicCustomOp {
     @Getter
     private String[] subGraphOutputVarNames;
 
+    public Invoke() {
+    }
 
     @Data
     @Builder
@@ -143,7 +145,7 @@ public class Invoke extends DynamicCustomOp {
             }
 
             return ExecutionResult.builder()
-                    .outputs(output)
+                    .outputs(ExecutionResult.pack(output))
                     .build();
         } else {
             Map<String,SDValue> valueInputs = new HashMap<>();

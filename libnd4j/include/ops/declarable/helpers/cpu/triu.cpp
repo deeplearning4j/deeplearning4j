@@ -36,7 +36,9 @@ static void triuBP_(sd::LaunchContext* context, const NDArray& input, const NDAr
     gradI.assign(firstElement);
   } else {
     auto dOdI = NDArray(&gradO);  // dO/dI
-    const_cast<NDArray&>(input).fillAsTriangular<T>(0, diagonal, dOdI.sizeAt(-1), dOdI, 'b');
+    char direction = diagonal <= 0  || diagonal > 0 ? 'l': 'u';
+
+    const_cast<NDArray&>(input).fillAsTriangular<T>(0, diagonal, diagonal, dOdI, direction,false);
     int dLen = dOdI.lengthOf();
 
     auto func = PRAGMA_THREADS_FOR {

@@ -17,22 +17,19 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.nd4j.graph;
 
-import com.google.flatbuffers.BaseVector;
-import com.google.flatbuffers.Constants;
-import com.google.flatbuffers.FlatBufferBuilder;
-import com.google.flatbuffers.Table;
-
-import java.nio.ByteBuffer;
+import java.nio.*;
+import java.lang.*;
 import java.nio.ByteOrder;
+import java.util.*;
+import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")
 public final class UIAddName extends Table {
   public static void ValidateVersion() { Constants.FLATBUFFERS_1_12_0(); }
   public static UIAddName getRootAsUIAddName(ByteBuffer _bb) { return getRootAsUIAddName(_bb, new UIAddName()); }
-  public static UIAddName getRootAsUIAddName(ByteBuffer _bb, UIAddName obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
+  public static UIAddName getRootAsUIAddName(ByteBuffer _bb, UIAddName obj) { _bb.order(java.nio.ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public UIAddName __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 

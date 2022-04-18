@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 
 import java.util.Collections;
@@ -41,6 +42,15 @@ public class TensorArrayConcat extends BaseTensorOp {
     }
 
     public TensorArrayConcat(){}
+
+    public TensorArrayConcat(SameDiff sd, SDVariable inputVar) {
+        this(sd,new SDVariable[]{inputVar});
+    }
+
+    public TensorArrayConcat(INDArray inputVar) {
+
+    }
+
     @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op name found for " + opName());
