@@ -28,6 +28,14 @@
 #include <atomic>
 #include <stdexcept>
 #include <vector>
+#include <config.h>
+
+#ifndef __JAVACPP_HACK__
+#if defined(HAVE_VEDA)
+#include <string>
+#include <mutex>
+#endif
+#endif
 
 namespace sd {
 class SD_LIB_EXPORT Environment {
@@ -50,7 +58,12 @@ class SD_LIB_EXPORT Environment {
   std::atomic<int64_t> _maxTotalPrimaryMemory{-1};
   std::atomic<int64_t> _maxTotalSpecialMemory{-1};
   std::atomic<int64_t> _maxDeviceMemory{-1};
-
+#ifndef __JAVACPP_HACK__
+#if defined(HAVE_VEDA)
+  std::mutex path_mutex;
+  std::string veda_device_dir;
+#endif
+#endif
   bool _blasFallback = false;
 
 #ifdef SD_EXPERIMENTAL_ENABLED
@@ -143,6 +156,10 @@ class SD_LIB_EXPORT Environment {
   int blasPatchVersion();
 
   std::vector<Pair>& capabilities();
+
+  const char* getVedaDeviceDir();
+
+  void setVedaDeviceDir(const std::string &dir);
 };
 }  // namespace sd
 

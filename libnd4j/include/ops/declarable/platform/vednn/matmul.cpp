@@ -36,52 +36,54 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
 
   if (x->isEmpty() || y->isEmpty()) return sd::Status::OK;
 
-  unsigned long bGemm = 1;
-  for(int i=0; i< x->rankOf()-2;i++){
-      bGemm = bGemm * x->sizeAt(i);
+  uint64_t bGemm = 1;
+  for (int i = 0; i < x->rankOf() - 2; i++) {
+    bGemm = bGemm * x->sizeAt(i);
   }
-  const unsigned long outDim = z->sizeAt(-1);
-  const unsigned long nBatch = z->sizeAt(-2);
-  const unsigned long inDim = x->sizeAt(-1);
+  const uint64_t outDim = z->sizeAt(-1);
+  const uint64_t nBatch = z->sizeAt(-2);
+  const uint64_t inDim = x->sizeAt(-1);
 #if !defined(HAVE_VEDA)
-  if(bGemm == 1){
+  if (bGemm == 1) {
     vednnLinearForward(inDim, outDim, nBatch, 1, x->buffer(), y->buffer(), z->buffer());
-  }else{
-    //because of the bgemm did not work as expected, we will manually parallelize over bGemm
-    int xStride = x->rankOf()>2 ? x->sizeAt(-1) * x->sizeAt(-2) : 0;
-    int yStride = y->rankOf()>2 ? y->sizeAt(-1) * y->sizeAt(-2) : 0;
-    int zStride = z->rankOf()>2 ? z->sizeAt(-1) * z->sizeAt(-2) : 0;
+  } else {
+    // because of the bgemm did not work as expected, we will manually parallelize over bGemm
+    int xStride = x->rankOf() > 2 ? x->sizeAt(-1) * x->sizeAt(-2) : 0;
+    int yStride = y->rankOf() > 2 ? y->sizeAt(-1) * y->sizeAt(-2) : 0;
+    int zStride = z->rankOf() > 2 ? z->sizeAt(-1) * z->sizeAt(-2) : 0;
 
-    #pragma omp parallel for
-    for(int i=0; i<bGemm; i++){
-        float *xPtr = x->bufferAsT<float>() + i * xStride;
-        float *yPtr = y->bufferAsT<float>() + i * yStride;
-        float *zPtr = z->bufferAsT<float>() + i * zStride;
-        vednnLinearForward(inDim, outDim, nBatch, 1, xPtr, yPtr, zPtr );
+#pragma omp parallel for
+    for (int i = 0; i < bGemm; i++) {
+      float *xPtr = x->bufferAsT<float>() + i * xStride;
+      float *yPtr = y->bufferAsT<float>() + i * yStride;
+      float *zPtr = z->bufferAsT<float>() + i * zStride;
+      vednnLinearForward(inDim, outDim, nBatch, 1, xPtr, yPtr, zPtr);
     }
   }
 #else
-  VEDA_HANDLE &handle = VEDA_HANDLE::getInstance();
+  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
+  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
   auto func = handle.getFunctionByConstPtrName("vedaVednnLinearForwardExF32");
 
   VEDAdeviceptr vX, vY, vZ;
-  const unsigned long xStride = x->rankOf()>2 ? x->sizeAt(-1) * x->sizeAt(-2) : 0;
-  const unsigned long yStride = y->rankOf()>2 ? y->sizeAt(-1) * y->sizeAt(-2) : 0;
-  const unsigned long zStride = z->rankOf()>2 ? z->sizeAt(-1) * z->sizeAt(-2) : 0;
-  VEDA(vedaMemAllocAsync(&vX, x->lengthOf() * x->sizeOfT(), 0));
-  VEDA(vedaMemAllocAsync(&vY, y->lengthOf() * y->sizeOfT(), 0));
-  VEDA(vedaMemAllocAsync(&vZ, z->lengthOf() * z->sizeOfT(), 0));
-  VEDA(vedaMemcpyHtoDAsync(vX, x->buffer(), x->lengthOf() * x->sizeOfT(), 0));
-  VEDA(vedaMemcpyHtoDAsync(vY, y->buffer(), y->lengthOf() * y->sizeOfT(), 0));
+  const uint64_t xStride = x->rankOf() > 2 ? x->sizeAt(-1) * x->sizeAt(-2) : 0;
+  const uint64_t yStride = y->rankOf() > 2 ? y->sizeAt(-1) * y->sizeAt(-2) : 0;
+  const uint64_t zStride = z->rankOf() > 2 ? z->sizeAt(-1) * z->sizeAt(-2) : 0;
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vX, x->lengthOf() * x->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vY, y->lengthOf() * y->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vZ, z->lengthOf() * z->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vX, x->buffer(), x->lengthOf() * x->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vY, y->buffer(), y->lengthOf() * y->sizeOfT(), 0));
 
-  VEDA(vedaLaunchKernel(func, 0, bGemm, inDim, outDim, nBatch, vX, xStride, vY, yStride, vZ, zStride));
-  VEDA(vedaMemcpyDtoHAsync(z->buffer(), vZ, z->lengthOf() * z->sizeOfT(), 0));
-  VEDA(vedaCtxSynchronize());
+  VEDA_CALL_THROW(vedaLaunchKernel(func, 0, bGemm, inDim, outDim, nBatch, vX, xStride, vY, yStride, vZ, zStride));
+  VEDA_CALL_THROW(vedaMemcpyDtoHAsync(z->buffer(), vZ, z->lengthOf() * z->sizeOfT(), 0));
 
-  VEDA(vedaMemFreeAsync(vX, 0));
-  VEDA(vedaMemFreeAsync(vY, 0));
-  VEDA(vedaMemFreeAsync(vZ, 0));
+
+  VEDA_CALL_THROW(vedaMemFreeAsync(vX, 0));
+  VEDA_CALL_THROW(vedaMemFreeAsync(vY, 0));
+  VEDA_CALL_THROW(vedaMemFreeAsync(vZ, 0));
+  scopedContext.sync();
 #endif
   return sd::Status::OK;
 }
@@ -113,7 +115,7 @@ PLATFORM_CHECK(matmul, ENGINE_CPU) {
       req.expectEq(makeInfoVariable(output->ordering(), ORDERING_MSG_OUTPUT), 'c') &&
       req.expectEq(makeInfoVariable(output->ews(), EWS_MSG_OUTPUT), 1);
   // matrix checks
-      req.expectGreater(makeInfoVariable(input0->rankOf(), RANK_MSG_INPUT0), 0) &&
+  req.expectGreater(makeInfoVariable(input0->rankOf(), RANK_MSG_INPUT0), 0) &&
       req.expectGreater(makeInfoVariable(input1->rankOf(), RANK_MSG_INPUT1), 0) &&
       req.expectGreater(makeInfoVariable(output->rankOf(), RANK_MSG_OUTPUT), 0) &&
       req.expectTrue(makeInfoVariable(
@@ -124,19 +126,18 @@ PLATFORM_CHECK(matmul, ENGINE_CPU) {
             int maxRank = i0Rank > i1Rank ? i0Rank : i1Rank;
             maxRank = outRank > maxRank ? outRank : maxRank;
 
-            for (int j=-maxRank; j<=-3; j++){
-
-                int bGemm0 = i0Rank >= -j ? input0->sizeAt(j) : 1;
-                int bGemm1 = i1Rank >= -j ? input1->sizeAt(j) : 1;
-                // if(bGemm0 != bGemm1){
-                //     //if one of the ranks is below 3 we will allow it
-                //     if(i0Rank <=2 ) bGemm0 = bGemm1;
-                //     else if(i1Rank > 2 ) return false;
-                // }
-                int bGemmOut = outRank >= -j ? output->sizeAt(j) : 1;
-                if(bGemm0 != bGemm1 || bGemmOut != bGemm0){
-                    return false;
-                }
+            for (int j = -maxRank; j <= -3; j++) {
+              int bGemm0 = i0Rank >= -j ? input0->sizeAt(j) : 1;
+              int bGemm1 = i1Rank >= -j ? input1->sizeAt(j) : 1;
+              // if(bGemm0 != bGemm1){
+              //     //if one of the ranks is below 3 we will allow it
+              //     if(i0Rank <=2 ) bGemm0 = bGemm1;
+              //     else if(i1Rank > 2 ) return false;
+              // }
+              int bGemmOut = outRank >= -j ? output->sizeAt(j) : 1;
+              if (bGemm0 != bGemm1 || bGemmOut != bGemm0) {
+                return false;
+              }
             }
             return true;
           },

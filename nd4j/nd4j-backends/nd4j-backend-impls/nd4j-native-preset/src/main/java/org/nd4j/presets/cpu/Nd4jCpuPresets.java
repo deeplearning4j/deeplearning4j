@@ -159,7 +159,8 @@ import org.nd4j.presets.OpExclusionUtils;
                 @Platform(value = "linux-arm64", preloadpath = {"/usr/aarch64-linux-gnu/lib/", "/usr/lib/aarch64-linux-gnu/"}),
                 @Platform(value = "linux-ppc64", preloadpath = {"/usr/powerpc64-linux-gnu/lib/", "/usr/powerpc64le-linux-gnu/lib/", "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}),
                 @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jcpu"}),
-                @Platform(extension = {"-onednn", "-onednn-avx512","-onednn-avx2","-","-avx2","-avx512","-compat"}) })
+                @Platform(extension = {"-onednn", "-onednn-avx512","-onednn-avx2", "-vednn", "-vednn-avx512", "-vednn-avx2", "-","-avx2","-avx512", "-compat"}, resource={"libnd4jcpu_device.vso"})
+        })
 public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 
     private Logger logger;

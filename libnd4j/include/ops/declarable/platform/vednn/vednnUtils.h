@@ -21,12 +21,12 @@
 #ifndef DEV_TESTSVEDNNUTILS_H
 #define DEV_TESTSVEDNNUTILS_H
 
-#include <vednn.h>
 #include <array/NDArray.h>
 #include <graph/Context.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
+#include <vednn.h>
 #if defined(HAVE_VEDA)
 #include "veda_helper.h"
 #endif
@@ -46,11 +46,50 @@ DECLARE_PLATFORM(maxpool2d_bp, ENGINE_CPU);
 DECLARE_PLATFORM(conv2d, ENGINE_CPU);
 DECLARE_PLATFORM(conv2d_bp, ENGINE_CPU);
 
-//only forward
+// only forward
 DECLARE_PLATFORM(matmul, ENGINE_CPU);
 DECLARE_PLATFORM(softmax, ENGINE_CPU);
 DECLARE_PLATFORM(log_softmax, ENGINE_CPU);
 
+SD_INLINE vednnTensorParam_t getTensorFormat(const NDArray &in, bool isNCHW = true) {
+  vednnTensorParam_t param;
+  param.dtype = DTYPE_FLOAT;
+  if (isNCHW) {
+    param.batch = (int)in.sizeAt(0);
+    param.channel = (int)in.sizeAt(1);
+    param.height = (int)in.sizeAt(2);
+    param.width = (int)in.sizeAt(3);
+  } else {
+    param.batch = (int)in.sizeAt(0);
+    param.channel = (int)in.sizeAt(3);
+    param.height = (int)in.sizeAt(1);
+    param.width = (int)in.sizeAt(2);
+  }
+  return param;
+}
+
+SD_INLINE vednnFilterParam_t getFilterParam(const NDArray &weights, int wFormat) {
+  //// 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+  vednnFilterParam_t paramFilter;
+  paramFilter.dtype = DTYPE_FLOAT;
+  if (wFormat == 0) {
+    paramFilter.height = (int)weights.sizeAt(0);
+    paramFilter.width = (int)weights.sizeAt(1);
+    paramFilter.inChannel = (int)weights.sizeAt(2);
+    paramFilter.outChannel = (int)weights.sizeAt(3);
+  } else if (wFormat == 1) {
+    paramFilter.outChannel = (int)weights.sizeAt(0);
+    paramFilter.inChannel = (int)weights.sizeAt(1);
+    paramFilter.height = (int)weights.sizeAt(2);
+    paramFilter.width = (int)weights.sizeAt(3);
+  } else {
+    paramFilter.outChannel = (int)weights.sizeAt(0);
+    paramFilter.height = (int)weights.sizeAt(1);
+    paramFilter.width = (int)weights.sizeAt(2);
+    paramFilter.inChannel = (int)weights.sizeAt(3);
+  }
+  return paramFilter;
+}
 
 }  // namespace platforms
 }  // namespace ops

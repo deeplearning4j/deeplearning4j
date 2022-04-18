@@ -25,6 +25,8 @@
 
 #include "vednnUtils.h"
 
+#undef ALLOW_NHWC_FORMAT
+
 namespace sd {
 namespace ops {
 namespace platforms {
@@ -43,31 +45,20 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
   auto dW = INT_ARG(7);
   auto isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;  // INT_ARG(10): 1-NHWC, 0-NCHW
 
-  std::unique_ptr<NDArray> inTemp, outTemp;
   NDArray *in = input, *out = output;
+#if defined(ALLOW_NHWC_FORMAT)
+  std::unique_ptr<NDArray> inTemp, outTemp;
   if (!isNCHW) {
     inTemp.reset(new NDArray(input->permute({0, 3, 1, 2}).dup('c')));
     in = inTemp.get();
     outTemp.reset(new NDArray(output->permute({0, 3, 1, 2}).ulike()));
     out = outTemp.get();
   }
-
-  vednnTensorParam_t paramIn;
-  vednnTensorParam_t paramOut;
+#endif
+  vednnTensorParam_t paramIn = getTensorFormat(*in);
+  vednnTensorParam_t paramOut = getTensorFormat(*out);
 
   vednnPoolingParam_t paramConv;
-
-  paramIn.dtype = DTYPE_FLOAT;
-  paramIn.batch = (int)in->sizeAt(0);
-  paramIn.channel = (int)in->sizeAt(1);
-  paramIn.height = (int)in->sizeAt(2);
-  paramIn.width = (int)in->sizeAt(3);
-
-  paramOut.dtype = DTYPE_FLOAT;
-  paramOut.batch = (int)out->sizeAt(0);
-  paramOut.channel = (int)out->sizeAt(1);
-  paramOut.height = (int)out->sizeAt(2);
-  paramOut.width = (int)out->sizeAt(3);
 
   paramConv.windowWidth = kW;
   paramConv.windowHeight = kH;
@@ -80,33 +71,35 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
 
   auto status = res == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
-  VEDA_HANDLE &handle = VEDA_HANDLE::getInstance();
+  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
+  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
   auto func = handle.getFunctionByConstPtrName("vedaVednnMaxPoolingForward");
   VEDAdeviceptr vIn, vOut;
 
-  VEDA(vedaMemAllocAsync(&vIn, in->lengthOf() * in->sizeOfT(), 0));
-  VEDA(vedaMemAllocAsync(&vOut, out->lengthOf() * out->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vIn, in->lengthOf() * in->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vOut, out->lengthOf() * out->sizeOfT(), 0));
 
-  VEDA(vedaMemcpyHtoDAsync(vIn, in->buffer(), in->lengthOf() * in->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vIn, in->buffer(), in->lengthOf() * in->sizeOfT(), 0));
 
-  VEDA(vedaLaunchKernel(func, 0, VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn,
-                        VEDAstack(&paramOut, VEDA_ARGS_INTENT_IN, sizeof(paramOut)), vOut,
+  VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn,
+                             VEDAstack(&paramOut, VEDA_ARGS_INTENT_IN, sizeof(paramOut)), vOut,
 
-                        VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv))));
+                             VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv))));
 
-  VEDA(vedaMemcpyDtoHAsync(out->buffer(), vOut, out->lengthOf() * out->sizeOfT(), 0));
-  VEDA(vedaCtxSynchronize());
+  VEDA_CALL_THROW(vedaMemcpyDtoHAsync(out->buffer(), vOut, out->lengthOf() * out->sizeOfT(), 0));
 
-  VEDA(vedaMemFreeAsync(vOut, 0));
-  VEDA(vedaMemFreeAsync(vIn, 0));
 
+  VEDA_CALL_THROW(vedaMemFreeAsync(vOut, 0));
+  VEDA_CALL_THROW(vedaMemFreeAsync(vIn, 0));
+  scopedContext.sync();
   auto status = sd::Status::OK;
 #endif
-
+#if defined(ALLOW_NHWC_FORMAT)
   if (out != nullptr && out != output) {
     output->assign(out->permute({0, 2, 3, 1}));
   }
+#endif
   return status;
 }
 
@@ -119,7 +112,11 @@ PLATFORM_CHECK(maxpool2d, ENGINE_CPU) {
   auto paddingMode = INT_ARG(8);
 
   Requirements req("VEDNN MAXPOOL2d OP");
-  req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
+#if !defined(ALLOW_NHWC_FORMAT)
+  auto isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;
+  req.expectTrue(makeInfoVariable(isNCHW, "isNCHW")) &&
+#endif
+      req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(dH, "dilation#H"), 1) && req.expectEq(makeInfoVariable(dW, "dilation#W"), 1) &&
@@ -133,6 +130,7 @@ PLATFORM_CHECK(maxpool2d, ENGINE_CPU) {
       req.expectEq(makeInfoVariable(input->ews(), EWS_MSG_INPUT0), 1) &&
       req.expectEq(makeInfoVariable(input->ews(), EWS_MSG_INPUT0), 1) &&
       req.expectEq(makeInfoVariable(output->ews(), EWS_MSG_OUTPUT), 1);
+
   req.logTheSuccess();
   return req;
 }
@@ -151,9 +149,11 @@ PLATFORM_IMPL(maxpool2d_bp, ENGINE_CPU) {
   auto dW = INT_ARG(7);
 
   auto isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;  // INT_ARG(10): 1-NHWC, 0-NCHW
-  std::unique_ptr<NDArray> inTemp, gradOutTemp, gradInTemp;
 
   NDArray *in = input, *gradOutPtr = gradOut, *gradInPtr = gradIn, *out;
+
+#if defined(ALLOW_NHWC_FORMAT)
+  std::unique_ptr<NDArray> inTemp, gradOutTemp, gradInTemp;
   if (!isNCHW) {
     inTemp.reset(new NDArray(input->permute({0, 3, 1, 2}).dup('c')));
     in = inTemp.get();
@@ -162,29 +162,18 @@ PLATFORM_IMPL(maxpool2d_bp, ENGINE_CPU) {
     gradInTemp.reset(new NDArray(gradIn->permute({0, 3, 1, 2}).ulike()));
     gradInPtr = gradInTemp.get();
   }
+#endif
 #if !defined(VEDA)
   NDArray output = gradOutPtr->ulike();
   out = &output;
 #endif
   vednnTensorParam_t paramIn, paramGradOut, paramGradIn, paramOut;
   vednnPoolingParam_t paramConv;
-  paramIn.dtype = DTYPE_FLOAT;
-  paramIn.batch = (int)in->sizeAt(0);
-  paramIn.channel = (int)in->sizeAt(1);
-  paramIn.height = (int)in->sizeAt(2);
-  paramIn.width = (int)in->sizeAt(3);
+  paramIn = getTensorFormat(*in);
 
-  paramGradOut.dtype = DTYPE_FLOAT;
-  paramGradOut.batch = (int)gradOutPtr->sizeAt(0);
-  paramGradOut.channel = (int)gradOutPtr->sizeAt(1);
-  paramGradOut.height = (int)gradOutPtr->sizeAt(2);
-  paramGradOut.width = (int)gradOutPtr->sizeAt(3);
+  paramGradOut = getTensorFormat(*gradOutPtr);
 
-  paramGradIn.dtype = DTYPE_FLOAT;
-  paramGradIn.batch = (int)gradInPtr->sizeAt(0);
-  paramGradIn.channel = (int)gradInPtr->sizeAt(1);
-  paramGradIn.height = (int)gradInPtr->sizeAt(2);
-  paramGradIn.width = (int)gradInPtr->sizeAt(3);
+  paramGradIn = getTensorFormat(*gradInPtr);
 
   paramOut = paramGradOut;
 
@@ -203,38 +192,40 @@ PLATFORM_IMPL(maxpool2d_bp, ENGINE_CPU) {
 
   auto status = res == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
-  VEDA_HANDLE &handle = VEDA_HANDLE::getInstance();
+  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
+  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
   auto func = handle.getFunctionByConstPtrName("vedaVednnMaxPoolingBackwardEx");
   VEDAdeviceptr vGradOut, vOut, vIn, vGradIn;
 
-  VEDA(vedaMemAllocAsync(&vGradOut, gradOutPtr->lengthOf() * gradOutPtr->sizeOfT(), 0));
-  VEDA(vedaMemAllocAsync(&vOut, gradOutPtr->lengthOf() * gradOutPtr->sizeOfT(), 0));
-  VEDA(vedaMemAllocAsync(&vIn, in->lengthOf() * in->sizeOfT(), 0));
-  VEDA(vedaMemAllocAsync(&vGradIn, gradInPtr->lengthOf() * gradInPtr->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vGradOut, gradOutPtr->lengthOf() * gradOutPtr->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vOut, gradOutPtr->lengthOf() * gradOutPtr->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vIn, in->lengthOf() * in->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemAllocAsync(&vGradIn, gradInPtr->lengthOf() * gradInPtr->sizeOfT(), 0));
 
-  VEDA(vedaMemcpyHtoDAsync(vGradOut, gradOutPtr->buffer(), gradOutPtr->lengthOf() * gradOutPtr->sizeOfT(), 0));
-  VEDA(vedaMemcpyHtoDAsync(vIn, in->buffer(), in->lengthOf() * in->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vGradOut, gradOutPtr->buffer(), gradOutPtr->lengthOf() * gradOutPtr->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vIn, in->buffer(), in->lengthOf() * in->sizeOfT(), 0));
 
-  VEDA(vedaLaunchKernel(func, 0, VEDAstack(&paramGradOut, VEDA_ARGS_INTENT_IN, sizeof(paramGradOut)), vGradOut,
-                        VEDAstack(&paramOut, VEDA_ARGS_INTENT_IN, sizeof(paramOut)), vOut,
-                        VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn,
-                        VEDAstack(&paramGradIn, VEDA_ARGS_INTENT_IN, sizeof(paramGradIn)), vGradIn,
-                        VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv))));
+  VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDAstack(&paramGradOut, VEDA_ARGS_INTENT_IN, sizeof(paramGradOut)), vGradOut,
+                             VEDAstack(&paramOut, VEDA_ARGS_INTENT_IN, sizeof(paramOut)), vOut,
+                             VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn,
+                             VEDAstack(&paramGradIn, VEDA_ARGS_INTENT_IN, sizeof(paramGradIn)), vGradIn,
+                             VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv))));
 
-  VEDA(vedaMemcpyDtoHAsync(gradInPtr->buffer(), vGradIn, gradInPtr->lengthOf() * gradInPtr->sizeOfT(), 0));
-  VEDA(vedaCtxSynchronize());
+  VEDA_CALL_THROW(vedaMemcpyDtoHAsync(gradInPtr->buffer(), vGradIn, gradInPtr->lengthOf() * gradInPtr->sizeOfT(), 0));
 
-  VEDA(vedaMemFreeAsync(vGradOut, 0));
-  VEDA(vedaMemFreeAsync(vOut, 0));
-  VEDA(vedaMemFreeAsync(vIn, 0));
-  VEDA(vedaMemFreeAsync(vGradIn, 0));
+  VEDA_CALL_THROW(vedaMemFreeAsync(vGradOut, 0));
+  VEDA_CALL_THROW(vedaMemFreeAsync(vOut, 0));
+  VEDA_CALL_THROW(vedaMemFreeAsync(vIn, 0));
+  VEDA_CALL_THROW(vedaMemFreeAsync(vGradIn, 0));
+  scopedContext.sync();
   auto status = sd::Status::OK;
 #endif
+#if defined(ALLOW_NHWC_FORMAT)
   if (gradIn != nullptr && gradInPtr != gradIn) {
     gradIn->assign(gradInPtr->permute({0, 2, 3, 1}));
   }
-
+#endif
   return status;
 }
 
@@ -248,8 +239,11 @@ PLATFORM_CHECK(maxpool2d_bp, ENGINE_CPU) {
   auto paddingMode = INT_ARG(8);
 
   Requirements req("VEDNN MAXPOOL2d OP");
-
-  req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
+#if !defined(ALLOW_NHWC_FORMAT)
+  auto isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;
+  req.expectTrue(makeInfoVariable(isNCHW, "isNCHW")) &&
+#endif
+      req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(gradOut->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(dH, "dilation#H"), 1) && req.expectEq(makeInfoVariable(dW, "dilation#W"), 1) &&

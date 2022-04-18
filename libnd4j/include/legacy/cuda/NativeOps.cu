@@ -3474,3 +3474,7 @@ int dbLocality(OpaqueDataBuffer *dataBuffer) {
   else
     return 1;
 }
+
+void setVedaDeviceLibFolder(std::string path){
+
+}
