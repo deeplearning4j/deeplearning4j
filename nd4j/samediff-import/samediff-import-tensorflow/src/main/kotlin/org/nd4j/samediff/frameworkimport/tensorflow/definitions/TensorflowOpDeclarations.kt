@@ -1756,10 +1756,9 @@ val randomUniformInt = TensorflowMappingProcess(
 
 val range = multipleNameMapping(inputFrameworkOpNames = listOf("Range"),opName = "range",
         attributeMappingRules = listOf(
-                convertNDArrayInputToNumericalAttr(mutableMapOf("from" to "start",
-                        "to" to "limit","step" to "delta")),
                 valueMapping(mutableMapOf("dtype" to "Tidx"))),
-        tensorNames = mutableMapOf("from" to "start","to" to "limit","step" to "delta"),tensorflowOpRegistry = tensorflowOpRegistry)
+        tensorNames = mutableMapOf("from" to "start","to" to "limit","step" to "delta"),
+        tensorflowOpRegistry = tensorflowOpRegistry)
 
 val relu = mapTensorNamesWithOp(inputFrameworkOpName = "Relu",opName = "relu",tensorNames = mutableMapOf("input" to "features"),
         attributeMappingRules = listOf(doubleConstant(inputName = "cutoff",constantValue = 0.0,argumentIndex = 0)[0],

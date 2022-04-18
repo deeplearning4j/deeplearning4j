@@ -50,7 +50,7 @@ public class SameDiffUtils {
                 for(String k : batch.getOutputs().keySet()) {
                     if(!outs.containsKey(k))
                         outs.put(k, new ArrayList<>());
-                    outs.get(k).add(batch.getOutputs().get(k));
+                    outs.get(k).add(batch.getOutputs().get(k).get());
                 }
             } else if(batch.getValueOutputs() != null) {
                 for(String k : batch.getValueOutputs().keySet()) {

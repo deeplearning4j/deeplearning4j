@@ -1997,18 +1997,18 @@ public class TestMiscOpValidation extends BaseOpValidation {
     public void testMatrixBandPart(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
 
-        INDArray input = Nd4j.createFromArray(new float[]{0.7788f,0.8012f,0.7244f,0.2309f,
-                0.7271f,0.1804f,0.5056f,0.8925f,
-                0.5461f,0.9234f,0.0856f,0.7938f}).reshape(3,4);
+        INDArray input = Nd4j.createFromArray(new double[]{0.7788,0.8012f,0.7244,0.2309,
+                0.7271,0.1804,0.5056,0.8925,
+                0.5461,0.9234,0.0856,0.7938}).reshape(3,4);
 
         SDVariable sdInput = sameDiff.var(input);
         SDVariable sdInput1 = sameDiff.constant(1);
         SDVariable sdInput2 = sameDiff.constant(-1);
 
-        INDArray expected = Nd4j.createFromArray(new float[]{
-                0.7788f,    0.8012f,    0.7244f,    0.2309f,
-                0.7271f,    0.1804f,    0.5056f,    0.8925f,
-                0.f,    0.9234f,    0.0856f,    0.7938f
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                0.7788,    0.8012,    0.7244,    0.2309,
+                0.7271,    0.1804,    0.5056,    0.8925,
+                0.f,    0.9234,    0.0856,    0.7938
         }).reshape(3,4);
 
         sameDiff.loss.l2Loss(sdInput);

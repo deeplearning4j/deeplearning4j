@@ -33,14 +33,15 @@ import org.nd4j.common.util.ArrayUtil;
 import java.util.*;
 
 @Getter
+@Setter
 public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     private final double maxMemFrac;
-    private final long smallArrayThreshold;
-    private final double largerArrayMaxMultiple;
+    private  long smallArrayThreshold;
+    private  double largerArrayMaxMultiple;
 
-    private final long maxCacheBytes;
-    private final long totalMemBytes;
+    private  long maxCacheBytes;
+    private  long totalMemBytes;
 
     private long currentCacheSize = 0;
     private Map<DataType, ArrayStore> arrayStores = new HashMap<>();

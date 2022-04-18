@@ -3380,8 +3380,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         Map<String, INDArray> secondBranch = Maps.newHashMap();
         secondBranch.put("a", Nd4j.createFromArray(7.0));
-//        System.out.println(sd.summary());
-        sd.summary();
+        System.out.println(sd.summary());
         INDArray outArr = sd.output(secondBranch, "out").get("out");
         assertEquals(Nd4j.createFromArray(14.0), outArr);
 

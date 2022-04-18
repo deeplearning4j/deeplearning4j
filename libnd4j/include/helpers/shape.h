@@ -2239,10 +2239,8 @@ SD_INLINE SD_DEVICE int tadOffset(sd::LongType *xInfo, int offset) {
         if(shape::isVector(shapeInfo)) {
             for (sd::Unsigned i = 0; i < shapeInfo[0]; ++i) {
                     offset += coords[i] * shape::elementWiseStride(shapeInfo);
-                sd_printf("Coords i %d is %d and stride is %d\n",i,coords[i],shape::elementWiseStride(shapeInfo));
             }
 
-            sd_printf("Base offset is %d and Offset is %d\n",baseOffset,offset);
         }
         else {
             for (sd::Unsigned i = 1; i <= shapeInfo[0]; ++i)

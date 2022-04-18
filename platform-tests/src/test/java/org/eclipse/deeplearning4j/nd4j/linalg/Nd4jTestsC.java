@@ -1124,8 +1124,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         INDArray expAllZeros = Nd4j.getExecutioner().exec(new Eps(first, second, Nd4j.create(DataType.BOOL, 10)));
         INDArray expAllOnes = Nd4j.getExecutioner().exec(new Eps(first, first, Nd4j.create(DataType.BOOL, 10)));
 
-//        System.out.println(expAllZeros);
-//        System.out.println(expAllOnes);
 
         val allones = Nd4j.getExecutioner().exec(new All(expAllOnes)).getDouble(0);
 

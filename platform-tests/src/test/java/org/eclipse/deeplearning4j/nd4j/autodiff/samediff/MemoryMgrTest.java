@@ -52,18 +52,15 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
     public void testArrayReuseTooLarge(Nd4jBackend backend) throws Exception {
 
         ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
-        Field f = ArrayCacheMemoryMgr.class.getDeclaredField("maxCacheBytes");
-        f.setAccessible(true);
-        f.set(mmgr, 1000);
-
+        mmgr.setMaxCacheBytes(1000);
         assertEquals(1000, mmgr.getMaxCacheBytes());
 
         INDArray[] arrays = new INDArray[100];
-        for( int i=0; i<arrays.length; i++ ){
+        for( int i = 0; i < arrays.length; i++) {
             arrays[i] = Nd4j.create(DataType.FLOAT, 25);        //100 bytes each
         }
 
-        for( int i=0; i<10; i++ ){
+        for( int i = 0; i < 10; i++) {
             mmgr.release(arrays[i]);
         }
 
@@ -78,7 +75,7 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
 
         //At this point: array store is full.
         //If we try to release more, the oldest (first released) values should be closed
-        for( int i=0; i < 10; i++) {
+        for( int i = 0; i < 10; i++) {
             INDArray toRelease = Nd4j.create(DataType.FLOAT, 25);
             mmgr.release(toRelease);
             //oldest N only should be closed by this point...

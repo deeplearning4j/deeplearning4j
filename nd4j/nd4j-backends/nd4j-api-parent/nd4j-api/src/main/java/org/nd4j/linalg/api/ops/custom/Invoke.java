@@ -145,7 +145,7 @@ public class Invoke extends DynamicCustomOp {
             }
 
             return ExecutionResult.builder()
-                    .outputs(output)
+                    .outputs(ExecutionResult.pack(output))
                     .build();
         } else {
             Map<String,SDValue> valueInputs = new HashMap<>();

@@ -13172,24 +13172,6 @@ mappings {
     inputFrameworkOpName: "Range"
   }
   rule {
-    ruleName: "ndarrayinputtonumericalattribute"
-    functionName: "ndarrayinputtonumericalattribute"
-    inputToOutput {
-      key: "from"
-      value: "start"
-    }
-    inputToOutput {
-      key: "step"
-      value: "delta"
-    }
-    inputToOutput {
-      key: "to"
-      value: "limit"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Range"
-  }
-  rule {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputDataTypeName: "Tidx"

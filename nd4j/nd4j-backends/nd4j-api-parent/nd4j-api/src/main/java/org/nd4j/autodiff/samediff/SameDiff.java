@@ -47,6 +47,7 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.common.util.MultiValueMap;
 import org.nd4j.common.util.ND4JFileUtils;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
@@ -2382,7 +2383,7 @@ public class SameDiff extends SDBaseOps {
 
             for (Map.Entry<String, List<IEvaluation>> e : variableEvals.entrySet()) {
                 if(m.hasSingle()) {
-                    INDArray prediction = m.getOutputs().get(e.getKey());
+                    INDArray prediction = m.getOutputs().get(e.getKey()).get();
                     for (IEvaluation eval : e.getValue()) {
                         INDArray label = ds.getLabels(predictionLabelMapping.get(e.getKey()));
                         INDArray mask = ds.getLabelsMaskArray(predictionLabelMapping.get(e.getKey()));
@@ -2554,7 +2555,7 @@ public class SameDiff extends SDBaseOps {
         List<Map<String,INDArray>> ret = new ArrayList<>();
         for(ExecutionResult executionResult : executionResults) {
             if(executionResult.getOutputs() != null)
-                ret.add(executionResult.getOutputs());
+                ret.add(ExecutionResult.unpack(executionResult.getOutputs()));
             else if(executionResult.getValueOutputs() != null) {
                 Map<String,INDArray> add = new HashMap<>();
                 for(Map.Entry<String,SDValue> entry : executionResult.getValueOutputs().entrySet()) {
@@ -2804,7 +2805,11 @@ public class SameDiff extends SDBaseOps {
             output.getValueOutputs().entrySet().forEach(entry -> ret.put(entry.getKey(),entry.getValue().getTensorValue()));
             return ret;
         } else {
-            return output.getOutputs();
+            Map<String,INDArray> ret = new LinkedHashMap<>();
+            for(Map.Entry<String,Optional<INDArray>> entry : output.getOutputs().entrySet()) {
+                ret.put(entry.getKey(),entry.getValue().get());
+            }
+            return ret;
         }
     }
 
@@ -4619,7 +4624,7 @@ public class SameDiff extends SDBaseOps {
                 grads.put(values.getKey(),values.getValue().getTensorValue());
             }
         } else if(gradExecResult.hasSingle()) {
-            grads = gradExecResult.getOutputs();
+            grads = ExecutionResult.unpack(gradExecResult.getOutputs());
         }
         Map<String, INDArray> outOutputs = outputVars == null ? null : new HashMap<>();
         Map<String, INDArray> outGrads = gradientVars == null ? null : new HashMap<>();

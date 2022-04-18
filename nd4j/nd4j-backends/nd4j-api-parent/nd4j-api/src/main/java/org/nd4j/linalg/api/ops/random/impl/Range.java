@@ -101,6 +101,25 @@ public class Range extends DynamicCustomOp {
     }
 
 
+    @Override
+    public void configureFromArguments() {
+        if(!iArguments.isEmpty()) {
+            this.from = iArguments.get(0).doubleValue();
+            this.to = iArguments.get(1).doubleValue();
+            this.delta = iArguments.get(2).doubleValue();
+        }
+
+        if(!tArguments.isEmpty()) {
+            this.from = tArguments.get(0).doubleValue();
+            this.to = tArguments.get(1).doubleValue();
+            this.delta = tArguments.get(2).doubleValue();
+        }
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        super.setPropertiesForFunction(properties);
+    }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
@@ -122,7 +141,7 @@ public class Range extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         Preconditions.checkState(inputDataTypes == null || inputDataTypes.isEmpty() || inputDataTypes.size() == 3,
                 "Expected no input datatypes (no args) or 3 input datatypes for %s, got %s", getClass(), inputDataTypes);
         return Collections.singletonList(dataType == null ? DEFAULT_DTYPE : dataType);

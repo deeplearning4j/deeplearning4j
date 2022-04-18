@@ -53,6 +53,7 @@ public abstract class AbstractSession<T, O> {
     @Getter
     protected final Map<VarId, SDValue> nodeValueOutputs = new LinkedHashMap<>();        //Key: variable (at a given frame + iteration). Value: the calculated output for that variable
 
+
     @Getter
     protected final Map<VarId, List<T>> tensorArrays = new LinkedHashMap<>(); //Stores the underlying arrays for TensorArray ops
     /*
@@ -515,6 +516,13 @@ public abstract class AbstractSession<T, O> {
                                     //note: we omit break on purpose
                                 case TENSOR:
                                     nodeValueOutputs.put(vid, sdValue);
+                                    //tensorflow import case where 2 input names are the same and 1 output will be null
+                                    if(op.getOp() instanceof Switch && inputNames.size() > 1 && inputNames.get(0).equals(inputNames.get(1))) {
+                                        nodeValueOutputs.put(vid,sdValue);
+                                        nodeValueOutputs.put(outFrameIter.toVarId(vid.getVariable() + ":1"),sdValue);
+                                    } else {
+                                        nodeValueOutputs.put(vid, sdValue);
+                                    }
                                     break;
                             }
 
@@ -549,26 +557,37 @@ public abstract class AbstractSession<T, O> {
                      */
                     skipDepUpdate = true;
                     skipMarkSatisfied = true;
-                    int nullCount = (opOutputValues.valueExistsAtIndex(0) ? 1 : 0) + (opOutputValues.valueExistsAtIndex(1) ? 1 : 0);
-                    Preconditions.checkState(nullCount == 1, "Expected exactly one output to be present for switch ops, got %s", nullCount);
-                    /**
-                     * TODO: investigate why the final branch is still SWITCH_R on the list dependency only.
-                     * This is what's causing the loop to not exit.
-                     * You can debug this with:
-                     * opName: loop_body/switch_3
-                     * iteration 2
-                     * execution step name: loop_body/switch_3
-                     *
-                     */
-                    boolean left = opOutputValues.valueExistsAtIndex(0);
-                    ExecStep branch;
-                    if (left) {
-                        branch = new ExecStep(ExecType.SWITCH_L, es.getName(), es.getFrameIter());
+                    String[] argNames = o.argNames();
+                    //tensorflow import case: this means we output a list with a single name and need to extract the null value from that singular list
+                    if(argNames[0].equals(argNames[1])) {
+                        SDValue sdValue = opOutputValues.getValueOutputs().get(argNames[0]);
+                        List<INDArray> inputList = sdValue.getListValue();
+                        int nullCount = (inputList.get(0) != null ? 1 : 0) + (inputList.get(1) != null ? 1 : 0);
+                        Preconditions.checkState(nullCount == 1, "Expected exactly one output to be present for switch ops, got %s", nullCount);
+                        boolean left = inputList.get(0) != null;
+
+                        ExecStep branch;
+                        if (left) {
+                            branch = new ExecStep(ExecType.SWITCH_L, es.getName(), es.getFrameIter());
+                        } else {
+                            branch = new ExecStep(ExecType.SWITCH_R, es.getName(), es.getFrameIter());
+                        }
+                        updateDescendantDeps(branch, outFrameIter);
+                        dt.markSatisfied(branch, true);
                     } else {
-                        branch = new ExecStep(ExecType.SWITCH_R, es.getName(), es.getFrameIter());
+                        int nullCount = (opOutputValues.valueExistsAtIndex(0) ? 1 : 0) + (opOutputValues.valueExistsAtIndex(1) ? 1 : 0);
+                        Preconditions.checkState(nullCount == 1, "Expected exactly one output to be present for switch ops, got %s", nullCount);
+                        boolean left = opOutputValues.valueExistsAtIndex(0);
+                        ExecStep branch;
+                        if (left) {
+                            branch = new ExecStep(ExecType.SWITCH_L, es.getName(), es.getFrameIter());
+                        } else {
+                            branch = new ExecStep(ExecType.SWITCH_R, es.getName(), es.getFrameIter());
+                        }
+                        updateDescendantDeps(branch, outFrameIter);
+                        dt.markSatisfied(branch, true);
                     }
-                    updateDescendantDeps(branch, outFrameIter);
-                    dt.markSatisfied(branch, true);
+
                 } else if (o instanceof Enter) {
                     //Enter op: we want to say that the inner frame is executed...
                     skipDepUpdate = true;
