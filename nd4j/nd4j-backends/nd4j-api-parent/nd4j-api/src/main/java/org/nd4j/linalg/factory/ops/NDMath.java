@@ -2582,7 +2582,7 @@ public class NDMath {
 
   /**
    * Matrix trace operation<br>
-   * For rank 2 matrices, the output is a scalar with the trace - i.e., sum of the main diagonal.<br>
+   * For rank 2 matrices, the output is a scalar vith the trace - i.e., sum of the main diagonal.<br>
    * For higher rank inputs, output[a,b,c] = trace(in[a,b,c,:,:])<br>
    *
    * @param in Input variable (NUMERIC type)

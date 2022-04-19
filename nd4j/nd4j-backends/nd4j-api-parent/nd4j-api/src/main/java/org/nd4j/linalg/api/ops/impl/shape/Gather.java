@@ -29,6 +29,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -55,7 +56,7 @@ public class Gather extends DynamicCustomOp {
     }
 
     public Gather(SameDiff sameDiff, SDVariable input, int[] indices, int axis, boolean inPlace) {
-        super(null, sameDiff, new SDVariable[] {input}, inPlace);
+        super(null, sameDiff, new SDVariable[] {input, sameDiff.constant(Nd4j.createFromArray(indices))}, inPlace);
 
         addIArgument(axis);
         addIArgument(indices);
@@ -160,7 +161,6 @@ public class Gather extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //2 args: input and indices. Plus integer dimension arg
         //Gather backprop is just scatter add
-
         SDVariable indicesGrad = sameDiff.zerosLike(arg(1));
         SDVariable inputGrad = sameDiff.zerosLike(arg(0));
 

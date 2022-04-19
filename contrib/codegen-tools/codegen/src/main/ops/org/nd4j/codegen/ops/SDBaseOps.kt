@@ -332,10 +332,10 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("gather") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "df") { description = "Input variable" }
+        Input(NDARRAY, "df") { description = "Input variable" }
         Arg(INT, "indices") { count = AtLeast(1); description = "Indices to get" }
         Arg(INT, "axis") { description = "Axis that the indices refer to" }
-        Output(NUMERIC, "output"){ description = "Output variable with slices pulled from the specified axis" }
+        Output(NDARRAY, "output"){ description = "Output variable with slices pulled from the specified axis" }
         Doc(Language.ANY, DocScope.ALL){
             """
                 Gather slices from the input variable where the indices are specified as fixed int[] values.
@@ -346,10 +346,10 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("gather") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "df") { description = "Input variable" }
+        Input(NDARRAY, "df") { description = "Input variable" }
         Input(INT, "indices") { description = "Indices to get slices for. Rank 0 or 1 input" }
         Arg(INT, "axis") { description = "Axis that the indices refer to" }
-        Output(NUMERIC, "output"){ description = "Output variable with slices pulled from the specified axis" }
+        Output(NDARRAY, "output"){ description = "Output variable with slices pulled from the specified axis" }
         Doc(Language.ANY, DocScope.ALL){
             """
                 Gather slices from the input variable where the indices are specified as dynamic array values.
@@ -361,9 +361,9 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     Op("gatherNd") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
         javaOpClass = "GatherNd"
-        Input(NUMERIC, "df") {description = "" }
+        Input(NDARRAY, "df") {description = "" }
         Input(NUMERIC, "indices") {description = "" }
-        Output(NUMERIC, "output"){ description = "" }
+        Output(NDARRAY, "output"){ description = "" }
         Doc(Language.ANY, DocScope.ALL){
             """
                Gather slices from df with shape specified by indices. 

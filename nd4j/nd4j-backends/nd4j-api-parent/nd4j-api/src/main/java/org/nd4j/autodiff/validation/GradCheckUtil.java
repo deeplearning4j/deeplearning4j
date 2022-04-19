@@ -132,8 +132,8 @@ public class GradCheckUtil {
         //Collect variables to get gradients for - we want placeholders AND variables
         Set<String> varsNeedingGrads = new HashSet<>();
         for(Variable v : sd.getVariables().values()) {
-            if(v.getVariable().dataType().isFPType() && (v.getVariable().getVariableType() == VariableType.VARIABLE || v.getVariable().getVariableType() == VariableType.PLACEHOLDER)){
-                SDVariable g = v.getVariable().getGradient();
+            if(v.getVariable().dataType().isFPType() && (v.getVariable().getVariableType() == VariableType.VARIABLE || v.getVariable().getVariableType() == VariableType.PLACEHOLDER)) {
+                SDVariable g = sd.getGradForVariable(v.getName());
                 Preconditions.checkNotNull(g, "No gradient variable found for variable %s", v.getVariable());
                 varsNeedingGrads.add(v.getName());
             }

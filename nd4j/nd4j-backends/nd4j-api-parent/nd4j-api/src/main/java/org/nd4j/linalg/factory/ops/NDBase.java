@@ -157,16 +157,6 @@ public class NDBase {
   }
 
   /**
-   * Asserts the input array is true for all elements. <br>
-   *
-   * @param x A boolean array to assert the state of (NDARRAY type)
-   * @return output The state to assert (NUMERIC type)
-   */
-  public INDArray assertOp(INDArray x) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Assert(x))[0];
-  }
-
-  /**
    * Assign the contents of y to x.<br>
    * Y must be broadcastable to x or the same shape.<br>
    *
@@ -523,27 +513,15 @@ public class NDBase {
   }
 
   /**
-   * Returns a flattened 1d array with the length of the input.<br>
-   *
-   * @param input Input variable (NDARRAY type)
-   * @param order ordering of the array
-   * @return output outputs the 1d array with a length equal to the input's length (NDARRAY type)
-   */
-  public INDArray flatten(INDArray input, String order) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.Flatten(input, order))[0];
-  }
-
-  /**
    * Gather slices from the input variable where the indices are specified as fixed int[] values.<br>
    * Output shape is same as input shape, except for axis dimension, which has size equal to indices.length.<br>
    *
-   * @param df Input variable (NUMERIC type)
+   * @param df Input variable (NDARRAY type)
    * @param indices Indices to get (Size: AtLeast(min=1))
    * @param axis Axis that the indices refer to
-   * @return output Output variable with slices pulled from the specified axis (NUMERIC type)
+   * @return output Output variable with slices pulled from the specified axis (NDARRAY type)
    */
   public INDArray gather(INDArray df, int[] indices, int axis) {
-    NDValidation.validateNumerical("gather", "df", df);
     Preconditions.checkArgument(indices.length >= 1, "indices has incorrect size/length. Expected: indices.length >= 1, got %s", indices.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Gather(df, indices, axis))[0];
   }
@@ -552,13 +530,12 @@ public class NDBase {
    * Gather slices from the input variable where the indices are specified as dynamic array values.<br>
    * Output shape is same as input shape, except for axis dimension, which has size equal to indices.length.<br>
    *
-   * @param df Input variable (NUMERIC type)
+   * @param df Input variable (NDARRAY type)
    * @param indices Indices to get slices for. Rank 0 or 1 input (INT type)
    * @param axis Axis that the indices refer to
-   * @return output Output variable with slices pulled from the specified axis (NUMERIC type)
+   * @return output Output variable with slices pulled from the specified axis (NDARRAY type)
    */
   public INDArray gather(INDArray df, INDArray indices, int axis) {
-    NDValidation.validateNumerical("gather", "df", df);
     NDValidation.validateInteger("gather", "indices", indices);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Gather(df, indices, axis))[0];
   }
@@ -566,12 +543,11 @@ public class NDBase {
   /**
    * Gather slices from df with shape specified by indices. <br>
    *
-   * @param df  (NUMERIC type)
+   * @param df  (NDARRAY type)
    * @param indices  (NUMERIC type)
-   * @return output  (NUMERIC type)
+   * @return output  (NDARRAY type)
    */
   public INDArray gatherNd(INDArray df, INDArray indices) {
-    NDValidation.validateNumerical("gatherNd", "df", df);
     NDValidation.validateNumerical("gatherNd", "indices", indices);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.GatherNd(df, indices))[0];
   }
@@ -1936,20 +1912,22 @@ public class NDBase {
   /**
    * Returns the shape of the specified INDArray  as a 1D INDArray <br>
    *
-   * @param input Input variable (NDARRAY type)
+   * @param input Input variable (NUMERIC type)
    * @return output 1D output variable with contents equal to the shape of the input (NUMERIC type)
    */
   public INDArray shape(INDArray input) {
+    NDValidation.validateNumerical("shape", "input", input);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Shape(input))[0];
   }
 
   /**
    * Returns the size (number of elements, i.e., prod(shape)) of the specified INDArray  as a 0D scalar variable<br>
    *
-   * @param in Input variable (NDARRAY type)
+   * @param in Input variable (NUMERIC type)
    * @return output 0D (scalar) output variable with value equal to the number of elements in the specified array (NUMERIC type)
    */
   public INDArray size(INDArray in) {
+    NDValidation.validateNumerical("size", "in", in);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Size(in))[0];
   }
 
@@ -1957,11 +1935,12 @@ public class NDBase {
    * Returns a rank 0 (scalar) variable for the size of the specified dimension.<br>
    * For example, if X has shape [10,20,30] then sizeAt(X,1)=20. Similarly, sizeAt(X,-1)=30<br>
    *
-   * @param in Input variable (NDARRAY type)
+   * @param in Input variable (NUMERIC type)
    * @param dimension Dimension to get size of
    * @return output Scalar INDArray  for size at specified variable (NUMERIC type)
    */
   public INDArray sizeAt(INDArray in, int dimension) {
+    NDValidation.validateNumerical("sizeAt", "in", in);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.SizeAt(in, dimension))[0];
   }
 
