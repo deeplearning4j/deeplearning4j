@@ -88,17 +88,17 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
                  "%i, z rank = %i !",
                  xRank, yRank, zRank);
     REQUIRE_TRUE(x->sizeAt(xLastDim) == y->sizeAt(yLastButOneDim) && x->sizeAt(xLastButOneDim) == z->sizeAt(-2) &&
-                     y->sizeAt(yLastDim) == z->sizeAt(-1),
+                 y->sizeAt(yLastDim) == z->sizeAt(-1),
                  0, "MATMUL OP: input/output arrays have inconsistent shapes for matrix product: x %s, y %s, z %s !",
                  ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str(),
                  ShapeUtils::shapeAsString(z).c_str());
 
     if (xRank > 2)  // outer dims must be the same
       for (int i = 0; i < xRank - 2; ++i)
-        REQUIRE_TRUE(x->sizeAt(i) == y->sizeAt(i) && y->sizeAt(i) == z->sizeAt(i), 0,
-                     "MATMUL OP: input/output arrays have inconsistent shapes for matrix product: x %s, y %s, z %s !",
-                     ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str(),
-                     ShapeUtils::shapeAsString(z).c_str());
+    REQUIRE_TRUE(x->sizeAt(i) == y->sizeAt(i) && y->sizeAt(i) == z->sizeAt(i), 0,
+                 "MATMUL OP: input/output arrays have inconsistent shapes for matrix product: x %s, y %s, z %s !",
+                 ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str(),
+                 ShapeUtils::shapeAsString(z).c_str());
   }
   // ******* end of input validation ******* //
 
@@ -195,8 +195,16 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
   // special case for scalar value
   if (eps->isScalar()) {
     if (x->isVector() && y->isVector()) {
-      dldx->assign((*eps) * y->sumNumber());
-      dldy->assign((*eps) * x->sumNumber());
+      if(x->isRowVector() && y->isRowVector()) {
+        dldx->assign((*eps) * y->sumNumber());
+        dldy->assign((*eps) * x->sumNumber());
+      } else if(x->isColumnVector() && y->isColumnVector()) {
+        dldx->assign((*eps) * y->sumNumber());
+        dldy->assign((*eps) * x->sumNumber());
+      } else {
+        dldx->assign((*eps) * (*y));
+        dldy->assign((*eps) * (*x));
+      }
     } else {
       // assign all ones to shape as baseline
       auto alphaBetaBase = 1.0;

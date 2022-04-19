@@ -848,15 +848,12 @@ TEST_F(RNGTests, Test_GammaDistribution_4) {
   ASSERT_EQ(Status::OK, result.status());
 
   auto z = result.at(0);
-  //    z->printIndexedBuffer("Gamma distribution");
   ASSERT_TRUE(exp0.isSameShape(z));
   ASSERT_FALSE(exp0.equalsTo(z));
   sd::ops::reduce_mean testOps1;
   sd::ops::reduce_variance testOps2;
   auto testRes1 = testOps1.evaluate({z});
   auto testRes2 = testOps2.evaluate({z});
-  //    testRes1[0]->printBuffer("Mean (expected 1.0)");
-  //    testRes2[0]->printBuffer("Variance (expected 0.5)");
   ASSERT_NEAR(testRes1[0]->t<float>(0), 1.0f, 0.01);
   ASSERT_NEAR(testRes2[0]->t<float>(0), 0.5f, 0.02);
 }
@@ -875,16 +872,12 @@ TEST_F(RNGTests, Test_GammaDistribution_5) {
   ASSERT_EQ(Status::OK, result.status());
 
   auto z = result.at(0);
-  //    z->printIndexedBuffer("Gamma distribution");
   ASSERT_TRUE(exp0.isSameShape(z));
   ASSERT_FALSE(exp0.equalsTo(z));
-  //    z->printIndexedBuffer("Gamma distributed");
   sd::ops::reduce_mean testOps1;
   sd::ops::reduce_variance testOps2;
   auto testRes1 = testOps1.evaluate({z});
   auto testRes2 = testOps2.evaluate({z});
-  //    testRes1[0]->printBuffer("Mean (expected 0.1)");
-  //    testRes2[0]->printBuffer("Variance (expected 0.05)");
   ASSERT_NEAR(testRes1[0]->t<float>(0), 0.1f, 0.02);
   ASSERT_NEAR(testRes2[0]->t<float>(0), 0.05f, 0.02);
 }
@@ -1016,7 +1009,6 @@ TEST_F(RNGTests, Test_Uniform_4) {
 
   /* Check up distribution */
   auto mean = x1.reduceNumber(reduce::Mean);
-  // mean.printIndexedBuffer("Mean should be 1.5");
   auto sumA = x1 - mean;  //.reduceNumber(reduce::Sum);
 
   auto deviation = x1.varianceNumber(variance::SummaryStatsVariance, false);

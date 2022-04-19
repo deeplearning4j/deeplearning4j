@@ -56,10 +56,17 @@ TEST_F(HelpersTests2, Hessenberg_1) {
 TEST_F(HelpersTests2, Hessenberg_2) {
   NDArray x('c', {2, 2}, {1.5, -2, 17, 5}, sd::DataType::DOUBLE);
   NDArray expQ('c', {2, 2}, {1, 0, 0, 1}, sd::DataType::DOUBLE);
-
   ops::helpers::Hessenberg<double> hess(x);
 
-  // hess._H.printBuffer();
+
+
+  x.printIndexedBuffer("expected x");
+  hess._H.printIndexedBuffer("output h");
+
+
+  expQ.printIndexedBuffer("expected q");
+  hess._Q.printIndexedBuffer("output q");
+
 
   ASSERT_TRUE(hess._H.isSameShape(&x));
   ASSERT_TRUE(hess._H.equalsTo(&x));

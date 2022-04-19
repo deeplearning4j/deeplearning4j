@@ -38,13 +38,10 @@ LIST_OP_IMPL(write_list, 2, 1, 0, -2) {
 
     REQUIRE_TRUE(idx->isScalar(), 0, "Index should be Scalar");
 
-    // sd_printf("Writing [%i]:\n", idx->e<int>(0));
-    // input->printShapeInfo("input shape");
-    // input->printIndexedBuffer("input buffer");
+
     sd::Status result = list->write(idx->e<int>(0), new NDArray(input->dup()));
 
     auto res = NDArrayFactory::create_(list->counter(), block.launchContext());
-    // res->printShapeInfo("Write_list 2 output shape");
 
     setupResult(res, block);
     //                OVERWRITE_RESULT(res);

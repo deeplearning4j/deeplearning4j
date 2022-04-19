@@ -63,12 +63,9 @@ sd::Status LogicMerge::processNode(Graph *graph, Node *node) {
       else
         lvar = new Variable(nullptr, node->getName()->c_str(), node->id(), 0);
 
-      //                    if (lvar->hasNDArray())
-      //                        delete lvar->getNDArray();
 
       auto array = var->getNDArray();
 
-      // array->printIndexedBuffer("propagated");
 
       lvar->setNDArray(array);
       lvar->markReadOnly(true);

@@ -263,12 +263,12 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
   const T almostZero = DataTypeUtils::min_positive<T>();
 
   T scale = matrix.reduceNumber(reduce::AMax).template t<T>(0);
-  if (scale == (T)0.f) scale = (T)1.f;
+  if (scale <   (T)1.f) scale = (T)1.f;
 
   if (_rows > _cols) {
     HHcolPivQR qr(matrix / scale);
     _m.assign(qr._qr({0, _cols, 0, _cols}));
-    _m.fillAsTriangular<T>(0., 0, 0, _m, 'l');
+    _m.fillAsTriangular<T>(0., 0, 0, _m, 'l',false);
 
     HHsequence hhSeg(qr._qr, qr._coeffs, 'u');
 
@@ -283,7 +283,7 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
   } else if (_rows < _cols) {
     HHcolPivQR qr(matrix.transpose() / scale);
     _m.assign(qr._qr({0, _rows, 0, _rows}));
-    _m.fillAsTriangular<T>(0., 0, 0, _m, 'l');
+    _m.fillAsTriangular<T>(0., 0, 0, _m, 'l',false);
     _m.transposei();
 
     HHsequence hhSeg(qr._qr, qr._coeffs, 'u');  // type = 'u' is not mistake here !

@@ -112,10 +112,8 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
       }
 
       if(!areSameOffsets && rankOf() < 2) {
-        sd_printf("X vector offset is %d\n",vectorCoord[0]);
         //rotate count of elements based on how many times accessed
         xOffset = shape::getOffset(shapeInfo(),vectorCoord);
-        sd_printf("X vector offset output is %d\n",xOffset);
       } else if(areSameOffsets) {
         xOffset = zOffset;
       } else {

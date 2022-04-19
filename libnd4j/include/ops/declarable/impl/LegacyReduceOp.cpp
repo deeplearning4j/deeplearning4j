@@ -78,8 +78,6 @@ sd::Status LegacyReduceOp::validateAndExecute(Context &block) {
     auto indices = INPUT_VARIABLE(1);
     if (indices->lengthOf() == x->rankOf()) allAxes = true;
 
-    // indices->printIndexedBuffer("indices");
-
     std::vector<int> axis(indices->lengthOf());
     for (int e = 0; e < indices->lengthOf(); e++) {
       // lol otherwise we segfault on macOS
@@ -94,7 +92,6 @@ sd::Status LegacyReduceOp::validateAndExecute(Context &block) {
       auto s = x->shapeInfo();
       auto e = block.numT() > 0 ? block.getTArguments()->data() : nullptr;
 
-      // x->printIndexedBuffer("x");
 
       // scalar
       NativeOpExcutioner::execReduceFloatScalar(opNum, b, s, e, z->buffer(), z->shapeInfo());

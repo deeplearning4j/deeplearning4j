@@ -1073,6 +1073,10 @@ public static final int
 // #include <atomic>
 // #include <stdexcept>
 // #include <vector>
+// #include <config.h>
+
+// #ifndef __JAVACPP_HACK__
+// #endif
 @Namespace("sd") @NoOffset public static class Environment extends Pointer {
     static { Loader.load(); }
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -1155,6 +1159,11 @@ public static final int
   public native int blasPatchVersion();
 
   public native @StdVector Pair capabilities();
+
+  public native @Cast("char*") String getVedaDeviceDir();
+
+  public native void setVedaDeviceDir(@StdString BytePointer dir);
+  public native void setVedaDeviceDir(@StdString String dir);
 }
   // namespace sd
 
@@ -3150,6 +3159,9 @@ public native int optimalLevel();
 
 public native @Cast("bool") boolean isMinimalRequirementsMet();
 public native @Cast("bool") boolean isOptimalRequirementsMet();
+
+public native void setVedaDeviceLibFolder(@StdString BytePointer path);
+public native void setVedaDeviceLibFolder(@StdString String path);
 
 // #endif  // NATIVEOPERATIONS_NATIVEOPS_H
 

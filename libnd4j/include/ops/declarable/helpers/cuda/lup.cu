@@ -729,21 +729,16 @@ static sd::Status inverse_(sd::LaunchContext *context, NDArray *input, NDArray *
                                                      matrix.specialBuffer(), matrix.specialShapeInfo(), n);
     lower.tickWriteDevice();
     upper.tickWriteDevice();
-    //                lower.printIndexedBuffer("LOWER");
-    //                upper.printIndexedBuffer("UPPER");
+
     matrix.assign(0);
     invertUpperMatrix(context, &upper, &matrix);  // U^{-1}
     matrix.tickWriteDevice();
-    //                matrix.printIndexedBuffer("Upper Inverted");
     compound.assign(0);
     invertLowerMatrix(context, &lower, &compound);  // L{-1}
     compound.tickWriteDevice();
-    //                compound.printIndexedBuffer("Lower Inverted");
-    //                matrix.tickWriteDevice();
-    //                compound.tickWriteDevice();
+
     sd::MmulHelper::mmul(&matrix, &compound, &upper, 1.0, 0.0);
     upper.tickWriteDevice();
-    //                upper.printIndexedBuffer("Full inverted");
     returnMatrix<T><<<1, n2, 1024, *stream>>>(output->specialBuffer(), output->specialShapeInfo(),
                                               upper.specialBuffer(), upper.specialShapeInfo(), i * n2, n);
   }
