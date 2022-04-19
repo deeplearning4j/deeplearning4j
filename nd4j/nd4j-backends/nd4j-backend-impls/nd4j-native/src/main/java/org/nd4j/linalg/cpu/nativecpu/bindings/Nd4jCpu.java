@@ -4247,10 +4247,19 @@ public static final int
   public native @ByVal NDArray dup(byte newOrder/*='a'*/);
   public native @ByVal NDArray dup();
 
+
+
   /**
    *  returns sum of all elements of array
    */
   public native @ByVal NDArray sumNumber();
+
+
+  /**
+   *  returns prod of all elements of array
+   */
+  public native @ByVal NDArray prodNumber();
+
 
   /**
    *  returns mean number of array
