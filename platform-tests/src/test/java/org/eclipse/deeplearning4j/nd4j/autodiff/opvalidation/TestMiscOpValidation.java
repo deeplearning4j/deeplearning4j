@@ -579,7 +579,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
         SDVariable from = sd.constant(Nd4j.rand(5));
         SDVariable gather = sd.gather("out",from, new int[]{0, 1}, 0);
         sd.convertConstantsToVariables();
-        sd.calculateGradients(Collections.emptyMap(),"out");
+        assertTrue(!sd.calculateGradients(Collections.emptyMap(),"out").isEmpty());
     }
 
     @ParameterizedTest

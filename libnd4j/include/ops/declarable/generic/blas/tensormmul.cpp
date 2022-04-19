@@ -126,12 +126,6 @@ CUSTOM_OP_IMPL(tensormmul_bp, 3, 2, false, 0, -1) {
 
   // special case for scalar value
   if (dLdC->isScalar()) {
-    dLdC->printIndexedBuffer("dldC is ");
-    sd_debug("tensormmul_bp: In scalar value\n",0);
-    B->printShapeInfo(" b shape info is ");
-    B->printIndexedBuffer("B is");
-    A->printShapeInfo("A shape info is");
-    A->printIndexedBuffer("A is");
     dLdA->assign((*dLdC) * *B);
     dLdB->assign((*dLdC) * *A);
 
