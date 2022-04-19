@@ -124,7 +124,6 @@ void compareAndBitpack_(const NDArray& input, const NDArray& thresholdScalar, ND
       auto outLastStride = outStrides[rank - 1];
       FUNC_1D func = [buff, outBuff, inLastStride, outLastStride, threshold](uint64_t thread_id, int64_t start,
                                                                              int64_t stop, int64_t increment) -> void {
-        // sd_printf("rankkk s: %i e: %i \n", (int)start,(int)stop);
         auto buffPart = buff + start * 8 * inLastStride;
         auto outBuffPart = outBuff + start * outLastStride;
         auto len = stop - start;

@@ -48,9 +48,7 @@ static sd::Status topKFunctor_(const NDArray* input, NDArray* values, NDArray* i
   if (k == 1) {
     for (sd::LongType e = 0; e < numOfSubArrs; ++e) {
       auto trial = (*input)(e, dimsToExclude);
-      // int maxPos = //lastDimList->at(e)->argMax();
       sd::LongType maxPos = 0;
-      // trial.printIndexedBuffer("TRIAL:");
       T maxVal = trial.e<T>(0);
       for (sd::LongType pos = 1; pos < trial.lengthOf(); pos++)
         if (maxVal < trial.e<T>(pos)) {
@@ -124,7 +122,6 @@ static sd::Status topKFunctor_(const NDArray* input, NDArray* values, NDArray* i
       if (values) (*values)(e, dimsToExclude).assign(topValues);
       if (indices) (*indices)(e, dimsToExclude).assign(topIndices);
     }
-    // indices->printIndexedBuffer("Indices as is");
   }
   return sd::Status::OK;
 }

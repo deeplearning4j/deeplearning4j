@@ -1201,6 +1201,22 @@ NDArray NDArray::varianceNumber(sd::variance::Ops op, bool biasCorrected) {
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+
+
+NDArray NDArray::prodNumber() const {
+  if (isS()) throw std::runtime_error("NDArray::sumNumber: you can't use this method on String array!");
+  NDArray res(dataType(), getContext());
+
+  NDArray::prepareSpecialUse({&res}, {this});
+  NativeOpExecutioner::execReduceSameScalar(getContext(), sd::reduce::SameOps::Prod, buffer(), shapeInfo(),
+                                            specialBuffer(), specialShapeInfo(), nullptr, res.buffer(), res.shapeInfo(),
+                                            res.specialBuffer(), res.specialShapeInfo());
+  NDArray::registerSpecialUse({&res}, {this});
+
+  return res;
+}
+
 // This method returns sum of all elements of this NDArray
 NDArray NDArray::sumNumber() const {
   if (isS()) throw std::runtime_error("NDArray::sumNumber: you can't use this method on String array!");
@@ -2216,12 +2232,12 @@ NDArray NDArray::asS() const {
                                                : unicode::offsetUtf8StringInUtf32(data + start, stop);
     } else if (dataType() == DataType::UTF16) {
       dataLength += (dtype == DataType::UTF32)
-                        ? unicode::offsetUtf16StringInUtf32(data + start, (stop / sizeof(char16_t)))
-                        : unicode::offsetUtf16StringInUtf8(data + start, (stop / sizeof(char16_t)));
+                    ? unicode::offsetUtf16StringInUtf32(data + start, (stop / sizeof(char16_t)))
+                    : unicode::offsetUtf16StringInUtf8(data + start, (stop / sizeof(char16_t)));
     } else {
       dataLength += (dtype == DataType::UTF16)
-                        ? unicode::offsetUtf32StringInUtf16(data + start, (stop / sizeof(char32_t)))
-                        : unicode::offsetUtf32StringInUtf8(data + start, (stop / sizeof(char32_t)));
+                    ? unicode::offsetUtf32StringInUtf16(data + start, (stop / sizeof(char32_t)))
+                    : unicode::offsetUtf32StringInUtf8(data + start, (stop / sizeof(char32_t)));
     }
   }
   offsets[lengthOf()] = dataLength;
@@ -2700,8 +2716,8 @@ void NDArray::applyTrueBroadcast(sd::BroadcastOpsTuple op, const NDArray &other,
   if (checkTargetShape) {
     const sd::LongType *newShapeInfo = nullptr;
     if (!ShapeUtils::evalBroadcastShapeInfo(
-            *this, other, true, newShapeInfo,
-            getContext()->getWorkspace()))  // the rank of target array must be equal to max->rankOf)()
+        *this, other, true, newShapeInfo,
+        getContext()->getWorkspace()))  // the rank of target array must be equal to max->rankOf)()
       throw std::runtime_error(
           "NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast "
           "operation !");
@@ -2755,8 +2771,8 @@ void NDArray::applyTrueBroadcast(sd::BroadcastBoolOpsTuple op, const NDArray &ot
   if (checkTargetShape) {
     const sd::LongType *newShapeInfo = nullptr;
     if (!ShapeUtils::evalBroadcastShapeInfo(
-            *this, other, true, newShapeInfo,
-            getContext()->getWorkspace()))  // the rank of target array must be equal to max->rankOf)()
+        *this, other, true, newShapeInfo,
+        getContext()->getWorkspace()))  // the rank of target array must be equal to max->rankOf)()
       throw std::runtime_error(
           "NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast "
           "operation !");
@@ -2814,8 +2830,8 @@ void NDArray::applyTrueBroadcast(sd::BroadcastIntOpsTuple op, const NDArray &oth
   if (checkTargetShape) {
     const sd::LongType *newShapeInfo = nullptr;
     if (!ShapeUtils::evalBroadcastShapeInfo(
-            *this, other, false, newShapeInfo,
-            getContext()->getWorkspace()))  // the rank of target array must be equal to max->rankOf)()
+        *this, other, false, newShapeInfo,
+        getContext()->getWorkspace()))  // the rank of target array must be equal to max->rankOf)()
       throw std::runtime_error(
           "NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast "
           "operation !");
@@ -3720,7 +3736,7 @@ T NDArray::e(const sd::LongType i, const sd::LongType j, const sd::LongType k, c
 }
 BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT,
                                 NDArray::e(const sd::LongType, const sd::LongType, const sd::LongType,
-                                           const sd::LongType) const,
+                                    const sd::LongType) const,
                                 SD_COMMON_TYPES_ALL);
 
 //////////////////////////////////////////////////////////////////////////
@@ -4838,8 +4854,8 @@ ResultSet NDArray::allExamples() const {
 ////////////////////////////////////////////////////////////////////////
 sd::LongType NDArray::getOffset(const sd::LongType i) const {
   if (i >= lengthOf()) {
-      sd_debug("NDArray::getOffset: input index %d array length %d\n",i,lengthOf());
-      throw std::invalid_argument("NDArray::getOffset: input index %d is out of array length %d!");
+    sd_debug("NDArray::getOffset: input index %d array length %d\n",i,lengthOf());
+    throw std::invalid_argument("NDArray::getOffset: input index %d is out of array length %d!");
   }
 
   return shape::getIndexOffset(i, _shapeInfo);
@@ -4903,10 +4919,10 @@ NDArray NDArray::diagonal(const char type) const {
 ////////////////////////////////////////////////////////////////////////
 ResultSet NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions) const {
   ResultSet result;
-
-  if (dimensions.size() == 0 || isScalar())
+  if(dimensions.size() == 0) {
     return result;
-  else if (dimensions.back() == rankOf()) {
+  }
+  if (dimensions.back() == rankOf() || isScalar() && dimensions.size() == 1 && dimensions[0] == 0) {
     auto array = new NDArray(_buffer, this->shapeInfo(), getContext(), bufferOffset());
     array->_isView = true;
     result.push_back(array);

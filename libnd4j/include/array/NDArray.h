@@ -637,10 +637,19 @@ class SD_LIB_EXPORT NDArray {
    */
   NDArray dup(const char newOrder = 'a') const;
 
+
+
   /**
    *  returns sum of all elements of array
    */
   NDArray sumNumber() const;
+
+
+  /**
+   *  returns prod of all elements of array
+   */
+  NDArray prodNumber() const;
+
 
   /**
    *  returns mean number of array

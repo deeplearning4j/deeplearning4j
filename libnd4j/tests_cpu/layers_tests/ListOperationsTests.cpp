@@ -383,9 +383,6 @@ TEST_F(ListOperationsTests, BasicTest_Gather_1) {
 
   ASSERT_TRUE(exp.isSameShape(z));
 
-  // exp.printIndexedBuffer("e");
-  // z->printIndexedBuffer("z");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 

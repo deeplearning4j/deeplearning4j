@@ -192,7 +192,6 @@ static void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng
   // fill up uniform with given length
   RandomLauncher::fillUniform(context, rng, &uniform, 0.0000000001, 0.9999999999);
   uniform.syncToDevice();
-  //        uniform.printIndexedBuffer("Uniform");
   fillGammaKernel<T><<<128, 128, 256, *stream>>>(
       uniform.dataBuffer()->specialAsT<T>(), shift, copyAlpha->dataBuffer()->specialAsT<T>(),
       copyAlpha->specialShapeInfo(), beta ? copyBeta->dataBuffer()->specialAsT<T>() : (T const*)nullptr,

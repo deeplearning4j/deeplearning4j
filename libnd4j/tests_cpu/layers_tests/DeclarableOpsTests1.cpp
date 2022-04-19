@@ -404,14 +404,6 @@ TEST_F(DeclarableOpsTests1, TestTensorDot8) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, TestTensorDot9) {
-  // NDArray z('f',{2,2,3}, sd::DataType::DOUBLE);
-  // z.linspace(1);
-  // z.printShapeInfo();
-  // z.printIndexedBuffer();
-  // z.reshapei('c', {4,3});
-  // z.printShapeInfo();
-  // z.printIndexedBuffer();
-
   auto x = NDArrayFactory::create<double>(
       'f', {2, 3, 4}, {1, 3, 5, 7, 9, 11, 13, 15, 1, 3, 5, 7, 9, 11, 13, 15, 1, 3, 5, 7, 9, 11, 13, 15});
   auto y = NDArrayFactory::create<double>(
@@ -2113,38 +2105,7 @@ TEST_F(DeclarableOpsTests1, Pnormpool2d1) {
   delete block;
 }
 
-/*/////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, IsMax1) {
 
-    float xBuff[]   = {1,2,3,4,5,6,7,8,9};
-    sd::LongType xShape[]    = {2,3,3,3,1,0,1,99};
-    bool expBuff[] = {0,0,1,0,0,1,0,0,1};
-    ArrayOptions::setDataType(xShape, sd::DataType::BOOL);
-
-    auto x = new NDArray(xBuff, xShape);
-    NDArray exp(expBuff, xShape);
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1});
-    std::vector<int>* argI = block->getIArguments();
-//    *argI = {1};                                        // dimensions
-    argI->push_back(1); // = {1};                                        // dimensions
-
-    sd::ops::ismax ismaxOp;
-    sd::Status status = ismaxOp.execute(block);
-    ASSERT_EQ(sd::Status::OK, status);
-
-    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    result->printIndexedBuffer("IS_MAX");
-    ASSERT_TRUE(exp.equalsTo(result));
-
-    delete variableSpace;
-    delete block;
-}
-*/
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, IsMax1) {
@@ -2162,7 +2123,6 @@ TEST_F(DeclarableOpsTests1, IsMax1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto res = result.at(0);
-  // res->printIndexedBuffer("IS_MAX");
   ASSERT_TRUE(exp.equalsTo(res));
 }
 
@@ -2182,7 +2142,6 @@ TEST_F(DeclarableOpsTests1, IsMax2) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto res = result.at(0);
-  // res->printIndexedBuffer("IS_MAX");
   ASSERT_TRUE(exp.equalsTo(res));
 }
 
@@ -2192,9 +2151,6 @@ TEST_F(DeclarableOpsTests1, IsMax3) {
                                                      //    NDArray exp('c', {3, 3}, sd::DataType::BOOL);
   NDArray exp = NDArrayFactory::create<float>(1.f);  //, sd::DataType::FLOAT32); //'c', {3, 3}, sd::DataType::FLOAT32);
   x.linspace(1);
-  // exp.p<bool>(0, 2, true);
-  // exp.p<bool>(1, 2, true);
-  // exp.p<bool>(2, 2, true);
 
   sd::ops::ismax ismaxOp;
   auto result = ismaxOp.evaluate({&x}, {}, {0});
@@ -2202,7 +2158,6 @@ TEST_F(DeclarableOpsTests1, IsMax3) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto res = result.at(0);
-  // res->printIndexedBuffer("IS_MAX");
   ASSERT_TRUE(exp.equalsTo(res));
 }
 
@@ -2220,44 +2175,6 @@ TEST_F(DeclarableOpsTests1, IsMax4) {
 }
 
 ////////////////////////////////////////////////////////////////////
-// TEST_F(DeclarableOpsTests1, sru_old_test1) {
-
-//     const int bS = 2;
-//     const int K = 3;
-//     const int N = 4;
-
-//     NDArray input('c', {bS,K,N}, sd::DataType::DOUBLE);
-//     NDArray weights('c', {3*K,K}, sd::DataType::DOUBLE);
-//     NDArray bias('c', {1,2*K}, sd::DataType::DOUBLE);
-//     NDArray init('c', {bS,K}, sd::DataType::DOUBLE);
-//     NDArray mask('c', {bS,K}, sd::DataType::DOUBLE);
-//     NDArray expState('c', {bS,K,N}, {0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715,
-//     0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109,
-//     0.913715, 0.847983, 0.874549, 0.896109, 0.913715}, sd::DataType::DOUBLE); NDArray expOut('c', {bS,K,N},
-//     {1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656,
-//     1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656},
-//     sd::DataType::DOUBLE);
-
-//     input.assign(1.5);
-//     weights.assign(0.5);
-//     bias.assign(0.3) ;
-//     init.assign(1.);
-//     mask.assign(1.);
-
-//     sd::ops::sru_old op;
-//     auto  results = op.execute({&input, &weights, &bias, &init, &mask}, {}, {});
-//     ASSERT_TRUE(results.size() == 2);
-
-//     auto state  = results.at(0);
-//     auto output = results.at(1);
-//     // state->printBuffer();
-//     // expState.printIndexedBuffer("EXP STATE");
-//     // state->printIndexedBuffer("OUT STATE");
-//     ASSERT_TRUE(expState.equalsTo(state));
-//     ASSERT_TRUE(expOut.equalsTo(output));
-
-//
-// }
 
 //////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, sru_test1) {
@@ -2694,7 +2611,6 @@ TEST_F(DeclarableOpsTests1, OneHotTests_3) {
 
   auto z = result.at(0);
 
-  // z->printIndexedBuffer("z");
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
@@ -2793,7 +2709,6 @@ TEST_F(DeclarableOpsTests1, Test_Range_Integer_1) {
   ASSERT_EQ(1, result.size());
 
   auto array = result.at(0);
-  // array->printIndexedBuffer("Range integer 1");
   ASSERT_TRUE(exp.isSameShape(array));
   ASSERT_TRUE(exp.equalsTo(array));
 }
