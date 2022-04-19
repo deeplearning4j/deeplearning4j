@@ -459,10 +459,6 @@ TYPED_TEST(TypedDeclarableOpsTests4, avgpool2d_10) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  // z->printIndexedBuffer("z");
-  // exp.printIndexedBuffer("e");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -562,10 +558,6 @@ TEST_F(DeclarableOpsTests4, avgpool2d_12) {
   auto output = results.at(0);
 
   ASSERT_EQ(sd::Status::OK, results.status());
-
-  // output->printIndexedBuffer("output");
-  // expected.printIndexedBuffer("expected");
-
   ASSERT_TRUE(expected.isSameShape(output));
   ASSERT_TRUE(expected.equalsTo(output));
 }
@@ -716,10 +708,6 @@ TEST_F(DeclarableOpsTests4, avgpool2d_16) {
   auto status = op.execute({&input}, {&output}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, 0, dataFormat}, {});
 
   ASSERT_EQ(sd::Status::OK, status);
-
-  // output.printBuffer();
-  // expected.printIndexedBuffer("expected");
-
   ASSERT_TRUE(expected.equalsTo(output));
 }
 
