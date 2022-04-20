@@ -53,6 +53,7 @@ public abstract class AbstractSession<T, O> {
     @Getter
     protected final Map<VarId, SDValue> nodeValueOutputs = new LinkedHashMap<>();        //Key: variable (at a given frame + iteration). Value: the calculated output for that variable
 
+
     @Getter
     protected final Map<VarId, List<T>> tensorArrays = new LinkedHashMap<>(); //Stores the underlying arrays for TensorArray ops
     /*
@@ -128,7 +129,20 @@ public abstract class AbstractSession<T, O> {
      */
     public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues,
                                  MultiDataSet batch, Collection<String> requiredActivations, List<Listener> listeners, At at) {
-        return (Map<String, T>) output(variables, placeholderValues,Collections.emptyMap(), batch, requiredActivations, listeners, at).getOutputs();
+        ExecutionResult output = output(variables, placeholderValues, Collections.emptyMap(), batch, requiredActivations, listeners, at);
+        if(output.hasSingle())
+            return (Map<String, T>) output.getOutputs();
+        else if(output.hasValues()) {
+            Map<String,SDValue> outputs = output.getValueOutputs();
+            Map<String,INDArray> ret = new LinkedHashMap<>();
+            for(Map.Entry<String,SDValue> value : outputs.entrySet()) {
+                ret.put(value.getKey(),value.getValue().getTensorValue());
+            }
+
+            return (Map<String,T>) ret;
+        }
+
+        throw new IllegalStateException("No result output! Expected values or tensors.");
     }
     /**
      * Get the output of the session - i.e., perform inference/forward pass and return the outputs for the specified variables
@@ -147,6 +161,22 @@ public abstract class AbstractSession<T, O> {
                                   Collection<String> requiredActivations,
                                   List<Listener> listeners, At at) {
         Preconditions.checkState(!variables.isEmpty() || !requiredActivations.isEmpty(), "Variables to perform forward pass for must not be empty");
+
+
+        //ensure all placeholders are in a mutable map
+        otherPlaceHolderValues = new LinkedHashMap<>(otherPlaceHolderValues);
+
+        //ensure all placeholders passed in are placed with the other placeholder values for consistency
+        //later in execution we only use other place holder values
+        if(placeholderValues != null && !placeholderValues.isEmpty()) {
+            for(Map.Entry<String,T> placeHolderValue : placeholderValues.entrySet()) {
+                if(otherPlaceHolderValues.containsKey(placeHolderValue.getKey())) {
+                    throw new IllegalArgumentException("Unable to determine which placeholder to use. Please ensure all names across both placeholders are unique");
+                }
+
+                otherPlaceHolderValues.put(placeHolderValue.getKey(),SDValue.create((INDArray) placeHolderValue.getValue()));
+            }
+        }
 
         if (requiredActivations == null)
             requiredActivations = Collections.emptySet();
@@ -486,6 +516,13 @@ public abstract class AbstractSession<T, O> {
                                     //note: we omit break on purpose
                                 case TENSOR:
                                     nodeValueOutputs.put(vid, sdValue);
+                                    //tensorflow import case where 2 input names are the same and 1 output will be null
+                                    if(op.getOp() instanceof Switch && inputNames.size() > 1 && inputNames.get(0).equals(inputNames.get(1))) {
+                                        nodeValueOutputs.put(vid,sdValue);
+                                        nodeValueOutputs.put(outFrameIter.toVarId(vid.getVariable() + ":1"),sdValue);
+                                    } else {
+                                        nodeValueOutputs.put(vid, sdValue);
+                                    }
                                     break;
                             }
 
@@ -520,26 +557,37 @@ public abstract class AbstractSession<T, O> {
                      */
                     skipDepUpdate = true;
                     skipMarkSatisfied = true;
-                    int nullCount = (opOutputValues.valueExistsAtIndex(0) ? 1 : 0) + (opOutputValues.valueExistsAtIndex(1) ? 1 : 0);
-                    Preconditions.checkState(nullCount == 1, "Expected exactly one output to be present for switch ops, got %s", nullCount);
-                    /**
-                     * TODO: investigate why the final branch is still SWITCH_R on the list dependency only.
-                     * This is what's causing the loop to not exit.
-                     * You can debug this with:
-                     * opName: loop_body/switch_3
-                     * iteration 2
-                     * execution step name: loop_body/switch_3
-                     *
-                     */
-                    boolean left = opOutputValues.valueExistsAtIndex(0);
-                    ExecStep branch;
-                    if (left) {
-                        branch = new ExecStep(ExecType.SWITCH_L, es.getName(), es.getFrameIter());
+                    String[] argNames = o.argNames();
+                    //tensorflow import case: this means we output a list with a single name and need to extract the null value from that singular list
+                    if(argNames[0].equals(argNames[1])) {
+                        SDValue sdValue = opOutputValues.getValueOutputs().get(argNames[0]);
+                        List<INDArray> inputList = sdValue.getListValue();
+                        int nullCount = (inputList.get(0) != null ? 1 : 0) + (inputList.get(1) != null ? 1 : 0);
+                        Preconditions.checkState(nullCount == 1, "Expected exactly one output to be present for switch ops, got %s", nullCount);
+                        boolean left = inputList.get(0) != null;
+
+                        ExecStep branch;
+                        if (left) {
+                            branch = new ExecStep(ExecType.SWITCH_L, es.getName(), es.getFrameIter());
+                        } else {
+                            branch = new ExecStep(ExecType.SWITCH_R, es.getName(), es.getFrameIter());
+                        }
+                        updateDescendantDeps(branch, outFrameIter);
+                        dt.markSatisfied(branch, true);
                     } else {
-                        branch = new ExecStep(ExecType.SWITCH_R, es.getName(), es.getFrameIter());
+                        int nullCount = (opOutputValues.valueExistsAtIndex(0) ? 1 : 0) + (opOutputValues.valueExistsAtIndex(1) ? 1 : 0);
+                        Preconditions.checkState(nullCount == 1, "Expected exactly one output to be present for switch ops, got %s", nullCount);
+                        boolean left = opOutputValues.valueExistsAtIndex(0);
+                        ExecStep branch;
+                        if (left) {
+                            branch = new ExecStep(ExecType.SWITCH_L, es.getName(), es.getFrameIter());
+                        } else {
+                            branch = new ExecStep(ExecType.SWITCH_R, es.getName(), es.getFrameIter());
+                        }
+                        updateDescendantDeps(branch, outFrameIter);
+                        dt.markSatisfied(branch, true);
                     }
-                    updateDescendantDeps(branch, outFrameIter);
-                    dt.markSatisfied(branch, true);
+
                 } else if (o instanceof Enter) {
                     //Enter op: we want to say that the inner frame is executed...
                     skipDepUpdate = true;

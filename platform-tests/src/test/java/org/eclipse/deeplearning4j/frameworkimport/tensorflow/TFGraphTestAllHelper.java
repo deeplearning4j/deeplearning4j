@@ -169,7 +169,6 @@ public class TFGraphTestAllHelper {
         }
 
 
-//        SameDiff graph = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
         //Collect coverage info about ops
         Pair<SameDiff,Map<String,INDArray>> p = getGraphAfterExec(baseDir, modelFilename, modelName, inputs, execType, loader, null, outputsToCheck, printArraysDebugging);
         SameDiff graph = p.getFirst();

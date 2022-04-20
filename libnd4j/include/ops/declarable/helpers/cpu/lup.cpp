@@ -552,8 +552,6 @@ sd::Status cholesky_(LaunchContext* context, NDArray* input, NDArray* output, bo
       T diagonalSum = 0;
       for (sd::LongType k = 0; k < col; ++k) diagonalSum += lowerMatrix->e<T>(col, k) * lowerMatrix->e<T>(col, k);
       lowerMatrix->p(col, col, sd::math::sd_sqrt<T, T>(matrix->e<T>(col, col) - diagonalSum));
-      // sd_printf("%i: ", col);
-      // lowerMatrix->printIndexedBuffer("Lower matrix");
     }
     for (int k = e * n2, l = 0; k < (e + 1) * n2; k++) {
       output->p(k, lowerMatrix->e<T>(l++));

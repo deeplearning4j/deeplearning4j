@@ -47,10 +47,47 @@ interface PreImportHook {
         outputNames: List<String>,
         isFinalOutput: Boolean,
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
-        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
+        dynamicVariables: Map<String, GeneratedMessageV3>
+
     ): HookResult {
-        return HookResult(outputVariables = handleOutputs(outputNames, sd, op, attributes,mappingRegistry,importGraph),
+        val ret =  HookResult(outputVariables = handleOutputs(
+            outputNames,
+            sd,
+            op,
+            attributes,
+            mappingRegistry,
+            importGraph,dynamicVariables
+        ),
             proceedWithInit = false)
+        //override old op
+        ret.outputVariables.entries.forEach { entry ->
+            //relative to each op's creator rename the relevant op to match the output variable name
+            //this will compensate for each variable
+            val op = entry.value[0].creator
+            val renameOp = sd.ops.remove(op.ownName)
+            val oldName = op.ownName
+            val inputVar = sd.variables[entry.value[0].name()]
+            op.ownName = entry.key
+            renameOp!!.name = entry.key
+            sd.ops[entry.key] = renameOp
+            val opVar = sd.variables[entry.value[0].name()]
+            sd.variables.forEach { name,variable ->
+                if(variable.inputsForOp != null)
+                    while(variable.inputsForOp.contains(oldName)) {
+                        variable.inputsForOp[variable.inputsForOp.indexOf(oldName)] = entry.key
+                    }
+            }
+
+            opVar!!.outputOfOp = entry.key
+            /**
+             * Change op output to make sure op name is accounted for. The op name
+             * is not propagated for output variables.
+             */
+
+        }
+
+        return ret
     }
 
     fun handleOutputs(
@@ -59,7 +96,8 @@ interface PreImportHook {
         op: SameDiffOp,
         attributes: Map<String, Any>,
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
-        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
+        dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String,List<SDVariable>> {
         outputNames.forEach { outputVarName ->
             if(outputVarName != null && sd.hasVariable(outputVarName)) {
@@ -70,7 +108,7 @@ interface PreImportHook {
 
         op.outputsOfOp = outputNames
 
-        return doImport(sd, attributes, outputNames, op,mappingRegistry,importGraph)
+        return doImport(sd, attributes, outputNames, op, mappingRegistry, importGraph, dynamicVariables)
     }
 
     fun doImport(
@@ -79,7 +117,8 @@ interface PreImportHook {
         outputNames: List<String>,
         op: SameDiffOp,
         mappingRegistry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>,
-        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+        importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
+        dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String,List<SDVariable>>
 
 

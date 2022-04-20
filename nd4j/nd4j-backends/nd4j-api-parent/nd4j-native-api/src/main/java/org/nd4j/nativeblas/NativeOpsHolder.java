@@ -108,7 +108,6 @@ public class NativeOpsHolder {
                             getCores(Runtime.getRuntime().availableProcessors()));
             }
 
-
             String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
             boolean logInit = Boolean.parseBoolean(logInitProperty);
 

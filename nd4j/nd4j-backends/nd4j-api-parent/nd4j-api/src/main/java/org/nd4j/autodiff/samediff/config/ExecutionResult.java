@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.util.MultiValueMap;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
@@ -15,21 +16,16 @@ import java.util.*;
 @Data
 public class ExecutionResult {
 
-    private Map<String,INDArray> outputs;
+    private Map<String,Optional<INDArray>> outputs;
     private Map<String,SDValue> valueOutputs;
 
 
 
-
-    public INDArray arrayWithName(String name) {
-        return outputs.get(name);
-    }
-
     public static  ExecutionResult createFrom(List<String> names,List<INDArray> input) {
         Preconditions.checkState(names.size() == input.size(),"Inputs and names must be equal size!");
-        Map<String,INDArray> outputs = new LinkedHashMap<>();
+        Map<String,Optional<INDArray>> outputs = new LinkedHashMap<>();
         for(int i = 0; i < input.size(); i++) {
-            outputs.put(names.get(i),input.get(i));
+            outputs.put(names.get(i),input.get(i) == null ? Optional.empty() : Optional.of(input.get(i)));
         }
         return ExecutionResult.builder()
                 .outputs(outputs)
@@ -61,9 +57,9 @@ public class ExecutionResult {
 
     public static  ExecutionResult createFrom(List<String> names,INDArray[] input) {
         Preconditions.checkState(names.size() == input.length,"Inputs and names must be equal size!");
-        Map<String,INDArray> outputs = new LinkedHashMap<>();
+        Map<String,Optional<INDArray>> outputs = new LinkedHashMap<>();
         for(int i = 0; i < input.length; i++) {
-            outputs.put(names.get(i),input[i]);
+            outputs.put(names.get(i),Optional.ofNullable(input[i]));
         }
         return ExecutionResult.builder()
                 .outputs(outputs)
@@ -71,12 +67,30 @@ public class ExecutionResult {
     }
 
     public INDArray[] outputsToArray(List<String> inputs) {
-        INDArray[] ret =  new INDArray[inputs.size()];
-        for(int i = 0; i < inputs.size(); i++) {
-            ret[i] = outputs.get(inputs.get(i));
+        if(valueOutputs != null) {
+            INDArray[] ret =  new INDArray[valueOutputs.size()];
+            int count = 0;
+            for(Map.Entry<String,SDValue> entry : valueOutputs.entrySet()) {
+                if(entry.getValue() != null)
+                    ret[count++] = entry.getValue().getTensorValue();
+            }
+            return ret;
+        } else if(outputs != null) {
+            INDArray[] ret =  new INDArray[inputs.size()];
+            for(int i = 0; i < inputs.size(); i++) {
+                Optional<INDArray> get = outputs.get(inputs.get(i));
+                try {
+                    ret[i] = get.get();
+                }catch(NullPointerException e) {
+                    ret[i] = null;
+                }
+            }
+
+            return ret;
+        } else {
+            throw new IllegalStateException("No outputs to be converted.");
         }
 
-        return ret;
     }
 
 
@@ -176,9 +190,28 @@ public class ExecutionResult {
         }
 
         String name = this.valueAtIndex(index);
-        return outputs.get(name);
+        return outputs.get(name).get();
     }
 
+
+    public static Map<String,INDArray> unpack(Map<String,Optional<INDArray>> result) {
+        Map<String,INDArray> ret = new LinkedHashMap<>();
+        for(Map.Entry<String,Optional<INDArray>> entry : result.entrySet()) {
+            ret.put(entry.getKey(),entry.getValue().get());
+        }
+
+        return ret;
+    }
+
+
+    public static Map<String,Optional<INDArray>> pack(Map<String,INDArray> result) {
+        Map<String,Optional<INDArray>> ret = new LinkedHashMap<>();
+        for(Map.Entry<String,INDArray> entry : result.entrySet()) {
+            ret.put(entry.getKey(),Optional.ofNullable(entry.getValue().get()));
+        }
+
+        return ret;
+    }
 
 
 }

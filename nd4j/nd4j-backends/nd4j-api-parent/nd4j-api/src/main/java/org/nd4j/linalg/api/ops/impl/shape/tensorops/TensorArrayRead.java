@@ -40,9 +40,13 @@ public class TensorArrayRead extends BaseTensorOp {
 
     public TensorArrayRead(String name, SameDiff sameDiff, SDVariable[] args){
         super(name, sameDiff, args);
+        this.importDataType = args[0].dataType();
     }
     public TensorArrayRead(SameDiff sameDiff, SDVariable[] args){
         super(null, sameDiff, args);
+        this.importDataType = args[0].dataType();
+
+
     }
 
     public TensorArrayRead(){}

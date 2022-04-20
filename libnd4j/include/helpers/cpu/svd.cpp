@@ -401,7 +401,7 @@ void SVD<T>::calcSingVals(const NDArray& col0, const NDArray& diag, const NDArra
     bool useBisection = fPrev * fCur > (T)0.;
     while (fCur != (T).0 &&
            math::sd_abs<T>(muCur - muPrev) >
-               (T)8. * DataTypeUtils::eps<T>() * math::sd_max<T>(math::sd_abs<T>(muCur), math::sd_abs<T>(muPrev)) &&
+           (T)8. * DataTypeUtils::eps<T>() * math::sd_max<T>(math::sd_abs<T>(muCur), math::sd_abs<T>(muPrev)) &&
            math::sd_abs<T>(fCur - fPrev) > DataTypeUtils::eps<T>() && !useBisection) {
       T a = (fCur - fPrev) / ((T)1. / muCur - (T)1. / muPrev);
       T jac = fCur - a / muCur;
@@ -439,7 +439,7 @@ void SVD<T>::calcSingVals(const NDArray& col0, const NDArray& diag, const NDArra
 
       while (rightShifted - leftShifted >
              (T)2.f * DataTypeUtils::eps<T>() *
-                 math::sd_max<T>(math::sd_abs<T>(leftShifted), math::sd_abs<T>(rightShifted))) {
+             math::sd_max<T>(math::sd_abs<T>(leftShifted), math::sd_abs<T>(rightShifted))) {
         T midShifted = (leftShifted + rightShifted) / (T)2.;
         fMid = secularEq(midShifted, col0, diag, permut, diagShifted, shift);
         if (fLeft * fMid < (T)0.)
@@ -756,6 +756,7 @@ void SVD<T>::evalData(const NDArray& matrix) {
 
   if (matrix.sizeAt(1) < _switchSize) {
     JacobiSVD<T> jac(matrix, _calcU, _calcV, _fullUV);
+    sd_debug("Executed jacobian switch size early eval %d\n",0);
 
     if (_calcU) _u = jac._u;
     if (_calcV) _v = jac._v;

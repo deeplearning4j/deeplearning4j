@@ -35,6 +35,7 @@ import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.imports.VariableUtils;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -199,7 +200,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 switch(value.getSdValueType()) {
                     case LIST:
                         for(INDArray arr : value.getListValue())
-                            mmgr.release(arr);
+                            if(arr != null)
+                                mmgr.release(arr);
                         break;
                     case TENSOR:
                         mmgr.release(value.getTensorValue());
@@ -361,7 +363,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 //TODO: we could skil this but it's useful to know how to associate the step with
                 //the specific value here
                 addToArrayTracker(out,i,new ReqOutputDep(name));
-            } else if ((inputsForOps == null || inputsForOps.isEmpty()) && out.valueWithKeyAtIndex(i,false) != null && !arrayUseTracker.hasDependency(out.valueWithKeyAtIndex(i,false))) {
+            } else if ((inputsForOps == null || inputsForOps.isEmpty()) && out.getValueOutputs() != null && !arrayUseTracker.hasDependency(out.valueWithKeyAtIndex(i,false))) {
                 //This particular array is not actually needed anywhere, so we can deallocate in immediately
                 //Possibly only a control dependency, or only one of the outputs of a multi-output op is used
                 SDValue array = out.valueWithKeyAtIndex(i, false);
@@ -371,8 +373,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 }
 
                 if(array != null && array.getTensorValue() != null)
-                    mmgr.release(array.getTensorValue());
-            } else if ((inputsForOps == null || inputsForOps.isEmpty()) && out.resultAt(i) != null  && !arrayUseTracker.hasDependency(SDValue.create(out.resultAt(i)))) {
+                    mmgr.release(array.getTensorValue() );
+            } else if ((inputsForOps == null || inputsForOps.isEmpty()) && out.getOutputs() != null && !arrayUseTracker.hasDependency(SDValue.create(out.resultAt(i)))) {
                 //This particular array is not actually needed anywhere, so we can deallocate in immediately
                 //Possibly only a control dependency, or only one of the outputs of a multi-output op is used
                 INDArray array = out.resultAt(i);
@@ -409,7 +411,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         break;
                     case LIST:
                         for(INDArray arr : value.getListValue())
-                            mmgr.release(arr);
+                            if(arr != null)
+                                mmgr.release(arr);
                         break;
                 }
 
@@ -467,12 +470,27 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             Map<String,SDValue> values = new LinkedHashMap<>();
             ExecutionResult.ExecutionResultBuilder executionResultBuilder = ExecutionResult.builder()
                     .valueOutputs(values);
+
             if (predicate.getDouble(0) == 0.0) {
-                values.put(vid.getVariable(),sdValue);
-                values.put(vidPredicate.getVariable(),null);
+                //tensorflow import case
+                if(vid.getVariable().equals(vidPredicate.getVariable())) {
+                    values.put(vidPredicate.getVariable(),SDValue.create(Arrays.asList(sdValue.getTensorValue(),null)));
+                } else {
+                    values.put(vid.getVariable(),sdValue);
+                    values.put(vidPredicate.getVariable(),null);
+                }
+
+
             } else {
-                values.put(vid.getVariable(),null);
-                values.put(vidPredicate.getVariable(),sdValue);
+                //tensorflow import case
+                if(vid.getVariable().equals(vidPredicate.getVariable())) {
+                    values.put(vidPredicate.getVariable(),SDValue.create(Arrays.asList(null,sdValue.getTensorValue())));
+                } else {
+                    values.put(vid.getVariable(),null);
+                    values.put(vidPredicate.getVariable(),sdValue);
+                }
+
+
             }
 
             return executionResultBuilder.build();
@@ -494,6 +512,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             } else {
                 inputVarId = opInputs.iterator().next();
             }
+
+            //note: we strip suffixes on purpose here. DO NOT REMOVE
+            inputVarId.setVariable(VariableUtils.stripVarSuffix(inputVarId.getVariable()));
 
             if(nodeValueOutputs.containsKey(inputVarId) && nodeValueOutputs.get(inputVarId) != null) {
                 SDValue value = nodeValueOutputs.get(inputVarId);
@@ -572,28 +593,34 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // is undefined
             Merge m = (Merge) op;
             String[] in = sameDiff.getInputsForOp(op);
-            for (String s : in) {
-                VarId vid = outputFrameIter.toVarId(s);
-                if (nodeValueOutputs.containsKey(vid) && nodeValueOutputs.get(vid) != null) {
-                    log.trace("Returning input \"{}\" for merge node \"{}\"", m.getOwnName(), s);
-                    SDValue value = nodeValueOutputs.get(vid);
-                    if(value.getSdValueType() == SDValueType.LIST) {
-                        return ExecutionResult.createValue(vid.getVariable(),nodeValueOutputs.get(vid));
-                    } else if(value.getSdValueType() == SDValueType.TENSOR) {
-                        INDArray inArr = getTensorFromOutputs(vid);
-                        if (inArr == null) {
-                            Preconditions.throwStateEx("Could not find array for NextIteration operation %s with output %s (frame=%s, iteration=%s)",
-                                    op.getOwnName(), sameDiff.getOps().get(op.getOwnName()).getOutputsOfOp().get(0), outputFrameIter.getFrame(), outputFrameIter.getIteration());
-                        }
+            VarId firstInput = outputFrameIter.toVarId(in[0]);
+            VarId secondInput = outputFrameIter.toVarId(in[1]);
 
-                        return ExecutionResult.createFrom(Arrays.asList(vid.getVariable()),new INDArray[]{inArr});
-                    } else {
-                        throw new IllegalStateException("Illegal value type " + value.getSdValueType() + " for input " + in);
-                    }
+            SDValue firstValue = nodeValueOutputs.get(firstInput);
+            SDValue secondValue = nodeValueOutputs.get(secondInput);
+            String s = secondValue != null ? in[1] : in[0];
+            VarId vid = secondValue != null ? secondInput :firstInput;
+            if(firstValue == null && secondValue == null)
+                throw new IllegalStateException("Merge node " + m.getOwnName() + " has no available inputs (all inputs: " + Arrays.toString(in) +
+                        ") - should not be executed at this point");
+            log.trace("Returning input \"{}\" for merge node \"{}\"", m.getOwnName(), s);
+            SDValue value = nodeValueOutputs.get(vid);
+            if(value.getSdValueType() == SDValueType.LIST) {
+                return ExecutionResult.createValue(vid.getVariable(),nodeValueOutputs.get(vid));
+            } else if(value.getSdValueType() == SDValueType.TENSOR) {
+                INDArray inArr = getTensorFromOutputs(vid);
+                if (inArr == null) {
+                    Preconditions.throwStateEx("Could not find array for NextIteration operation %s with output %s (frame=%s, iteration=%s)",
+                            op.getOwnName(), sameDiff.getOps().get(op.getOwnName()).getOutputsOfOp().get(0), outputFrameIter.getFrame(), outputFrameIter.getIteration());
                 }
+
+                return ExecutionResult.createFrom(Arrays.asList(vid.getVariable()),new INDArray[]{inArr});
+            } else {
+                throw new IllegalStateException("Illegal value type " + value.getSdValueType() + " for input " + in);
             }
-            throw new IllegalStateException("Merge node " + m.getOwnName() + " has no available inputs (all inputs: " + Arrays.toString(in) +
-                    ") - should not be executed at this point");
+
+
+
         } else if (op instanceof LoopCond) {
             //LoopCond just forwards scalar boolean to output
             LoopCond lc = (LoopCond) op;
@@ -617,9 +644,16 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         } else if(op instanceof Assign) {
             List<VarId> orderedInputs = new ArrayList<>(opInputs);
-            SDValue sdValue = nodeValueOutputs.get(orderedInputs.get(0));
-            SDValue sdValue1 = nodeValueOutputs.get(orderedInputs.get(1));
-            return ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue1);
+            if(orderedInputs.size() > 1) {
+                SDValue sdValue = nodeValueOutputs.get(orderedInputs.get(0));
+                SDValue sdValue1 = nodeValueOutputs.get(orderedInputs.get(1));
+                return ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue1);
+
+            } else {
+                SDValue sdValue = nodeValueOutputs.get(orderedInputs.get(0));
+                return ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue);
+            }
+
 
 
         } else if (op instanceof GradientBackwardsMarker) {
@@ -673,7 +707,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 for(int i = 0; i < invoke.getInputVarNames().length; i++) {
                     VarId opInput = varIdsByVariable.get(invoke.getInputVarNames()[i]);
                     if(constAndPhInputs.contains(invoke.getInputVarNames()[i])) {
-                        valueInputs.put(invoke.getInputVarNames()[i],otherPlaceHolders.get(invoke.getInputVarNames()[i]));
+                        if(otherPlaceHolders.containsKey(invoke.getInputVarNames()[i]))
+                            valueInputs.put(invoke.getInputVarNames()[i],otherPlaceHolders.get(invoke.getInputVarNames()[i]));
+                        else if(inputs.containsKey(invoke.getInputVarNames()[i]))
+                            valueInputs.put(invoke.getInputVarNames()[i],SDValue.create(inputs.get(invoke.getInputVarNames()[i])));
                     }else if(sameDiff.getArrForVarName(invoke.getInputVarNames()[i]) != null) {
                         valueInputs.put(invoke.getInputVarNames()[i],SDValue.create(sameDiff.getArrForVarName(invoke.getInputVarNames()[i])));
                     }  else if(nodeValueOutputs.containsKey(opInput)) {
@@ -693,7 +730,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         } else if (op instanceof Assert) {
             Assert a = (Assert)op;
             boolean condition = opContext.getInputArray(0).getDouble(0) != 0.0;
-            if(!condition){
+            if(!condition) {
                 //Assertion failed
                 String s = "Assertion failed for operation \"" + op.getOwnName() + "\" during execution";
                 if(a.numInputArguments() >= 3) {
@@ -780,7 +817,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             Preconditions.checkState(list.size() > i, "Cannot get index %s from TensorList of size %s (array not present?) - VarId=%s", i, list.size(), v);
 
             INDArray out = list.get(i);
-            return ExecutionResult.createValue(v.getVariable(),Arrays.asList(out));
+            return ExecutionResult.createFrom(v.getVariable(),out);
         } else if (op instanceof TensorArrayWrite) {
             //TensorArrayWrite - also has a scalar 0.0 that it returns...
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
@@ -846,9 +883,14 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             //Index 0 is the TensorArray (or dummy variable that represents it)
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
             TensorArray tensorArray = TensorArray.getTensorArray(sameDiff,inTensorArray);
-            List<INDArray> l = getTensorArraysInSession(tensorArray.getVar().name());
-            INDArray scalar = mmgr.allocate(false, DataType.INT).assign(l.size());
-            return ExecutionResult.createValue(tensorArray.getVar().name(),Arrays.asList(scalar));
+            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.name(), opInputs, false));
+            if (tArr == null && allIterInputs != null) {
+                tArr = lookup(inTensorArray.name(), allIterInputs, false);
+            }
+            List<INDArray> l = nodeValueOutputs.get(tArr).getListValue();
+            int size = l == null ? 0 : l.size();
+            INDArray scalar = mmgr.allocate(false, DataType.INT).assign(size);
+            return ExecutionResult.createFrom(tensorArray.getVar().name(),scalar);
         } else if (op instanceof TensorArrayConcat) {
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
             VarId tArr = (opInputs == null ? null : lookup(inTensorArray.name(), opInputs, false));
@@ -862,7 +904,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             INDArray out = mmgr.allocate(false, shape.get(0));
             c.setOutputArgument(0, out);
             Nd4j.exec(c);
-            return ExecutionResult.createValue(tArr.getVariable(),Arrays.asList(out));
+            return ExecutionResult.createFrom(tArr.getVariable(),out);
         } else if (op instanceof TensorArrayGather) {
             //Input 0: the TensorArray
             //Input 1: the indices (1d integer vector)
@@ -877,7 +919,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             String indicesName = op.arg(1).name();
             SDVariable indicesSDV = sameDiff.getVariable(indicesName);
-            INDArray idxArr = getArray(indicesSDV, opInputs, allIterInputs);
+            INDArray idxArr = indicesSDV.getArr();
             Preconditions.checkState(idxArr.isVector(), "Indices variable for TensorArrayGather should be a vector, got %ndShape for %s", idxArr, indicesName);
             Preconditions.checkState(idxArr.dataType().isIntType(), "Indices variable for TensorArrayGather should be an integer type, got %s for array %s", idxArr.dataType(), indicesName);
 
@@ -899,7 +941,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             INDArray out = mmgr.allocate(false, shape.get(0));
             s.setOutputArgument(0, out);
             Nd4j.exec(s);
-            return ExecutionResult.createValue(tArr.getVariable(),Arrays.asList(out));
+            return ExecutionResult.createFrom(tArr.getVariable(),out);
         } else if (op instanceof TensorArrayScatter) {
             //Scatter values from a rank (N+1)d tensor into specific indices of the TensorArray
             //Input 0: the TensorArray
@@ -918,7 +960,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             String indicesName = op.arg(1).name();
             SDVariable indicesSDV = sameDiff.getVariable(indicesName);
-            INDArray idxArr = getArray(indicesSDV, opInputs, allIterInputs);
+            INDArray idxArr = indicesSDV.getArr();
             Preconditions.checkState(idxArr.isVector(), "Indices variable for TensorArrayScatter should be a vector, got %ndShape for %s", idxArr, indicesName);
             Preconditions.checkState(idxArr.dataType().isIntType(), "Indices variable for TensorArrayScatter should be an integer type, got %s for array %s", idxArr.dataType(), indicesName);
             int[] idxs = idxArr.toIntVector();
@@ -959,9 +1001,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 arrayUseTracker.addDependency(newValue, new ExecDoneDep());
             }
 
-            //Return dummy array
-            INDArray scalar = mmgr.allocate(false, DataType.FLOAT).assign(0.0);
-            return ExecutionResult.createValue(valuesName,Arrays.asList(scalar));
+
+            return ExecutionResult.createValue(valuesName,SDValue.create(l));
         } else if (op instanceof TensorArraySplit) {
             //Split values from a rank (N+1)d tensor into sequential indices of the TensorArray
             //For example, orig=[8,2] sizearray with split (4,4) means TensorArray[0] = orig[0:4,:] and TensorArray[1] = orig[4:8,:]
@@ -1005,9 +1046,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 arrayUseTracker.addDependency(subValue, new ExecDoneDep());
             }
 
-            //Return dummy array
-            INDArray scalar = mmgr.allocate(false, DataType.FLOAT).assign(0.0);
-            return ExecutionResult.createValue(sizeName,Arrays.asList(scalar));
+            return ExecutionResult.createValue(sizeName,SDValue.create(l));
         } else if (op instanceof TensorArrayRemove) {
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
             SDVariable index = op.arg(1);
@@ -1107,15 +1146,29 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 } else {
                     VarId vid = lookup(s, opInputs, allIterInputs, true);
                     SDValue getValue = nodeValueOutputs.get(vid);
-                    switch(getValue.getSdValueType()) {
-                        case TENSOR:
-                            args[i] = getValue.getTensorValue();
-                            break;
-                        case LIST:
-                            args[i] = Nd4j.empty(DataType.FLOAT);
-                            break;
+                    if(getValue != null)
+                        switch(getValue.getSdValueType()) {
+                            case TENSOR:
+                                args[i] = getValue.getTensorValue();
+                                break;
+                            case LIST:
+                                DifferentialFunction variableOutputOp = sameDiff.getVariableOutputOp(s);
+                                //tensorflow import case: when switch is imported and 2 are input names are equal
+                                //we output a list with 1 value that's null and 1 that's not
+                                if(variableOutputOp instanceof Switch && variableOutputOp.argNames().length == 2 && variableOutputOp.argNames()[0].equals(variableOutputOp.argNames()[1])) {
+                                    //find the non null value
+                                    for(int j = 0; j < getValue.getListValue().size(); j++) {
+                                        if(getValue.getListValue().get(j) !=  null) {
+                                            args[i] = getValue.getListValue().get(j);
+                                            break;
+                                        }
+                                    }
+                                }
+                                else
+                                    args[i] = Nd4j.empty(DataType.FLOAT);
+                                break;
 
-                    }
+                        }
                 }
 
 
@@ -1172,6 +1225,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 if(reqShape.isEmpty() && !out.isEmpty()) {
                     throw new IllegalStateException("Output shape was empty, but created array was not.");
                 }
+
                 oc.setOutputArray(i, out);
             }
 

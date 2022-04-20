@@ -1478,7 +1478,7 @@ val nonMaxSuppressionV1 = multipleNameMapping(inputFrameworkOpNames = listOf("No
                                 argIndex = 1
                         }
                 )),
-                valueMapping(mutableMapOf("iouThreshold" to "iou_threshold")),
+                valueMapping(mutableMapOf("outputs" to "iou_threshold")),
                 convertNDArrayInputToNumericalAttr(mutableMapOf("maxOutputSize" to "max_output_size")))
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
@@ -1487,7 +1487,7 @@ val nonMaxSuppressionV1 = multipleNameMapping(inputFrameworkOpNames = listOf("No
 val nonMaxSuppressionV2 = multipleNameMapping(inputFrameworkOpNames = listOf("NonMaxSuppressionV2"),
         opName = "non_max_suppression",
         tensorNames = mutableMapOf("boxes" to "boxes","scales" to "scores",
-                "iouThreshold" to "iou_threshold","maxOutputSize" to "max_output_size"),
+                "overlayThreshold" to "iou_threshold","maxOutputSize" to "max_output_size"),
         attributeMappingRules = listOf(
                 argDescriptorConstant(listOf(
                         ArgDescriptor {
@@ -1756,10 +1756,9 @@ val randomUniformInt = TensorflowMappingProcess(
 
 val range = multipleNameMapping(inputFrameworkOpNames = listOf("Range"),opName = "range",
         attributeMappingRules = listOf(
-                convertNDArrayInputToNumericalAttr(mutableMapOf("from" to "start",
-                        "to" to "limit","step" to "delta")),
                 valueMapping(mutableMapOf("dtype" to "Tidx"))),
-        tensorNames = mutableMapOf("from" to "start","to" to "limit","step" to "delta"),tensorflowOpRegistry = tensorflowOpRegistry)
+        tensorNames = mutableMapOf("from" to "start","to" to "limit","step" to "delta"),
+        tensorflowOpRegistry = tensorflowOpRegistry)
 
 val relu = mapTensorNamesWithOp(inputFrameworkOpName = "Relu",opName = "relu",tensorNames = mutableMapOf("input" to "features"),
         attributeMappingRules = listOf(doubleConstant(inputName = "cutoff",constantValue = 0.0,argumentIndex = 0)[0],
@@ -1986,7 +1985,7 @@ val fakeQuantWithMinMaxVarsPerChannel = TensorflowMappingProcess(
         inputFrameworkOpName = "FakeQuantWithMinMaxVarsPerChannel",
         opMappingRegistry = tensorflowOpRegistry,
         attributeMappingRules = listOf(
-                valueMapping(mapOf("numBits" to "num_bits","narrowed" to "narrow_range"))),
+                valueMapping(mapOf("num_bits" to "num_bits","narrowed" to "narrow_range"))),
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "inputs","min" to "min","max" to "max")))
 )
 

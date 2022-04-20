@@ -83,6 +83,8 @@ class DefaultImportRunner<GRAPH_TYPE: GeneratedMessageV3,
                         OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR -> {
                             if(df.opType() != Op.Type.LOGIC) {
                                 val opInputs = sd.ops[dynamicCustomOp.ownName]
+                                if(opInputs == null)
+                                    throw IllegalArgumentException("No op with name ${dynamicCustomOp.ownName} found!")
                                 for(input in opInputs!!.inputsToOp) {
                                     val name = if(mappingContext.graph().hasConstantInitializer(input)) {
                                         input

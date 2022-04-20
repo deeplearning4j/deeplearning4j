@@ -123,6 +123,8 @@ interface IRNode<NODE_TYPE : GeneratedMessageV3,
      */
     fun outputAt(index: Int): String
 
+    fun isControlflowOp(): Boolean
+
     /**
      * The number of inputs for this node
      */

@@ -552,8 +552,7 @@ nullptr, 0, exp, 11, nullptr, 0, false);
     }
     m /= c;
 
-    //z.printIndexedBuffer("z buffer", 100);
-    //m.printIndexedBuffer("m buffer", 100);
+
     int cnt = 0;
     int lim = 10;
     for (int e = 0; e < z.lengthOf() && cnt < lim; e++) {

@@ -364,7 +364,7 @@ public class TestLossOpValidation extends BaseOpValidation {
             }
         }
 
-        assertEquals(0, failed.size(),failed.size() + " of " + totalRun + " failed: " + failed.toString());
+        assertEquals(0, failed.size(),failed.size() + " of " + totalRun + " failed: " + failed);
     }
 
 

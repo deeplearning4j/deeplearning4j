@@ -82,7 +82,7 @@ void Hessenberg<T>::evalData() {
   hhSeq.applyTo_<T>(_Q);
 
   // fill down with zeros starting at first subdiagonal
-  _H.fillAsTriangular<T>(0, -1, 0, _H, 'l');
+  _H.fillAsTriangular<T>(0, -1, -1, _H, 'l',false);
 }
 
 //////////////////////////////////////////////////////////////////////////

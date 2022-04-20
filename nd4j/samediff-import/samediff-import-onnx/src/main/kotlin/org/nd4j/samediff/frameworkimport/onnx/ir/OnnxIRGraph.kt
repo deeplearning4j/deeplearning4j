@@ -280,14 +280,14 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
     }
 
     override fun dataTypeForVariable(varName: String): IRDataType<Onnx.TensorProto.DataType> {
-       val varNameStripped = stripVarSuffix(varName)
+        val varNameStripped = stripVarSuffix(varName)
         val firstOrNull = graphDef.initializerList.firstOrNull {
                 inputNode -> inputNode.name == varNameStripped }
         val input = graphDef.inputList.firstOrNull { input2 ->
             input2.name == varNameStripped
         }
         if(firstOrNull != null)
-            return OnnxIRDataType(Onnx.TensorProto.DataType.values()[firstOrNull!!.dataType.ordinal])
+            return OnnxIRDataType(Onnx.TensorProto.DataType.values()[firstOrNull!!.dataType])
         else if(nodeIsPlaceHolder(varNameStripped)) {
             if(input != null && input.type.hasTensorType()) {
                 return OnnxIRDataType(Onnx.TensorProto.DataType.forNumber(input.type.tensorType.elemType))
@@ -300,7 +300,7 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
             return placeHolder.attributeMap()["value"]!!.tensorValue().dataType()
         }
         else if(input != null)
-            return OnnxIRDataType(Onnx.TensorProto.DataType.forNumber(input.type.tensorType.elemType.ordinal))
+            return OnnxIRDataType(Onnx.TensorProto.DataType.forNumber(input.type.tensorType.elemType))
         else
             return OnnxIRDataType(Onnx.TensorProto.DataType.UNDEFINED)
     }

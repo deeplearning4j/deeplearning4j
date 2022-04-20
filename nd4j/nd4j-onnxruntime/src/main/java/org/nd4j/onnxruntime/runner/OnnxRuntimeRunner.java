@@ -162,7 +162,7 @@ public class OnnxRuntimeRunner implements Closeable  {
             Value outValue = outputVector.get(i);
             outValue.retainReference();
             if(outValue.IsTensor()) {
-                INDArray arr = ndarrayFromValue(outValue,allocator.asOrtAllocator());
+                INDArray arr = getArray(outValue);
                 ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), SDValue.create(arr));
             } else  {
                 INDArray[] seq = ndarraysFromSequence(outValue,allocator.asOrtAllocator());

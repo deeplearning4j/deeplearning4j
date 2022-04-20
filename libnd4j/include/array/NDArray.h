@@ -637,10 +637,19 @@ class SD_LIB_EXPORT NDArray {
    */
   NDArray dup(const char newOrder = 'a') const;
 
+
+
   /**
    *  returns sum of all elements of array
    */
   NDArray sumNumber() const;
+
+
+  /**
+   *  returns prod of all elements of array
+   */
+  NDArray prodNumber() const;
+
 
   /**
    *  returns mean number of array
@@ -1245,9 +1254,11 @@ class SD_LIB_EXPORT NDArray {
    * unaffected 'b' - fill in both directions, both "lower" and "upper" are taken into account rest of target elements
    * are equal to this array elements target and this array should have same shapes, except when this_rank = 1 (in that
    * case should be target_rank = 2)
+   *
+   * includeEdges handles the cases where we need to include edges (basically >= or <= 0 and edges of the triangle)
    */
   template <typename T>
-  void fillAsTriangular(const float value, int lower, int upper, NDArray &target, const char direction = 'b');
+  void fillAsTriangular(const float value, int lower, int upper, NDArray &target, const char direction = 'b',const bool includeEdges = true);
 
   /**
    *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape

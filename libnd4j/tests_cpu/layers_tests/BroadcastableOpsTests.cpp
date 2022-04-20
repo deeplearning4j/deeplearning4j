@@ -41,7 +41,6 @@ TEST_F(BroadcastableOpsTests, Test_Add_1) {
   y.linspace(1);
   exp.linspace(1);
 
-  // exp.printIndexedBuffer("E B");
 
   exp.applyBroadcast(broadcast::Add, {1}, y, exp);
 
@@ -52,8 +51,6 @@ TEST_F(BroadcastableOpsTests, Test_Add_1) {
 
   auto z = result.at(0);
 
-  // exp.printIndexedBuffer("E A");
-  // z->printIndexedBuffer("Z");
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
@@ -516,7 +513,6 @@ TEST_F(BroadcastableOpsTests, broadcast_equals_1) {
 
   sd::ops::equals op;
   auto status = op.execute({&x, &y}, {&z});
-  // z.printIndexedBuffer();
 
   ASSERT_EQ(sd::Status::OK, status);
   ASSERT_TRUE(z.equalsTo(exp));
@@ -684,7 +680,6 @@ TEST_F(BroadcastableOpsTests, broadcast_bool_1) {
 
   ASSERT_EQ(sd::Status::OK, status);
 
-  // z.printIndexedBuffer("Z");
 
   ASSERT_TRUE(z.isSameShape(e));
   ASSERT_TRUE(z.equalsTo(e));
@@ -706,7 +701,6 @@ TEST_F(BroadcastableOpsTests, broadcast_bool_2) {
 
   ASSERT_EQ(sd::Status::OK, status);
 
-  // z.printIndexedBuffer("Z");
 
   ASSERT_TRUE(z.isSameShape(e));
   ASSERT_TRUE(z.equalsTo(e));
@@ -725,7 +719,6 @@ TEST_F(BroadcastableOpsTests, broadcast_bool_3) {
 
   ASSERT_EQ(sd::Status::OK, status);
 
-  // z.printIndexedBuffer("Z");
 
   ASSERT_TRUE(z.isSameShape(e));
   ASSERT_TRUE(z.equalsTo(e));
@@ -747,7 +740,6 @@ TEST_F(BroadcastableOpsTests, broadcast_2) {
 
   ASSERT_EQ(sd::Status::OK, status);
 
-  // z.printIndexedBuffer("Z");
 
   ASSERT_TRUE(z.isSameShape(e));
   ASSERT_TRUE(z.equalsTo(e));
@@ -764,7 +756,6 @@ TEST_F(BroadcastableOpsTests, broadcast_3) {
 
   ASSERT_EQ(sd::Status::OK, status);
 
-  // z.printIndexedBuffer("Z");
 
   ASSERT_TRUE(z.isSameShape(e));
   ASSERT_TRUE(z.equalsTo(e));
@@ -780,22 +771,9 @@ TEST_F(BroadcastableOpsTests, test_bert_multiply_1) {
   y.assign(1.f);
   z.assign(119.f);
   e.assign(0.f);
-  /*
-      Context ctx(1);
-      ctx.setInputArray(0, &x);
-      ctx.setInputArray(1, &y);
-      ctx.setOutputArray(0, &z);
-
-      sd::ops::multiply op;
-      auto status = op.execute(&ctx);
-      ASSERT_EQ(sd::Status::OK, status);
-
-      z.printIndexedBuffer();
-  */
 
   x.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), y, z);
 
-  // z.printIndexedBuffer();
 
   ASSERT_EQ(e, z);
 }

@@ -468,8 +468,6 @@ TEST_F(DeclarableOpsTests7, TestRandomCrop_1) {
 
   auto result = op.evaluate({&x, &shape}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  // result.at(0)->printIndexedBuffer("Output");
-  //    ASSERT_TRUE(z.equalsTo(result.at(0)));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3676,7 +3674,6 @@ TEST_F(DeclarableOpsTests7, percentile_test11) {
   auto input = NDArrayFactory::create<double>('c', {dim0}, {100.});
 
   auto expected = NDArrayFactory::create<double>('c', {1}, {100.});
-
   sd::ops::percentile op;
   // q,  interpolation, keepDims
   auto result = op.evaluate({&input}, {10, 2, 1}, {0});

@@ -364,7 +364,6 @@ TEST_F(NDArrayTest2, tileToShape_test3) {
   auto exp = NDArrayFactory::create<double>('c', {2, 2, 2}, {1, 2, 3, 4, 1, 2, 3, 4});
 
   x.tileToShape({2, 2, 2}, result);
-  // result.printIndexedBuffer();
 
   ASSERT_TRUE(result.isSameShape(&exp));
   ASSERT_TRUE(result.equalsTo(&exp));
@@ -552,9 +551,7 @@ TEST_F(NDArrayTest2, Test_PermuteEquality_5) {
 TEST_F(NDArrayTest2, fillAsTriangular_test1) {
   auto x = NDArrayFactory::create<double>('c', {4, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
   auto exp = NDArrayFactory::create<double>('c', {4, 4}, {1, 0, 0, 0, 5, 6, 0, 0, 9, 10, 11, 0, 13, 14, 15, 16});
-
-  x.fillAsTriangular<double>(0., 0, 0, x, 'u');
-
+  x.fillAsTriangular<double>(0., 0, 0, x, 'u',false);
   ASSERT_TRUE(exp.isSameShape(&x));
   ASSERT_TRUE(exp.equalsTo(&x));
 }
@@ -575,7 +572,7 @@ TEST_F(NDArrayTest2, fillAsTriangular_test3) {
   auto x = NDArrayFactory::create<double>('c', {4, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
   auto exp = NDArrayFactory::create<double>('c', {4, 4}, {1, 2, 3, 4, 0, 6, 7, 8, 0, 0, 11, 12, 0, 0, 0, 16});
 
-  x.fillAsTriangular<double>(0., 0, 0, x, 'l');
+  x.fillAsTriangular<double>(0., 0, 0, x, 'l',false);
 
   ASSERT_TRUE(exp.isSameShape(&x));
   ASSERT_TRUE(exp.equalsTo(&x));
@@ -739,9 +736,6 @@ TEST_F(NDArrayTest2, allTensorsAlongDimension_test1) {
   auto exp = NDArrayFactory::create<double>('c', {4}, {1, 2, 3, 4});
 
   auto set = x.allTensorsAlongDimension({0});
-  // set->at(0)->printShapeInfo();
-  // set->at(0)->printIndexedBuffer();
-
   ASSERT_TRUE(set.size() == 1);
   ASSERT_TRUE(exp.isSameShape(set.at(0)));
   ASSERT_TRUE(exp.equalsTo(set.at(0)));
@@ -1144,10 +1138,6 @@ TEST_F(NDArrayTest2, trueBroadcast_1) {
 
   auto exp = x - y;
   x.applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), y, z);
-
-  // exp.printIndexedBuffer();
-  // z.printIndexedBuffer();
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -1174,10 +1164,6 @@ TEST_F(NDArrayTest2, reduce_1) {
     }
   }
 
-  // arr6s->printShapeInfo();
-  // exp.printShapeInfo();
-  // exp.printIndexedBuffer();
-  // arr6s->printIndexedBuffer();
 
   ASSERT_TRUE(exp.equalsTo(arr6s));
 }
@@ -1227,10 +1213,8 @@ TEST_F(NDArrayTest2, test_subarray_followed_by_reshape_1) {
 
   auto s = x({2, 3, 0, 0, 0, 0});
 
-  // s.printIndexedBuffer("s");
 
   auto r = s.reshape(x.ordering(), {1, 3});
-  // r.printIndexedBuffer("r");
 
   ASSERT_EQ(e, r);
 }

@@ -74,8 +74,7 @@ sd::Status LogicSwitch::processNode(Graph* graph, Node* node) {
     auto input = ctx.variable(0)->getNDArray();
     auto boolean = ctx.variable(1)->getNDArray();
 
-    // input->printIndexedBuffer("0");
-    // boolean->printIndexedBuffer("1");
+
 
     std::pair<int, int> pair0(node->id(), 0);
     std::pair<int, int> pair1(node->id(), 1);
