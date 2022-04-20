@@ -50,6 +50,15 @@ public class UnsortedSegmentSqrtN extends DynamicCustomOp {
         addIArgument(numSegments);
     }
 
+    public UnsortedSegmentSqrtN(SameDiff sd, SDVariable data, SDVariable segmentIds, SDVariable numSegments) {
+        super(sd,new SDVariable[]{data,segmentIds,numSegments});
+    }
+
+    public UnsortedSegmentSqrtN(INDArray data, INDArray segmentIds, INDArray numSegments) {
+        super(new INDArray[]{data,segmentIds,numSegments},null);
+    }
+
+
     @Override
     public String opName(){
         return "unsorted_segment_sqrt_n";

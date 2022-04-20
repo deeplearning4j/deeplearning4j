@@ -2429,6 +2429,25 @@ public class NDBase {
   }
 
   /**
+   * Unsorted segment max operation. As per segmentMax(String, SDVariable, SDVariable) but without<br>
+   * the requirement for the indices to be sorted.<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]<br>
+   *
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public INDArray unsortedSegmentMax(INDArray data, INDArray segmentIds, INDArray numSegments) {
+    NDValidation.validateNumerical("unsortedSegmentMax", "data", data);
+    NDValidation.validateNumerical("unsortedSegmentMax", "segmentIds", segmentIds);
+    NDValidation.validateInteger("unsortedSegmentMax", "numSegments", numSegments);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMax(data, segmentIds, numSegments))[0];
+  }
+
+  /**
    * Unsorted segment mean operation. As per segmentMean(String, SDVariable, SDVariable) but without<br>
    * the requirement for the indices to be sorted.<br>
    * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
@@ -2443,6 +2462,25 @@ public class NDBase {
   public INDArray unsortedSegmentMean(INDArray data, INDArray segmentIds, int numSegments) {
     NDValidation.validateNumerical("unsortedSegmentMean", "data", data);
     NDValidation.validateNumerical("unsortedSegmentMean", "segmentIds", segmentIds);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMean(data, segmentIds, numSegments))[0];
+  }
+
+  /**
+   * Unsorted segment mean operation. As per segmentMean(String, SDVariable, SDVariable) but without<br>
+   * the requirement for the indices to be sorted.<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+   *
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public INDArray unsortedSegmentMean(INDArray data, INDArray segmentIds, INDArray numSegments) {
+    NDValidation.validateNumerical("unsortedSegmentMean", "data", data);
+    NDValidation.validateNumerical("unsortedSegmentMean", "segmentIds", segmentIds);
+    NDValidation.validateInteger("unsortedSegmentMean", "numSegments", numSegments);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMean(data, segmentIds, numSegments))[0];
   }
 
@@ -2465,6 +2503,25 @@ public class NDBase {
   }
 
   /**
+   * Unsorted segment min operation. As per segmentMin(String, SDVariable, SDVariable) but without<br>
+   * the requirement for the indices to be sorted.<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]<br>
+   *
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public INDArray unsortedSegmentMin(INDArray data, INDArray segmentIds, INDArray numSegments) {
+    NDValidation.validateNumerical("unsortedSegmentMin", "data", data);
+    NDValidation.validateNumerical("unsortedSegmentMin", "segmentIds", segmentIds);
+    NDValidation.validateInteger("unsortedSegmentMin", "numSegments", numSegments);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMin(data, segmentIds, numSegments))[0];
+  }
+
+  /**
    * Unsorted segment product operation. As per segmentProd(String, SDVariable, SDVariable) but without<br>
    * the requirement for the indices to be sorted.<br>
    * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
@@ -2479,6 +2536,25 @@ public class NDBase {
   public INDArray unsortedSegmentProd(INDArray data, INDArray segmentIds, int numSegments) {
     NDValidation.validateNumerical("unsortedSegmentProd", "data", data);
     NDValidation.validateNumerical("unsortedSegmentProd", "segmentIds", segmentIds);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentProd(data, segmentIds, numSegments))[0];
+  }
+
+  /**
+   * Unsorted segment product operation. As per segmentProd(String, SDVariable, SDVariable) but without<br>
+   * the requirement for the indices to be sorted.<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+   *
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public INDArray unsortedSegmentProd(INDArray data, INDArray segmentIds, INDArray numSegments) {
+    NDValidation.validateNumerical("unsortedSegmentProd", "data", data);
+    NDValidation.validateNumerical("unsortedSegmentProd", "segmentIds", segmentIds);
+    NDValidation.validateInteger("unsortedSegmentProd", "numSegments", numSegments);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentProd(data, segmentIds, numSegments))[0];
   }
 
@@ -2500,6 +2576,24 @@ public class NDBase {
   }
 
   /**
+   * Unsorted segment sqrtN operation. Simply returns the sqrt of the count of the number of values in each segment<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [1.414, 1.732, 1.414] = [sqrt(2), sqrtN(3), sqrtN(2)]<br>
+   *
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public INDArray unsortedSegmentSqrtN(INDArray data, INDArray segmentIds, INDArray numSegments) {
+    NDValidation.validateNumerical("unsortedSegmentSqrtN", "data", data);
+    NDValidation.validateNumerical("unsortedSegmentSqrtN", "segmentIds", segmentIds);
+    NDValidation.validateInteger("unsortedSegmentSqrtN", "numSegments", numSegments);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentSqrtN(data, segmentIds, numSegments))[0];
+  }
+
+  /**
    * Unsorted segment sum operation. As per segmentSum(String, SDVariable, SDVariable) but without<br>
    * the requirement for the indices to be sorted.<br>
    * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
@@ -2514,6 +2608,25 @@ public class NDBase {
   public INDArray unsortedSegmentSum(INDArray data, INDArray segmentIds, int numSegments) {
     NDValidation.validateNumerical("unsortedSegmentSum", "data", data);
     NDValidation.validateNumerical("unsortedSegmentSum", "segmentIds", segmentIds);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentSum(data, segmentIds, numSegments))[0];
+  }
+
+  /**
+   * Unsorted segment sum operation. As per segmentSum(String, SDVariable, SDVariable) but without<br>
+   * the requirement for the indices to be sorted.<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]<br>
+   *
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public INDArray unsortedSegmentSum(INDArray data, INDArray segmentIds, INDArray numSegments) {
+    NDValidation.validateNumerical("unsortedSegmentSum", "data", data);
+    NDValidation.validateNumerical("unsortedSegmentSum", "segmentIds", segmentIds);
+    NDValidation.validateInteger("unsortedSegmentSum", "numSegments", numSegments);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentSum(data, segmentIds, numSegments))[0];
   }
 

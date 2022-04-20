@@ -111,8 +111,8 @@ public class GradCheckUtil {
         }
 
         //Check that all non-Array type SDVariables have arrays associated with them
-        for(Variable v : sd.getVariables().values()){
-            if(v.getVariable().getVariableType() == VariableType.ARRAY) {
+        for(Variable v : sd.getVariables().values()) {
+            if(v.getVariable().getVariableType() == VariableType.ARRAY || v.getVariable().getVariableType() == VariableType.PLACEHOLDER) {
                 //OK if variable is not available for this, it'll be created during forward pass
                 continue;
             }

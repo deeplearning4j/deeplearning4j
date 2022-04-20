@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.val;
 import onnx.Onnx;
+import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
@@ -161,22 +162,48 @@ public class Gather extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //2 args: input and indices. Plus integer dimension arg
         //Gather backprop is just scatter add
+        SDVariable indicesSize = sameDiff.expandDims(args()[1].shape().prod(-1),0);
+        SDVariable paramsShape = sameDiff.shape(args()[0]);
         SDVariable indicesGrad = sameDiff.zerosLike(arg(1));
-        SDVariable inputGrad = sameDiff.zerosLike(arg(0));
 
-        SDVariable[] inputs = args();
-        SDVariable axis;
-        SDVariable rank = inputs[0].rank();
-        if(inputs.length == 2){
-            axis = sameDiff.constant(jaxis);
-            if(jaxis < 0)
-                axis = axis.add(rank);
+        if(jaxis == 0) {
+            SDVariable paramsTailShape = paramsShape.get(SDIndex.interval(sameDiff.constant(1)
+                    ,paramsShape.rank()));
+            SDVariable valueShape = sameDiff.concat(0,indicesSize,paramsTailShape);
+            SDVariable values = sameDiff.reshape(i_v.get(0),valueShape);
+            SDVariable indices = sameDiff.reshape(args()[1],indicesSize);
+            return Arrays.asList(values.get(indices,false), indicesGrad);
         } else {
-            axis = inputs[2];
-        }
+            SDVariable outerShape = paramsShape.get(SDIndex.interval(0,jaxis));
+            SDVariable outerDims = outerShape.shape().prod(-1);
 
+
+            SDVariable innerShape = paramsShape.get(
+                    SDIndex.interval((long) jaxis,SDIndex.all().getIntervalEnd()),
+                    SDIndex.interval((long) 1,SDIndex.all().getIntervalEnd()));
+
+            SDVariable innerDims = innerShape.shape().prod(-1);
+
+
+
+            SDVariable outerAxesIndices = sameDiff.range(sameDiff.constant(0.0),outerDims, sameDiff.constant(1),DataType.INT32);
+            SDVariable innerAxesIndices = sameDiff.range(outerDims.add(1.0),outerDims.add(1.0).add(innerDims), sameDiff.constant(1.0),DataType.INT32);
+
+
+            SDVariable valueShape = sameDiff.concat(0,outerShape,indicesSize.castTo(outerShape.dataType()),innerShape.castTo(outerShape.dataType()));
+            SDVariable values = sameDiff.reshape(i_v.get(0),valueShape);
+            SDVariable indices = sameDiff.reshape(args()[1],indicesSize);
+
+
+            SDVariable transposeDims = sameDiff.concat(0,outerDims,outerAxesIndices.castTo(outerDims.dataType()),innerAxesIndices.castTo(outerDims.dataType()));
+            SDVariable valuesTranspose = sameDiff.permute(values,transposeDims);
+            SDVariable numSegments = paramsShape.shape().get(SDIndex.point(jaxis));
+            SDVariable paramsGrad = sameDiff.unsortedSegmentSum(valuesTranspose,indices,numSegments);
+
+
+/*
         //Use scatter add plus permute
-        SDVariable dimsExAxis = sameDiff.range(null, sameDiff.constant(0), rank, sameDiff.constant(1), DataType.INT);
+        SDVariable dimsExAxis = sameDiff.range(null, sameDiff.constant(0), rank, sameDiff.constant(1), DataType.INT32);
         SDVariable axisRank1 = axis.reshape(1);
         dimsExAxis = sameDiff.math().listDiff(dimsExAxis, axisRank1)[0];  //Don't need indices
         SDVariable permuteDims = sameDiff.concat(0, axisRank1, dimsExAxis);
@@ -185,14 +212,19 @@ public class Gather extends DynamicCustomOp {
 
         //Permute gradients so original axis is at position 0... then scatter add, and reverse
         SDVariable gradAtOut = i_v.get(0);
+
+
         SDVariable permuteGrad = gradAtOut.permute(permuteDims);
         SDVariable inputGradPermute = inputGrad.permute(permuteDims);
         inputGrad = sameDiff.scatterAdd(inputGradPermute, arg(1), permuteGrad);
 
         //Now, invert the permutation so axis is back where it was
         inputGrad = inputGrad.permute(invertDims);
+*/
 
-        return Arrays.asList(inputGrad, indicesGrad);
+            return Arrays.asList(paramsGrad, indicesGrad);
+        }
+
     }
 
     @Override
