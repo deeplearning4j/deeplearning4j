@@ -56,13 +56,13 @@ public class NonInplaceValidationListener extends BaseListener {
 
     @Override
     public void preOpExecution(SameDiff sd, At at, SameDiffOp op, OpContext oc) {
-        if(op.getOp().isInPlace()){
+        if(op.getOp().isInPlace() || oc == null) { // control flow ops can have null op contexts
             //Don't check inplace op
             return;
         }
-        if(op.getOp() instanceof Op){
+        if(op.getOp() instanceof Op) {
             Op o = (Op)op.getOp();
-            if(oc.getInputArray(0) == null){
+            if(oc.getInputArray(0) == null) {
                 //No input op
                 return;
             } else if(oc.getInputArray(1) == null){
@@ -72,11 +72,11 @@ public class NonInplaceValidationListener extends BaseListener {
                 opInputsOrig = new INDArray[]{oc.getInputArray(0), oc.getInputArray(1)};
                 opInputs = new INDArray[]{oc.getInputArray(0).dup(), oc.getInputArray(1).dup()};
             }
-        } else if(op.getOp() instanceof DynamicCustomOp){
+        } else if(op.getOp() instanceof DynamicCustomOp) {
             List<INDArray> arr = oc.getInputArrays(); // ((DynamicCustomOp) op.getOp()).inputArguments();
             opInputs = new INDArray[arr.size()];
             opInputsOrig = new INDArray[arr.size()];
-            for( int i=0; i<arr.size(); i++ ){
+            for( int i = 0; i < arr.size(); i++) {
                 opInputsOrig[i] = arr.get(i);
                 opInputs[i] = arr.get(i).dup();
             }
@@ -87,7 +87,7 @@ public class NonInplaceValidationListener extends BaseListener {
 
     @Override
     public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, OpContext opContext, INDArray[] outputs) {
-        if(op.getOp().isInPlace()){
+        if(op.getOp().isInPlace() || opContext == null) { //null op contexts occur with control flow
             //Don't check inplace op
             return;
         }
@@ -98,7 +98,7 @@ public class NonInplaceValidationListener extends BaseListener {
         } catch (Throwable t){
             throw new RuntimeException(t);
         }
-        for( int i=0; i<opInputs.length; i++ ){
+        for( int i = 0; i < opInputs.length; i++) {
             if(opInputs[i].isEmpty())
                 continue;
 

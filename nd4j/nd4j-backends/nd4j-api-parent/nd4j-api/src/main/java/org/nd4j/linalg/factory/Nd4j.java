@@ -4746,7 +4746,7 @@ public class Nd4j {
      * @return Destination array with specified tensors
      */
     @SuppressWarnings("Duplicates")
-    public static INDArray pullRows(INDArray source, INDArray destination, int sourceDimension, @NonNull int... indexes){
+    public static INDArray pullRows(INDArray source, INDArray destination, int sourceDimension, @NonNull int... indexes) {
         if (sourceDimension >= source.rank())
             throw new IllegalStateException("Source dimension can't be higher the rank of source tensor");
 
@@ -4779,7 +4779,7 @@ public class Nd4j {
      * @see #concat(int, INDArray...)
      */
     @SuppressWarnings("ConstantConditions")
-    public static INDArray stack(int axis, @NonNull INDArray... values){
+    public static INDArray stack(int axis, @NonNull INDArray... values) {
         Preconditions.checkArgument(values != null && values.length > 0, "No inputs: %s", (Object[]) values);
         Preconditions.checkState(axis >= -(values[0].rank()+1) && axis < values[0].rank()+1, "Invalid axis: must be between " +
                         "%s (inclusive) and %s (exclusive) for rank %s input, got %s", -(values[0].rank()+1), values[0].rank()+1,
@@ -4793,7 +4793,7 @@ public class Nd4j {
     }
 
     /**
-     * Concatneate ndarrays along a dimension
+     * Concatenate ndarrays along a dimension
      *
      * @param dimension the dimension to concatenate along
      * @param toConcat  the ndarrays to concat
@@ -4810,12 +4810,12 @@ public class Nd4j {
     }
 
     /**
-     * Concatneate ndarrays along a dimension
+     * Concatenate ndarrays along a dimension
      *
      * PLEASE NOTE: This method is special for GPU backend, it works on HOST side only.
      *
      * @param dimension dimension
-     * @param toConcat arrayts to concatenate
+     * @param toConcat arrays to concatenate
      * @return concatenated arrays.
      */
     public static INDArray specialConcat(int dimension, @NonNull INDArray... toConcat) {

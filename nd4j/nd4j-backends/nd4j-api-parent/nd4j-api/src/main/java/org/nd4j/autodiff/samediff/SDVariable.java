@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.weightinit.WeightInitScheme;
 
 import java.io.Serializable;
@@ -1349,6 +1350,15 @@ public class SDVariable implements Serializable {
         return sameDiff.argmax(name, this, keepDims, dimensions);
     }
 
+
+    /**
+     * Return the total number of elements in this array
+     * @return
+     */
+    public SDVariable length() {
+        return sameDiff.prod(shape());
+    }
+
     /**
      * Get the shape of the array as a dynamic SDVariable
      * @return Shape SDVariable
@@ -1373,8 +1383,20 @@ public class SDVariable implements Serializable {
      * @param newShape New shape for variable
      * @return Output variable
      */
-    public SDVariable reshape(SDVariable newShape){
+    public SDVariable reshape(SDVariable newShape) {
         return sameDiff.reshape(this, newShape);
+    }
+
+    /**
+     * Reshape the current variable to the specified (dynamic) shape. The output variable will have the same values as the
+     * input, but with the specified shape.<br>
+     * Note that prod(shape) must match length(input) == prod(input.shape)
+     *
+     * @param newShape New shape for variable
+     * @return Output variable
+     */
+    public SDVariable reshape(String name,SDVariable newShape) {
+        return sameDiff.reshape(name,this, newShape);
     }
 
     /**
@@ -1528,7 +1550,7 @@ public class SDVariable implements Serializable {
             }
 
             //convert indices to SDVariable based indices
-            if(variableIndices && indices[i].getIndexType() == SDIndex.IndexType.INTERVAL || indices[i].getIndexType() == SDIndex.IndexType.POINT) {
+            if(variableIndices && (indices[i].getIndexType() == SDIndex.IndexType.INTERVAL || indices[i].getIndexType() == SDIndex.IndexType.POINT)) {
                 switch(indices[i].getIndexType()) {
                     case INTERVAL:
                         indices[i] = SDIndex.interval(sameDiff.constant(indices[i].getIntervalBegin()),sameDiff.constant(indices[i].getIntervalEnd()),sameDiff.constant(indices[i].getIntervalEnd()));
@@ -1578,7 +1600,7 @@ public class SDVariable implements Serializable {
                     shrink_axis_mask_arr[i] = 1;
                 }
             } else if (indexType == SDIndex.IndexType.INTERVAL || indexType == SDIndex.IndexType.INTERVAL_INPUT) {
-                if (index.getIntervalBegin() == null) {
+                if (index.getIntervalBegin() == null && indexType != SDIndex.IndexType.INTERVAL_INPUT) {
                     begin_mask_arr[i] = 1;
                 } else if(indexType == SDIndex.IndexType.INTERVAL_INPUT) {
                     if(beginVar == null) {
@@ -1589,7 +1611,7 @@ public class SDVariable implements Serializable {
                 } else {
                     begin[i] = index.getIntervalBegin();
                 }
-                if (index.getIntervalEnd() == null) {
+                if (index.getIntervalEnd() == null && indexType != SDIndex.IndexType.INTERVAL_INPUT) {
                     end_mask_arr[i] = 1;
                 } else if(indexType == SDIndex.IndexType.INTERVAL_INPUT) {
                     if(endVar == null) {
@@ -1603,9 +1625,9 @@ public class SDVariable implements Serializable {
                 if (index.getIntervalStrides() == null) {
                     strides[i] = 1;
                     if(stridesVar != null) {
-                        stridesVar = sameDiff.concat(0,stridesVar,sameDiff.constant(1));
+                        stridesVar = sameDiff.concat(0,stridesVar,sameDiff.constant(1).reshape(1));
                     } else {
-                        stridesVar = sameDiff.constant(1);
+                        stridesVar = sameDiff.constant(1).reshape(1);
                     }
                 } else {
                     strides[i] = index.getIntervalStrides();
@@ -1623,6 +1645,10 @@ public class SDVariable implements Serializable {
         int end_mask = binArrToInt(end_mask_arr);
         int shrink_axis = binArrToInt(shrink_axis_mask_arr);
         if(variableIndices) {
+            if(stridesVar == null) {
+                stridesVar = sameDiff.onesLike(beginVar);
+            }
+
             return this.sameDiff.stridedSlice(this, beginVar, endVar, stridesVar,
                     begin_mask, end_mask, 0, 0, shrink_axis);
         } else  {
@@ -1633,16 +1659,138 @@ public class SDVariable implements Serializable {
 
 
 
+    public static  SDVariable sliceEnd(SDVariable input,SDVariable sliceIndexInput) {
+        SameDiff sameDiff = input.getSameDiff();
+        SDVariable range = sameDiff.range(sameDiff.constant(0), input.rank(), sameDiff.constant(1), DataType.INT64);
+        //0 1 1
+        SDVariable mask = range.gt(0.0).castTo(DataType.INT64);
+
+        SDVariable sliceMask = range.eq(0).castTo(DataType.INT64);
+
+
+        SDVariable sliceIndex = sliceMask.mul(sliceIndexInput);
+
+        SDVariable outputShape = input.shape().mul(mask).add(sliceIndex);
+        return outputShape;
+    }
+
+
     /**
      * Get a variable with content equal to a specified sub-array of this variable.<br>
      * Can be used (for example) to get rows, columns, sub-matrices, etc.
+     *
+     * This will loop over the indices (think of it as a list) and concatenate
+     * each slice of the input array to the final result.
+     *
+     * Expected input for indices would be a vector with indices such as 0,1,2,3,4.
+     * For each element in the index we then concatenate the result to the previous iteration.
+     *
+     * Note that this is slow and should only be used in very specific circumstances.
+     * Otherwise {@link org.nd4j.linalg.api.ops.impl.shape.StridedSlice} will be more performant
+     * for creating views. Many times {@link org.nd4j.linalg.api.ops.impl.shape.StridedSlice} avoids
+     * this slower approach by directly calculating the strides of a view.
+     *
      * @param indices Indices to get
      * @return Sub-array variable
      */
-    public SDVariable get(SDVariable indices,boolean keepDims) {
-        SDVariable ends = indices.add(1.0);
-        SDVariable strides = sameDiff.onesLike(indices);
-        return this.sameDiff.stridedSlice(this,indices, ends, strides,0, 0, 0, 0, keepDims ? 0 :1);
+    public SDVariable get(SDVariable indices) {
+        SDVariable initialSize = sameDiff.zerosLike(shape()).castTo(DataType.INT64);
+        //pull from the first slice as the starting point and concatenate each result together
+        SDVariable startResult = sameDiff.slice(this, initialSize.castTo(DataType.INT64), sliceEnd(this,
+                sameDiff.onesLike(shape()).castTo(DataType.INT64)));
+        //start at 1 because we start with the initial output (basically the item at the first element in the indices)
+        SDVariable currIteration = sameDiff.var(Nd4j.ones(1).castTo(DataType.INT32));
+        //this condition is normally used when you want to toss in an extra condition to terminate early
+        SDVariable cond = sameDiff.constant("curr_cond",true);
+        //the total length of the indices to loop till
+        SDVariable indicesLength = indices.length();
+        //sub graph that uses invoke
+        SameDiff loop = createLoopConcat(this,indices);
+        //collect slices along the first dimension concatenating the result along the way
+        return this.sameDiff.loopWithConditions(ControlFlow.LoopParams.builder()
+                .functionBody(loop)
+                .loopVars(new SDVariable[] {
+                        currIteration,
+                        indicesLength,
+                        cond,
+                        startResult,
+                        this,
+                        indices
+                }).functionBodyInputs(new String[] {
+                        //note here all inputs are the same as the outputs, and we return the original
+                        //input concatenated with the starting input (the first slice at index 0)
+                        //and then loop over each index in the list till we get the specific result
+                        "index",
+                        "max",
+                        "cond",
+                        "input",
+                        "pullFrom",
+                        "indices"
+                })
+                .functionBodyOutputs(new String[]{
+                        "index",
+                        "max",
+                        "cond",
+                        "output",
+                        "pullFrom",
+                        "indices"})
+                .functionName("slices")
+                .loopName("outputs")
+                //note the ordering here is important. Output is the accumulated output of each iteration appending
+                //a result to the previous iteration. We start with the initial input and add more over time.
+                .build())[3];
+
+    }
+
+
+    /**
+     * Create a graph that takes in the indices as a placeholder, loops over each element in the index vector
+     * and appends the slice to the end result. This graph is equivalent to something like:
+     * INDArray input = ....;
+     * INDArray indices = ...;
+     * INDArray result = input.get(NDArrayIndex.point(indices.getInt(0));
+     * for(int i = i; i < maxIndex && customInputResult; i++) {
+     *      result = Nd4j.concat(0,input.get(NDArrayIndex.point(i)));
+     * }
+     * return result
+     *
+     * Note this is similar to {@link INDArray#get(INDArray)}
+     * @param relative the expected target input variable. We use this to pull expected
+     *                 return data type for the result
+     * @param indices the indices to get
+     * @return the graph for dynamically creating a result graph
+     */
+    public static SameDiff createLoopConcat(SDVariable relative,SDVariable indices) {
+        //standard loop body for loopWithConditions
+        SameDiff loop = SameDiff.create();
+        //curr index
+        SDVariable index = loop.placeHolder("index",DataType.INT32);
+        //loop until
+        SDVariable maxIndex = loop.placeHolder("max",DataType.INT32);
+        //constant condition of true for custom,  just loop till max iterations hit
+        SDVariable currCondition = loop.placeHolder("cond",DataType.BOOL);
+        //the input to pull from (in this case this)
+        SDVariable input = loop.placeHolder("input", relative.dataType());
+        //the actual variable to pull from
+        SDVariable pullFrom = loop.placeHolder("pullFrom",relative.dataType());
+        //the indices to loop over (the input variable
+        SDVariable indicesLoop = loop.placeHolder("indices",indices.dataType());
+        //standardize indices to length 1
+        indicesLoop = indicesLoop.reshape("indicesReshape",indicesLoop.length());
+        //the current index to retrieve
+        SDVariable indexToRetrieve = indicesLoop.get(SDIndex.point(index)).reshape(1).castTo("indexToReceive",DataType.INT64);
+
+
+        SDVariable endBegin = input.shape().get(SDIndex.interval(loop.constant(1),input.rank())).castTo(DataType.INT64).sub("endBegin",1);
+        SDVariable endShapeZeros =  loop.zerosLike("endShapeZeros",endBegin);
+        SDVariable endShape = endShapeZeros.sub("endShape",1);
+
+        //the final concatenated output
+        //SDVariable sliceOutput = loop.slice("outputSlice",pullFrom,beginSlice,endSlice);
+        SDVariable sliceOutput = loop.expandDims("outputSlice",pullFrom.get(SDIndex.point(indexToRetrieve)),0);
+        SDVariable output = loop.concat("output",0,input,sliceOutput);
+        return loop;
+
     }
 
     /**

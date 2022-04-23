@@ -575,6 +575,10 @@ public class TestMiscOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void gatherTest(Nd4jBackend backend) {
+        /**
+         * TODO: add tests for new indexing engine based on SDVariable
+         * TODO: add tests for pure point based indices derived from an SDVariable
+         */
         SameDiff sd = SameDiff.create();
         long sequenceLength = 256;
         int hiddenSize = 768;
@@ -607,7 +611,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
                 .gradientCheck(true)
                 .gradCheckPrint(true)
                 .testFlatBufferSerialization(TestCase.TestSerialization.BOTH)
-                .placeholderValue("inputTokenVocabIndices",Nd4j.zeros(1, sequenceLength))
+                .placeholderValue("inputTokenVocabIndices",Nd4j.zeros(1,sequenceLength))
                 .placeholderValue("labels",Nd4j.ones(sequenceLength));
 
         String err = OpValidation.validate(tc);

@@ -146,7 +146,7 @@ public class SDIndex {
      */
     public static SDIndex interval(SDVariable begin, SDVariable end) {
         SDIndex sdIndex = new SDIndex();
-        sdIndex.indexType = IndexType.INTERVAL;
+        sdIndex.indexType = IndexType.INTERVAL_INPUT;
         sdIndex.intervalInputBegin = begin;
         sdIndex.intervalInputEnd = end;
         return sdIndex;

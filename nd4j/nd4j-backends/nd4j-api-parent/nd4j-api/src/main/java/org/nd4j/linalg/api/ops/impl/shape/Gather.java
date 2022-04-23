@@ -162,17 +162,17 @@ public class Gather extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //2 args: input and indices. Plus integer dimension arg
         //Gather backprop is just scatter add
-        SDVariable indicesSize = sameDiff.expandDims(args()[1].shape().prod(-1),0);
+        SDVariable indicesSize = sameDiff.expandDims(args()[1].length(),0);
         SDVariable paramsShape = sameDiff.shape(args()[0]);
         SDVariable indicesGrad = sameDiff.zerosLike(arg(1));
 
         if(jaxis == 0) {
             SDVariable paramsTailShape = paramsShape.get(SDIndex.interval(sameDiff.constant(1)
-                    ,paramsShape.rank()));
+                    ,paramsShape.rank().add(1.0)));
             SDVariable valueShape = sameDiff.concat(0,indicesSize,paramsTailShape);
             SDVariable values = sameDiff.reshape(i_v.get(0),valueShape);
-            SDVariable indices = sameDiff.reshape(args()[1],indicesSize);
-            return Arrays.asList(values.get(indices,false), indicesGrad);
+            SDVariable indices = sameDiff.flatten(args()[1]);
+            return Arrays.asList(values.get(indices), indicesGrad);
         } else {
             SDVariable outerShape = paramsShape.get(SDIndex.interval(0,jaxis));
             SDVariable outerDims = outerShape.shape().prod(-1);

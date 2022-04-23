@@ -1253,6 +1253,22 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
     }
 
+
+
+
+    Op("flatten") {
+        javaPackage = "org.nd4j.linalg.api.ops.custom"
+        javaOpClass = "Flatten"
+        val inputs = Input(NDARRAY, "inputs") {count = AtLeast(1); description = "Input variables" }
+        Arg(STRING, "order") { description = "ordering for the variable"; defaultValue = "\"c\"" }
+        Output(NUMERIC, "output"){ description = "Output variable" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+             Return a flattened variable with the specified ordering
+            """.trimIndent()
+        }
+    }
+
     Op("reshape") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
         Input(NDARRAY, "x") { description = "Input variable" }

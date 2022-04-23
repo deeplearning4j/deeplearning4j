@@ -42,7 +42,7 @@ public class Slice extends DynamicCustomOp {
     public Slice() {
     }
 
-    public Slice(SameDiff sameDiff, @NonNull SDVariable input, @NonNull int[] begin, @NonNull int[] size){
+    public Slice(SameDiff sameDiff, @NonNull SDVariable input, @NonNull int[] begin, @NonNull int[] size) {
         super(null, sameDiff, new SDVariable[]{input});
         this.begin = begin;
         this.size = size;
@@ -50,11 +50,12 @@ public class Slice extends DynamicCustomOp {
         addIArgument(size);
     }
 
-    public Slice(SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable begin, @NonNull SDVariable end){
+    public Slice(SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable begin, @NonNull SDVariable end) {
         super(null, sameDiff, new SDVariable[]{input, begin, end});
+        System.out.println();
     }
 
-    public Slice(INDArray input, int[] begin, int... size){
+    public Slice(INDArray input, int[] begin, int... size) {
         super(new INDArray[] {input}, null);
         this.begin = begin;
         this.size = size;
@@ -62,7 +63,7 @@ public class Slice extends DynamicCustomOp {
         addIArgument(size);
     }
 
-    public Slice(@NonNull INDArray input, @NonNull INDArray begin, @NonNull INDArray end){
+    public Slice(@NonNull INDArray input, @NonNull INDArray begin, @NonNull INDArray end) {
         super(new INDArray[]{input, begin, end}, null);
     }
 
