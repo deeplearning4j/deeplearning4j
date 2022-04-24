@@ -2214,6 +2214,25 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testArrayIndicesPut(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+        INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L);
+        System.out.println(arr);
+        SDVariable x = sd.var(arr);
+        SDVariable get = x.get(sd.var(Nd4j.createFromArray(0,1,2,3,4)));
+        INDArray assertion = Nd4j.linspace(1,50,50).reshape(5,10);
+        assertEquals(assertion,get.eval());
+
+        SDVariable putInTo = sd.zerosLike(x);
+        SDVariable putIndices = sd.range(sd.constant(0),sd.sizeAt(x,0),sd.constant(1),DataType.INT64);
+        SDVariable put = putInTo.put(putIndices, x, putIndices);
+        assertEquals(x.eval(),put.eval());
+
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGet(Nd4jBackend backend) {
 
         SameDiff sd = SameDiff.create();

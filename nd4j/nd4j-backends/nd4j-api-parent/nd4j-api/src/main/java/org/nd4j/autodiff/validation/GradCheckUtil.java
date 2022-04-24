@@ -183,10 +183,10 @@ public class GradCheckUtil {
                 throw new IllegalStateException("Null gradient variable for \"" + v.name() + "\"");
             }
             INDArray ga = gm.get(v.name());
-            if(ga == null){
+            if(ga == null) {
                 throw new IllegalStateException("Null gradient array encountered for variable: " + v.name());
             }
-            if(!Arrays.equals(v.getArr().shape(), ga.shape())){
+            if(!Arrays.equals(v.getArr().shape(), ga.shape())) {
                 throw new IllegalStateException("Gradient shape does not match variable shape for variable \"" +
                     v.name() + "\": shape " + Arrays.toString(v.getArr().shape()) + " vs. gradient shape " +
                     Arrays.toString(ga.shape()));

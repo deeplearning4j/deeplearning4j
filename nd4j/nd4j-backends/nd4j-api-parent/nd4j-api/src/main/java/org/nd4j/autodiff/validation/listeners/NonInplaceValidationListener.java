@@ -107,7 +107,7 @@ public class NonInplaceValidationListener extends BaseListener {
             INDArray after = this.opInputsOrig[i];
             boolean dealloc = false;
             if(opInputs[i].ordering() != opInputsOrig[i].ordering() || Arrays.equals(opInputs[i].stride(), opInputsOrig[i].stride())
-                    || opInputs[i].elementWiseStride() != opInputsOrig[i].elementWiseStride()){
+                    || opInputs[i].elementWiseStride() != opInputsOrig[i].elementWiseStride()) {
                 //Clone if required (otherwise fails for views etc)
                 after = opInputsOrig[i].dup();
                 dealloc = true;

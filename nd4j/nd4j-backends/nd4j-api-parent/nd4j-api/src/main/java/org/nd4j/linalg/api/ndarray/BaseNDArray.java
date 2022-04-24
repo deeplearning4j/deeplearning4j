@@ -2151,6 +2151,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 }
             }
         }
+
         return this;
     }
 
@@ -4139,7 +4140,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         for(INDArrayIndex i : indexes){
             if(i instanceof PointIndex){
                 numPoint++;
-            } else if(i instanceof NDArrayIndexAll){
+            } else if(i instanceof NDArrayIndexAll) {
                 numAll++;
             } else if(i instanceof IntervalIndex){
                 numInterval++;
