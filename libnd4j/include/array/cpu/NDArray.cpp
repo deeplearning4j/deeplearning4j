@@ -254,7 +254,7 @@ void NDArray::synchronize(const char* msg) const {
   // no-op
 }
 
-//NOTE: we will use different method name for veda syncronization to avoid cuda external calls
+//NOTE: we will use different method name for veda syncronization to avoid special external calls
 
 void NDArray::prepareVedaUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList,
                              bool synchronizeWritables) {

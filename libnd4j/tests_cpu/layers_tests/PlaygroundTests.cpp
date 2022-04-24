@@ -122,7 +122,7 @@ TEST_F(PlaygroundTests, test_conv2d_bench) {
   auto rr = buildInfo();
   sd_printf("info:\n%s\n", rr);
 
-  bool helpers[] = {true};//{false, true, false, true};
+  bool helpers[] = {true};  //{false, true, false, true};
 
   for (auto h : helpers) {
     sd::Environment::getInstance().allowHelpers(h);
@@ -205,6 +205,57 @@ TEST_F(PlaygroundTests, tt_conv2) {
   auto out = res.at(0);
   out->printShapeInfo("out");
   out->printIndexedBuffer("out");
+}
+
+TEST_F(PlaygroundTests, tt_conv2d_followed_by_ordinary_concat) {
+  auto in0 = NDArrayFactory::create<float>('c', {1, 2, 5, 4});
+  auto w0 = NDArrayFactory::create<float>('c', {2, 2, 2, 2});
+  auto in1 = NDArrayFactory::create<float>('c', {1, 2, 5, 4});
+  auto w2 = NDArrayFactory::create<float>('c', {2, 2, 2, 2});
+  in0.linspace(0);
+  w0.linspace(0);
+  in1.linspace(0);
+  w2.linspace(0);
+  auto exp = NDArrayFactory::create<float>(
+      'c', {2, 2, 4, 3},
+      {528.f,  556.f,  584.f,  640.f,  668.f,  696.f,  752.f,  780.f,  808.f,  864.f,  892.f,  920.f,
+
+       1328.f, 1420.f, 1512.f, 1696.f, 1788.f, 1880.f, 2064.f, 2156.f, 2248.f, 2432.f, 2524.f, 2616.f,
+
+       528.f,  556.f,  584.f,  640.f,  668.f,  696.f,  752.f,  780.f,  808.f,  864.f,  892.f,  920.f,
+
+       1328.f, 1420.f, 1512.f, 1696.f, 1788.f, 1880.f, 2064.f, 2156.f, 2248.f, 2432.f, 2524.f, 2616.f});
+  // w0 = 1;
+  int kH = 2;
+  int kW = 2;
+  int sH = 1;
+  int sW = 1;
+  int pH = 0;
+  int pW = 0;
+  int dH = 1;
+  int dW = 1;
+  int paddingMode = 0;
+  // int isNCHW = 1;
+  int weightFormat = 1;
+  // w0.permutei({1,0,3,2});
+  in0.printIndexedBuffer("input");
+  w0.printIndexedBuffer("weights");
+  std::vector<sd::LongType> iArgs = {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, 0, weightFormat};
+  sd::ops::conv2d op;
+  auto res = op.evaluate({&in0, &w0}, {}, iArgs);
+  auto out0 = res.at(0);
+  auto res1 = op.evaluate({&in0, &w0}, {}, iArgs);
+  auto out1 = res1.at(0);
+  //disable concat call with helpers
+  sd::Environment::getInstance().allowHelpers(false);
+  sd::ops::concat op_concat; 
+  auto res2 = op_concat.evaluate({out0, out1}, {}, {0});
+  auto out2 = res2.at(0);
+
+  out2->printShapeInfo("out2");
+  out2->printIndexedBuffer("out2");
+  ASSERT_TRUE(out2->equalsTo(&exp));
+
 }
 
 TEST_F(PlaygroundTests, test_bert_full_1) {
