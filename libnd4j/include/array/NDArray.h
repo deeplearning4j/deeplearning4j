@@ -380,6 +380,7 @@ class SD_LIB_EXPORT NDArray {
   void syncToDevice() const;
   void syncShape() const;
 
+
   /**
    * This method can be used on architectures that use special buffers
    * @param writeList
@@ -394,6 +395,14 @@ class SD_LIB_EXPORT NDArray {
                                  const std::vector<const NDArray *> &readList = {});
   static void preparePrimaryUse(const std::vector<const NDArray *> &writeList,
                                 const std::vector<const NDArray *> &readList = {}, bool synchronizeWritables = false);
+
+#if defined(HAVE_VEDA)
+  static void registerVedaUse(const std::vector<const NDArray *> &writeList,
+                                 const std::vector<const NDArray *> &readList = {});
+  static void prepareVedaUse(const std::vector<const NDArray *> &writeList,
+                                const std::vector<const NDArray *> &readList = {}, bool synchronizeWritables = false);
+
+#endif
 
   /**
    * This method returns buffer pointer offset by given number of elements, wrt own data type

@@ -218,38 +218,21 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
   SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
   auto func = handle.getFunctionByConstPtrName("vedaVednnConvolutionForwardAddBias");
-
+  NDArray::prepareVedaUse({out}, {in, w, bias});
   VEDAdeviceptr vIn, vW, vO;
   VEDAdeviceptr vB = nullptr;
-  size_t sizeIn = in->lengthOf() * in->sizeOfT();
-  size_t sizeW = w->lengthOf() * w->sizeOfT();
-  size_t sizeB = bias ? bias->lengthOf() * bias->sizeOfT() : 0;
-  size_t sizeO = out->lengthOf() * out->sizeOfT();
-
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vIn, sizeIn, 0));
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vW, sizeW, 0));
-  if (bias) VEDA_CALL_THROW(vedaMemAllocAsync(&vB, sizeB, 0));
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vO, sizeO, 0));
-
-  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vIn, in->buffer(), sizeIn, 0));
-  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vW, w->buffer(), sizeW, 0));
-  if (bias) VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vB, bias->buffer(), sizeB, 0));
-
+  vIn = (VEDAdeviceptr) in->specialBuffer();
+  vW =  (VEDAdeviceptr) w->specialBuffer();
+  if (bias) vB = (VEDAdeviceptr) bias->specialBuffer();
+  vO = (VEDAdeviceptr) out->specialBuffer();
+  sd_printf("%s %d\n", __FILE__,__LINE__);
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn, (uint8_t)isNCHW,
                              VEDAstack(&paramFilter, VEDA_ARGS_INTENT_IN, sizeof(paramFilter)), vW, (int32_t)weightFormat,
                              VEDAstack(&paramBias, VEDA_ARGS_INTENT_IN, sizeof(paramBias)), vB,
                              VEDAstack(&paramOut, VEDA_ARGS_INTENT_IN, sizeof(paramOut)), vO,  (uint8_t)isNCHW,
                              VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv)),
                              (int)VEDNN_CONV_ALGORITHM_DIRECT));
-
-  VEDA_CALL_THROW(vedaMemcpyDtoHAsync(out->buffer(), vO, sizeO, 0));
-
-  VEDA_CALL_THROW(vedaMemFreeAsync(vIn, 0));
-  VEDA_CALL_THROW(vedaMemFreeAsync(vW, 0));
-  if (bias) VEDA_CALL_THROW(vedaMemFreeAsync(vB, 0));
-  VEDA_CALL_THROW(vedaMemFreeAsync(vO, 0));
-  scopedContext.sync();
-
+  NDArray::registerVedaUse({out}, {in, w, bias});
   auto status = sd::Status::OK;
 #endif
 

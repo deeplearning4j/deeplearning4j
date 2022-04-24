@@ -45,12 +45,14 @@ class SD_LIB_EXPORT DataBuffer {
   bool _isOwnerSpecial;
   std::atomic<int> _deviceId;
 
-#ifdef __CUDABLAS__
+#ifndef __JAVACPP_HACK__
+#if defined(__CUDABLAS__) || defined(HAVE_VEDA)
   mutable std::atomic<sd::LongType> _counter;
   mutable std::atomic<sd::LongType> _writePrimary;
   mutable std::atomic<sd::LongType> _writeSpecial;
   mutable std::atomic<sd::LongType> _readPrimary;
   mutable std::atomic<sd::LongType> _readSpecial;
+#endif
 #endif
 
   void setCountersToZero();
@@ -60,7 +62,9 @@ class SD_LIB_EXPORT DataBuffer {
   void deleteBuffers();
   void setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpecial = false);
   void allocateBuffers(const bool allocBoth = false);
+#if !defined(HAVE_VEDA)
   void setSpecial(void *special, const bool isOwnerSpecial);
+#endif
   void copyBufferFromHost(const void *hostBuffer, size_t sizeToCopyinBytes = 0, const sd::LongType offsetThis = 0,
                           const sd::LongType offsetHostBuffer = 0);
 
@@ -126,6 +130,9 @@ class SD_LIB_EXPORT DataBuffer {
 
   void setPrimaryBuffer(void *buffer, size_t length);
   void setSpecialBuffer(void *buffer, size_t length);
+#if defined(HAVE_VEDA)
+  void setSpecial(void *special, const bool isOwnerSpecial);
+#endif
 
   /**
    * This method deletes buffers, if we're owners

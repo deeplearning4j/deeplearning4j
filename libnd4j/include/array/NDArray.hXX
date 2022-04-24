@@ -3532,14 +3532,20 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
     NDArray tmp(sd::DataType::FLOAT32, getContext());  // scalar = 0
 
     ExtraArguments extras({0.0, 0.0, eps});
-
+#if defined(__CUDABLAS__)
     NDArray::prepareSpecialUse({&tmp}, {this, other});
+#else
+    NDArray::preparePrimaryUse({&tmp}, {this, other});
+#endif
     NativeOpExecutioner::execReduce3Scalar(getContext(), reduce3::EqualsWithEps, buffer(), shapeInfo(), specialBuffer(),
                                            specialShapeInfo(), extras.argumentsAsT(DataType::FLOAT32), other->buffer(),
                                            other->shapeInfo(), other->specialBuffer(), other->specialShapeInfo(),
                                            tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo());
+#if defined(__CUDABLAS__)
     NDArray::registerSpecialUse({&tmp}, {this, other});
-
+#else
+    NDArray::registerPrimaryUse({&tmp}, {this, other});
+#endif
     synchronize("NDArray::equalsTo");
 
     if (tmp.e<sd::LongType>(0) != 0) return false;

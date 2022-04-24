@@ -161,6 +161,7 @@ struct VEDA {
     return ve_handles[device_index];
   }
 
+  int getHandlesCount() const { return ve_handles.size();}
  private:
   VEDA(const char* library_name);
 
