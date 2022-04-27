@@ -697,10 +697,25 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   return status;
 }
 
+
+void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array,bool remove) {
+  block.pushNDArrayToVariableSpace(block.nodeId(), outputIdx, array,remove);
+  auto varSpace = block.getVariableSpace();
+  if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
+    auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
+    if (var->getNDArray() != nullptr && var->isRemovable())
+      delete var->getNDArray();
+
+    var->setNDArray(array);
+    var->markRemovable(true);
+  } else {
+    auto var = new Variable(array, nullptr, block.getNodeId(), outputIdx);
+    varSpace->putVariable(block.getNodeId(), outputIdx, var);
+  }
+}
+
 void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array) {
-  throw std::runtime_error("Overwrite result used!");
-  // block.pushNDArrayToVariableSpace(block.nodeId(), outputIdx, array);
-  /*
+  block.pushNDArrayToVariableSpace(block.nodeId(), outputIdx, array);
   auto varSpace = block.getVariableSpace();
   if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
       auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
@@ -713,13 +728,10 @@ void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array
       auto var = new Variable(array, nullptr, block.getNodeId(), outputIdx);
       varSpace->putVariable(block.getNodeId(), outputIdx, var);
   }
-  */
 }
 
 void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArrayList *list) {
-  throw std::runtime_error("Overwrite result used!");
-  // block.pushNDArrayListToVariableSpace(block.nodeId(), outputIdx, list);
-  /*
+  block.pushNDArrayListToVariableSpace(block.nodeId(), outputIdx, list);
   auto varSpace = block.getVariableSpace();
   if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
       auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
@@ -729,7 +741,6 @@ void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArrayList *l
       var->setNDArrayList(list);
       varSpace->putVariable(block.getNodeId(), outputIdx, var);
   }
-  */
 }
 
 sd::Status sd::ops::DeclarableOp::validateArguments(Context &block) {

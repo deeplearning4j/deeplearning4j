@@ -647,14 +647,20 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             if(orderedInputs.size() > 1) {
                 SDValue sdValue = nodeValueOutputs.get(orderedInputs.get(0));
                 SDValue sdValue1 = nodeValueOutputs.get(orderedInputs.get(1));
-                return ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue1);
+                switch(sdValue.getSdValueType()) {
+                    case TENSOR:
+                        Assign c = (Assign) op;
+                        Nd4j.exec(c, opContext);
+                        return ExecutionResult.createFrom(c,opContext);
+                    case LIST:
+                        return ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue1);
 
-            } else {
-                SDValue sdValue = nodeValueOutputs.get(orderedInputs.get(0));
-                return ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue);
+                }
+
             }
 
-
+            SDValue sdValue = nodeValueOutputs.get(orderedInputs.get(0));
+            return ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue);
 
         } else if (op instanceof GradientBackwardsMarker) {
             INDArray out = mmgr.allocate(false, DataType.FLOAT).assign(1.0f);
@@ -1191,7 +1197,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         if (df instanceof CustomOp) {
             DynamicCustomOp customOp = (DynamicCustomOp) df;
-
+            //TODO: add exception for CreateView new op
             if (df instanceof Identity) {
                 if (args != null) {
                     oc.setInputArrays(args);

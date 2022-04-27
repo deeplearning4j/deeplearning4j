@@ -1093,6 +1093,19 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
 
 
+    Op("createView") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
+        javaOpClass = "CreateView"
+        Input(NDARRAY, "input") { description = "Input INDArray " }
+        Input(NDARRAY, "indices") { description = "index arrays representing indices"; count = AtLeast(0); description = ""}
+        Output(NUMERIC, "output"){ description = "A new INDArray  with the same (dynamic) shape as the input" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Return a newly created variable,  with the specified shape and data type.
+            """.trimIndent()
+        }
+    }
+
     Op("onesLike") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
         Input(NDARRAY, "input") { description = "Input INDArray " }

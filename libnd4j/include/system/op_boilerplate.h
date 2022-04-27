@@ -2658,6 +2658,8 @@ SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
 
 #define STORE_RESULT(A) this->storeResult(block, 0, A)
 #define OVERWRITE_RESULT(A) this->overwriteResult(block, 0, A)
+#define OVERWRITE_RESULT_NO_DELETE(A) this->overwriteResult(block, 0, A,false)
+
 #define OVERWRITE_2_RESULTS(A, B)     \
   this->overwriteResult(block, 0, A); \
   this->overwriteResult(block, 1, B)

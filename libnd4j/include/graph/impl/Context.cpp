@@ -244,8 +244,9 @@ void Context::pushNDArrayToVariableSpace(std::pair<int, int> &pair, NDArray *arr
       auto var = _variableSpace->getVariable(pair);
       if (var->hasNDArray()) {
         if (var->getNDArray() != array) {
-          if (var->isRemovable() && var->hasNDArray()) delete var->getNDArray();
-
+          if (var->isRemovable() && var->hasNDArray() && !var->getNDArray()->isView()) {
+            delete var->getNDArray();
+          }
           var->setNDArray(array);
           var->markRemovable(removable);
         }

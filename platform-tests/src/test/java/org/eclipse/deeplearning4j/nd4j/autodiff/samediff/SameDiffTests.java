@@ -2208,7 +2208,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable get = x.get(sd.var(Nd4j.createFromArray(0,1,2,3,4)));
         INDArray assertion = Nd4j.linspace(1,50,50).reshape(5,10);
         assertEquals(assertion,get.eval());
-        System.out.println(get.eval());
+
     }
 
 
@@ -2217,7 +2217,6 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     public void testArrayIndicesPut(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
         INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L);
-        System.out.println(arr);
         SDVariable x = sd.var(arr);
         SDVariable get = x.get(sd.var(Nd4j.createFromArray(0,1,2,3,4)));
         INDArray assertion = Nd4j.linspace(1,50,50).reshape(5,10);
@@ -2228,6 +2227,23 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable put = putInTo.put(putIndices, x, putIndices);
         assertEquals(x.eval(),put.eval());
 
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testArrayIndicesPut3d(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+        INDArray arr = Nd4j.linspace(1, 125, 125).reshape('c', 5L,5L,5L);
+        SDVariable x = sd.var(arr);
+        SDVariable get = x.get(sd.var(Nd4j.createFromArray(0,1,2)));
+        INDArray assertion = Nd4j.linspace(1,75,75).reshape(3,5,5);
+        assertEquals(assertion,get.eval());
+
+        SDVariable putInTo = sd.zerosLike(x);
+        SDVariable putIndices = sd.range(sd.constant(0),sd.constant(3),sd.constant(1),DataType.INT64);
+        SDVariable put = putInTo.put(putIndices, x, putIndices);
+        INDArray eval = put.eval();
+        assertEquals(arr,eval);
 
     }
 

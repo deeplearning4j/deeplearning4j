@@ -653,6 +653,32 @@ public class SDBaseOps {
   }
 
   /**
+   * Return a newly created variable,  with the specified shape and data type.<br>
+   *
+   * @param input Input INDArray  (NDARRAY type)
+   * @param indices  (NDARRAY type)
+   * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
+   */
+  public SDVariable createView(SDVariable input, SDVariable... indices) {
+    Preconditions.checkArgument(indices.length >= 0, "indices has incorrect size/length. Expected: indices.length >= 0, got %s", indices.length);
+    return new org.nd4j.linalg.api.ops.impl.shape.CreateView(sd,input, indices).outputVariable();
+  }
+
+  /**
+   * Return a newly created variable,  with the specified shape and data type.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input INDArray  (NDARRAY type)
+   * @param indices  (NDARRAY type)
+   * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
+   */
+  public SDVariable createView(String name, SDVariable input, SDVariable... indices) {
+    Preconditions.checkArgument(indices.length >= 0, "indices has incorrect size/length. Expected: indices.length >= 0, got %s", indices.length);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.CreateView(sd,input, indices).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Cumulative product operation.<br>
    * For input: [ a, b, c], output is:<br>
    * exclusive=false, reverse=false: [a, a*b, a*b*c]<br>

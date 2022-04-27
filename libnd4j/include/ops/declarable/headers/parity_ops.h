@@ -409,9 +409,18 @@ DECLARE_CUSTOM_OP(unstack, 1, -1, false, 0, 1);
  * This operation extracts a strided (optionally) slice from a tensor,
  */
 #if NOT_EXCLUDED(OP_strided_slice)
-DECLARE_CUSTOM_OP(strided_slice, 1, 1, false, 0, 5);  // TODO: new op type needed. that returns VIEW
+DECLARE_CUSTOM_OP(strided_slice, 1, 1, false, 0, 5);
 DECLARE_CUSTOM_OP(strided_slice_bp, 2, 1, false, 0, 5);
 #endif
+
+/**
+ * This operation creates a view from a pre existing tensor.
+ *
+ */
+#if NOT_EXCLUDED(OP_create_view)
+DECLARE_CUSTOM_OP(create_view, -2, -1, true, 0, -2);
+#endif
+
 
 /**
  * This operation extracts a slice from a tensor.
@@ -427,17 +436,17 @@ DECLARE_CUSTOM_OP(slice_bp, 2, 1, false, 0, -2);
  * Expected arguments:
  * start: optional scalar with starting value
  * stop: optional scalar with end value
- * step: optional scalar witn step value
+ * step: optional scalar with step value
  *
  * Int args: (optional)
  * 0: optional scalar with starting value
  * 1: optional scalar with end value
- * 1: optional scalar witn step value
+ * 1: optional scalar with step value
  *
  * T args: (optional)
  * 0: optional scalar with starting value
  * 1: optional scalar with end value
- * 1: optional scalar witn step value
+ * 1: optional scalar with step value
  */
 #if NOT_EXCLUDED(OP_range)
 DECLARE_CUSTOM_OP(range, -2, 1, false, -2, -2);

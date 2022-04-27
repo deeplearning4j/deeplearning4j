@@ -325,6 +325,18 @@ public class NDBase {
   }
 
   /**
+   * Return a newly created variable,  with the specified shape and data type.<br>
+   *
+   * @param input Input INDArray  (NDARRAY type)
+   * @param indices  (NDARRAY type)
+   * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
+   */
+  public INDArray createView(INDArray input, INDArray... indices) {
+    Preconditions.checkArgument(indices.length >= 0, "indices has incorrect size/length. Expected: indices.length >= 0, got %s", indices.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.CreateView(input, indices))[0];
+  }
+
+  /**
    * Cumulative product operation.<br>
    * For input: [ a, b, c], output is:<br>
    * exclusive=false, reverse=false: [a, a*b, a*b*c]<br>

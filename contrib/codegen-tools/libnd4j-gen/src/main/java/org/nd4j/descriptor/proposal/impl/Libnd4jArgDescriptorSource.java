@@ -1120,6 +1120,30 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                                                 .build()).build());
                             }
 
+
+                            if(name.equals("create_view")) {
+                                //importDataType
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .sourceOfProposal("cpp")
+                                        .proposalWeight(Double.POSITIVE_INFINITY)
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                                .setName("inputArray")
+                                                .setIsArray(false)
+                                                .setArgIndex(0)
+                                                .build()).build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .sourceOfProposal("cpp")
+                                        .proposalWeight(Double.POSITIVE_INFINITY)
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                                .setName("indexArrays")
+                                                .setIsArray(false)
+                                                .setArgIndex(1)
+                                                .build()).build());
+                            }
+
                             if(name.equals("read_list")) {
                                 //importDataType
                                 argDescriptorProposals.add(ArgDescriptorProposal.builder()

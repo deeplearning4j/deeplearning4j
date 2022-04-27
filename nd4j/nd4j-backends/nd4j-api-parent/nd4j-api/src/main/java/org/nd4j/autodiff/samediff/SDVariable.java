@@ -1799,7 +1799,7 @@ public class SDVariable implements Serializable {
                         "index",
                         "max",
                         "cond",
-                        "assignTo",
+                        "assignOutput",
                         "toPut",
                         "indices",
                         "indicesPut"})
@@ -1860,7 +1860,18 @@ public class SDVariable implements Serializable {
         SDVariable toAssign = toPut.get(SDIndex.point(indexToPut));
 
         SDVariable sliceOutput = assignTo.get(SDIndex.point(indexToRetrieve));
-        loop.assign(sliceOutput,toAssign);
+        /**
+         * TODO; figure out why assign is just 0 upon returning (this could be an index)
+         * Note when debugging: remember that the output names here need to be apart of the return function
+         * in order to be executed properly otherwise the variable will be ignored.
+         *
+         * Generally the output name should be in the index where you would want to return the
+         * result of the graph for a particular loop variable.
+         */
+        SDVariable assignOutput = loop.assign(sliceOutput,toAssign);
+        SDVariable outputIdentity = loop.identity("assignOutput",assignTo);
+        //ensure the output depends on the final assign so it gets executed, return the final output as a view
+        outputIdentity.addControlDependency(assignOutput);
         return loop;
 
     }
@@ -2032,4 +2043,6 @@ public class SDVariable implements Serializable {
         }
         return true;
     }
+
+
 }

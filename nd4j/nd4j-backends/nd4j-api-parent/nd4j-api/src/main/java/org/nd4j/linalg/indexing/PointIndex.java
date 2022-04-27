@@ -20,7 +20,6 @@
 
 package org.nd4j.linalg.indexing;
 
-import org.nd4j.shade.guava.primitives.Longs;
 import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -28,7 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Adam Gibson
  */
 @EqualsAndHashCode
-public class PointIndex implements INDArrayIndex {
+public class  PointIndex implements INDArrayIndex {
     private long point;
 
     /**
