@@ -106,9 +106,6 @@ TEST_F(DeclarableOpsTests3, Test_Unique_1) {
 
   auto v = result.at(0);
   auto i = result.at(1);
-  // v->printIndexedBuffer("Values");
-  // i->printIndexedBuffer("Indices");
-  // i->printShapeInfo("Indices shape");
   ASSERT_TRUE(expV.isSameShape(v));
   ASSERT_TRUE(expV.equalsTo(v));
 
@@ -132,12 +129,7 @@ TEST_F(DeclarableOpsTests3, Test_Unique_2) {
   auto i = result.at(1);
   auto c = result.at(2);
 
-  // v->printShapeInfo();
-  // v->printIndexedBuffer("Values");
-  // i->printShapeInfo();
-  // i->printIndexedBuffer("Indices");
-  // c->printShapeInfo();
-  // c->printIndexedBuffer("Counts");
+
 
   ASSERT_TRUE(expV.isSameShape(v));
   ASSERT_TRUE(expV.equalsTo(v));
@@ -180,11 +172,7 @@ TEST_F(DeclarableOpsTests3, Test_Norm_1) {
   auto result1 = op.evaluate({&x}, {1.}, {1});
   ASSERT_EQ(result1.status(), sd::Status::OK);
   auto z1 = result1.at(0);
-  // z1->printIndexedBuffer("Z1");
   auto exp1 = x.reduceAlongDimension(reduce::Norm2, dims);
-  // exp1.printIndexedBuffer("EXP1");
-  // z1->printShapeInfo("Z1 shape");
-  // exp1.printShapeInfo("EXP1 shape");
   ASSERT_TRUE(exp1.isSameShape(z1));
   ASSERT_TRUE(exp1.equalsTo(z1));
 
@@ -425,10 +413,6 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_1) {
 
   for (int e = 0; e < 3; e++) {
     auto z = result.at(e);
-
-    //        exp->printIndexedBuffer("e");
-    //        z->printIndexedBuffer("z");
-
     ASSERT_TRUE(exp->isSameShape(z));
     ASSERT_TRUE(exp->equalsTo(z));
   }
@@ -453,8 +437,6 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_2) {
   for (int e = 0; e < 3; e++) {
     auto z = result.at(e);
 
-    // exp->printIndexedBuffer("e");
-    // z->printIndexedBuffer("z");
 
     ASSERT_TRUE(exp->isSameShape(z));
     ASSERT_TRUE(exp->equalsTo(z));

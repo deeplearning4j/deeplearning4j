@@ -132,8 +132,6 @@ void histogramHelper(sd::LaunchContext *context, NDArray &input, NDArray &output
 
   auto min_val = input.reduceNumber(reduce::SameOps::Min);
   auto max_val = input.reduceNumber(reduce::SameOps::Max);
-  //                min_val.printIndexedBuffer("MIN");
-  //                max_val.printIndexedBuffer("MAX");
   BUILD_DOUBLE_SELECTOR(
       input.dataType(), output.dataType(), histogram_,
       (context, input.specialBuffer(), input.shapeInfo(), input.specialShapeInfo(), output.specialBuffer(),
