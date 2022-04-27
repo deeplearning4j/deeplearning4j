@@ -1243,6 +1243,7 @@ NDArray NDArray::varianceNumber(sd::variance::Ops op, bool biasCorrected) {
 
 NDArray NDArray::prodNumber() const {
   if (isS()) throw std::runtime_error("NDArray::prodNumber: you can't use this method on String array!");
+
   NDArray res(dataType(), getContext());
 
   NDArray::prepareSpecialUse({&res}, {this});

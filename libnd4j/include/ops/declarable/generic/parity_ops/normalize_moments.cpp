@@ -49,7 +49,6 @@ CUSTOM_OP_IMPL(normalize_moments, 3, 2, false, 1, 0) {
 
   squareMeans.applyTransform(transform::Square, squareMeans, nullptr);
   variances->applyScalarArr(scalar::Divide, *counts, tempVariances);
-  //            tempVariances.printIndexedBuffer("varianced divided by count");
   tempVariances.applyPairwiseTransform(pairwise::Subtract, squareMeans, *resVariances);
 
   if (shift.e<double>(0) != 0) {

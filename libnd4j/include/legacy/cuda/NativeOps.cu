@@ -2506,11 +2506,6 @@ static SD_INLINE sd::Status realExec(sd::ops::DeclarableOp *op, sd::Pointer *ext
 
   if (!isInplace)
     for (int e = 0; e < numOutputs; e++) {
-      // shape::printShapeInfoLinear("JVM output shape", (int *) outputShapes[e]);
-      // shape::printShapeInfoLinear("C++ output shape", (int *) outputs[e]->shapeInfo());
-      // outputs[e]->printIndexedBuffer("C++ raw output");
-      // outputs[e]->printBuffer("C++ indexed output");
-
       if (outputs[e]->ordering() != shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])))
         outputs[e]->streamline(shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])));
     }
