@@ -232,6 +232,7 @@ NDArray::NDArray(sd::LaunchContext *context) {
 NDArray::NDArray(const sd::LongType *shapeInfo, const bool copyStrides, sd::LaunchContext *context, const bool nullify)
     : NDArray(shapeInfo, ArrayOptions::dataType(shapeInfo), copyStrides, context) {}
 
+#ifndef __JAVACPP_HACK__
 
 NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype,
                  sd::LaunchContext *context, const bool isBuffAlloc,const bool isView,sd::LongType offset) {
@@ -260,6 +261,9 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const ShapeDescriptor &desc
 
   _isView = offset > 0 || _length * DataTypeUtils::sizeOf(_dataType) < buffer->getLenInBytes();
 }
+
+#endif
+
 
 NDArray::NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc)
     : NDArray::NDArray(buffer, const_cast<const sd::LongType *>(shapeInfo), context, isBuffAlloc) {

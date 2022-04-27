@@ -18,9 +18,9 @@ sd::NDArray NDIndexUtils::createPoint(sd::LongType offset) {
   return indexFirstPoint;
 }
 
-sd::NDArray NDIndexUtils::createNewAxis(sd::LongType offset) {
+sd::NDArray NDIndexUtils::createNewAxis() {
   // index type, num indices,stride, indices (length num indices), inclusive
-  auto indexFirstPoint = NDArrayFactory::create<sd::LongType>('c',{5},{NEW_AXIS,1,1,offset,DEFAULT_INCLUSIVE});
+  auto indexFirstPoint = NDArrayFactory::create<sd::LongType>('c',{5},{NEW_AXIS,1,1,0,DEFAULT_INCLUSIVE});
   return indexFirstPoint;
 }
 

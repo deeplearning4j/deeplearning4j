@@ -24,7 +24,7 @@ class SD_LIB_EXPORT NDIndexUtils {
  public:
   static sd::NDArray createInterval(sd::LongType start,sd::LongType end,sd::LongType stride = 1,sd::LongType inclusive = 1);
   static sd::NDArray createPoint(sd::LongType offset);
-  static sd::NDArray createNewAxis(sd::LongType offset);
+  static sd::NDArray createNewAxis();
   static sd::NDArray createAll();
 
 

@@ -63,6 +63,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.shape.CreateView;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual;
@@ -2179,7 +2180,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SameDiff sameDiff = SameDiff.create();
         SDVariable input = sameDiff.placeHolder("input",DataType.INT64);
         SDVariable range = sameDiff.range(sameDiff.constant(0), input.rank(), sameDiff.constant(1), DataType.INT64);
-         //0 1 1
+        //0 1 1
         SDVariable mask = range.gt(0.0).castTo(DataType.INT64);
 
         //1 0 0
@@ -2245,6 +2246,21 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         INDArray eval = put.eval();
         assertEquals(arr,eval);
 
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testView(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        SameDiff sd = SameDiff.create();
+        INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L);
+        SDVariable x = sd.var(arr);
+
+        SDVariable view = sd.createView(x, new SDVariable[]{CreateView.createAll(sd)});
+        INDArray eval = view.eval();
+        assertEquals(arr,eval);
     }
 
     @ParameterizedTest

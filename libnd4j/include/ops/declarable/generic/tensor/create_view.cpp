@@ -17,7 +17,7 @@
  ******************************************************************************/
 
 //
-// @author raver119@gmail.com
+// @author Adam Gibson
 //
 
 #include <system/op_boilerplate.h>
@@ -30,15 +30,9 @@ namespace sd {
 namespace ops {
 
 CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
-
-  if(!block.isInplace()) {
-    for(int i = 0; i < block.width(); i++) {
-      block.variable(i)->markRemovable(false);
-    }
-  }
-
-
+  sd_printf("About to get variable 0\n",0);
   auto inputBase = INPUT_VARIABLE(0);
+  sd_printf("Obtained variable 0\n",0);
   auto numInterval = 0;
   auto numAll = 0;
   auto numNewAxis = 0;
@@ -147,6 +141,7 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
   //note we pass in delete false here so we don't cause a double free
   //overwrite first calls push ndarray which has an option to delete the array if it's not relevant
   //we also call delete later when it's removable.
+  sd_debug("About to overwrite\n",0);
   OVERWRITE_RESULT_NO_DELETE(newResult);
   return sd::Status::OK;
 }

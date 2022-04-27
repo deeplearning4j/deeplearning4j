@@ -1578,12 +1578,14 @@ class SD_LIB_EXPORT NDArray {
   SD_INLINE bool operator!=(const NDArray &other) const;
   NDArray(void *buffer, const char order, const std::vector<sd::LongType> &shape, DataType dtype,
           LaunchContext *context, const bool isBuffAlloc, const bool isView, LongType offset);
+#ifndef __JAVACPP_HACK__
   NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<sd::LongType> &shape, DataType dtype,
           LaunchContext *context, const bool isBuffAlloc, const bool isView, LongType offset);
+#endif
 };
 
 //////////////////////////////////////////////////////////////////////////
-///// IMLEMENTATION OF INLINE METHODS /////
+///// IMPLEMENTATION OF INLINE METHODS /////
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isAttached() { return this->_context->getWorkspace() != nullptr; }
 
