@@ -21,24 +21,41 @@
 package org.nd4j.contrib.aurora;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import  org.nd4j.autodiff.samediff.config;
 
-public class WrapNDArray {
+public class WrapSDValue {
 
-    public INDArray arr;
+    public List<Integer> idList;
 
-    public WrapNDArray(INDArray arr) {
-        this.arr = arr;
+    public WrapSDValue(SDValue value) {
+        this.value = getIds((WrapSDValue) value);
+    }
+
+    public List<Integer> getIds(SDValue value){
+        List<Integer> idList= new List<>();
+        switch(value.getSdValueType()) {
+            case LIST:
+                List<INDArray> listValue = value.getListValue();
+                forEach(INDArray arr: listValue){
+                    if(arr!=null) idList.add(arr.getId())
+                }
+                break;
+            case TENSOR:
+                if(arr!=null) idList.add(arr.getId())
+                break;
+        }
+        return idList;
     }
 
     @Override
     public boolean equals(Object o) {
-        WrapNDArray w = (WrapNDArray) o;
-        return w.arr != null && (w.arr.getId() == this.arr.getId());
+        List<Integer> listx = getIds((WrapSDValue) o);
+        return Arrays.equals(listx, this.idList);
     }
 
     @Override
     public int hashCode() {
-        return (int) (this.arr.getId() % Integer.MAX_VALUE);
+        return this.idList.hashCode();
     }
 
 }

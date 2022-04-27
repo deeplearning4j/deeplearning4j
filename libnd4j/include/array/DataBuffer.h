@@ -62,9 +62,9 @@ class SD_LIB_EXPORT DataBuffer {
   void deleteBuffers();
   void setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpecial = false);
   void allocateBuffers(const bool allocBoth = false);
-#if !defined(HAVE_VEDA)
+
   void setSpecial(void *special, const bool isOwnerSpecial);
-#endif
+
   void copyBufferFromHost(const void *hostBuffer, size_t sizeToCopyinBytes = 0, const sd::LongType offsetThis = 0,
                           const sd::LongType offsetHostBuffer = 0);
 
@@ -130,8 +130,10 @@ class SD_LIB_EXPORT DataBuffer {
 
   void setPrimaryBuffer(void *buffer, size_t length);
   void setSpecialBuffer(void *buffer, size_t length);
+#ifndef __JAVACPP_HACK__
 #if defined(HAVE_VEDA)
-  void setSpecial(void *special, const bool isOwnerSpecial);
+  void** getPtrToSpecial() const;
+#endif
 #endif
 
   /**

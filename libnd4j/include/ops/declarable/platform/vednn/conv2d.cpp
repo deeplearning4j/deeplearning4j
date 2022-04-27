@@ -225,7 +225,7 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
   vW =  (VEDAdeviceptr) w->specialBuffer();
   if (bias) vB = (VEDAdeviceptr) bias->specialBuffer();
   vO = (VEDAdeviceptr) out->specialBuffer();
-  sd_printf("%s %d\n", __FILE__,__LINE__);
+  //sd_printf("%s %d\n", __FILE__,__LINE__);
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn, (uint8_t)isNCHW,
                              VEDAstack(&paramFilter, VEDA_ARGS_INTENT_IN, sizeof(paramFilter)), vW, (int32_t)weightFormat,
                              VEDAstack(&paramBias, VEDA_ARGS_INTENT_IN, sizeof(paramBias)), vB,

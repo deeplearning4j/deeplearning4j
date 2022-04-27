@@ -93,21 +93,20 @@ void DataBuffer::memcpy(const DataBuffer& dst, const DataBuffer& src) {
 void DataBuffer::deleteSpecial() {
   // device id for now is 0
   if (_specialBuffer) {
-    sd_printf("%s \n", "remove Veda Buffer and sync");
+    sd_debug("%s \n", "remove Veda Buffer");
     VEDAdeviceptr v = (VEDAdeviceptr)_specialBuffer;
     VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
     SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
     VEDA_CALL_THROW(vedaMemFreeAsync(v, 0));
     // sync here
-    scopedContext.sync();
+    //scopedContext.sync();
+    _specialBuffer = nullptr;
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::setSpecial(void* special, const bool isOwnerSpecial) {
-  if (_specialBuffer != nullptr && _specialBuffer != special) deleteSpecial();
-  _specialBuffer = special;
-  _isOwnerSpecial = isOwnerSpecial;
+void** DataBuffer::getPtrToSpecial() const {
+  return (void**)&_specialBuffer;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -120,11 +119,10 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
     allocatePrimary();
     // lets copy from _specialBuffer and sync it back
     // we will take device 0 as usual and sync on it
-    sd_printf("%s \n", "syncToPrimary Veda Buffer");
-    VEDAdeviceptr v = (VEDAdeviceptr)_specialBuffer;
+    sd_debug("%s \n", "syncToPrimary Veda Buffer");
     VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
     SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
-    VEDA_CALL_THROW(vedaMemcpyDtoHAsync(_primaryBuffer, v, getLenInBytes(), 0));
+    VEDA_CALL_THROW(vedaMemcpyDtoHAsync(_primaryBuffer, (VEDAdeviceptr)_specialBuffer, getLenInBytes(), 0));
     // sync ops here to read completed result
     scopedContext.sync();
     readPrimary();
@@ -166,11 +164,7 @@ bool DataBuffer::isSpecialActual() const {
 void DataBuffer::deleteSpecial() {}
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::setSpecial(void* special, const bool isOwnerSpecail) {}
-////////////////////////////////////////////////////////////////////////
 void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSync) {}
-////////////////////////////////////////////////////////////////////////
-void DataBuffer::allocateSpecial() {}
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::setCountersToZero() {}
@@ -185,6 +179,9 @@ void DataBuffer::readSpecial() const {}
 bool DataBuffer::isPrimaryActual() const { return true; }
 bool DataBuffer::isSpecialActual() const { return false; }
 #endif
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::setSpecial(void* special, const bool isOwnerSpecail) {}
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::setToZeroBuffers(const bool both) { memset(primary(), 0, getLenInBytes()); }

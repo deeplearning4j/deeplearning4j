@@ -258,21 +258,21 @@ void NDArray::synchronize(const char* msg) const {
 
 void NDArray::prepareVedaUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList,
                              bool synchronizeWritables) {
-  sd_printf("%s \n", "prepareVedaUse");
+  sd_debug("%s \n", "prepareVedaUse");
   // as we have one veda device and stream, we will get one scope for the entire
   VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
   SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
   auto asyncToVeda = [](const NDArray* x) {
     auto buffer = x->getDataBuffer();
-    VEDAdeviceptr vedaPtr = (VEDAdeviceptr)buffer->special();
-    auto hostPtr = buffer->primary();
-    auto length = buffer->getLenInBytes();
-    sd_printf("%s \n", "asyncToVeda primary Buffer");
-    if (!vedaPtr) VEDA_CALL_THROW(vedaMemAllocAsync(&vedaPtr, length, 0));
-    VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vedaPtr, hostPtr, length, 0));
-    buffer->setSpecial((void*)vedaPtr, false);
-    buffer->readSpecial();
+    if(!buffer->special() || !x->isActualOnDeviceSide()){
+      auto hostPtr = buffer->primary();
+      auto length = buffer->getLenInBytes();
+      sd_debug("%s \n", "asyncToVeda primary Buffer");
+      if (!buffer->special()) VEDA_CALL_THROW(vedaMemAllocAsync((VEDAdeviceptr*)buffer->getPtrToSpecial(), length, 0));
+      VEDA_CALL_THROW(vedaMemcpyHtoDAsync((VEDAdeviceptr)buffer->special(), hostPtr, length, 0));
+      buffer->readSpecial();
+    }
   };
   for (const auto& a : readList)
     if (a != nullptr) {
@@ -290,7 +290,7 @@ void NDArray::prepareVedaUse(const std::vector<const NDArray*>& writeList, const
 ////////////////////////////////////////////////////////////////////////
 void NDArray::registerVedaUse(const std::vector<const NDArray*>& writeList,
                                  const std::vector<const NDArray*>& readList) {
-                                   sd_printf("%s \n","registerVedaUse");
+  sd_debug("%s \n","registerVedaUse");
   for (const auto& p : readList)
     if (p != nullptr) p->tickReadDevice();
 
