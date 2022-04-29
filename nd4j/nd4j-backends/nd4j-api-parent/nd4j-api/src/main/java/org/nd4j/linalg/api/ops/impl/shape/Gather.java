@@ -219,7 +219,7 @@ public class Gather extends DynamicCustomOp {
              */
 
             SDVariable paramsGrad = sameDiff.unsortedSegmentSum(valuesTranspose,indices,paramsShape.get(SDIndex.point(jaxis)));
-            SDVariable invertTransposeDims = sameDiff.concat(0,outerBatchIndices.castTo(DataType.INT64),axisDims.castTo(DataType.INT64),batchAxisIndices.castTo(DataType.INT64),innerAxisIndices.castTo(DataType.INT64));
+            SDVariable invertTransposeDims = sameDiff.concat(0,outerBatchIndices.castTo(DataType.INT64),batchAxisIndices.add(1).castTo(DataType.INT64),batchDims.castTo(DataType.INT64),innerAxisIndices.castTo(DataType.INT64));
             paramsGrad = sameDiff.permute(paramsGrad,invertTransposeDims);
 
 
