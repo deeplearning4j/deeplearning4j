@@ -192,7 +192,6 @@ class Deviation {
     x1M2 = InitializeFromAggregate ? a1.M2 : 0;
     x2M2 = InitializeFromAggregate ? a2.M2 : 0;
     x3M2 = InitializeFromAggregate ? a3.M2 : 0;
-    // sd_printf("++----%f    \n", xn);
     for (sd::LongType i = 0; i < length; i++) {
       double n = xn + 1;
       double delta0 = buffer[i * stride] - x0mean;
