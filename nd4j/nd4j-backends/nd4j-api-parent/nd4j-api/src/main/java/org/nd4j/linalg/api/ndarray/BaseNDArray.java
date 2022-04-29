@@ -4131,20 +4131,29 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray get(INDArrayIndex... indexes) {
         Nd4j.getCompressor().autoDecompress(this);
+        INDArrayIndex[] originalIndices = indexes;
+        //copy to avoid direct modification
+        indexes = NDArrayIndex.deepCopy(indexes);
+        //initialize upon use passing in the array where necessary when not initialized
+        for(int i = 0; i < indexes.length; i++) {
+            if(!indexes[i].initialized()) {
+                indexes[i].init(this,indexes[i].offset(),(int) indexes[i].end());
+            }
+        }
 
         int numPoint = 0;
         int numInterval = 0;
         int numAll = 0;
         int numNewAxis = 0;
         int numSpecified = 0;
-        for(INDArrayIndex i : indexes){
+        for(INDArrayIndex i : indexes) {
             if(i instanceof PointIndex) {
                 numPoint++;
             } else if(i instanceof NDArrayIndexAll) {
                 numAll++;
-            } else if(i instanceof IntervalIndex){
+            } else if(i instanceof IntervalIndex) {
                 numInterval++;
-            } else if(i instanceof NewAxis){
+            } else if(i instanceof NewAxis) {
                 numNewAxis++;
             } else if(i instanceof SpecifiedIndex){
                 numSpecified++;
@@ -4167,8 +4176,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             indexes = newIndexes;
         }
 
-        Preconditions.checkState((numPoint + numInterval + numAll + numSpecified) == rank(), "Illegal set of indices for array: need at least" +
-                " %s point/interval/all/specified indices for rank %s array (%ndShape), got indices %s", rank(), rank(), this, indexes);
+
 
         int outRank = rank() + numNewAxis - numPoint;
         Preconditions.checkState(outRank >= 0, "Illegal set of indices for array: %ndShape, %s", this, indexes);
@@ -4182,6 +4190,26 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int outIdx = 0;     //Axis number counter for output array
         int inIdx = 0;      //Axis number counter for input array
         for( int i = 0; i < indexes.length; i++) {
+            if(offset >= length() || inIdx >= rank()) {
+                if(offset >= length())
+                    return Nd4j.empty();
+                else {
+                    //more indices to process but we've exhausted this list
+                    //use the offset we have and process further indices
+                    //recursively
+                    INDArrayIndex[] subIndices = new INDArrayIndex[indexes.length - i];
+                    char order = Shape.getOrder(outShape, outStrides, -1);
+                    INDArray out = create(data, outShape, outStrides, offset, order);
+                    for(int j = 0; j < subIndices.length; j++) {
+                        //note we pull from the original indices to preserve un initialized indices
+                        //for cases like dynamic dimensions that should be relative to the second sub array
+                        subIndices[j] = originalIndices[j + i];
+                    }
+
+                    return out.get(subIndices);
+                }
+            }
+
             if(indexes[i] instanceof PointIndex) {
                 //Point indexes don't appear in output
                 PointIndex pi = (PointIndex) indexes[i];
@@ -4198,13 +4226,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 IntervalIndex ii = (IntervalIndex)indexes[i];
                 long start = ii.offset();
                 long endInc = ii.end() - (ii.isInclusive() ? 0 : 1);
+
                 if (endInc >= size(inIdx)) {
                     throw new IllegalStateException("Indices are out of range: Cannot get interval index " + indexes[i] +
                             " on array with size(" + inIdx + ")=" + size(inIdx) + ". Array shape: " + Arrays.toString(shape()) +
                             ", indices: " + Arrays.toString(indexes));
                 }
                 long stride = ii.stride();
-                long length = (endInc - start) / stride + 1;
+                long length = (endInc - start /stride) + 1;
 
                 offset += ii.offset() * stride(inIdx);
                 outShape[outIdx] = length;
@@ -4243,7 +4272,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             SpecifiedIndex[] si = new SpecifiedIndex[numSpecified];
             int j = 0;
             for(int i = 0; i < indexes.length; i++) {
-                if(indexes[i] instanceof SpecifiedIndex){
+                if(indexes[i] instanceof SpecifiedIndex) {
                     specifiedSizes[j] = indexes[i].length();
                     si[j] = (SpecifiedIndex)indexes[i];
                     j++;
@@ -4308,6 +4337,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             return out;
         }
+
+
 
 
         char order = Shape.getOrder(outShape, outStrides, -1);

@@ -21,14 +21,27 @@
 package org.nd4j.linalg.indexing;
 
 import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
+ *
+ * A point index is used for pulling something like a specific row from
+ * an array. A view will be created based on the point at the given dimension.
+ *
+ * Negative indices can also be specified allowing for dynamic
+ * resolution of dimensions/coordinates at runtime.
+ *
  * @author Adam Gibson
  */
 @EqualsAndHashCode
+@Slf4j
 public class  PointIndex implements INDArrayIndex {
     private long point;
+    private boolean initialized = false;
+
+
+    private PointIndex(){}
 
     /**
      *
@@ -36,6 +49,7 @@ public class  PointIndex implements INDArrayIndex {
      */
     public PointIndex(long point) {
         this.point = point;
+        initialized = point > 0;
     }
 
     @Override
@@ -70,22 +84,54 @@ public class  PointIndex implements INDArrayIndex {
 
     @Override
     public void init(INDArray arr, long begin, int dimension) {
-
+        if(begin < 0) {
+            begin += arr.size(dimension);
+            point = begin;
+        } else {
+            point = begin;
+        }
     }
 
     @Override
     public void init(INDArray arr, int dimension) {
-
+        point = arr.size(dimension);
     }
 
     @Override
     public void init(long begin, long end, long max) {
+        if(begin < 0) {
+            initialized = false;
+            log.debug("Not initializing due to missing positive dimensions. Initialization will be attempted again during runtime.");
+            return;
+        }
 
+        point = begin;
+        initialized = true;
     }
 
     @Override
     public void init(long begin, long end) {
+        if(begin < 0) {
+            initialized = false;
+            log.debug("Not initializing due to missing positive dimensions. Initialization will be attempted again during runtime.");
+            return;
+        }
 
+        point = begin;
+        initialized = true;
+    }
+
+    @Override
+    public boolean initialized() {
+        return initialized && point >= 0;
+    }
+
+    @Override
+    public INDArrayIndex dup() {
+        PointIndex pointIndex = new PointIndex();
+        pointIndex.initialized = initialized;
+        pointIndex.point = point;
+        return pointIndex;
     }
 
     @Override

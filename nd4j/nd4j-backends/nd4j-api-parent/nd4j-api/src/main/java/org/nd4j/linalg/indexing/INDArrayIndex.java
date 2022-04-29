@@ -79,9 +79,27 @@ public interface INDArrayIndex {
     void init(long begin, long end, long max);
 
     /**
-     * Initiailize based on the specified begin and end
+     * Initialize based on the specified begin and end
      * @param begin
      * @param end
      */
     void init(long begin, long end);
+
+    /**
+     * Returns true if this index has been initialized.
+     * Sometimes indices may define certain constraints
+     * such as negative indices that may not be resolved
+     * until use. {@link INDArray#get(INDArrayIndex...)}
+     * will check for when an index is initialized and if not
+     * initialize it upon use.
+     * @return
+     */
+    boolean initialized();
+
+    /**
+     * Deep copy of this {@link INDArrayIndex}
+     * @return
+     */
+    INDArrayIndex dup();
+
 }

@@ -29,6 +29,7 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.shape.CreateView;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.factory.Nd4j;
@@ -1532,6 +1533,48 @@ public class SDVariable implements Serializable {
         }
     }
 
+
+
+    /**
+     * Get a variable with content equal to a specified sub-array of this variable.<br>
+     * Can be used (for example) to get rows, columns, sub-matrices, etc.
+     * @param indices Indices to get
+     * @return Sub-array variable
+     */
+    public SDVariable getView(SDIndex... indices) {
+        //copy because we can mutate this internally
+        SDVariable[] indicesVars = new SDVariable[indices.length];
+        for(int i = 0; i < indices.length; i++) {
+            //convert indices to SDVariable based indices
+            switch(indices[i].getIndexType()) {
+                case INTERVAL:
+                    indicesVars[i] = CreateView.createInterval(sameDiff,indices[i].getIntervalBegin(),indices[i].getIntervalEnd(),indices[i].getIntervalStrides(),indices[i].isInclusive()  ? 1 : 0);
+                    break;
+                case POINT:
+                    indicesVars[i] = CreateView.createPoint(sameDiff,indices[i].getPointIndex());
+                    break;
+                case POINT_INPUT:
+                    indicesVars[i] = CreateView.createPoint(sameDiff,indices[i].getPointVar());
+                    break;
+                case INTERVAL_INPUT:
+                    indicesVars[i] = CreateView.createInterval(sameDiff,indices[i].getIntervalInputBegin(),indices[i].getIntervalInputEnd(),indices[i].getIntervalStrideInput(), indices[i].getInclusiveInput());
+                    break;
+                case ALL:
+                    indicesVars[i] = CreateView.createAll(sameDiff);
+                    break;
+
+                default:
+                    throw new IllegalArgumentException("Illegal type " + indices[i].getIndexType());
+
+            }
+
+        }
+
+        return sameDiff.createView(this,indicesVars);
+
+    }
+
+
     /**
      * Get a variable with content equal to a specified sub-array of this variable.<br>
      * Can be used (for example) to get rows, columns, sub-matrices, etc.
@@ -1855,19 +1898,11 @@ public class SDVariable implements Serializable {
         indicesPut =  indicesPut.reshape("indicesPutReshape",indicesPut.length());
 
         //the current index to retrieve
-        SDVariable indexToRetrieve = indicesLoop.get(SDIndex.point(index)).reshape(1).castTo("indexToReceive",DataType.INT64);
-        SDVariable indexToPut = indicesPut.get(SDIndex.point(index)).reshape(1).castTo("indexToPut",DataType.INT64);
-        SDVariable toAssign = toPut.get(SDIndex.point(indexToPut));
+        SDVariable indexToRetrieve = indicesLoop.getView(SDIndex.point(index)).reshape(1).castTo("indexToReceive",DataType.INT64);
+        SDVariable indexToPut = indicesPut.getView(SDIndex.point(index)).reshape(1).castTo("indexToPut",DataType.INT64);
+        SDVariable toAssign = toPut.getView(SDIndex.point(indexToPut));
 
-        SDVariable sliceOutput = assignTo.get(SDIndex.point(indexToRetrieve));
-        /**
-         * TODO; figure out why assign is just 0 upon returning (this could be an index)
-         * Note when debugging: remember that the output names here need to be apart of the return function
-         * in order to be executed properly otherwise the variable will be ignored.
-         *
-         * Generally the output name should be in the index where you would want to return the
-         * result of the graph for a particular loop variable.
-         */
+        SDVariable sliceOutput = assignTo.getView(SDIndex.point(indexToRetrieve));
         SDVariable assignOutput = loop.assign(sliceOutput,toAssign);
         SDVariable outputIdentity = loop.identity("assignOutput",assignTo);
         //ensure the output depends on the final assign so it gets executed, return the final output as a view

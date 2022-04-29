@@ -46,7 +46,7 @@ public class Permute extends Transpose {
         addIArgument(permuteDims);
     }
 
-    public Permute(INDArray input, INDArray result, int... permuteDims){
+    public Permute(INDArray input, INDArray result, int... permuteDims) {
         super(input, result);
         this.permuteDims = permuteDims;
         this.reverseDims = new int[permuteDims.length];
@@ -56,8 +56,9 @@ public class Permute extends Transpose {
         addIArgument(permuteDims);
     }
 
-    public Permute(SameDiff sd, SDVariable input, SDVariable permuteDims){
+    public Permute(SameDiff sd, SDVariable input, SDVariable permuteDims) {
         super(sd, input, permuteDims);
+        System.out.println();
     }
 
     public Permute(INDArray input, int... permuteDims){

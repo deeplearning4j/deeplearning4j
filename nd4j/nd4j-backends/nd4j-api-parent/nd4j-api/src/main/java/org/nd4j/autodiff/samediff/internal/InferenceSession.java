@@ -45,6 +45,7 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.shape.Concat;
+import org.nd4j.linalg.api.ops.impl.shape.CreateView;
 import org.nd4j.linalg.api.ops.impl.shape.Stack;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.*;
 import org.nd4j.linalg.api.ops.impl.transforms.Assert;
@@ -196,7 +197,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         arrayUseTracker.markSatisfied(new ExecDoneDep(), true);
         if (arrayUseTracker.hasNewAllSatisfied()) {
             List<SDValue> l = arrayUseTracker.getNewAllSatisfiedList();
-            for (SDValue value : l) {
+     /*       for (SDValue value : l) {
                 switch(value.getSdValueType()) {
                     case LIST:
                         for(INDArray arr : value.getListValue())
@@ -207,7 +208,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         mmgr.release(value.getTensorValue());
                         break;
                 }
-            }
+            }*/
         }
 
         return output;
@@ -372,8 +373,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         log.trace("Found array id {} (output of {}) not required anywhere, deallocating", array.getTensorValue().getId(), o.getName());
                 }
 
-                if(array != null && array.getTensorValue() != null)
-                    mmgr.release(array.getTensorValue() );
+              /*  if(array != null && array.getTensorValue() != null)
+                    mmgr.release(array.getTensorValue() );*/
             } else if ((inputsForOps == null || inputsForOps.isEmpty()) && out.getOutputs() != null && !arrayUseTracker.hasDependency(SDValue.create(out.resultAt(i)))) {
                 //This particular array is not actually needed anywhere, so we can deallocate in immediately
                 //Possibly only a control dependency, or only one of the outputs of a multi-output op is used
@@ -383,8 +384,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         log.trace("Found array id {} (output of {}) not required anywhere, deallocating", array.getId(), o.getName());
                 }
 
-                if(array != null && array != null)
-                    mmgr.release(array);
+             /*   if(array != null && array != null)
+                    mmgr.release(array);*/
             }
         }
 
@@ -405,7 +406,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     }
                 }
 
-                switch(value.getSdValueType()) {
+             /*   switch(value.getSdValueType()) {
                     case TENSOR:
                         mmgr.release(value.getTensorValue());
                         break;
@@ -414,7 +415,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                             if(arr != null)
                                 mmgr.release(arr);
                         break;
-                }
+                }*/
 
             }
         }
@@ -665,6 +666,23 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         } else if (op instanceof GradientBackwardsMarker) {
             INDArray out = mmgr.allocate(false, DataType.FLOAT).assign(1.0f);
             return ExecutionResult.createFrom(Arrays.asList("gradientbackwardsmarker"), new INDArray[]{out});
+        } else if(op instanceof CreateView) {
+           Map<String,VarId> inputVars = new LinkedHashMap<>();
+           String[] argNames = op.argNames();
+           for(Iterator<VarId> iter = opInputs.iterator(); iter.hasNext();) {
+               VarId varId  = iter.next();
+               inputVars.put(varId.getVariable(),varId);
+           }
+           SDValue sdValue = nodeValueOutputs.get(inputVars.get(argNames[0]));
+           if(sdValue == null) {
+               sdValue = SDValue.create(opContext.getInputArray(0));
+           }
+            INDArray[] indices = new INDArray[argNames.length - 1];
+            for(int i = 1; i < argNames.length; i++) {
+                indices[i - 1] = nodeValueOutputs.get(inputVars.get(argNames[i])).getTensorValue();
+            }
+            return ExecutionResult.createFrom(op.outputVariablesNames()[0],
+                    CreateView.createFrom(sdValue.getTensorValue(),indices));
         } else if (op instanceof ExternalErrorsFunction) {
             ExternalErrorsFunction fn = (ExternalErrorsFunction) op;
             String n = fn.getGradPlaceholderName();
@@ -1116,9 +1134,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 //Might be due to repeated inputs
                 Set<String> uniqueArgNames = new LinkedHashSet<>();
                 Collections.addAll(uniqueArgNames, argNames);
-             /*   Preconditions.checkState(uniqueArgNames.size() == (numNonConstIns + numConstPhIns + numNonConstInsAllIters),
-                        "Different number of arg names as op inputs for op %s (%s): arg names %s vs. op inputs %s+%s", df.getClass().getSimpleName(),
-                        opName, uniqueArgNames, opInputs, constAndPhInputs);*/
+
             } else {
                 Preconditions.checkState(numArgs == (numNonConstIns + numConstPhIns),
                         "Different number of arg names as op inputs for op %s (%s): arg names %s vs. op inputs %s+%s", df.getClass().getSimpleName(),
@@ -1126,11 +1142,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
         }
 
-        //TODO: handle lists better. For some reason, add_scalar is trying to add a list to 1.0.
-        //This is probably another value propagation failure. Focus on the names of the values
-        //like the previous fixes. It might be a control flow/switch issue propagating the wrong values
-        //This is often the case where an array is attempting to be used and is passed along instead
-        //of the right thing. Replace calls to getTensorFromOutputs(..) with actual createValue calls.
         INDArray[] args = null;
         if (argNames != null && argNames.length > 0) {
             args = new INDArray[argNames.length];
@@ -1197,8 +1208,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         if (df instanceof CustomOp) {
             DynamicCustomOp customOp = (DynamicCustomOp) df;
-            //TODO: add exception for CreateView new op
-            if (df instanceof Identity) {
+            if (df instanceof Identity || df instanceof CreateView) {
                 if (args != null) {
                     oc.setInputArrays(args);
                 }

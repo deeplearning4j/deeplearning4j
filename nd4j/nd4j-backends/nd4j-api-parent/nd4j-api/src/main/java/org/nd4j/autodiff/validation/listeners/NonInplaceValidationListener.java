@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.ops.impl.shape.CreateView;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 public class NonInplaceValidationListener extends BaseListener {
@@ -56,7 +57,7 @@ public class NonInplaceValidationListener extends BaseListener {
 
     @Override
     public void preOpExecution(SameDiff sd, At at, SameDiffOp op, OpContext oc) {
-        if(op.getOp().isInPlace() || oc == null) { // control flow ops can have null op contexts
+        if(op.getOp().isInPlace() || oc == null || op.getOp() instanceof CreateView) { // control flow ops can have null op contexts
             //Don't check inplace op
             return;
         }
@@ -127,7 +128,7 @@ public class NonInplaceValidationListener extends BaseListener {
                     "for op %s - input %s", op.getOp().getClass(), i);
 
             //Deallocate:
-            if(dealloc && after.closeable()){
+            if(dealloc && after.closeable()) {
                 after.close();
             }
             if(opInputs[i].closeable()){

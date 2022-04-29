@@ -143,7 +143,7 @@ public class GradCheckUtil {
         List<Listener> listenersBefore = new ArrayList<>(sd.getListeners());
         int listenerIdx = -1;
         if(listenersBefore.isEmpty()) {
-            sd.addListeners(new NonInplaceValidationListener());
+            //  sd.addListeners(new NonInplaceValidationListener());
             listenerIdx = 0;
         } else {
             boolean found = false;
@@ -157,7 +157,7 @@ public class GradCheckUtil {
                 i++;
             }
             if(!found) {
-                sd.addListeners(new NonInplaceValidationListener());
+                // sd.addListeners(new NonInplaceValidationListener());
                 listenerIdx = i;
             }
         }
@@ -166,7 +166,8 @@ public class GradCheckUtil {
         Map<String,INDArray> gm = sd.calculateGradients(placeholderValues, varsNeedingGrads);
 
         //Remove listener, to reduce overhead
-        sd.getListeners().remove(listenerIdx);
+        if(!sd.getListeners().isEmpty())
+            sd.getListeners().remove(listenerIdx);
 
         Map<String,INDArray> grad = new HashMap<>();
         for(SDVariable v : sd.variables()){
@@ -188,8 +189,8 @@ public class GradCheckUtil {
             }
             if(!Arrays.equals(v.getArr().shape(), ga.shape())) {
                 throw new IllegalStateException("Gradient shape does not match variable shape for variable \"" +
-                    v.name() + "\": shape " + Arrays.toString(v.getArr().shape()) + " vs. gradient shape " +
-                    Arrays.toString(ga.shape()));
+                        v.name() + "\": shape " + Arrays.toString(v.getArr().shape()) + " vs. gradient shape " +
+                        Arrays.toString(ga.shape()));
             }
             grad.put(v.name(), ga.dup());
         }

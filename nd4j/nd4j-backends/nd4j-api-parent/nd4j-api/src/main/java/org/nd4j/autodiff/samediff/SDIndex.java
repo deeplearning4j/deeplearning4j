@@ -70,6 +70,10 @@ public class SDIndex {
 
     private Long intervalStrides = 1l;
 
+    private boolean inclusive = false;
+
+    private SDVariable inclusiveInput = null;
+
 
     public SDIndex(){}
 
@@ -149,6 +153,7 @@ public class SDIndex {
         sdIndex.indexType = IndexType.INTERVAL_INPUT;
         sdIndex.intervalInputBegin = begin;
         sdIndex.intervalInputEnd = end;
+        sdIndex.inclusiveInput = begin.getSameDiff().constant(0);
         return sdIndex;
     }
 
@@ -160,16 +165,35 @@ public class SDIndex {
      * @return
      */
     public static SDIndex interval(Long begin, Long end) {
+        return interval(begin,end,false);
+    }
+
+    /**
+     *  Represents all elements begin to end (think get row from beginning to end)
+     *  Note these are static indices.
+     * @param begin the begin index
+     * @param end the end index
+     * @return
+     */
+    public static SDIndex interval(Long begin, Long end,Boolean inclusive) {
         SDIndex sdIndex = new SDIndex();
         sdIndex.indexType = IndexType.INTERVAL;
         if(begin != null) {
             sdIndex.intervalBegin = begin.longValue();
         }
-        if(end != null){
+        if(end != null) {
             sdIndex.intervalEnd = end.longValue();
         }
+
+        if(inclusive != null) {
+            sdIndex.inclusive = inclusive;
+        } else {
+            sdIndex.inclusive = false;
+        }
+
         return sdIndex;
     }
+
 
     /**
      *  Represents all elements begin to end (think get row from beginning to end)
@@ -187,6 +211,9 @@ public class SDIndex {
         if(end != null){
             sdIndex.intervalEnd = end.longValue();
         }
+
+        sdIndex.inclusive = false;
+
         return sdIndex;
     }
 
@@ -207,8 +234,37 @@ public class SDIndex {
         sdIndex.intervalBegin = begin;
         sdIndex.intervalEnd = end;
         sdIndex.intervalStrides = strides;
+        sdIndex.inclusive  = false;
         return sdIndex;
     }
+
+    /**
+     *  Represents all elements begin to end (think get row from beginning to end)
+     *  Note these are static indices.
+     * @param begin the begin index
+     * @param strides the stride to increment by to end
+     * @param end the end index
+     * @param inclusive whether the index is inclusive or not
+     * @return
+     */
+    public static SDIndex interval(Long begin, Long strides, Long end,Boolean inclusive) {
+        if(strides == 0) {
+            throw new ND4JIllegalArgumentException("Invalid index : strides can not be 0.");
+        }
+
+        SDIndex sdIndex = new SDIndex();
+        sdIndex.indexType = IndexType.INTERVAL;
+        sdIndex.intervalBegin = begin;
+        sdIndex.intervalEnd = end;
+        sdIndex.intervalStrides = strides;
+        if(inclusive != null) {
+            sdIndex.inclusive = inclusive;
+        } else {
+            sdIndex.inclusive = false;
+        }
+        return sdIndex;
+    }
+
 
     /**
      *  Represents all elements begin to end (think get row from beginning to end)
@@ -219,21 +275,7 @@ public class SDIndex {
      * @return
      */
     public static SDIndex interval(Integer begin, Integer strides, Integer end) {
-        if(strides == 0){
-            throw new ND4JIllegalArgumentException("Invalid index : strides can not be 0.");
-        }
-        SDIndex sdIndex = new SDIndex();
-        sdIndex.indexType = IndexType.INTERVAL;
-        if(begin != null) {
-            sdIndex.intervalBegin = begin.longValue();
-        }
-        if(end != null){
-            sdIndex.intervalEnd = end.longValue();
-        }
-        if(strides != null){
-            sdIndex.intervalStrides = strides.longValue();
-        }
-        return sdIndex;
+        return interval(begin.longValue(),strides.longValue(),end.longValue());
     }
 
     /**
@@ -245,6 +287,18 @@ public class SDIndex {
      * @return
      */
     public static SDIndex interval(SDVariable begin, SDVariable strides, SDVariable end) {
+      return interval(begin,strides,end,begin.getSameDiff().constant(false));
+    }
+
+    /**
+     *  Represents all elements begin to end (think get row from beginning to end)
+     *  Note these are static indices.
+     * @param begin the begin index
+     * @param strides the stride to increment by to end
+     * @param end the end index
+     * @return
+     */
+    public static SDIndex interval(SDVariable begin, SDVariable strides, SDVariable end,SDVariable inclusive) {
         SDIndex sdIndex = new SDIndex();
         sdIndex.indexType = IndexType.INTERVAL_INPUT;
         if(begin != null) {
@@ -258,6 +312,13 @@ public class SDIndex {
         if(strides != null) {
             sdIndex.intervalStrideInput = strides;
         }
+
+        if(inclusive != null) {
+            sdIndex.inclusiveInput = inclusive;
+        } else {
+            sdIndex.inclusiveInput = begin.getSameDiff().constant(false);
+        }
+
         return sdIndex;
     }
 }
