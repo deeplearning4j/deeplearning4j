@@ -384,7 +384,7 @@
                 <dependency>
                     <groupId>org.bytedeco</groupId>
                     <artifactId>javacpp</artifactId>
-                    <classifier>linux-x86_64</classifier>
+                    <version>${javacpp.version}</version>
                 </dependency>
                 <dependency>
                     <groupId>org.bytedeco</groupId>
