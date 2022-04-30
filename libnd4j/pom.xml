@@ -240,8 +240,8 @@
                 </property>
             </activation>
             <properties>
-                <openblas.artifactId>openblas-platform</openblas.artifactId>
-                <openblas.classifier></openblas.classifier>
+                <openblas.artifactId>openblas</openblas.artifactId>
+                <openblas.classifier>${javacpp.platform}</openblas.classifier>
 
             </properties>
         </profile>
@@ -253,8 +253,7 @@
                 </property>
             </activation>
             <properties>
-                <openblas.artifactId>openblas</openblas.artifactId>
-                <openblas.classifier>${javacpp.platform}</openblas.classifier>
+                <openblas.artifactId>openblas-platform</openblas.artifactId>
             </properties>
         </profile>
 
