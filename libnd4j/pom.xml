@@ -240,7 +240,7 @@
                 </property>
             </activation>
             <properties>
-                <openblas.artifactid>openblas-platform</openblas.artifactid>
+                <openblas.artifactId>openblas-platform</openblas.artifactId>
                 <openblas.classifier></openblas.classifier>
 
             </properties>
