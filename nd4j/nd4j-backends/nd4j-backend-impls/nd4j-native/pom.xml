@@ -402,8 +402,7 @@
             <id>default-javacpp</id>
             <activation>
                 <property>
-                    <name>javacpp.platform.extension</name>
-                    <value>!compat</value>
+                    <name>!javacpp.platform.extension</name>
                 </property>
             </activation>
             <dependencies>
