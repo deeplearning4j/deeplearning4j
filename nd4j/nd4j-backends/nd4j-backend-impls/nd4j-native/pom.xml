@@ -376,7 +376,8 @@
             <activation>
                 <property>
                     <name>javacpp.platform.extension</name>
-                    <value>compat</value>
+                    <!-- Using the maven build extension (see ./mvn/extensions.xml) use regex to check for any value that isn't empty-->
+                    <value>/.+/</value>
                 </property>
             </activation>
             <dependencies>

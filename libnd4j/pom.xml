@@ -59,6 +59,8 @@
         <libnd4j.datatypes></libnd4j.datatypes>
         <libnd4j.sanitize>OFF</libnd4j.sanitize>
         <libnd4j.arch></libnd4j.arch>
+        <openblas.artifactId></openblas.artifactId>
+        <openblas.classifier></openblas.classifier>
     </properties>
 
     <build>
@@ -95,8 +97,9 @@
                 <dependencies>
                     <dependency>
                         <groupId>org.bytedeco</groupId>
-                        <artifactId>openblas-platform</artifactId>
+                        <artifactId>${openblas.artifactId}</artifactId>
                         <version>${openblas.version}-${javacpp-presets.version}</version>
+                        <classifier>${openblas.classifier}</classifier>
                     </dependency>
                 </dependencies>
                 <configuration>
@@ -226,6 +229,35 @@
     </build>
 
     <profiles>
+
+        <profile>
+            <id>compat-profile</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform.extension</name>
+                    <!-- Using the maven build extension (see ./mvn/extensions.xml) use regex to check for any value that isn't empty-->
+                    <value>/.+/</value>
+                </property>
+            </activation>
+            <properties>
+                <openblas.artifactid>openblas-platform</openblas.artifactid>
+                <openblas.classifier></openblas.classifier>
+
+            </properties>
+        </profile>
+        <profile>
+            <id>default-javacpp</id>
+            <activation>
+                <property>
+                    <name>!javacpp.platform.extension</name>
+                </property>
+            </activation>
+            <properties>
+                <openblas.artifactId>openblas</openblas.artifactId>
+                <openblas.classifier>${javacpp.platform}</openblas.classifier>
+            </properties>
+        </profile>
+
         <!-- Build on windows can use sh rather than bash due to WSL clashing with msys2 -->
         <profile>
             <id>build-windows</id>
