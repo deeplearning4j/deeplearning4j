@@ -199,6 +199,24 @@ fun Linalg() =  Namespace("Linalg") {
         }
     }
 
+
+
+
+    Op("matrixDeterminant") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "MatrixDeterminant"
+
+        Input(DataType.NUMERIC, "input") {"Input tensor"}
+        Output(FLOATING_POINT, "output")
+
+        Doc(Language.ANY, DocScope.ALL){
+            """
+             Calculates matrix determinant.
+            """.trimIndent()
+        }
+    }
+
+
     Op("logdet") {
         javaPackage = "org.nd4j.linalg.api.ops.custom"
         javaOpClass = "Logdet"
@@ -209,6 +227,22 @@ fun Linalg() =  Namespace("Linalg") {
         Doc(Language.ANY, DocScope.ALL){
             """
              Calculates log of determinant.
+            """.trimIndent()
+        }
+    }
+
+
+    Op("eig") {
+        javaPackage = "org.nd4j.linalg.eigen"
+        javaOpClass = "Eigen"
+
+        Input(DataType.NUMERIC, "input") {"Input tensor"}
+        Output(FLOATING_POINT, "eigenValues")
+        Output(FLOATING_POINT, "eigenVectors")
+
+        Doc(Language.ANY, DocScope.ALL){
+            """
+             Calculates eigen values
             """.trimIndent()
         }
     }
@@ -242,7 +276,7 @@ fun Linalg() =  Namespace("Linalg") {
 
         Output(FLOATING_POINT, "output")
 
-        Doc(Language.ANY, DocScope.ALL){
+        Doc(Language.ANY, DocScope.ALL) {
             """
              An array with ones at and below the given diagonal and zeros elsewhere.
             """.trimIndent()
