@@ -66,7 +66,7 @@ public class NonInplaceValidationListener extends BaseListener {
             if(oc.getInputArray(0) == null) {
                 //No input op
                 return;
-            } else if(oc.getInputArray(1) == null){
+            } else if(oc.getInputArray(1) == null) {
                 opInputsOrig = new INDArray[]{oc.getInputArray(0)};
                 opInputs = new INDArray[]{oc.getInputArray(0).dup()};
             } else {
@@ -88,7 +88,7 @@ public class NonInplaceValidationListener extends BaseListener {
 
     @Override
     public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, OpContext opContext, INDArray[] outputs) {
-        if(op.getOp().isInPlace() || opContext == null) { //null op contexts occur with control flow
+        if(op.getOp().isInPlace() || opContext == null || op.getOp() instanceof CreateView) { //null op contexts occur with control flow
             //Don't check inplace op
             return;
         }

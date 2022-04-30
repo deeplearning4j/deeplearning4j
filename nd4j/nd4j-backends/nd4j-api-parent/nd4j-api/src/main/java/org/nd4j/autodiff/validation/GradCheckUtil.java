@@ -94,12 +94,12 @@ public class GradCheckUtil {
         }
 
         //Validation sanity checks:
-        if(!skipValidation){
+        if(!skipValidation) {
             validateInternalState(sd, true);
         }
 
         //Check data type:
-        if(Nd4j.dataType() != DataType.DOUBLE){
+        if(Nd4j.dataType() != DataType.DOUBLE) {
             throw new IllegalStateException("Data type must be set to double");
         }
 
@@ -143,7 +143,7 @@ public class GradCheckUtil {
         List<Listener> listenersBefore = new ArrayList<>(sd.getListeners());
         int listenerIdx = -1;
         if(listenersBefore.isEmpty()) {
-            //  sd.addListeners(new NonInplaceValidationListener());
+            sd.addListeners(new NonInplaceValidationListener());
             listenerIdx = 0;
         } else {
             boolean found = false;
@@ -157,7 +157,7 @@ public class GradCheckUtil {
                 i++;
             }
             if(!found) {
-                // sd.addListeners(new NonInplaceValidationListener());
+                sd.addListeners(new NonInplaceValidationListener());
                 listenerIdx = i;
             }
         }
@@ -170,7 +170,7 @@ public class GradCheckUtil {
             sd.getListeners().remove(listenerIdx);
 
         Map<String,INDArray> grad = new HashMap<>();
-        for(SDVariable v : sd.variables()){
+        for(SDVariable v : sd.variables()) {
             if (fnOutputs.contains(v.name())) {
                 //This is not an input to the graph
                 continue;
