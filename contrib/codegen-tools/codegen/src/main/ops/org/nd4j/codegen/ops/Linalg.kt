@@ -231,10 +231,24 @@ fun Linalg() =  Namespace("Linalg") {
         }
     }
 
+    Op("matrixInverse") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "MatrixInverse"
+
+        Input(DataType.NUMERIC, "input") {"Input tensor"}
+        Output(FLOATING_POINT, "output")
+
+        Doc(Language.ANY, DocScope.ALL){
+            """
+             Inverts a matrix
+            """.trimIndent()
+        }
+    }
+
 
     Op("eig") {
-        javaPackage = "org.nd4j.linalg.eigen"
-        javaOpClass = "Eigen"
+        javaPackage = "org.nd4j.linalg.api.ops.custom"
+        javaOpClass = "Eig"
 
         Input(DataType.NUMERIC, "input") {"Input tensor"}
         Output(FLOATING_POINT, "eigenValues")

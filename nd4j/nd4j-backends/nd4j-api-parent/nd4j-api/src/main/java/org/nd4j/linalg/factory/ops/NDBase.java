@@ -157,16 +157,6 @@ public class NDBase {
   }
 
   /**
-   * Asserts the input array is true for all elements. <br>
-   *
-   * @param x A boolean array to assert the state of (NDARRAY type)
-   * @return output The state to assert (NUMERIC type)
-   */
-  public INDArray assertOp(INDArray x) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Assert(x))[0];
-  }
-
-  /**
    * Assign the contents of y to x.<br>
    * Y must be broadcastable to x or the same shape.<br>
    *
@@ -520,17 +510,6 @@ public class NDBase {
   public INDArray fill(INDArray shape, DataType dataType, double value) {
     NDValidation.validateInteger("fill", "shape", shape);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Fill(shape, dataType, value))[0];
-  }
-
-  /**
-   * Returns a flattened 1d array with the length of the input.<br>
-   *
-   * @param input Input variable (NDARRAY type)
-   * @param order ordering of the array
-   * @return output outputs the 1d array with a length equal to the input's length (NDARRAY type)
-   */
-  public INDArray flatten(INDArray input, String order) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.Flatten(input, order))[0];
   }
 
   /**
@@ -1936,20 +1915,22 @@ public class NDBase {
   /**
    * Returns the shape of the specified INDArray  as a 1D INDArray <br>
    *
-   * @param input Input variable (NDARRAY type)
+   * @param input Input variable (NUMERIC type)
    * @return output 1D output variable with contents equal to the shape of the input (NUMERIC type)
    */
   public INDArray shape(INDArray input) {
+    NDValidation.validateNumerical("shape", "input", input);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Shape(input))[0];
   }
 
   /**
    * Returns the size (number of elements, i.e., prod(shape)) of the specified INDArray  as a 0D scalar variable<br>
    *
-   * @param in Input variable (NDARRAY type)
+   * @param in Input variable (NUMERIC type)
    * @return output 0D (scalar) output variable with value equal to the number of elements in the specified array (NUMERIC type)
    */
   public INDArray size(INDArray in) {
+    NDValidation.validateNumerical("size", "in", in);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Size(in))[0];
   }
 
@@ -1957,11 +1938,12 @@ public class NDBase {
    * Returns a rank 0 (scalar) variable for the size of the specified dimension.<br>
    * For example, if X has shape [10,20,30] then sizeAt(X,1)=20. Similarly, sizeAt(X,-1)=30<br>
    *
-   * @param in Input variable (NDARRAY type)
+   * @param in Input variable (NUMERIC type)
    * @param dimension Dimension to get size of
    * @return output Scalar INDArray  for size at specified variable (NUMERIC type)
    */
   public INDArray sizeAt(INDArray in, int dimension) {
+    NDValidation.validateNumerical("sizeAt", "in", in);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.SizeAt(in, dimension))[0];
   }
 

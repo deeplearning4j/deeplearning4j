@@ -119,6 +119,14 @@ public class Nd4j {
      * Bitwise namespace - operations related to bitwise manipulation of arrays
      */
     public static final NDBitwise bitwise = new NDBitwise();
+
+
+    /**
+     * Bitwise namespace - operations related to bitwise manipulation of arrays
+     */
+    public static final NDLinalg linalg = new NDLinalg();
+
+
     /**
      * Math namespace - general mathematical operations
      */
@@ -166,6 +174,13 @@ public class Nd4j {
         return math;
     }
 
+
+    /**
+     * Linalg namespace - operations related to linear algebra (lapack operations)
+     */
+    public static NDLinalg linalg() { return linalg; }
+
+
     /**
      * Random namespace - (pseudo) random number generation methods
      */
@@ -183,7 +198,7 @@ public class Nd4j {
     /**
      * Loss function namespace - operations related to loss functions.
      */
-    public static NDLoss loss(){ return loss; }
+    public static NDLoss loss() { return loss; }
 
     /**
      * Convolutional network namespace - operations related to convolutional neural networks
