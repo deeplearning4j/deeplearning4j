@@ -39,7 +39,7 @@ public class InvertMatrix {
      * @return the inverted matrix
      */
     public static INDArray invert(INDArray arr, boolean inPlace) {
-        if(arr.rank() == 2 && arr.length() == 1){
+        if(arr.rank() == 2 && arr.length() == 1) {
             //[1,1] edge case. Matrix inversion: [x] * [1/x] = [1]
             if(inPlace){
                 return arr.rdivi(1.0);

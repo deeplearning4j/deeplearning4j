@@ -201,7 +201,7 @@ public class TestInvertMatrices extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRightPseudoInvertWithNonFullRowRank(Nd4jBackend backend) {
-        assertThrows(IllegalArgumentException.class,() -> {
+        assertThrows(RuntimeException.class,() -> {
             INDArray X = Nd4j.create(new double[][]{{1, 2}, {3, 6}, {5, 10}}).transpose();
             INDArray rightInverse = InvertMatrix.pRightInvert(X, false);
         });
@@ -214,7 +214,7 @@ public class TestInvertMatrices extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLeftPseudoInvertWithNonFullColumnRank(Nd4jBackend backend) {
-        assertThrows(IllegalArgumentException.class,() -> {
+        assertThrows(RuntimeException.class,() -> {
             INDArray X = Nd4j.create(new double[][]{{1, 2}, {3, 6}, {5, 10}});
             INDArray leftInverse = InvertMatrix.pLeftInvert(X, false);
         });
