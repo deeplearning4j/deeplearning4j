@@ -1054,6 +1054,56 @@ public class SDBaseOps {
   }
 
   /**
+   * Return a flattened variable with the specified ordering<br>
+   *
+   * @param inputs Input variables (NDARRAY type)
+   * @param order ordering for the variable
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable flatten(SDVariable[] inputs, String order) {
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+    return new org.nd4j.linalg.api.ops.custom.Flatten(sd,inputs, order).outputVariable();
+  }
+
+  /**
+   * Return a flattened variable with the specified ordering<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param inputs Input variables (NDARRAY type)
+   * @param order ordering for the variable
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable flatten(String name, SDVariable[] inputs, String order) {
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+    SDVariable out =  new org.nd4j.linalg.api.ops.custom.Flatten(sd,inputs, order).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Return a flattened variable with the specified ordering<br>
+   *
+   * @param inputs Input variables (NDARRAY type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable flatten(SDVariable... inputs) {
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+    return new org.nd4j.linalg.api.ops.custom.Flatten(sd,inputs, "c").outputVariable();
+  }
+
+  /**
+   * Return a flattened variable with the specified ordering<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param inputs Input variables (NDARRAY type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable flatten(String name, SDVariable... inputs) {
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+    SDVariable out =  new org.nd4j.linalg.api.ops.custom.Flatten(sd,inputs, "c").outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Gather slices from the input variable where the indices are specified as fixed int[] values.<br>
    * Output shape is same as input shape, except for axis dimension, which has size equal to indices.length.<br>
    *

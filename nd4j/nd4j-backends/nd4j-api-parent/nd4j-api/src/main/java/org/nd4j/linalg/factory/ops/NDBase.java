@@ -513,6 +513,29 @@ public class NDBase {
   }
 
   /**
+   * Return a flattened variable with the specified ordering<br>
+   *
+   * @param inputs Input variables (NDARRAY type)
+   * @param order ordering for the variable
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray flatten(INDArray[] inputs, String order) {
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.Flatten(inputs, order))[0];
+  }
+
+  /**
+   * Return a flattened variable with the specified ordering<br>
+   *
+   * @param inputs Input variables (NDARRAY type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray flatten(INDArray... inputs) {
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.Flatten(inputs, "c"))[0];
+  }
+
+  /**
    * Gather slices from the input variable where the indices are specified as fixed int[] values.<br>
    * Output shape is same as input shape, except for axis dimension, which has size equal to indices.length.<br>
    *

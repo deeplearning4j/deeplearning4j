@@ -68,6 +68,16 @@ public class Flatten extends DynamicCustomOp {
         addIArgument(order.charAt(0));
     }
 
+    public Flatten(INDArray[] inputs, String order) {
+        super(inputs,null);
+        addIArgument(order.charAt(0));
+    }
+
+    public Flatten(SameDiff sd, SDVariable[] inputs, String order) {
+        super(sd,inputs,false);
+        addIArgument(order.charAt(0));
+    }
+
     @Override
     public String opName() {
         return "flatten";
