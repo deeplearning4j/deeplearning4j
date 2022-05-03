@@ -29,6 +29,7 @@ public class Eigen {
 
     public static INDArray dummy = Nd4j.scalar(1);
 
+
     /**
      * Compute generalized eigenvalues of the problem A x = L x.
      * Matrix A is modified in the process, holding eigenvectors after execution.

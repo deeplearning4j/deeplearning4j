@@ -291,28 +291,6 @@ public class SDBaseOps {
   }
 
   /**
-   * Asserts the input array is true for all elements. <br>
-   *
-   * @param x A boolean array to assert the state of (NDARRAY type)
-   * @return output The state to assert (NUMERIC type)
-   */
-  public SDVariable assertOp(SDVariable x) {
-    return new org.nd4j.linalg.api.ops.impl.transforms.Assert(sd,x).outputVariable();
-  }
-
-  /**
-   * Asserts the input array is true for all elements. <br>
-   *
-   * @param name name May be null. Name for the output variable
-   * @param x A boolean array to assert the state of (NDARRAY type)
-   * @return output The state to assert (NUMERIC type)
-   */
-  public SDVariable assertOp(String name, SDVariable x) {
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.Assert(sd,x).outputVariable();
-    return sd.updateVariableNameAndReference(out, name);
-  }
-
-  /**
    * Assign the contents of y to x.<br>
    * Y must be broadcastable to x or the same shape.<br>
    *
@@ -1076,26 +1054,52 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns a flattened 1d array with the length of the input.<br>
+   * Return a flattened variable with the specified ordering<br>
    *
-   * @param input Input variable (NDARRAY type)
-   * @param order ordering of the array
-   * @return output outputs the 1d array with a length equal to the input's length (NDARRAY type)
+   * @param inputs Input variables (NDARRAY type)
+   * @param order ordering for the variable
+   * @return output Output variable (NUMERIC type)
    */
-  public SDVariable flatten(SDVariable input, String order) {
-    return new org.nd4j.linalg.api.ops.custom.Flatten(sd,input, order).outputVariable();
+  public SDVariable flatten(SDVariable[] inputs, String order) {
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+    return new org.nd4j.linalg.api.ops.custom.Flatten(sd,inputs, order).outputVariable();
   }
 
   /**
-   * Returns a flattened 1d array with the length of the input.<br>
+   * Return a flattened variable with the specified ordering<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input Input variable (NDARRAY type)
-   * @param order ordering of the array
-   * @return output outputs the 1d array with a length equal to the input's length (NDARRAY type)
+   * @param inputs Input variables (NDARRAY type)
+   * @param order ordering for the variable
+   * @return output Output variable (NUMERIC type)
    */
-  public SDVariable flatten(String name, SDVariable input, String order) {
-    SDVariable out =  new org.nd4j.linalg.api.ops.custom.Flatten(sd,input, order).outputVariable();
+  public SDVariable flatten(String name, SDVariable[] inputs, String order) {
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+    SDVariable out =  new org.nd4j.linalg.api.ops.custom.Flatten(sd,inputs, order).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Return a flattened variable with the specified ordering<br>
+   *
+   * @param inputs Input variables (NDARRAY type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable flatten(SDVariable... inputs) {
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+    return new org.nd4j.linalg.api.ops.custom.Flatten(sd,inputs, "c").outputVariable();
+  }
+
+  /**
+   * Return a flattened variable with the specified ordering<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param inputs Input variables (NDARRAY type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable flatten(String name, SDVariable... inputs) {
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+    SDVariable out =  new org.nd4j.linalg.api.ops.custom.Flatten(sd,inputs, "c").outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -4088,10 +4092,11 @@ public class SDBaseOps {
   /**
    * Returns the shape of the specified INDArray  as a 1D INDArray <br>
    *
-   * @param input Input variable (NDARRAY type)
+   * @param input Input variable (NUMERIC type)
    * @return output 1D output variable with contents equal to the shape of the input (NUMERIC type)
    */
   public SDVariable shape(SDVariable input) {
+    SDValidation.validateNumerical("shape", "input", input);
     return new org.nd4j.linalg.api.ops.impl.shape.Shape(sd,input).outputVariable();
   }
 
@@ -4099,10 +4104,11 @@ public class SDBaseOps {
    * Returns the shape of the specified INDArray  as a 1D INDArray <br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input Input variable (NDARRAY type)
+   * @param input Input variable (NUMERIC type)
    * @return output 1D output variable with contents equal to the shape of the input (NUMERIC type)
    */
   public SDVariable shape(String name, SDVariable input) {
+    SDValidation.validateNumerical("shape", "input", input);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Shape(sd,input).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -4110,10 +4116,11 @@ public class SDBaseOps {
   /**
    * Returns the size (number of elements, i.e., prod(shape)) of the specified INDArray  as a 0D scalar variable<br>
    *
-   * @param in Input variable (NDARRAY type)
+   * @param in Input variable (NUMERIC type)
    * @return output 0D (scalar) output variable with value equal to the number of elements in the specified array (NUMERIC type)
    */
   public SDVariable size(SDVariable in) {
+    SDValidation.validateNumerical("size", "in", in);
     return new org.nd4j.linalg.api.ops.impl.shape.Size(sd,in).outputVariable();
   }
 
@@ -4121,10 +4128,11 @@ public class SDBaseOps {
    * Returns the size (number of elements, i.e., prod(shape)) of the specified INDArray  as a 0D scalar variable<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param in Input variable (NDARRAY type)
+   * @param in Input variable (NUMERIC type)
    * @return output 0D (scalar) output variable with value equal to the number of elements in the specified array (NUMERIC type)
    */
   public SDVariable size(String name, SDVariable in) {
+    SDValidation.validateNumerical("size", "in", in);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Size(sd,in).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -4133,11 +4141,12 @@ public class SDBaseOps {
    * Returns a rank 0 (scalar) variable for the size of the specified dimension.<br>
    * For example, if X has shape [10,20,30] then sizeAt(X,1)=20. Similarly, sizeAt(X,-1)=30<br>
    *
-   * @param in Input variable (NDARRAY type)
+   * @param in Input variable (NUMERIC type)
    * @param dimension Dimension to get size of
    * @return output Scalar INDArray  for size at specified variable (NUMERIC type)
    */
   public SDVariable sizeAt(SDVariable in, int dimension) {
+    SDValidation.validateNumerical("sizeAt", "in", in);
     return new org.nd4j.linalg.api.ops.impl.shape.SizeAt(sd,in, dimension).outputVariable();
   }
 
@@ -4146,11 +4155,12 @@ public class SDBaseOps {
    * For example, if X has shape [10,20,30] then sizeAt(X,1)=20. Similarly, sizeAt(X,-1)=30<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param in Input variable (NDARRAY type)
+   * @param in Input variable (NUMERIC type)
    * @param dimension Dimension to get size of
    * @return output Scalar INDArray  for size at specified variable (NUMERIC type)
    */
   public SDVariable sizeAt(String name, SDVariable in, int dimension) {
+    SDValidation.validateNumerical("sizeAt", "in", in);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.SizeAt(sd,in, dimension).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
