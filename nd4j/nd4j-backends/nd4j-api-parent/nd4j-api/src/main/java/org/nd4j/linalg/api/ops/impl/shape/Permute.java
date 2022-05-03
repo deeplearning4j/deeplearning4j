@@ -58,7 +58,6 @@ public class Permute extends Transpose {
 
     public Permute(SameDiff sd, SDVariable input, SDVariable permuteDims) {
         super(sd, input, permuteDims);
-        System.out.println();
     }
 
     public Permute(INDArray input, int... permuteDims){

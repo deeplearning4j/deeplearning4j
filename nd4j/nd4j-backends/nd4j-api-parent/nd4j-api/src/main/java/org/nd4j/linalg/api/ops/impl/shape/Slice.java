@@ -52,7 +52,6 @@ public class Slice extends DynamicCustomOp {
 
     public Slice(SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable begin, @NonNull SDVariable end) {
         super(null, sameDiff, new SDVariable[]{input, begin, end});
-        System.out.println();
     }
 
     public Slice(INDArray input, int[] begin, int... size) {

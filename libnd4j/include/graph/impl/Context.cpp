@@ -236,15 +236,14 @@ void Context::pushNDArrayToVariableSpace(int nodeId, int index, NDArray *array, 
 
 void Context::pushNDArrayToVariableSpace(std::pair<int, int> &pair, NDArray *array, bool removable) {
   if (_variableSpace != nullptr) {
-    sd_printf("Pushing variable to space",0);
     if (!_variableSpace->hasVariable(pair)) {
       auto var = new Variable(array, nullptr, pair.first, pair.second);
       _variableSpace->putVariable(pair, var);
       var->markRemovable(removable);
     } else {
-      sd_printf("Getting variable in push ndarray",0);
+      sd_debug("Context: Getting variable in push ndarray",0);
       auto var = _variableSpace->getVariable(pair);
-      sd_printf("After getting variable in push ndarray to variable space",0);
+      sd_printf("Context: After getting variable in push ndarray to variable space",0);
       if (var->hasNDArray()) {
         if (var->getNDArray() != array) {
           if (var->isRemovable() && var->hasNDArray() && !var->getNDArray()->isView()) {
