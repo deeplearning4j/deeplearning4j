@@ -107,7 +107,10 @@ public class Bidirectional extends Layer {
     public long getNOut() {
         if (this.fwd instanceof LastTimeStep) {
             return ((FeedForwardLayer) ((LastTimeStep) this.fwd).getUnderlying()).getNOut();
-        } else {
+        } else if(this.mode == Mode.CONCAT) {
+            return ((FeedForwardLayer) this.fwd).getNOut() * 2;
+        }
+        else {
             return ((FeedForwardLayer) this.fwd).getNOut();
         }
     }

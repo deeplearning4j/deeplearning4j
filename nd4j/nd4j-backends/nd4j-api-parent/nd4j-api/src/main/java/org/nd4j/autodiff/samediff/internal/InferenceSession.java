@@ -197,7 +197,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         arrayUseTracker.markSatisfied(new ExecDoneDep(), true);
         if (arrayUseTracker.hasNewAllSatisfied()) {
             List<SDValue> l = arrayUseTracker.getNewAllSatisfiedList();
-     /*       for (SDValue value : l) {
+            for (SDValue value : l) {
                 switch(value.getSdValueType()) {
                     case LIST:
                         for(INDArray arr : value.getListValue())
@@ -208,7 +208,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         mmgr.release(value.getTensorValue());
                         break;
                 }
-            }*/
+            }
         }
 
         return output;
@@ -360,8 +360,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             if (OUTER_FRAME.equals(outputFrameIter.getFrame()) && allReqVariables.contains(name)) {
                 //This variable is an output, record that in the array use tracker, so we don't deallocate it
-                //TODO: figure out why name of step dependency is not consistent with list input
-                //TODO: we could skil this but it's useful to know how to associate the step with
                 //the specific value here
                 addToArrayTracker(out,i,new ReqOutputDep(name));
             } else if ((inputsForOps == null || inputsForOps.isEmpty()) && out.getValueOutputs() != null && !arrayUseTracker.hasDependency(out.valueWithKeyAtIndex(i,false))) {
@@ -373,8 +371,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         log.trace("Found array id {} (output of {}) not required anywhere, deallocating", array.getTensorValue().getId(), o.getName());
                 }
 
-              /*  if(array != null && array.getTensorValue() != null)
-                    mmgr.release(array.getTensorValue() );*/
+                if(array != null && array.getTensorValue() != null)
+                    mmgr.release(array.getTensorValue());
             } else if ((inputsForOps == null || inputsForOps.isEmpty()) && out.getOutputs() != null && !arrayUseTracker.hasDependency(SDValue.create(out.resultAt(i)))) {
                 //This particular array is not actually needed anywhere, so we can deallocate in immediately
                 //Possibly only a control dependency, or only one of the outputs of a multi-output op is used
@@ -384,8 +382,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         log.trace("Found array id {} (output of {}) not required anywhere, deallocating", array.getId(), o.getName());
                 }
 
-             /*   if(array != null && array != null)
-                    mmgr.release(array);*/
+                if(array != null)
+                    mmgr.release(array);
             }
         }
 
@@ -406,7 +404,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     }
                 }
 
-             /*   switch(value.getSdValueType()) {
+                switch(value.getSdValueType()) {
                     case TENSOR:
                         mmgr.release(value.getTensorValue());
                         break;
@@ -415,7 +413,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                             if(arr != null)
                                 mmgr.release(arr);
                         break;
-                }*/
+                }
 
             }
         }

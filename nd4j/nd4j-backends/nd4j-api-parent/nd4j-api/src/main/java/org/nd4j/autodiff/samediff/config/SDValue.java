@@ -22,6 +22,7 @@ package org.nd4j.autodiff.samediff.config;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,6 +39,15 @@ import java.util.*;
 @Getter
 @EqualsAndHashCode
 public class SDValue {
+
+
+    private static Map<INDArray,SDValue> values = new LinkedHashMap<>();
+    private static Map<Collection<INDArray>,SDValue> listValues = new LinkedHashMap<>();
+
+
+    private static Map<Map<String,INDArray>,SDValue> dictValues = new LinkedHashMap<>();
+
+   
 
     private SDValueType sdValueType;
     private INDArray tensorValue;
@@ -89,8 +99,8 @@ public class SDValue {
      * @return
      */
     public List<INDArray> getListValue() {
-       if(tensorValue != null)
-           return Arrays.asList(tensorValue);
+        if(tensorValue != null)
+            return Arrays.asList(tensorValue);
         return listValue;
     }
 
@@ -101,9 +111,13 @@ public class SDValue {
      * @return the created value
      */
     public static SDValue create(INDArray inputValue) {
+        if(values.containsKey(inputValue))
+            return values.get(inputValue);
+
         SDValue sdValue = new SDValue();
         sdValue.tensorValue = inputValue;
         sdValue.sdValueType = SDValueType.TENSOR;
+        values.put(inputValue,sdValue);
         return sdValue;
     }
 
@@ -115,9 +129,12 @@ public class SDValue {
      * @return the created value
      */
     public static SDValue create(Collection<INDArray> inputValue) {
+        if(listValues.containsKey(inputValue))
+            return listValues.get(inputValue);
         SDValue sdValue = new SDValue();
         sdValue.listValue = (List<INDArray>) inputValue;
         sdValue.sdValueType = SDValueType.LIST;
+        listValues.put(inputValue,sdValue);
         return sdValue;
     }
 
@@ -128,9 +145,12 @@ public class SDValue {
      * @return the created value
      */
     public static SDValue create(List<INDArray> inputValue) {
+        if(listValues.containsKey(inputValue))
+            return listValues.get(inputValue);
         SDValue sdValue = new SDValue();
         sdValue.listValue = inputValue;
         sdValue.sdValueType = SDValueType.LIST;
+        listValues.put(inputValue,sdValue);
         return sdValue;
     }
 
@@ -141,9 +161,12 @@ public class SDValue {
      * @return the created value
      */
     public static SDValue create(Map<String,INDArray> inputValue) {
+        if(dictValues.containsKey(inputValue))
+            return dictValues.get(inputValue);
         SDValue sdValue = new SDValue();
         sdValue.dictValue = inputValue;
         sdValue.sdValueType = SDValueType.DICT;
+        dictValues.put(inputValue,sdValue);
         return sdValue;
     }
 

@@ -38,13 +38,24 @@ import java.util.function.Consumer;
 
 public class AeronUtil {
 
+
+    /**
+     * Sets a system property if not set
+     * @param propertyName the name of the property
+     * @param value the value to set
+     */
+    public static void setSystemPropertyIfNotSet(String propertyName,String value) {
+        if(!System.getProperties().containsKey(propertyName)) {
+            System.setProperty(propertyName,value);
+        }
+    }
     /**
      * Get a media driver context
      * for sending ndarrays
      * based on a given length
      * where length is the length (number of elements)
-     * in the ndarrays hat are being sent
-     * @param length the length to based the ipc length
+     * in the ndarrays that are being sent
+     * @param length the length to base the ipc length
      * @return the media driver context based on the given length
      */
     public static MediaDriver.Context getMediaDriverContext(int length) {
@@ -57,14 +68,10 @@ public class AeronUtil {
         //ipc length must be positive power of 2
         while (!BitUtil.isPowerOfTwo(ipcLength))
             ipcLength += 2;
-        // System.setProperty("aeron.term.buffer.size",String.valueOf(ipcLength));
         final MediaDriver.Context ctx =
                 new MediaDriver.Context().threadingMode(ThreadingMode.SHARED)
                         .dirDeleteOnStart(true)
                         .dirDeleteOnShutdown(true)
-                        /*  .ipcTermBufferLength(ipcLength)
-                          .publicationTermBufferLength(ipcLength)
-                          .maxTermBufferLength(ipcLength)*/
                         .conductorIdleStrategy(new BusySpinIdleStrategy())
                         .receiverIdleStrategy(new BusySpinIdleStrategy())
                         .senderIdleStrategy(new BusySpinIdleStrategy());
