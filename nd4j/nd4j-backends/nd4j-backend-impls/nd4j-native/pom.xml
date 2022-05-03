@@ -55,22 +55,7 @@
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>javacpp</artifactId>
-            <classifier>${dependency.platform}</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>openblas</artifactId>
-            <version>${openblas.version}-${javacpp-presets.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>openblas</artifactId>
-            <version>${openblas.version}-${javacpp-presets.version}</version>
-            <classifier>${dependency.platform}</classifier>
-        </dependency>
+
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
@@ -385,6 +370,63 @@
     </build>
 
     <profiles>
+        <!-- profile only enabled for compat which does not have a matching classifier for dependencies-->
+        <profile>
+            <id>compat-profile</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform.extension</name>
+                    <!-- Using the maven build extension (see ./mvn/extensions.xml) use regex to check for any value that isn't empty-->
+                    <value>/.+/</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>javacpp</artifactId>
+                    <version>${javacpp.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>openblas</artifactId>
+                    <version>${openblas.version}-${javacpp-presets.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>openblas</artifactId>
+                    <version>${openblas.version}-${javacpp-presets.version}</version>
+                    <classifier>linux-x86_64</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>default-javacpp</id>
+            <activation>
+                <property>
+                    <name>!javacpp.platform.extension</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>javacpp</artifactId>
+                    <classifier>${dependency.platform}</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>openblas</artifactId>
+                    <version>${openblas.version}-${javacpp-presets.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>openblas</artifactId>
+                    <version>${openblas.version}-${javacpp-presets.version}</version>
+                    <classifier>${dependency.platform}</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+
+
         <profile>
             <!-- This causes build failure on osx due to memory issues. For now, just skip this since we publish javadoc from other platforms fine.-->
             <id>skip-javadoc-on-osx</id>
