@@ -40,7 +40,7 @@ public class IdentityDependencyTracker<T, D> extends AbstractDependencyTracker<T
 
     @Override
     protected String toStringT(T t) {
-        if(t instanceof INDArray){
+        if(t instanceof INDArray) {
             INDArray i = (INDArray)t;
             return System.identityHashCode(t) + " - id=" + i.getId() + ", " + i.shapeInfoToString();
         } else {
