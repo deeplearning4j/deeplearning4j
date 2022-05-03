@@ -208,6 +208,16 @@ public class NDLinalg {
   }
 
   /**
+   * Calculates eigen values<br>
+   *
+   * @param input  (NUMERIC type)
+   */
+  public INDArray[] eig(INDArray input) {
+    NDValidation.validateNumerical("eig", "input", input);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.Eig(input));
+  }
+
+  /**
    * Calculates log of determinant.<br>
    *
    * @param input  (NUMERIC type)
@@ -216,6 +226,28 @@ public class NDLinalg {
   public INDArray logdet(INDArray input) {
     NDValidation.validateNumerical("logdet", "input", input);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.Logdet(input))[0];
+  }
+
+  /**
+   * Calculates matrix determinant.<br>
+   *
+   * @param input  (NUMERIC type)
+   * @return output  (FLOATING_POINT type)
+   */
+  public INDArray matrixDeterminant(INDArray input) {
+    NDValidation.validateNumerical("matrixDeterminant", "input", input);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MatrixDeterminant(input))[0];
+  }
+
+  /**
+   * Inverts a matrix<br>
+   *
+   * @param input  (NUMERIC type)
+   * @return output  (FLOATING_POINT type)
+   */
+  public INDArray matrixInverse(INDArray input) {
+    NDValidation.validateNumerical("matrixInverse", "input", input);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MatrixInverse(input))[0];
   }
 
   /**
