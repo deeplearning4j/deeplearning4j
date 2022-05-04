@@ -126,7 +126,7 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, sd::LaunchContext
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype,
                  sd::LaunchContext *context, const bool isBuffAlloc) {
-  if (shape.empty()) throw std::runtime_error("NDArray constructor: input shape is empty !");
+
 
   if ((int)shape.size() > SD_MAX_RANK) throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
@@ -139,6 +139,26 @@ NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType>
   _buffer = std::make_shared<DataBuffer>(buffer, lengthOf() * sizeOfT(), dataType(), isBuffAlloc,
                                          getContext()->getWorkspace());
 }
+
+
+
+NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype,
+                 sd::LaunchContext *context, const bool isBuffAlloc,const bool isView,sd::LongType offset) {
+
+
+  if ((int)shape.size() > SD_MAX_RANK) throw std::invalid_argument("Rank of NDArray can't exceed 32");
+
+  _context = context;
+  _offset = offset;
+  _isAttached = getContext()->getWorkspace() != nullptr;
+  _isView = isView;
+  setShapeInfo(ShapeDescriptor(dtype, order, shape));
+
+  _buffer = std::make_shared<DataBuffer>(buffer, lengthOf() * sizeOfT(), dataType(), isBuffAlloc,
+                                         getContext()->getWorkspace());
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
@@ -212,6 +232,23 @@ NDArray::NDArray(sd::LaunchContext *context) {
 NDArray::NDArray(const sd::LongType *shapeInfo, const bool copyStrides, sd::LaunchContext *context, const bool nullify)
     : NDArray(shapeInfo, ArrayOptions::dataType(shapeInfo), copyStrides, context) {}
 
+#ifndef __JAVACPP_HACK__
+
+NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype,
+                 sd::LaunchContext *context, const bool isBuffAlloc,const bool isView,sd::LongType offset) {
+
+
+  if ((int)shape.size() > SD_MAX_RANK) throw std::invalid_argument("Rank of NDArray can't exceed 32");
+
+  _context = context;
+  _offset = offset;
+  _isAttached = getContext()->getWorkspace() != nullptr;
+  _isView = isView;
+  setShapeInfo(ShapeDescriptor(dtype, order, shape));
+
+  _buffer = buffer;
+}
+
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const ShapeDescriptor &descriptor, sd::LaunchContext *context,
                  const sd::LongType offset) {
@@ -224,6 +261,9 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const ShapeDescriptor &desc
 
   _isView = offset > 0 || _length * DataTypeUtils::sizeOf(_dataType) < buffer->getLenInBytes();
 }
+
+#endif
+
 
 NDArray::NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc)
     : NDArray::NDArray(buffer, const_cast<const sd::LongType *>(shapeInfo), context, isBuffAlloc) {
@@ -279,8 +319,9 @@ NDArray::NDArray(void *buffer, void *bufferD, const sd::LongType *shapeInfo, sd:
 //////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<sd::LongType> &shape,
                  sd::LaunchContext *context) {
-  if (shape.empty()) throw std::runtime_error("NDArray constructor: input shape is empty !");
-
+  if (shape.empty()) {
+    throw std::runtime_error("NDArray constructor: input shape is empty !");
+  }
   if ((int)shape.size() > SD_MAX_RANK)
     throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32");
 
@@ -1205,7 +1246,8 @@ NDArray NDArray::varianceNumber(sd::variance::Ops op, bool biasCorrected) {
 
 
 NDArray NDArray::prodNumber() const {
-  if (isS()) throw std::runtime_error("NDArray::sumNumber: you can't use this method on String array!");
+  if (isS()) throw std::runtime_error("NDArray::prodNumber: you can't use this method on String array!");
+
   NDArray res(dataType(), getContext());
 
   NDArray::prepareSpecialUse({&res}, {this});
@@ -3182,7 +3224,9 @@ void *NDArray::operator new(size_t i) {
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::operator delete(void *p) {
-  if (!sd::memory::MemoryRegistrator::getInstance().hasWorkspaceAttached()) free(p);
+  if (!sd::memory::MemoryRegistrator::getInstance().hasWorkspaceAttached()) {
+    free(p);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////

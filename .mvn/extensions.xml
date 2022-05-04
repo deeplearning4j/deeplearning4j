@@ -5,4 +5,9 @@
         <artifactId>project-settings-extension</artifactId>
         <version>0.2.3</version>
     </extension>
+    <extension>
+        <groupId>fish.payara.maven.extensions</groupId>
+        <artifactId>regex-profile-activator</artifactId>
+        <version>0.2</version>
+    </extension>
 </extensions>

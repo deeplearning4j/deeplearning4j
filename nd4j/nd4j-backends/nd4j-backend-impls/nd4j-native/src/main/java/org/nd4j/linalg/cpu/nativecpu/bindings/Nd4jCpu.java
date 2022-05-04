@@ -4872,10 +4872,24 @@ public static final int
   public native @Cast("bool") @Name("operator ==") boolean equals(@Const @ByRef NDArray other);
 
   public native @Cast("bool") @Name("operator !=") boolean notEquals(@Const @ByRef NDArray other);
+  public NDArray(Pointer buffer, byte order, @Cast("sd::LongType*") @StdVector LongPointer shape, @Cast("sd::DataType") int dtype,
+            LaunchContext context, @Cast("const bool") boolean isBuffAlloc, @Cast("const bool") boolean isView, @Cast("sd::LongType") long offset) { super((Pointer)null); allocate(buffer, order, shape, dtype, context, isBuffAlloc, isView, offset); }
+  private native void allocate(Pointer buffer, byte order, @Cast("sd::LongType*") @StdVector LongPointer shape, @Cast("sd::DataType") int dtype,
+            LaunchContext context, @Cast("const bool") boolean isBuffAlloc, @Cast("const bool") boolean isView, @Cast("sd::LongType") long offset);
+  public NDArray(Pointer buffer, byte order, @Cast("sd::LongType*") @StdVector LongBuffer shape, @Cast("sd::DataType") int dtype,
+            LaunchContext context, @Cast("const bool") boolean isBuffAlloc, @Cast("const bool") boolean isView, @Cast("sd::LongType") long offset) { super((Pointer)null); allocate(buffer, order, shape, dtype, context, isBuffAlloc, isView, offset); }
+  private native void allocate(Pointer buffer, byte order, @Cast("sd::LongType*") @StdVector LongBuffer shape, @Cast("sd::DataType") int dtype,
+            LaunchContext context, @Cast("const bool") boolean isBuffAlloc, @Cast("const bool") boolean isView, @Cast("sd::LongType") long offset);
+  public NDArray(Pointer buffer, byte order, @Cast("sd::LongType*") @StdVector long[] shape, @Cast("sd::DataType") int dtype,
+            LaunchContext context, @Cast("const bool") boolean isBuffAlloc, @Cast("const bool") boolean isView, @Cast("sd::LongType") long offset) { super((Pointer)null); allocate(buffer, order, shape, dtype, context, isBuffAlloc, isView, offset); }
+  private native void allocate(Pointer buffer, byte order, @Cast("sd::LongType*") @StdVector long[] shape, @Cast("sd::DataType") int dtype,
+            LaunchContext context, @Cast("const bool") boolean isBuffAlloc, @Cast("const bool") boolean isView, @Cast("sd::LongType") long offset);
+// #ifndef __JAVACPP_HACK__
+// #endif
 }
 
 //////////////////////////////////////////////////////////////////////////
-///// IMLEMENTATION OF INLINE METHODS /////
+///// IMPLEMENTATION OF INLINE METHODS /////
 //////////////////////////////////////////////////////////////////////////
 
 
@@ -13054,6 +13068,8 @@ public static final int SD_ALL_OPS_ACTIVATED = 1;
 
 // #define STORE_RESULT(A) this->storeResult(block, 0, A)
 // #define OVERWRITE_RESULT(A) this->overwriteResult(block, 0, A)
+// #define OVERWRITE_RESULT_NO_DELETE(A) this->overwriteResult(block, 0, A,false)
+
 // #define OVERWRITE_2_RESULTS(A, B)
 //   this->overwriteResult(block, 0, A);
 //   this->overwriteResult(block, 1, B)
@@ -13766,6 +13782,7 @@ public static final int
 
   // this method checks if number of available arguments matches op expectations
   public native @Cast("sd::Status") int validateArguments(@ByRef Context block);
+  public native void overwriteResult(@ByRef Context block, int outputIdx, NDArray array, @Cast("bool") boolean remove);
 }
   // namespace ops
   // namespace sd
@@ -20773,7 +20790,7 @@ public static final int
     public strided_slice() { super((Pointer)null); allocate(); }
     private native void allocate();
     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-  }  // TODO: new op type needed. that returns VIEW
+  }
 @Namespace("sd::ops") public static class strided_slice_bp extends DeclarableCustomOp {
     static { Loader.load(); }
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -20793,6 +20810,32 @@ public static final int
     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
   }
 // #endif
+
+/**
+ * This operation creates a view from a pre existing tensor.
+ *
+ */
+// #if NOT_EXCLUDED(OP_create_view)
+@Namespace("sd::ops") public static class create_view extends DeclarableCustomOp {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public create_view(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public create_view(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public create_view position(long position) {
+        return (create_view)super.position(position);
+    }
+    @Override public create_view getPointer(long i) {
+        return new create_view((Pointer)this).offsetAddress(i);
+    }
+
+    public create_view() { super((Pointer)null); allocate(); }
+    private native void allocate();
+    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+  }
+// #endif
+
 
 /**
  * This operation extracts a slice from a tensor.
@@ -20842,17 +20885,17 @@ public static final int
  * Expected arguments:
  * start: optional scalar with starting value
  * stop: optional scalar with end value
- * step: optional scalar witn step value
+ * step: optional scalar with step value
  *
  * Int args: (optional)
  * 0: optional scalar with starting value
  * 1: optional scalar with end value
- * 1: optional scalar witn step value
+ * 1: optional scalar with step value
  *
  * T args: (optional)
  * 0: optional scalar with starting value
  * 1: optional scalar with end value
- * 1: optional scalar witn step value
+ * 1: optional scalar with step value
  */
 // #if NOT_EXCLUDED(OP_range)
 @Namespace("sd::ops") public static class range extends DeclarableCustomOp {

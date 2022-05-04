@@ -20,22 +20,35 @@
 
 package org.nd4j.linalg.indexing;
 
-import org.nd4j.shade.guava.primitives.Longs;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import net.ericaro.neoitertools.Generator;
 import net.ericaro.neoitertools.Itertools;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.LongUtils;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
+ *
+ * A SpecifiedIndex refers to a concrete set of points
+ * to be selectively pulled from a given dimension.
+ *
+ * Note that using this index will always trigger a copy.
+ *
+ * Pulling random indices from an array wil not allow a view to be computed.
+ * Negative indices can also be specified allowing for dynamic
+ * resolution of dimensions/coordinates at runtime.
+ *
  * @author Adam Gibson
  */
 @Data
+@Slf4j
 public class SpecifiedIndex implements INDArrayIndex {
     private long[] indexes;
+    private boolean initialized = false;
 
     public SpecifiedIndex(int... indexes) {
         this.indexes = LongUtils.toLongs(indexes);
@@ -77,12 +90,19 @@ public class SpecifiedIndex implements INDArrayIndex {
 
     @Override
     public void init(INDArray arr, long begin, int dimension) {
-
     }
 
     @Override
     public void init(INDArray arr, int dimension) {
+        if(indexes != null) {
+            for(int i = 0; i < indexes.length; i++) {
+                if(indexes[i] < 0) {
+                    indexes[i] += arr.size(dimension);
+                }
+            }
 
+            initialized = true;
+        }
     }
 
     @Override
@@ -93,6 +113,26 @@ public class SpecifiedIndex implements INDArrayIndex {
     @Override
     public void init(long begin, long end) {
 
+    }
+
+    @Override
+    public boolean initialized() {
+        boolean initialized = indexes != null;
+        if(indexes != null)
+            for(int i = 0; i < indexes.length; i++) {
+                if(indexes[i] < 0) {
+                    return false;
+                }
+            }
+        return this.initialized && initialized;
+    }
+
+    @Override
+    public INDArrayIndex dup() {
+        SpecifiedIndex specifiedIndex = new SpecifiedIndex();
+        specifiedIndex.initialized = initialized;
+        specifiedIndex.indexes = Arrays.copyOf(indexes,indexes.length);
+        return this;
     }
 
 
@@ -139,9 +179,9 @@ public class SpecifiedIndex implements INDArrayIndex {
          */
         public SpecifiedIndexesGenerator(INDArrayIndex[] indexes) {
             this.indexes = indexes;
-            for(int i=0; i<indexes.length; i++ ){
+            for(int i=0; i<indexes.length; i++) {
                 //Replace point indices with specified indices
-                if(indexes[i] instanceof PointIndex){
+                if(indexes[i] instanceof PointIndex) {
                     indexes[i] = new SpecifiedIndex(indexes[i].offset());
                 }
             }

@@ -63,6 +63,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.shape.CreateView;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual;
@@ -2139,6 +2140,204 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
             m *= 2;
         }
         return x;
+    }
+
+
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSDVariableLength(Nd4jBackend backend) {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr = Nd4j.ones(100);
+        assertEquals(100,sameDiff.var(arr).length().eval().getInt(0));
+
+        INDArray arr2 = Nd4j.ones(5,5);
+        assertEquals(25,sameDiff.var(arr2).length().eval().getInt(0));
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testGetVariable(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+        INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L);
+        System.out.println(arr);
+        SDVariable x = sd.var(arr);
+        assertEquals(Nd4j.linspace(1,10,10),x.get(SDIndex.point(sd.constant(0).reshape(1))).eval());
+        assertEquals(arr.get(NDArrayIndex.point(0),NDArrayIndex.point(1)),x.get(SDIndex.point(0),SDIndex.point(1)).eval());
+        assertEquals(arr.get(NDArrayIndex.interval(0,2)),x.get(SDIndex.interval(0,2)).eval());
+        assertEquals(arr.get(NDArrayIndex.interval(0,2)),x.get(SDIndex.interval(sd.constant(0).reshape(1),sd.constant(2).reshape(1))).eval());
+        assertEquals(arr.get(NDArrayIndex.interval(0,2,2)),x.get(SDIndex.interval(sd.constant(0).reshape(1),sd.constant(2).reshape(1),sd.constant(2).reshape(1))).eval());
+
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testGetVariableView(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+        INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L);
+        System.out.println(arr);
+        SDVariable x = sd.var(arr);
+        //assertEquals(Nd4j.linspace(1,10,10),x.getView(SDIndex.point(sd.constant(0).reshape(1))).eval());
+        //assertEquals(arr.get(NDArrayIndex.point(0),NDArrayIndex.point(1)),x.getView(SDIndex.point(0),SDIndex.point(1)).eval());
+        assertEquals(arr.get(NDArrayIndex.interval(0,2)),x.getView(SDIndex.interval(0,2)).eval());
+        assertEquals(arr.get(NDArrayIndex.interval(0,2)),x.getView(SDIndex.interval(sd.constant(0).reshape(1),sd.constant(2).reshape(1))).eval());
+        assertEquals(arr.get(NDArrayIndex.interval(0,2,2)),x.getView(SDIndex.interval(sd.constant(0).reshape(1),sd.constant(2).reshape(1),sd.constant(2).reshape(1))).eval());
+
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testIndexInterval(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+        INDArray arr = Nd4j.createFromArray(10,10,10);
+        int jaxis = 1;
+        SDVariable paramsShape = sd.var(arr);
+        SDVariable innerShape = paramsShape.getView(
+                SDIndex.interval(sd.constant(jaxis),sd.constant(-1)),
+                SDIndex.interval(sd.constant(1),
+                        sd.constant(-1)));
+
+        assertEquals(Nd4j.createFromArray(10),innerShape.eval());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testIndexRange(Nd4jBackend backend) {
+        SameDiff sameDiff = SameDiff.create();
+        SDVariable input = sameDiff.placeHolder("input",DataType.INT64);
+        SDVariable range = sameDiff.range(sameDiff.constant(0), input.rank(), sameDiff.constant(1), DataType.INT64);
+        //0 1 1
+        SDVariable mask = range.gt(0.0).castTo(DataType.INT64);
+
+        //1 0 0
+        SDVariable sliceMask = range.eq(0).castTo(DataType.INT64);
+
+
+        //2 0 0
+        SDVariable sliceIndex = sliceMask.mul(3.0);
+
+        //1 2 3 -> 0 2 3
+        SDVariable outputShape = input.shape().mul(mask).add(sliceIndex);
+
+        System.out.println(outputShape.eval(Collections.singletonMap("input",Nd4j.ones(1,2,3))));
+
+
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testArrayIndices(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+        INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L);
+        System.out.println(arr);
+        SDVariable x = sd.var(arr);
+        SDVariable get = x.get(sd.var(Nd4j.createFromArray(0,1,2,3,4)));
+        INDArray assertion = Nd4j.linspace(1,50,50).reshape(5,10);
+        assertEquals(assertion,get.eval());
+
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testArrayIndicesPut(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+        INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L);
+        SDVariable x = sd.var(arr);
+        SDVariable get = x.get(sd.var(Nd4j.createFromArray(0,1,2,3,4)));
+        INDArray assertion = Nd4j.linspace(1,50,50).reshape(5,10);
+        assertEquals(assertion,get.eval());
+
+        SDVariable putInTo = sd.zerosLike(x);
+        SDVariable putIndices = sd.range(sd.constant(0),sd.sizeAt(x,0),sd.constant(1),DataType.INT64);
+        SDVariable put = putInTo.put(putIndices, x, putIndices);
+        assertEquals(x.eval(),put.eval());
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testArrayIndicesPut3d(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+        INDArray arr = Nd4j.linspace(1, 125, 125).reshape('c', 5L,5L,5L);
+        SDVariable x = sd.var(arr);
+        SDVariable get = x.get(sd.var(Nd4j.createFromArray(0,1,2)));
+        INDArray assertion = Nd4j.linspace(1,75,75).reshape(3,5,5);
+        assertEquals(assertion,get.eval());
+
+        SDVariable putInTo = sd.zerosLike(x);
+        SDVariable putIndices = sd.range(sd.constant(0),sd.constant(3),sd.constant(1),DataType.INT64);
+        SDVariable put = putInTo.put(putIndices, x, putIndices);
+        INDArray eval = put.eval();
+        assertEquals(arr,eval);
+
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testViewAll(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        SameDiff sd = SameDiff.create();
+        INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L);
+        SDVariable x = sd.var(arr);
+
+        SDVariable view = sd.createView(x, new SDVariable[]{CreateView.createAll(sd)});
+        INDArray eval = view.eval();
+        assertEquals(arr,eval);
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testViewInterval(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        SameDiff sd = SameDiff.create();
+        INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L);
+        SDVariable x = sd.var(arr);
+
+        SDVariable view = sd.createView(x, new SDVariable[]{CreateView.createInterval(sd,0,1,1,1)});
+        INDArray eval = view.eval();
+        assertEquals(arr.get(NDArrayIndex.interval(0,1,true)),eval);
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testNewAxis(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        SameDiff sd = SameDiff.create();
+        INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L);
+        SDVariable x = sd.var(arr);
+
+        SDVariable view = sd.createView(x, new SDVariable[]{CreateView.createNewAxis(sd)});
+        INDArray eval = view.eval();
+        assertEquals(arr.get(NDArrayIndex.newAxis()),eval);
+
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testPoint(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        SameDiff sd = SameDiff.create();
+        INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L);
+        SDVariable x = sd.var(arr);
+
+        SDVariable view = sd.createView(x, new SDVariable[]{CreateView.createPoint(sd,1)});
+        INDArray eval = view.eval();
+        assertEquals(arr.get(NDArrayIndex.point(1)),eval);
+
     }
 
     @ParameterizedTest

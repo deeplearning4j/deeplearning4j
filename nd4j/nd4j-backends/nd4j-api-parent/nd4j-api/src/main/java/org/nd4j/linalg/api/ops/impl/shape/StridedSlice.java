@@ -74,7 +74,7 @@ public class StridedSlice extends DynamicCustomOp {
         this.newAxisMask = newAxisMask;
         this.shrinkAxisMask = shrinkAxisMask;
 
-        //https://github.com/deeplearning4j/libnd4j/blob/master/include/ops/declarable/generic/parity_ops/strided_slice.cpp#L279
+        //https://github.com/eclipse/deeplearning4j/libnd4j/blob/master/include/ops/declarable/generic/parity_ops/strided_slice.cpp#L279
         addArguments();
     }
 

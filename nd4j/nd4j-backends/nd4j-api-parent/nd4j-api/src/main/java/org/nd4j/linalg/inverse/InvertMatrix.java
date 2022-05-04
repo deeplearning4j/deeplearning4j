@@ -27,6 +27,7 @@ import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.SingularMatrixException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.CheckUtil;
+import org.nd4j.linalg.factory.Nd4j;
 
 public class InvertMatrix {
 
@@ -38,7 +39,7 @@ public class InvertMatrix {
      * @return the inverted matrix
      */
     public static INDArray invert(INDArray arr, boolean inPlace) {
-        if(arr.rank() == 2 && arr.length() == 1){
+        if(arr.rank() == 2 && arr.length() == 1) {
             //[1,1] edge case. Matrix inversion: [x] * [1/x] = [1]
             if(inPlace){
                 return arr.rdivi(1.0);
@@ -50,22 +51,8 @@ public class InvertMatrix {
             throw new IllegalArgumentException("invalid array: must be square matrix");
         }
 
-        //FIX ME: Please
-       /* int[] IPIV = new int[arr.length() + 1];
-        int LWORK = arr.length() * arr.length();
-        INDArray WORK = Nd4j.create(new double[LWORK]);
-        INDArray inverse = inPlace ? arr : arr.dup();
-        Nd4j.getBlasWrapper().lapack().getrf(arr);
-        Nd4j.getBlasWrapper().lapack().getri(arr.size(0),inverse,arr.size(0),IPIV,WORK,LWORK,0);*/
 
-        RealMatrix rm = CheckUtil.convertToApacheMatrix(arr);
-        RealMatrix rmInverse = new LUDecomposition(rm).getSolver().getInverse();
-
-
-        INDArray inverse = CheckUtil.convertFromApacheMatrix(rmInverse, arr.dataType());
-        if (inPlace)
-            arr.assign(inverse);
-        return inverse;
+        return Nd4j.linalg().matrixInverse(arr);
 
     }
 

@@ -68,7 +68,7 @@ public class ParameterServerTrainerContext implements TrainerContext {
      * @param rootDevice the root device id
      * @param useMDS     whether to use MultiDataSet or DataSet
      *                   or not
-     * @param wrapper    the wrapper instance to use with this trainer (this refernece is needed
+     * @param wrapper    the wrapper instance to use with this trainer (this reference is needed
      *                   for coordination with the {@link ParallelWrapper} 's {@link TrainingListener}
      * @return the created training instance
      */

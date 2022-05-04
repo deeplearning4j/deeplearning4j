@@ -106,8 +106,16 @@ ResultSet& ResultSet::operator=(const ResultSet& other) noexcept {
 }
 
 void ResultSet::delContent() {
-  if (_removable)
-    for (auto v : _content) delete v;
+  if (_removable) {
+    std::vector<std::shared_ptr<DataBuffer>> deleted;
+    for (auto v : _content) {
+      auto buffer = v->dataBuffer();
+      deleted.push_back(buffer);
+      if (!v->isView() && v->shapeInfo() != nullptr) {
+        delete v;
+      }
+    }
+  }
 }
 
 ResultSet::~ResultSet() { delContent(); }

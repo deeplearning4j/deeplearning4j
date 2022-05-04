@@ -102,6 +102,14 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Output(NUMERIC, "output") { description = "Unsorted segment output" }
     }
 
+    val unsortedSegmentOpInput = Mixin("unsortedSegmentOp") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.segment"
+        Input(NUMERIC, "data") { description = "Data (variable) to perform unsorted segment max on" }
+        Input(NUMERIC, "segmentIds") { description = "Variable for the segment IDs" }
+        Input(INT, "numSegments") { description = "Number of segments" }
+        Output(NUMERIC, "output") { description = "Unsorted segment output" }
+    }
+
     Op("argmax") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.indexaccum.custom"
         javaOpClass = "ArgMax"
@@ -332,10 +340,10 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("gather") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "df") { description = "Input variable" }
+        Input(NDARRAY, "df") { description = "Input variable" }
         Arg(INT, "indices") { count = AtLeast(1); description = "Indices to get" }
         Arg(INT, "axis") { description = "Axis that the indices refer to" }
-        Output(NUMERIC, "output"){ description = "Output variable with slices pulled from the specified axis" }
+        Output(NDARRAY, "output"){ description = "Output variable with slices pulled from the specified axis" }
         Doc(Language.ANY, DocScope.ALL){
             """
                 Gather slices from the input variable where the indices are specified as fixed int[] values.
@@ -346,10 +354,10 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("gather") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
-        Input(NUMERIC, "df") { description = "Input variable" }
+        Input(NDARRAY, "df") { description = "Input variable" }
         Input(INT, "indices") { description = "Indices to get slices for. Rank 0 or 1 input" }
         Arg(INT, "axis") { description = "Axis that the indices refer to" }
-        Output(NUMERIC, "output"){ description = "Output variable with slices pulled from the specified axis" }
+        Output(NDARRAY, "output"){ description = "Output variable with slices pulled from the specified axis" }
         Doc(Language.ANY, DocScope.ALL){
             """
                 Gather slices from the input variable where the indices are specified as dynamic array values.
@@ -361,9 +369,9 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     Op("gatherNd") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
         javaOpClass = "GatherNd"
-        Input(NUMERIC, "df") {description = "" }
+        Input(NDARRAY, "df") {description = "" }
         Input(NUMERIC, "indices") {description = "" }
-        Output(NUMERIC, "output"){ description = "" }
+        Output(NDARRAY, "output"){ description = "" }
         Doc(Language.ANY, DocScope.ALL){
             """
                Gather slices from df with shape specified by indices. 
@@ -1085,6 +1093,19 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
 
 
+    Op("createView") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
+        javaOpClass = "CreateView"
+        Input(NDARRAY, "input") { description = "Input INDArray " }
+        Input(NDARRAY, "indices") { description = "index arrays representing indices"; count = AtLeast(0); description = ""}
+        Output(NUMERIC, "output"){ description = "A new INDArray  with the same (dynamic) shape as the input" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Return a newly created variable,  with the specified shape and data type.
+            """.trimIndent()
+        }
+    }
+
     Op("onesLike") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
         Input(NDARRAY, "input") { description = "Input INDArray " }
@@ -1241,6 +1262,22 @@ fun SDBaseOps() =  Namespace("BaseOps"){
                 Element-wise replace where condition:
                 out[i] = value if condition(update[i]) is satisfied, or
                 out[i] = update[i] if condition(update[i]) is NOT satisfied
+            """.trimIndent()
+        }
+    }
+
+
+
+
+    Op("flatten") {
+        javaPackage = "org.nd4j.linalg.api.ops.custom"
+        javaOpClass = "Flatten"
+        val inputs = Input(NDARRAY, "inputs") {count = AtLeast(1); description = "Input variables" }
+        Arg(STRING, "order") { description = "ordering for the variable"; defaultValue = "\"c\"" }
+        Output(NUMERIC, "output"){ description = "Output variable" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+             Return a flattened variable with the specified ordering
             """.trimIndent()
         }
     }
@@ -1886,6 +1923,86 @@ fun SDBaseOps() =  Namespace("BaseOps"){
             """.trimIndent()
         }
     }
+
+
+    Op("unsortedSegmentMax") {
+        useMixin(unsortedSegmentOpInput)
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Unsorted segment max operation. As per segmentMax(String, SDVariable, SDVariable) but without
+                the requirement for the indices to be sorted.
+                If data =     [1, 3, 2, 6, 4, 9, 8]
+                segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+                then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]
+            """.trimIndent()
+        }
+    }
+
+    Op("unsortedSegmentMean") {
+        useMixin(unsortedSegmentOpInput)
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Unsorted segment mean operation. As per segmentMean(String, SDVariable, SDVariable) but without
+                the requirement for the indices to be sorted.
+                If data =     [1, 3, 2, 6, 4, 9, 8]
+                segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+                then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]
+            """.trimIndent()
+        }
+    }
+
+    Op("unsortedSegmentMin") {
+        useMixin(unsortedSegmentOpInput)
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Unsorted segment min operation. As per segmentMin(String, SDVariable, SDVariable) but without
+                the requirement for the indices to be sorted.
+                If data =     [1, 3, 2, 6, 4, 9, 8]
+                segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+                then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]
+            """.trimIndent()
+        }
+    }
+
+    Op("unsortedSegmentProd") {
+        useMixin(unsortedSegmentOpInput)
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Unsorted segment product operation. As per segmentProd(String, SDVariable, SDVariable) but without
+                the requirement for the indices to be sorted.
+                If data =     [1, 3, 2, 6, 4, 9, 8]
+                segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+                then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]
+            """.trimIndent()
+        }
+    }
+
+    Op("unsortedSegmentSqrtN") {
+        useMixin(unsortedSegmentOpInput)
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Unsorted segment sqrtN operation. Simply returns the sqrt of the count of the number of values in each segment
+                If data =     [1, 3, 2, 6, 4, 9, 8]
+                segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+                then output = [1.414, 1.732, 1.414] = [sqrt(2), sqrtN(3), sqrtN(2)]
+            """.trimIndent()
+        }
+    }
+
+    Op("unsortedSegmentSum") {
+        useMixin(unsortedSegmentOpInput)
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Unsorted segment sum operation. As per segmentSum(String, SDVariable, SDVariable) but without
+                the requirement for the indices to be sorted.
+                If data =     [1, 3, 2, 6, 4, 9, 8]
+                segmentIds =  [1, 0, 2, 0, 1, 1, 2]
+                then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]
+            """.trimIndent()
+        }
+    }
+
+
 
     Op("variance") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.summarystats"

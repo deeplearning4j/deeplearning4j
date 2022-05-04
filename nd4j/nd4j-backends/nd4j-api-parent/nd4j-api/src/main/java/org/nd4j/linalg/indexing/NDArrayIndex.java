@@ -44,6 +44,21 @@ public abstract class NDArrayIndex implements INDArrayIndex {
 
 
     /**
+     * Deep copy all elements of this array of {@link INDArrayIndex}
+     * invoking {@link INDArrayIndex#dup()} on each entry
+     * @param indices the indices to copy
+     * @return
+     */
+    public static INDArrayIndex[] deepCopy(INDArrayIndex[] indices) {
+        INDArrayIndex[] ret = new INDArrayIndex[indices.length];
+        for(int i = 0; i < indices.length; i++) {
+            ret[i] = indices[i].dup();
+        }
+
+        return ret;
+    }
+
+    /**
      * Returns a point index
      * @param point the point index
      * @return the point index based
@@ -256,7 +271,7 @@ public abstract class NDArrayIndex implements INDArrayIndex {
                     } else if (intendedIndexes[i] instanceof IntervalIndex) {
                         IntervalIndex intervalIndex = (IntervalIndex) intendedIndexes[i];
                         ret[i] = new SpecifiedIndex(ArrayUtil.range(intervalIndex.begin, intervalIndex.end(),
-                                        intervalIndex.stride()));
+                                intervalIndex.stride()));
                     } else if(intendedIndexes[i] instanceof PointIndex){
                         ret[i] = intendedIndexes[i];
                     }
@@ -389,7 +404,7 @@ public abstract class NDArrayIndex implements INDArrayIndex {
     protected static INDArrayIndex validate(long size, INDArrayIndex index) {
         if ((index instanceof IntervalIndex || index instanceof PointIndex) && size <= index.offset())
             throw new IllegalArgumentException("NDArrayIndex is out of range. Beginning index: " + index.offset()
-                            + " must be less than its size: " + size);
+                    + " must be less than its size: " + size);
         if (index instanceof IntervalIndex && index.end() > size)
             throw new IllegalArgumentException("NDArrayIndex is out of range. End index: " + index.end()
                     + " must be less than its size: " + size);
@@ -538,9 +553,9 @@ public abstract class NDArrayIndex implements INDArrayIndex {
      * @return the interval
      */
     public static INDArrayIndex interval(long begin, long stride, long end) {
-        if (Math.abs(begin - end) < 1)
+        if (end  > 0 && Math.abs(begin - end) < 1)
             end++;
-        if (stride > 1 && Math.abs(begin - end) == 1) {
+        if (end  > 0 && stride > 1 && Math.abs(begin - end) == 1) {
             end *= stride;
         }
         return interval(begin, stride, end, false);
@@ -556,7 +571,7 @@ public abstract class NDArrayIndex implements INDArrayIndex {
      * @return the interval
      */
     public static INDArrayIndex interval(int begin, int stride, int end, boolean inclusive) {
-        Preconditions.checkArgument(begin <= end, "Beginning index (%s) in range must be less than or equal to end (%s)", begin, end);
+        Preconditions.checkArgument(begin <= end || end < 0, "Beginning index (%s) in range must be less than or equal to end (%s)", begin, end);
         INDArrayIndex index = new IntervalIndex(inclusive, stride);
         index.init(begin, end);
         return index;
@@ -565,7 +580,7 @@ public abstract class NDArrayIndex implements INDArrayIndex {
 
 
     public static INDArrayIndex interval(long begin, long stride, long end,long max, boolean inclusive) {
-        Preconditions.checkArgument(begin <= end, "Beginning index (%s) in range must be less than or equal to end (%s)", begin, end);
+        Preconditions.checkArgument(begin <= end || end < 0, "Beginning index (%s) in range must be less than or equal to end (%s)", begin, end);
         INDArrayIndex index = new IntervalIndex(inclusive, stride);
         index.init(begin, end);
         return index;
@@ -573,7 +588,7 @@ public abstract class NDArrayIndex implements INDArrayIndex {
 
 
     public static INDArrayIndex interval(long begin, long stride, long end, boolean inclusive) {
-        Preconditions.checkArgument(begin <= end, "Beginning index (%s) in range must be less than or equal to end (%s)", begin, end);
+        Preconditions.checkArgument(begin <= end || end < 0, "Beginning index (%s) in range must be less than or equal to end (%s)", begin, end);
         INDArrayIndex index = new IntervalIndex(inclusive, stride);
         index.init(begin, end);
         return index;

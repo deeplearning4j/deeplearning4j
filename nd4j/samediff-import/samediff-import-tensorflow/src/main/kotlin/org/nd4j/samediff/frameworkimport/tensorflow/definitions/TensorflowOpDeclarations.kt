@@ -1538,7 +1538,7 @@ val nonMaxSuppressionOverlaps = multipleNameMapping(inputFrameworkOpNames = list
         attributeMappingRules = listOf(
                 convertNDArrayInputToNumericalAttr(mutableMapOf(
                         "maxOutputSize" to "max_output_size",
-                        "iouThreshold" to "overlap_threshold",
+                        "overlapThreshold" to "overlap_threshold",
                         "scoreThreshold" to "score_threshold")))
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
@@ -2277,7 +2277,7 @@ val topkV2 = multipleNameMapping(inputFrameworkOpNames = listOf("TopKV2"),opName
 val transpose = mapTensorNamesWithOp(
         inputFrameworkOpName = "Transpose",
         opName = "transpose",
-        tensorNames = mutableMapOf("input" to "x","permuteDims" to "perm"),
+        tensorNames = mutableMapOf("input" to "x","permutationVector" to "perm"),
         attributeMappingRules = listOf(valueMapping(mutableMapOf("dtype" to "T")))
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
@@ -2311,7 +2311,7 @@ val unpack = multipleNameMapping(inputFrameworkOpNames = listOf("Unpack"),
 val unsortedSegmentMax = mapTensorNamesWithOp(inputFrameworkOpName = "UnsortedSegmentMax",
         opName = "unsorted_segment_max",
         attributeMappingRules = listOf(
-                convertNDArrayInputToNumericalAttr(mutableMapOf("numSegments" to "num_segments"))),
+                convertNDArrayInputToNumericalAttr(mutableMapOf("numOfClasses" to "num_segments"))),
         tensorNames = mutableMapOf("input" to "data","idxSegments" to "segment_ids","numSegments" to "num_segments")
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 

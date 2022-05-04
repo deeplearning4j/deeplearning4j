@@ -340,12 +340,16 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
     REQUIRE_TRUE(v_begin->lengthOf() == v_end->lengthOf(), 0,
                  "StridedSlice: Length of begin/end should match, but got %i vs %i instead", (int)v_begin->lengthOf(),
                  (int)v_end->lengthOf());
-    REQUIRE_TRUE((v_begin->rankOf() == 1) && (v_begin->rankOf() == v_end->rankOf()), 0,
-                 "StridedSlice: Rank of begin and ends should be 1, but %i given instead", (int)v_end->rankOf());
 
     for (int e = 0; e < v_begin->lengthOf(); e++) begin.emplace_back(v_begin->e<int>(e));
 
-    for (int e = 0; e < v_end->lengthOf(); e++) end.emplace_back(v_end->e<int>(e));
+    for (int e = 0; e < v_end->lengthOf(); e++) {
+      if(v_end->e<int>(e) < 0) {
+        end.emplace_back(v_end->e<int>(e)+ x->sizeAt(e));
+      } else {
+        end.emplace_back(v_end->e<int>(e));
+      }
+    }
 
     if (block.width() > 3) {
       auto v_stride = INPUT_VARIABLE(3);
@@ -353,9 +357,7 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
       REQUIRE_TRUE(v_stride->lengthOf() == v_begin->lengthOf(), 0,
                    "StridedSlice: Length of begin/end/stride should match, but got %i vs %i vs %i instead",
                    (int)v_begin->lengthOf(), (int)v_end->lengthOf(), (int)v_stride->lengthOf());
-      REQUIRE_TRUE((v_begin->rankOf() == v_stride->rankOf()), 0,
-                   "StridedSlice: Rank of begin and ends should be %i, but %i given instead", (int)v_begin->rankOf(),
-                   v_stride->rankOf());
+
 
       for (int e = 0; e < v_stride->lengthOf(); e++) strides.emplace_back(v_stride->e<int>(e));
     } else {
@@ -459,6 +461,12 @@ DECLARE_SHAPE_FN(strided_slice) {
   if (block.width() > 1) {
     begin = INPUT_VARIABLE(1)->template asVectorT<int>();
     end = INPUT_VARIABLE(2)->template asVectorT<int>();
+    for(int  e = 0; e < end.size(); e++) {
+      if(end[e] < 0) {
+        end[e] += inShape[e];
+      }
+    }
+
     strides = INPUT_VARIABLE(3)->template asVectorT<int>();
   } else if (dim_values > 0) {
     int delta2 = dim_values / x_rank;
@@ -590,7 +598,16 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
 
     for (int e = 0; e < v_begin->lengthOf(); e++) begin.emplace_back(v_begin->e<int>(e));
 
-    for (int e = 0; e < v_end->lengthOf(); e++) end.emplace_back(v_end->e<int>(e));
+    for (int e = 0; e < v_end->lengthOf(); e++) {
+      if(v_end->e<int>(e) < 0) {
+        end.emplace_back(v_end->e<int>(e) + x->sizeAt(e));
+      } else {
+        end.emplace_back(v_end->e<int>(e));
+      }
+
+
+
+    }
 
     if (block.width() >= 4) {
       auto v_stride = INPUT_VARIABLE(4);

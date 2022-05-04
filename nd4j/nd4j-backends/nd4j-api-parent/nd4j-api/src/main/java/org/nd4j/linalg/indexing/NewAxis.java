@@ -22,6 +22,10 @@ package org.nd4j.linalg.indexing;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+/**
+ * New axis adds a new singular dimension to an array.
+ * @author  Adam Gibson
+ */
 public class NewAxis implements INDArrayIndex {
     @Override
     public long end() {
@@ -71,6 +75,16 @@ public class NewAxis implements INDArrayIndex {
     @Override
     public void init(long begin, long end) {
 
+    }
+
+    @Override
+    public boolean initialized() {
+        return true;
+    }
+
+    @Override
+    public INDArrayIndex dup() {
+        return new NewAxis();
     }
 
     @Override

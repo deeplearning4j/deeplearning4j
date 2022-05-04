@@ -613,7 +613,7 @@ public class NDNN {
   /**
    * Find values and indices for the largest k entries along the last dimension.<br>
    *
-   * @param input Input tensor (NUMERIC type)
+   * @param input Input data (NUMERIC type)
    * @param k The number of values to return
    * @param sorted Whether to return the values sorted or not
    */

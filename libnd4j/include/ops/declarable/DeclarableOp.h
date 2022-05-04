@@ -228,6 +228,7 @@ class SD_LIB_EXPORT DeclarableOp {
 
   // this method checks if number of available arguments matches op expectations
   sd::Status validateArguments(Context& block);
+  void overwriteResult(Context& block, int outputIdx, NDArray* array, bool remove);
 };
 }  // namespace ops
 }  // namespace sd
