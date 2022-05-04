@@ -12,8 +12,7 @@ Dynamic indexing has a wide variety of applications
 for building deep learning graphs. 
 
 Expressing a dynamic index that gets resolved at runtime entails specifying a negative index as the desired index for an indexing operation. 
-At runtime, the indexing engine will
-then count backwards from the element the user specified. An example being: -1 starts at the end, -2 starts at the second to last. 
+At runtime, the indexing engine will then count backwards from the element the user specified. An example being: -1 starts at the end, -2 starts at the second to last. 
 
 Samediff and nd4j have numpy style indexing support. 
 
