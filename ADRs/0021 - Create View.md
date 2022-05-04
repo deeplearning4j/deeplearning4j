@@ -21,18 +21,11 @@ gains you typically see in views.
 ## Proposal
  
 CreateView is an op that takes in a set of SDVariables that represents index information
-similar to nd4j's point, interval,all, and new axis.
+similar to nd4j's point, interval,all, and new axis. This op allows for  dynamic generation of views of variables.
 
-This op allows for  dynamic generation of views of variables.
+CreateView is a building block for other ops to execute in place operations. Usage of CreateView should be deliberate and only used in certain circumstances.
 
-CreateView is a building block for other ops to 
-execute in place operations. Usage of CreateView
-should be deliberate and only used in certain circumstances.
-
-CreateView simply (using the aforementioned index inputs)
-creates a view using the existing data buffer and returns
-an output that wraps the same exact buffer as is rendered
-as an alternative view in a similar way as nd4j's indexing mechanisms.
+CreateView simply (using the aforementioned index inputs) creates a view using the existing data buffer and returns  an output that wraps the same exact buffer as is rendered  as an alternative view in a similar way as nd4j's indexing mechanisms.
 
 
 
@@ -56,11 +49,8 @@ Of note here are a few constants representing types to be passed to the ops:
 2. DEFAULT_INCLUSIVE: whether the index's end is inclusive or not (only needed for intervals)
 this is by default 0 most of the time since the value is only relevant for intervals.
 
-
-
 These are created as INT64 ndarrays passed in to the
 operation itself.
-
 
 An omission of indexing here is SpecifiedIndex.
 Since SpecifiedIndex requires a copy most of the time, this op will
