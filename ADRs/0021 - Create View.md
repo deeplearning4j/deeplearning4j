@@ -4,6 +4,8 @@
 **Discussion**
 
 Proposed by: Adam Gibson (27th April 2022)
+Discussed with: Paul Dubs
+Finalized by: Adam Gibson (5th May 2022)
 
 
 ## Context
@@ -16,7 +18,7 @@ Currently, the samediff strided_slice operation works to provide a view of an ar
 but the view is a copy. This limitation prevents performance gains you typically see in views.
 
 
-## Proposal
+## Decision
  
 CreateView is an op that takes in a set of SDVariables that represents index information similar to nd4j's point, interval,all, and new axis. This op allows for  dynamic generation of views of variables.
 
