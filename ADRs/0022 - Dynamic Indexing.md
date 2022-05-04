@@ -35,9 +35,10 @@ are not known in samediff till execution time.
 
 We now support the ability to dynamically resolve indices
 during execution. This happens as follows:
-1. Each index now as a concept of initialized(). This returns a boolean indicating whether the operation was initialized or not. Initialized usually means there are no negative values present in the index.
+1. Each index now as a concept of initialized().
+This returns a boolean indicating whether the operation was initialized or not. Initialized  means there are no negative values present in the index and a specific boolean flag has been set representing the index being fully initialized.
 2. If a negative index is specified, the index is set on the index itself but it will not be considered initialized.
-3. At runtime, upon use a deep copy of the index happens and then initialization will occur upon use relative to the ndarray using it.
+3. At runtime, upon use a deep copy of the index happens and then initialization will occur upon use relative to the ndarray using it. This currently happens at the java level. Indexing does not exist fully at the c++ level.
 
 
 ## Consequences

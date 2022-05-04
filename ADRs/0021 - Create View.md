@@ -45,16 +45,19 @@ These inputs are represented as follows:
 4. New Axis: NEW_AXIS,1,10, DEFAULT_INCLUSIVE
 
 
-Of note here are a few constants:
-1. *_TYPE: a pre defined constant representing the kind of index this is
-2. DEFAULT_INCLUSIVE: whether the index's end is inclusive or not (only needed for intervals)
-this is by default 0 most of the time since the value is only relevant for intervals.
-
-The format of the buffer is as follows:
+This describes the general pattern the above described buffers follow:
 1. type of index
 2. Number of indices (representing offsets)
 3. Stride
 4. Inclusive/exclusive
+
+
+Of note here are a few constants representing types to be passed to the ops:
+1. *_TYPE: a pre defined constant representing the kind of index this is
+2. DEFAULT_INCLUSIVE: whether the index's end is inclusive or not (only needed for intervals)
+this is by default 0 most of the time since the value is only relevant for intervals.
+
+
 
 These are created as INT64 ndarrays passed in to the
 operation itself.
@@ -69,7 +72,8 @@ mainly be focused on indexing that is guaranteed to use the same buffer.
 
 ### Advantages
 
-* Self contained op for creating a view
+* Self contained op for creating a view leveraging nd4j's existing indexing engine but
+better integrated as a libnd4j op allowing for better dynamic indexing of arrays
 * Similar in usage to indexes
 * Contains the potential bugs from views to a pre-specified op
 
