@@ -8,14 +8,12 @@ Proposed by: Adam Gibson (27th April 2022)
 
 ## Context
 
-Samediff's op graph mainly focuses on immutability to prevent bugs
-making many variable inputs and outputs for various ops copy on write.
+Samediff's op graph mainly focuses on immutability to prevent bugs making many variable inputs and outputs for various ops copy on write.
 
 This prevents performance gains with in place ops such as +=.
 
 Currently, the samediff strided_slice operation works to provide a view of an array
-but the view is a copy. This limitation prevents performance 
-gains you typically see in views.
+but the view is a copy. This limitation prevents performance gains you typically see in views.
 
 
 ## Proposal
@@ -51,17 +49,15 @@ this is by default 0 most of the time since the value is only relevant for inter
 These are created as INT64 ndarrays passed in to the
 operation itself.
 
-An omission of indexing here is SpecifiedIndex.
-Since SpecifiedIndex requires a copy most of the time, this op will
-mainly be focused on indexing that is guaranteed to use the same buffer.
+An omission of indexing here is SpecifiedIndex.  Since SpecifiedIndex requires a copy most of the time, this op will mainly be focused on indexing that is guaranteed to use the same buffer.
 
 
 ## In place exception in gradient checks
 
 
-Usually, arrays during training should not modify their outputs. Instead, new output arrays are allocated with calculated results being inserted into these pre-defined outputs.
-However, CreateView is, by definition, special since it is a building block for enabling manipulation of a view of the same data buffer as the input.
-The gradient checks in the [NonInplaceValidationListener](https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/validation/listeners/NonInplaceValidationListener.java#L43) make an exception to this rule to account for this particular behaviour.
+Usually, arrays during training should not modify their outputs. Instead, new output arrays are allocated with calculated results being inserted into these pre-defined outputs. 
+
+However, CreateView is, by definition, special since it is a building block for enabling manipulation of a view of the same data buffer as the input. The gradient checks in the [NonInplaceValidationListener](https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/validation/listeners/NonInplaceValidationListener.java#L43) make an exception to this rule to account for this particular behaviour.
 
 ## Consequences
 
