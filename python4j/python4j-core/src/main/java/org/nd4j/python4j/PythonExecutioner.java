@@ -70,7 +70,7 @@ public class PythonExecutioner {
         init();
     }
 
-    private static synchronized void init() {
+    public static synchronized void init() {
         if (init.get()) {
             return;
         }
@@ -85,9 +85,9 @@ public class PythonExecutioner {
         }
 
         //set the main thread state for the gil
-        PythonGIL.setMainThreadState();
-        if(_Py_IsFinalizing() != 1 && PythonConstants.releaseGilAutomatically())
-            PyEval_SaveThread();
+        //PythonGIL.setMainThreadState();
+        //if(_Py_IsFinalizing() != 1 && PythonConstants.releaseGilAutomatically())
+        //    PyEval_SaveThread();
 
     }
 

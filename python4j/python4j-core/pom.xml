@@ -49,6 +49,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>guava</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20190722</version>
