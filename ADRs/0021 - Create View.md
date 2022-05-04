@@ -20,11 +20,10 @@ gains you typically see in views.
 
 ## Proposal
  
-We introduce a new CreateView op. CreateView takes in a
- set of SDVariables that represents index information
+CreateView is an op that takes in a set of SDVariables that represents index information
 similar to nd4j's point, interval,all, and new axis.
 
-This op allows dynamic generation of views of variables.
+This op allows for  dynamic generation of views of variables.
 
 CreateView is a building block for other ops to 
 execute in place operations. Usage of CreateView
@@ -53,7 +52,7 @@ This describes the general pattern the above described buffers follow:
 
 
 Of note here are a few constants representing types to be passed to the ops:
-1. *_TYPE: a pre defined constant representing the kind of index this is
+1. *_TYPE: a pre-defined constant representing the kind of index this is
 2. DEFAULT_INCLUSIVE: whether the index's end is inclusive or not (only needed for intervals)
 this is by default 0 most of the time since the value is only relevant for intervals.
 
@@ -66,6 +65,15 @@ operation itself.
 An omission of indexing here is SpecifiedIndex.
 Since SpecifiedIndex requires a copy most of the time, this op will
 mainly be focused on indexing that is guaranteed to use the same buffer.
+
+
+## In place exception in gradient checks
+
+An exception in gradient checks in the [non in place listen 
+checker](https://github.com/eclipse/deeplearning4j/blob/4976fccddab42e493c1bd4153003807c5e52afca/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/validation/listeners/NonInplaceValidationListener.java#L43). Normally arrays during training should not modify their outputs
+was added.  CreateView is by definition an exception to that
+due to the fact it is a building block for enabling manipulation of
+a view of the same data buffer as the input.
 
 
 ## Consequences
