@@ -20,8 +20,7 @@ gains you typically see in views.
 
 ## Proposal
  
-CreateView is an op that takes in a set of SDVariables that represents index information
-similar to nd4j's point, interval,all, and new axis. This op allows for  dynamic generation of views of variables.
+CreateView is an op that takes in a set of SDVariables that represents index information similar to nd4j's point, interval,all, and new axis. This op allows for  dynamic generation of views of variables.
 
 CreateView is a building block for other ops to execute in place operations. Usage of CreateView should be deliberate and only used in certain circumstances.
 
