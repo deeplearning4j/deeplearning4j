@@ -70,12 +70,9 @@ mainly be focused on indexing that is guaranteed to use the same buffer.
 ## In place exception in gradient checks
 
 
-A special case in gradient checks in the [non in place listen 
-checker](https://github.com/eclipse/deeplearning4j/blob/4976fccddab42e493c1bd4153003807c5e52afca/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/validation/listeners/NonInplaceValidationListener.java#L43) was added. 
-Normally arrays during training should not modify their outputs. Instead new output arrays are allocated
-with results calculated being inserted in to these pre defined outputs.
-CreateView is by definition special due to the fact it is a building block for enabling manipulation of  a view of the same data buffer as the input.
-
+Usually, arrays during training should not modify their outputs. Instead, new output arrays are allocated with calculated results being inserted into these pre-defined outputs.
+However, CreateView is, by definition, special since it is a building block for enabling manipulation of a view of the same data buffer as the input.
+The gradient checks in the [NonInplaceValidationListener](https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/validation/listeners/NonInplaceValidationListener.java#L43) make an exception to this rule to account for this particular behaviour.
 
 ## Consequences
 
