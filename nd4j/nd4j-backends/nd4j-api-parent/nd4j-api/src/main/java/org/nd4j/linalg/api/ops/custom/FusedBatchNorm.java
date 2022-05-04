@@ -97,4 +97,9 @@ public class FusedBatchNorm extends DynamicCustomOp {
                 outputDataType == null ? DataType.FLOAT : outputDataType,
                 outputDataType == null ? DataType.FLOAT : outputDataType);
     }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        throw new UnsupportedOperationException("Automatic differentiation is not implemented!");
+    }
 }

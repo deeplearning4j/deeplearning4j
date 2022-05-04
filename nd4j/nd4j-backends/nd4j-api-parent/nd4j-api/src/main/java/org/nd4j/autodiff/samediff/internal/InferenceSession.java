@@ -45,6 +45,7 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.shape.Concat;
+import org.nd4j.linalg.api.ops.impl.shape.CreateView;
 import org.nd4j.linalg.api.ops.impl.shape.Stack;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.*;
 import org.nd4j.linalg.api.ops.impl.transforms.Assert;
@@ -645,18 +646,41 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             if(orderedInputs.size() > 1) {
                 SDValue sdValue = nodeValueOutputs.get(orderedInputs.get(0));
                 SDValue sdValue1 = nodeValueOutputs.get(orderedInputs.get(1));
-                return ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue1);
+                switch(sdValue.getSdValueType()) {
+                    case TENSOR:
+                        Assign c = (Assign) op;
+                        Nd4j.exec(c, opContext);
+                        return ExecutionResult.createFrom(c,opContext);
+                    case LIST:
+                        return ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue1);
 
-            } else {
-                SDValue sdValue = nodeValueOutputs.get(orderedInputs.get(0));
-                return ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue);
+                }
+
             }
 
-
+            SDValue sdValue = nodeValueOutputs.get(orderedInputs.get(0));
+            return ExecutionResult.createValue(op.outputVariablesNames()[0], sdValue);
 
         } else if (op instanceof GradientBackwardsMarker) {
             INDArray out = mmgr.allocate(false, DataType.FLOAT).assign(1.0f);
             return ExecutionResult.createFrom(Arrays.asList("gradientbackwardsmarker"), new INDArray[]{out});
+        } else if(op instanceof CreateView) {
+           Map<String,VarId> inputVars = new LinkedHashMap<>();
+           String[] argNames = op.argNames();
+           for(Iterator<VarId> iter = opInputs.iterator(); iter.hasNext();) {
+               VarId varId  = iter.next();
+               inputVars.put(varId.getVariable(),varId);
+           }
+           SDValue sdValue = nodeValueOutputs.get(inputVars.get(argNames[0]));
+           if(sdValue == null) {
+               sdValue = SDValue.create(opContext.getInputArray(0));
+           }
+            INDArray[] indices = new INDArray[argNames.length - 1];
+            for(int i = 1; i < argNames.length; i++) {
+                indices[i - 1] = nodeValueOutputs.get(inputVars.get(argNames[i])).getTensorValue();
+            }
+            return ExecutionResult.createFrom(op.outputVariablesNames()[0],
+                    CreateView.createFrom(sdValue.getTensorValue(),indices));
         } else if (op instanceof ExternalErrorsFunction) {
             ExternalErrorsFunction fn = (ExternalErrorsFunction) op;
             String n = fn.getGradPlaceholderName();
@@ -1108,9 +1132,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 //Might be due to repeated inputs
                 Set<String> uniqueArgNames = new LinkedHashSet<>();
                 Collections.addAll(uniqueArgNames, argNames);
-             /*   Preconditions.checkState(uniqueArgNames.size() == (numNonConstIns + numConstPhIns + numNonConstInsAllIters),
-                        "Different number of arg names as op inputs for op %s (%s): arg names %s vs. op inputs %s+%s", df.getClass().getSimpleName(),
-                        opName, uniqueArgNames, opInputs, constAndPhInputs);*/
+
             } else {
                 Preconditions.checkState(numArgs == (numNonConstIns + numConstPhIns),
                         "Different number of arg names as op inputs for op %s (%s): arg names %s vs. op inputs %s+%s", df.getClass().getSimpleName(),
@@ -1118,11 +1140,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
         }
 
-        //TODO: handle lists better. For some reason, add_scalar is trying to add a list to 1.0.
-        //This is probably another value propagation failure. Focus on the names of the values
-        //like the previous fixes. It might be a control flow/switch issue propagating the wrong values
-        //This is often the case where an array is attempting to be used and is passed along instead
-        //of the right thing. Replace calls to getTensorFromOutputs(..) with actual createValue calls.
         INDArray[] args = null;
         if (argNames != null && argNames.length > 0) {
             args = new INDArray[argNames.length];
@@ -1189,8 +1206,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         if (df instanceof CustomOp) {
             DynamicCustomOp customOp = (DynamicCustomOp) df;
-
-            if (df instanceof Identity) {
+            if (df instanceof Identity || df instanceof CreateView) {
                 if (args != null) {
                     oc.setInputArrays(args);
                 }

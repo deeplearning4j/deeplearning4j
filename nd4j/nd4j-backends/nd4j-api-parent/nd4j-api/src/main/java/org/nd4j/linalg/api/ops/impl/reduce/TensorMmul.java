@@ -204,6 +204,7 @@ public class TensorMmul extends DynamicCustomOp {
 
     @Override
     public void configureFromArguments() {
+        MMulTranspose.MMulTransposeBuilder mMulTransposeBuilder = MMulTranspose.builder();
         if(!iArguments.isEmpty()) {
             long numDimensionsX = iArguments.get(0);
             List<Long> xDims = new ArrayList<>();
@@ -222,6 +223,14 @@ public class TensorMmul extends DynamicCustomOp {
         }
 
 
+        if(!bArguments.isEmpty()) {
+            mMulTransposeBuilder.transposeA(bArguments.get(0))
+                    .transposeB(bArguments.get(1))
+                    .transposeResult(bArguments.get(2));
+        }
+
+        this.mMulTranspose = mMulTransposeBuilder.build();
+        this.addedEdges = true;
     }
 
     @Override

@@ -59,6 +59,8 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             //crashes JVM
             "scatter_nd_sub/unique_idxs/rank3shape_2indices",
 
+            "resize_bicubic/float64",
+            "resize_bicubic/int32",
             //
             //invalid graph:  Unable to run session input_0:0 is both fed and fetched.
             //also due to the dynamic inputs being -1 3 for the first matrix multiply for the first 2 inputs

@@ -241,11 +241,14 @@ void Context::pushNDArrayToVariableSpace(std::pair<int, int> &pair, NDArray *arr
       _variableSpace->putVariable(pair, var);
       var->markRemovable(removable);
     } else {
+      sd_debug("Context: Getting variable in push ndarray",0);
       auto var = _variableSpace->getVariable(pair);
+      sd_debug("Context: After getting variable in push ndarray to variable space",0);
       if (var->hasNDArray()) {
         if (var->getNDArray() != array) {
-          if (var->isRemovable() && var->hasNDArray()) delete var->getNDArray();
-
+          if (var->isRemovable() && var->hasNDArray() && !var->getNDArray()->isView()) {
+            delete var->getNDArray();
+          }
           var->setNDArray(array);
           var->markRemovable(removable);
         }
@@ -293,6 +296,7 @@ Variable *Context::ensureVariable(int idx) {
     _variableSpace->putVariable(pair, var);
     return var;
   } else {
+    sd_debug("Before ensure variable",0);
     return _variableSpace->getVariable(pair);
   }
 }
@@ -316,7 +320,6 @@ NDArray *Context::array(int idx) {
   if (!_fastpath_in.empty() && _fastpath_in.size() > idx) {
     return _fastpath_in[idx];
   }
-
   // if no luck for fastpath - return whatever is available
   return getVariable(idx)->getNDArray();
 }

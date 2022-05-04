@@ -44,7 +44,7 @@ public class Diag extends DynamicCustomOp {
         this(input, null);
     }
 
-    public Diag(@NonNull INDArray input, @NonNull INDArray output){
+    public Diag(@NonNull INDArray input, @NonNull INDArray output) {
         super(null, new INDArray[]{input}, wrapOrNull(output));
     }
 

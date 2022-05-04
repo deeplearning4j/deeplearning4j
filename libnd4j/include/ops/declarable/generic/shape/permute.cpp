@@ -47,6 +47,10 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
   }
 
   std::vector<int> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<int>() : *block.getIArguments();
+  if(permutationVector.size() != x->rankOf()) {
+    sd_printf("PERMUTE OP: permutation vector size was %d and x input rank was %d\n",permutationVector.size(),x->rankOf());
+  }
+  REQUIRE_TRUE(permutationVector.size() == x->rankOf(),permutationVector.size(),"PERMUTE OP: number of permutations is less in size than input rank.");
 
   z->assign(x->permute(permutationVector));
 

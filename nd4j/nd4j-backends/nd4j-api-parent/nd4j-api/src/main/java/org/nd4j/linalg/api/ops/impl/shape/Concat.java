@@ -57,11 +57,11 @@ public class Concat extends DynamicCustomOp {
         this(concatDimension, arrays);
     }
 
-    public Concat(SameDiff sameDiff, SDVariable[] inputs, int concatDimension){
+    public Concat(SameDiff sameDiff, SDVariable[] inputs, int concatDimension) {
         this(sameDiff, concatDimension, inputs);
     }
 
-    public Concat(SameDiff sameDiff, int concatDimension, SDVariable... inputs){
+    public Concat(SameDiff sameDiff, int concatDimension, SDVariable... inputs) {
         super(null, sameDiff, inputs);
         addIArgument(concatDimension);
         this.concatDimension = concatDimension;

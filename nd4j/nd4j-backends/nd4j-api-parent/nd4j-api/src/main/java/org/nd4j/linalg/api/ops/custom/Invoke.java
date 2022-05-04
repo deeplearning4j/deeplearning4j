@@ -148,7 +148,7 @@ public class Invoke extends DynamicCustomOp {
                     .outputs(ExecutionResult.pack(output))
                     .build();
         } else {
-            Map<String,SDValue> valueInputs = new HashMap<>();
+            Map<String,SDValue> valueInputs = new LinkedHashMap<>();
             for(int i = 0; i < inputVarNameMappings.length; i++) {
                 //note that we use the inputs in numerical order ignoring the names
                 //this is because the input names aren't aligned with what's passed in

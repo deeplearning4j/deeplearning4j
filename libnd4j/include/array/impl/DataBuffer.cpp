@@ -268,8 +268,10 @@ void DataBuffer::deletePrimary() {
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::deleteBuffers() {
-  deletePrimary();
-  deleteSpecial();
+  if(_primaryBuffer != nullptr)
+    deletePrimary();
+  if(_specialBuffer != nullptr)
+    deleteSpecial();
   _lenInBytes = 0;
 }
 

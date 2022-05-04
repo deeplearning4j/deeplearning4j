@@ -94,12 +94,12 @@ public class GradCheckUtil {
         }
 
         //Validation sanity checks:
-        if(!skipValidation){
+        if(!skipValidation) {
             validateInternalState(sd, true);
         }
 
         //Check data type:
-        if(Nd4j.dataType() != DataType.DOUBLE){
+        if(Nd4j.dataType() != DataType.DOUBLE) {
             throw new IllegalStateException("Data type must be set to double");
         }
 
@@ -111,8 +111,8 @@ public class GradCheckUtil {
         }
 
         //Check that all non-Array type SDVariables have arrays associated with them
-        for(Variable v : sd.getVariables().values()){
-            if(v.getVariable().getVariableType() == VariableType.ARRAY) {
+        for(Variable v : sd.getVariables().values()) {
+            if(v.getVariable().getVariableType() == VariableType.ARRAY || v.getVariable().getVariableType() == VariableType.PLACEHOLDER) {
                 //OK if variable is not available for this, it'll be created during forward pass
                 continue;
             }
@@ -132,8 +132,8 @@ public class GradCheckUtil {
         //Collect variables to get gradients for - we want placeholders AND variables
         Set<String> varsNeedingGrads = new HashSet<>();
         for(Variable v : sd.getVariables().values()) {
-            if(v.getVariable().dataType().isFPType() && (v.getVariable().getVariableType() == VariableType.VARIABLE || v.getVariable().getVariableType() == VariableType.PLACEHOLDER)){
-                SDVariable g = v.getVariable().getGradient();
+            if(v.getVariable().dataType().isFPType() && (v.getVariable().getVariableType() == VariableType.VARIABLE || v.getVariable().getVariableType() == VariableType.PLACEHOLDER)) {
+                SDVariable g = sd.getGradForVariable(v.getName());
                 Preconditions.checkNotNull(g, "No gradient variable found for variable %s", v.getVariable());
                 varsNeedingGrads.add(v.getName());
             }
@@ -166,10 +166,11 @@ public class GradCheckUtil {
         Map<String,INDArray> gm = sd.calculateGradients(placeholderValues, varsNeedingGrads);
 
         //Remove listener, to reduce overhead
-        sd.getListeners().remove(listenerIdx);
+        if(!sd.getListeners().isEmpty())
+            sd.getListeners().remove(listenerIdx);
 
         Map<String,INDArray> grad = new HashMap<>();
-        for(SDVariable v : sd.variables()){
+        for(SDVariable v : sd.variables()) {
             if (fnOutputs.contains(v.name())) {
                 //This is not an input to the graph
                 continue;
@@ -183,13 +184,13 @@ public class GradCheckUtil {
                 throw new IllegalStateException("Null gradient variable for \"" + v.name() + "\"");
             }
             INDArray ga = gm.get(v.name());
-            if(ga == null){
+            if(ga == null) {
                 throw new IllegalStateException("Null gradient array encountered for variable: " + v.name());
             }
-            if(!Arrays.equals(v.getArr().shape(), ga.shape())){
+            if(!Arrays.equals(v.getArr().shape(), ga.shape())) {
                 throw new IllegalStateException("Gradient shape does not match variable shape for variable \"" +
-                    v.name() + "\": shape " + Arrays.toString(v.getArr().shape()) + " vs. gradient shape " +
-                    Arrays.toString(ga.shape()));
+                        v.name() + "\": shape " + Arrays.toString(v.getArr().shape()) + " vs. gradient shape " +
+                        Arrays.toString(ga.shape()));
             }
             grad.put(v.name(), ga.dup());
         }

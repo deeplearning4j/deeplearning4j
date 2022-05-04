@@ -906,7 +906,7 @@ val flatten = OnnxMappingProcess(
         inputFrameworkOpName = "Flatten",
         opName = "flatten_2d",
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input"))),
-        attributeMappingRules = listOf(valueMappings(mutableMapOf("flattenDimension" to "axis"))),
+        attributeMappingRules = listOf(valueMappings(mutableMapOf("dimensions" to "axis"))),
         opMappingRegistry = onnxOpRegistry
 )
 

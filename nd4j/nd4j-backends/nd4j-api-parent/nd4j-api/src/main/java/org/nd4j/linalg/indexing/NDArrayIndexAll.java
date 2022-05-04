@@ -20,14 +20,16 @@
 
 package org.nd4j.linalg.indexing;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * Mainly meant for internal use:
- * represents all of the elements of a dimension
+ * represents all the elements of a dimension
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class NDArrayIndexAll extends IntervalIndex {
 
     public NDArrayIndexAll() {
@@ -37,9 +39,11 @@ public class NDArrayIndexAll extends IntervalIndex {
 
     @Override
     public void init(INDArray arr, long begin, int dimension) {
+        initialized = true;
+
         this.begin = 0;
         this.end = arr.size(dimension);
-        this.length = (end - begin)/stride + 1;
+        this.length = (end - begin) / stride + 1;
     }
 
     @Override

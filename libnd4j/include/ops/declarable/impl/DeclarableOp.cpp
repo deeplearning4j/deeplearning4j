@@ -681,6 +681,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
         }
       }
 
+      sd_printf("About to get variable in  execute output\n",0);
       auto array = block->isFastPath() ? block->isInplace() ? block->fastpath_in()[e] : block->fastpath_out()[e]
                                        : vs->getVariable(block->nodeId(), e)->getNDArray();
 
@@ -697,39 +698,75 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   return status;
 }
 
-void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array) {
-  throw std::runtime_error("Overwrite result used!");
-  // block.pushNDArrayToVariableSpace(block.nodeId(), outputIdx, array);
-  /*
-  auto varSpace = block.getVariableSpace();
-  if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
+
+void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array,bool remove) {
+  sd_printf("Pushing variable\n",0);
+  if(block.isFastPath()) {
+    if(remove && block.fastpath_out()[outputIdx] != nullptr) {
+      //delete reference/call destrucotr if remove is true
+      delete block.fastpath_out()[outputIdx];
+    }
+    sd_printf("In fast path, setting variable\n",0);
+    array->printIndexedBuffer("setting variable\n");
+    block.fastpath_out()[outputIdx] = array;
+  }
+  else if( block.getVariableSpace() == nullptr) {
+    throw std::runtime_error("Var space should not be null before pushing variable!");
+  } else {
+    block.pushNDArrayToVariableSpace(block.nodeId(), outputIdx, array,remove);
+    sd_printf("After pushing variable\n",0);
+    auto varSpace = block.getVariableSpace();
+    if(varSpace == nullptr) {
+      throw std::runtime_error("Var space should not be null!");
+    }
+    sd_printf("After getting var space\n",0);
+    if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
+      sd_printf("calling get variable\n",0);
       auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
+      sd_printf("after calling get variable",0);
       if (var->getNDArray() != nullptr && var->isRemovable())
-          delete var->getNDArray();
+        delete var->getNDArray();
 
       var->setNDArray(array);
       var->markRemovable(true);
-  } else {
+    } else {
+      sd_printf("Creating new variable\n",0);
       auto var = new Variable(array, nullptr, block.getNodeId(), outputIdx);
       varSpace->putVariable(block.getNodeId(), outputIdx, var);
+      sd_printf("Putting variable\n",0);
+    }
   }
-  */
+
+
+}
+
+void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array) {
+  block.pushNDArrayToVariableSpace(block.nodeId(), outputIdx, array);
+  auto varSpace = block.getVariableSpace();
+  if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
+    auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
+    if (var->getNDArray() != nullptr && var->isRemovable())
+      delete var->getNDArray();
+
+    var->setNDArray(array);
+    var->markRemovable(true);
+  } else {
+    auto var = new Variable(array, nullptr, block.getNodeId(), outputIdx);
+    varSpace->putVariable(block.getNodeId(), outputIdx, var);
+  }
 }
 
 void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArrayList *list) {
-  throw std::runtime_error("Overwrite result used!");
-  // block.pushNDArrayListToVariableSpace(block.nodeId(), outputIdx, list);
-  /*
+  block.pushNDArrayListToVariableSpace(block.nodeId(), outputIdx, list);
   auto varSpace = block.getVariableSpace();
   if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
-      auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
-      var->setNDArrayList(list);
+    auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
+    var->setNDArrayList(list);
   } else {
-      auto var = new Variable(nullptr, nullptr, block.getNodeId(), outputIdx);
-      var->setNDArrayList(list);
-      varSpace->putVariable(block.getNodeId(), outputIdx, var);
+    auto var = new Variable(nullptr, nullptr, block.getNodeId(), outputIdx);
+    var->setNDArrayList(list);
+    varSpace->putVariable(block.getNodeId(), outputIdx, var);
   }
-  */
 }
 
 sd::Status sd::ops::DeclarableOp::validateArguments(Context &block) {
