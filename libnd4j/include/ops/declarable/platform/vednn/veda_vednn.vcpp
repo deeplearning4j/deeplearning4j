@@ -305,4 +305,44 @@ vednnError_t vedaVednnMaxPoolingBackwardEx(const vednnTensorParam_t *pParamGradO
   }
   return res;
 }
+
+uint64_t vedaConcatUpTo32(const uint64_t nInput, VEDAdeviceptr *inputList, VEDAdeviceptr vO) {
+  LOG_FUNC();
+  if (nInput > 0 && nInput < 32) {
+    void *output;
+    vedaMemPtr(&output, vO);
+
+    struct OmpArgs {
+      float *in;
+      float *out;
+      int size;
+    };
+
+    OmpArgs zPtrList[32];
+    float *z = (float *)output;
+    for (int i = 0; i < nInput; i++) {
+      void *in;
+      size_t size;
+      vedaMemPtrSize(&in, &size, inputList[i]);
+      auto sizeInFloats = size / sizeof(float);
+      zPtrList[i].in = (float *)in;
+      zPtrList[i].out = z;
+      zPtrList[i].size = (int)sizeInFloats;
+      z += sizeInFloats;
+    }
+
+#pragma omp parallel for
+    for (int i = 0; i < nInput; ++i) {
+      auto inputPtr = zPtrList[i].in;
+      auto outPtr = zPtrList[i].out;
+      int size = zPtrList[i].size;
+      for (size_t j = 0; j < size; j++) {
+        outPtr[j] = inputPtr[j];
+      }
+    }
+    return 0;
+  }
+
+  return -1;
+}
 }

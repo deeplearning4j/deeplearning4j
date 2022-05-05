@@ -99,9 +99,9 @@ extern const char *RANK_MSG_OUTPUT;
 extern const char *RANK_MSG_OUTPUT0;
 extern const char *RANK_MSG_OUTPUT1;
 
-extern const char *IS_EMPTY_OUTPUT;
-extern const char *IS_EMPTY_OUTPUT0;
-extern const char *IS_EMPTY_OUTPUT1;
+extern const char *IS_EMPTY_MSG_OUTPUT;
+extern const char *IS_EMPTY_MSG_OUTPUT0;
+extern const char *IS_EMPTY_MSG_OUTPUT1;
 
 extern const char *TYPE_MSG_OUTPUT;
 extern const char *TYPE_MSG_OUTPUT0;
