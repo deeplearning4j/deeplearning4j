@@ -35,7 +35,7 @@ public class InitializingPythonInterpreter implements PythonInterpreter {
     private final PythonInterpreter delegate;
 
     public InitializingPythonInterpreter() {
-        delegate = InitializingPythonInterpreter.getInstance();
+        delegate = UncheckedPythonInterpreter.getInstance();
     }
 
     public static void maybeInit() {
@@ -59,11 +59,14 @@ public class InitializingPythonInterpreter implements PythonInterpreter {
 
     @Override
     public Object get(String variable) {
+        InitializingPythonInterpreter.maybeInit();
         return delegate.get(variable);
     }
 
     @Override
     public void set(String variable, Object value) {
+        InitializingPythonInterpreter.maybeInit();
+
         delegate.set(variable,value);
     }
 

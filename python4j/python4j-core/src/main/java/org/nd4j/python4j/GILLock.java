@@ -36,18 +36,17 @@ public class GILLock {
     private AtomicInteger lockCount = new AtomicInteger(0);
 
     public void lock() {
-        if(lockCount.getAndIncrement() == 1) {
-            reentrantLock.lock();
-            pythonGIL = PythonGIL.lock();
-        }
+        reentrantLock.lock();
+        pythonGIL = PythonGIL.lock();
+
     }
 
     public void unlock() {
-        if(lockCount.decrementAndGet() == 0) {
+        if(pythonGIL != null)
             pythonGIL.close();
-            pythonGIL = null;
-            reentrantLock.unlock();
-        }
+        pythonGIL = null;
+        reentrantLock.unlock();
+
     }
 
 

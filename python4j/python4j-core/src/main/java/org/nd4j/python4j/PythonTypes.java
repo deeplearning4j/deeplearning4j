@@ -31,12 +31,13 @@ public class PythonTypes {
 
 
     private static List<PythonType> getPrimitiveTypes() {
-        return Arrays.<PythonType>asList(STR, INT, FLOAT, BOOL, BYTES);
+        return Arrays.asList(STR, INT, FLOAT, BOOL, BYTES,new NoneType());
     }
 
     private static List<PythonType> getCollectionTypes() {
-        return Arrays.<PythonType>asList(LIST, DICT);
+        return Arrays.asList(LIST, DICT);
     }
+
 
     private static List<PythonType> getExternalTypes() {
         List<PythonType> ret = new ArrayList<>();

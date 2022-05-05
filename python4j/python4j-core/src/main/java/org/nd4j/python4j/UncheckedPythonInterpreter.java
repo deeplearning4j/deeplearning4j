@@ -89,6 +89,9 @@ public class UncheckedPythonInterpreter implements PythonInterpreter {
 
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                gilLock.unlock();
+
             }
         }
     }
