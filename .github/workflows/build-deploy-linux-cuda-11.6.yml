@@ -161,8 +161,8 @@ jobs:
         if: steps.cache-cmake.outputs.cache-hit != 'true'
       - name: Work around cuda caching permissions issue
         run: |
-             sudo mkdir /usr/local/cuda-11.6 && chmod 755 /usr/local/cuda-11.6
-             sudo mkdir /usr/local/cuda && chmod 755 /usr/local/cuda
+             sudo mkdir /usr/local/cuda-11.6 && sudo chmod 755 /usr/local/cuda-11.6
+             sudo mkdir /usr/local/cuda && sudo chmod 755 /usr/local/cuda
       - name: Cache cuda install
         uses: actions/cache@v2
         id:  cache-cuda-116
