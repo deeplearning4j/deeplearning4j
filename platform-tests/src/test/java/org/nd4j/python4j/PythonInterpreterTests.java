@@ -28,15 +28,13 @@ import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.shade.netty.util.concurrent.DefaultThreadFactory;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -55,24 +53,35 @@ public class PythonInterpreterTests {
 
     @Test
     public void testMultiThreadedExecution() throws Exception {
-        ExecutorService executorService = Executors.newFixedThreadPool(2);
-        PythonInterpreter initializingPythonInterpreter =  InitializingPythonInterpreter.getInstance();
-        List<Callable<Void>> tasks = new ArrayList<>();
-        for(int i = 0; i < 2; i++) {
+        ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(),new DefaultThreadFactory("test-thread"));
+        List<Callable<Integer>> tasks = new ArrayList<>();
+        int count = 10;
+        for(int i = 0; i < count; i++) {
             tasks.add(() -> {
+                PythonInterpreter initializingPythonInterpreter =  InitializingPythonInterpreter.getInstance();
                 testBasicExecution(initializingPythonInterpreter);
-                return null;
+                return 1;
             });
         }
-        executorService.invokeAll(tasks);
+
+        List<Future<Integer>> futures = executorService.invokeAll(tasks);
+        int done = 0;
+        for(Future<Integer> f : futures) {
+            done += f.get(20,TimeUnit.MILLISECONDS);
+        }
+
+        assertEquals(count,done);
 
     }
 
     private void testBasicExecution(PythonInterpreter interpreter) {
-        testNull(interpreter);
+       // testNull(interpreter);
+        interpreter.gilLock().lock();
         testAddInt(interpreter);
         testAddDouble(interpreter);
         testNumpyAdd(interpreter);
+        System.out.println("Ran test");
+        interpreter.gilLock().unlock();
     }
 
 

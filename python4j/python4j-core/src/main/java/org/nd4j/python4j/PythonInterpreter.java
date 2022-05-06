@@ -19,6 +19,7 @@
  */
 package org.nd4j.python4j;
 
+
 /**
  * Base interface for a python interpreter for running python code.
  * Based on:
@@ -29,6 +30,13 @@ package org.nd4j.python4j;
  * @author Adam Gibson
  */
 public interface PythonInterpreter {
+
+
+    /**
+     * GIL Lock object
+     * @return
+     */
+    GILLock gilLock();
 
     /**
      * Execute the given python code

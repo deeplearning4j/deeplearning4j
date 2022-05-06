@@ -24,6 +24,7 @@ import org.apache.commons.io.IOUtils;
 import org.bytedeco.cpython.PyObject;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.shade.netty.util.concurrent.FastThreadLocal;
 
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -40,7 +41,7 @@ public class UncheckedPythonInterpreter implements PythonInterpreter {
     private static final String ANS = "__ans__";
     private static final String ANS_EQUALS = ANS + " = ";
 
-    private static UncheckedPythonInterpreter INSTANCE;
+    private static final FastThreadLocal<UncheckedPythonInterpreter> INSTANCE;
 
     private static PyObject globals;
     private static PyObject globalsAns;
@@ -50,7 +51,12 @@ public class UncheckedPythonInterpreter implements PythonInterpreter {
 
 
     static {
-        INSTANCE = new UncheckedPythonInterpreter();
+        INSTANCE =  new FastThreadLocal<UncheckedPythonInterpreter>() {
+            @Override
+            protected UncheckedPythonInterpreter initialValue() throws Exception {
+                return new UncheckedPythonInterpreter();
+            }
+        };
     }
 
 
@@ -64,12 +70,12 @@ public class UncheckedPythonInterpreter implements PythonInterpreter {
 
     public void init() {
         synchronized (UncheckedPythonInterpreter.class) {
-            PythonExecutioner.init();
             if (UncheckedPythonInterpreter.globals != null) {
                 return;
             }
 
             gilLock.lock();
+            PythonExecutioner.init();
 
             try (InputStream is = new ClassPathResource(UncheckedPythonInterpreter.class.getSimpleName() + ".py").getInputStream()) {
                 String code = IOUtils.toString(is, Charset.defaultCharset());
@@ -118,7 +124,12 @@ public class UncheckedPythonInterpreter implements PythonInterpreter {
 
 
     public static UncheckedPythonInterpreter getInstance() {
-        return UncheckedPythonInterpreter.INSTANCE;
+        return UncheckedPythonInterpreter.INSTANCE.get();
+    }
+
+    @Override
+    public GILLock gilLock() {
+        return gilLock;
     }
 
     @Override

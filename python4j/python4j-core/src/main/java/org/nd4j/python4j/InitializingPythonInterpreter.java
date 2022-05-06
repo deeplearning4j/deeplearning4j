@@ -53,6 +53,11 @@ public class InitializingPythonInterpreter implements PythonInterpreter {
     }
 
     @Override
+    public GILLock gilLock() {
+        return delegate.gilLock();
+    }
+
+    @Override
     public void exec(String expression) {
         delegate.exec(expression);
     }
@@ -66,12 +71,11 @@ public class InitializingPythonInterpreter implements PythonInterpreter {
     @Override
     public void set(String variable, Object value) {
         InitializingPythonInterpreter.maybeInit();
-
         delegate.set(variable,value);
     }
 
     public static PythonInterpreter getInstance() {
-        InitializingPythonInterpreter.maybeInit();
+         InitializingPythonInterpreter.maybeInit();
         return UncheckedPythonInterpreter.getInstance();
     }
 }

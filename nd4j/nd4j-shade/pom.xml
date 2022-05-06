@@ -38,6 +38,7 @@
         <module>jackson</module>
         <module>protobuf</module>
         <module>guava</module>
+        <module>netty-common</module>
     </modules>
 
     <properties>

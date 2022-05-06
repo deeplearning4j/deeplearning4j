@@ -20,7 +20,13 @@
 
 package org.nd4j.python4j;
 
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.nd4j.shade.guava.util.concurrent.CycleDetectingLockFactory;
+
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -29,26 +35,52 @@ import java.util.concurrent.locks.ReentrantLock;
  * Permission under apache license granted here: https://github.com/eclipse/deeplearning4j/issues/9595
  * @author Adam Gibson
  */
-public class GILLock {
+public class GILLock implements Lock {
 
-    private ReentrantLock reentrantLock = new ReentrantLock();
+    private static CycleDetectingLockFactory cycleDetectingLockFactory = CycleDetectingLockFactory.newInstance(CycleDetectingLockFactory.Policies.DISABLED);;
+
+    private static final ReentrantLock reentrantLock = cycleDetectingLockFactory.newReentrantLock("python4j_lock");
     private PythonGIL pythonGIL;
-    private AtomicInteger lockCount = new AtomicInteger(0);
+    private final MutableInt lockedCount = new MutableInt();
 
     public void lock() {
-        reentrantLock.lock();
-        pythonGIL = PythonGIL.lock();
+        if(lockedCount.getAndIncrement() == 1) {
+            reentrantLock.lock();
+            pythonGIL = PythonGIL.lock();
+        }
 
+    }
+
+    @Override
+    public void lockInterruptibly() throws InterruptedException {
+        lock();
+    }
+
+    @Override
+    public boolean tryLock() {
+        lock();
+        return true;
+    }
+
+    @Override
+    public boolean tryLock(long l, TimeUnit timeUnit) throws InterruptedException {
+        return false;
     }
 
     public void unlock() {
-        if(pythonGIL != null)
-            pythonGIL.close();
-        pythonGIL = null;
-        reentrantLock.unlock();
+        if(lockedCount.getAndDecrement() == 0) {
+            if (pythonGIL != null)
+                pythonGIL.close();
+            pythonGIL = null;
+            reentrantLock.unlock();
+        }
 
     }
 
+    @Override
+    public Condition newCondition() {
+        throw new UnsupportedOperationException();
+    }
 
 
 }
