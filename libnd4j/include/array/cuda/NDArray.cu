@@ -129,7 +129,7 @@ SD_KERNEL static void fillAsTriangularCuda(const void* vx, const sd::LongType* x
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& target, const char direction) {
+void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& target, const char direction,const bool includeEdges) {
   if (isS()) throw std::runtime_error("NDArray::fillAsTriangular: you can't use this method on String array!");
 
   if (!isSameShape(target) &&
@@ -156,7 +156,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
   manager.synchronize();
 }
 BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::fillAsTriangular,
-                      (const float val, int lower, int upper, NDArray& target, const char direction), SD_COMMON_TYPES);
+                      (const float val, int lower, int upper, NDArray& target, const char direction,const bool includeEdges), SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
