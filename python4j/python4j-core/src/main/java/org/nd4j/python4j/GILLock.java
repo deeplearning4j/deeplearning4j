@@ -41,10 +41,10 @@ public class GILLock implements Lock {
 
     private static final ReentrantLock reentrantLock = cycleDetectingLockFactory.newReentrantLock("python4j_lock");
     private PythonGIL pythonGIL;
-    private final MutableInt lockedCount = new MutableInt();
+    private final AtomicInteger lockedCount = new AtomicInteger();
 
     public void lock() {
-        if(lockedCount.getAndIncrement() == 1) {
+        if(lockedCount.incrementAndGet() == 1) {
             reentrantLock.lock();
             pythonGIL = PythonGIL.lock();
         }
@@ -68,7 +68,7 @@ public class GILLock implements Lock {
     }
 
     public void unlock() {
-        if(lockedCount.getAndDecrement() == 0) {
+        if(lockedCount.decrementAndGet() == 0) {
             if (pythonGIL != null)
                 pythonGIL.close();
             pythonGIL = null;
