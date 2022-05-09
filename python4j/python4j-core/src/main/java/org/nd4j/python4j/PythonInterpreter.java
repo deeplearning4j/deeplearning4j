@@ -20,6 +20,8 @@
 package org.nd4j.python4j;
 
 
+import org.nd4j.common.primitives.Pair;
+
 /**
  * Base interface for a python interpreter for running python code.
  * Based on:
@@ -31,6 +33,12 @@ package org.nd4j.python4j;
  */
 public interface PythonInterpreter {
 
+
+    Object getCachedPython(String varName);
+
+    Object getCachedJava(String varName);
+
+    Pair<PythonObject,Object> getCachedPythonJava(String varName);
 
     /**
      * GIL Lock object
@@ -48,10 +56,12 @@ public interface PythonInterpreter {
      * Retrieve a variable from the interpreter.
      * Returns none if none is found or variable
      * does not exist
+     *
      * @param variable the variable to retrieve
+     * @param getNew
      * @return null if the object is none or the variable does not exist
      */
-    Object get(String variable);
+    Object get(String variable, boolean getNew);
 
     /**
      * Set a variable in the interpreter

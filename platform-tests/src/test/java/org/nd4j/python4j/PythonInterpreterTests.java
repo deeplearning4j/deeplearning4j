@@ -21,12 +21,9 @@ package org.nd4j.python4j;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.netty.util.concurrent.DefaultThreadFactory;
 
@@ -82,30 +79,37 @@ public class PythonInterpreterTests {
         testNumpyAdd(interpreter);
         System.out.println("Ran test");
         interpreter.gilLock().unlock();
+        assertEquals(Nd4j.createFromArray(new long[]{3,3}), interpreter.getCachedJava("a_arr"));
+        assertEquals(interpreter.getCachedJava("a_double"),4.0);
+        assertEquals(interpreter.getCachedJava("a_int"),(long) 4);
+
     }
 
 
     private void testNumpyAdd(PythonInterpreter pythonInterpreter) {
-        pythonInterpreter.set("a", Nd4j.ones(2).castTo(DataType.INT64));
-        pythonInterpreter.exec("a += 2");
-        assertEquals(Nd4j.createFromArray(new long[]{3,3}),(INDArray) pythonInterpreter.get("a"));
+        pythonInterpreter.set("a_arr", Nd4j.ones(2).castTo(DataType.INT64));
+        pythonInterpreter.exec("a_arr += 2");
+        assertEquals(Nd4j.createFromArray(new long[]{3,3}), pythonInterpreter.get("a_arr", false));
     }
 
     private void testAddDouble(PythonInterpreter interpreter) {
-        interpreter.set("a",2.0);
-        interpreter.exec("a += 2");
-        assertEquals(interpreter.get("a"),4.0);
+        interpreter.set("a_double",2.0);
+        interpreter.exec("a_double += 2");
+        assertEquals(interpreter.get("a_double", false),4.0);
     }
     private void testAddInt(PythonInterpreter interpreter) {
-        interpreter.set("a",2);
-        interpreter.exec("a += 2");
-        assertEquals(interpreter.get("a"),(long) 4);
+        interpreter.set("a_int",2);
+        interpreter.exec("a_int += 2");
+        assertEquals(interpreter.get("a_int", false),(long) 4);
     }
 
     private void testNull(PythonInterpreter interpreter) {
         interpreter.set("some_none",null);
-        Object some_none = interpreter.get("some_none");
+        Object some_none = interpreter.get("some_none", false);
         assertNull(some_none);
+        Object someCachedNull = interpreter.getCachedJava("some_none");
+        assertNull(someCachedNull);
+
 
     }
 

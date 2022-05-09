@@ -20,6 +20,7 @@
 package org.nd4j.python4j;
 
 import org.nd4j.common.primitives.AtomicBoolean;
+import org.nd4j.common.primitives.Pair;
 
 /**
  * A port of:
@@ -53,6 +54,21 @@ public class InitializingPythonInterpreter implements PythonInterpreter {
     }
 
     @Override
+    public Object getCachedPython(String varName) {
+        return delegate.getCachedPython(varName);
+    }
+
+    @Override
+    public Object getCachedJava(String varName) {
+        return delegate.getCachedJava(varName);
+    }
+
+    @Override
+    public Pair<PythonObject, Object> getCachedPythonJava(String varName) {
+        return delegate.getCachedPythonJava(varName);
+    }
+
+    @Override
     public GILLock gilLock() {
         return delegate.gilLock();
     }
@@ -63,9 +79,9 @@ public class InitializingPythonInterpreter implements PythonInterpreter {
     }
 
     @Override
-    public Object get(String variable) {
+    public Object get(String variable, boolean getNew) {
         InitializingPythonInterpreter.maybeInit();
-        return delegate.get(variable);
+        return delegate.get(variable, false);
     }
 
     @Override

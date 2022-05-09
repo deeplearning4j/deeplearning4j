@@ -20,7 +20,6 @@
 
 package org.nd4j.python4j;
 
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.nd4j.shade.guava.util.concurrent.CycleDetectingLockFactory;
 
 import java.util.concurrent.TimeUnit;

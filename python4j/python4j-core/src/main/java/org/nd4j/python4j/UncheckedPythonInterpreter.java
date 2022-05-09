@@ -22,12 +22,14 @@ package org.nd4j.python4j;
 
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.cpython.PyObject;
-import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.shade.netty.util.concurrent.FastThreadLocal;
 
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A port of UncheckedPythonWrapper from:
@@ -46,11 +48,14 @@ public class UncheckedPythonInterpreter implements PythonInterpreter {
     private static PyObject globals;
     private static PyObject globalsAns;
 
+    private final static Map<String, Pair<PythonObject,Object>> cachedVariables = new ConcurrentHashMap<>();
+
     private final GILLock gilLock = new GILLock();
 
 
 
     static {
+
         INSTANCE =  new FastThreadLocal<UncheckedPythonInterpreter>() {
             @Override
             protected UncheckedPythonInterpreter initialValue() throws Exception {
@@ -61,6 +66,39 @@ public class UncheckedPythonInterpreter implements PythonInterpreter {
 
 
     private UncheckedPythonInterpreter() {
+    }
+
+
+
+    /**
+     * Get the cached python object.
+     * @param varName the name of the variable
+     * @return the cached object
+     */
+    @Override
+    public  Object getCachedPython(String varName) {
+        return cachedVariables.get(varName).getKey();
+    }
+
+
+    /**
+     * Get the cached java objects.
+     * @param varName the name of the variable
+     * @return the cached object
+     */
+    @Override
+    public  Object getCachedJava(String varName) {
+        return cachedVariables.get(varName).getValue();
+    }
+
+    /**
+     * Get the cached python/java objects.
+     * @param varName the name of the variable
+     * @return the cached object
+     */
+    @Override
+    public  Pair<PythonObject,Object> getCachedPythonJava(String varName) {
+        return cachedVariables.get(varName);
     }
 
     public PythonObject newNone() {
@@ -138,16 +176,24 @@ public class UncheckedPythonInterpreter implements PythonInterpreter {
     }
 
     @Override
-    public Object get(String variable) {
+    public Object get(String variable, boolean getNew) {
+        Object ret = null;
         gilLock.lock();
         try {
             evalUnchecked(ANS_EQUALS + variable);
             final PythonObject ans = getAns();
             final PythonType<Object> type = PythonTypes.getPythonTypeForPythonObject(ans);
-            return type.toJava(ans);
+            Object o = type.toJava(ans);
+            cachedVariables.put(variable,Pair.of(ans,o));
+            ret = o;
+
         } finally {
             gilLock.unlock();
         }
+
+        return ret;
+
+
     }
 
     @Override
@@ -156,10 +202,12 @@ public class UncheckedPythonInterpreter implements PythonInterpreter {
         try {
             if (value == null) {
                 evalUnchecked(variable + " = None");
+                cachedVariables.put(variable,Pair.of(UncheckedPythonInterpreter.getInstance().newNone(),null));
             } else {
                 final PythonObject converted = PythonTypes.convert(value);
                 org.bytedeco.cpython.global.python.PyDict_SetItemString(globals, variable,
                         converted.getNativePythonObject());
+                cachedVariables.put(variable,Pair.of(converted,value));
             }
         } catch (final Throwable t) {
             throw new RuntimeException("Variable=" + variable + " Value=" + value, t);
