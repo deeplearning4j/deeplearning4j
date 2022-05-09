@@ -72,12 +72,10 @@ public class PythonInterpreterTests {
     }
 
     private void testBasicExecution(PythonInterpreter interpreter) {
-       // testNull(interpreter);
         interpreter.gilLock().lock();
         testAddInt(interpreter);
         testAddDouble(interpreter);
         testNumpyAdd(interpreter);
-        System.out.println("Ran test");
         interpreter.gilLock().unlock();
         assertEquals(Nd4j.createFromArray(new long[]{3,3}), interpreter.getCachedJava("a_arr"));
         assertEquals(interpreter.getCachedJava("a_double"),4.0);
@@ -103,14 +101,6 @@ public class PythonInterpreterTests {
         assertEquals(interpreter.get("a_int", false),(long) 4);
     }
 
-    private void testNull(PythonInterpreter interpreter) {
-        interpreter.set("some_none",null);
-        Object some_none = interpreter.get("some_none", false);
-        assertNull(some_none);
-        Object someCachedNull = interpreter.getCachedJava("some_none");
-        assertNull(someCachedNull);
 
-
-    }
 
 }
