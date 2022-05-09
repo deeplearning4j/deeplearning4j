@@ -141,10 +141,10 @@ void DataBuffer::setCountersToZero() {
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::copyCounters(const DataBuffer& other) {
   _counter.store(other._counter);
-  _writePrimary.store(other._readSpecial);
-  _writeSpecial.store(other._readPrimary);
-  _readPrimary.store(other._writeSpecial);
-  _readSpecial.store(other._writePrimary);
+  _writePrimary.store(other._writePrimary);
+  _writeSpecial.store(other._writeSpecial);
+  _readPrimary.store(other._readPrimary);
+  _readSpecial.store(other._readSpecial);
 }
 
 void DataBuffer::writePrimary() const { _writePrimary = ++_counter; }

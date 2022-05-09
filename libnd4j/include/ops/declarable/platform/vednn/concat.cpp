@@ -98,6 +98,9 @@ SD_INLINE int isShapeExtendedWithOnes(const NDArray &input, int axis) {
 }
 
 PLATFORM_CHECK(concat, ENGINE_CPU) {
+#if 1
+  return false;
+#else
   auto output = OUTPUT_VARIABLE(0);
 // sd::Environment::getInstance().setDebug(true);
 // sd::Environment::getInstance().setVerbose(true);
@@ -151,6 +154,7 @@ PLATFORM_CHECK(concat, ENGINE_CPU) {
   }
   req.logTheSuccess();
   return req;
+#endif
 }
 
 }  // namespace platforms
