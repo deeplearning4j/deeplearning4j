@@ -40,10 +40,23 @@ public class NDArrayIndexAll extends IntervalIndex {
     @Override
     public void init(INDArray arr, long begin, int dimension) {
         initialized = true;
-
+        inclusive = false;
         this.begin = 0;
         this.end = arr.size(dimension);
         this.length = (end - begin) / stride + 1;
+    }
+
+    @Override
+    public INDArrayIndex dup() {
+        NDArrayIndexAll all = new NDArrayIndexAll();
+        all.inclusive = this.inclusive;
+        all.begin = this.begin;
+        all.end = this.begin;
+        all.initialized = this.initialized;
+        all.index = this.index;
+        all.length = this.length;
+        all.stride = this.stride;
+        return all;
     }
 
     @Override

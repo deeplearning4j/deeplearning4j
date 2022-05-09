@@ -4190,7 +4190,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int outIdx = 0;     //Axis number counter for output array
         int inIdx = 0;      //Axis number counter for input array
         for( int i = 0; i < indexes.length; i++) {
-            if(offset >= length() || inIdx >= rank()) {
+            if(i > 0 && offset >= length() || inIdx >= rank()) {
                 if(offset >= length())
                     return Nd4j.empty();
                 else {
