@@ -102,7 +102,7 @@ public class WrapHashSet<K extends SDValue> implements Set<SDValue> {
         int s = 0;
         SDValue[] to = new SDValue[size()];
         for (WrapSDValue x : set) {
-            to[s] = x.arr;
+            to[s] = x.value;
             ++s;
         }
         return null;
@@ -129,7 +129,7 @@ public class WrapHashSet<K extends SDValue> implements Set<SDValue> {
         @Override
         public SDValue next() {
             WrapSDValue x = it.next();
-            return x.arr;
+            return x.value;
         }
 
     }

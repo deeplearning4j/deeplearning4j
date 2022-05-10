@@ -21,27 +21,35 @@
 package org.nd4j.contrib.aurora;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import  org.nd4j.autodiff.samediff.config;
+import org.nd4j.autodiff.samediff.config.*;
+import java.util.*;
 
 public class WrapSDValue {
 
-    public List<Integer> idList;
+    public List<Long> idList;
+    public SDValue value;
 
     public WrapSDValue(SDValue value) {
-        this.value = getIds((WrapSDValue) value);
+        this.value = value;
+        this.idList = WrapSDValue.getIds(value);
     }
 
-    public List<Integer> getIds(SDValue value){
-        List<Integer> idList= new List<>();
-        switch(value.getSdValueType()) {
-            case LIST:
+    public static List<Long> getIds(SDValue value) {
+        List<Long> idList = new ArrayList<>();
+        switch (value.getSdValueType()) {
+            case LIST: {
                 List<INDArray> listValue = value.getListValue();
-                forEach(INDArray arr: listValue){
-                    if(arr!=null) idList.add(arr.getId())
+                for (INDArray arr : listValue) {
+                    if (arr != null)
+                        idList.add(arr.getId());
                 }
+            }
                 break;
-            case TENSOR:
-                if(arr!=null) idList.add(arr.getId())
+            case TENSOR: {
+                INDArray arr = value.getTensorValue();
+                if (arr != null)
+                    idList.add(arr.getId());
+            }
                 break;
         }
         return idList;
@@ -49,8 +57,9 @@ public class WrapSDValue {
 
     @Override
     public boolean equals(Object o) {
-        List<Integer> listx = getIds((WrapSDValue) o);
-        return Arrays.equals(listx, this.idList);
+        WrapSDValue wrapped = (WrapSDValue) o;
+        List<Long> listx = wrapped.idList;
+        return listx.equals(this.idList);
     }
 
     @Override

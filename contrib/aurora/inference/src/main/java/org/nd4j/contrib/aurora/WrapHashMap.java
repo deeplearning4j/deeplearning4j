@@ -62,7 +62,7 @@ public class WrapHashMap<K extends SDValue, V> implements Map<SDValue, V> {
     public Set<SDValue> keySet() {
         Set<SDValue> ret = new HashSet<>();
         for (WrapSDValue x : map.keySet()) {
-            ret.add(x.arr);
+            ret.add(x.value);
         }
         return ret;
     }
