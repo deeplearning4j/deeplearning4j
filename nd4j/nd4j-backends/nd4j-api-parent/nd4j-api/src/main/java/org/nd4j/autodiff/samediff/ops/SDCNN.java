@@ -22,6 +22,7 @@
 
 package org.nd4j.autodiff.samediff.ops;
 
+import static org.nd4j.autodiff.samediff.ops.SDValidation.isSameType;
 
 import java.lang.String;
 import org.nd4j.autodiff.samediff.SDVariable;

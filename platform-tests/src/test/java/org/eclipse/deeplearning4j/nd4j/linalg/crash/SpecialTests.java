@@ -301,7 +301,7 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcastLt2(){
-        for( int i=0; i<10; i++) {
+        for( int i = 0; i < 10; i++) {
             INDArray orig = Nd4j.create(DataType.DOUBLE, 1, 7, 4, 4);
             INDArray y = orig.get(all(), interval(0,2), all(), all());
 

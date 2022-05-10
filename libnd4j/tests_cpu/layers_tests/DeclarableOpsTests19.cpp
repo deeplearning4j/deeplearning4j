@@ -21,13 +21,9 @@
 //
 // @author raver119@gmail.com
 //
-#include <array/NDArray.h>
-#include <helpers/GradCheck.h>
-#include <helpers/RandomLauncher.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/ops.h>
-
-#include <array>
+#include <indexing/NDIndexUtils.h>
 
 #include "testlayers.h"
 
@@ -410,4 +406,140 @@ TEST_F(DeclarableOpsTests19, test_squeeze_1) {
   sd::ops::squeeze op;
   auto status = op.execute({&x}, {&e}, {axis});
   ASSERT_EQ(sd::Status::OK, status);
+}
+
+
+TEST_F(DeclarableOpsTests19, test_create_view_1) {
+  auto xLinspace = NDArrayFactory::linspace<double>(1,12,12);
+  auto x = xLinspace->reshape('c',{3,4});
+  //multiple parts:
+  //index type: 0 = point,interval = 1,all = 2,new axis = 3
+  auto indexFirstPoint = sd::NDIndexUtils::createPoint(1);
+
+  sd::ops::create_view op;
+  auto result = op.evaluate({&x,&indexFirstPoint,&indexFirstPoint});
+  result.setNonRemovable();
+  auto shape = result[0]->getShapeAsVectorInt();
+  auto expectedShape = std::vector<int>({});
+  ASSERT_EQ(expectedShape,shape);
+
+  auto assertion = NDArrayFactory::create<double>(6.0);
+  ASSERT_TRUE(assertion.equalsTo(result[0],1e-5));
+
+
+}
+
+
+TEST_F(DeclarableOpsTests19,test_create_view_2) {
+   sd::ops::create_view op;
+   auto inclusive = std::vector<int>({0,1});
+
+  for(int i = 0; i < 2; i++) {
+    auto x = NDArrayFactory::create<double>('c', {3, 4});
+    auto all = sd::NDIndexUtils::createAll();
+    auto indexInterval = sd::NDIndexUtils::createInterval(0,1,1,inclusive[i]);
+    auto expectedRows = inclusive[i] > 0 ? 2 : 1;
+    auto expectedShapeInterval = std::vector<int>({expectedRows,4});
+    auto resultInterval = op.evaluate({&x,&indexInterval,&all});
+    auto shapeInterval = resultInterval[0]->getShapeAsVectorInt();
+    ASSERT_EQ(expectedShapeInterval,shapeInterval);
+    resultInterval.setNonRemovable();
+  }
+
+
+}
+
+TEST_F(DeclarableOpsTests19,test_create_view_3) {
+  sd::ops::create_view op;
+  auto x = NDArrayFactory::create<double>('c', {3, 4});
+  auto expectedShapeAll = std::vector<int>({3,4});
+  auto all = sd::NDIndexUtils::createAll();
+  auto newAll = all.dup();
+  auto resultAll = op.evaluate({&x,&all,&newAll});
+  resultAll.setNonRemovable();
+  auto shapeAll = resultAll[0]->getShapeAsVectorInt();
+  ASSERT_EQ(expectedShapeAll,shapeAll);
+
+
+}
+
+
+TEST_F(DeclarableOpsTests19,test_create_view_4) {
+  sd::ops::create_view op;
+  auto expectedShapeAll2 = std::vector<int>({3,4});
+  auto x = NDArrayFactory::create<double>('c', {3, 4});
+  auto all = sd::NDIndexUtils::createAll();
+
+  auto newAll2 = all.dup();
+  auto resultAll2 = op.evaluate({&x,&all});
+  resultAll2.setNonRemovable();
+  auto shapeAll2 = resultAll2[0]->getShapeAsVectorInt();
+  ASSERT_EQ(expectedShapeAll2,shapeAll2);
+
+}
+
+TEST_F(DeclarableOpsTests19,test_create_view_5) {
+  sd::ops::create_view op;
+  auto vectorInput = NDArrayFactory::create<double>(1.0);
+  auto newAxis = sd::NDIndexUtils::createNewAxis(0);
+  auto resultNewAxis = op.evaluate({&vectorInput,&newAxis});
+  auto expectedNewAxis = NDArrayFactory::create<double>(1.0);
+  auto newExpectedAxis = expectedNewAxis.reshape('c',{1});
+  ASSERT_EQ(newExpectedAxis.getShapeAsVectorInt(),resultNewAxis[0]->getShapeAsVectorInt());
+  resultNewAxis.setNonRemovable();
+}
+
+TEST_F(DeclarableOpsTests19,test_create_view_6) {
+  sd::ops::create_view op;
+  auto linspace = NDArrayFactory::linspace<double>(1,125,125);
+  auto reshaped = linspace->reshape('c',{5,5,5});
+  auto slice = sd::NDIndexUtils::createInterval(0,1);
+  auto resultSlice = op.evaluate({&reshaped,&slice});
+  resultSlice.setNonRemovable();
+  auto assertionShape = std::vector<int>({1,5,5});
+  auto resultSliceShape = resultSlice[0]->getShapeAsVectorInt();
+  ASSERT_EQ(assertionShape,resultSliceShape);
+
+}
+
+TEST_F(DeclarableOpsTests19,test_create_view_7) {
+  sd::ops::create_view op;
+  //intervals, new axis, point, all
+  auto fiveByFive = NDArrayFactory::linspace<double>(1,25,25);
+  auto reshapedFiveByFive = fiveByFive->reshape('c',{5,5});
+  auto columns = NDIndexUtils::createInterval(0,1,1,0);
+  auto newAll4 = NDIndexUtils::createAll();
+  auto columnVectorAssertion = std::vector<int>({5,1});
+  auto resultFiveByFive = op.evaluate({&reshapedFiveByFive,&newAll4,&columns});
+  resultFiveByFive.setNonRemovable();
+  auto resultFiveByFiveShape = resultFiveByFive[0]->getShapeAsVectorInt();
+  ASSERT_EQ(columnVectorAssertion,resultFiveByFiveShape);
+
+}
+
+TEST_F(DeclarableOpsTests19,test_create_view_8) {
+  sd::ops::create_view op;
+  auto fiveByFiveSubColumns = NDArrayFactory::linspace<double>(1,25,25);
+  auto reshapedFiveByFiveSubColumns = fiveByFiveSubColumns->reshape('c',{5,5});
+  auto columns2 = NDIndexUtils::createInterval(0,1,1,0);
+  auto newAll3 = NDIndexUtils::createPoint(1);
+  auto subColumnsAssertion = std::vector<int>({1});
+  auto resultSubColumn = op.evaluate({&reshapedFiveByFiveSubColumns,&columns2,&newAll3});
+  resultSubColumn.setNonRemovable();
+  auto subColumnShape = resultSubColumn[0]->getShapeAsVectorInt();
+  ASSERT_EQ(subColumnsAssertion,subColumnShape);
+}
+
+
+TEST_F(DeclarableOpsTests19,test_create_view_9) {
+  sd::ops::create_view op;
+  auto fiveByFiveSubColumns = NDArrayFactory::linspace<double>(1,25,25);
+  auto reshapedFiveByFiveSubColumns = fiveByFiveSubColumns->reshape('c',{5,5});
+  auto columns2 = NDIndexUtils::createInterval(0,1,1,0);
+  auto newAll3 = NDIndexUtils::createPoint(1);
+  auto subColumnsAssertion = std::vector<int>({1});
+  auto resultSubColumn = op.evaluate({&reshapedFiveByFiveSubColumns,&columns2,&newAll3});
+  resultSubColumn.setNonRemovable();
+  auto subColumnShape = resultSubColumn[0]->getShapeAsVectorInt();
+  ASSERT_EQ(subColumnsAssertion,subColumnShape);
 }

@@ -49,6 +49,15 @@ public class UnsortedSegmentMean extends DynamicCustomOp {
         addIArgument(numSegments);
     }
 
+    public UnsortedSegmentMean(SameDiff sd, SDVariable data, SDVariable segmentIds, SDVariable numSegments) {
+        super(null, sd,  new SDVariable[] {data, segmentIds,numSegments}, false);
+    }
+
+    public UnsortedSegmentMean(INDArray data, INDArray segmentIds, INDArray numSegments) {
+        super(new INDArray[]{data,segmentIds,numSegments},null);
+    }
+
+
     @Override
     public String opName(){
         return "unsorted_segment_mean";

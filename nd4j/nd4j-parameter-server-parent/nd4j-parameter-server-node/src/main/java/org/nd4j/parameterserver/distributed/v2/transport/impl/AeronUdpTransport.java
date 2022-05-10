@@ -20,6 +20,7 @@
 
 package org.nd4j.parameterserver.distributed.v2.transport.impl;
 
+import io.aeron.driver.Configuration;
 import org.nd4j.shade.guava.math.IntMath;
 import io.aeron.Aeron;
 import io.aeron.FragmentAssembler;
@@ -118,13 +119,17 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
         Preconditions.checkArgument(ownPort > 0 && ownPort < 65536, "Own UDP port should be positive value in range of 1 and 65536");
         Preconditions.checkArgument(rootPort > 0 && rootPort < 65536, "Master node UDP port should be positive value in range of 1 and 65536");
+        if(!System.getProperties().containsKey(Configuration.CLIENT_LIVENESS_TIMEOUT_PROP_NAME)) {
+            //see: https://github.com/eclipse/deeplearning4j/issues/9677, ensure that publication unblock is >= client liveness
+            setProperty(Configuration.CLIENT_LIVENESS_TIMEOUT_PROP_NAME, "30000000000");
+            setProperty(Configuration.PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME,"35000000000");
 
-        setProperty("aeron.client.liveness.timeout", "30000000000");
+        }
 
         // setting this property to try to increase maxmessage length, not sure if it still works though
         //Term buffer length: must be power of 2 and in range 64kB to 1GB: https://github.com/real-logic/aeron/wiki/Configuration-Options
         String p = System.getProperty(ND4JSystemProperties.AERON_TERM_BUFFER_PROP);
-        if(p == null){
+        if(p == null) {
             System.setProperty(ND4JSystemProperties.AERON_TERM_BUFFER_PROP, String.valueOf(DEFAULT_TERM_BUFFER_PROP));
         }
 
@@ -449,40 +454,40 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             // if response != OK we must do something with response
             switch (status) {
                 case MAX_POSITION_EXCEEDED: {
-                        log.warn("MaxPosition hit: [{}]", id);
-                        try {
-                            // in case of backpressure we're just sleeping for a while, and message out again
-                            Thread.sleep(voidConfiguration.getRetransmitTimeout());
-                        } catch (InterruptedException e) {
-                            //
-                        }
+                    log.warn("MaxPosition hit: [{}]", id);
+                    try {
+                        // in case of backpressure we're just sleeping for a while, and message out again
+                        Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                    } catch (InterruptedException e) {
+                        //
                     }
-                    break;
+                }
+                break;
                 case CLOSED: {
                     // TODO: here we should properly handle reconnection
                     log.warn(" Connection was closed: [{}]", id);
                     return;
                 }
                 case ADMIN_ACTION: {
-                        log.info("ADMIN_ACTION: [{}]", id);
-                        try {
-                            Thread.sleep(voidConfiguration.getRetransmitTimeout());
-                        } catch (InterruptedException e) {
-                            //
-                        }
+                    log.info("ADMIN_ACTION: [{}]", id);
+                    try {
+                        Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                    } catch (InterruptedException e) {
+                        //
                     }
-                    break;
+                }
+                break;
                 case NOT_CONNECTED: {
-                            log.info("NOT_CONNECTED: [{}]", id);
-                            addConnection(id);
-                            try {
-                                // in case of backpressure we're just sleeping for a while, and message out again
-                                Thread.sleep(voidConfiguration.getRetransmitTimeout());
-                            } catch (InterruptedException e) {
-                                //
-                            }
-                        }
-                        break;
+                    log.info("NOT_CONNECTED: [{}]", id);
+                    addConnection(id);
+                    try {
+                        // in case of backpressure we're just sleeping for a while, and message out again
+                        Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                    } catch (InterruptedException e) {
+                        //
+                    }
+                }
+                break;
                 case BACK_PRESSURED: {
                     log.info("BACK_PRESSURED: [{}]", id);
                     try {

@@ -206,7 +206,7 @@ class SD_LIB_EXPORT NDArray {
           sd::LaunchContext *context = sd::LaunchContext::defaultContext());
 
   /**
-   * This contructors create scalar array containing string utf8
+   * This constructors create scalar array containing string utf8
    *
    */
   NDArray(const char *str, sd::DataType dtype = sd::DataType::UTF8,
@@ -216,7 +216,7 @@ class SD_LIB_EXPORT NDArray {
           sd::LaunchContext *context = sd::LaunchContext::defaultContext());
 
   /**
-   * This contructors create scalar array containing string utf16
+   * This constructors create scalar array containing string utf16
    *
    */
   NDArray(const char16_t *u16string, sd::DataType dtype = sd::DataType::UTF16,
@@ -227,7 +227,7 @@ class SD_LIB_EXPORT NDArray {
           sd::LaunchContext *context = sd::LaunchContext::defaultContext());
 
   /**
-   * This contructors create scalar array containing string utf32
+   * This constructors create scalar array containing string utf32
    *
    */
   NDArray(const char32_t *u32string, sd::DataType dtype = sd::DataType::UTF32,
@@ -238,7 +238,7 @@ class SD_LIB_EXPORT NDArray {
           sd::LaunchContext *context = sd::LaunchContext::defaultContext());
 
   /**
-   * This contructors create array from vector of utf8 strings
+   * This constructors create array from vector of utf8 strings
    *
    */
   NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char *> &strings,
@@ -247,7 +247,7 @@ class SD_LIB_EXPORT NDArray {
           sd::DataType dtype = sd::DataType::UTF8, sd::LaunchContext *context = sd::LaunchContext::defaultContext());
 
   /**
-   * This contructors create array from vector of utf16 strings
+   * This constructors create array from vector of utf16 strings
    *
    */
   NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char16_t *> &strings,
@@ -256,7 +256,7 @@ class SD_LIB_EXPORT NDArray {
           sd::DataType dtype = sd::DataType::UTF16, sd::LaunchContext *context = sd::LaunchContext::defaultContext());
 
   /**
-   * This contructors create array from vector of utf32 strings
+   * This constructors create array from vector of utf32 strings
    *
    */
   NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char32_t *> &strings,
@@ -1585,10 +1585,16 @@ class SD_LIB_EXPORT NDArray {
   SD_INLINE bool operator==(const NDArray &other) const;
 
   SD_INLINE bool operator!=(const NDArray &other) const;
+  NDArray(void *buffer, const char order, const std::vector<sd::LongType> &shape, DataType dtype,
+          LaunchContext *context, const bool isBuffAlloc, const bool isView, LongType offset);
+#ifndef __JAVACPP_HACK__
+  NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<sd::LongType> &shape, DataType dtype,
+          LaunchContext *context, const bool isBuffAlloc, const bool isView, LongType offset);
+#endif
 };
 
 //////////////////////////////////////////////////////////////////////////
-///// IMLEMENTATION OF INLINE METHODS /////
+///// IMPLEMENTATION OF INLINE METHODS /////
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isAttached() { return this->_context->getWorkspace() != nullptr; }
 

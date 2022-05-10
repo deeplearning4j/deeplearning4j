@@ -10,9 +10,9 @@ runs:
           sudo apt-get install ca-certificates libgomp1
 
 
-          wget https://www.gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-1.36.tar.bz2
-          tar jxf libgpg-error-1.36.tar.bz2
-          cd libgpg-error-1.36
+          wget https://www.gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-1.37.tar.bz2
+          tar jxf libgpg-error-1.37.tar.bz2
+          cd libgpg-error-1.37
           ./configure
           make
           sudo make install

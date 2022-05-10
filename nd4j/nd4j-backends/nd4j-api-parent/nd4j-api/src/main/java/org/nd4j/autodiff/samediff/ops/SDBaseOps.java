@@ -291,28 +291,6 @@ public class SDBaseOps {
   }
 
   /**
-   * Asserts the input array is true for all elements. <br>
-   *
-   * @param x A boolean array to assert the state of (NDARRAY type)
-   * @return output The state to assert (NUMERIC type)
-   */
-  public SDVariable assertOp(SDVariable x) {
-    return new org.nd4j.linalg.api.ops.impl.transforms.Assert(sd,x).outputVariable();
-  }
-
-  /**
-   * Asserts the input array is true for all elements. <br>
-   *
-   * @param name name May be null. Name for the output variable
-   * @param x A boolean array to assert the state of (NDARRAY type)
-   * @return output The state to assert (NUMERIC type)
-   */
-  public SDVariable assertOp(String name, SDVariable x) {
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.Assert(sd,x).outputVariable();
-    return sd.updateVariableNameAndReference(out, name);
-  }
-
-  /**
    * Assign the contents of y to x.<br>
    * Y must be broadcastable to x or the same shape.<br>
    *
@@ -671,6 +649,32 @@ public class SDBaseOps {
   public SDVariable create(String name, SDVariable shape, DataType dataType) {
     SDValidation.validateNumerical("create", "shape", shape);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Create(sd,shape, dataType, "c", false).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Return a newly created variable,  with the specified shape and data type.<br>
+   *
+   * @param input Input INDArray  (NDARRAY type)
+   * @param indices  (NDARRAY type)
+   * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
+   */
+  public SDVariable createView(SDVariable input, SDVariable... indices) {
+    Preconditions.checkArgument(indices.length >= 0, "indices has incorrect size/length. Expected: indices.length >= 0, got %s", indices.length);
+    return new org.nd4j.linalg.api.ops.impl.shape.CreateView(sd,input, indices).outputVariable();
+  }
+
+  /**
+   * Return a newly created variable,  with the specified shape and data type.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input INDArray  (NDARRAY type)
+   * @param indices  (NDARRAY type)
+   * @return output A new INDArray  with the same (dynamic) shape as the input (NUMERIC type)
+   */
+  public SDVariable createView(String name, SDVariable input, SDVariable... indices) {
+    Preconditions.checkArgument(indices.length >= 0, "indices has incorrect size/length. Expected: indices.length >= 0, got %s", indices.length);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.CreateView(sd,input, indices).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1076,26 +1080,52 @@ public class SDBaseOps {
   }
 
   /**
-   * Returns a flattened 1d array with the length of the input.<br>
+   * Return a flattened variable with the specified ordering<br>
    *
-   * @param input Input variable (NDARRAY type)
-   * @param order ordering of the array
-   * @return output outputs the 1d array with a length equal to the input's length (NDARRAY type)
+   * @param inputs Input variables (NDARRAY type)
+   * @param order ordering for the variable
+   * @return output Output variable (NUMERIC type)
    */
-  public SDVariable flatten(SDVariable input, String order) {
-    return new org.nd4j.linalg.api.ops.custom.Flatten(sd,input, order).outputVariable();
+  public SDVariable flatten(SDVariable[] inputs, String order) {
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+    return new org.nd4j.linalg.api.ops.custom.Flatten(sd,inputs, order).outputVariable();
   }
 
   /**
-   * Returns a flattened 1d array with the length of the input.<br>
+   * Return a flattened variable with the specified ordering<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input Input variable (NDARRAY type)
-   * @param order ordering of the array
-   * @return output outputs the 1d array with a length equal to the input's length (NDARRAY type)
+   * @param inputs Input variables (NDARRAY type)
+   * @param order ordering for the variable
+   * @return output Output variable (NUMERIC type)
    */
-  public SDVariable flatten(String name, SDVariable input, String order) {
-    SDVariable out =  new org.nd4j.linalg.api.ops.custom.Flatten(sd,input, order).outputVariable();
+  public SDVariable flatten(String name, SDVariable[] inputs, String order) {
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+    SDVariable out =  new org.nd4j.linalg.api.ops.custom.Flatten(sd,inputs, order).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Return a flattened variable with the specified ordering<br>
+   *
+   * @param inputs Input variables (NDARRAY type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable flatten(SDVariable... inputs) {
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+    return new org.nd4j.linalg.api.ops.custom.Flatten(sd,inputs, "c").outputVariable();
+  }
+
+  /**
+   * Return a flattened variable with the specified ordering<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param inputs Input variables (NDARRAY type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable flatten(String name, SDVariable... inputs) {
+    Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
+    SDVariable out =  new org.nd4j.linalg.api.ops.custom.Flatten(sd,inputs, "c").outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1103,13 +1133,12 @@ public class SDBaseOps {
    * Gather slices from the input variable where the indices are specified as fixed int[] values.<br>
    * Output shape is same as input shape, except for axis dimension, which has size equal to indices.length.<br>
    *
-   * @param df Input variable (NUMERIC type)
+   * @param df Input variable (NDARRAY type)
    * @param indices Indices to get (Size: AtLeast(min=1))
    * @param axis Axis that the indices refer to
-   * @return output Output variable with slices pulled from the specified axis (NUMERIC type)
+   * @return output Output variable with slices pulled from the specified axis (NDARRAY type)
    */
   public SDVariable gather(SDVariable df, int[] indices, int axis) {
-    SDValidation.validateNumerical("gather", "df", df);
     Preconditions.checkArgument(indices.length >= 1, "indices has incorrect size/length. Expected: indices.length >= 1, got %s", indices.length);
     return new org.nd4j.linalg.api.ops.impl.shape.Gather(sd,df, indices, axis).outputVariable();
   }
@@ -1119,13 +1148,12 @@ public class SDBaseOps {
    * Output shape is same as input shape, except for axis dimension, which has size equal to indices.length.<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param df Input variable (NUMERIC type)
+   * @param df Input variable (NDARRAY type)
    * @param indices Indices to get (Size: AtLeast(min=1))
    * @param axis Axis that the indices refer to
-   * @return output Output variable with slices pulled from the specified axis (NUMERIC type)
+   * @return output Output variable with slices pulled from the specified axis (NDARRAY type)
    */
   public SDVariable gather(String name, SDVariable df, int[] indices, int axis) {
-    SDValidation.validateNumerical("gather", "df", df);
     Preconditions.checkArgument(indices.length >= 1, "indices has incorrect size/length. Expected: indices.length >= 1, got %s", indices.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Gather(sd,df, indices, axis).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
@@ -1135,13 +1163,12 @@ public class SDBaseOps {
    * Gather slices from the input variable where the indices are specified as dynamic array values.<br>
    * Output shape is same as input shape, except for axis dimension, which has size equal to indices.length.<br>
    *
-   * @param df Input variable (NUMERIC type)
+   * @param df Input variable (NDARRAY type)
    * @param indices Indices to get slices for. Rank 0 or 1 input (INT type)
    * @param axis Axis that the indices refer to
-   * @return output Output variable with slices pulled from the specified axis (NUMERIC type)
+   * @return output Output variable with slices pulled from the specified axis (NDARRAY type)
    */
   public SDVariable gather(SDVariable df, SDVariable indices, int axis) {
-    SDValidation.validateNumerical("gather", "df", df);
     SDValidation.validateInteger("gather", "indices", indices);
     return new org.nd4j.linalg.api.ops.impl.shape.Gather(sd,df, indices, axis).outputVariable();
   }
@@ -1151,13 +1178,12 @@ public class SDBaseOps {
    * Output shape is same as input shape, except for axis dimension, which has size equal to indices.length.<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param df Input variable (NUMERIC type)
+   * @param df Input variable (NDARRAY type)
    * @param indices Indices to get slices for. Rank 0 or 1 input (INT type)
    * @param axis Axis that the indices refer to
-   * @return output Output variable with slices pulled from the specified axis (NUMERIC type)
+   * @return output Output variable with slices pulled from the specified axis (NDARRAY type)
    */
   public SDVariable gather(String name, SDVariable df, SDVariable indices, int axis) {
-    SDValidation.validateNumerical("gather", "df", df);
     SDValidation.validateInteger("gather", "indices", indices);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Gather(sd,df, indices, axis).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
@@ -1166,12 +1192,11 @@ public class SDBaseOps {
   /**
    * Gather slices from df with shape specified by indices. <br>
    *
-   * @param df  (NUMERIC type)
+   * @param df  (NDARRAY type)
    * @param indices  (NUMERIC type)
-   * @return output  (NUMERIC type)
+   * @return output  (NDARRAY type)
    */
   public SDVariable gatherNd(SDVariable df, SDVariable indices) {
-    SDValidation.validateNumerical("gatherNd", "df", df);
     SDValidation.validateNumerical("gatherNd", "indices", indices);
     return new org.nd4j.linalg.api.ops.impl.shape.GatherNd(sd,df, indices).outputVariable();
   }
@@ -1180,12 +1205,11 @@ public class SDBaseOps {
    * Gather slices from df with shape specified by indices. <br>
    *
    * @param name name May be null. Name for the output variable
-   * @param df  (NUMERIC type)
+   * @param df  (NDARRAY type)
    * @param indices  (NUMERIC type)
-   * @return output  (NUMERIC type)
+   * @return output  (NDARRAY type)
    */
   public SDVariable gatherNd(String name, SDVariable df, SDVariable indices) {
-    SDValidation.validateNumerical("gatherNd", "df", df);
     SDValidation.validateNumerical("gatherNd", "indices", indices);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.GatherNd(sd,df, indices).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
@@ -5187,6 +5211,48 @@ public class SDBaseOps {
   }
 
   /**
+   * Unsorted segment max operation. As per segmentMax(String, SDVariable, SDVariable) but without<br>
+   * the requirement for the indices to be sorted.<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]<br>
+   *
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public SDVariable unsortedSegmentMax(SDVariable data, SDVariable segmentIds,
+      SDVariable numSegments) {
+    SDValidation.validateNumerical("unsortedSegmentMax", "data", data);
+    SDValidation.validateNumerical("unsortedSegmentMax", "segmentIds", segmentIds);
+    SDValidation.validateInteger("unsortedSegmentMax", "numSegments", numSegments);
+    return new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMax(sd,data, segmentIds, numSegments).outputVariable();
+  }
+
+  /**
+   * Unsorted segment max operation. As per segmentMax(String, SDVariable, SDVariable) but without<br>
+   * the requirement for the indices to be sorted.<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [6, 9, 8] = [max(3,6), max(1,4,9), max(2,8)]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public SDVariable unsortedSegmentMax(String name, SDVariable data, SDVariable segmentIds,
+      SDVariable numSegments) {
+    SDValidation.validateNumerical("unsortedSegmentMax", "data", data);
+    SDValidation.validateNumerical("unsortedSegmentMax", "segmentIds", segmentIds);
+    SDValidation.validateInteger("unsortedSegmentMax", "numSegments", numSegments);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMax(sd,data, segmentIds, numSegments).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Unsorted segment mean operation. As per segmentMean(String, SDVariable, SDVariable) but without<br>
    * the requirement for the indices to be sorted.<br>
    * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
@@ -5221,6 +5287,48 @@ public class SDBaseOps {
       int numSegments) {
     SDValidation.validateNumerical("unsortedSegmentMean", "data", data);
     SDValidation.validateNumerical("unsortedSegmentMean", "segmentIds", segmentIds);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMean(sd,data, segmentIds, numSegments).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Unsorted segment mean operation. As per segmentMean(String, SDVariable, SDVariable) but without<br>
+   * the requirement for the indices to be sorted.<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+   *
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public SDVariable unsortedSegmentMean(SDVariable data, SDVariable segmentIds,
+      SDVariable numSegments) {
+    SDValidation.validateNumerical("unsortedSegmentMean", "data", data);
+    SDValidation.validateNumerical("unsortedSegmentMean", "segmentIds", segmentIds);
+    SDValidation.validateInteger("unsortedSegmentMean", "numSegments", numSegments);
+    return new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMean(sd,data, segmentIds, numSegments).outputVariable();
+  }
+
+  /**
+   * Unsorted segment mean operation. As per segmentMean(String, SDVariable, SDVariable) but without<br>
+   * the requirement for the indices to be sorted.<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public SDVariable unsortedSegmentMean(String name, SDVariable data, SDVariable segmentIds,
+      SDVariable numSegments) {
+    SDValidation.validateNumerical("unsortedSegmentMean", "data", data);
+    SDValidation.validateNumerical("unsortedSegmentMean", "segmentIds", segmentIds);
+    SDValidation.validateInteger("unsortedSegmentMean", "numSegments", numSegments);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMean(sd,data, segmentIds, numSegments).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -5265,6 +5373,48 @@ public class SDBaseOps {
   }
 
   /**
+   * Unsorted segment min operation. As per segmentMin(String, SDVariable, SDVariable) but without<br>
+   * the requirement for the indices to be sorted.<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]<br>
+   *
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public SDVariable unsortedSegmentMin(SDVariable data, SDVariable segmentIds,
+      SDVariable numSegments) {
+    SDValidation.validateNumerical("unsortedSegmentMin", "data", data);
+    SDValidation.validateNumerical("unsortedSegmentMin", "segmentIds", segmentIds);
+    SDValidation.validateInteger("unsortedSegmentMin", "numSegments", numSegments);
+    return new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMin(sd,data, segmentIds, numSegments).outputVariable();
+  }
+
+  /**
+   * Unsorted segment min operation. As per segmentMin(String, SDVariable, SDVariable) but without<br>
+   * the requirement for the indices to be sorted.<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [3, 1, 2] = [min(3,6), min(1,4,9), min(2,8)]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public SDVariable unsortedSegmentMin(String name, SDVariable data, SDVariable segmentIds,
+      SDVariable numSegments) {
+    SDValidation.validateNumerical("unsortedSegmentMin", "data", data);
+    SDValidation.validateNumerical("unsortedSegmentMin", "segmentIds", segmentIds);
+    SDValidation.validateInteger("unsortedSegmentMin", "numSegments", numSegments);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMin(sd,data, segmentIds, numSegments).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Unsorted segment product operation. As per segmentProd(String, SDVariable, SDVariable) but without<br>
    * the requirement for the indices to be sorted.<br>
    * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
@@ -5299,6 +5449,48 @@ public class SDBaseOps {
       int numSegments) {
     SDValidation.validateNumerical("unsortedSegmentProd", "data", data);
     SDValidation.validateNumerical("unsortedSegmentProd", "segmentIds", segmentIds);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentProd(sd,data, segmentIds, numSegments).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Unsorted segment product operation. As per segmentProd(String, SDVariable, SDVariable) but without<br>
+   * the requirement for the indices to be sorted.<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+   *
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public SDVariable unsortedSegmentProd(SDVariable data, SDVariable segmentIds,
+      SDVariable numSegments) {
+    SDValidation.validateNumerical("unsortedSegmentProd", "data", data);
+    SDValidation.validateNumerical("unsortedSegmentProd", "segmentIds", segmentIds);
+    SDValidation.validateInteger("unsortedSegmentProd", "numSegments", numSegments);
+    return new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentProd(sd,data, segmentIds, numSegments).outputVariable();
+  }
+
+  /**
+   * Unsorted segment product operation. As per segmentProd(String, SDVariable, SDVariable) but without<br>
+   * the requirement for the indices to be sorted.<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [4.5, 4.666, 5] = [mean(3,6), mean(1,4,9), mean(2,8)]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public SDVariable unsortedSegmentProd(String name, SDVariable data, SDVariable segmentIds,
+      SDVariable numSegments) {
+    SDValidation.validateNumerical("unsortedSegmentProd", "data", data);
+    SDValidation.validateNumerical("unsortedSegmentProd", "segmentIds", segmentIds);
+    SDValidation.validateInteger("unsortedSegmentProd", "numSegments", numSegments);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentProd(sd,data, segmentIds, numSegments).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -5341,6 +5533,46 @@ public class SDBaseOps {
   }
 
   /**
+   * Unsorted segment sqrtN operation. Simply returns the sqrt of the count of the number of values in each segment<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [1.414, 1.732, 1.414] = [sqrt(2), sqrtN(3), sqrtN(2)]<br>
+   *
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public SDVariable unsortedSegmentSqrtN(SDVariable data, SDVariable segmentIds,
+      SDVariable numSegments) {
+    SDValidation.validateNumerical("unsortedSegmentSqrtN", "data", data);
+    SDValidation.validateNumerical("unsortedSegmentSqrtN", "segmentIds", segmentIds);
+    SDValidation.validateInteger("unsortedSegmentSqrtN", "numSegments", numSegments);
+    return new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentSqrtN(sd,data, segmentIds, numSegments).outputVariable();
+  }
+
+  /**
+   * Unsorted segment sqrtN operation. Simply returns the sqrt of the count of the number of values in each segment<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [1.414, 1.732, 1.414] = [sqrt(2), sqrtN(3), sqrtN(2)]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public SDVariable unsortedSegmentSqrtN(String name, SDVariable data, SDVariable segmentIds,
+      SDVariable numSegments) {
+    SDValidation.validateNumerical("unsortedSegmentSqrtN", "data", data);
+    SDValidation.validateNumerical("unsortedSegmentSqrtN", "segmentIds", segmentIds);
+    SDValidation.validateInteger("unsortedSegmentSqrtN", "numSegments", numSegments);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentSqrtN(sd,data, segmentIds, numSegments).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Unsorted segment sum operation. As per segmentSum(String, SDVariable, SDVariable) but without<br>
    * the requirement for the indices to be sorted.<br>
    * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
@@ -5375,6 +5607,48 @@ public class SDBaseOps {
       int numSegments) {
     SDValidation.validateNumerical("unsortedSegmentSum", "data", data);
     SDValidation.validateNumerical("unsortedSegmentSum", "segmentIds", segmentIds);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentSum(sd,data, segmentIds, numSegments).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Unsorted segment sum operation. As per segmentSum(String, SDVariable, SDVariable) but without<br>
+   * the requirement for the indices to be sorted.<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]<br>
+   *
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public SDVariable unsortedSegmentSum(SDVariable data, SDVariable segmentIds,
+      SDVariable numSegments) {
+    SDValidation.validateNumerical("unsortedSegmentSum", "data", data);
+    SDValidation.validateNumerical("unsortedSegmentSum", "segmentIds", segmentIds);
+    SDValidation.validateInteger("unsortedSegmentSum", "numSegments", numSegments);
+    return new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentSum(sd,data, segmentIds, numSegments).outputVariable();
+  }
+
+  /**
+   * Unsorted segment sum operation. As per segmentSum(String, SDVariable, SDVariable) but without<br>
+   * the requirement for the indices to be sorted.<br>
+   * If data =     [1, 3, 2, 6, 4, 9, 8]<br>
+   * segmentIds =  [1, 0, 2, 0, 1, 1, 2]<br>
+   * then output = [9, 14, 10] = [sum(3,6), sum(1,4,9), sum(2,8)]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param data Data (variable) to perform unsorted segment max on (NUMERIC type)
+   * @param segmentIds Variable for the segment IDs (NUMERIC type)
+   * @param numSegments Number of segments (INT type)
+   * @return output Unsorted segment output (NUMERIC type)
+   */
+  public SDVariable unsortedSegmentSum(String name, SDVariable data, SDVariable segmentIds,
+      SDVariable numSegments) {
+    SDValidation.validateNumerical("unsortedSegmentSum", "data", data);
+    SDValidation.validateNumerical("unsortedSegmentSum", "segmentIds", segmentIds);
+    SDValidation.validateInteger("unsortedSegmentSum", "numSegments", numSegments);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentSum(sd,data, segmentIds, numSegments).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }

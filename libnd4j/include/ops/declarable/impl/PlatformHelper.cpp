@@ -76,8 +76,7 @@ sd::NDArray* PlatformHelper::getZ(graph::Context& ctx, int inputId) {
         sd_printf("Can't get Z variable for node_%i!\n", ctx.nodeId());
       }
     } else {
-      sd_printf("BOOM!\n", "");
-      throw std::runtime_error("Boom!");
+      throw std::runtime_error("Failed execution after attempting to get result outside of fast_path. This should not happen.\n");
     }
   }
 
