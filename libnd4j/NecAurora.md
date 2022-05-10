@@ -61,9 +61,9 @@ Building libdn4j:
 
     sudo yum install veoffload-veda.x86_64
 2nd option:
-install from the source
+install from the source [the older version]
 
-    git clone https://github.com/SX-Aurora/veda.git
+    git clone --depth 1 --branch v1.2.0 https://github.com/SX-Aurora/veda.git
     mkdir -p veda/src/build
     cd veda/src/build
     cmake ..
@@ -90,6 +90,13 @@ ${PWD}/blasbuild/cpu/tests_cpu/layers_tests/runtests --gtest_filter=*conv2*
 
 There is not any need to set the device library path manually within nd4j framework. Loading and setting the right device library path are handled inside.
 
+##### Building using maven
+```
+export VEDNN_ROOT="your VEDNN root folder"
+
+mvn clean install  -DskipTests  -Dlibnd4j.helper=vednn -Dlibnd4j.extension=avx2  -Djavacpp.platform=linux-x86_64  -Djavacpp.platform.extension=-vednn-avx2 -Dlibnd4j.classifier=linux-x86_64-vednn-avx2 -Pcpu
+
+```
 ###### Notes
    - vc/vcpp file extensions are used to diferentitate VE device files from c/cpp in cmake. Cmake will compile them using nec.
 
