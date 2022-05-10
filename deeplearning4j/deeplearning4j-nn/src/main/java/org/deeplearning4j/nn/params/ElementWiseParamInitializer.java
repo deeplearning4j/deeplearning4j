@@ -72,9 +72,10 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer{
                 (FeedForwardLayer) conf.getLayer();
         val nIn = layerConf.getNIn();
 
+        INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
         val nWeightParams = nIn ;
-        INDArray weightView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nWeightParams));
-        INDArray biasView = paramsView.get(NDArrayIndex.interval(0,0,true),
+        INDArray weightView = paramsViewReshape.get(NDArrayIndex.interval(0, nWeightParams));
+        INDArray biasView = paramsViewReshape.get(
                 NDArrayIndex.interval(nWeightParams, nWeightParams + nIn));
 
 
@@ -103,8 +104,9 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer{
         val nOut = layerConf.getNOut();
         val nWeightParams = nIn ;
 
-        INDArray weightGradientView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nWeightParams));
-        INDArray biasView = gradientView.get(NDArrayIndex.interval(0,0,true),
+        INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
+        INDArray weightGradientView = gradientViewReshape.get( NDArrayIndex.interval(0, nWeightParams));
+        INDArray biasView = gradientViewReshape.get(
                 NDArrayIndex.interval(nWeightParams, nWeightParams + nOut)); //Already a row vector
 
         Map<String, INDArray> out = new LinkedHashMap<>();

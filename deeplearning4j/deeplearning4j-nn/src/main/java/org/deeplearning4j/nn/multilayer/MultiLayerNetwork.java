@@ -699,12 +699,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 Nd4j.getRandom().setSeed(getDefaultConfiguration().getSeed());
             }
 
+            INDArray flattenedParamsReshape = flattenedParams.reshape(flattenedParams.length());
             // construct multi-layer
             long paramCountSoFar = 0;
             for (int i = 0; i < nLayers; i++) {
                 INDArray paramsView;
                 if (nParamsPerLayer[i] > 0) {
-                    paramsView = flattenedParams.get(NDArrayIndex.interval(0,0,true),
+                    paramsView = flattenedParamsReshape.get(
                             NDArrayIndex.interval(paramCountSoFar, paramCountSoFar + nParamsPerLayer[i]));
                 } else {
                     paramsView = null;
@@ -801,11 +802,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 flattenedGradients = Nd4j.create(flattenedParams.dataType(), new long[]{1, paramLength}, 'f'); //No need to initialize, as each layer will do it each iteration anyway
             }
 
+            INDArray flattenedGradientsReshape = flattenedGradients.reshape(flattenedGradients.length());
             long paramsSoFar = 0;
             for (int i = 0; i < layers.length; i++) {
                 if (nParamsPerLayer[i] == 0)
                     continue; //This layer doesn't have any parameters...
-                INDArray thisLayerGradView = flattenedGradients.get(NDArrayIndex.interval(0,0,true),
+                INDArray thisLayerGradView = flattenedGradientsReshape.get(
                         NDArrayIndex.interval(paramsSoFar, paramsSoFar + nParamsPerLayer[i]));
                 layers[i].setBackpropGradientsViewArray(thisLayerGradView);
                 paramsSoFar += nParamsPerLayer[i];
@@ -1543,6 +1545,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     @Override
     public INDArray params() {
+        if(flattenedParams.rank() > 1)
+            return flattenedParams.reshape(flattenedParams.length());
         return flattenedParams;
     }
 
@@ -1559,6 +1563,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             return; //No op
         }
 
+        INDArray paramsReshape = params.reshape(params.length());
         if (flattenedParams != null && params.length() == flattenedParams.length()) {
             if (params != flattenedParams) {
                 flattenedParams.assign(params);
@@ -1572,7 +1577,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 long range = layer.numParams();
                 if (range <= 0)
                     continue; //Some layers: no parameters (subsampling, etc)
-                INDArray get = params.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(idx, range + idx));
+                INDArray get = paramsReshape.get(NDArrayIndex.interval(idx, range + idx));
                 layer.setParams(get);
                 idx += range;
             }
@@ -1592,10 +1597,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
         int paramsSoFar = 0;
+        INDArray gradientsReshape = gradients.reshape(gradients.length());
         for (Layer layer : layers) {
             if (layer.numParams() == 0)
                 continue;
-            layer.setBackpropGradientsViewArray(gradients.get(NDArrayIndex.interval(0,0,true),
+            layer.setBackpropGradientsViewArray(gradientsReshape.get(
                     NDArrayIndex.interval(paramsSoFar, paramsSoFar + layer.numParams())));
             paramsSoFar += layer.numParams();
         }
@@ -3313,17 +3319,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             // non-zero (i.e., activationFunction(0*weights + bias) != 0 in general)
             //This assumes that the time series input is masked - i.e., values are 0 at the padded time steps,
             // so we don't need to do anything for the recurrent layer
-            
+
             //Now, if mask array is 2d -> need to reshape to 1d (column vector) in the exact same order
             // as is done for 3d -> 2d time series reshaping
             INDArray reshapedFeaturesMask = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(featuresMaskArray);
-            
+
             for( int i=0; i<layers.length-1; i++ ){
                 Type t = layers[i].type();
                 if( t == Type.CONVOLUTIONAL || t == Type.FEED_FORWARD ){
                     layers[i].setMaskArray(reshapedFeaturesMask);
                 } else if( t == Type.RECURRENT ) break;
-            
+
             }
             */
         }

@@ -93,10 +93,12 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
                     INDArray gradientViewSubset = null;
                     INDArray paramsViewSubset = null;
+                    INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
+                    INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
                     if (paramSizeThisVariable > 0) {
-                        paramsViewSubset = paramsView.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(paramsViewSoFar,
+                        paramsViewSubset = paramsViewReshape.get(NDArrayIndex.interval(paramsViewSoFar,
                                         paramsViewSoFar + paramSizeThisVariable));
-                        gradientViewSubset = gradientView.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex
+                        gradientViewSubset = gradientViewReshape.get( NDArrayIndex
                                         .interval(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable));
                     }
 

@@ -71,9 +71,10 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
         Convolution3D layerConf = (Convolution3D) conf.getLayer();
         val nOut = layerConf.getNOut();
 
+        INDArray paramViewReshape = paramsView.reshape(paramsView.length());
         if (layer.hasBias()) {
-            INDArray biasView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nOut));
-            INDArray weightView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nOut, numParams(conf)));
+            INDArray biasView = paramViewReshape.get(NDArrayIndex.interval(0, nOut));
+            INDArray weightView = paramViewReshape.get(NDArrayIndex.interval(nOut, numParams(conf)));
             params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
             params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
             conf.addVariable(WEIGHT_KEY);
@@ -95,12 +96,12 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
         int[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
         val nOut = layerConf.getNOut();
-
+        INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
         Map<String, INDArray> out = new LinkedHashMap<>();
         if (layerConf.hasBias()) {
-            INDArray biasGradientView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nOut));
+            INDArray biasGradientView = gradientViewReshape.get(NDArrayIndex.interval(0, nOut));
             INDArray weightGradientView =
-                    gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nOut, numParams(conf)))
+                    gradientViewReshape.get( NDArrayIndex.interval(nOut, numParams(conf)))
                             .reshape('c', nOut, nIn, kernel[0], kernel[1], kernel[2]);
             out.put(BIAS_KEY, biasGradientView);
             out.put(WEIGHT_KEY, weightGradientView);

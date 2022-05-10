@@ -3281,7 +3281,7 @@ public class Shape {
         val dtype = ArrayOptionsHelper.dataType(extras);
         //val empty = ArrayOptionsHelper.hasBitSet(extras, ArrayOptionsHelper.ATYPE_EMPTY_BIT);
         //just propogate extra // it is the same value in the backend
-        return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dtype, extras); 
+        return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dtype, extras);
     }
 
     public static DataBuffer createSparseInformation(int[] flags, long[] sparseOffsets, int[] hiddenDimensions,
@@ -3378,7 +3378,7 @@ public class Shape {
         if (axis == null || axis.length == 0)
             return new int[] {Integer.MAX_VALUE};
 
-        if(rank == 0){
+        if(rank == 0) {
             if(axis.length != 1 || (axis[0] != 0 && axis[0] != Integer.MAX_VALUE)){
                 throw new ND4JIllegalStateException("Array axis for scalar (rank 0) array invalid: rank " + Arrays.toString(axis));
             }

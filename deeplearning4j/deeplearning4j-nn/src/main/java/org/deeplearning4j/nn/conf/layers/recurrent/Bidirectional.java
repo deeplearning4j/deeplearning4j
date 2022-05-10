@@ -136,9 +136,10 @@ public class Bidirectional extends Layer {
         c1.setLayer(fwd);
         c2.setLayer(bwd);
 
+        INDArray layerParamsReshape = layerParamsView.reshape(layerParamsView.length());
         long n = layerParamsView.length() / 2;
-        INDArray fp = layerParamsView.get(interval(0,0,true), interval(0, n));
-        INDArray bp = layerParamsView.get(interval(0,0,true), interval(n, 2 * n));
+        INDArray fp = layerParamsReshape.get(interval(0, n));
+        INDArray bp = layerParamsReshape.get(interval(n, 2 * n));
         org.deeplearning4j.nn.api.Layer f = fwd.instantiate(c1, trainingListeners, layerIndex, fp, initializeParams, networkDataType);
 
         org.deeplearning4j.nn.api.Layer b = bwd.instantiate(c2, trainingListeners, layerIndex, bp, initializeParams, networkDataType);

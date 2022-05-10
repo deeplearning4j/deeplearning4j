@@ -127,14 +127,15 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
         val depthWiseParams = numDepthWiseParams(layerConf);
         val biasParams = numBiasParams(layerConf);
 
-        INDArray depthWiseWeightView = paramsView.get(
-                NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(biasParams, biasParams + depthWiseParams));
+        INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
+        INDArray depthWiseWeightView = paramsViewReshape.get(
+                NDArrayIndex.interval(biasParams, biasParams + depthWiseParams));
 
         params.put(WEIGHT_KEY, createDepthWiseWeightMatrix(conf, depthWiseWeightView, initializeParams));
         conf.addVariable(WEIGHT_KEY);
 
         if(layer.hasBias()){
-            INDArray biasView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, biasParams));
+            INDArray biasView = paramsViewReshape.get(NDArrayIndex.interval(0, biasParams));
             params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
             conf.addVariable(BIAS_KEY);
         }
@@ -156,14 +157,14 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
 
         val depthWiseParams = numDepthWiseParams(layerConf);
         val biasParams = numBiasParams(layerConf);
-
-        INDArray depthWiseWeightGradientView = gradientView.get(
-                NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(biasParams, biasParams + depthWiseParams))
+        INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
+        INDArray depthWiseWeightGradientView = gradientViewReshape.get(
+                        NDArrayIndex.interval(biasParams, biasParams + depthWiseParams))
                 .reshape('c', kernel[0], kernel[1], nIn, depthMultiplier);
         out.put(WEIGHT_KEY, depthWiseWeightGradientView);
 
-        if(layerConf.hasBias()){
-            INDArray biasGradientView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nOut));
+        if(layerConf.hasBias()) {
+            INDArray biasGradientView = gradientViewReshape.get(NDArrayIndex.interval(0, nOut));
             out.put(BIAS_KEY, biasGradientView);
         }
         return out;
@@ -183,7 +184,7 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
          Inputs to the convolution layer are: (batch size, num input feature maps, image height, image width)
          */
         DepthwiseConvolution2D layerConf =
-                        (DepthwiseConvolution2D) conf.getLayer();
+                (DepthwiseConvolution2D) conf.getLayer();
         int depthMultiplier = layerConf.getDepthMultiplier();
 
         if (initializeParams) {
@@ -198,11 +199,11 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
             val weightsShape = new long[] {kernel[0], kernel[1], inputDepth, depthMultiplier};
 
             return layerConf.getWeightInitFn().init(fanIn, fanOut, weightsShape, 'c',
-                            weightView);
+                    weightView);
         } else {
             int[] kernel = layerConf.getKernelSize();
             return WeightInitUtil.reshapeWeights(
-                            new long[] {kernel[0], kernel[1], layerConf.getNIn(), depthMultiplier}, weightView, 'c');
+                    new long[] {kernel[0], kernel[1], layerConf.getNIn(), depthMultiplier}, weightView, 'c');
         }
     }
 }

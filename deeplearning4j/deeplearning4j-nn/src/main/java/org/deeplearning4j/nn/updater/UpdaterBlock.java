@@ -135,9 +135,10 @@ public class UpdaterBlock {
             init();
         }
 
+        INDArray fullNetworkGradientViewReshape = fullNetworkGradientView.reshape(fullNetworkGradientView.length());
         INDArray blockGradViewArray;
         if (externalGradient) {
-            blockGradViewArray = fullNetworkGradientView.get(NDArrayIndex.interval(0,0,true),
+            blockGradViewArray = fullNetworkGradientViewReshape.get(
                             NDArrayIndex.interval(paramOffsetStart, paramOffsetEnd));
         } else {
             blockGradViewArray = gradientView;

@@ -41,13 +41,13 @@ import java.util.*;
 public class SDValue {
 
 
-    private static Map<INDArray,SDValue> values = new LinkedHashMap<>();
+    private static Map<INDArray,SDValue> values = new IdentityHashMap<>();
     private static Map<Collection<INDArray>,SDValue> listValues = new LinkedHashMap<>();
 
 
     private static Map<Map<String,INDArray>,SDValue> dictValues = new LinkedHashMap<>();
 
-   
+
 
     private SDValueType sdValueType;
     private INDArray tensorValue;

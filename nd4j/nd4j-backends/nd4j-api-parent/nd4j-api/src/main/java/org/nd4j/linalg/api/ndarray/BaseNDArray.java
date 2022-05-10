@@ -4186,12 +4186,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         long[] outShape = new long[outRank];
         long[] outStrides = new long[outRank];
         long offset = offset();                     //Start with existing offset if view
-
+        long startingOffset = offset;
         int outIdx = 0;     //Axis number counter for output array
         int inIdx = 0;      //Axis number counter for input array
         for( int i = 0; i < indexes.length; i++) {
-            if(i > 0 && offset >= length() || inIdx >= rank()) {
-                if(offset >= length())
+            if(startingOffset < length() &&  i > 0 && offset >= length() || inIdx >= rank()) {
+                if(startingOffset < length() &&  offset >= length())
                     return Nd4j.empty();
                 else {
                     //more indices to process but we've exhausted this list
@@ -4233,7 +4233,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                             ", indices: " + Arrays.toString(indexes));
                 }
                 long stride = ii.stride();
-                long length = (endInc - start /stride) + 1;
+                long length = (endInc - start)/stride + 1;
 
                 offset += ii.offset() * stride(inIdx);
                 outShape[outIdx] = length;

@@ -314,7 +314,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @param reverse the matrix to reverse
      * @return the reversed matrix
      */
-    
+
     @Override
     public INDArray reverse(INDArray reverse) {
         // FIXME: native method should be used instead
@@ -961,11 +961,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public INDArray hstack(@NonNull INDArray... arrs) {
         int firstRank = arrs[0].rank();
         Preconditions.checkState(firstRank > 0 && firstRank <= 2, "Only rank 1 and 2 arrays may be horizontally stacked; first input has rank %ndRank shape %nhShape", arrs[0], arrs[0]);
-        for( int i=1; i<arrs.length; i++ ){
+        for( int i = 1; i < arrs.length; i++) {
             Preconditions.checkState(firstRank == arrs[i].rank(), "Array ranks must be equal for horizontal stacking, arrs[0].rank=%s, arrs[%s].rank=%s",
                     arrs[0].rank(), i, arrs[i].rank());
         }
-        if(firstRank == 1){
+        if(firstRank == 1) {
             return Nd4j.concat(0, arrs);
         } else {
             return Nd4j.concat(1, arrs);
