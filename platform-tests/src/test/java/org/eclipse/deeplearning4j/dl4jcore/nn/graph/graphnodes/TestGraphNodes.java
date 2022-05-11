@@ -177,16 +177,16 @@ public class TestGraphNodes extends BaseDL4JTest {
         subset.setInputs(in);
         out = subset.doForward(false, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(in.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 7, true), NDArrayIndex.all(),
-                        NDArrayIndex.all()), out);
+                NDArrayIndex.all()), out);
 
         subset.setEpsilon(out);
         backward = subset.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond()[0];
         assertEquals(Nd4j.zeros(5, 4, 3, 3), backward.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 3, true),
-                        NDArrayIndex.all(), NDArrayIndex.all()));
+                NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(out, backward.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 7, true), NDArrayIndex.all(),
-                        NDArrayIndex.all()));
+                NDArrayIndex.all()));
         assertEquals(Nd4j.zeros(5, 2, 3, 3), backward.get(NDArrayIndex.all(), NDArrayIndex.interval(8, 9, true),
-                        NDArrayIndex.all(), NDArrayIndex.all()));
+                NDArrayIndex.all(), NDArrayIndex.all()));
     }
 
 
@@ -194,9 +194,9 @@ public class TestGraphNodes extends BaseDL4JTest {
     public void testLastTimeStepVertex() {
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
-                        .addVertex("lastTS", new LastTimeStepVertex("in"), "in")
-                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build(), "lastTS").setOutputs("out")
-                        .build();
+                .addVertex("lastTS", new LastTimeStepVertex("in"), "in")
+                .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build(), "lastTS").setOutputs("out")
+                .build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -217,7 +217,7 @@ public class TestGraphNodes extends BaseDL4JTest {
         INDArray eps = pair.getSecond()[0];
         assertArrayEquals(in.shape(), eps.shape());
         assertEquals(Nd4j.zeros(3, 5, 5),
-                        eps.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 4, true)));
+                eps.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 4, true)));
         assertEquals(expOut, eps.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(5)));
 
         //Second: test with input mask array
@@ -245,11 +245,11 @@ public class TestGraphNodes extends BaseDL4JTest {
     public void testDuplicateToTimeSeriesVertex() {
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder()
-                        .addInputs("in2d", "in3d")
-                        .addVertex("duplicateTS", new DuplicateToTimeSeriesVertex("in3d"), "in2d")
-                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build(), "duplicateTS")
-                        .addLayer("out3d", new RnnOutputLayer.Builder().nIn(1).nOut(1).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build(), "in3d")
-                        .setOutputs("out", "out3d").build();
+                .addInputs("in2d", "in3d")
+                .addVertex("duplicateTS", new DuplicateToTimeSeriesVertex("in3d"), "in2d")
+                .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build(), "duplicateTS")
+                .addLayer("out3d", new RnnOutputLayer.Builder().nIn(1).nOut(1).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build(), "in3d")
+                .setOutputs("out", "out3d").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -315,19 +315,19 @@ public class TestGraphNodes extends BaseDL4JTest {
 
         INDArray l = Nd4j.rand(5, 5);
         MultiDataSet ds = new org.nd4j.linalg.dataset.MultiDataSet(new INDArray[] {in1, in2}, new INDArray[] {l, l},
-                        null, null);
+                null, null);
 
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in1", "in2")
-                        .addVertex("stack", new org.deeplearning4j.nn.conf.graph.StackVertex(), "in1", "in2")
-                        .addLayer("1", new EmbeddingLayer.Builder().nIn(5).nOut(5).build(), "stack")
-                        .addVertex("unstack1", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 2), "1")
-                        .addVertex("unstack2", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 2), "1")
-                        .addLayer("out1", new OutputLayer.Builder().activation(Activation.TANH)
-                                        .lossFunction(LossFunctions.LossFunction.L2).nIn(5).nOut(5).build(), "unstack1")
-                        .addLayer("out2", new OutputLayer.Builder().activation(Activation.TANH)
-                                        .lossFunction(LossFunctions.LossFunction.L2).nIn(5).nOut(5).build(), "unstack2")
-                        .setOutputs("out1", "out2").build();
+                .addVertex("stack", new org.deeplearning4j.nn.conf.graph.StackVertex(), "in1", "in2")
+                .addLayer("1", new EmbeddingLayer.Builder().nIn(5).nOut(5).build(), "stack")
+                .addVertex("unstack1", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 2), "1")
+                .addVertex("unstack2", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 2), "1")
+                .addLayer("out1", new OutputLayer.Builder().activation(Activation.TANH)
+                        .lossFunction(LossFunctions.LossFunction.L2).nIn(5).nOut(5).build(), "unstack1")
+                .addLayer("out2", new OutputLayer.Builder().activation(Activation.TANH)
+                        .lossFunction(LossFunctions.LossFunction.L2).nIn(5).nOut(5).build(), "unstack2")
+                .setOutputs("out1", "out2").build();
 
         ComputationGraph g = new ComputationGraph(conf);
         g.init();
@@ -354,7 +354,7 @@ public class TestGraphNodes extends BaseDL4JTest {
 
         stack.setInputs(in0, in1, in2);
         Pair<INDArray, MaskState> p =
-                        stack.feedForwardMaskArrays(new INDArray[] {mask0, mask1, mask2}, MaskState.Active, 5);
+                stack.feedForwardMaskArrays(new INDArray[] {mask0, mask1, mask2}, MaskState.Active, 5);
         assertArrayEquals(new long[] {15, 7}, p.getFirst().shape());
         assertEquals(MaskState.Active, p.getSecond());
 
@@ -389,11 +389,11 @@ public class TestGraphNodes extends BaseDL4JTest {
         assertEquals(in2, f2.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 7)));
 
         Pair<INDArray, MaskState> p0 =
-                        unstack0.feedForwardMaskArrays(new INDArray[] {p.getFirst()}, MaskState.Active, 5);
+                unstack0.feedForwardMaskArrays(new INDArray[] {p.getFirst()}, MaskState.Active, 5);
         Pair<INDArray, MaskState> p1 =
-                        unstack1.feedForwardMaskArrays(new INDArray[] {p.getFirst()}, MaskState.Active, 5);
+                unstack1.feedForwardMaskArrays(new INDArray[] {p.getFirst()}, MaskState.Active, 5);
         Pair<INDArray, MaskState> p2 =
-                        unstack2.feedForwardMaskArrays(new INDArray[] {p.getFirst()}, MaskState.Active, 5);
+                unstack2.feedForwardMaskArrays(new INDArray[] {p.getFirst()}, MaskState.Active, 5);
 
         assertEquals(mask0, p0.getFirst().get(NDArrayIndex.all(), NDArrayIndex.interval(0, 5)));
         assertEquals(mask1, p1.getFirst().get(NDArrayIndex.all(), NDArrayIndex.interval(0, 6)));
@@ -448,11 +448,11 @@ public class TestGraphNodes extends BaseDL4JTest {
         out2 = unstack2.doForward(false, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(in.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()),
-                        out0);
+                out0);
         assertEquals(in.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()),
-                        out1);
+                out1);
         assertEquals(in.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()),
-                        out2);
+                out2);
 
         unstack0.setEpsilon(out0);
         unstack1.setEpsilon(out1);
@@ -461,24 +461,24 @@ public class TestGraphNodes extends BaseDL4JTest {
         backward1 = unstack1.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond()[0];
         backward2 = unstack2.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond()[0];
         assertEquals(out0, backward0.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.all()));
+                NDArrayIndex.all()));
         assertEquals(Nd4j.zeros(5, 10, 3, 3), backward0.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(),
-                        NDArrayIndex.all(), NDArrayIndex.all()));
+                NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(Nd4j.zeros(5, 10, 3, 3), backward0.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all(),
-                        NDArrayIndex.all(), NDArrayIndex.all()));
+                NDArrayIndex.all(), NDArrayIndex.all()));
 
         assertEquals(Nd4j.zeros(5, 10, 3, 3), backward1.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(),
-                        NDArrayIndex.all(), NDArrayIndex.all()));
+                NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(out1, backward1.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.all()));
+                NDArrayIndex.all()));
         assertEquals(Nd4j.zeros(5, 10, 3, 3), backward1.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all()));
 
         assertEquals(Nd4j.zeros(5, 10, 3, 3), backward2.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(),
-                        NDArrayIndex.all(), NDArrayIndex.all()));
+                NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(Nd4j.zeros(5, 10, 3, 3), backward2.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(),
-                        NDArrayIndex.all(), NDArrayIndex.all()));
+                NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(out2, backward2.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.all()));
+                NDArrayIndex.all()));
     }
 
     @Test
@@ -545,18 +545,18 @@ public class TestGraphNodes extends BaseDL4JTest {
     public void testJSON() {
         //The config here is non-sense, but that doesn't matter for config -> json -> config test
         ComputationGraphConfiguration conf =
-                        new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
-                                        .addVertex("v1", new ElementWiseVertex(ElementWiseVertex.Op.Add), "in")
-                                        .addVertex("v2", new org.deeplearning4j.nn.conf.graph.MergeVertex(), "in", "in")
-                                        .addVertex("v3", new PreprocessorVertex(
-                                                        new CnnToFeedForwardPreProcessor(1, 2, 1)), "in")
-                                        .addVertex("v4", new org.deeplearning4j.nn.conf.graph.SubsetVertex(0, 1), "in")
-                                        .addVertex("v5", new DuplicateToTimeSeriesVertex("in"), "in")
-                                        .addVertex("v6", new LastTimeStepVertex("in"), "in")
-                                        .addVertex("v7", new org.deeplearning4j.nn.conf.graph.StackVertex(), "in")
-                                        .addVertex("v8", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 1), "in")
-                                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build(), "in")
-                                        .setOutputs("out", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8").build();
+                new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
+                        .addVertex("v1", new ElementWiseVertex(ElementWiseVertex.Op.Add), "in")
+                        .addVertex("v2", new org.deeplearning4j.nn.conf.graph.MergeVertex(), "in", "in")
+                        .addVertex("v3", new PreprocessorVertex(
+                                new CnnToFeedForwardPreProcessor(1, 2, 1)), "in")
+                        .addVertex("v4", new org.deeplearning4j.nn.conf.graph.SubsetVertex(0, 1), "in")
+                        .addVertex("v5", new DuplicateToTimeSeriesVertex("in"), "in")
+                        .addVertex("v6", new LastTimeStepVertex("in"), "in")
+                        .addVertex("v7", new org.deeplearning4j.nn.conf.graph.StackVertex(), "in")
+                        .addVertex("v8", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 1), "in")
+                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build(), "in")
+                        .setOutputs("out", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8").build();
 
         String json = conf.toJson();
         ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);

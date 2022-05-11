@@ -51,7 +51,7 @@ public class AMSGrad implements IUpdater {
                         DEFAULT_AMSGRAD_EPSILON);
     }
 
-    public AMSGrad(double learningRate){
+    public AMSGrad(double learningRate) {
         this(learningRate, null, DEFAULT_AMSGRAD_BETA1_MEAN_DECAY, DEFAULT_AMSGRAD_BETA2_VAR_DECAY, DEFAULT_AMSGRAD_EPSILON);
     }
 
@@ -83,9 +83,10 @@ public class AMSGrad implements IUpdater {
     @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         AMSGradUpdater u = new AMSGradUpdater(this);
+        viewArray = viewArray.reshape(viewArray.length());
         long[] gradientShape = viewArray.shape();
         gradientShape = Arrays.copyOf(gradientShape, gradientShape.length);
-        gradientShape[1] /= 3;
+        gradientShape[0] /= 3;
         u.setStateViewArray(viewArray, gradientShape, viewArray.ordering(), initializeViewArray);
         return u;
     }

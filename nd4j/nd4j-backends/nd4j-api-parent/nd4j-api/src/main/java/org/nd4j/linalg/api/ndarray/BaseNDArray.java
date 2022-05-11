@@ -4137,7 +4137,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         //initialize upon use passing in the array where necessary when not initialized
         for(int i = 0; i < indexes.length; i++) {
             if(!indexes[i].initialized()) {
-                indexes[i].init(this,indexes[i].offset(),(int) indexes[i].end());
+                indexes[i].init(this,indexes[i].offset(),(int) i);
             }
         }
 
@@ -4193,7 +4193,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if(startingOffset < length() &&  i > 0 && offset >= length() || inIdx >= rank()) {
                 if(startingOffset < length() &&  offset >= length())
                     return Nd4j.empty();
-                else {
+                else if(indexes.length > 1) {
                     //more indices to process but we've exhausted this list
                     //use the offset we have and process further indices
                     //recursively
@@ -4556,9 +4556,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public long size(int dimension) {
-        if (dimension < 0)
+        if (dimension < 0 && jvmShapeInfo.rank > 0)
             dimension += jvmShapeInfo.rank;
-
+        if(dimension < 0)
+            dimension = 0;
         if (isScalar()) {
             if (dimension == 0 || dimension == 1 || dimension < 0)
                 return length();

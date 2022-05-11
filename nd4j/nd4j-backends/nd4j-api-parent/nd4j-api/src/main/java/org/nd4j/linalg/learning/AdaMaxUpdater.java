@@ -107,6 +107,6 @@ public class AdaMaxUpdater implements GradientUpdater<AdaMax> {
         double b2 = config.getBeta2();
         double eps = config.getEpsilon();
 
-        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.AdaMaxUpdater(gradient, u, m, lr, b1, b2, eps, iteration));
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.AdaMaxUpdater(gradient.reshape(u.shape()), u, m, lr, b1, b2, eps, iteration));
     }
 }

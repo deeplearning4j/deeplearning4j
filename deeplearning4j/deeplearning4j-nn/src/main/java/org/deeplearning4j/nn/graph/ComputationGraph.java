@@ -524,7 +524,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         boolean initializeParams;
         if (parameters != null) {
-            if (!parameters.isRowVectorOrScalar())
+            if (numParams > 0 && !parameters.isRowVectorOrScalar())
                 throw new IllegalArgumentException("Invalid parameters: should be a row vector");
             if (parameters.length() != numParams)
                 throw new IllegalArgumentException("Invalid parameters: expected length " + numParams + ", got length "
@@ -548,6 +548,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (initializeParams) {
             Nd4j.getRandom().setSeed(conf().getSeed());
         }
+
+        if(flattenedParams == null)
+            flattenedParams = Nd4j.zeros(DataType.FLOAT,0);
 
         INDArray flattenedParamsReshape = flattenedParams.reshape(flattenedParams.length());
         //Given the topological ordering: work out the subset of the parameters array used for each layer
@@ -781,6 +784,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             if(numParams > 0) {
                 flattenedGradients = Nd4j.create(flattenedParams.dataType(), 1, numParams);
             }
+
+            if(flattenedGradients == null)
+                flattenedGradients = Nd4j.zeros(DataType.FLOAT,0);
 
             INDArray flattenedGradientsReshape = flattenedGradients.reshape(flattenedGradients.length());
             //Given the topological ordering: work out the subset of the gradient array used for each layer, and set it
@@ -3306,6 +3312,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     @Override
     public INDArray params() {
+        if(flattenedParams == null)
+            return Nd4j.zeros(DataType.FLOAT);
+
+        if(flattenedParams.rank() > 1)
+            return flattenedParams.reshape(flattenedParams.length());
         return flattenedParams;
     }
 

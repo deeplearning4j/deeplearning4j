@@ -673,7 +673,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             //Create parameters array, if required
             boolean initializeParams;
             if (parameters != null) {
-                if (!parameters.isRowVectorOrScalar())
+                if (parameters.length() > 0 && !parameters.isRowVectorOrScalar())
                     throw new IllegalArgumentException("Invalid parameters: should be a row vector");
                 if (parameters.length() != paramLength)
                     throw new IllegalArgumentException("Invalid parameters: expected length " + paramLength
@@ -685,7 +685,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     flattenedParams = parameters;
 
                 initializeParams = false;
-            } else if(paramLength > 0){
+            } else if(paramLength > 0) {
                 flattenedParams = Nd4j.create(netDtype, 1, paramLength);
                 initializeParams = true;
             } else {
@@ -694,12 +694,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 initializeParams = false;
             }
 
+            INDArray flattenedParamsReshape = null;
+            if(flattenedParams != null) {
+                flattenedParamsReshape = flattenedParams.reshape(flattenedParams.length());
+            }
+
             //Set RNG seed, for repeatability between initializations when set
             if (initializeParams) {
                 Nd4j.getRandom().setSeed(getDefaultConfiguration().getSeed());
             }
 
-            INDArray flattenedParamsReshape = flattenedParams.reshape(flattenedParams.length());
             // construct multi-layer
             long paramCountSoFar = 0;
             for (int i = 0; i < nLayers; i++) {
@@ -1545,6 +1549,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     @Override
     public INDArray params() {
+        if(flattenedParams == null)
+            return Nd4j.zeros(DataType.FLOAT);
         if(flattenedParams.rank() > 1)
             return flattenedParams.reshape(flattenedParams.length());
         return flattenedParams;

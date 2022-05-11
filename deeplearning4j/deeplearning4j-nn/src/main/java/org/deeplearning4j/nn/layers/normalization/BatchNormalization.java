@@ -346,7 +346,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             vari.muli(vari);
 
             double decay = layerConf().getDecay();
-            INDArray varip1 = vari.mul(decay).addi(batchVar.mul(1-decay));
+            INDArray varip1 = vari.mul(decay).addi(batchVar.mul(1 - decay).reshape(vari.shape()));
             Nd4j.getExecutioner().exec(new DivOp(vari, varip1, dGlobalLog10StdView));
             Transforms.log(dGlobalLog10StdView, false);
             dGlobalLog10StdView.muli(ONE_ON_2LOGE_10);

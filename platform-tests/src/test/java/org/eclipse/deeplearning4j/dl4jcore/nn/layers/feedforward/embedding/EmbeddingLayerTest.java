@@ -75,7 +75,7 @@ class EmbeddingLayerTest extends BaseDL4JTest {
             INDArray bias = l0.getParam(DefaultParamInitializer.BIAS_KEY);
             assertArrayEquals(new long[] { 10, 5 }, weights.shape());
             if (hasBias) {
-                assertArrayEquals(new long[] { 1, 5 }, bias.shape());
+                assertArrayEquals(new long[] {  5 }, bias.shape());
             }
         }
     }
@@ -99,7 +99,7 @@ class EmbeddingLayerTest extends BaseDL4JTest {
             INDArray bias = l0.getParam(DefaultParamInitializer.BIAS_KEY);
             assertArrayEquals(new long[] { 10, 5 }, weights.shape());
             if (hasBias) {
-                assertArrayEquals(new long[] { 1, 5 }, bias.shape());
+                assertArrayEquals(new long[] {  5 }, bias.shape());
             }
         }
     }

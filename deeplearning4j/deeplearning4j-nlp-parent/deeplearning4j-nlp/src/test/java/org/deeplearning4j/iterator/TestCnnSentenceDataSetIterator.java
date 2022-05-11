@@ -134,7 +134,7 @@ public class TestCnnSentenceDataSetIterator extends BaseDL4JTest {
 
                 INDArray s1F = dsi.loadSingleSentence(sentences.get(0));
                 INDArray s2F = dsi.loadSingleSentence(sentences.get(1));
-                INDArray sub1 = ds.getFeatures().get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.all(),
+                INDArray sub1 = ds.getFeatures().get(NDArrayIndex.all(),
                         NDArrayIndex.all(), NDArrayIndex.all());
                 INDArray sub2;
                 if (alongHeight) {

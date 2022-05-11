@@ -104,6 +104,6 @@ public class NadamUpdater implements GradientUpdater<Nadam> {
         double learningRate = config.getLearningRate(iteration, epoch);
         double epsilon = config.getEpsilon();
 
-        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.NadamUpdater(gradient, v, m, learningRate, beta1, beta2, epsilon, iteration));
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.NadamUpdater(gradient.reshape(v.shape()), v, m, learningRate, beta1, beta2, epsilon, iteration));
     }
 }

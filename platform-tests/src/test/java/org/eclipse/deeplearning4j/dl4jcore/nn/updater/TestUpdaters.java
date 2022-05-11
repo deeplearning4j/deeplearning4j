@@ -1050,17 +1050,17 @@ public class TestUpdaters extends BaseDL4JTest {
 
         INDArray viewReshape = view.reshape(view.length());
         INDArray expView1 = viewReshape.get(interval(0, 10*9 + 9 + 2*9));
-        assertEquals(expView1, l.get(0));
+        assertEquals(expView1.reshape(l.get(0).shape()), l.get(0));
 
         long start2 = (10 * 9 + 9 + 2 * 9) + 2 * 9;
         long length2 = 9 * 8 + 8 + 2*8;
         INDArray expView2 = viewReshape.get(interval(start2, start2 + length2));
-        assertEquals(expView2, l.get(1));
+        assertEquals(expView2.reshape(l.get(1).shape()), l.get(1));
 
         long start3 = start2 + length2 + 2*  8;
         long length3 = 8 * 7 + 7;
         INDArray expView3 = viewReshape.get(interval(start3, start3 + length3));
-        assertEquals(expView3, l.get(2));
+        assertEquals(expView3.reshape(l.get(2).shape()), l.get(2));
     }
 
     @Test
@@ -1106,16 +1106,16 @@ public class TestUpdaters extends BaseDL4JTest {
         view.assign(Nd4j.linspace(1, view.length(), view.length(), Nd4j.dataType()));
         INDArray viewReshape = view.reshape(view.length());
         INDArray expView1 = viewReshape.get(interval(0, 2 * 6));
-        assertEquals(expView1, l.get(0));
+        assertEquals(expView1.reshape(l.get(0).shape()), l.get(0));
 
-        long start2 = 2*6 + 2*6;
-        long length2 = 6*5*2*2 + 5 + 2*5;
+        long start2 = 2 * 6 + 2 * 6;
+        long length2 = 6 * 5 * 2 * 2 + 5 + 2 * 5;
         INDArray expView2 = viewReshape.get( interval(start2, start2 + length2));
-        assertEquals(expView2, l.get(1));
+        assertEquals(expView2.reshape(l.get(1).shape()), l.get(1));
 
-        long start3 = start2 + length2 + 2*5;
-        long length3 = 5 * 4* 2 * 2 + 4 + 2*4;
+        long start3 = start2 + length2 + 2 * 5;
+        long length3 = 5 * 4 * 2 * 2 + 4 + 2 * 4;
         INDArray expView3 = viewReshape.get(interval(start3, start3 + length3));
-        assertEquals(expView3, l.get(2));
+        assertEquals(expView3.reshape(l.get(2).shape()), l.get(2));
     }
 }

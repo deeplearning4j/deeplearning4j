@@ -199,7 +199,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
         graph.setParams(arr);
         params = graph.params();
-        assertEquals(arr, params);
+        assertEquals(arr.reshape(params.shape()), params);
 
         //Number of inputs and outputs:
         assertEquals(1, graph.getNumInputArrays());
@@ -766,7 +766,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
             INDArray gradient = sGrad.gradient().reshape(sGrad.gradient().length());
             int nParamsDense = 10 * 10 + 10;
-            assertEquals(gradient.get(NDArrayIndex.interval(0, nParamsDense)),
+            assertEquals(gradient.get(NDArrayIndex.interval(0, nParamsDense)).reshape(extErrorGrad.gradient().shape()),
                     extErrorGrad.gradient());
 
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -892,11 +892,11 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         INDArray actualParams = net.params().castTo(Nd4j.defaultFloatingPointType());
 
         // Confirm params
-        assertEquals(Nd4j.ones(1, 43), actualParams);
+        assertEquals(Nd4j.ones( 43), actualParams);
 
         net.update(expectedGradient);
         actualParams = net.params();
-        assertEquals(Nd4j.ones(1, 43).addi(1), actualParams);
+        assertEquals(Nd4j.ones( 43).addi(1), actualParams);
     }
 
 
@@ -1897,9 +1897,9 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         assertEquals(Nd4j.linspace(1, 100, 100).reshape('f', 10, 10), p0w);
 
         INDArray p1b = cg.getParam("layer_one_b");
-        assertEquals(Nd4j.linspace(211, 220, 10).reshape(1,10), p1b);
+        assertEquals(Nd4j.linspace(211, 220, 10).reshape(10), p1b);
 
-        INDArray newP1b = Nd4j.valueArrayOf(new long[]{1,10}, -1.0);
+        INDArray newP1b = Nd4j.valueArrayOf(new long[]{10}, -1.0);
         cg.setParam("layer_one_b", newP1b);
 
         assertEquals(newP1b, p1b);
@@ -2097,7 +2097,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
         //Expect new updater state to look like:
         //[m0w, m0b][v0w,v0b], [m1w, m1b, m2w, m2b][v1w, v1b, v2w, v2b]
-        INDArray exp = Nd4j.concat(1, m0w, m0b, v0w, v0b,
+        INDArray exp = Nd4j.concat(0, m0w, m0b, v0w, v0b,
                 m1w, m1b, m2w, m2b, v1w, v1b, v2w, v2b);
 
         INDArray act = cg.getUpdater().getUpdaterStateViewArray();
@@ -2108,7 +2108,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
         //And set layer 1 LR:
         cg.setLearningRate("1", 0.2);
-        exp = Nd4j.concat(1, m0w, m0b, v0w, v0b,
+        exp = Nd4j.concat(0, m0w, m0b, v0w, v0b,
                 m1w, m1b, v1w, v1b,
                 m2w, m2b, v2w, v2b);
         assertEquals(exp, cg.getUpdater().getStateViewArray());
@@ -2118,7 +2118,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         cg.setLearningRate("1", lr);
         cg.setLearningRate("0", lr);
 
-        exp = Nd4j.concat(1, m0w, m0b, m1w, m1b, m2w, m2b, v0w, v0b, v1w, v1b, v2w, v2b);
+        exp = Nd4j.concat(0, m0w, m0b, m1w, m1b, m2w, m2b, v0w, v0b, v1w, v1b, v2w, v2b);
         assertEquals(exp, cg.getUpdater().getStateViewArray());
 
 

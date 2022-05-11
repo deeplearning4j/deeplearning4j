@@ -104,6 +104,6 @@ public class AdaDeltaUpdater implements GradientUpdater<AdaDelta> {
         //Note: negative is applied in the DL4J step function: params -= update rather than params += update
         //Accumulate gradients: E[delta x^2]_t = rho * E[delta x^2]_{t-1} + (1-rho)* (delta x_t)^2
 
-        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.AdaDeltaUpdater(gradient, msg, msdx, rho, epsilon));
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.AdaDeltaUpdater(gradient.reshape(msdx.shape()), msg, msdx, rho, epsilon));
     }
 }

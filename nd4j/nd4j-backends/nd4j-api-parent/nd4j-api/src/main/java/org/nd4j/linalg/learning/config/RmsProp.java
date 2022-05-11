@@ -59,9 +59,9 @@ public class RmsProp implements IUpdater {
     }
 
     private RmsProp(@JsonProperty("learningRate") double learningRate,
-                   @JsonProperty("learningRateSchedule") ISchedule learningRateSchedule,
-                   @JsonProperty("rmsDecay") double rmsDecay,
-                   @JsonProperty("epsilon") double epsilon){
+                    @JsonProperty("learningRateSchedule") ISchedule learningRateSchedule,
+                    @JsonProperty("rmsDecay") double rmsDecay,
+                    @JsonProperty("epsilon") double epsilon){
         this.learningRate = learningRate;
         this.learningRateSchedule = learningRateSchedule;
         this.rmsDecay = rmsDecay;
@@ -76,6 +76,7 @@ public class RmsProp implements IUpdater {
     @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         RmsPropUpdater u = new RmsPropUpdater(this);
+        viewArray = viewArray.reshape(viewArray.length());
         u.setStateViewArray(viewArray, viewArray.shape(), viewArray.ordering(), initializeViewArray);
         return u;
     }

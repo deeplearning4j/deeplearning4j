@@ -114,7 +114,7 @@ public class TestMultiModelGradientApplication extends BaseDL4JTest {
 
                 //Also: if we apply the gradient using a subi op, we should get the same final params as if we did a fit op
                 // on the original network
-                net2GradUpd.params().subi(g.gradient());
+                net2GradUpd.params().subi(g.gradient().reshape(net2GradUpd.params().shape()));
 
                 net1GradCalc.fit(f, l);
                 assertEquals(net1GradCalc.params(), net2GradUpd.params());
@@ -206,7 +206,7 @@ public class TestMultiModelGradientApplication extends BaseDL4JTest {
 
                 //Also: if we apply the gradient using a subi op, we should get the same final params as if we did a fit op
                 // on the original network
-                net2GradUpd.params().subi(g.gradient());
+                net2GradUpd.params().subi(g.gradient().reshape(net2GradUpd.params().shape()));
 
                 net1GradCalc.fit(new INDArray[] {f}, new INDArray[] {l});
                 assertEquals(net1GradCalc.params(), net2GradUpd.params());

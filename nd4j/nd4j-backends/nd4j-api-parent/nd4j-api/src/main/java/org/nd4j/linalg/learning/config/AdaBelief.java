@@ -32,7 +32,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 /**
- * AdaBelief 
+ * AdaBelief
  * https://arxiv.org/pdf/2010.07468.pdf
  */
 @Data
@@ -55,7 +55,7 @@ public class AdaBelief implements IUpdater {
                         DEFAULT_EPSILON);
     }
 
-    public AdaBelief(double learningRate){
+    public AdaBelief(double learningRate) {
         this(learningRate, null, DEFAULT_BETA1_MEAN_DECAY, DEFAULT_BETA2_VAR_DECAY, DEFAULT_EPSILON);
     }
 
@@ -87,6 +87,7 @@ public class AdaBelief implements IUpdater {
     @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         AdaBeliefUpdater u = new AdaBeliefUpdater(this);
+        viewArray = viewArray.reshape(viewArray.length());
         long[] gradientShape = viewArray.shape();
         gradientShape = Arrays.copyOf(gradientShape, gradientShape.length);
         gradientShape[1] /= 2;

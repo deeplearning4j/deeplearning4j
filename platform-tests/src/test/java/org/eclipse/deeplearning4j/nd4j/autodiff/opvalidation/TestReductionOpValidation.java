@@ -312,7 +312,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
                 case 20:
                     inputArr = Nd4j.rand(minibatch, nOut);
                     name = "shannonEntropy";
-                    loss = sd.math().shannonEntropy("loss", input, 0);
+                    loss = sd.math().shannonEntropy("loss", input, 0,1);
                     double shannonEntropy = inputArr.shannonEntropyNumber().doubleValue();
                     tc.expected(loss, Nd4j.scalar(shannonEntropy));
                     break;

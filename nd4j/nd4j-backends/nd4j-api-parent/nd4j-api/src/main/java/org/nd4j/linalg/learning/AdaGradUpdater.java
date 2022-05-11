@@ -92,6 +92,6 @@ public class AdaGradUpdater implements GradientUpdater<AdaGrad> {
         double learningRate = config.getLearningRate(iteration, epoch);
         double epsilon = config.getEpsilon();
 
-        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.AdaGradUpdater(gradient, historicalGradient, learningRate, epsilon));
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.AdaGradUpdater(gradient, historicalGradient.reshape(gradient.shape()), learningRate, epsilon));
     }
 }
