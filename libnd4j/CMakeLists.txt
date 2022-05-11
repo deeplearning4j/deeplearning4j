@@ -516,8 +516,10 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 add_subdirectory(blas)
 if(SD_BUILD_TESTS)
+    include(CTest)
     # tests are always compiled with all ops included
     set(SD_ALL_OPS true)
+    enable_testing()
     add_subdirectory(tests_cpu)
 endif()
 
