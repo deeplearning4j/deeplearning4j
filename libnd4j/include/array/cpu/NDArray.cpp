@@ -376,14 +376,14 @@ const void* NDArray::specialBufferWithOffset(sd::LongType offset) const { return
 
 ////////////////////////////////////////////////////////////////////////
 void* NDArray::specialBuffer() {
-  if (_buffer->special() == nullptr) return buffer();
+  if (!_buffer->special()) return nullptr;
   // FIXME: this should be fixed once CUDA backend added
   return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
 }
 
 ////////////////////////////////////////////////////////////////////////
 void const* NDArray::specialBuffer() const {
-  if (_buffer->special() == nullptr) return buffer();
+  if (!_buffer->special()) return nullptr;
   // FIXME: this should be fixed once CUDA backend added
   return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
 }
