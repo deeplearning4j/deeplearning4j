@@ -47,7 +47,7 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
     @Override
     public long numParams(NeuralNetConfiguration conf) {
         org.deeplearning4j.nn.conf.layers.BasePretrainNetwork layerConf =
-                        (org.deeplearning4j.nn.conf.layers.BasePretrainNetwork) conf.getLayer();
+                (org.deeplearning4j.nn.conf.layers.BasePretrainNetwork) conf.getLayer();
         return super.numParams(conf) + layerConf.getNIn();
     }
 
@@ -56,13 +56,14 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
         Map<String, INDArray> params = super.init(conf, paramsView, initializeParams);
 
         org.deeplearning4j.nn.conf.layers.BasePretrainNetwork layerConf =
-                        (org.deeplearning4j.nn.conf.layers.BasePretrainNetwork) conf.getLayer();
+                (org.deeplearning4j.nn.conf.layers.BasePretrainNetwork) conf.getLayer();
         val nIn = layerConf.getNIn();
         val nOut = layerConf.getNOut();
         val nWeightParams = nIn * nOut;
 
-        INDArray visibleBiasView = paramsView.get(NDArrayIndex.interval(0,0,true),
-                        NDArrayIndex.interval(nWeightParams + nOut, nWeightParams + nOut + nIn));
+        INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
+        INDArray visibleBiasView = paramsViewReshape.get(
+                NDArrayIndex.interval(nWeightParams + nOut, nWeightParams + nOut + nIn));
         params.put(VISIBLE_BIAS_KEY, createVisibleBias(conf, visibleBiasView, initializeParams));
         conf.addVariable(VISIBLE_BIAS_KEY);
 
@@ -70,9 +71,9 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
     }
 
     protected INDArray createVisibleBias(NeuralNetConfiguration conf, INDArray visibleBiasView,
-                    boolean initializeParameters) {
+                                         boolean initializeParameters) {
         org.deeplearning4j.nn.conf.layers.BasePretrainNetwork layerConf =
-                        (org.deeplearning4j.nn.conf.layers.BasePretrainNetwork) conf.getLayer();
+                (org.deeplearning4j.nn.conf.layers.BasePretrainNetwork) conf.getLayer();
         if (initializeParameters) {
             INDArray ret = Nd4j.valueArrayOf(new long[]{1, layerConf.getNIn()}, layerConf.getVisibleBiasInit());
             visibleBiasView.assign(ret);
@@ -85,14 +86,14 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
         Map<String, INDArray> out = super.getGradientsFromFlattened(conf, gradientView);
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-                        (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+                (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
 
         val nIn = layerConf.getNIn();
         val nOut = layerConf.getNOut();
         val nWeightParams = nIn * nOut;
-
-        INDArray vBiasView = gradientView.get(NDArrayIndex.interval(0,0,true),
-                        NDArrayIndex.interval(nWeightParams + nOut, nWeightParams + nOut + nIn));
+        INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
+        INDArray vBiasView = gradientViewReshape.get(
+                NDArrayIndex.interval(nWeightParams + nOut, nWeightParams + nOut + nIn));
 
         out.put(VISIBLE_BIAS_KEY, vBiasView);
 

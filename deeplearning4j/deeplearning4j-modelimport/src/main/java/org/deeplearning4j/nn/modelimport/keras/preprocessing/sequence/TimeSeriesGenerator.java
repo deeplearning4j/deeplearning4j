@@ -154,7 +154,8 @@ public class TimeSeriesGenerator {
         for (int j = 0; j < rows.rows(); j++) {
             long idx = (long) rows.getDouble(j);
             INDArrayIndex indices = NDArrayIndex.interval(idx - this.length, this.samplingRate, idx);
-            samples.putSlice(j, this.data.get(indices));
+            INDArray slice = this.data.get(indices);
+            samples.putSlice(j, slice);
             INDArrayIndex point = NDArrayIndex.point((long) rows.getDouble(j));
             targets.putSlice(j, this.targets.get(point));
         }

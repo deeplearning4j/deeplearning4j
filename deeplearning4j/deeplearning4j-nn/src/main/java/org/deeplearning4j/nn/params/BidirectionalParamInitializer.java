@@ -107,8 +107,9 @@ public class BidirectionalParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         val n = paramsView.length()/2;
-        INDArray forwardView = paramsView.get(interval(0,0,true), interval(0, n));
-        INDArray backwardView = paramsView.get(interval(0,0,true), interval(n, 2*n));
+        INDArray paramsReshape = paramsView.reshape(paramsView.length());
+        INDArray forwardView = paramsReshape.get(interval(0, n));
+        INDArray backwardView = paramsReshape.get(interval(n, 2*n));
 
         conf.clearVariables();
 
@@ -157,15 +158,17 @@ public class BidirectionalParamInitializer implements ParamInitializer {
 
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
-        val n = gradientView.length()/2;
-        INDArray forwardView = gradientView.get(interval(0,0,true), interval(0, n));
-        INDArray backwardView = gradientView.get(interval(0,0,true), interval(n, 2*n));
+        val n = gradientView.length() / 2;
+
+        INDArray gradientsViewReshape = gradientView.reshape(gradientView.length());
+        INDArray forwardView = gradientsViewReshape.get(interval(0, n));
+        INDArray backwardView = gradientsViewReshape.get(interval(n, 2*n));
 
         Map<String, INDArray> origFwd = underlying.initializer().getGradientsFromFlattened(conf, forwardView);
         Map<String, INDArray> origBwd = underlying.initializer().getGradientsFromFlattened(conf, backwardView);
 
         Map<String,INDArray> out = new LinkedHashMap<>();
-        for( Map.Entry<String, INDArray> e : origFwd.entrySet()){
+        for( Map.Entry<String, INDArray> e : origFwd.entrySet()) {
             out.put(FORWARD_PREFIX + e.getKey(), e.getValue());
         }
         for( Map.Entry<String, INDArray> e : origBwd.entrySet()){

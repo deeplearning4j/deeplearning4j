@@ -424,7 +424,7 @@ public class TestOptimizers extends BaseDL4JTest {
                 scores[0] = m.score(); //Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa, conf, m);
-                opt.getUpdater().setStateViewArray((Layer) m, Nd4j.create(new int[] {1, nParams}, 'c'), true);
+                opt.getUpdater().setStateViewArray((Layer) m, Nd4j.create(new int[] {nParams}, 'c'), true);
                 opt.optimize(LayerWorkspaceMgr.noWorkspaces());
                 m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[i] = m.score();

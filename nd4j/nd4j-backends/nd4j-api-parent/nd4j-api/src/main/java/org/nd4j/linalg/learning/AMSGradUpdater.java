@@ -104,6 +104,6 @@ public class AMSGradUpdater implements GradientUpdater<AMSGrad> {
         //gradient array contains: sqrt(vHat) + eps
         //gradient = alphat * m_t / (sqrt(vHat) + eps)
 
-        Nd4j.exec(new AmsGradUpdater(gradient, v, m, vHat, learningRate, beta1, beta2, epsilon, iteration));
+        Nd4j.exec(new AmsGradUpdater(gradient.reshape(v.shape()), v, m, vHat, learningRate, beta1, beta2, epsilon, iteration));
     }
 }

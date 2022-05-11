@@ -53,9 +53,10 @@ public class AdaDelta implements IUpdater {
     @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         AdaDeltaUpdater u = new AdaDeltaUpdater(this);
+        viewArray = viewArray.reshape(viewArray.length());
         long[] gradientShape = viewArray.shape();
         gradientShape = Arrays.copyOf(gradientShape, gradientShape.length);
-        gradientShape[1] /= 2;
+        gradientShape[0] /= 2;
         u.setStateViewArray(viewArray, gradientShape, viewArray.ordering(), initializeViewArray);
         return u;
     }

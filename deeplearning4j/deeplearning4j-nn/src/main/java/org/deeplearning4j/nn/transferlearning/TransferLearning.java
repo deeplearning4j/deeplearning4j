@@ -61,7 +61,7 @@ public class TransferLearning {
         private boolean prepDone = false;
         private Set<Integer> editedLayers = new HashSet<>();
         private Map<Integer, Triple<Integer, IWeightInit, IWeightInit>> editedLayersMap =
-                        new HashMap<>();
+                new HashMap<>();
         private Map<Integer, Pair<Integer, IWeightInit>> nInEditedMap = new HashMap<>();
         private List<INDArray> editedParams = new ArrayList<>();
         private List<NeuralNetConfiguration> editedConfs = new ArrayList<>();
@@ -220,7 +220,7 @@ public class TransferLearning {
         public Builder nOutReplace(int layerNum, int nOut, IWeightInit scheme, IWeightInit schemeNext) {
             editedLayers.add(layerNum);
             Triple<Integer, IWeightInit, IWeightInit> t =
-                            new Triple<>(nOut, scheme, schemeNext);
+                    new Triple<>(nOut, scheme, schemeNext);
             editedLayersMap.put(layerNum, t);
             return this;
         }
@@ -315,12 +315,12 @@ public class TransferLearning {
             //Issue: fine tune config has .learningRate(x), then I add a layer with .learningRate(y)...
             //We don't want that to be overridden
             NeuralNetConfiguration layerConf =
-                            finetuneConfiguration.appliedNeuralNetConfigurationBuilder().layer(layer).build();
+                    finetuneConfiguration.appliedNeuralNetConfigurationBuilder().layer(layer).build();
 
             val numParams = layer.initializer().numParams(layerConf);
             INDArray params;
             if (numParams > 0) {
-                params = Nd4j.create(origModel.getLayerWiseConfigurations().getDataType(), 1, numParams);
+                params = Nd4j.create(origModel.getLayerWiseConfigurations().getDataType(),  numParams);
                 org.deeplearning4j.nn.api.Layer someLayer = layer.instantiate(layerConf, null, 0, params, true, dataType);
                 appendParams.add(someLayer.params());
                 appendConfs.add(someLayer.conf());
@@ -412,12 +412,12 @@ public class TransferLearning {
                 for (int i = 0; i < editedLayersSorted.length; i++) {
                     int layerNum = editedLayersSorted[i];
                     nOutReplaceBuild(layerNum, editedLayersMap.get(layerNum).getLeft(),
-                                    editedLayersMap.get(layerNum).getMiddle(),
-                                    editedLayersMap.get(layerNum).getRight());
+                            editedLayersMap.get(layerNum).getMiddle(),
+                            editedLayersMap.get(layerNum).getRight());
                 }
             }
 
-            if(!nInEditedMap.isEmpty()){
+            if(!nInEditedMap.isEmpty()) {
                 Integer[] editedLayersSorted = nInEditedMap.keySet().toArray(new Integer[nInEditedMap.size()]);
                 Arrays.sort(editedLayersSorted);
                 for (Integer layerNum : editedLayersSorted) {
@@ -459,16 +459,16 @@ public class TransferLearning {
 
         private void nInReplaceBuild(int layerNum, int nIn, IWeightInit init) {
             Preconditions.checkArgument(layerNum >= 0 && layerNum < editedConfs.size(), "Invalid layer index: must be 0 to " +
-                    "numLayers-1 = %s includive, got %s", editedConfs.size(), layerNum);
+                    "numLayers-1 = %s inclusive, got %s", editedConfs.size(), layerNum);
             NeuralNetConfiguration layerConf = editedConfs.get(layerNum);
             Layer layerImpl = layerConf.getLayer(); //not a clone need to modify nOut in place
-            Preconditions.checkArgument(layerImpl instanceof FeedForwardLayer, "nInReplace can only be applide on FeedForward layers;" +
+            Preconditions.checkArgument(layerImpl instanceof FeedForwardLayer, "nInReplace can only be applied on FeedForward layers;" +
                     "got layer of type %s", layerImpl.getClass().getSimpleName());
             FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
             layerImplF.setWeightInitFn(init);
             layerImplF.setNIn(nIn);
             long numParams = layerImpl.initializer().numParams(layerConf);
-            INDArray params = Nd4j.create(origModel.getLayerWiseConfigurations().getDataType(), 1, numParams);
+            INDArray params = Nd4j.create(origModel.getLayerWiseConfigurations().getDataType(), numParams);
             org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true, dataType);
             editedParams.set(layerNum, someLayer.params());
         }
@@ -486,9 +486,10 @@ public class TransferLearning {
             layerImplF.setWeightInitFn(scheme);
             layerImplF.setNOut(nOut);
             long numParams = layerImpl.initializer().numParams(layerConf);
-            INDArray params = Nd4j.create(origModel.getLayerWiseConfigurations().getDataType(), 1, numParams);
+            INDArray params = Nd4j.create(origModel.getLayerWiseConfigurations().getDataType(),  numParams);
             org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true, dataType);
-            editedParams.set(layerNum, someLayer.params());
+            INDArray params1 = someLayer.params();
+            editedParams.set(layerNum,  params1.reshape(params1.length()));
 
             if (layerNum + 1 < editedConfs.size()) {
                 layerConf = editedConfs.get(layerNum + 1);
@@ -499,9 +500,10 @@ public class TransferLearning {
                     layerImplF.setNIn(nOut);
                     numParams = layerImpl.initializer().numParams(layerConf);
                     if (numParams > 0) {
-                        params = Nd4j.create(origModel.getLayerWiseConfigurations().getDataType(), 1, numParams);
+                        params = Nd4j.create(origModel.getLayerWiseConfigurations().getDataType(),  numParams);
                         someLayer = layerImpl.instantiate(layerConf, null, 0, params, true, dataType);
-                        editedParams.set(layerNum + 1, someLayer.params());
+                        params1 = someLayer.params();
+                        editedParams.set(layerNum + 1, params1.reshape(params1.length()));
                     }
                 }
             }
@@ -542,9 +544,9 @@ public class TransferLearning {
             }
 
             MultiLayerConfiguration conf = new MultiLayerConfiguration.Builder().inputPreProcessors(inputPreProcessors)
-                            .setInputType(this.inputType).confs(allConfs)
-                            .validateOutputLayerConfig(validateOutputLayerConfig == null ? true : validateOutputLayerConfig)
-                            .dataType(origConf.getDataType())
+                    .setInputType(this.inputType).confs(allConfs)
+                    .validateOutputLayerConfig(validateOutputLayerConfig == null ? true : validateOutputLayerConfig)
+                    .dataType(origConf.getDataType())
                     .build();
             if (finetuneConfiguration != null) {
                 finetuneConfiguration.applyToMultiLayerConfiguration(conf);
@@ -586,7 +588,7 @@ public class TransferLearning {
         public GraphBuilder fineTuneConfiguration(FineTuneConfiguration fineTuneConfiguration) {
             this.fineTuneConfiguration = fineTuneConfiguration;
             this.editedConfigBuilder = new ComputationGraphConfiguration.GraphBuilder(origConfig,
-                            fineTuneConfiguration.appliedNeuralNetConfigurationBuilder());
+                    fineTuneConfiguration.appliedNeuralNetConfigurationBuilder());
 
             Map<String, GraphVertex> vertices = this.editedConfigBuilder.getVertices();
             for (Map.Entry<String, GraphVertex> gv : vertices.entrySet()) {
@@ -802,7 +804,7 @@ public class TransferLearning {
                 for (String fanoutVertexName : fanoutVertices) {
                     if (!origGraph.getVertex(fanoutVertexName).hasLayer()) {
                         throw new UnsupportedOperationException(
-                                        "Cannot modify nOut of a layer vertex that feeds non-layer vertices. Use removeVertexKeepConnections followed by addVertex instead");
+                                "Cannot modify nOut of a layer vertex that feeds non-layer vertices. Use removeVertexKeepConnections followed by addVertex instead");
                     }
                     layerConf = origGraph.getLayer(fanoutVertexName).conf();
                     if(!(layerConf.getLayer() instanceof FeedForwardLayer))
@@ -825,7 +827,7 @@ public class TransferLearning {
                 }
             } else {
                 throw new IllegalArgumentException("noutReplace can only be applied to layer vertices. " + layerName
-                                + " is not a layer vertex");
+                        + " is not a layer vertex");
             }
             return this;
         }
@@ -877,7 +879,7 @@ public class TransferLearning {
          * @return
          */
         public GraphBuilder addLayer(String layerName, Layer layer, InputPreProcessor preProcessor,
-                        String... layerInputs) {
+                                     String... layerInputs) {
             initBuilderIfReq();
             editedConfigBuilder.addLayer(layerName, layer, preProcessor, layerInputs);
             editedVertices.add(layerName);
@@ -916,7 +918,7 @@ public class TransferLearning {
                 //So: create an empty finetune config, which won't override anything
                 //but keep the seed
                 fineTuneConfiguration(new FineTuneConfiguration.Builder()
-                                .seed(origConfig.getDefaultConfiguration().getSeed()).build());
+                        .seed(origConfig.getDefaultConfiguration().getSeed()).build());
             }
         }
 

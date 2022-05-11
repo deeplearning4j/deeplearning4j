@@ -51,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class TestLrChanges extends BaseDL4JTest {
 
     @Test
-    public void testChangeLrMLN(){
+    public void testChangeLrMLN() {
         //First: Set LR for a *single* layer and compare vs. equivalent net config
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .activation(Activation.TANH)

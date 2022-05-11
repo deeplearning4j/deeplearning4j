@@ -184,7 +184,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             this.originalBuffer = underlyingBuffer.originalDataBuffer();
 
             // FIXME: please don't remove this comment, since there's probably a bug in current offset() impl,
-            // and this line will change originalOffset accroding to proper offset() impl
+            // and this line will change originalOffset according to proper offset() impl
             // FIXME: raver119@gmail.com
             this.originalOffset = offset; // + underlyingBuffer.originalOffset();
         }
@@ -932,7 +932,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @return
      */
     public static short fromFloat(float v) {
-        return ArrayUtil.fromFloat(v);        
+        return ArrayUtil.fromFloat(v);
     }
 
     @Override

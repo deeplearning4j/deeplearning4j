@@ -70,13 +70,12 @@ public class NadamUpdater implements GradientUpdater<Nadam> {
 
     @Override
     public void setStateViewArray(INDArray viewArray, long[] gradientShape, char gradientOrder, boolean initialize) {
-        if (!viewArray.isRowVector())
-            throw new IllegalArgumentException("Invalid input: expect row vector input");
+        viewArray = viewArray.reshape(viewArray.length());
         if (initialize)
             viewArray.assign(0);
         long length = viewArray.length();
-        this.m = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, length / 2));
-        this.v = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(length / 2, length));
+        this.m = viewArray.get(NDArrayIndex.interval(0, length / 2));
+        this.v = viewArray.get(NDArrayIndex.interval(length / 2, length));
 
         //Reshape to match the expected shape of the input gradient arrays
         this.m = Shape.newShapeNoCopy(this.m, gradientShape, gradientOrder == 'f');
@@ -104,6 +103,6 @@ public class NadamUpdater implements GradientUpdater<Nadam> {
         double learningRate = config.getLearningRate(iteration, epoch);
         double epsilon = config.getEpsilon();
 
-        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.NadamUpdater(gradient, v, m, learningRate, beta1, beta2, epsilon, iteration));
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.NadamUpdater(gradient.reshape(v.shape()), v, m, learningRate, beta1, beta2, epsilon, iteration));
     }
 }

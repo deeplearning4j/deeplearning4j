@@ -163,10 +163,10 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         assertNotNull(biasGradientB);
         assertNotNull(inWeightGradientB);
         assertNotNull(recurrentWeightGradientB);
-        assertArrayEquals(biasGradientF.shape(), new long[] { 1, 4 * lstmNHiddenUnits });
+        assertArrayEquals(biasGradientF.shape(), new long[] { 4 * lstmNHiddenUnits });
         assertArrayEquals(inWeightGradientF.shape(), new long[] { nIn, 4 * lstmNHiddenUnits });
         assertArrayEquals(recurrentWeightGradientF.shape(), new long[] { lstmNHiddenUnits, 4 * lstmNHiddenUnits + 3 });
-        assertArrayEquals(biasGradientB.shape(), new long[] { 1, 4 * lstmNHiddenUnits });
+        assertArrayEquals(biasGradientB.shape(), new long[] {  4 * lstmNHiddenUnits });
         assertArrayEquals(inWeightGradientB.shape(), new long[] { nIn, 4 * lstmNHiddenUnits });
         assertArrayEquals(recurrentWeightGradientB.shape(), new long[] { lstmNHiddenUnits, 4 * lstmNHiddenUnits + 3 });
         assertNotNull(nextEpsilon);

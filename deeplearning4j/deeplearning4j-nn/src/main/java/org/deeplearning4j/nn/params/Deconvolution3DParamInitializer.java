@@ -69,10 +69,10 @@ public class Deconvolution3DParamInitializer extends ConvolutionParamInitializer
 
         Deconvolution3D layerConf = (Deconvolution3D) conf.getLayer();
         val nOut = layerConf.getNOut();
-
+        INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
         if (layer.hasBias()) {
-            INDArray biasView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nOut));
-            INDArray weightView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nOut, numParams(conf)));
+            INDArray biasView = paramsViewReshape.get(NDArrayIndex.interval(0, nOut));
+            INDArray weightView = paramsViewReshape.get( NDArrayIndex.interval(nOut, numParams(conf)));
             params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
             params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
             conf.addVariable(WEIGHT_KEY);
@@ -96,10 +96,11 @@ public class Deconvolution3DParamInitializer extends ConvolutionParamInitializer
         val nOut = layerConf.getNOut();
 
         Map<String, INDArray> out = new LinkedHashMap<>();
+        INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
         if (layerConf.hasBias()) {
-            INDArray biasGradientView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nOut));
+            INDArray biasGradientView = gradientViewReshape.get(NDArrayIndex.interval(0, nOut));
             INDArray weightGradientView =
-                    gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nOut, numParams(conf)))
+                    gradientViewReshape.get(NDArrayIndex.interval(nOut, numParams(conf)))
                             .reshape('c', kernel[0], kernel[1], kernel[2], nOut, nIn);
             out.put(BIAS_KEY, biasGradientView);
             out.put(WEIGHT_KEY, weightGradientView);

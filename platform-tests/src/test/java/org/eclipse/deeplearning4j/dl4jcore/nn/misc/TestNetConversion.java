@@ -49,7 +49,7 @@ public class TestNetConversion extends BaseDL4JTest {
     public void testMlnToCompGraph() {
         Nd4j.getRandom().setSeed(12345);
 
-        for( int i=0; i<3; i++ ){
+        for( int i=0; i < 3; i++) {
             MultiLayerNetwork n;
             switch (i){
                 case 0:
@@ -64,6 +64,7 @@ public class TestNetConversion extends BaseDL4JTest {
                 default:
                     throw new RuntimeException();
             }
+
             INDArray in = (i <= 1 ? Nd4j.rand(new int[]{8, 3, 10, 10}) : Nd4j.rand(new int[]{8, 5, 10}));
             INDArray labels = (i <= 1 ? Nd4j.rand(new int[]{8, 10}) : Nd4j.rand(new int[]{8, 10, 10}));
 
@@ -90,7 +91,9 @@ public class TestNetConversion extends BaseDL4JTest {
             n.fit(in, labels);
             cg.fit(new INDArray[]{in}, new INDArray[]{labels});
 
-            assertEquals(n.params(), cg.params());
+            INDArray params = n.params();
+            INDArray params1 = cg.params();
+            assertEquals(params, params1);
         }
     }
 

@@ -48,8 +48,8 @@ DECLARE_SHAPE_FN(hashcode) {
 
 DECLARE_TYPES(hashcode) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
-      ->setAllowedInputTypes(1, {ALL_INTS})
+      ->setAllowedInputTypes(0, {ANY})
+      ->setAllowedInputTypes(1, {ANY})
       ->setAllowedOutputTypes({sd::DataType::INT64});
 };
 }  // namespace ops

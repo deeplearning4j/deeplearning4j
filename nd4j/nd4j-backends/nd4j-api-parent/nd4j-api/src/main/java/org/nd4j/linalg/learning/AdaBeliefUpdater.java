@@ -102,6 +102,6 @@ public class AdaBeliefUpdater implements GradientUpdater<AdaBelief> {
         double learningRate = config.getLearningRate(iteration, epoch);
         double epsilon = config.getEpsilon();
 
-        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.AdaBeliefUpdater(gradient, s, m, learningRate, beta1, beta2, epsilon, iteration));
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.AdaBeliefUpdater(gradient.reshape(s.shape()), s, m, learningRate, beta1, beta2, epsilon, iteration));
     }
 }

@@ -322,8 +322,8 @@ public class BidirectionalLayer implements RecurrentLayer {
 
         this.gradientView = gradients;
         val n = gradients.length() / 2;
-        INDArray g1 = gradients.get(interval(0, 0, true), interval(0,n));
-        INDArray g2 = gradients.get(interval(0, 0, true), interval(n, 2*n));
+        INDArray g1 = gradients.get(interval(0,n));
+        INDArray g2 = gradients.get(interval(n, 2 * n));
         fwd.setBackpropGradientsViewArray(g1);
         bwd.setBackpropGradientsViewArray(g2);
     }

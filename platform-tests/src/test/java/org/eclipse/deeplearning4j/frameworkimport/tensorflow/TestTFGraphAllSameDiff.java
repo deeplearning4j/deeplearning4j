@@ -57,6 +57,7 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
     public static final String[] IGNORE_REGEXES = new String[]{
             //crashes JVM
+            "lstsq/.*",
             "scatter_nd_sub/unique_idxs/rank3shape_2indices",
 
             "resize_bicubic/float64",

@@ -115,10 +115,11 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
         val nOut = layerConf.getNOut();
 
+        INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
         if(layer.hasBias()){
             //Standard case
-            INDArray biasView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nOut));
-            INDArray weightView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nOut, numParams(conf)));
+            INDArray biasView = paramsViewReshape.get( NDArrayIndex.interval(0, nOut));
+            INDArray weightView = paramsViewReshape.get( NDArrayIndex.interval(nOut, numParams(conf)));
             params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
             params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
             conf.addVariable(WEIGHT_KEY);
@@ -143,20 +144,21 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         val nIn = layerConf.getNIn();
         val nOut = layerConf.getNOut();
 
+        INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
         Map<String, INDArray> out = new LinkedHashMap<>();
         if(layerConf.hasBias()){
             //Standard case
             if(layerConf instanceof Convolution1DLayer) {
-                INDArray biasGradientView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nOut));
+                INDArray biasGradientView = gradientViewReshape.get( NDArrayIndex.interval(0, nOut));
                 INDArray weightGradientView =
-                        gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nOut, numParams(conf)))
+                        gradientViewReshape.get(NDArrayIndex.interval(nOut, numParams(conf)))
                                 .reshape('c', nOut, nIn, kernel[0]);
                 out.put(BIAS_KEY, biasGradientView);
                 out.put(WEIGHT_KEY, weightGradientView);
             } else {
-                INDArray biasGradientView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nOut));
+                INDArray biasGradientView = gradientViewReshape.get( NDArrayIndex.interval(0, nOut));
                 INDArray weightGradientView =
-                        gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nOut, numParams(conf)))
+                        gradientViewReshape.get(NDArrayIndex.interval(nOut, numParams(conf)))
                                 .reshape('c', nOut, nIn, kernel[0], kernel[1]);
                 out.put(BIAS_KEY, biasGradientView);
                 out.put(WEIGHT_KEY, weightGradientView);

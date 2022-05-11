@@ -237,7 +237,7 @@ class Keras2ModelConfigurationTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Embedding LSTM Mask Zero Test")
-    void embeddingLSTMMaskZeroTest() throws Exception {
+    void embeddingLSTMMask12ZeroTest() throws Exception {
         String path = "modelimport/keras/configs/keras2/embedding_lstm_calculator.json";
         try (InputStream is = Resources.asStream(path)) {
             ComputationGraphConfiguration config = new KerasModel().modelBuilder().modelJsonInputStream(is).enforceTrainingConfig(false).buildModel().getComputationGraphConfiguration();

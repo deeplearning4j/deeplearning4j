@@ -110,13 +110,13 @@ public class OCNNParamInitializer extends DefaultParamInitializer {
         val firstLayerWeightLength =  hiddenLayer;
         val secondLayerLength = nIn * hiddenLayer;
         int rLength = 1;
-        INDArray weightView = paramsView.get(point(0),interval(0, firstLayerWeightLength))
+        INDArray weightView = paramsView.get(interval(0, firstLayerWeightLength))
                 .reshape(1,hiddenLayer);
-        INDArray weightsTwoView = paramsView.get(point(0),
+        INDArray weightsTwoView = paramsView.get(
                 NDArrayIndex.interval(firstLayerWeightLength,
                         firstLayerWeightLength + secondLayerLength))
                 .reshape('f',nIn,hiddenLayer);
-        INDArray rView = paramsView.get(point(0),point(paramsView.length() - rLength));
+        INDArray rView = paramsView.get(point(paramsView.length() - rLength));
 
 
         INDArray paramViewPut = createWeightMatrix(conf, weightView, initializeParams);
@@ -142,14 +142,14 @@ public class OCNNParamInitializer extends DefaultParamInitializer {
         val firstLayerWeightLength =  hiddenLayer;
         val secondLayerLength = nIn * hiddenLayer;
 
-        INDArray weightView = gradientView.get(point(0),interval(0, firstLayerWeightLength))
+        INDArray weightView = gradientView.get(interval(0, firstLayerWeightLength))
                 .reshape('f',1,hiddenLayer);
-        INDArray vView = gradientView.get(point(0),
+        INDArray vView = gradientView.get(
                 NDArrayIndex.interval(firstLayerWeightLength,firstLayerWeightLength + secondLayerLength))
                 .reshape('f',nIn,hiddenLayer);
         params.put(W_KEY, weightView);
         params.put(V_KEY,vView);
-        params.put(R_KEY,gradientView.get(point(0),point(gradientView.length() - 1)));
+        params.put(R_KEY,gradientView.get(point(gradientView.length() - 1)));
         return params;
 
     }

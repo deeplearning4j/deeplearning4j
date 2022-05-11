@@ -245,7 +245,8 @@ public class NDArrayStrings {
 //                        sb.append(format(Nd4j.scalar(arr.getDouble(0)),offset,summarize));
 //                    }
                     else {
-                        sb.append(format(arr.slice(i), offset, summarize));
+                        INDArray slice = arr.slice(i);
+                        sb.append(format(slice, offset, summarize));
                     }
                     if (i != nSlices - 1) {
                         if (arr.rank() == 3 && arr.slice(i).isRowVector()) sb.append("]");

@@ -76,6 +76,7 @@ public class AdaGrad implements IUpdater {
 
     @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
+       viewArray = viewArray.reshape(viewArray.length());
         AdaGradUpdater u = new AdaGradUpdater(this);
         u.setStateViewArray(viewArray, viewArray.shape(), viewArray.ordering(), initializeViewArray);
         return u;

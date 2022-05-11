@@ -112,10 +112,11 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
         val nParamsIn = nLast * (4 * nL);
         val nParamsRecurrent = nL * (4 * nL + 3);
         val nBias = 4 * nL;
-        INDArray inputWeightView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nParamsIn));
-        INDArray recurrentWeightView = paramsView.get(NDArrayIndex.interval(0,0,true),
+        INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
+        INDArray inputWeightView = paramsViewReshape.get(NDArrayIndex.interval(0, nParamsIn));
+        INDArray recurrentWeightView = paramsViewReshape.get(
                         NDArrayIndex.interval(nParamsIn, nParamsIn + nParamsRecurrent));
-        INDArray biasView = paramsView.get(NDArrayIndex.interval(0,0,true),
+        INDArray biasView = paramsViewReshape.get(
                         NDArrayIndex.interval(nParamsIn + nParamsRecurrent, nParamsIn + nParamsRecurrent + nBias));
 
         if (initializeParams) {
@@ -135,7 +136,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
                             IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, inputWeightView));
             params.put(RECURRENT_WEIGHT_KEY, rwInit.init(fanIn, fanOut, recurrentWShape,
                             IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, recurrentWeightView));
-            biasView.put(new INDArrayIndex[] {NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nL, 2 * nL)},
+            biasView.put(new INDArrayIndex[] {NDArrayIndex.interval(nL, 2 * nL)},
                             Nd4j.valueArrayOf(new long[]{1, nL}, forgetGateInit)); //Order: input, forget, output, input modulation, i.e., IFOG}
             /*The above line initializes the forget gate biases to specified value.
              * See Sutskever PhD thesis, pg19:
@@ -169,15 +170,16 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
             throw new IllegalStateException(
                             "Expected gradient view of length " + length + ", got length " + gradientView.length());
 
+        INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
         val nParamsIn = nLast * (4 * nL);
         val nParamsRecurrent = nL * (4 * nL + 3);
         val nBias = 4 * nL;
-        INDArray inputWeightGradView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, nParamsIn))
+        INDArray inputWeightGradView = gradientViewReshape.get( NDArrayIndex.interval(0, nParamsIn))
                         .reshape('f', nLast, 4 * nL);
-        INDArray recurrentWeightGradView = gradientView
-                        .get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nParamsIn, nParamsIn + nParamsRecurrent))
+        INDArray recurrentWeightGradView = gradientViewReshape
+                        .get(NDArrayIndex.interval(nParamsIn, nParamsIn + nParamsRecurrent))
                         .reshape('f', nL, 4 * nL + 3);
-        INDArray biasGradView = gradientView.get(NDArrayIndex.interval(0,0,true),
+        INDArray biasGradView = gradientViewReshape.get(
                         NDArrayIndex.interval(nParamsIn + nParamsRecurrent, nParamsIn + nParamsRecurrent + nBias)); //already a row vector
 
         Map<String, INDArray> out = new LinkedHashMap<>();

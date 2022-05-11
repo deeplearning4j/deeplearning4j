@@ -64,7 +64,7 @@ public class SameDiffMSEOutputLayer extends SameDiffOutputLayer {
     @Override
     public void defineParameters(SDLayerParams params) {
         params.addWeightParam("W", nIn, nOut);
-        params.addBiasParam("b", 1, nOut);
+        params.addBiasParam("b",  nOut);
     }
 
     @Override

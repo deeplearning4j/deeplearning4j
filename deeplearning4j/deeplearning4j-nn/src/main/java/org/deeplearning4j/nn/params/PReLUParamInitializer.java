@@ -79,7 +79,7 @@ public class PReLUParamInitializer implements ParamInitializer {
 
     @Override
     public List<String> paramKeys(Layer layer) {
-            return weightKeys(layer);
+        return weightKeys(layer);
     }
 
     @Override
@@ -112,9 +112,10 @@ public class PReLUParamInitializer implements ParamInitializer {
         val length = numParams(conf);
         if (paramsView.length() != length)
             throw new IllegalStateException(
-                            "Expected params view of length " + length + ", got length " + paramsView.length());
+                    "Expected params view of length " + length + ", got length " + paramsView.length());
 
-        INDArray weightView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, length));
+        INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
+        INDArray weightView = paramsViewReshape.get(NDArrayIndex.interval(0, length));
 
         params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
         conf.addVariable(WEIGHT_KEY);
@@ -126,8 +127,9 @@ public class PReLUParamInitializer implements ParamInitializer {
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
 
         val length = numParams(conf);
-        INDArray weightGradientView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, length))
-                        .reshape('f', weightShape);
+        INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
+        INDArray weightGradientView = gradientViewReshape.get(NDArrayIndex.interval(0, length))
+                .reshape('f', weightShape);
         Map<String, INDArray> out = new LinkedHashMap<>();
         out.put(WEIGHT_KEY, weightGradientView);
 
@@ -136,7 +138,7 @@ public class PReLUParamInitializer implements ParamInitializer {
 
 
     protected INDArray createWeightMatrix(NeuralNetConfiguration conf, INDArray weightParamView,
-                    boolean initializeParameters) {
+                                          boolean initializeParameters) {
 
         PReLULayer layerConf = (PReLULayer) conf.getLayer();
         if (initializeParameters) {

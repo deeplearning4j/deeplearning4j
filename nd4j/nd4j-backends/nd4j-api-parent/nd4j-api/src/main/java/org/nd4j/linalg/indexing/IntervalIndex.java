@@ -96,7 +96,7 @@ public class IntervalIndex implements INDArrayIndex {
     @Override
     public void init(INDArray arr, long begin, int dimension) {
         if(begin < 0) {
-            begin +=  arr.size(dimension);
+            begin +=  arr.rank();
         }
 
         this.begin = begin;

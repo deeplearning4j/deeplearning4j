@@ -2621,7 +2621,8 @@ public class Nd4j {
             arr = arr.dup();
 
         arr.shapeInfoDataBuffer().write(dataOutputStream);
-        arr.data().write(dataOutputStream);
+        if(arr.data() != null)
+            arr.data().write(dataOutputStream);
     }
 
     /**
