@@ -986,7 +986,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
 
     @Test
-    public void testDivisionByMinibatch1(){
+    public void testDivisionByMinibatch1() {
         //No batch norm - should be single INDArray equal to flattened gradient view
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -1008,7 +1008,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
         INDArray arr = l.get(0);
         assertEquals(3 * (10 * 10 + 10), arr.length());
-        assertEquals(net.getFlattenedGradients(), arr);
+        assertEquals(net.getFlattenedGradients().reshape(net.getFlattenedGradients().length()), arr);
     }
 
     @Test

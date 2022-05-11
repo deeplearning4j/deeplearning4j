@@ -4560,7 +4560,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             dimension += jvmShapeInfo.rank;
         if(dimension < 0)
             dimension = 0;
-        if (isScalar()) {
+        if (isScalar() || rank() == 0) {
             if (dimension == 0 || dimension == 1 || dimension < 0)
                 return length();
             else

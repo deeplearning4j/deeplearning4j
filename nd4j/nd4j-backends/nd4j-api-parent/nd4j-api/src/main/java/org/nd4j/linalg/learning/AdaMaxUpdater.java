@@ -70,13 +70,12 @@ public class AdaMaxUpdater implements GradientUpdater<AdaMax> {
 
     @Override
     public void setStateViewArray(INDArray viewArray, long[] gradientShape, char gradientOrder, boolean initialize) {
-        if (!viewArray.isRowVector())
-            throw new IllegalArgumentException("Invalid input: expect row vector input");
+       viewArray = viewArray.reshape(viewArray.length());
         if (initialize)
             viewArray.assign(0);
         long length = viewArray.length();
-        this.m = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, length / 2));
-        this.u = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(length / 2, length));
+        this.m = viewArray.get(NDArrayIndex.interval(0, length / 2));
+        this.u = viewArray.get(NDArrayIndex.interval(length / 2, length));
 
         //Reshape to match the expected shape of the input gradient arrays
         this.m = Shape.newShapeNoCopy(this.m, gradientShape, gradientOrder == 'f');

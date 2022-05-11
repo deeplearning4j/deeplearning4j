@@ -686,7 +686,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                 initializeParams = false;
             } else if(paramLength > 0) {
-                flattenedParams = Nd4j.create(netDtype, 1, paramLength);
+                flattenedParams = Nd4j.create(netDtype,  paramLength);
                 initializeParams = true;
             } else {
                 //Edge case: 0 params in network
