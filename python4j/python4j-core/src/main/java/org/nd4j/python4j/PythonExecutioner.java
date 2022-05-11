@@ -70,7 +70,7 @@ public class PythonExecutioner {
         init();
     }
 
-    private static synchronized void init() {
+    public static synchronized void init() {
         if (init.get()) {
             return;
         }
