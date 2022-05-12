@@ -156,7 +156,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public void update(INDArray gradient, String paramType) {
-        setParam(paramType, getParam(paramType).addi(gradient));
+        setParam(paramType, getParam(paramType).addi(gradient.reshape(getParam(paramType).shape())));
     }
 
 
@@ -202,6 +202,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         int length = 0;
         for (String s : parameterList)
             length += getParam(s).length();
+        params = params.reshape(params.length());
         if (params.length() != length)
             throw new IllegalArgumentException("Unable to set parameters: must be of length " + length
                     + ", got params of length " + params.length() + " - " + layerId());
@@ -209,7 +210,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         Set<String> paramKeySet = this.params.keySet();
         for (String s : paramKeySet) {
             INDArray param = getParam(s);
-            INDArray get = params.get(NDArrayIndex.point(0), NDArrayIndex.interval(idx, idx + param.length()));
+            INDArray get = params.get(NDArrayIndex.interval(idx, idx + param.length()));
             if (param.length() != get.length())
                 throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length()
                         + " but was " + get.length() + " - " + layerId());

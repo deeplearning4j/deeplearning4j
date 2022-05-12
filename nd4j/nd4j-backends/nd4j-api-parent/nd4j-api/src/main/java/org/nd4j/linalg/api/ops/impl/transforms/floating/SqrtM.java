@@ -39,7 +39,8 @@ public class SqrtM extends DynamicCustomOp {
         super(null, sameDiff, args);
     }
 
-
+    public SqrtM() {
+    }
 
     public SqrtM(INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, int[] iArguments) {
         super(null, inputs, outputs, tArguments, iArguments);

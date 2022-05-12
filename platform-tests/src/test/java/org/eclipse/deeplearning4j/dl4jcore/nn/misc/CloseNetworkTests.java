@@ -85,16 +85,16 @@ public class CloseNetworkTests extends BaseDL4JTest {
                 }
 
                 net.close();
-
-                assertTrue(net.params().wasClosed());
-                if(train) {
-                    assertTrue(net.getGradientsViewArray().wasClosed());
-                    Updater u = net.getUpdater(false);
-                    assertTrue(u.getStateViewArray().wasClosed());
-                }
-
                 //Make sure we don't get crashes etc when trying to use after closing
                 try {
+                    assertTrue(net.params().wasClosed());
+                    if(train) {
+                        assertTrue(net.getGradientsViewArray().wasClosed());
+                        Updater u = net.getUpdater(false);
+                        assertTrue(u.getStateViewArray().wasClosed());
+                    }
+
+
                     net.output(f);
                 } catch (IllegalStateException e) {
                     String msg = e.getMessage();
@@ -133,16 +133,16 @@ public class CloseNetworkTests extends BaseDL4JTest {
                 }
 
                 net.close();
-
-                assertTrue(net.params().wasClosed());
-                if(train) {
-                    assertTrue(net.getGradientsViewArray().wasClosed());
-                    Updater u = net.getUpdater(false);
-                    assertTrue(u.getStateViewArray().wasClosed());
-                }
-
                 //Make sure we don't get crashes etc when trying to use after closing
                 try {
+                    assertTrue(net.params().wasClosed());
+                    if(train) {
+                        assertTrue(net.getGradientsViewArray().wasClosed());
+                        Updater u = net.getUpdater(false);
+                        assertTrue(u.getStateViewArray().wasClosed());
+                    }
+
+
                     net.output(f);
                 } catch (IllegalStateException e) {
                     String msg = e.getMessage();

@@ -51,11 +51,11 @@ public class Nadam implements IUpdater {
                         DEFAULT_NADAM_EPSILON);
     }
 
-    public Nadam(double learningRate){
+    public Nadam(double learningRate) {
         this(learningRate, null, DEFAULT_NADAM_BETA1_MEAN_DECAY, DEFAULT_NADAM_BETA2_VAR_DECAY, DEFAULT_NADAM_EPSILON);
     }
 
-    public Nadam(ISchedule learningRateSchedule){
+    public Nadam(ISchedule learningRateSchedule) {
         this(Double.NaN, learningRateSchedule, DEFAULT_NADAM_BETA1_MEAN_DECAY, DEFAULT_NADAM_BETA2_VAR_DECAY, DEFAULT_NADAM_EPSILON);
     }
 
@@ -83,9 +83,10 @@ public class Nadam implements IUpdater {
     @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         NadamUpdater u = new NadamUpdater(this);
+        viewArray = viewArray.reshape(viewArray.length());
         long[] gradientShape = viewArray.shape();
         gradientShape = Arrays.copyOf(gradientShape, gradientShape.length);
-        gradientShape[1] /= 2;
+        gradientShape[0] /= 2;
         u.setStateViewArray(viewArray, gradientShape, viewArray.ordering(), initializeViewArray);
         return u;
     }

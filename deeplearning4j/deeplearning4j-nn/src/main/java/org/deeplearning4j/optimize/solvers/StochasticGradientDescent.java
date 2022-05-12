@@ -41,7 +41,7 @@ public class StochasticGradientDescent extends BaseOptimizer {
 
 
     public StochasticGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<TrainingListener> trainingListeners, Model model) {
+                                     Collection<TrainingListener> trainingListeners, Model model) {
         super(conf, stepFunction, trainingListeners, model);
     }
 
@@ -63,7 +63,8 @@ public class StochasticGradientDescent extends BaseOptimizer {
         Gradient gradient = pair.getFirst();
 
         INDArray params = model.params();
-
+        INDArray fullGrad = gradient.gradient();
+        fullGrad = fullGrad.reshape(fullGrad.length());
         // if optimizer has GradientsAccumulator defined - go for it
         if (accumulator != null) {
             // we're propagating current update
@@ -78,17 +79,17 @@ public class StochasticGradientDescent extends BaseOptimizer {
                 epochNum = ((ComputationGraph) model).getEpochCount();
             }
 
-            accumulator.storeUpdate(gradient.gradient(), iterationNum, epochNum);
+            accumulator.storeUpdate(fullGrad, iterationNum, epochNum);
 
             // and getting (possible) pending update from accumulator
             //INDArray pendingUpdate = accumulator.getUpdate();
             //stepFunction.step(params, pendingUpdate);
-            accumulator.applyUpdate(stepFunction, params, gradient.gradient(), true);
+            accumulator.applyUpdate(stepFunction, params, fullGrad, true);
 
             // if there's no update available - just go on then
         } else {
             // if accumulator isn't used - we just to for direct updates application
-            stepFunction.step(params, gradient.gradient());
+            stepFunction.step(params, fullGrad);
         }
 
         //Note: model.params() is always in-place for MultiLayerNetwork and ComputationGraph, hence no setParams is necessary there

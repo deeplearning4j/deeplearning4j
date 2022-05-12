@@ -28,6 +28,8 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.List;
 
 public class Eig extends DynamicCustomOp {
+    public Eig() {
+    }
 
     public Eig(SameDiff sameDiff, SDVariable arg) {
         super(sameDiff, arg);

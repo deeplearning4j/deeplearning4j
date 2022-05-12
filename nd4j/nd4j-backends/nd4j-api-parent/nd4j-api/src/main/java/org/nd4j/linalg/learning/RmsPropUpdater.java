@@ -82,6 +82,6 @@ public class RmsPropUpdater implements GradientUpdater<RmsProp> {
         double epsilon = config.getEpsilon();
 
         // lr * gradient / (sqrt(cache) + 1e-8)
-        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.RmsPropUpdater(gradient, lastGradient, learningRate, rmsDecay, epsilon));
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.RmsPropUpdater(gradient.reshape(lastGradient.shape()), lastGradient, learningRate, rmsDecay, epsilon));
     }
 }

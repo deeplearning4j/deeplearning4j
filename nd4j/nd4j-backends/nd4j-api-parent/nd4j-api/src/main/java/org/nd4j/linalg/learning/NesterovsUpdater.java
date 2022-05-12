@@ -93,6 +93,6 @@ public class NesterovsUpdater implements GradientUpdater<Nesterovs> {
         //i.e., we do params -= updatedGradient, not params += updatedGradient
         //v = mu * v - lr * gradient
 
-        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.NesterovsUpdater(gradient, v, learningRate, momentum));
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.NesterovsUpdater(gradient.reshape(v.shape()), v, learningRate, momentum));
     }
 }

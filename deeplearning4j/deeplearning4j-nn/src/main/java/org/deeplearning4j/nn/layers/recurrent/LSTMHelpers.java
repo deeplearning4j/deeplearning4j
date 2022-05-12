@@ -688,14 +688,16 @@ public class LSTMHelpers {
                     rwGradientsOO.addi(dLdwOO);
                 }
 
+                INDArray bGradientsOutReshape = bGradientsOut.reshape(bGradientsOut.length());
                 if (iTimeIndex > 0 || prevHiddenUnitActivation != null) { //For time == 0 && no prevMemCellState, equivalent to muli by 0
                     //Note that prevHiddenUnitActivation may be non-null at t=0 for TBPTT
-                    bGradientsOut.addi(deltaifogNext.sum(true, 0));
+                    bGradientsOut.addi(deltaifogNext.sum(true, 0).reshape(bGradientsOut.shape()));
                 } else {
-                    bGradientsOut.get(interval(0,0,true), interval(0, hiddenLayerSize)).addi(deltai.sum(true, 0));
+                    INDArray bGradientsOutReshapeAdd = bGradientsOutReshape.get(interval(0, hiddenLayerSize));
+                    bGradientsOutReshapeAdd.addi(deltai.sum(true, 0).reshape(bGradientsOutReshapeAdd.shape()));
                     INDArray ogBiasToAdd = deltaifogNext.get(all(), interval(2 * hiddenLayerSize, 4 * hiddenLayerSize)).sum(true, 0);
-                    INDArray ogBiasGrad = bGradientsOut.get(interval(0,0,true), interval(2 * hiddenLayerSize, 4 * hiddenLayerSize));
-                    ogBiasGrad.addi(ogBiasToAdd);
+                    INDArray ogBiasGrad = bGradientsOutReshape.get(interval(2 * hiddenLayerSize, 4 * hiddenLayerSize));
+                    ogBiasGrad.addi(ogBiasToAdd.reshape(ogBiasGrad.shape()));
                 }
 
                 //Calculate epsilonNext - i.e., equiv. to what would be (w^L*(d^(Lt))^T)^T in a normal network

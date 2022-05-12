@@ -62,9 +62,9 @@ class DenseTest extends BaseDL4JTest {
         DenseLayer build = new DenseLayer.Builder().nIn(1).nOut(3).biasInit(1).build();
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(build).build();
         long numParams = conf.getLayer().initializer().numParams(conf);
-        INDArray params = Nd4j.create(1, numParams);
+        INDArray params = Nd4j.create(numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true, Nd4j.defaultFloatingPointType());
-        assertEquals(1, layer.getParam("b").size(0));
+        assertEquals(3, layer.getParam("b").size(0));
     }
 
     @Test

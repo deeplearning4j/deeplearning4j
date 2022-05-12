@@ -65,9 +65,10 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
         val bEndOffset = wEndOffset + nOut;
         val cEndOffset = bEndOffset + nIn * nOut;
 
-        INDArray weightView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, wEndOffset));
-        INDArray biasView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(wEndOffset, bEndOffset));
-        INDArray centerLossView = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(bEndOffset, cEndOffset))
+        INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
+        INDArray weightView = paramsViewReshape.get( NDArrayIndex.interval(0, wEndOffset));
+        INDArray biasView = paramsViewReshape.get(NDArrayIndex.interval(wEndOffset, bEndOffset));
+        INDArray centerLossView = paramsViewReshape.get( NDArrayIndex.interval(bEndOffset, cEndOffset))
                         .reshape('c', nOut, nIn);
 
         params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
@@ -92,10 +93,11 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
         val bEndOffset = wEndOffset + nOut;
         val cEndOffset = bEndOffset + nIn * nOut; // note: numClasses == nOut
 
-        INDArray weightGradientView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, wEndOffset))
+        INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
+        INDArray weightGradientView = gradientViewReshape.get(NDArrayIndex.interval(0, wEndOffset))
                         .reshape('f', nIn, nOut);
-        INDArray biasView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(wEndOffset, bEndOffset)); //Already a row vector
-        INDArray centerLossView = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(bEndOffset, cEndOffset))
+        INDArray biasView = gradientViewReshape.get( NDArrayIndex.interval(wEndOffset, bEndOffset)); //Already a row vector
+        INDArray centerLossView = gradientViewReshape.get(NDArrayIndex.interval(bEndOffset, cEndOffset))
                         .reshape('c', nOut, nIn);
 
         Map<String, INDArray> out = new LinkedHashMap<>();

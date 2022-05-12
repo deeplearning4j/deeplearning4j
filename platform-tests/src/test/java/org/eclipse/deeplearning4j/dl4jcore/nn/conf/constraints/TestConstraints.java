@@ -65,10 +65,10 @@ public class TestConstraints extends BaseDL4JTest {
     public void testLayerRecurrentConstraints() throws Exception {
 
         LayerConstraint[] constraints = new LayerConstraint[]{
-                new MaxNormConstraint(0.5, 1),
-                new MinMaxNormConstraint(0.3, 0.4, 1.0, 1),
+                new MaxNormConstraint(0.5, 0),
+                new MinMaxNormConstraint(0.3, 0.4, 1.0, 0),
                 new NonNegativeConstraint(),
-                new UnitNormConstraint(1)
+                new UnitNormConstraint(0)
         };
 
         for (LayerConstraint lc : constraints) {
@@ -97,16 +97,16 @@ public class TestConstraints extends BaseDL4JTest {
 
 
             if (lc instanceof MaxNormConstraint) {
-                assertTrue(RW0.norm2(1).maxNumber().doubleValue() <= 0.5);
+                assertTrue(RW0.norm2(0).maxNumber().doubleValue() <= 0.5);
 
             } else if (lc instanceof MinMaxNormConstraint) {
-                assertTrue(RW0.norm2(1).minNumber().doubleValue() >= 0.3);
-                assertTrue(RW0.norm2(1).maxNumber().doubleValue() <= 0.4);
+                assertTrue(RW0.norm2(0).minNumber().doubleValue() >= 0.3);
+                assertTrue(RW0.norm2(0).maxNumber().doubleValue() <= 0.4);
             } else if (lc instanceof NonNegativeConstraint) {
                 assertTrue(RW0.minNumber().doubleValue() >= 0.0);
             } else if (lc instanceof UnitNormConstraint) {
-                assertEquals(1.0, RW0.norm2(1).minNumber().doubleValue(), 1e-6);
-                assertEquals(1.0, RW0.norm2(1).maxNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, RW0.norm2(0).minNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, RW0.norm2(0).maxNumber().doubleValue(), 1e-6);
             }
 
             TestUtils.testModelSerialization(net);
@@ -117,10 +117,10 @@ public class TestConstraints extends BaseDL4JTest {
     public void testLayerBiasConstraints() throws Exception {
 
         LayerConstraint[] constraints = new LayerConstraint[]{
-                new MaxNormConstraint(0.5, 1),
-                new MinMaxNormConstraint(0.3, 0.4, 1.0, 1),
+                new MaxNormConstraint(0.5, -1),
+                new MinMaxNormConstraint(0.3, 0.4, 1.0, -1),
                 new NonNegativeConstraint(),
-                new UnitNormConstraint(1)
+                new UnitNormConstraint(-1)
         };
 
         for (LayerConstraint lc : constraints) {
@@ -150,16 +150,16 @@ public class TestConstraints extends BaseDL4JTest {
 
 
             if (lc instanceof MaxNormConstraint) {
-                assertTrue(b0.norm2(1).maxNumber().doubleValue() <= 0.5);
+                assertTrue(b0.norm2(0).maxNumber().doubleValue() <= 0.5);
 
             } else if (lc instanceof MinMaxNormConstraint) {
-                assertTrue(b0.norm2(1).minNumber().doubleValue() >= 0.3);
-                assertTrue(b0.norm2(1).maxNumber().doubleValue() <= 0.4);
+                assertTrue(b0.norm2(0).minNumber().doubleValue() >= 0.3);
+                assertTrue(b0.norm2(0).maxNumber().doubleValue() <= 0.4);
             } else if (lc instanceof NonNegativeConstraint) {
                 assertTrue(b0.minNumber().doubleValue() >= 0.0);
             } else if (lc instanceof UnitNormConstraint) {
-                assertEquals(1.0, b0.norm2(1).minNumber().doubleValue(), 1e-6);
-                assertEquals(1.0, b0.norm2(1).maxNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, b0.norm2(0).minNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, b0.norm2(0).maxNumber().doubleValue(), 1e-6);
             }
 
             TestUtils.testModelSerialization(net);
@@ -170,8 +170,8 @@ public class TestConstraints extends BaseDL4JTest {
     public void testLayerWeightsConstraints() throws Exception {
 
         LayerConstraint[] constraints = new LayerConstraint[]{
-                new MaxNormConstraint(0.5, 1),
-                new MinMaxNormConstraint(0.3, 0.4, 1.0, 1),
+                new MaxNormConstraint(0.5, 0),
+                new MinMaxNormConstraint(0.3, 0.4, 1.0, 0),
                 new NonNegativeConstraint(),
                 new UnitNormConstraint(1)
         };
@@ -202,11 +202,11 @@ public class TestConstraints extends BaseDL4JTest {
 
 
             if (lc instanceof MaxNormConstraint) {
-                assertTrue(w0.norm2(1).maxNumber().doubleValue() <= 0.5);
+                assertTrue(w0.norm2(0).maxNumber().doubleValue() <= 0.5);
 
             } else if (lc instanceof MinMaxNormConstraint) {
-                assertTrue(w0.norm2(1).minNumber().doubleValue() >= 0.3);
-                assertTrue(w0.norm2(1).maxNumber().doubleValue() <= 0.4);
+                assertTrue(w0.norm2(0).minNumber().doubleValue() >= 0.3);
+                assertTrue(w0.norm2(0).maxNumber().doubleValue() <= 0.4);
             } else if (lc instanceof NonNegativeConstraint) {
                 assertTrue(w0.minNumber().doubleValue() >= 0.0);
             } else if (lc instanceof UnitNormConstraint) {
@@ -222,10 +222,10 @@ public class TestConstraints extends BaseDL4JTest {
     public void testLayerWeightsAndBiasConstraints() throws Exception {
 
         LayerConstraint[] constraints = new LayerConstraint[]{
-                new MaxNormConstraint(0.5, 1),
-                new MinMaxNormConstraint(0.3, 0.4, 1.0, 1),
+                new MaxNormConstraint(0.5, 0),
+                new MinMaxNormConstraint(0.3, 0.4, 1.0, 0),
                 new NonNegativeConstraint(),
-                new UnitNormConstraint(1)
+                new UnitNormConstraint(0)
         };
 
         for (LayerConstraint lc : constraints) {
@@ -256,22 +256,22 @@ public class TestConstraints extends BaseDL4JTest {
 
 
             if (lc instanceof MaxNormConstraint) {
-                assertTrue(w0.norm2(1).maxNumber().doubleValue() <= 0.5);
-                assertTrue(b0.norm2(1).maxNumber().doubleValue() <= 0.5);
+                assertTrue(w0.norm2(0).maxNumber().doubleValue() <= 0.5);
+                assertTrue(b0.norm2(0).maxNumber().doubleValue() <= 0.5);
 
             } else if (lc instanceof MinMaxNormConstraint) {
-                assertTrue(w0.norm2(1).minNumber().doubleValue() >= 0.3);
-                assertTrue(w0.norm2(1).maxNumber().doubleValue() <= 0.4);
-                assertTrue(b0.norm2(1).minNumber().doubleValue() >= 0.3);
-                assertTrue(b0.norm2(1).maxNumber().doubleValue() <= 0.4);
+                assertTrue(w0.norm2(0).minNumber().doubleValue() >= 0.3);
+                assertTrue(w0.norm2(0).maxNumber().doubleValue() <= 0.4);
+                assertTrue(b0.norm2(0).minNumber().doubleValue() >= 0.3);
+                assertTrue(b0.norm2(0).maxNumber().doubleValue() <= 0.4);
             } else if (lc instanceof NonNegativeConstraint) {
                 assertTrue(w0.minNumber().doubleValue() >= 0.0);
                 assertTrue(b0.minNumber().doubleValue() >= 0.0);
             } else if (lc instanceof UnitNormConstraint) {
-                assertEquals(1.0, w0.norm2(1).minNumber().doubleValue(), 1e-6);
-                assertEquals(1.0, w0.norm2(1).maxNumber().doubleValue(), 1e-6);
-                assertEquals(1.0, b0.norm2(1).minNumber().doubleValue(), 1e-6);
-                assertEquals(1.0, b0.norm2(1).maxNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, w0.norm2(0).minNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, w0.norm2(0).maxNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, b0.norm2(0).minNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, b0.norm2(0).maxNumber().doubleValue(), 1e-6);
             }
 
             TestUtils.testModelSerialization(net);
@@ -283,10 +283,10 @@ public class TestConstraints extends BaseDL4JTest {
     public void testLayerWeightsAndBiasSeparateConstraints() throws Exception {
 
         LayerConstraint[] constraints = new LayerConstraint[]{
-                new MaxNormConstraint(0.5, 1),
-                new MinMaxNormConstraint(0.3, 0.4, 1.0, 1),
+                new MaxNormConstraint(0.5, 0),
+                new MinMaxNormConstraint(0.3, 0.4, 1.0, 0),
                 new NonNegativeConstraint(),
-                new UnitNormConstraint(1)
+                new UnitNormConstraint(0)
         };
 
         for (LayerConstraint lc : constraints) {
@@ -317,22 +317,22 @@ public class TestConstraints extends BaseDL4JTest {
 
 
             if (lc instanceof MaxNormConstraint) {
-                assertTrue(w0.norm2(1).maxNumber().doubleValue() <= 0.5);
-                assertTrue(b0.norm2(1).maxNumber().doubleValue() <= 0.5);
+                assertTrue(w0.norm2(0).maxNumber().doubleValue() <= 0.5);
+                assertTrue(b0.norm2(0).maxNumber().doubleValue() <= 0.5);
 
             } else if (lc instanceof MinMaxNormConstraint) {
-                assertTrue(w0.norm2(1).minNumber().doubleValue() >= 0.3);
-                assertTrue(w0.norm2(1).maxNumber().doubleValue() <= 0.4);
-                assertTrue(b0.norm2(1).minNumber().doubleValue() >= 0.3);
-                assertTrue(b0.norm2(1).maxNumber().doubleValue() <= 0.4);
+                assertTrue(w0.norm2(0).minNumber().doubleValue() >= 0.3);
+                assertTrue(w0.norm2(0).maxNumber().doubleValue() <= 0.4);
+                assertTrue(b0.norm2(0).minNumber().doubleValue() >= 0.3);
+                assertTrue(b0.norm2(0).maxNumber().doubleValue() <= 0.4);
             } else if (lc instanceof NonNegativeConstraint) {
                 assertTrue(w0.minNumber().doubleValue() >= 0.0);
                 assertTrue(b0.minNumber().doubleValue() >= 0.0);
             } else if (lc instanceof UnitNormConstraint) {
-                assertEquals(1.0, w0.norm2(1).minNumber().doubleValue(), 1e-6);
-                assertEquals(1.0, w0.norm2(1).maxNumber().doubleValue(), 1e-6);
-                assertEquals(1.0, b0.norm2(1).minNumber().doubleValue(), 1e-6);
-                assertEquals(1.0, b0.norm2(1).maxNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, w0.norm2(0).minNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, w0.norm2(0).maxNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, b0.norm2(0).minNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, b0.norm2(0).maxNumber().doubleValue(), 1e-6);
             }
 
             TestUtils.testModelSerialization(net);
@@ -343,10 +343,10 @@ public class TestConstraints extends BaseDL4JTest {
     public void testModelConstraints() throws Exception {
 
         LayerConstraint[] constraints = new LayerConstraint[]{
-                new MaxNormConstraint(0.5, 1),
-                new MinMaxNormConstraint(0.3, 0.4, 1.0, 1),
+                new MaxNormConstraint(0.5, 0),
+                new MinMaxNormConstraint(0.3, 0.4, 1.0, 0),
                 new NonNegativeConstraint(),
-                new UnitNormConstraint(1)
+                new UnitNormConstraint(0)
         };
 
         for(LayerConstraint lc : constraints){
@@ -377,20 +377,20 @@ public class TestConstraints extends BaseDL4JTest {
             INDArray w1 = net.getParam("1_W");
 
             if(lc instanceof MaxNormConstraint){
-                assertTrue(w0.norm2(1).maxNumber().doubleValue() <= 0.5 );
-                assertTrue(w1.norm2(1).maxNumber().doubleValue() <= 0.5 );
+                assertTrue(w0.norm2(0).maxNumber().doubleValue() <= 0.5 );
+                assertTrue(w1.norm2(0).maxNumber().doubleValue() <= 0.5 );
             } else if(lc instanceof MinMaxNormConstraint){
-                assertTrue(w0.norm2(1).minNumber().doubleValue() >= 0.3 );
-                assertTrue(w0.norm2(1).maxNumber().doubleValue() <= 0.4 );
-                assertTrue(w1.norm2(1).minNumber().doubleValue() >= 0.3 );
-                assertTrue(w1.norm2(1).maxNumber().doubleValue() <= 0.4 );
-            } else if(lc instanceof NonNegativeConstraint ){
+                assertTrue(w0.norm2(0).minNumber().doubleValue() >= 0.3 );
+                assertTrue(w0.norm2(0).maxNumber().doubleValue() <= 0.4 );
+                assertTrue(w1.norm2(0).minNumber().doubleValue() >= 0.3 );
+                assertTrue(w1.norm2(0).maxNumber().doubleValue() <= 0.4 );
+            } else if(lc instanceof NonNegativeConstraint) {
                 assertTrue(w0.minNumber().doubleValue() >= 0.0 );
-            } else if(lc instanceof UnitNormConstraint ){
-                assertEquals(1.0, w0.norm2(1).minNumber().doubleValue(),  1e-6 );
-                assertEquals(1.0, w0.norm2(1).maxNumber().doubleValue(), 1e-6 );
-                assertEquals(1.0, w1.norm2(1).minNumber().doubleValue(), 1e-6 );
-                assertEquals(1.0, w1.norm2(1).maxNumber().doubleValue(), 1e-6 );
+            } else if(lc instanceof UnitNormConstraint) {
+                assertEquals(1.0, w0.norm2(0).minNumber().doubleValue(),  1e-6 );
+                assertEquals(1.0, w0.norm2(0).maxNumber().doubleValue(), 1e-6 );
+                assertEquals(1.0, w1.norm2(0).minNumber().doubleValue(), 1e-6 );
+                assertEquals(1.0, w1.norm2(0).maxNumber().doubleValue(), 1e-6 );
             }
 
             TestUtils.testModelSerialization(net);
@@ -399,7 +399,7 @@ public class TestConstraints extends BaseDL4JTest {
 
 
     @Test
-    public void testConstraints(){
+    public void testConstraints() {
 
         double learningRate = 0.001;
         int nIn = 10;

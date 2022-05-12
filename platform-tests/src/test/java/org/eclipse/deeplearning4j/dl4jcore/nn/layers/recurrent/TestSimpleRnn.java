@@ -158,6 +158,6 @@ public class TestSimpleRnn extends BaseDL4JTest {
         net.init();
 
         INDArray bArr = net.getParam("0_b");
-        assertEquals(Nd4j.valueArrayOf(new long[]{1,layerSize}, 100.0f), bArr);
+        assertEquals(Nd4j.valueArrayOf(new long[]{layerSize}, 100.0f), bArr);
     }
 }

@@ -121,7 +121,7 @@ public class ShannonEntropy extends BaseReduceFloatOp {
         SDVariable log2x = sameDiff.math.log(arg(),2);
         SDVariable logx = sameDiff.math.log(arg());
         SDVariable xLog2X = arg().mul(log2x);
-        SDVariable sumBp = new SumBp(sameDiff, xLog2X, f1.get(0).neg(), false, dimensions).outputVariable();
+        SDVariable sumBp = new SumBp(sameDiff, xLog2X, f1.get(0).neg(), this.isKeepDims(), dimensions).outputVariable();
         return Collections.singletonList(sumBp.mul(logx.add(1.0)).div(Math.log(2.0)));
     }
 

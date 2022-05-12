@@ -77,7 +77,7 @@ public class UpdaterBlock {
      *                                  and variables in this list <i>must</i> have an identical updater configuration.
      */
     public UpdaterBlock(int paramOffsetStart, int paramOffsetEnd, int updaterViewOffsetStart, int updaterViewOffsetEnd,
-                    List<ParamState> layersAndVariablesInBlock) {
+                        List<ParamState> layersAndVariablesInBlock) {
         this.paramOffsetStart = paramOffsetStart;
         this.paramOffsetEnd = paramOffsetEnd;
         this.updaterViewOffsetStart = updaterViewOffsetStart;
@@ -90,7 +90,7 @@ public class UpdaterBlock {
             ParamState varState = layersAndVariablesInBlock.get(0);
             String varName = varState.getParamName();
             gradientUpdater = varState.getLayer().getConfig().getUpdaterByParam(varName).instantiate(updaterView,
-                            updaterViewRequiresInitialization); //UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getParamName());
+                    updaterViewRequiresInitialization); //UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getParamName());
         }
     }
 
@@ -123,22 +123,23 @@ public class UpdaterBlock {
     }
 
     public void updateExternalGradient(int iteration, int epoch, INDArray fullNetworkGradientView,
-                    INDArray fullNetworkParamsArray) {
+                                       INDArray fullNetworkParamsArray) {
         //Extract the relevant subset from the external network
         update(iteration, epoch, true, fullNetworkGradientView, fullNetworkParamsArray);
     }
 
     private void update(int iteration, int epoch, boolean externalGradient, INDArray fullNetworkGradientView,
-                    INDArray fullNetworkParamsArray) {
+                        INDArray fullNetworkParamsArray) {
         //Initialize the updater, if necessary
         if (gradientUpdater == null) {
             init();
         }
 
+        INDArray fullNetworkGradientViewReshape = fullNetworkGradientView.reshape(fullNetworkGradientView.length());
         INDArray blockGradViewArray;
         if (externalGradient) {
-            blockGradViewArray = fullNetworkGradientView.get(NDArrayIndex.interval(0,0,true),
-                            NDArrayIndex.interval(paramOffsetStart, paramOffsetEnd));
+            blockGradViewArray = fullNetworkGradientViewReshape.get(
+                    NDArrayIndex.interval(paramOffsetStart, paramOffsetEnd));
         } else {
             blockGradViewArray = gradientView;
         }
@@ -158,7 +159,7 @@ public class UpdaterBlock {
         applyRegularizationAllVariables(Regularization.ApplyStep.BEFORE_UPDATER, iteration, epoch, externalGradient, fullNetworkGradientView, fullNetworkParamsArray);
 
         //Apply the updater itself
-        gradientUpdater.applyUpdater(blockGradViewArray, iteration, epoch);
+        gradientUpdater.applyUpdater(blockGradViewArray.reshape(blockGradViewArray.length()), iteration, epoch);
 
         //Post updater regularization: weight decay
         applyRegularizationAllVariables(Regularization.ApplyStep.POST_UPDATER, iteration, epoch, externalGradient, fullNetworkGradientView, fullNetworkParamsArray);
@@ -169,10 +170,12 @@ public class UpdaterBlock {
         for (ParamState p : layersAndVariablesInBlock) {
             INDArray paramView;
             INDArray gradView;
+            if(fullNetworkParamsArray != null)
+                fullNetworkParamsArray = fullNetworkParamsArray.reshape(fullNetworkParamsArray.length());
             if (externalGradient) {
-                paramView = fullNetworkParamsArray.get(NDArrayIndex.point(0),
+                paramView = fullNetworkParamsArray.get(
                         NDArrayIndex.interval(p.getParamOffsetStart(), p.getParamOffsetEnd()));
-                gradView = fullNetworkGradientView.get(NDArrayIndex.point(0),
+                gradView = fullNetworkGradientView.reshape(fullNetworkGradientView.length()).get(
                         NDArrayIndex.interval(p.getParamOffsetStart(), p.getParamOffsetEnd()));
             } else {
                 //Standard case

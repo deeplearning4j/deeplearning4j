@@ -200,7 +200,7 @@ public class NumpyArray extends PythonType<INDArray> {
         }
         ret = Nd4j.create(buff, shape, nd4jStrides, 0, Shape.getOrder(shape, nd4jStrides, 1), dtype);
         Nd4j.getAffinityManager().tagLocation(ret, AffinityManager.Location.HOST);
-        log.debug("Done creating numpy arrray.");
+        log.debug("Done creating numpy array.");
         return ret;
 
 

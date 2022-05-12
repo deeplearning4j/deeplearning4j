@@ -77,16 +77,6 @@ public class PythonGIL implements AutoCloseable {
 
 
     private PythonGIL() {
-        while (acquired.get()) {
-            try {
-                log.debug("Blocking for GIL on thread " + Thread.currentThread().getId());
-                Thread.sleep(100);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-
-        }
-
         log.debug("Acquiring GIL on " + Thread.currentThread().getId());
         acquired.set(true);
         acquiredByMe = true;

@@ -91,6 +91,7 @@ public class Nesterovs implements IUpdater {
     @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         NesterovsUpdater u = new NesterovsUpdater(this);
+        viewArray = viewArray.reshape(viewArray.length());
         u.setStateViewArray(viewArray, viewArray.shape(), viewArray.ordering(), initializeViewArray);
         return u;
     }

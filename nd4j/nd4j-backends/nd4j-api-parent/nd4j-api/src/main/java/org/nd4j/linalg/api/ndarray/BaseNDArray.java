@@ -4137,7 +4137,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         //initialize upon use passing in the array where necessary when not initialized
         for(int i = 0; i < indexes.length; i++) {
             if(!indexes[i].initialized()) {
-                indexes[i].init(this,indexes[i].offset(),(int) indexes[i].end());
+                indexes[i].init(this,indexes[i].offset(),(int) i);
             }
         }
 
@@ -4186,14 +4186,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         long[] outShape = new long[outRank];
         long[] outStrides = new long[outRank];
         long offset = offset();                     //Start with existing offset if view
-
+        long startingOffset = offset;
         int outIdx = 0;     //Axis number counter for output array
         int inIdx = 0;      //Axis number counter for input array
         for( int i = 0; i < indexes.length; i++) {
-            if(i > 0 && offset >= length() || inIdx >= rank()) {
-                if(offset >= length())
+            if(startingOffset < length() &&  i > 0 && offset >= length() || inIdx >= rank()) {
+                if(startingOffset < length() &&  offset >= length())
                     return Nd4j.empty();
-                else {
+                else if(indexes.length > 1) {
                     //more indices to process but we've exhausted this list
                     //use the offset we have and process further indices
                     //recursively
@@ -4233,7 +4233,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                             ", indices: " + Arrays.toString(indexes));
                 }
                 long stride = ii.stride();
-                long length = (endInc - start /stride) + 1;
+                long length = (endInc - start)/stride + 1;
 
                 offset += ii.offset() * stride(inIdx);
                 outShape[outIdx] = length;
@@ -4556,10 +4556,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public long size(int dimension) {
-        if (dimension < 0)
+        if (dimension < 0 && jvmShapeInfo.rank > 0)
             dimension += jvmShapeInfo.rank;
-
-        if (isScalar()) {
+        if(dimension < 0)
+            dimension = 0;
+        if (isScalar() || rank() == 0) {
             if (dimension == 0 || dimension == 1 || dimension < 0)
                 return length();
             else

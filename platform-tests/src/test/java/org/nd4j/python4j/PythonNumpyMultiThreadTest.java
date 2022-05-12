@@ -73,7 +73,7 @@ public class PythonNumpyMultiThreadTest {
     @MethodSource("org.nd4j.python4j.PythonNumpyMultiThreadTest#params")
     @ParameterizedTest
     public void testMultiThreading1(DataType dataType) throws Throwable {
-        final List<Throwable> exceptions = Collections.synchronizedList(new ArrayList<Throwable>());
+        final List<Throwable> exceptions = Collections.synchronizedList(new ArrayList< >());
         Runnable runnable = () -> {
             try (PythonGIL gil = PythonGIL.lock()) {
                 try (PythonGC gc = PythonGC.watch()) {

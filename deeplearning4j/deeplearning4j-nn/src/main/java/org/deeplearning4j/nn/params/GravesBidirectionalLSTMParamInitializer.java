@@ -134,17 +134,18 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
         val rwROffset = iwROffset + nParamsInput;
         val bROffset = rwROffset + nParamsRecurrent;
 
-        INDArray iwF = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, rwFOffset));
-        INDArray rwF = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(rwFOffset, bFOffset));
-        INDArray bF = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(bFOffset, iwROffset));
-        INDArray iwR = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(iwROffset, rwROffset));
-        INDArray rwR = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(rwROffset, bROffset));
-        INDArray bR = paramsView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(bROffset, bROffset + nBias));
+        INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
+        INDArray iwF = paramsViewReshape.get(NDArrayIndex.interval(0, rwFOffset));
+        INDArray rwF = paramsViewReshape.get(NDArrayIndex.interval(rwFOffset, bFOffset));
+        INDArray bF = paramsViewReshape.get(NDArrayIndex.interval(bFOffset, iwROffset));
+        INDArray iwR = paramsViewReshape.get(NDArrayIndex.interval(iwROffset, rwROffset));
+        INDArray rwR = paramsViewReshape.get(NDArrayIndex.interval(rwROffset, bROffset));
+        INDArray bR = paramsViewReshape.get(NDArrayIndex.interval(bROffset, bROffset + nBias));
 
         if (initializeParams) {
-            bF.put(new INDArrayIndex[]{NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nL, 2 * nL)},
+            bF.put(new INDArrayIndex[]{NDArrayIndex.interval(nL, 2 * nL)},
                     Nd4j.ones(1, nL).muli(forgetGateInit)); //Order: input, forget, output, input modulation, i.e., IFOG
-            bR.put(new INDArrayIndex[]{NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(nL, 2 * nL)},
+            bR.put(new INDArrayIndex[]{NDArrayIndex.interval(nL, 2 * nL)},
                     Nd4j.ones(1, nL).muli(forgetGateInit));
         }
         /*The above line initializes the forget gate biases to specified value.
@@ -203,17 +204,17 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
         val iwROffset = bFOffset + nBias;
         val rwROffset = iwROffset + nParamsInput;
         val bROffset = rwROffset + nParamsRecurrent;
-
-        INDArray iwFG = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(0, rwFOffset)).reshape('f', nLast,
+        INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
+        INDArray iwFG = gradientViewReshape.get(NDArrayIndex.interval(0, rwFOffset)).reshape('f', nLast,
                 4 * nL);
-        INDArray rwFG = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(rwFOffset, bFOffset)).reshape('f',
+        INDArray rwFG = gradientViewReshape.get(NDArrayIndex.interval(rwFOffset, bFOffset)).reshape('f',
                 nL, 4 * nL + 3);
-        INDArray bFG = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(bFOffset, iwROffset));
-        INDArray iwRG = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(iwROffset, rwROffset))
+        INDArray bFG = gradientViewReshape.get(NDArrayIndex.interval(bFOffset, iwROffset));
+        INDArray iwRG = gradientViewReshape.get(NDArrayIndex.interval(iwROffset, rwROffset))
                 .reshape('f', nLast, 4 * nL);
-        INDArray rwRG = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(rwROffset, bROffset)).reshape('f',
+        INDArray rwRG = gradientViewReshape.get(NDArrayIndex.interval(rwROffset, bROffset)).reshape('f',
                 nL, 4 * nL + 3);
-        INDArray bRG = gradientView.get(NDArrayIndex.interval(0,0,true), NDArrayIndex.interval(bROffset, bROffset + nBias));
+        INDArray bRG = gradientViewReshape.get(NDArrayIndex.interval(bROffset, bROffset + nBias));
 
         Map<String, INDArray> out = new LinkedHashMap<>();
         out.put(INPUT_WEIGHT_KEY_FORWARDS, iwFG);

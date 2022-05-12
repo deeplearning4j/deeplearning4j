@@ -115,7 +115,7 @@ class GravesLSTMTest extends BaseDL4JTest {
         assertNotNull(biasGradient);
         assertNotNull(inWeightGradient);
         assertNotNull(recurrentWeightGradient);
-        assertArrayEquals(biasGradient.shape(), new long[] { 1, 4 * lstmNHiddenUnits });
+        assertArrayEquals(biasGradient.shape(), new long[] {  4 * lstmNHiddenUnits });
         assertArrayEquals(inWeightGradient.shape(), new long[] { nIn, 4 * lstmNHiddenUnits });
         assertArrayEquals(recurrentWeightGradient.shape(), new long[] { lstmNHiddenUnits, 4 * lstmNHiddenUnits + 3 });
         assertNotNull(nextEpsilon);
@@ -188,7 +188,7 @@ class GravesLSTMTest extends BaseDL4JTest {
         // System.out.println("-----\n" + i);
         // System.out.println(Arrays.toString(activations1.get(i).dup().data().asDouble()));
         // System.out.println(Arrays.toString(activations2.get(i).dup().data().asDouble()));
-        // 
+        //
         // System.out.println(activations1.get(i));
         // System.out.println(activations2.get(i));
         // }

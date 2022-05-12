@@ -139,9 +139,9 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "dilations"
     inputIntName: "dH"
     outputIntName: "dH"
-    inputFloatName: "dilations"
     inputToOutput {
       key: "dH"
       value: "dilations"
@@ -151,6 +151,7 @@ mappings {
       key: "dH"
       transformerArgs {
         name: "dilations"
+        argType: INT64
         argIndex: 6
       }
       transformerArgs {
@@ -164,6 +165,7 @@ mappings {
       key: "dH"
       transformerArgs {
         name: "dilations"
+        argType: INT64
         argIndex: 6
       }
       transformerArgs {
@@ -178,9 +180,9 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "dilations"
     inputIntName: "dW"
     outputIntName: "dW"
-    inputFloatName: "dilations"
     inputToOutput {
       key: "dW"
       value: "dilations"
@@ -191,6 +193,7 @@ mappings {
       transformerArgs {
         name: "dilations"
         int64Value: 1
+        argType: INT64
         argIndex: 7
       }
       transformerArgs {
@@ -205,6 +208,7 @@ mappings {
       transformerArgs {
         name: "dilations"
         int64Value: 1
+        argType: INT64
         argIndex: 7
       }
       transformerArgs {
@@ -220,8 +224,8 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "pads"
+    inputIntName: "pads"
     outputIntName: "pH"
-    inputFloatName: "pads"
     inputToOutput {
       key: "pH"
       value: "pads"
@@ -231,6 +235,8 @@ mappings {
       key: "pH"
       transformerArgs {
         name: "pads"
+        int64Value: 2
+        argType: INT64
         argIndex: 4
       }
       transformerArgs {
@@ -243,6 +249,8 @@ mappings {
       key: "pH"
       transformerArgs {
         name: "pads"
+        int64Value: 2
+        argType: INT64
         argIndex: 4
       }
       transformerArgs {
@@ -257,8 +265,8 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "pads"
+    inputIntName: "pads"
     outputIntName: "pW"
-    inputFloatName: "pads"
     inputToOutput {
       key: "pW"
       value: "pads"
@@ -268,7 +276,8 @@ mappings {
       key: "pW"
       transformerArgs {
         name: "pads"
-        int64Value: 1
+        int64Value: 3
+        argType: INT64
         argIndex: 5
       }
       transformerArgs {
@@ -281,7 +290,8 @@ mappings {
       key: "pW"
       transformerArgs {
         name: "pads"
-        int64Value: 1
+        int64Value: 3
+        argType: INT64
         argIndex: 5
       }
       transformerArgs {
@@ -295,9 +305,9 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "strides"
     inputIntName: "sH"
     outputIntName: "sH"
-    inputFloatName: "strides"
     inputToOutput {
       key: "sH"
       value: "strides"
@@ -307,6 +317,7 @@ mappings {
       key: "sH"
       transformerArgs {
         name: "strides"
+        argType: INT64
         argIndex: 2
       }
       transformerArgs {
@@ -320,6 +331,7 @@ mappings {
       key: "sH"
       transformerArgs {
         name: "strides"
+        argType: INT64
         argIndex: 2
       }
       transformerArgs {
@@ -334,9 +346,9 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "strides"
     inputIntName: "sW"
     outputIntName: "sW"
-    inputFloatName: "strides"
     inputToOutput {
       key: "sW"
       value: "strides"
@@ -347,6 +359,7 @@ mappings {
       transformerArgs {
         name: "strides"
         int64Value: 1
+        argType: INT64
         argIndex: 3
       }
       transformerArgs {
@@ -361,6 +374,7 @@ mappings {
       transformerArgs {
         name: "strides"
         int64Value: 1
+        argType: INT64
         argIndex: 3
       }
       transformerArgs {
@@ -375,8 +389,8 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "kernel_shape"
     outputIntName: "kH"
-    inputFloatName: "kernel_shape"
     inputToOutput {
       key: "kH"
       value: "kernel_shape"
@@ -386,6 +400,7 @@ mappings {
       key: "kH"
       transformerArgs {
         name: "kernel_shape"
+        argType: INT64
       }
     }
     inputFrameworkOpName: "MaxPool"
@@ -393,8 +408,8 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "kernel_shape"
     outputIntName: "kW"
-    inputFloatName: "kernel_shape"
     inputToOutput {
       key: "kW"
       value: "kernel_shape"
@@ -405,6 +420,7 @@ mappings {
       transformerArgs {
         name: "kernel_shape"
         int64Value: 1
+        argType: INT64
         argIndex: 1
       }
     }
@@ -759,9 +775,9 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
-    outputIntName: "flattenDimension"
+    outputIntName: "dimensions"
     inputToOutput {
-      key: "flattenDimension"
+      key: "dimensions"
       value: "axis"
     }
     ruleType: "attribute"
@@ -1348,6 +1364,11 @@ mappings {
 mappings {
   frameworkName: "onnx"
   opName: "noop"
+  inputFrameworkOpName: "SequenceRemove"
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
   inputFrameworkOpName: "Placeholder"
 }
 mappings {
@@ -1483,6 +1504,11 @@ mappings {
     }
     inputFrameworkOpName: "HardSigmoid"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "SequenceInsert"
 }
 mappings {
   frameworkName: "onnx"
@@ -1701,13 +1727,13 @@ mappings {
   rule {
     ruleName: "argdescriptorconstant"
     functionName: "argdescriptorconstant"
-    inputFloatName: "isNCHW"
+    inputIntName: "isNCHW"
     ruleType: "attribute"
     transformerArgs {
       key: "value"
       transformerArgs {
         name: "isNCHW"
-        int64Value: 1
+        argType: INT64
         argIndex: 10
       }
     }
@@ -1722,6 +1748,7 @@ mappings {
       key: "value"
       transformerArgs {
         name: "dH"
+        int64Value: 1
         argType: INT64
         argIndex: 6
       }
@@ -1737,6 +1764,7 @@ mappings {
       key: "value"
       transformerArgs {
         name: "dW"
+        int64Value: 1
         argType: INT64
         argIndex: 7
       }
@@ -1782,8 +1810,9 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "pads"
+    inputIntName: "pH"
     outputIntName: "pH"
-    inputFloatName: "pads"
     inputToOutput {
       key: "pH"
       value: "pads"
@@ -1793,6 +1822,27 @@ mappings {
       key: "pH"
       transformerArgs {
         name: "pads"
+        int64Value: 2
+        argType: INT64
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "pH"
+        argType: INT64
+        argIndex: 4
+      }
+    }
+    transformerArgs {
+      key: "pH"
+      transformerArgs {
+        name: "pads"
+        int64Value: 2
+        argType: INT64
+        argIndex: 4
+      }
+      transformerArgs {
+        name: "pH"
+        argType: INT64
         argIndex: 4
       }
     }
@@ -1801,8 +1851,9 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "pads"
+    inputIntName: "pW"
     outputIntName: "pW"
-    inputFloatName: "pads"
     inputToOutput {
       key: "pW"
       value: "pads"
@@ -1812,7 +1863,27 @@ mappings {
       key: "pW"
       transformerArgs {
         name: "pads"
-        int64Value: 1
+        int64Value: 3
+        argType: INT64
+        argIndex: 5
+      }
+      transformerArgs {
+        name: "pW"
+        argType: INT64
+        argIndex: 5
+      }
+    }
+    transformerArgs {
+      key: "pW"
+      transformerArgs {
+        name: "pads"
+        int64Value: 3
+        argType: INT64
+        argIndex: 5
+      }
+      transformerArgs {
+        name: "pW"
+        argType: INT64
         argIndex: 5
       }
     }
@@ -1821,8 +1892,9 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "strides"
+    inputIntName: "sH"
     outputIntName: "sH"
-    inputFloatName: "strides"
     inputToOutput {
       key: "sH"
       value: "strides"
@@ -1832,6 +1904,27 @@ mappings {
       key: "sH"
       transformerArgs {
         name: "strides"
+        argType: INT64
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "sH"
+        int64Value: 1
+        argType: INT64
+        argIndex: 2
+      }
+    }
+    transformerArgs {
+      key: "sH"
+      transformerArgs {
+        name: "strides"
+        argType: INT64
+        argIndex: 2
+      }
+      transformerArgs {
+        name: "sH"
+        int64Value: 1
+        argType: INT64
         argIndex: 2
       }
     }
@@ -1840,8 +1933,9 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "strides"
+    inputIntName: "sW"
     outputIntName: "sW"
-    inputFloatName: "strides"
     inputToOutput {
       key: "sW"
       value: "strides"
@@ -1852,6 +1946,28 @@ mappings {
       transformerArgs {
         name: "strides"
         int64Value: 1
+        argType: INT64
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "sW"
+        int64Value: 1
+        argType: INT64
+        argIndex: 3
+      }
+    }
+    transformerArgs {
+      key: "sW"
+      transformerArgs {
+        name: "strides"
+        int64Value: 1
+        argType: INT64
+        argIndex: 3
+      }
+      transformerArgs {
+        name: "sW"
+        int64Value: 1
+        argType: INT64
         argIndex: 3
       }
     }
@@ -1860,8 +1976,8 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "kernel_shape"
     outputIntName: "kW"
-    inputFloatName: "kernel_shape"
     inputToOutput {
       key: "kW"
       value: "kernel_shape"
@@ -1872,6 +1988,7 @@ mappings {
       transformerArgs {
         name: "kernel_shape"
         int64Value: 1
+        argType: INT64
         argIndex: 1
       }
     }
@@ -1880,8 +1997,8 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "kernel_shape"
     outputIntName: "kH"
-    inputFloatName: "kernel_shape"
     inputToOutput {
       key: "kH"
       value: "kernel_shape"
@@ -1891,10 +2008,21 @@ mappings {
       key: "kH"
       transformerArgs {
         name: "kernel_shape"
+        argType: INT64
       }
     }
     inputFrameworkOpName: "AveragePool"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "SequenceConstruct"
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "SequenceLength"
 }
 mappings {
   frameworkName: "onnx"
@@ -2210,7 +2338,7 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
-    inputFloatName: "activation_alpha"
+    inputIntName: "activation_alpha"
     outputDoubleName: "gateAlpha"
     inputToOutput {
       key: "gateAlpha"
@@ -2221,6 +2349,7 @@ mappings {
       key: "gateAlpha"
       transformerArgs {
         name: "activation_alpha"
+        argType: INT64
         argIndex: 1
       }
     }
@@ -2229,7 +2358,7 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
-    inputFloatName: "activation_alpha"
+    inputIntName: "activation_alpha"
     outputDoubleName: "cellAlpha"
     inputToOutput {
       key: "cellAlpha"
@@ -2241,6 +2370,7 @@ mappings {
       transformerArgs {
         name: "activation_alpha"
         int64Value: 1
+        argType: INT64
         argIndex: 3
       }
     }
@@ -2249,7 +2379,7 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
-    inputFloatName: "activation_alpha"
+    inputIntName: "activation_alpha"
     outputDoubleName: "outAlpha"
     inputToOutput {
       key: "outAlpha"
@@ -2261,6 +2391,7 @@ mappings {
       transformerArgs {
         name: "activation_alpha"
         int64Value: 2
+        argType: INT64
         argIndex: 5
       }
     }
@@ -2269,7 +2400,7 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
-    inputFloatName: "activation_beta"
+    inputIntName: "activation_beta"
     outputDoubleName: "gateBeta"
     inputToOutput {
       key: "gateBeta"
@@ -2280,6 +2411,7 @@ mappings {
       key: "gateBeta"
       transformerArgs {
         name: "activation_beta"
+        argType: INT64
         argIndex: 2
       }
     }
@@ -2288,7 +2420,7 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
-    inputFloatName: "activation_beta"
+    inputIntName: "activation_beta"
     outputDoubleName: "cellBeta"
     inputToOutput {
       key: "cellBeta"
@@ -2300,6 +2432,7 @@ mappings {
       transformerArgs {
         name: "activation_beta"
         int64Value: 1
+        argType: INT64
         argIndex: 4
       }
     }
@@ -2308,7 +2441,7 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
-    inputFloatName: "activation_beta"
+    inputIntName: "activation_beta"
     outputDoubleName: "outBeta"
     inputToOutput {
       key: "outBeta"
@@ -2320,6 +2453,7 @@ mappings {
       transformerArgs {
         name: "activation_beta"
         int64Value: 2
+        argType: INT64
         argIndex: 6
       }
     }
@@ -4679,9 +4813,9 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "dilations"
     inputIntName: "dH"
     outputIntName: "dH"
-    inputFloatName: "dilations"
     inputToOutput {
       key: "dH"
       value: "dilations"
@@ -4691,6 +4825,7 @@ mappings {
       key: "dH"
       transformerArgs {
         name: "dilations"
+        argType: INT64
         argIndex: 6
       }
       transformerArgs {
@@ -4704,6 +4839,7 @@ mappings {
       key: "dH"
       transformerArgs {
         name: "dilations"
+        argType: INT64
         argIndex: 6
       }
       transformerArgs {
@@ -4718,9 +4854,9 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "dilations"
     inputIntName: "dW"
     outputIntName: "dW"
-    inputFloatName: "dilations"
     inputToOutput {
       key: "dW"
       value: "dilations"
@@ -4731,6 +4867,7 @@ mappings {
       transformerArgs {
         name: "dilations"
         int64Value: 1
+        argType: INT64
         argIndex: 7
       }
       transformerArgs {
@@ -4745,6 +4882,7 @@ mappings {
       transformerArgs {
         name: "dilations"
         int64Value: 1
+        argType: INT64
         argIndex: 7
       }
       transformerArgs {
@@ -4759,9 +4897,9 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "pads"
     inputIntName: "padding"
     outputIntName: "pH"
-    inputFloatName: "pads"
     inputToOutput {
       key: "pH"
       value: "pads"
@@ -4771,6 +4909,7 @@ mappings {
       key: "pH"
       transformerArgs {
         name: "pads"
+        argType: INT64
         argIndex: 4
       }
       transformerArgs {
@@ -4783,6 +4922,7 @@ mappings {
       key: "pH"
       transformerArgs {
         name: "pads"
+        argType: INT64
         argIndex: 4
       }
       transformerArgs {
@@ -4796,9 +4936,9 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "pads"
     inputIntName: "padding"
     outputIntName: "pW"
-    inputFloatName: "pads"
     inputToOutput {
       key: "pW"
       value: "pads"
@@ -4809,6 +4949,7 @@ mappings {
       transformerArgs {
         name: "pads"
         int64Value: 1
+        argType: INT64
         argIndex: 5
       }
       transformerArgs {
@@ -4822,6 +4963,7 @@ mappings {
       transformerArgs {
         name: "pads"
         int64Value: 1
+        argType: INT64
         argIndex: 5
       }
       transformerArgs {
@@ -4836,8 +4978,8 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "strides"
+    inputIntName: "strides"
     outputIntName: "sH"
-    inputFloatName: "strides"
     inputToOutput {
       key: "sH"
       value: "strides"
@@ -4847,6 +4989,7 @@ mappings {
       key: "sH"
       transformerArgs {
         name: "strides"
+        argType: INT64
         argIndex: 2
       }
       transformerArgs {
@@ -4860,6 +5003,7 @@ mappings {
       key: "sH"
       transformerArgs {
         name: "strides"
+        argType: INT64
         argIndex: 2
       }
       transformerArgs {
@@ -4875,8 +5019,8 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "strides"
+    inputIntName: "strides"
     outputIntName: "sW"
-    inputFloatName: "strides"
     inputToOutput {
       key: "sW"
       value: "strides"
@@ -4887,6 +5031,7 @@ mappings {
       transformerArgs {
         name: "strides"
         int64Value: 1
+        argType: INT64
         argIndex: 3
       }
       transformerArgs {
@@ -4901,6 +5046,7 @@ mappings {
       transformerArgs {
         name: "strides"
         int64Value: 1
+        argType: INT64
         argIndex: 3
       }
       transformerArgs {
@@ -4915,8 +5061,8 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "kernel_shape"
     outputIntName: "kW"
-    inputFloatName: "kernel_shape"
     inputToOutput {
       key: "kW"
       value: "kernel_shape"
@@ -4927,6 +5073,7 @@ mappings {
       transformerArgs {
         name: "kernel_shape"
         int64Value: 1
+        argType: INT64
       }
     }
     inputFrameworkOpName: "Conv"
@@ -4934,8 +5081,8 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "kernel_shape"
     outputIntName: "kH"
-    inputFloatName: "kernel_shape"
     inputToOutput {
       key: "kH"
       value: "kernel_shape"
@@ -4945,6 +5092,7 @@ mappings {
       key: "kH"
       transformerArgs {
         name: "kernel_shape"
+        argType: INT64
         argIndex: 1
       }
     }
@@ -4981,6 +5129,11 @@ mappings {
     }
     inputFrameworkOpName: "Softsign"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "SequenceErase"
 }
 mappings {
   frameworkName: "onnx"
@@ -5052,6 +5205,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "ResizeNearest"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "lrn"
   inputFrameworkOpName: "LRN"
   rule {
@@ -5113,123 +5271,8 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "batchnorm"
+  opName: "noop"
   inputFrameworkOpName: "BatchNormalization"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "X"
-    inputTensorName: "input_mean"
-    inputTensorName: "input_var"
-    inputTensorName: "scale"
-    outputTensorName: "input"
-    outputTensorName: "mean"
-    outputTensorName: "variance"
-    outputTensorName: "gamma"
-    inputToOutput {
-      key: "gamma"
-      value: "scale"
-    }
-    inputToOutput {
-      key: "input"
-      value: "X"
-    }
-    inputToOutput {
-      key: "mean"
-      value: "input_mean"
-    }
-    inputToOutput {
-      key: "variance"
-      value: "input_var"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "BatchNormalization"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputFloatName: "epsilon"
-    outputDoubleName: "epsilon"
-    inputToOutput {
-      key: "epsilon"
-      value: "epsilon"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "BatchNormalization"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "inPlace"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "inPlace"
-        argType: BOOL
-      }
-    }
-    inputFrameworkOpName: "BatchNormalization"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "applyGamma"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "applyGamma"
-        argType: BOOL
-        argIndex: 1
-      }
-    }
-    inputFrameworkOpName: "BatchNormalization"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "applyBeta"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "applyBeta"
-        argType: BOOL
-        argIndex: 2
-      }
-    }
-    inputFrameworkOpName: "BatchNormalization"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputIntName: "applyScale"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "applyScale"
-        argType: INT64
-      }
-    }
-    inputFrameworkOpName: "BatchNormalization"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputIntName: "applyOffset"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "applyOffset"
-        argType: INT64
-        argIndex: 1
-      }
-    }
-    inputFrameworkOpName: "BatchNormalization"
-  }
 }
 mappings {
   frameworkName: "onnx"
@@ -5586,6 +5629,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "AliasWithName"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "less"
   inputFrameworkOpName: "Less"
   rule {
@@ -5760,7 +5808,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputDoubleName: "from"
+    outputIntName: "from"
     inputToOutput {
       key: "from"
       value: "start"
@@ -5771,7 +5819,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputDoubleName: "to"
+    outputIntName: "to"
     inputToOutput {
       key: "to"
       value: "limit"
@@ -5782,7 +5830,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputDoubleName: "step"
+    outputIntName: "step"
     inputToOutput {
       key: "step"
       value: "delta"
@@ -5873,41 +5921,8 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "reshape"
+  opName: "noop"
   inputFrameworkOpName: "Reshape"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "data"
-    inputTensorName: "shape"
-    outputTensorName: "input"
-    outputTensorName: "shape"
-    inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    inputToOutput {
-      key: "shape"
-      value: "shape"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Reshape"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputIntName: "shapeArr"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "shapeArr"
-        int64Value: -99
-        argType: INT64
-      }
-    }
-    inputFrameworkOpName: "Reshape"
-  }
 }
 mappings {
   frameworkName: "onnx"
@@ -5923,8 +5938,6 @@ mappings {
     functionName: "valuemapping"
     inputFloatName: "low"
     inputFloatName: "high"
-    outputDoubleName: "min"
-    outputDoubleName: "max"
     inputToOutput {
       key: "max"
       value: "high"
@@ -6156,49 +6169,8 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "cumsum"
+  opName: "noop"
   inputFrameworkOpName: "CumSum"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "x"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "x"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "CumSum"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputIntName: "exclusive"
-    inputIntName: "reverse"
-    outputIntName: "exclusive"
-    outputIntName: "reverse"
-    inputToOutput {
-      key: "exclusive"
-      value: "exclusive"
-    }
-    inputToOutput {
-      key: "reverse"
-      value: "reverse"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "CumSum"
-  }
-  rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
-    inputToOutput {
-      key: "dimensions"
-      value: "axis"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "CumSum"
-  }
 }
 mappings {
   frameworkName: "onnx"
@@ -6278,6 +6250,35 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "scatter_nd"
+  inputFrameworkOpName: "ScatterND"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "indices"
+    inputTensorName: "updates"
+    inputTensorName: "data"
+    outputTensorName: "indices"
+    outputTensorName: "updates"
+    outputTensorName: "shape"
+    inputToOutput {
+      key: "indices"
+      value: "indices"
+    }
+    inputToOutput {
+      key: "shape"
+      value: "data"
+    }
+    inputToOutput {
+      key: "updates"
+      value: "updates"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ScatterND"
+  }
+}
+mappings {
+  frameworkName: "onnx"
   opName: "noop"
   inputFrameworkOpName: "ConstantOfShape"
 }
@@ -6314,6 +6315,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "SequenceEmpty"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "sigmoid"
   inputFrameworkOpName: "Sigmoid"
   rule {
@@ -6345,31 +6351,8 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "dropout_inverted"
+  opName: "noop"
   inputFrameworkOpName: "Dropout"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "data"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "data"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Dropout"
-  }
-  rule {
-    ruleName: "ndarrayinputtonumericalattribute"
-    functionName: "ndarrayinputtonumericalattribute"
-    outputDoubleName: "p"
-    inputToOutput {
-      key: "p"
-      value: "ratio"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Dropout"
-  }
 }
 mappings {
   frameworkName: "onnx"
@@ -6404,6 +6387,11 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "Loop"
+}
+mappings {
+  frameworkName: "onnx"
   opName: "floor"
   inputFrameworkOpName: "Floor"
   rule {
@@ -6435,41 +6423,8 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "prelu"
+  opName: "noop"
   inputFrameworkOpName: "PRelu"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "X"
-    inputTensorName: "slope"
-    outputTensorName: "input"
-    outputTensorName: "alpha"
-    inputToOutput {
-      key: "alpha"
-      value: "slope"
-    }
-    inputToOutput {
-      key: "input"
-      value: "X"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "PRelu"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputIntName: "sharedAxes"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "sharedAxes"
-        int64Value: -1
-        argType: INT64
-      }
-    }
-    inputFrameworkOpName: "PRelu"
-  }
 }
 mappings {
   frameworkName: "onnx"
@@ -6711,6 +6666,11 @@ mappings {
     }
     inputFrameworkOpName: "Det"
   }
+}
+mappings {
+  frameworkName: "onnx"
+  opName: "noop"
+  inputFrameworkOpName: "SequenceAt"
 }
 mappings {
   frameworkName: "onnx"
