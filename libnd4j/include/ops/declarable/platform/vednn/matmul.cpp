@@ -61,22 +61,23 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
     }
   }
 #else
-  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
+  
+  
 
-  auto func = handle.getFunctionByConstPtrName("vedaVednnLinearForwardExF32");
+    VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
+auto func = handle.getFunctionByConstPtrName("vedaVednnLinearForwardExF32");
 
   VEDAdeviceptr vX, vY, vZ;
   const uint64_t xStride = x->rankOf() > 2 ? x->sizeAt(-1) * x->sizeAt(-2) : 0;
   const uint64_t yStride = y->rankOf() > 2 ? y->sizeAt(-1) * y->sizeAt(-2) : 0;
   const uint64_t zStride = z->rankOf() > 2 ? z->sizeAt(-1) * z->sizeAt(-2) : 0;
-  NDArray::prepareVedaUse({z}, {x, y});
+
   vX = (VEDAdeviceptr)x->specialBuffer();
   vY = (VEDAdeviceptr)y->specialBuffer();
   vZ = (VEDAdeviceptr)z->specialBuffer();
 
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, bGemm, inDim, outDim, nBatch, vX, xStride, vY, yStride, vZ, zStride));
-  NDArray::registerVedaUse({z}, {x, y});
+
 #endif
   return sd::Status::OK;
 }

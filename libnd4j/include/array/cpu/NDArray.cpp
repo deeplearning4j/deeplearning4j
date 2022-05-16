@@ -254,49 +254,6 @@ void NDArray::synchronize(const char* msg) const {
   // no-op
 }
 
-//NOTE: we will use different method name for veda syncronization to avoid special external calls
-
-void NDArray::prepareVedaUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList,
-                             bool synchronizeWritables) {
-  sd_debug("%s \n", "prepareVedaUse");
-  // as we have one veda device and stream, we will get one scope for the entire
-  VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
-
-  auto asyncToVeda = [](const NDArray* x) {
-    auto buffer = x->getDataBuffer();
-    if(!buffer->special() || !x->isActualOnDeviceSide()){
-      auto hostPtr = buffer->primary();
-      auto length = buffer->getLenInBytes();
-      sd_debug("%s \n", "asyncToVeda primary Buffer");
-      if (!buffer->special()) VEDA_CALL_THROW(vedaMemAllocAsync((VEDAdeviceptr*)buffer->getPtrToSpecial(), length, 0));
-      VEDA_CALL_THROW(vedaMemcpyHtoDAsync((VEDAdeviceptr)buffer->special(), hostPtr, length, 0));
-      buffer->readSpecial();
-    }
-  };
-  for (const auto& a : readList)
-    if (a != nullptr) {
-      // we will implement veda sync device as async call
-      asyncToVeda(a);
-    }
-
-  for (const auto& a : writeList) {
-    if (a != nullptr) {
-      asyncToVeda(a);
-    }
-  }
-}
-
-////////////////////////////////////////////////////////////////////////
-void NDArray::registerVedaUse(const std::vector<const NDArray*>& writeList,
-                                 const std::vector<const NDArray*>& readList) {
-  sd_debug("%s \n","registerVedaUse");
-  for (const auto& p : readList)
-    if (p != nullptr) p->tickReadDevice();
-
-  for (const auto& p : writeList)
-    if (p != nullptr) p->tickWriteDevice();
-}
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::preparePrimaryUse(const std::vector<const NDArray*>& writeList,
@@ -307,7 +264,7 @@ void NDArray::preparePrimaryUse(const std::vector<const NDArray*>& writeList,
   for (const auto& a : writeList) {
     if (a != nullptr) {
       a->getDataBuffer()->allocatePrimary();
-      if (synchronizeWritables) a->syncToHost();
+      if (synchronizeWritables || !a->getDataBuffer()->isPrimaryActual()) a->syncToHost();
     }
   }
 }
@@ -315,11 +272,12 @@ void NDArray::preparePrimaryUse(const std::vector<const NDArray*>& writeList,
 ////////////////////////////////////////////////////////////////////////
 void NDArray::registerPrimaryUse(const std::vector<const NDArray*>& writeList,
                                  const std::vector<const NDArray*>& readList) {
-  for (const auto& p : readList)
-    if (p != nullptr) p->tickReadHost();
+  // for (const auto& p : readList)
+  //   if (p != nullptr) p->tickReadHost();
 
-  for (const auto& p : writeList)
-    if (p != nullptr) p->tickWriteHost();
+  // for (const auto& p : writeList){
+  //   if (p != nullptr) p->tickWriteHost();
+  // }
 }
 
 

@@ -42,19 +42,20 @@ PLATFORM_IMPL(softmax, ENGINE_CPU) {
   auto ret = vednnSoftmaxForward(VEDNN_SOFTMAX_ACCURATE, input->buffer(), output->buffer(), outer_dim, inner_dim);
   return ret == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
-  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
+  
+  
 
-  auto func = handle.getFunctionByConstPtrName("vedaVednnSoftmaxForward");
+    VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
+auto func = handle.getFunctionByConstPtrName("vedaVednnSoftmaxForward");
 
   VEDAdeviceptr vIn, vO;
-  NDArray::prepareVedaUse({output}, {input});
+
   vIn = (VEDAdeviceptr)input->specialBuffer();
   vO = (VEDAdeviceptr)output->specialBuffer();
 
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDNN_SOFTMAX_ACCURATE, vIn, vO, outer_dim, inner_dim));
 
-  NDArray::registerVedaUse({output}, {input});
+
   return sd::Status::OK;
 #endif
 }

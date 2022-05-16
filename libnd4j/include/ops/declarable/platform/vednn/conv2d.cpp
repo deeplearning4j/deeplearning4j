@@ -22,6 +22,7 @@
 #include <ops/declarable/PlatformHelper.h>
 #include <ops/declarable/helpers/convolutions.h>
 #include <system/platform_boilerplate.h>
+
 #include "vednnUtils.h"
 
 namespace sd {
@@ -100,7 +101,6 @@ std::unique_ptr<NDArray> newWeight_3x3(const NDArray &w, int weightFormat) {
 
 //////////////////////////////////////////////////////////////////////
 PLATFORM_IMPL(conv2d, ENGINE_CPU) {
-
   auto input = INPUT_VARIABLE(0);                               // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
   auto weights = INPUT_VARIABLE(1);                             // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
   auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;  // [oC]
@@ -155,7 +155,27 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
   vednnConvolutionParam_t paramConv;
   NDArray *w = weights, *in = input, *out = output;
 
+  if (bias) {
+    paramBias.dtype = DTYPE_FLOAT;
+    paramBias.channel = bias->lengthOf();
+  }
+
+  paramIn = getTensorFormat(*in, isNCHW);
+  //// 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+  paramFilter = getFilterParam(*w, weightFormat);
+
+  paramOut = getTensorFormat(*out, isNCHW);
+
+  paramConv.group = 1;
+  paramConv.strideWidth = sW;     // col stride    W
+  paramConv.strideHeight = sH;    // row stride    H
+  paramConv.dilationWidth = dW;   // col dilation  W
+  paramConv.dilationHeight = dH;  // row dilation  H
+  paramConv.padWidth = pW;        // col padding   W
+  paramConv.padHeight = pH;       // row padding   H
+
 #if !defined(HAVE_VEDA)
+
   std::unique_ptr<NDArray> wTemp, inTemp, outTemp;
 
   if (0 == weightFormat) {
@@ -179,28 +199,6 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
     outTemp.reset(new NDArray(output->permute({0, 3, 1, 2}).ulike()));
     out = outTemp.get();
   }
-#endif
-
-  if (bias) {
-    paramBias.dtype = DTYPE_FLOAT;
-    paramBias.channel = bias->lengthOf();
-  }
-
-  paramIn = getTensorFormat(*in, isNCHW);
-  //// 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
-  paramFilter = getFilterParam(*w, weightFormat);
-
-  paramOut = getTensorFormat(*out, isNCHW);
-
-  paramConv.group = 1;
-  paramConv.strideWidth = sW;     // col stride    W
-  paramConv.strideHeight = sH;    // row stride    H
-  paramConv.dilationWidth = dW;   // col dilation  W
-  paramConv.dilationHeight = dH;  // row dilation  H
-  paramConv.padWidth = pW;        // col padding   W
-  paramConv.padHeight = pH;       // row padding   H
-
-#if !defined(HAVE_VEDA)
 
   vednnError_t res;
   if (bias) {
@@ -212,35 +210,33 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
   }
 
   auto status = res == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
-#else
 
-  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
-
-  auto func = handle.getFunctionByConstPtrName("vedaVednnConvolutionForwardAddBias");
-  NDArray::prepareVedaUse({out}, {in, w, bias});
-  VEDAdeviceptr vIn, vW, vO;
-  VEDAdeviceptr vB = nullptr;
-  vIn = (VEDAdeviceptr) in->specialBuffer();
-  vW =  (VEDAdeviceptr) w->specialBuffer();
-  if (bias) vB = (VEDAdeviceptr) bias->specialBuffer();
-  vO = (VEDAdeviceptr) out->specialBuffer();
-  //sd_printf("%s %d\n", __FILE__,__LINE__);
-  VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn, (uint8_t)isNCHW,
-                             VEDAstack(&paramFilter, VEDA_ARGS_INTENT_IN, sizeof(paramFilter)), vW, (int32_t)weightFormat,
-                             VEDAstack(&paramBias, VEDA_ARGS_INTENT_IN, sizeof(paramBias)), vB,
-                             VEDAstack(&paramOut, VEDA_ARGS_INTENT_IN, sizeof(paramOut)), vO,  (uint8_t)isNCHW,
-                             VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv)),
-                             (int)VEDNN_CONV_ALGORITHM_DIRECT));
-  NDArray::registerVedaUse({out}, {in, w, bias});
-  auto status = sd::Status::OK;
-#endif
-
-#if !defined(HAVE_VEDA)
   if (out != nullptr && out != output) {
     output->assign(out->permute({0, 2, 3, 1}));
   }
+#else
+
+  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
+  auto func = handle.getFunctionByConstPtrName("vedaVednnConvolutionForwardAddBias");
+
+  VEDAdeviceptr vIn, vW, vO;
+  VEDAdeviceptr vB = nullptr;
+  vIn = (VEDAdeviceptr)in->specialBuffer();
+  vW = (VEDAdeviceptr)w->specialBuffer();
+  if (bias) vB = (VEDAdeviceptr)bias->specialBuffer();
+  vO = (VEDAdeviceptr)out->specialBuffer();
+
+  VEDA_CALL_THROW(vedaLaunchKernel(
+      func, 0, VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn, (uint8_t)isNCHW,
+      VEDAstack(&paramFilter, VEDA_ARGS_INTENT_IN, sizeof(paramFilter)), vW, (int32_t)weightFormat,
+      VEDAstack(&paramBias, VEDA_ARGS_INTENT_IN, sizeof(paramBias)), vB,
+      VEDAstack(&paramOut, VEDA_ARGS_INTENT_IN, sizeof(paramOut)), vO, (uint8_t)isNCHW,
+      VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv)), (int)VEDNN_CONV_ALGORITHM_DIRECT));
+
+  auto status = sd::Status::OK;
 #endif
+
+
   return status;
 }
 
@@ -330,6 +326,22 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CPU) {
 
   std::unique_ptr<NDArray> inTemp, wTemp, gradOutTemp, gradInTemp, gradWeightsTemp;
   NDArray *in = input, *weightPtr = weights, *gradOutPtr = gradO, *gradInPtr = gradI, *gradWeightsPtr = gradW;
+
+
+  paramGradOut = getTensorFormat(*gradOutPtr, isNCHW);
+
+  paramFilter = getFilterParam(*weightPtr, weightFormat);
+
+  paramGradIn = getTensorFormat(*gradInPtr, isNCHW);
+
+  paramConv.group = 1;
+  paramConv.strideWidth = sW;     // col stride    W
+  paramConv.strideHeight = sH;    // row stride    H
+  paramConv.dilationWidth = dW;   // col dilation  W
+  paramConv.dilationHeight = dH;  // row dilation  H
+  paramConv.padWidth = pW;        // col padding   W
+  paramConv.padHeight = pH;       // row padding   H
+#if !defined(HAVE_VEDA)
   if (0 == weightFormat) {
     // [kH, kW, iC, oC] -> [oC, iC, kH, kW]
     if (weights->ordering() == 'c' && weights->ews() == 1 && weights->sizeAt(0) == 3 && weights->sizeAt(1) == 3) {
@@ -355,21 +367,6 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CPU) {
     gradInTemp.reset(new NDArray(gradI->permute({0, 3, 1, 2}).ulike()));
     gradInPtr = gradInTemp.get();
   }
-
-  paramGradOut = getTensorFormat(*gradOutPtr);
-
-  paramFilter = getFilterParam(*weightPtr, 1);
-
-  paramGradIn = getTensorFormat(*gradInPtr);
-
-  paramConv.group = 1;
-  paramConv.strideWidth = sW;     // col stride    W
-  paramConv.strideHeight = sH;    // row stride    H
-  paramConv.dilationWidth = dW;   // col dilation  W
-  paramConv.dilationHeight = dH;  // row dilation  H
-  paramConv.padWidth = pW;        // col padding   W
-  paramConv.padHeight = pH;       // row padding   H
-#if !defined(HAVE_VEDA)
   vednnError_t resData =
       vednnConvolutionBackwardData(&paramGradOut, gradOutPtr->buffer(), &paramFilter, weightPtr->buffer(), &paramGradIn,
                                    gradInPtr->buffer(), &paramConv, VEDNN_CONV_ALGORITHM_DIRECT);
@@ -380,48 +377,6 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CPU) {
       vednnConvolutionBackwardFilter(&paramGradIn, in->buffer(), &paramGradOut, gradOutPtr->buffer(), &paramFilter,
                                      gradWeightsPtr->buffer(), &paramConv, VEDNN_CONV_ALGORITHM_DIRECT);
   auto status = (resData == VEDNN_SUCCESS && resFilter == VEDNN_SUCCESS) ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
-#else
-  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
-
-  auto func = handle.getFunctionByConstPtrName("vedaVednnConvolutionBackwardDataAndFilter");
-  VEDAdeviceptr vGradOut, vW, vGradW, vIn, vGradIn;
-
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vGradOut, gradOutPtr->lengthOf() * gradOutPtr->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vW, weightPtr->lengthOf() * weightPtr->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vGradW, gradWeightsPtr->lengthOf() * gradWeightsPtr->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vIn, in->lengthOf() * in->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vGradIn, gradInPtr->lengthOf() * gradInPtr->sizeOfT(), 0));
-
-  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vGradOut, gradOutPtr->buffer(), gradOutPtr->lengthOf() * gradOutPtr->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vW, weightPtr->buffer(), weightPtr->lengthOf() * weightPtr->sizeOfT(), 0));
-  // VEDA_CALL_THROW(
-  //     vedaMemcpyHtoDAsync(vGradW, gradWeightsPtr->buffer(), gradWeightsPtr->lengthOf() * gradWeightsPtr->sizeOfT(),
-  //     0));
-  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vIn, in->buffer(), in->lengthOf() * in->sizeOfT(), 0));
-  // VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vGradIn, gradInPtr->buffer(), gradInPtr->lengthOf() * gradInPtr->sizeOfT(), 0));
-
-  VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDAstack(&paramGradOut, VEDA_ARGS_INTENT_IN, sizeof(paramGradOut)), vGradOut,
-                             VEDAstack(&paramFilter, VEDA_ARGS_INTENT_IN, sizeof(paramFilter)), vW, vGradW,
-                             VEDAstack(&paramGradIn, VEDA_ARGS_INTENT_IN, sizeof(paramGradIn)), vIn, vGradIn,
-                             VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv)),
-                             VEDNN_CONV_ALGORITHM_DIRECT));
-
-  VEDA_CALL_THROW(vedaMemcpyDtoHAsync(gradInPtr->buffer(), vGradIn, gradInPtr->lengthOf() * gradInPtr->sizeOfT(), 0));
-  VEDA_CALL_THROW(
-      vedaMemcpyDtoHAsync(gradWeightsPtr->buffer(), vGradW, gradWeightsPtr->lengthOf() * gradWeightsPtr->sizeOfT(), 0));
-
-  VEDA_CALL_THROW(vedaMemFreeAsync(vGradOut, 0));
-  VEDA_CALL_THROW(vedaMemFreeAsync(vW, 0));
-  VEDA_CALL_THROW(vedaMemFreeAsync(vGradW, 0));
-  VEDA_CALL_THROW(vedaMemFreeAsync(vIn, 0));
-  VEDA_CALL_THROW(vedaMemFreeAsync(vGradIn, 0));
-
-  scopedContext.sync();
-
-  // TODO: after replacing it with vedaLaunchKernelEx we will return result based on vednn veda call
-  auto status = sd::Status::OK;
-#endif
   if (gradInPtr != nullptr && gradInPtr != gradI) {
     gradI->assign(gradInPtr->permute({0, 2, 3, 1}));
   }
@@ -449,6 +404,30 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CPU) {
     gradO->reduceAlongDimension(reduce::Sum, *gradBiasPtr, gradOaxesForDot, false);  // sum over bS, oH, oW
   }
   return status;
+#else
+
+  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
+
+  auto func = handle.getFunctionByConstPtrName("vedaVednnConvolutionBackwardDataAndFilter");
+  VEDAdeviceptr vGradOut, vW, vGradW, vIn, vGradIn, vGradBias;
+
+  vGradOut = (VEDAdeviceptr)gradOutPtr->specialBuffer();
+  vW = (VEDAdeviceptr)weightPtr->specialBuffer();
+  vGradW = (VEDAdeviceptr)gradWeightsPtr->specialBuffer();
+  vIn = (VEDAdeviceptr)in->specialBuffer();
+  vGradIn = (VEDAdeviceptr)gradInPtr->specialBuffer();
+  vGradBias = gradB? (VEDAdeviceptr)gradB->specialBuffer() : nullptr;
+
+
+  VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDAstack(&paramGradOut, VEDA_ARGS_INTENT_IN, sizeof(paramGradOut)),
+                                   vGradOut, VEDAstack(&paramFilter, VEDA_ARGS_INTENT_IN, sizeof(paramFilter)), vW, (int32_t)weightFormat,
+                                   vGradW, VEDAstack(&paramGradIn, VEDA_ARGS_INTENT_IN, sizeof(paramGradIn)), vIn,
+                                   vGradIn, (uint8_t)isNCHW, vGradBias, VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv)),
+                                   VEDNN_CONV_ALGORITHM_DIRECT));
+
+  auto status = sd::Status::OK;
+  return status;
+#endif
 }
 
 PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
@@ -471,6 +450,9 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
       req.expectEq(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(weights->rankOf(), RANK_MSG_INPUT1), 4) &&
       req.expectEq(makeInfoVariable(weights->ordering(), ORDERING_MSG_INPUT1), 'c') &&
+#if defined(HAVE_VEDA)
+      req.expectEq(makeInfoVariable(weights->ews(), EWS_MSG_INPUT1), 1) &&
+#endif
       req.expectEq(makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT2), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(gradO->rankOf(), RANK_MSG_INPUT2), 4) &&
       req.expectEq(makeInfoVariable(gradO->ordering(), ORDERING_MSG_INPUT2), 'c') &&
@@ -481,8 +463,15 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
       req.expectEq(makeInfoVariable(gradI->ews(), EWS_MSG_OUTPUT0), 1) &&
       req.expectEq(makeInfoVariable(gradW->dataType(), TYPE_MSG_OUTPUT1), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(gradW->rankOf(), RANK_MSG_OUTPUT1), 4) &&
+#if defined(HAVE_VEDA)
+      req.expectEq(makeInfoVariable(gradW->ews(), EWS_MSG_OUTPUT1), 1) &&
+#endif
       req.expectEq(makeInfoVariable(gradW->ordering(), ORDERING_MSG_OUTPUT1), 'c');
-
+#if defined(HAVE_VEDA)
+      if(gradB){
+        req.expectEq(makeInfoVariable(gradB->ews(), EWS_MSG_OUTPUT2), 1);
+      }
+#endif
   req.logTheSuccess();
   return req;
 }

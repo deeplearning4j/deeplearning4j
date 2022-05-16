@@ -132,7 +132,11 @@ DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory:
 
   if (lenInBytes != 0) {
     allocateBuffers(allocBoth);
+#if defined(HAVE_VEDA)
+    readPrimary();
+#else
     writeSpecial();
+#endif
   }
 }
 

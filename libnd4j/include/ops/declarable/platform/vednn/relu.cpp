@@ -36,19 +36,20 @@ PLATFORM_IMPL(relu, ENGINE_CPU) {
   auto ret = vednnActivationForward(VEDNN_ACTIVATION_RELU, input->buffer(), output->buffer(), input->lengthOf());
   return ret == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
-  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
+  
+  
 
-  auto func = handle.getFunctionByConstPtrName("vedaVednnActivationForward");
+    VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
+auto func = handle.getFunctionByConstPtrName("vedaVednnActivationForward");
 
   VEDAdeviceptr vIn, vO;
-  NDArray::prepareVedaUse({output}, {input});
+
   vIn = (VEDAdeviceptr)input->specialBuffer();
   vO = (VEDAdeviceptr)output->specialBuffer();
   const uint64_t nElements = input->lengthOf();
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDNN_ACTIVATION_RELU, vIn, vO, nElements));
 
-  NDArray::registerVedaUse({output}, {input});
+
   return sd::Status::OK;
 #endif
 }
@@ -81,13 +82,14 @@ PLATFORM_IMPL(relu_bp, ENGINE_CPU) {
                                      input->lengthOf());
   return ret == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
-  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
+  
+  
 
-  auto func = handle.getFunctionByConstPtrName("vedaVednnActivationBackward");
+    VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
+auto func = handle.getFunctionByConstPtrName("vedaVednnActivationBackward");
 
   VEDAdeviceptr vGradOut, vIn, vGradIn;
-  NDArray::prepareVedaUse({gradI}, {input, gradO});
+
   vIn = (VEDAdeviceptr)input->specialBuffer();
   vGradOut = (VEDAdeviceptr)gradO->specialBuffer();
   vGradIn = (VEDAdeviceptr)gradI->specialBuffer();
@@ -96,7 +98,7 @@ PLATFORM_IMPL(relu_bp, ENGINE_CPU) {
 
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDNN_ACTIVATION_RELU, vGradOut, vIn, vGradIn, nElements));
 
-  NDArray::registerVedaUse({gradI}, {input, gradO});
+
   return sd::Status::OK;
 #endif
 }

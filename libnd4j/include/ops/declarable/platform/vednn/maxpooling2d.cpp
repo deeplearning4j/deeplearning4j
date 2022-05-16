@@ -61,21 +61,25 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
 
   auto status = res == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
-  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
+  
+  
 
-  auto func = handle.getFunctionByConstPtrName("vedaVednnMaxPoolingForward");
+    VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
+auto func = handle.getFunctionByConstPtrName("vedaVednnMaxPoolingForward");
   VEDAdeviceptr vIn, vOut;
-  NDArray::prepareVedaUse({out}, {in});
+  float *xxx =in->bufferAsT<float>();
+  sd_printf("maxpool isActualOnHostSide %d isActualOnDeviceSide %d  input primary %p %f\n",(int)in->isActualOnHostSide(), (int)in->isActualOnDeviceSide(), in->buffer(), xxx[0] );
+
+
   vIn = (VEDAdeviceptr)in->specialBuffer();
   vOut = (VEDAdeviceptr)out->specialBuffer();
-
+  
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn,
                                    VEDAstack(&paramOut, VEDA_ARGS_INTENT_IN, sizeof(paramOut)), vOut,
 
                                    VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv))));
 
-  NDArray::registerVedaUse({out}, {in});
+
   auto status = sd::Status::OK;
 #endif
 
@@ -160,12 +164,13 @@ PLATFORM_IMPL(maxpool2d_bp, ENGINE_CPU) {
 
   auto status = res == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
-  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
+  
+  
 
-  auto func = handle.getFunctionByConstPtrName("vedaVednnMaxPoolingBackwardEx");
+    VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
+auto func = handle.getFunctionByConstPtrName("vedaVednnMaxPoolingBackwardEx");
   VEDAdeviceptr vGradOut, vOut, vIn, vGradIn;
-  NDArray::prepareVedaUse({gradInPtr}, {input, gradOutPtr});
+
   vIn = (VEDAdeviceptr)input->specialBuffer();
   vGradOut = (VEDAdeviceptr)gradOutPtr->specialBuffer();
   vGradIn = (VEDAdeviceptr)gradInPtr->specialBuffer();
@@ -178,7 +183,7 @@ PLATFORM_IMPL(maxpool2d_bp, ENGINE_CPU) {
                                    VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv))));
 
   VEDA_CALL_THROW(vedaMemFreeAsync(vOut, 0));
-  NDArray::registerVedaUse({gradInPtr}, {input, gradOutPtr});
+
   auto status = sd::Status::OK;
 #endif
   return status;

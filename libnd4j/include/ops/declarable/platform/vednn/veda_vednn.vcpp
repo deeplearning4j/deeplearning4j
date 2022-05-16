@@ -56,7 +56,7 @@ inline void copyTo_nchw_generic(const vednnTensorParam_t &p, const float *nhwc, 
   LOG_FUNC();
 }
 
-void copyFromNCHW(const vednnTensorParam_t &param, const float *nchw_data, float *nhwc_data) {
+void copyIntoNHWC(const vednnTensorParam_t &param, const float *nchw_data, float *nhwc_data) {
   return copyTo_nhwc_generic(param, nchw_data, nhwc_data);
 }
 
@@ -129,30 +129,56 @@ float *getWeightFormat1Data(const vednnFilterParam_t &paramFilter, float *weight
   }
 }
 
+// copy WeightFormat2 into WeightFormat1
+void copyWf2ToWf1(const vednnFilterParam_t &paramFilter, const float *weight, float *weightOut) {
+  vednnTensorParam_t param;
+  param.dtype = DTYPE_FLOAT;
+  param.batch = paramFilter.outChannel;
+  param.channel = paramFilter.inChannel;
+  param.height = paramFilter.height;
+  param.width = paramFilter.width;
+  copyIntoNHWC(param, weight, weightOut);
+}
+
+void copyWf0ToWf1(const vednnFilterParam_t &paramFilter, const float *weight, float *weightOut) {
+  constexpr int ocs0 = 1;
+  int ics0 = paramFilter.outChannel;
+  int ws0 = ics0 * paramFilter.inChannel;
+  int hs0 = ws0 * paramFilter.width;
+
+  constexpr int ws1 = 1;
+  int hs1 = paramFilter.width;
+  int ics1 = hs1 * paramFilter.height;
+  int ocs1 = ics1 * paramFilter.inChannel;
+#pragma omp parallel for
+  for (int h = 0; h < paramFilter.height; h++)
+    for (int w = 0; w < paramFilter.width; w++)
+      for (int i = 0; i < paramFilter.inChannel; i++)
+        for (int j = 0; j < paramFilter.outChannel; j++) {
+          weightOut[j * ocs0 + i * ics0 + w * ws0 + h * hs0] = weight[j * ocs1 + i * ics1 + w * ws1 + h * hs1];
+        }
+}
+
 extern "C" {
 
 uint64_t vedaVednnConvolutionForwardAddBias(const vednnTensorParam_t *paramIn, VEDAdeviceptr vDataIn,
                                             uint8_t isDataInNCHW, const vednnFilterParam_t *paramFilter,
-                                            VEDAdeviceptr vDataKernel, int32_t WieghtFormat,
+                                            VEDAdeviceptr vDataKernel, int32_t weightFormat,
                                             const vednnBiasParam_t *paramBias, VEDAdeviceptr vDataBias,
                                             const vednnTensorParam_t *paramOut, VEDAdeviceptr vDataOut,
                                             uint8_t isDataOutNCHW, const vednnConvolutionParam_t *paramConv,
                                             vednnConvolutionAlgorithm_t algo) {
   LOG_FUNC();
   vednnError_t res;
-  LOG_FUNC();
   void *pDataIn, *pDataBias = nullptr, *pDataKernelPtr;
   void *pDataOutPtr, *pDataOut = nullptr;
   vedaMemPtr((void **)&pDataIn, vDataIn);
   vedaMemPtr((void **)&pDataKernelPtr, vDataKernel);
   if (vDataBias) vedaMemPtr((void **)&pDataBias, vDataBias);
   vedaMemPtr((void **)&pDataOutPtr, vDataOut);
-  // printf("ve %d %d %d sizes %d %d %d %d %d %d\n", sizeof(isDataInNCHW), sizeof(WieghtFormat), sizeof(isDataOutNCHW),
-  // (int)sizeof(vednnTensorParam_t), (int)sizeof(vednnFilterParam_t), (int)sizeof(vednnBiasParam_t),
-  // (int)sizeof(vednnTensorParam_t), (int)(sizeof(vednnConvolutionParam_t)), (int)sizeof(vednnConvolutionAlgorithm_t));
+
   std::unique_ptr<float[]> tempIn, tempOut, tempW;
-  // printf("%d %d %d\n", (int)isDataInNCHW, (int)isDataOutNCHW, (int)WieghtFormat);
-  LOG_FUNC();
+
   if (!isDataInNCHW) {
     pDataIn = getNCHW(*paramIn, (float *)pDataIn, tempIn);
   }
@@ -162,51 +188,104 @@ uint64_t vedaVednnConvolutionForwardAddBias(const vednnTensorParam_t *paramIn, V
   } else {
     pDataOut = pDataOutPtr;
   }
-  LOG_FUNC();
-  auto pDataKernel = getWeightFormat1Data(*paramFilter, (float *)pDataKernelPtr, WieghtFormat, tempW);
-  LOG_FUNC();
-  // printf("inside ve %p %p %p %p\n", pDataIn, pDataKernel, pDataBias, pDataOut);
+  auto pDataKernel = getWeightFormat1Data(*paramFilter, (float *)pDataKernelPtr, weightFormat, tempW);
+
   if (pDataBias) {
     // printf("%s\n", "bias case");
-    LOG_FUNC();
+
     res = vednnConvolutionForwardAddBias(paramIn, pDataIn, paramFilter, pDataKernel, paramBias, pDataBias, paramOut,
                                          pDataOut, paramConv, algo);
-    LOG_FUNC();
+
   } else {
     res = vednnConvolutionForward(paramIn, pDataIn, paramFilter, pDataKernel, paramOut, pDataOut, paramConv, algo);
   }
-  LOG_FUNC();
   if (pDataOut != pDataOutPtr) {
-    copyFromNCHW(*paramOut, (const float *)pDataOut, (float *)pDataOutPtr);
+    copyIntoNHWC(*paramOut, (const float *)pDataOut, (float *)pDataOutPtr);
   }
-  LOG_FUNC();
+
   return (uint64_t)res;
 }
 
 uint64_t vedaVednnConvolutionBackwardDataAndFilter(const vednnTensorParam_t *paramGradOut, VEDAdeviceptr vGradOutData,
                                                    const vednnFilterParam_t *paramFilter, VEDAdeviceptr vWeightData,
-                                                   VEDAdeviceptr vGradWeightData, const vednnTensorParam_t *paramGradIn,
-                                                   VEDAdeviceptr vInData, VEDAdeviceptr vGradInData,
+                                                   int32_t weightFormat, VEDAdeviceptr vGradWeightData,
+                                                   const vednnTensorParam_t *paramGradIn, VEDAdeviceptr vInData,
+                                                   VEDAdeviceptr vGradInData, uint8_t isNCHW, VEDAdeviceptr vGradBias,
                                                    const vednnConvolutionParam_t *paramConv,
                                                    vednnConvolutionAlgorithm_t algo) {
   LOG_FUNC();
-  void *gradOutData, *weightData, *gradWeightsData, *inData, *gradInData;
+  void *gradOutData, *weightData, *gradWeightsData, *inData, *gradInData, *gradInDataFormatted;
+  float *gradBias = nullptr;
   vedaMemPtr((void **)&gradOutData, vGradOutData);
   vedaMemPtr((void **)&weightData, vWeightData);
   vedaMemPtr((void **)&gradWeightsData, vGradWeightData);
   vedaMemPtr((void **)&inData, vInData);
   vedaMemPtr((void **)&gradInData, vGradInData);
+  if (vGradBias) vedaMemPtr((void **)&gradBias, vGradBias);
+  gradInDataFormatted = gradInData;
 
-  vednnError_t res = vednnConvolutionBackwardData(paramGradOut, gradOutData, paramFilter, weightData, paramGradIn,
-                                                  gradInData, paramConv, algo);
+  // temporary memory holders for the case when we need formatted buffers
+  std::unique_ptr<float[]> tempW, tempIn, tempGradIn, tempGradOut;
+
+  if (!isNCHW) {
+    inData = getNCHW(*paramGradIn, (float *)inData, tempIn);
+    gradOutData = getNCHW(*paramGradOut, (float *)gradOutData, tempGradOut);
+    gradInDataFormatted = getNCHW(*paramGradIn, (float *)gradInData, tempGradIn);
+  }
+
+  auto weightDataFormatted = getWeightFormat1Data(*paramFilter, (float *)weightData, weightFormat, tempW);
+
+  vednnError_t res = vednnConvolutionBackwardData(paramGradOut, gradOutData, paramFilter, weightDataFormatted,
+                                                  paramGradIn, gradInDataFormatted, paramConv, algo);
 
   if (res != VEDNN_SUCCESS) return res;
 
+  if (gradInDataFormatted != gradInData) {
+    copyIntoNHWC(*paramGradIn, (const float *)gradInDataFormatted, (float *)gradInData);
+  }
+
   // paramGradIn could be used for "in"
   // paramFilter could be used for "gradWeights"
-  res = vednnConvolutionBackwardFilter(paramGradIn, inData, paramGradOut, gradOutData, paramFilter, gradWeightsData,
-                                       paramConv, algo);
+  if (weightDataFormatted == weightData) {
+    res = vednnConvolutionBackwardFilter(paramGradIn, inData, paramGradOut, gradOutData, paramFilter, gradWeightsData,
+                                         paramConv, algo);
+  } else {
+    std::unique_ptr<float[]> tempWeightsData;
+    auto len = paramFilter->outChannel * paramFilter->inChannel * paramFilter->height * paramFilter->width;
+    tempWeightsData.reset(new float[len]);
+    float *gradWeightsDataLocal = tempWeightsData.get();
 
+    res = vednnConvolutionBackwardFilter(paramGradIn, inData, paramGradOut, gradOutData, paramFilter,
+                                         gradWeightsDataLocal, paramConv, algo);
+
+    // [oC, iC, kH, kW] -> [kH, kW, iC, oC]
+    if (weightFormat == 0) copyWf0ToWf1(*paramFilter, (const float *)gradWeightsDataLocal, (float *)gradWeightsData);
+    // [oC, iC, kH, kW] -> [oC, kH, kW, iC]
+    else
+      copyWf2ToWf1(*paramFilter, (const float *)gradWeightsDataLocal, (float *)gradWeightsData);
+  }
+
+  // calculate Bias
+  if (gradBias) {
+    //// sum formatted gradOutData over bS, oH, oW
+
+    int height_weight = paramGradOut->width * paramGradOut->height;
+    int ns1 = height_weight * paramGradOut->channel;
+    for (int c = 0; c < paramGradOut->channel; c++) {
+      gradBias[c] = 0;
+    }
+    auto nhwc_c = (float *)gradOutData;
+    for (int n = 0; n < paramGradOut->batch; n++) {
+      for (int c = 0; c < paramGradOut->channel; c++) {
+        auto sum = 0.f;
+        for (int hw = 0; hw < height_weight; hw++) {
+          sum += nhwc_c[hw];
+        }
+        gradBias[c] += sum;
+        nhwc_c += height_weight;
+      }
+    }
+  }
   return (uint64_t)res;
 }
 
@@ -282,6 +361,7 @@ vednnError_t vedaVednnMaxPoolingForward(const vednnTensorParam_t *pParamIn, VEDA
   void *pDataOut;
   vedaMemPtr((void **)&pDataIn, vDataIn);
   vedaMemPtr((void **)&pDataOut, vDataOut);
+
   return vednnMaxPoolingForward(pParamIn, pDataIn, pParamOut, pDataOut, pParamPool);
 }
 
@@ -311,7 +391,6 @@ uint64_t vedaConcatUpTo32(const uint64_t nInput, VEDAdeviceptr *inputList, VEDAd
   if (nInput > 0 && nInput < 32) {
     void *output;
     vedaMemPtr(&output, vO);
-
     struct OmpArgs {
       float *in;
       float *out;
@@ -345,4 +424,5 @@ uint64_t vedaConcatUpTo32(const uint64_t nInput, VEDAdeviceptr *inputList, VEDAd
 
   return -1;
 }
-}
+
+}  // extern "C"

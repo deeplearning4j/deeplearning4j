@@ -43,14 +43,13 @@ PLATFORM_IMPL(concat, ENGINE_CPU) {
     if (!input->isEmpty()) nonEmptyArrs.push_back(input);
   }
 
-  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
-  auto func = handle.getFunctionByConstPtrName("vedaConcatUpTo32");
+
+    VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
+auto func = handle.getFunctionByConstPtrName("vedaConcatUpTo32");
 
   VEDAdeviceptr vO;
-  NDArray::prepareVedaUse({output}, nonEmptyArrs);
-  
+
   std::vector<VEDAdeviceptr> inputList;
   for(auto input: nonEmptyArrs){
     
@@ -60,7 +59,7 @@ PLATFORM_IMPL(concat, ENGINE_CPU) {
 
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, (uint64_t)nonEmptyArrs.size(), VEDAstack(inputList.data(), VEDA_ARGS_INTENT_IN, inputList.size() * sizeof(VEDAdeviceptr)),  vO));
 
-  NDArray::registerVedaUse({output}, nonEmptyArrs);
+
 
   // scopedContext.sync();
 

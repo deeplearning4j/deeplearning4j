@@ -133,6 +133,10 @@ class SD_LIB_EXPORT DataBuffer {
 #ifndef __JAVACPP_HACK__
 #if defined(HAVE_VEDA)
   void** getPtrToSpecial() const;
+
+  void showCounters(){
+      printf(":: wP: %d wS: %d rP: %d rS: %d\n", (int)_writePrimary.load() , (int)_writeSpecial.load(), (int) _readPrimary.load(), (int)_readSpecial.load()  );
+  }
 #endif
 #endif
 

@@ -291,6 +291,7 @@ TEST_F(ContextTests, test_short_context_1) {
   auto input1 = ctx.array(1);
   ASSERT_TRUE(input1 != nullptr);
 
+
   ASSERT_TRUE(input0->buffer() == array0.buffer());
   ASSERT_TRUE(input0->shapeInfo() == array0.shapeInfo());
 

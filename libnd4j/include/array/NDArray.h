@@ -396,15 +396,15 @@ class SD_LIB_EXPORT NDArray {
   static void preparePrimaryUse(const std::vector<const NDArray *> &writeList,
                                 const std::vector<const NDArray *> &readList = {}, bool synchronizeWritables = false);
 
-#ifndef __JAVACPP_HACK__
-#if defined(HAVE_VEDA)
-  static void registerVedaUse(const std::vector<const NDArray *> &writeList,
-                                 const std::vector<const NDArray *> &readList = {});
-  static void prepareVedaUse(const std::vector<const NDArray *> &writeList,
-                                const std::vector<const NDArray *> &readList = {}, bool synchronizeWritables = false);
+// #ifndef __JAVACPP_HACK__
+// #if defined(HAVE_VEDA)
+//   static void registerVedaUse(const std::vector<const NDArray *> &writeList,
+//                                  const std::vector<const NDArray *> &readList = {});
+//   static void prepareVedaUse(const std::vector<const NDArray *> &writeList,
+//                                 const std::vector<const NDArray *> &readList = {}, bool synchronizeWritables = false);
 
-#endif
-#endif
+// #endif
+// #endif
   /**
    * This method returns buffer pointer offset by given number of elements, wrt own data type
    * @param offset

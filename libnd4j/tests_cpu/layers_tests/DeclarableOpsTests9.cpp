@@ -1822,9 +1822,10 @@ TEST_F(DeclarableOpsTests9, compare_and_bitpack_test5) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, compare_and_bitpack_test6) {
-  auto x = NDArrayFactory::create<float>('c', {2, 0, 3, 8});
+  auto x = NDArrayFactory::create<float>('c', {2, 1, 3, 8});
   auto threshold = NDArrayFactory::create<float>(0.5f);
-  auto out = NDArrayFactory::create<uint8_t>('c', {2, 0, 3, 2});
+  auto out = NDArrayFactory::create<uint8_t>('c', {2, 1, 3, 2});
+
   sd::ops::compare_and_bitpack op;
   // shape mismatch throws runtime error
   ASSERT_THROW(op.execute({&x, &threshold}, {&out}, {}, {}), std::runtime_error);

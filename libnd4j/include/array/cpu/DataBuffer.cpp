@@ -125,8 +125,8 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
     VEDA_CALL_THROW(vedaMemcpyDtoHAsync(_primaryBuffer, (VEDAdeviceptr)_specialBuffer, getLenInBytes(), 0));
     // sync ops here to read completed result
     scopedContext.sync();
-    readPrimary();
-  }
+    writePrimary();
+  } 
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -146,6 +146,7 @@ void DataBuffer::copyCounters(const DataBuffer& other) {
   _readPrimary.store(other._readPrimary);
   _readSpecial.store(other._readSpecial);
 }
+
 
 void DataBuffer::writePrimary() const { _writePrimary = ++_counter; }
 void DataBuffer::writeSpecial() const { _writeSpecial = ++_counter; }

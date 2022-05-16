@@ -29,6 +29,9 @@
 #include <ops/declarable/OpRegistrator.h>
 
 #include <cstdarg>
+#if defined(HAVE_VEDA)
+#include <ops/declarable/platform/vednn/veda_helper.h>
+#endif
 
 namespace sd {
 namespace ops {
@@ -627,7 +630,68 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     if (OpRegistrator::getInstance().hasHelper(this->getOpHash(), block->engine())) {
       auto helper = OpRegistrator::getInstance().getPlatformHelper(this->getOpHash(), block->engine());
       if (helper->isUsable(*block)) {
+#if defined(HAVE_VEDA)
+        auto helper_exec = [](sd::ops::platforms::PlatformHelper *helper, sd::graph::Context &block, int numOutputs) {
+          std::vector<const sd::NDArray *> readList;
+          std::vector<const sd::NDArray *> writeList;
+          VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
+          SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
+
+          auto allocVeda = [](const NDArray *x) {
+            auto buffer = x->getDataBuffer();
+            if (!x->isActualOnDeviceSide() && !buffer->special()) {
+              auto length = buffer->getLenInBytes();
+              if (buffer->primary() && length > 0) {
+                sd_debug("allocVeda: store result in %p\n", (void *)buffer->getPtrToSpecial());
+                VEDA_CALL_THROW(vedaMemAllocAsync((VEDAdeviceptr *)buffer->getPtrToSpecial(), length, 0));
+              } else {
+                sd_debug("allocVeda: %s\n", "as the length is 0, its not important");
+              }
+            }
+          };
+          auto asyncToVeda = [](const NDArray *x, bool read = true) {
+            if (!x->isActualOnDeviceSide()) {
+              auto buffer = x->getDataBuffer();
+              if (buffer->special()) {
+                auto hostPtr = buffer->primary();
+                auto length = buffer->getLenInBytes();
+                sd_debug("asyncCopyToVeda: primary %p to special %p\n", hostPtr, buffer->special());
+
+                VEDA_CALL_THROW(vedaMemcpyHtoDAsync((VEDAdeviceptr)buffer->special(), hostPtr, length, 0));
+              }
+              if (read)
+                buffer->readSpecial();
+              else
+                buffer->writeSpecial();
+            }
+          };
+          for (int i = 0; i < block.width(); i++) {
+            auto a = INPUT_VARIABLE(i);
+            sd_debug("##helper readList %d  primary %p isActualOnHostSide %d  isActualOnDeviceSide%d\n", i, a->buffer(),
+                     (int)a->isActualOnHostSide(), (int)a->isActualOnDeviceSide());
+            if (a) {
+              allocVeda(a);
+              asyncToVeda(a);
+            }
+          }
+          for (int i = 0; i < numOutputs; i++) {
+            auto a = reinterpret_cast<sd::NDArray *>(helper->getZ(block, i));
+            sd_debug("##helper writeList %d  primary %p isActualOnHostSide %d  isActualOnDeviceSide%d\n", i,
+                     a->buffer(), (int)a->isActualOnHostSide(), (int)a->isActualOnDeviceSide());
+            if (a) {
+              allocVeda(a);
+              asyncToVeda(a, false);
+            }
+          }
+
+          auto status = helper->invokeHelper(block);
+
+          return status;
+        };
+        status = helper_exec(helper, *block, numOutputs);
+#else
         status = helper->invokeHelper(*block);
+#endif
         hasHelper = true;
       }
     }
@@ -641,10 +705,16 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       std::vector<const sd::NDArray *> readList;
       std::vector<const sd::NDArray *> writeList;
       for (int i = 0; i < block.width(); i++) {
-        readList.push_back(INPUT_VARIABLE(i));
+        auto a = INPUT_VARIABLE(i);
+        sd_debug("##ordinary readList %d  primary %p isActualOnHostSide %d  isActualOnDeviceSide%d\n", i, a->buffer(),
+                 (int)a->isActualOnHostSide(), (int)a->isActualOnDeviceSide());
+        readList.push_back(a);
       }
-      for (int i = 0; i <numOutputs; i++) {
-        writeList.push_back(reinterpret_cast<sd::NDArray *>(op->getZ(block, i)));
+      for (int i = 0; i < numOutputs; i++) {
+        auto a = reinterpret_cast<sd::NDArray *>(op->getZ(block, i));
+        sd_debug("##ordinary readList %d  primary %p isActualOnHostSide %d  isActualOnDeviceSide%d\n", i, a->buffer(),
+                 (int)a->isActualOnHostSide(), (int)a->isActualOnDeviceSide());
+        writeList.push_back(a);
       }
 
       NDArray::preparePrimaryUse(writeList, readList);
@@ -698,7 +768,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
         }
       }
 
-      sd_printf("About to get variable in  execute output\n",0);
+      sd_printf("About to get variable in  execute output\n", 0);
       auto array = block->isFastPath() ? block->isInplace() ? block->fastpath_in()[e] : block->fastpath_out()[e]
                                        : vs->getVariable(block->nodeId(), e)->getNDArray();
 
@@ -714,46 +784,41 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   return status;
 }
 
-
-void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array,bool remove) {
-  sd_printf("Pushing variable\n",0);
-  if(block.isFastPath()) {
-    if(remove && block.fastpath_out()[outputIdx] != nullptr) {
-      //delete reference/call destrucotr if remove is true
+void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array, bool remove) {
+  sd_printf("Pushing variable\n", 0);
+  if (block.isFastPath()) {
+    if (remove && block.fastpath_out()[outputIdx] != nullptr) {
+      // delete reference/call destrucotr if remove is true
       delete block.fastpath_out()[outputIdx];
     }
-    sd_printf("In fast path, setting variable\n",0);
+    sd_printf("In fast path, setting variable\n", 0);
     array->printIndexedBuffer("setting variable\n");
     block.fastpath_out()[outputIdx] = array;
-  }
-  else if( block.getVariableSpace() == nullptr) {
+  } else if (block.getVariableSpace() == nullptr) {
     throw std::runtime_error("Var space should not be null before pushing variable!");
   } else {
-    block.pushNDArrayToVariableSpace(block.nodeId(), outputIdx, array,remove);
-    sd_printf("After pushing variable\n",0);
+    block.pushNDArrayToVariableSpace(block.nodeId(), outputIdx, array, remove);
+    sd_printf("After pushing variable\n", 0);
     auto varSpace = block.getVariableSpace();
-    if(varSpace == nullptr) {
+    if (varSpace == nullptr) {
       throw std::runtime_error("Var space should not be null!");
     }
-    sd_printf("After getting var space\n",0);
+    sd_printf("After getting var space\n", 0);
     if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
-      sd_printf("calling get variable\n",0);
+      sd_printf("calling get variable\n", 0);
       auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
-      sd_printf("after calling get variable",0);
-      if (var->getNDArray() != nullptr && var->isRemovable())
-        delete var->getNDArray();
+      sd_printf("after calling get variable", 0);
+      if (var->getNDArray() != nullptr && var->isRemovable()) delete var->getNDArray();
 
       var->setNDArray(array);
       var->markRemovable(true);
     } else {
-      sd_printf("Creating new variable\n",0);
+      sd_printf("Creating new variable\n", 0);
       auto var = new Variable(array, nullptr, block.getNodeId(), outputIdx);
       varSpace->putVariable(block.getNodeId(), outputIdx, var);
-      sd_printf("Putting variable\n",0);
+      sd_printf("Putting variable\n", 0);
     }
   }
-
-
 }
 
 void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array) {
@@ -761,8 +826,7 @@ void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array
   auto varSpace = block.getVariableSpace();
   if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
     auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
-    if (var->getNDArray() != nullptr && var->isRemovable())
-      delete var->getNDArray();
+    if (var->getNDArray() != nullptr && var->isRemovable()) delete var->getNDArray();
 
     var->setNDArray(array);
     var->markRemovable(true);
