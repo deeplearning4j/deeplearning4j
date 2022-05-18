@@ -259,12 +259,16 @@ void NDArray::synchronize(const char* msg) const {
 void NDArray::preparePrimaryUse(const std::vector<const NDArray*>& writeList,
                                 const std::vector<const NDArray*>& readList, bool synchronizeWritables) {
   for (const auto& a : readList)
-    if (a != nullptr) a->syncToHost();
+    if (a) a->syncToHost();
 
   for (const auto& a : writeList) {
-    if (a != nullptr) {
+    if (a) {
       a->getDataBuffer()->allocatePrimary();
-      if (synchronizeWritables || !a->getDataBuffer()->isPrimaryActual()) a->syncToHost();
+      if (synchronizeWritables) a->syncToHost();
+      // by ticking the write counter we inform that it was taken for the writing purpose by the host operation
+      // furethemore, we do it beforehand, as there could be the situation where device op is used inside
+      // if such case happens then the last usage will be done by the device operation
+      a->tickWriteHost();
     }
   }
 }
@@ -272,12 +276,9 @@ void NDArray::preparePrimaryUse(const std::vector<const NDArray*>& writeList,
 ////////////////////////////////////////////////////////////////////////
 void NDArray::registerPrimaryUse(const std::vector<const NDArray*>& writeList,
                                  const std::vector<const NDArray*>& readList) {
-  // for (const auto& p : readList)
-  //   if (p != nullptr) p->tickReadHost();
-
-  // for (const auto& p : writeList){
-  //   if (p != nullptr) p->tickWriteHost();
-  // }
+  // as noted above for some edge cases we decided to use counters and sync inside 
+  // preparePrimaryUse
+  // though registerPrimaryUse will be no op, it will be called to be on par with the cuda codes
 }
 
 

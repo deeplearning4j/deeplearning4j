@@ -31,7 +31,6 @@ namespace sd {
 namespace ops {
 namespace platforms {
 
-
 PLATFORM_IMPL(concat, ENGINE_CPU) {
   auto output = OUTPUT_VARIABLE(0);
 
@@ -43,23 +42,20 @@ PLATFORM_IMPL(concat, ENGINE_CPU) {
     if (!input->isEmpty()) nonEmptyArrs.push_back(input);
   }
 
-
-
-    VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
-auto func = handle.getFunctionByConstPtrName("vedaConcatUpTo32");
+  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
+  auto func = handle.getFunctionByConstPtrName("vedaConcatUpTo32");
 
   VEDAdeviceptr vO;
 
   std::vector<VEDAdeviceptr> inputList;
-  for(auto input: nonEmptyArrs){
-    
-      inputList.push_back((VEDAdeviceptr)input->specialBuffer());
+  for (auto input : nonEmptyArrs) {
+    inputList.push_back((VEDAdeviceptr)input->specialBuffer());
   }
   vO = (VEDAdeviceptr)output->specialBuffer();
 
-  VEDA_CALL_THROW(vedaLaunchKernel(func, 0, (uint64_t)nonEmptyArrs.size(), VEDAstack(inputList.data(), VEDA_ARGS_INTENT_IN, inputList.size() * sizeof(VEDAdeviceptr)),  vO));
-
-
+  VEDA_CALL_THROW(
+      vedaLaunchKernel(func, 0, (uint64_t)nonEmptyArrs.size(),
+                       VEDAstack(inputList.data(), VEDA_ARGS_INTENT_IN, inputList.size() * sizeof(VEDAdeviceptr)), vO));
 
   // scopedContext.sync();
 
@@ -97,12 +93,10 @@ SD_INLINE int isShapeExtendedWithOnes(const NDArray &input, int axis) {
 }
 
 PLATFORM_CHECK(concat, ENGINE_CPU) {
-#if 1
-  return false;
-#else
+
   auto output = OUTPUT_VARIABLE(0);
-// sd::Environment::getInstance().setDebug(true);
-// sd::Environment::getInstance().setVerbose(true);
+  // sd::Environment::getInstance().setDebug(true);
+  // sd::Environment::getInstance().setVerbose(true);
   const bool isAxisInLastArr = block.getBArguments()->size() == 0 ? false : B_ARG(0);
   const int numOfInArrs = isAxisInLastArr ? block.width() - 1 : block.width();
   Requirements req("VEDNN CONCAT OP");
@@ -153,7 +147,7 @@ PLATFORM_CHECK(concat, ENGINE_CPU) {
   }
   req.logTheSuccess();
   return req;
-#endif
+
 }
 
 }  // namespace platforms

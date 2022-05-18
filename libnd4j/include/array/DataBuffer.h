@@ -133,12 +133,12 @@ class SD_LIB_EXPORT DataBuffer {
 #ifndef __JAVACPP_HACK__
 #if defined(HAVE_VEDA)
   void** getPtrToSpecial() const;
+#endif
+#endif
 
-  void showCounters(){
-      printf(":: wP: %d wS: %d rP: %d rS: %d\n", (int)_writePrimary.load() , (int)_writeSpecial.load(), (int) _readPrimary.load(), (int)_readSpecial.load()  );
-  }
-#endif
-#endif
+  void  showBufferLimited();
+  //for Debug purposes
+  void showCounters(const char* msg1, const char* msg2);
 
   /**
    * This method deletes buffers, if we're owners

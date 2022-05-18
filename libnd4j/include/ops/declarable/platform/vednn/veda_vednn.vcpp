@@ -161,6 +161,26 @@ void copyWf0ToWf1(const vednnFilterParam_t &paramFilter, const float *weight, fl
 
 extern "C" {
 
+void showBufferVe(VEDAdeviceptr v) {
+#if defined(DEBUG_VEDA_LOGS)
+  size_t size = 0;
+  void *in;
+
+  std::cout << "ve " << (void *)v << "\n";
+  if (v) {
+    vedaMemPtrSize(&in, &size, v);
+    float *x = (float *)in;
+    size = size > 80 ? 80 : 0;
+    for (int i = 0; i < size / sizeof(float); i++) std::cout << x[i] << ", ";
+  } else {
+    std::cout << "null ";
+  }
+  std::cout << std::endl;
+#endif
+}
+
+
+
 uint64_t vedaVednnConvolutionForwardAddBias(const vednnTensorParam_t *paramIn, VEDAdeviceptr vDataIn,
                                             uint8_t isDataInNCHW, const vednnFilterParam_t *paramFilter,
                                             VEDAdeviceptr vDataKernel, int32_t weightFormat,
@@ -176,7 +196,11 @@ uint64_t vedaVednnConvolutionForwardAddBias(const vednnTensorParam_t *paramIn, V
   vedaMemPtr((void **)&pDataKernelPtr, vDataKernel);
   if (vDataBias) vedaMemPtr((void **)&pDataBias, vDataBias);
   vedaMemPtr((void **)&pDataOutPtr, vDataOut);
-
+#if defined(DEBUG_VEDA_LOGS)
+  showBufferVe(vDataIn);
+  showBufferVe(vDataKernel);
+  showBufferVe(vDataBias);
+#endif
   std::unique_ptr<float[]> tempIn, tempOut, tempW;
 
   if (!isDataInNCHW) {
@@ -361,7 +385,9 @@ vednnError_t vedaVednnMaxPoolingForward(const vednnTensorParam_t *pParamIn, VEDA
   void *pDataOut;
   vedaMemPtr((void **)&pDataIn, vDataIn);
   vedaMemPtr((void **)&pDataOut, vDataOut);
-
+#if defined(DEBUG_VEDA_LOGS)
+  showBufferVe(vDataIn);
+#endif
   return vednnMaxPoolingForward(pParamIn, pDataIn, pParamOut, pDataOut, pParamPool);
 }
 
@@ -403,6 +429,9 @@ uint64_t vedaConcatUpTo32(const uint64_t nInput, VEDAdeviceptr *inputList, VEDAd
       void *in;
       size_t size;
       vedaMemPtrSize(&in, &size, inputList[i]);
+#if defined(DEBUG_VEDA_LOGS)
+  showBufferVe(inputList[i]);
+#endif
       auto sizeInFloats = size / sizeof(float);
       zPtrList[i].in = (float *)in;
       zPtrList[i].out = z;

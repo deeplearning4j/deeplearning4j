@@ -36,11 +36,9 @@ PLATFORM_IMPL(relu, ENGINE_CPU) {
   auto ret = vednnActivationForward(VEDNN_ACTIVATION_RELU, input->buffer(), output->buffer(), input->lengthOf());
   return ret == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
-  
-  
 
-    VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
-auto func = handle.getFunctionByConstPtrName("vedaVednnActivationForward");
+  VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
+  auto func = handle.getFunctionByConstPtrName("vedaVednnActivationForward");
 
   VEDAdeviceptr vIn, vO;
 
@@ -48,7 +46,6 @@ auto func = handle.getFunctionByConstPtrName("vedaVednnActivationForward");
   vO = (VEDAdeviceptr)output->specialBuffer();
   const uint64_t nElements = input->lengthOf();
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDNN_ACTIVATION_RELU, vIn, vO, nElements));
-
 
   return sd::Status::OK;
 #endif
@@ -82,11 +79,9 @@ PLATFORM_IMPL(relu_bp, ENGINE_CPU) {
                                      input->lengthOf());
   return ret == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
-  
-  
 
-    VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
-auto func = handle.getFunctionByConstPtrName("vedaVednnActivationBackward");
+  VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
+  auto func = handle.getFunctionByConstPtrName("vedaVednnActivationBackward");
 
   VEDAdeviceptr vGradOut, vIn, vGradIn;
 
@@ -97,7 +92,6 @@ auto func = handle.getFunctionByConstPtrName("vedaVednnActivationBackward");
   const uint64_t nElements = input->lengthOf();
 
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDNN_ACTIVATION_RELU, vGradOut, vIn, vGradIn, nElements));
-
 
   return sd::Status::OK;
 #endif

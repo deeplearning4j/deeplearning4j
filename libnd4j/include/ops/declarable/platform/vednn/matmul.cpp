@@ -61,11 +61,9 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
     }
   }
 #else
-  
-  
 
-    VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
-auto func = handle.getFunctionByConstPtrName("vedaVednnLinearForwardExF32");
+  VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
+  auto func = handle.getFunctionByConstPtrName("vedaVednnLinearForwardExF32");
 
   VEDAdeviceptr vX, vY, vZ;
   const uint64_t xStride = x->rankOf() > 2 ? x->sizeAt(-1) * x->sizeAt(-2) : 0;

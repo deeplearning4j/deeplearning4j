@@ -93,22 +93,32 @@ void DataBuffer::memcpy(const DataBuffer& dst, const DataBuffer& src) {
 void DataBuffer::deleteSpecial() {
   // device id for now is 0
   if (_specialBuffer) {
+#if defined(DEBUG_VEDA_LOGS)
     sd_debug("%s \n", "remove Veda Buffer");
+#endif
     VEDAdeviceptr v = (VEDAdeviceptr)_specialBuffer;
     VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
     SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
     VEDA_CALL_THROW(vedaMemFreeAsync(v, 0));
     // sync here
-    //scopedContext.sync();
+    // scopedContext.sync();
     _specialBuffer = nullptr;
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void** DataBuffer::getPtrToSpecial() const {
-  return (void**)&_specialBuffer;
-}
+void** DataBuffer::getPtrToSpecial() const { return (void**)&_specialBuffer; }
 
+void DataBuffer::showBufferLimited() {
+#if defined(DEBUG_VEDA_LOGS)
+  float* x = (float*)_primaryBuffer;
+  size_t size = getLenInBytes();
+  size = size > 80 ? 80 : 0;
+  sd_debug("cpu: %p\n", (void*)x);
+  for (int i = 0; i < size / sizeof(float); i++) sd_debug("%f, ", x[i]);
+  sd_debug("%s", "\n");
+#endif
+}
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSync) {
   if (isPrimaryActual() && !forceSync) {
@@ -120,13 +130,28 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
     // lets copy from _specialBuffer and sync it back
     // we will take device 0 as usual and sync on it
     sd_debug("%s \n", "syncToPrimary Veda Buffer");
+#if defined(DEBUG_VEDA_LOGS)
+    sd_debug("syncToPrimary--%p ---%p---{\n", _primaryBuffer, _specialBuffer);
+    showBufferLimited();
+#endif
     VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
     SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
     VEDA_CALL_THROW(vedaMemcpyDtoHAsync(_primaryBuffer, (VEDAdeviceptr)_specialBuffer, getLenInBytes(), 0));
     // sync ops here to read completed result
     scopedContext.sync();
-    writePrimary();
-  } 
+    readPrimary();
+#if defined(DEBUG_VEDA_LOGS)
+    if (sd::Environment::getInstance().isDebug() && sd::Environment::getInstance().isVerbose()) {
+      auto fshow = handle.getFunctionByConstPtrName("showBufferVe");
+      VEDA_CALL_THROW(vedaLaunchKernel(fshow, 0, (VEDAdeviceptr)_specialBuffer));
+      scopedContext.sync();
+    }
+    sd_debug("%s", "----after---\n");
+    // show buffer
+    showBufferLimited();
+    sd_debug("%s", "----}\n");
+#endif
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -146,7 +171,6 @@ void DataBuffer::copyCounters(const DataBuffer& other) {
   _readPrimary.store(other._readPrimary);
   _readSpecial.store(other._readSpecial);
 }
-
 
 void DataBuffer::writePrimary() const { _writePrimary = ++_counter; }
 void DataBuffer::writeSpecial() const { _writeSpecial = ++_counter; }
@@ -195,5 +219,13 @@ void DataBuffer::allocateSpecial() {}
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::migrate() {}
+
+void DataBuffer::showCounters(const char* msg1, const char* msg2) {
+#if defined(HAVE_VEDA) && defined(DEBUG_VEDA_LOGS)
+  sd_debug("%s %s || primary %p special %p :: wP: %d wS: %d rP: %d rS: %d\n", msg1, msg2, _primaryBuffer,
+           _specialBuffer, (int)_writePrimary.load(), (int)_writeSpecial.load(), (int)_readPrimary.load(),
+           (int)_readSpecial.load());
+#endif
+}
 
 }  // namespace sd

@@ -226,6 +226,7 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
   if (bias) vB = (VEDAdeviceptr)bias->specialBuffer();
   vO = (VEDAdeviceptr)out->specialBuffer();
 
+
   VEDA_CALL_THROW(vedaLaunchKernel(
       func, 0, VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn, (uint8_t)isNCHW,
       VEDAstack(&paramFilter, VEDA_ARGS_INTENT_IN, sizeof(paramFilter)), vW, (int32_t)weightFormat,
@@ -235,7 +236,6 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
 
   auto status = sd::Status::OK;
 #endif
-
 
   return status;
 }
@@ -327,7 +327,6 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CPU) {
   std::unique_ptr<NDArray> inTemp, wTemp, gradOutTemp, gradInTemp, gradWeightsTemp;
   NDArray *in = input, *weightPtr = weights, *gradOutPtr = gradO, *gradInPtr = gradI, *gradWeightsPtr = gradW;
 
-
   paramGradOut = getTensorFormat(*gradOutPtr, isNCHW);
 
   paramFilter = getFilterParam(*weightPtr, weightFormat);
@@ -416,14 +415,13 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CPU) {
   vGradW = (VEDAdeviceptr)gradWeightsPtr->specialBuffer();
   vIn = (VEDAdeviceptr)in->specialBuffer();
   vGradIn = (VEDAdeviceptr)gradInPtr->specialBuffer();
-  vGradBias = gradB? (VEDAdeviceptr)gradB->specialBuffer() : nullptr;
+  vGradBias = gradB ? (VEDAdeviceptr)gradB->specialBuffer() : nullptr;
 
-
-  VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDAstack(&paramGradOut, VEDA_ARGS_INTENT_IN, sizeof(paramGradOut)),
-                                   vGradOut, VEDAstack(&paramFilter, VEDA_ARGS_INTENT_IN, sizeof(paramFilter)), vW, (int32_t)weightFormat,
-                                   vGradW, VEDAstack(&paramGradIn, VEDA_ARGS_INTENT_IN, sizeof(paramGradIn)), vIn,
-                                   vGradIn, (uint8_t)isNCHW, vGradBias, VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv)),
-                                   VEDNN_CONV_ALGORITHM_DIRECT));
+  VEDA_CALL_THROW(vedaLaunchKernel(
+      func, 0, VEDAstack(&paramGradOut, VEDA_ARGS_INTENT_IN, sizeof(paramGradOut)), vGradOut,
+      VEDAstack(&paramFilter, VEDA_ARGS_INTENT_IN, sizeof(paramFilter)), vW, (int32_t)weightFormat, vGradW,
+      VEDAstack(&paramGradIn, VEDA_ARGS_INTENT_IN, sizeof(paramGradIn)), vIn, vGradIn, (uint8_t)isNCHW, vGradBias,
+      VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv)), VEDNN_CONV_ALGORITHM_DIRECT));
 
   auto status = sd::Status::OK;
   return status;
@@ -468,9 +466,9 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
 #endif
       req.expectEq(makeInfoVariable(gradW->ordering(), ORDERING_MSG_OUTPUT1), 'c');
 #if defined(HAVE_VEDA)
-      if(gradB){
-        req.expectEq(makeInfoVariable(gradB->ews(), EWS_MSG_OUTPUT2), 1);
-      }
+  if (gradB) {
+    req.expectEq(makeInfoVariable(gradB->ews(), EWS_MSG_OUTPUT2), 1);
+  }
 #endif
   req.logTheSuccess();
   return req;

@@ -22,6 +22,7 @@
 
 #define __STDC_CONSTANT_MACROS
 
+#include <array/NDArray.h>
 #include <exceptions/allocation_exception.h>
 #include <fcntl.h>
 #include <graph/GraphExecutioner.h>
@@ -29,6 +30,7 @@
 #include <helpers/BlasHelper.h>
 #include <helpers/helper_ptrmap.h>
 #include <helpers/logger.h>
+#include <legacy/NativeOpExecutioner.h>
 #include <legacy/NativeOps.h>
 #include <loops/type_conversions.h>
 #include <math/templatemath.h>
@@ -38,8 +40,6 @@
 #include <system/pairwise_util.h>
 #include <types/float8.h>
 #include <types/types.h>
-#include <array/NDArray.h>
-#include <legacy/NativeOpExecutioner.h>
 #ifndef _WIN32
 #include <sys/mman.h>
 #include <unistd.h>
@@ -96,8 +96,10 @@ void execIndexReduceScalar(sd::Pointer *extraPointers, int opNum, OpaqueDataBuff
                            const sd::LongType *hXShapeInfo, const sd::LongType *dXShapeInfo, void *extraParams,
                            OpaqueDataBuffer *dbZ, const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execIndexReduceScalar(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                                extraParams, dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -120,6 +122,7 @@ void execIndexReduce(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
                      const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo, OpaqueDataBuffer *dbDimension,
                      const sd::LongType *hDimensionShape, const sd::LongType *dDimensionShape) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     auto dimension = reinterpret_cast<int *>(dbDimension->primary());
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
@@ -133,6 +136,7 @@ void execIndexReduce(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
     NativeOpExecutioner::execIndexReduce(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                          extraParams, hz, hZShapeInfo, dbZ->special(), dZShapeInfo, dimension,
                                          dimensionLength, hTADShapeInfo, hTADOffsets);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -157,6 +161,7 @@ void execBroadcast(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
                    const sd::LongType *dZShapeInfo, OpaqueDataBuffer *dbDimension, const sd::LongType *hDimensionShape,
                    const sd::LongType *dDimensionShape) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     auto dimension = reinterpret_cast<int *>(dbDimension->primary());
     auto dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
@@ -172,6 +177,7 @@ void execBroadcast(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
                                        dbY->primary(), hYShapeInfo, dbY->special(), dYShapeInfo, dbZ->primary(),
                                        hZShapeInfo, dbZ->special(), dZShapeInfo, dimension, dimensionLength,
                                        hTADShapeInfo, hTADOffsets, hTADShapeInfoZ, hTADOffsetsZ);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -184,6 +190,7 @@ void execBroadcastBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *
                        const sd::LongType *dZShapeInfo, void *extraParams, OpaqueDataBuffer *dbDimension,
                        const sd::LongType *hDimensionShape, const sd::LongType *dDimensionShape) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX, dbY});
     auto dimension = reinterpret_cast<int *>(dbDimension->primary());
     auto dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
@@ -199,6 +206,7 @@ void execBroadcastBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *
                                            dbY->primary(), hYShapeInfo, dbY->special(), dYShapeInfo, dbZ->primary(),
                                            hZShapeInfo, dbZ->special(), dZShapeInfo, extraParams, dimension,
                                            dimensionLength, hTADShapeInfo, hTADOffsets, hTADShapeInfoZ, hTADOffsetsZ);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX, dbY});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -222,9 +230,11 @@ void execPairwiseTransform(sd::Pointer *extraPointers, int opNum, OpaqueDataBuff
                            const sd::LongType *hYShapeInfo, const sd::LongType *dYShapeInfo, OpaqueDataBuffer *dbZ,
                            const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo, void *extraParams) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX, dbY});
     NativeOpExecutioner::execPairwiseTransform(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                                dbY->primary(), hYShapeInfo, dbY->special(), dYShapeInfo, dbZ->primary(),
                                                hZShapeInfo, dbZ->special(), dZShapeInfo, extraParams);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX, dbY});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -236,9 +246,11 @@ void execPairwiseTransformBool(sd::Pointer *extraPointers, int opNum, OpaqueData
                                const sd::LongType *hYShapeInfo, const sd::LongType *dYShapeInfo, OpaqueDataBuffer *dbZ,
                                const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo, void *extraParams) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX, dbY});
     NativeOpExecutioner::execPairwiseBoolTransform(
         nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo, dbY->primary(), hYShapeInfo,
         dbY->special(), dYShapeInfo, dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, extraParams);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX, dbY});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -258,8 +270,10 @@ void execReduceFloat(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
                      const sd::LongType *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
                      const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execReduceFloatScalar(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                                extraParams, dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -270,8 +284,10 @@ void execReduceSame(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
                     const sd::LongType *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
                     const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execReduceSameScalar(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                               extraParams, dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -282,8 +298,10 @@ void execReduceBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
                     const sd::LongType *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
                     const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execReduceBoolScalar(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                               extraParams, dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -294,8 +312,10 @@ void execReduceLong(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
                     const sd::LongType *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
                     const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execReduceLongScalar(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                               extraParams, dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -334,9 +354,11 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *d
 
     std::vector<int> dims =
         (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execReduceFloat(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                          extraParams, dbZ->primary(), zShapeInfoH, dbZ->special(), zShapeInfoD,
                                          dims.data(), dims.size());
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
 
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -367,9 +389,11 @@ void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
 
     std::vector<int> dims =
         (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execReduceBool(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                         extraParams, dbZ->primary(), zShapeInfoH, dbZ->special(), zShapeInfoD,
                                         dims.data(), dims.size());
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
 
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -400,9 +424,11 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
 
     std::vector<int> dims =
         (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execReduceSame(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                         extraParams, dbZ->primary(), zShapeInfoH, dbZ->special(), zShapeInfoD,
                                         dims.data(), dims.size());
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
 
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -433,9 +459,11 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
 
     std::vector<int> dims =
         (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execReduceLong(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                         extraParams, dbZ->primary(), zShapeInfoH, dbZ->special(), zShapeInfoD,
                                         dims.data(), dims.size());
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
 
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -459,9 +487,11 @@ void execReduce3(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, c
                  const sd::LongType *hYShapeInfo, const sd::LongType *dYShapeInfo, OpaqueDataBuffer *dbZ,
                  const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX, dbY});
     NativeOpExecutioner::execReduce3(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                      extraParams, dbY->primary(), hYShapeInfo, dbY->special(), dYShapeInfo,
                                      dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX, dbY});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -482,9 +512,11 @@ void execReduce3Scalar(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *
                        const sd::LongType *hYShapeInfo, const sd::LongType *dYShapeInfo, OpaqueDataBuffer *dbZ,
                        const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX, dbY});
     NativeOpExecutioner::execReduce3Scalar(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                            extraParams, dbY->primary(), hYShapeInfo, dbY->special(), dYShapeInfo,
                                            dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX, dbY});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -515,10 +547,12 @@ void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
     auto dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     if (extraPointers == nullptr || extraPointers[2] == 0) {
+      OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX, dbY});
       NativeOpExecutioner::execReduce3(
           LaunchContext::defaultContext(), opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo, extraParams,
           dbY->primary(), hYShapeInfo, dbY->special(), dYShapeInfo, dbZ->primary(), hZShapeInfo, dbZ->special(),
           dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
+      OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX, dbY});
     } else {
       // going tad-way
       auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
@@ -526,10 +560,12 @@ void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
       auto hTADShapeInfo = tadPack.primaryShapeInfo();
       auto hTADOffsets = tadPack.primaryOffsets();
 
+      OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX, dbY});
       NativeOpExecutioner::execReduce3TAD(
           LaunchContext::defaultContext(), opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo, extraParams,
           dbY->primary(), hYShapeInfo, dbY->special(), dYShapeInfo, dbZ->primary(), hZShapeInfo, dbZ->special(),
           dZShapeInfo, dimension, dimensionLength, hTADShapeInfo, hTADOffsets, nullptr, nullptr);
+      OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX, dbY});
     }
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -555,9 +591,11 @@ void execScalar(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, co
                 const sd::LongType *dZShapeInfo, OpaqueDataBuffer *dbScalar, const sd::LongType *hScalarShapeInfo,
                 const sd::LongType *dScalarShapeInfo, void *extraParams) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execScalar(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                     dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, dbScalar->primary(),
                                     hScalarShapeInfo, dbScalar->special(), dScalarShapeInfo, extraParams);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -569,9 +607,11 @@ void execScalarBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
                     const sd::LongType *dZShapeInfo, OpaqueDataBuffer *dbScalar, const sd::LongType *hScalarShapeInfo,
                     const sd::LongType *dScalarShapeInfo, void *extraParams) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execScalarBool(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                         dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, dbScalar->primary(),
                                         hScalarShapeInfo, dbScalar->special(), dScalarShapeInfo, extraParams);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -590,9 +630,11 @@ void execSummaryStatsScalar(sd::Pointer *extraPointers, int opNum, OpaqueDataBuf
                             OpaqueDataBuffer *dbZ, const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo,
                             bool biasCorrected) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execSummaryStatsScalar(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(),
                                                 dXShapeInfo, extraParams, dbZ->primary(), hZShapeInfo, dbZ->special(),
                                                 dZShapeInfo, biasCorrected);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -611,9 +653,11 @@ void execSummaryStats(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *d
                       const sd::LongType *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
                       const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo, bool biasCorrected) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execSummaryStats(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                           extraParams, dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo,
                                           biasCorrected);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -640,9 +684,11 @@ void execSummaryStatsTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer
     auto dimension = reinterpret_cast<int *>(dbDimension->primary());
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execSummaryStats(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                           extraParams, dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo,
                                           dimension, dimensionLength, tadShapeInfo, tadOffsets, biasCorrected);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -663,9 +709,11 @@ void execTransformFloat(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer 
                         const sd::LongType *dXShapeInfo, OpaqueDataBuffer *dbZ, const sd::LongType *hZShapeInfo,
                         const sd::LongType *dZShapeInfo, void *extraParams) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execTransformFloat(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                             dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, extraParams,
                                             nullptr, nullptr);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -676,9 +724,11 @@ void execTransformSame(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *
                        const sd::LongType *dXShapeInfo, OpaqueDataBuffer *dbZ, const sd::LongType *hZShapeInfo,
                        const sd::LongType *dZShapeInfo, void *extraParams) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execTransformSame(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                            dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, extraParams,
                                            nullptr, nullptr);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -689,9 +739,11 @@ void execTransformBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *
                        const sd::LongType *dXShapeInfo, OpaqueDataBuffer *dbZ, const sd::LongType *hZShapeInfo,
                        const sd::LongType *dZShapeInfo, void *extraParams) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execTransformBool(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                            dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, extraParams,
                                            nullptr, nullptr);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -702,9 +754,11 @@ void execTransformAny(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *d
                       const sd::LongType *dXShapeInfo, OpaqueDataBuffer *dbZ, const sd::LongType *hZShapeInfo,
                       const sd::LongType *dZShapeInfo, void *extraParams) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execTransformAny(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                           dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, extraParams,
                                           nullptr, nullptr);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -715,9 +769,11 @@ void execTransformStrict(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer
                          const sd::LongType *dXShapeInfo, OpaqueDataBuffer *dbZ, const sd::LongType *hZShapeInfo,
                          const sd::LongType *dZShapeInfo, void *extraParams) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execTransformStrict(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                              dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, extraParams,
                                              nullptr, nullptr);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -735,10 +791,12 @@ void execReduce3All(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
     auto dimension = reinterpret_cast<int *>(dbDimension->primary());
     auto dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX, dbY});
     NativeOpExecutioner::execReduce3All(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                         extraParamsVals, dbY->primary(), hYShapeInfo, dbY->special(), dYShapeInfo,
                                         dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, dimension,
                                         dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX, dbY});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1202,11 +1260,13 @@ void execScalarTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
     auto dimension = reinterpret_cast<int *>(dbDimension->primary());
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execScalar(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                     extraParams, dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo,
                                     dbScalars->primary(), hScalarShapeInfo, dbScalars->special(), dScalarShapeInfo,
                                     dimension, shape::length(hDimensionShape), tadShapeInfo, tadOffsets, tadShapeInfoZ,
                                     tadOffsetsZ);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1225,10 +1285,12 @@ void execScalarBoolTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *
     auto dimension = reinterpret_cast<int *>(dbDimension->primary());
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execScalarBool(
         nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo, extraParams, dbZ->primary(),
         hZShapeInfo, dbZ->special(), dZShapeInfo, dbScalars->primary(), hScalarShapeInfo, dbScalars->special(),
         dScalarShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1271,8 +1333,10 @@ void execAggregateBatch(sd::Pointer *extraPointers, int numAggregates, int opNum
 void execRandom(sd::Pointer *extraPointers, int opNum, sd::Pointer state, OpaqueDataBuffer *dbZ,
                 const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo, void *extraArguments) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {});
     NativeOpExecutioner::execRandom(nullptr, opNum, state, dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo,
                                     extraArguments);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1284,9 +1348,11 @@ void execRandom3(sd::Pointer *extraPointers, int opNum, sd::Pointer state, Opaqu
                  const sd::LongType *hYShapeInfo, const sd::LongType *dYShapeInfo, OpaqueDataBuffer *dbZ,
                  const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo, void *extraArguments) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX, dbY});
     NativeOpExecutioner::execRandom(nullptr, opNum, state, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                     dbY->primary(), hYShapeInfo, dbY->special(), dYShapeInfo, dbZ->primary(),
                                     hZShapeInfo, dbZ->special(), dZShapeInfo, extraArguments);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX, dbY});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1297,8 +1363,10 @@ void execRandom2(sd::Pointer *extraPointers, int opNum, sd::Pointer state, Opaqu
                  const sd::LongType *hXShapeInfo, const sd::LongType *dXShapeInfo, OpaqueDataBuffer *dbZ,
                  const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo, void *extraArguments) {
   try {
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execRandom(nullptr, opNum, state, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                     dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, extraArguments);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1370,6 +1438,7 @@ void sortTad(sd::Pointer *extraPointers, void *hX, const sd::LongType *hXShapeIn
              const sd::LongType *tadOffsets, bool descending) {
   try {
     NativeOpExecutioner::execSort(hX, hXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
+
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1380,6 +1449,7 @@ void sortCooIndices(sd::Pointer *extraPointers, sd::LongType *indices, void *x, 
                     const sd::LongType *xShapeInfo) {
   try {
     NativeOpExecutioner::execSortCooIndices(indices, x, length, xShapeInfo);
+
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1561,53 +1631,51 @@ sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType h
 }
 
 #if defined(__NEC__)
-void setGraphContextArgs(OpaqueContext *ctx, int numArr, sd::Pointer* inputArrDataShapePairs, int numIArgs, sd::LongType* iArgsPtr,
-                                      int numDArgs, int *dArgsPtr, int numTArgs, double *tArgsPtr, int numBArgs, bool *bArgsPtr){
-
-
-  if(numIArgs> 0 ) {
+void setGraphContextArgs(OpaqueContext *ctx, int numArr, sd::Pointer *inputArrDataShapePairs, int numIArgs,
+                         sd::LongType *iArgsPtr, int numDArgs, int *dArgsPtr, int numTArgs, double *tArgsPtr,
+                         int numBArgs, bool *bArgsPtr) {
+  if (numIArgs > 0) {
     auto vecPtr = ctx->getIArguments();
     vecPtr->resize(numIArgs);
     auto vecData = vecPtr->data();
     for (int e = 0; e < numIArgs; e++) vecData[e] = iArgsPtr[e];
   }
 
-  if(numDArgs> 0 ) {
+  if (numDArgs > 0) {
     auto vecPtr = ctx->getDArguments();
     vecPtr->resize(numDArgs);
     auto vecData = vecPtr->data();
-    for (int e = 0; e < numDArgs; e++) vecData[e] =(sd::DataType)dArgsPtr[e];
+    for (int e = 0; e < numDArgs; e++) vecData[e] = (sd::DataType)dArgsPtr[e];
   }
 
-  if(numTArgs> 0 ) {
+  if (numTArgs > 0) {
     auto vecPtr = ctx->getTArguments();
     vecPtr->resize(numTArgs);
     auto vecData = vecPtr->data();
     for (int e = 0; e < numTArgs; e++) vecData[e] = tArgsPtr[e];
   }
 
-  if(numBArgs> 0 ) {
+  if (numBArgs > 0) {
     auto vecPtr = ctx->getBArguments();
     vecPtr->clear();
     for (int e = 0; e < numBArgs; e++) vecPtr->push_back(bArgsPtr[e]);
   }
 
   int i = 0;
-  for (int e = 0; e < numArr; e+=2) {
-      ctx->setInputArray(i, inputArrDataShapePairs[e], inputArrDataShapePairs[e + 1], nullptr);
-      ++i;
+  for (int e = 0; e < numArr; e += 2) {
+    ctx->setInputArray(i, inputArrDataShapePairs[e], inputArrDataShapePairs[e + 1], nullptr);
+    ++i;
   }
 }
 
 sd::ShapeList *calculateOutputShapesFromContext(sd::graph::Context *ctx, sd::LongType hash) {
   try {
-
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
     auto status = op->validateDataTypes(*ctx);
     if (status != sd::Status::OK) throw std::runtime_error("Data types validation failed");
     sd::ShapeList inShapes;
 
-    for (int e = 0; e < ctx->width() ; e++) {
+    for (int e = 0; e < ctx->width(); e++) {
       auto arr = ctx->array(e);
       auto shape_ = arr->shapeInfo();
       inShapes.push_back(shape_);
@@ -1622,7 +1690,6 @@ sd::ShapeList *calculateOutputShapesFromContext(sd::graph::Context *ctx, sd::Lon
     return nullptr;
   }
 }
-
 
 /**
  * @brief Calculate output shapes for the given operation and context and fills the buffer with shape information
@@ -1643,7 +1710,6 @@ sd::ShapeList *calculateOutputShapesFromContext(sd::graph::Context *ctx, sd::Lon
  */
 int calculateOutputShapesAndFill(sd::graph::Context *ctx, sd::LongType hash, void **handleState,
                                  int outBufferSizeInBytes, sd::LongType *outConcatenatedShapesBuffer) {
-
   struct ShapeFillerHandle {
     sd::ShapeList *shapeList = nullptr;
     size_t last_index = 0;
@@ -1659,8 +1725,10 @@ int calculateOutputShapesAndFill(sd::graph::Context *ctx, sd::LongType hash, voi
   }
   int requiredMem = shape::shapeInfoLength(SD_MAX_RANK) * sizeof(sd::LongType);
   if (outBufferSizeInBytes < requiredMem) {
-    sd_printf("Buffersize (%d bytes ) should be enough (%d bytes ) to fill shape of the biggest possible NDArray (max-rank: %d )\n",
-              outBufferSizeInBytes, requiredMem, SD_MAX_RANK);
+    sd_printf(
+        "Buffersize (%d bytes ) should be enough (%d bytes ) to fill shape of the biggest possible NDArray (max-rank: "
+        "%d )\n",
+        outBufferSizeInBytes, requiredMem, SD_MAX_RANK);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(4);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(
         "Buffersize should enough to fill shape of the biggest possible NDArray");
@@ -1698,7 +1766,6 @@ int calculateOutputShapesAndFill(sd::graph::Context *ctx, sd::LongType hash, voi
   int count = (sHandle->last_index - old_index);
   // destroy everything in case filling is completed
   if (sHandle->last_index >= shapeList->size()) {
-
     delete shapeList;
     delete sHandle;
     // reset handle
@@ -2803,10 +2870,10 @@ int dbDeviceId(OpaqueDataBuffer *dataBuffer) { return dataBuffer->deviceId(); }
 
 void dbClose(OpaqueDataBuffer *dataBuffer) { dataBuffer->getDataBuffer()->close(); }
 
-void setVedaDeviceLibFolder(std::string path){
+void setVedaDeviceLibFolder(std::string path) {
   sd::Environment::getInstance().setVedaDeviceDir(path);
 #if defined(HAVE_VEDA)
-   VEDA::getInstance();
+  VEDA::getInstance();
 #endif
 }
 

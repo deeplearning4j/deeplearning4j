@@ -42,11 +42,9 @@ PLATFORM_IMPL(log_softmax, ENGINE_CPU) {
 
   return ret == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
-  
-  
 
-    VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
-auto func = handle.getFunctionByConstPtrName("vedaVednnSoftmaxForward");
+  VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
+  auto func = handle.getFunctionByConstPtrName("vedaVednnSoftmaxForward");
 
   VEDAdeviceptr vIn, vO;
 
@@ -54,8 +52,6 @@ auto func = handle.getFunctionByConstPtrName("vedaVednnSoftmaxForward");
   vO = (VEDAdeviceptr)output->specialBuffer();
 
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDNN_SOFTMAX_LOG, vIn, vO, outer_dim, inner_dim));
-
-
 
   return sd::Status::OK;
 

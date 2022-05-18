@@ -642,45 +642,50 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
             if (!x->isActualOnDeviceSide() && !buffer->special()) {
               auto length = buffer->getLenInBytes();
               if (buffer->primary() && length > 0) {
+#if defined(DEBUG_VEDA_LOGS)
                 sd_debug("allocVeda: store result in %p\n", (void *)buffer->getPtrToSpecial());
+#endif
                 VEDA_CALL_THROW(vedaMemAllocAsync((VEDAdeviceptr *)buffer->getPtrToSpecial(), length, 0));
               } else {
+#if defined(DEBUG_VEDA_LOGS)
                 sd_debug("allocVeda: %s\n", "as the length is 0, its not important");
+#endif
               }
             }
           };
-          auto asyncToVeda = [](const NDArray *x, bool read = true) {
+          auto asyncToVeda = [](const NDArray *x) {
             if (!x->isActualOnDeviceSide()) {
               auto buffer = x->getDataBuffer();
               if (buffer->special()) {
                 auto hostPtr = buffer->primary();
                 auto length = buffer->getLenInBytes();
+#if defined(DEBUG_VEDA_LOGS)
                 sd_debug("asyncCopyToVeda: primary %p to special %p\n", hostPtr, buffer->special());
-
+#endif
                 VEDA_CALL_THROW(vedaMemcpyHtoDAsync((VEDAdeviceptr)buffer->special(), hostPtr, length, 0));
               }
-              if (read)
-                buffer->readSpecial();
-              else
-                buffer->writeSpecial();
+              buffer->readSpecial();
             }
           };
           for (int i = 0; i < block.width(); i++) {
             auto a = INPUT_VARIABLE(i);
-            sd_debug("##helper readList %d  primary %p isActualOnHostSide %d  isActualOnDeviceSide%d\n", i, a->buffer(),
-                     (int)a->isActualOnHostSide(), (int)a->isActualOnDeviceSide());
             if (a) {
+#if defined(DEBUG_VEDA_LOGS)
+              a->getDataBuffer()->showCounters("helper: before read",helper->name().c_str());
+#endif
               allocVeda(a);
               asyncToVeda(a);
             }
           }
           for (int i = 0; i < numOutputs; i++) {
             auto a = reinterpret_cast<sd::NDArray *>(helper->getZ(block, i));
-            sd_debug("##helper writeList %d  primary %p isActualOnHostSide %d  isActualOnDeviceSide%d\n", i,
-                     a->buffer(), (int)a->isActualOnHostSide(), (int)a->isActualOnDeviceSide());
             if (a) {
+#if defined(DEBUG_VEDA_LOGS)
+              a->getDataBuffer()->showCounters("helper:  before write", helper->name().c_str());
+#endif
               allocVeda(a);
-              asyncToVeda(a, false);
+              //asyncToVeda(a);
+              a->getDataBuffer()->writeSpecial();
             }
           }
 
@@ -706,15 +711,23 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       std::vector<const sd::NDArray *> writeList;
       for (int i = 0; i < block.width(); i++) {
         auto a = INPUT_VARIABLE(i);
-        sd_debug("##ordinary readList %d  primary %p isActualOnHostSide %d  isActualOnDeviceSide%d\n", i, a->buffer(),
-                 (int)a->isActualOnHostSide(), (int)a->isActualOnDeviceSide());
         readList.push_back(a);
+#if defined(DEBUG_VEDA_LOGS)
+        if(a){
+          a->getDataBuffer()->showBufferLimited();
+          a->getDataBuffer()->showCounters("ordinary: before read",op->getOpName()->c_str());
+        }
+#endif
       }
       for (int i = 0; i < numOutputs; i++) {
         auto a = reinterpret_cast<sd::NDArray *>(op->getZ(block, i));
-        sd_debug("##ordinary readList %d  primary %p isActualOnHostSide %d  isActualOnDeviceSide%d\n", i, a->buffer(),
-                 (int)a->isActualOnHostSide(), (int)a->isActualOnDeviceSide());
         writeList.push_back(a);
+#if defined(DEBUG_VEDA_LOGS)
+        if(a){
+          a->getDataBuffer()->showBufferLimited();
+          a->getDataBuffer()->showCounters("ordinary: before write",op->getOpName()->c_str());
+        }
+#endif
       }
 
       NDArray::preparePrimaryUse(writeList, readList);
