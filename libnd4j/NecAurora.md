@@ -39,6 +39,12 @@ Building libdn4j:
 ./buildnativeoperations.sh -o aurora -dt "float;double;int;int64;bool" -t -h vednn -j 120
 ```
 
+
+####### Additional notes
+If you are facing `Unable to grow stack` error while running the test, then set this environment variable
+```
+export OMP_STACKSIZE=1G
+```
 ---------------------
 
 ### libdn4j Cpu library with platform  Ve  Vednn acceleration

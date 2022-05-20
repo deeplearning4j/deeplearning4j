@@ -90,6 +90,7 @@ TEST_F(PlaygroundTests, test_biasAdd_1) {
 
   sd_printf("Time: %lld us;\n", values[values.size() / 2]);
 }
+#if defined(TEST_BENCH_CONV)
 
 void bench_conv(int outter_loop, const char *msg, const std::vector<NDArray *> &inList,
                 const std::vector<NDArray *> &outList, const std::vector<sd::LongType> &iArgs) {
@@ -206,6 +207,7 @@ TEST_F(PlaygroundTests, tt_conv2) {
   out->printShapeInfo("out");
   out->printIndexedBuffer("out");
 }
+#endif
 
 TEST_F(PlaygroundTests, tt_conv2d_followed_by_ordinary_concat) {
   auto in0 = NDArrayFactory::create<float>('c', {1, 2, 5, 4});
@@ -246,16 +248,15 @@ TEST_F(PlaygroundTests, tt_conv2d_followed_by_ordinary_concat) {
   auto out0 = res.at(0);
   auto res1 = op.evaluate({&in0, &w0}, {}, iArgs);
   auto out1 = res1.at(0);
-  //disable concat call with helpers
+  // disable concat call with helpers
   sd::Environment::getInstance().allowHelpers(false);
-  sd::ops::concat op_concat; 
+  sd::ops::concat op_concat;
   auto res2 = op_concat.evaluate({out0, out1}, {}, {0});
   auto out2 = res2.at(0);
 
   out2->printShapeInfo("out2");
   out2->printIndexedBuffer("out2");
   ASSERT_TRUE(out2->equalsTo(&exp));
-
 }
 
 TEST_F(PlaygroundTests, test_bert_full_1) {

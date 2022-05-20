@@ -445,8 +445,11 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
   // rolling over inputs first
   int cnt = 0, inT = 0;
 #if defined(__NEC__)
-  assert(block.width() < 100);
-  sd::DataType inputTypes[100];
+  sd::DataType inputTypes[SD_MAX_INPUT_SIZE];
+  if (block.width() > SD_MAX_INPUT_SIZE) {
+    sd_printf("%s:%d Exceeded allowed input size (%d) \n", __FILE__, __LINE__,  SD_MAX_INPUT_SIZE);
+    throw std::runtime_error("Provided inputs are more than allowed");
+  }
 #else
   std::vector<sd::DataType> inputTypes(block.width());
 #endif
@@ -671,7 +674,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
             auto a = INPUT_VARIABLE(i);
             if (a) {
 #if defined(DEBUG_VEDA_LOGS)
-              a->getDataBuffer()->showCounters("helper: before read",helper->name().c_str());
+              a->getDataBuffer()->showCounters("helper: before read", helper->name().c_str());
 #endif
               allocVeda(a);
               asyncToVeda(a);
@@ -684,7 +687,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
               a->getDataBuffer()->showCounters("helper:  before write", helper->name().c_str());
 #endif
               allocVeda(a);
-              //asyncToVeda(a);
+              // asyncToVeda(a);
               a->getDataBuffer()->writeSpecial();
             }
           }
@@ -713,9 +716,9 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
         auto a = INPUT_VARIABLE(i);
         readList.push_back(a);
 #if defined(DEBUG_VEDA_LOGS)
-        if(a){
+        if (a) {
           a->getDataBuffer()->showBufferLimited();
-          a->getDataBuffer()->showCounters("ordinary: before read",op->getOpName()->c_str());
+          a->getDataBuffer()->showCounters("ordinary: before read", op->getOpName()->c_str());
         }
 #endif
       }
@@ -723,9 +726,9 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
         auto a = reinterpret_cast<sd::NDArray *>(op->getZ(block, i));
         writeList.push_back(a);
 #if defined(DEBUG_VEDA_LOGS)
-        if(a){
+        if (a) {
           a->getDataBuffer()->showBufferLimited();
-          a->getDataBuffer()->showCounters("ordinary: before write",op->getOpName()->c_str());
+          a->getDataBuffer()->showCounters("ordinary: before write", op->getOpName()->c_str());
         }
 #endif
       }

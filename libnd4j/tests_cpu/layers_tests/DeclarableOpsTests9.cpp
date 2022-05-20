@@ -575,22 +575,26 @@ TEST_F(DeclarableOpsTests9, concat_test17) {
 TEST_F(DeclarableOpsTests9, concat_test18) {
   Context context(1);
   sd::LongType axis = 0;
-
+#if defined(__NEC__)
+  constexpr int CONCAT_SIZE = 200;
+#else
+  constexpr int CONCAT_SIZE = 2000;
+#endif
   // we crate bunch of arrays, filled with specific values
-  for (int e = 0; e < 2000; e++) {
+  for (int e = 0; e < CONCAT_SIZE; e++) {
     auto array = NDArrayFactory::create_<int>('c', {1, 300});
     array->assign(e);
     context.setInputArray(e, array, true);
   }
 
-  auto z = NDArrayFactory::create<int>('c', {2000, 300});
+  auto z = NDArrayFactory::create<int>('c', {CONCAT_SIZE, 300});
   context.setOutputArray(0, &z, false);
   context.setIArguments(&axis, 1);
 
   sd::ops::concat op;
   op.execute(&context);
 
-  for (int e = 0; e < 2000; e++) {
+  for (int e = 0; e < CONCAT_SIZE; e++) {
     auto exp = NDArrayFactory::create<int>('c', {300});
     exp.assign(e);
     auto row = z(e, {0});

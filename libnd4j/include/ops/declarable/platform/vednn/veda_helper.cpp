@@ -1,5 +1,7 @@
+#include <config.h>
+//make it visible if only if HAVE_VEDA defined
+#if defined(HAVE_VEDA)
 #include "veda_helper.h"
-
 // https://github.com/SX-Aurora/veda/issues/16
 // to solve the issue related to graceful shutdown, above, we will use ThreadLocalScopVeda and SCOPED_VEDA_CONTEXT
 struct ThreadLocalScopVeda {
@@ -40,3 +42,5 @@ VEDA::VEDA(const char* library_name) {
   }
 
 }
+
+#endif

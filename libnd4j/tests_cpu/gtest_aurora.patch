@@ -19,3 +19,14 @@ diff -ruN googletest-src/googletest/cmake/internal_utils.cmake googletest-src-au
    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "SunPro")
      set(cxx_exception_flags "-features=except")
      # Sun Pro doesn't provide macros to indicate whether exceptions and
+--- googletest-src/googletest/src/gtest.cc	2022-05-20 05:43:27.742638894 +0900
++++ googletest-src/googletest/src/gtest_new.cc	2022-05-20 06:06:48.593779687 +0900
+@@ -4096,7 +4096,7 @@
+   if (tm_ptr == nullptr) return false;
+   *out = *tm_ptr;
+   return true;
+-#elif defined(__STDC_LIB_EXT1__)
++#elif defined(__STDC_LIB_EXT1__) && !defined(__NEC__)
+   // Uses localtime_s when available as localtime_r is only available from
+   // C23 standard.
+   return localtime_s(&seconds, out) != nullptr;
