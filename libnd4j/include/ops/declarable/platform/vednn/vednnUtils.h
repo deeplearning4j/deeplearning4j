@@ -51,6 +51,10 @@ DECLARE_PLATFORM(matmul, ENGINE_CPU);
 DECLARE_PLATFORM(softmax, ENGINE_CPU);
 DECLARE_PLATFORM(log_softmax, ENGINE_CPU);
 
+#if defined(HAVE_VEDA)
+DECLARE_PLATFORM(concat, ENGINE_CPU);
+#endif
+
 SD_INLINE vednnTensorParam_t getTensorFormat(const NDArray &in, bool isNCHW = true) {
   vednnTensorParam_t param;
   param.dtype = DTYPE_FLOAT;

@@ -100,19 +100,27 @@ void InteropDataBuffer::prepareSpecialUse(const std::vector<const InteropDataBuf
 
 void InteropDataBuffer::registerPrimaryUse(const std::vector<const InteropDataBuffer*>& writeList,
                                            const std::vector<const InteropDataBuffer*>& readList) {
-  for (const auto& v : writeList) {
-    if (v == nullptr) continue;
-  }
+
 }
 
 void InteropDataBuffer::preparePrimaryUse(const std::vector<const InteropDataBuffer*>& writeList,
                                           const std::vector<const InteropDataBuffer*>& readList,
                                           bool synchronizeWritables) {
-  for (const auto& v : readList) {
-    if (v == nullptr) continue;
 
-    v->getDataBuffer()->syncToPrimary(LaunchContext::defaultContext());
+#if defined(HAVE_VEDA)
+
+  for (const auto& a : readList) {
+    if (a != nullptr) a->getDataBuffer()->syncToPrimary(LaunchContext::defaultContext());
   }
+
+  for (const auto& a : writeList) {
+    if (a != nullptr) {
+      a->getDataBuffer()->allocatePrimary();
+      if (synchronizeWritables) a->getDataBuffer()->syncToPrimary(LaunchContext::defaultContext());
+      a->getDataBuffer()->writePrimary();
+    }
+  }
+#endif
 }
 
 void InteropDataBuffer::expand(size_t newlength) {

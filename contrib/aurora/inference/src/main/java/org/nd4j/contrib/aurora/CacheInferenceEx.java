@@ -26,30 +26,25 @@ import java.util.Set;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.AbstractDependencyTracker;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
-import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.autodiff.samediff.config.SDValue;
 
 public class CacheInferenceEx extends InferenceSession {
 
-    public static class HashDependencyTracker<T extends INDArray, D> extends AbstractDependencyTracker<INDArray, D> {
+    public static class HashDependencyTracker<T extends SDValue, D> extends AbstractDependencyTracker<SDValue, D> {
 
         @Override
-        protected Map<INDArray, ?> newTMap() {
+        protected Map<SDValue, ?> newTMap() {
             return new WrapHashMap<>();
         }
 
         @Override
-        protected Set<INDArray> newTSet() {
+        protected Set<SDValue> newTSet() {
             return new WrapHashSet<>();
         }
 
         @Override
-        protected String toStringT(INDArray t) {
-            if (t instanceof INDArray) {
-                INDArray i = (INDArray) t;
-                return " - id=" + i.getId() + ", " + i.shapeInfoToString();
-            } else {
-                return " - " + t.toString();
-            }
+        protected String toStringT(SDValue t) {
+            return " - " + t.toString();
         }
 
         @Override
@@ -61,7 +56,7 @@ public class CacheInferenceEx extends InferenceSession {
     public CacheInferenceEx(SameDiff sameDiff) {
         super(sameDiff);
         super.setMmgr(new CacheMgr());
-        setArrayUseTracker(new HashDependencyTracker<INDArray, Dep>());
+        setArrayUseTracker(new HashDependencyTracker<SDValue, Dep>());
     }
 
 }

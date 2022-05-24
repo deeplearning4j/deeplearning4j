@@ -36,30 +36,17 @@ PLATFORM_IMPL(relu, ENGINE_CPU) {
   auto ret = vednnActivationForward(VEDNN_ACTIVATION_RELU, input->buffer(), output->buffer(), input->lengthOf());
   return ret == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
-  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
+  VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
   auto func = handle.getFunctionByConstPtrName("vedaVednnActivationForward");
 
   VEDAdeviceptr vIn, vO;
-  size_t sizeIn = input->lengthOf() * input->sizeOfT();
-  size_t sizeO = output->lengthOf() * output->sizeOfT();
 
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vIn, sizeIn, 0));
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vO, sizeO, 0));
-
-  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vIn, input->buffer(), sizeIn, 0));
-
-  const unsigned long nElements = input->lengthOf();
-
+  vIn = (VEDAdeviceptr)input->specialBuffer();
+  vO = (VEDAdeviceptr)output->specialBuffer();
+  const uint64_t nElements = input->lengthOf();
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDNN_ACTIVATION_RELU, vIn, vO, nElements));
 
-  VEDA_CALL_THROW(vedaMemcpyDtoHAsync(output->buffer(), vO, sizeO, 0));
-
-  scopedContext.sync();
-
-  VEDA_CALL_THROW(vedaMemFreeAsync(vIn, 0));
-  VEDA_CALL_THROW(vedaMemFreeAsync(vO, 0));
   return sd::Status::OK;
 #endif
 }
@@ -92,28 +79,20 @@ PLATFORM_IMPL(relu_bp, ENGINE_CPU) {
                                      input->lengthOf());
   return ret == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
-  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
+  VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
   auto func = handle.getFunctionByConstPtrName("vedaVednnActivationBackward");
 
   VEDAdeviceptr vGradOut, vIn, vGradIn;
 
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vGradOut, gradO->lengthOf() * gradO->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vIn, input->lengthOf() * input->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vGradIn, gradI->lengthOf() * gradI->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vGradOut, gradO->buffer(), gradO->lengthOf() * gradO->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vIn, input->buffer(), input->lengthOf() * input->sizeOfT(), 0));
+  vIn = (VEDAdeviceptr)input->specialBuffer();
+  vGradOut = (VEDAdeviceptr)gradO->specialBuffer();
+  vGradIn = (VEDAdeviceptr)gradI->specialBuffer();
 
   const uint64_t nElements = input->lengthOf();
 
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDNN_ACTIVATION_RELU, vGradOut, vIn, vGradIn, nElements));
-  VEDA_CALL_THROW(vedaMemcpyDtoHAsync(gradI->buffer(), vGradIn, gradI->lengthOf() * gradI->sizeOfT(), 0));
 
-  VEDA_CALL_THROW(vedaMemFreeAsync(vGradOut, 0));
-  VEDA_CALL_THROW(vedaMemFreeAsync(vIn, 0));
-  VEDA_CALL_THROW(vedaMemFreeAsync(vGradIn, 0));
-  scopedContext.sync();
   return sd::Status::OK;
 #endif
 }

@@ -260,6 +260,7 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
 
   // ----- calculation of gradI -> pass it through conv2d_ff ----- //
   sd::ops::conv2d conv2d;
+
   const sd::Status status =
       conv2d.execute({gradO, weights}, {gradI}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, !isNCHW, wFormat}, {});
   if (status != sd::Status::OK) return status;

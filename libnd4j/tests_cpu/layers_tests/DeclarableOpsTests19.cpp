@@ -481,7 +481,7 @@ TEST_F(DeclarableOpsTests19,test_create_view_4) {
 TEST_F(DeclarableOpsTests19,test_create_view_5) {
   sd::ops::create_view op;
   auto vectorInput = NDArrayFactory::create<double>(1.0);
-  auto newAxis = sd::NDIndexUtils::createNewAxis(0);
+  auto newAxis = sd::NDIndexUtils::createNewAxis();
   auto resultNewAxis = op.evaluate({&vectorInput,&newAxis});
   auto expectedNewAxis = NDArrayFactory::create<double>(1.0);
   auto newExpectedAxis = expectedNewAxis.reshape('c',{1});

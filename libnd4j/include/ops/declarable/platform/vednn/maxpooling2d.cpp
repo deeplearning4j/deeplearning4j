@@ -25,8 +25,6 @@
 
 #include "vednnUtils.h"
 
-#undef ALLOW_NHWC_FORMAT
-
 namespace sd {
 namespace ops {
 namespace platforms {
@@ -46,15 +44,7 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
   auto isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;  // INT_ARG(10): 1-NHWC, 0-NCHW
 
   NDArray *in = input, *out = output;
-#if defined(ALLOW_NHWC_FORMAT)
-  std::unique_ptr<NDArray> inTemp, outTemp;
-  if (!isNCHW) {
-    inTemp.reset(new NDArray(input->permute({0, 3, 1, 2}).dup('c')));
-    in = inTemp.get();
-    outTemp.reset(new NDArray(output->permute({0, 3, 1, 2}).ulike()));
-    out = outTemp.get();
-  }
-#endif
+
   vednnTensorParam_t paramIn = getTensorFormat(*in);
   vednnTensorParam_t paramOut = getTensorFormat(*out);
 
@@ -71,35 +61,22 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
 
   auto status = res == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
-  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
+  VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
   auto func = handle.getFunctionByConstPtrName("vedaVednnMaxPoolingForward");
   VEDAdeviceptr vIn, vOut;
 
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vIn, in->lengthOf() * in->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vOut, out->lengthOf() * out->sizeOfT(), 0));
-
-  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vIn, in->buffer(), in->lengthOf() * in->sizeOfT(), 0));
+  vIn = (VEDAdeviceptr)in->specialBuffer();
+  vOut = (VEDAdeviceptr)out->specialBuffer();
 
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn,
-                             VEDAstack(&paramOut, VEDA_ARGS_INTENT_IN, sizeof(paramOut)), vOut,
+                                   VEDAstack(&paramOut, VEDA_ARGS_INTENT_IN, sizeof(paramOut)), vOut,
 
-                             VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv))));
+                                   VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv))));
 
-  VEDA_CALL_THROW(vedaMemcpyDtoHAsync(out->buffer(), vOut, out->lengthOf() * out->sizeOfT(), 0));
-
-
-  VEDA_CALL_THROW(vedaMemFreeAsync(vOut, 0));
-  VEDA_CALL_THROW(vedaMemFreeAsync(vIn, 0));
-  scopedContext.sync();
   auto status = sd::Status::OK;
 #endif
-#if defined(ALLOW_NHWC_FORMAT)
-  if (out != nullptr && out != output) {
-    output->assign(out->permute({0, 2, 3, 1}));
-  }
-#endif
+
   return status;
 }
 
@@ -152,17 +129,6 @@ PLATFORM_IMPL(maxpool2d_bp, ENGINE_CPU) {
 
   NDArray *in = input, *gradOutPtr = gradOut, *gradInPtr = gradIn, *out;
 
-#if defined(ALLOW_NHWC_FORMAT)
-  std::unique_ptr<NDArray> inTemp, gradOutTemp, gradInTemp;
-  if (!isNCHW) {
-    inTemp.reset(new NDArray(input->permute({0, 3, 1, 2}).dup('c')));
-    in = inTemp.get();
-    gradOutTemp.reset(new NDArray(gradOut->permute({0, 3, 1, 2}).dup('c')));
-    gradOutPtr = gradOutTemp.get();
-    gradInTemp.reset(new NDArray(gradIn->permute({0, 3, 1, 2}).ulike()));
-    gradInPtr = gradInTemp.get();
-  }
-#endif
 #if !defined(VEDA)
   NDArray output = gradOutPtr->ulike();
   out = &output;
@@ -192,39 +158,25 @@ PLATFORM_IMPL(maxpool2d_bp, ENGINE_CPU) {
 
   auto status = res == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
-  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
+  VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
   auto func = handle.getFunctionByConstPtrName("vedaVednnMaxPoolingBackwardEx");
   VEDAdeviceptr vGradOut, vOut, vIn, vGradIn;
 
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vGradOut, gradOutPtr->lengthOf() * gradOutPtr->sizeOfT(), 0));
+  vIn = (VEDAdeviceptr)input->specialBuffer();
+  vGradOut = (VEDAdeviceptr)gradOutPtr->specialBuffer();
+  vGradIn = (VEDAdeviceptr)gradInPtr->specialBuffer();
+  // we create temp out and pass it as well
   VEDA_CALL_THROW(vedaMemAllocAsync(&vOut, gradOutPtr->lengthOf() * gradOutPtr->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vIn, in->lengthOf() * in->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vGradIn, gradInPtr->lengthOf() * gradInPtr->sizeOfT(), 0));
+  VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDAstack(&paramGradOut, VEDA_ARGS_INTENT_IN, sizeof(paramGradOut)),
+                                   vGradOut, VEDAstack(&paramOut, VEDA_ARGS_INTENT_IN, sizeof(paramOut)), vOut,
+                                   VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn,
+                                   VEDAstack(&paramGradIn, VEDA_ARGS_INTENT_IN, sizeof(paramGradIn)), vGradIn,
+                                   VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv))));
 
-  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vGradOut, gradOutPtr->buffer(), gradOutPtr->lengthOf() * gradOutPtr->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vIn, in->buffer(), in->lengthOf() * in->sizeOfT(), 0));
-
-  VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDAstack(&paramGradOut, VEDA_ARGS_INTENT_IN, sizeof(paramGradOut)), vGradOut,
-                             VEDAstack(&paramOut, VEDA_ARGS_INTENT_IN, sizeof(paramOut)), vOut,
-                             VEDAstack(&paramIn, VEDA_ARGS_INTENT_IN, sizeof(paramIn)), vIn,
-                             VEDAstack(&paramGradIn, VEDA_ARGS_INTENT_IN, sizeof(paramGradIn)), vGradIn,
-                             VEDAstack(&paramConv, VEDA_ARGS_INTENT_IN, sizeof(paramConv))));
-
-  VEDA_CALL_THROW(vedaMemcpyDtoHAsync(gradInPtr->buffer(), vGradIn, gradInPtr->lengthOf() * gradInPtr->sizeOfT(), 0));
-
-  VEDA_CALL_THROW(vedaMemFreeAsync(vGradOut, 0));
   VEDA_CALL_THROW(vedaMemFreeAsync(vOut, 0));
-  VEDA_CALL_THROW(vedaMemFreeAsync(vIn, 0));
-  VEDA_CALL_THROW(vedaMemFreeAsync(vGradIn, 0));
-  scopedContext.sync();
+
   auto status = sd::Status::OK;
-#endif
-#if defined(ALLOW_NHWC_FORMAT)
-  if (gradIn != nullptr && gradInPtr != gradIn) {
-    gradIn->assign(gradInPtr->permute({0, 2, 3, 1}));
-  }
 #endif
   return status;
 }

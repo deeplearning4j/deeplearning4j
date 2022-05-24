@@ -45,6 +45,9 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
+#if defined(HAVE_VEDA)
+#include <ops/declarable/platform/vednn/veda_helper.h>
+#endif
 
 namespace sd {
 
@@ -54,17 +57,6 @@ void* NDArray::platformBuffer() { return buffer(); }
 void const* NDArray::platformBuffer() const { return buffer(); }
 
 sd::LongType const* NDArray::platformShapeInfo() const { return shapeInfo(); }
-
-void NDArray::syncToDevice() const {}
-void NDArray::syncToHost() const {}
-void NDArray::tickWriteHost() const {}
-void NDArray::tickWriteDevice() const {}
-void NDArray::tickReadHost() const {}
-void NDArray::tickReadDevice() const {}
-void NDArray::tickBothActual() const {}
-bool NDArray::isActualOnHostSide() const { return true; }
-bool NDArray::isActualOnDeviceSide() const { return true; }
-void NDArray::makeBothBuffersActual() const {}
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -230,23 +222,99 @@ void NDArray::swapUnsafe(NDArray& other) {
 }
 
 ////////////////////////////////////////////////////////////////////////
+
+#if defined(HAVE_VEDA)
+
+void NDArray::syncToDevice() const {}
+
+void NDArray::syncToHost() const { 
+  _buffer->syncToPrimary(getContext()); 
+  }
+
+void NDArray::tickWriteHost() const { _buffer->writePrimary(); }
+void NDArray::tickWriteDevice() const { _buffer->writeSpecial(); }
+void NDArray::tickReadHost() const { _buffer->readPrimary(); }
+void NDArray::tickReadDevice() const { _buffer->readSpecial(); }
+
+void NDArray::tickBothActual() const {
+  _buffer->writePrimary();
+  _buffer->readSpecial();
+}
+bool NDArray::isActualOnHostSide() const { return _buffer->isPrimaryActual(); }
+bool NDArray::isActualOnDeviceSide() const { return _buffer->isSpecialActual(); }
+void NDArray::makeBothBuffersActual() const {
+  if (!isActualOnHostSide()) syncToHost();
+  if (!isActualOnDeviceSide()) syncToDevice();
+}
+
+
+//logic to defer buffer sync between the host and veda devices
+
 void NDArray::synchronize(const char* msg) const {
   // no-op
 }
+
+
+////////////////////////////////////////////////////////////////////////
+void NDArray::preparePrimaryUse(const std::vector<const NDArray*>& writeList,
+                                const std::vector<const NDArray*>& readList, bool synchronizeWritables) {
+  for (const auto& a : readList)
+    if (a) a->syncToHost();
+
+  for (const auto& a : writeList) {
+    if (a) {
+      a->getDataBuffer()->allocatePrimary();
+      if (synchronizeWritables) a->syncToHost();
+      // by ticking the write counter we inform that it was taken for the writing purpose by the host operation
+      // furethemore, we do it beforehand, as there could be the situation where device op is used inside
+      // if such case happens then the last usage will be done by the device operation
+      a->tickWriteHost();
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////
+void NDArray::registerPrimaryUse(const std::vector<const NDArray*>& writeList,
+                                 const std::vector<const NDArray*>& readList) {
+  // as noted above for some edge cases we decided to use counters and sync inside 
+  // preparePrimaryUse
+  // though registerPrimaryUse will be no op, it will be called to be on par with the cuda codes
+}
+
+
+#else
+
+void NDArray::synchronize(const char* msg) const {
+  // no-op
+}
+
+void NDArray::syncToDevice() const {}
+void NDArray::syncToHost() const {}
+void NDArray::tickWriteHost() const {}
+void NDArray::tickWriteDevice() const {}
+void NDArray::tickReadHost() const {}
+void NDArray::tickReadDevice() const {}
+void NDArray::tickBothActual() const {}
+bool NDArray::isActualOnHostSide() const { return true; }
+bool NDArray::isActualOnDeviceSide() const { return true; }
+void NDArray::makeBothBuffersActual() const {}
+
+void NDArray::preparePrimaryUse(const std::vector<const NDArray*>& writeList,
+                                const std::vector<const NDArray*>& readList, bool synchronizeWritables) {
+  // no-op
+}
+void NDArray::registerPrimaryUse(const std::vector<const NDArray*>& writeList,
+                                 const std::vector<const NDArray*>& readList) {
+  // no-op
+}
+
+#endif
 
 void NDArray::prepareSpecialUse(const std::vector<const NDArray*>& writeList,
                                 const std::vector<const NDArray*>& readList, bool synchronizeWritables) {
   // no-op
 }
 void NDArray::registerSpecialUse(const std::vector<const NDArray*>& writeList,
-                                 const std::vector<const NDArray*>& readList) {
-  // no-op
-}
-void NDArray::preparePrimaryUse(const std::vector<const NDArray*>& writeList,
-                                const std::vector<const NDArray*>& readList, bool synchronizeWritables) {
-  // no-op
-}
-void NDArray::registerPrimaryUse(const std::vector<const NDArray*>& writeList,
                                  const std::vector<const NDArray*>& readList) {
   // no-op
 }
@@ -267,14 +335,14 @@ const void* NDArray::specialBufferWithOffset(sd::LongType offset) const { return
 
 ////////////////////////////////////////////////////////////////////////
 void* NDArray::specialBuffer() {
-  if (_buffer->special() == nullptr) return buffer();
+  if (!_buffer->special()) return nullptr;
   // FIXME: this should be fixed once CUDA backend added
   return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
 }
 
 ////////////////////////////////////////////////////////////////////////
 void const* NDArray::specialBuffer() const {
-  if (_buffer->special() == nullptr) return buffer();
+  if (!_buffer->special()) return nullptr;
   // FIXME: this should be fixed once CUDA backend added
   return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
 }

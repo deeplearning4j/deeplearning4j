@@ -42,27 +42,17 @@ PLATFORM_IMPL(log_softmax, ENGINE_CPU) {
 
   return ret == VEDNN_SUCCESS ? sd::Status::OK : sd::Status::BAD_ARGUMENTS;
 #else
-  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
+  VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
   auto func = handle.getFunctionByConstPtrName("vedaVednnSoftmaxForward");
 
   VEDAdeviceptr vIn, vO;
-  size_t sizeIn = input->lengthOf() * input->sizeOfT();
-  size_t sizeO = output->lengthOf() * output->sizeOfT();
 
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vIn, sizeIn, 0));
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vO, sizeO, 0));
-
-  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vIn, input->buffer(), sizeIn, 0));
+  vIn = (VEDAdeviceptr)input->specialBuffer();
+  vO = (VEDAdeviceptr)output->specialBuffer();
 
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, VEDNN_SOFTMAX_LOG, vIn, vO, outer_dim, inner_dim));
 
-  VEDA_CALL_THROW(vedaMemcpyDtoHAsync(output->buffer(), vO, sizeO, 0));
-
-  VEDA_CALL_THROW(vedaMemFreeAsync(vIn, 0));
-  VEDA_CALL_THROW(vedaMemFreeAsync(vO, 0));
-  scopedContext.sync();
   return sd::Status::OK;
 
 #endif

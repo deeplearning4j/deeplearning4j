@@ -169,3 +169,27 @@ elseif(SD_CUDA)
 
     target_link_libraries(runtests samediff_obj ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN} gtest gtest_main)
 endif()
+
+
+
+list(APPEND GTEST_LIST "ArrayOptionsTests;AttentionTests;BackpropTests;BitwiseUtilsTests;BooleanOpsTests;BroadcastableOpsTests;BroadcastMultiDimTest")
+list(APPEND GTEST_LIST "HeaderTest;ConditionalTests;ConstantShapeHelperTests;ConstantTadHelperTests;ConstantHelperTests;ContextTests;TypedConvolutionTests1")
+list(APPEND GTEST_LIST "ConvolutionTests1;ConvolutionTests2;TypedConvolutionTests2;CudaLaunchHelperTests;DataBufferTests;DataTypesValidationTests")
+list(APPEND GTEST_LIST "DeclarableOpsTests1;DeclarableOpsTests10;DeclarableOpsTests11;DeclarableOpsTests12;DeclarableOpsTests13;TypedDeclarableOpsTests13")
+list(APPEND GTEST_LIST "DeclarableOpsTests14;DeclarableOpsTests15;DeclarableOpsTests16;DeclarableOpsTests17;DeclarableOpsTests18;DeclarableOpsTests19")
+list(APPEND GTEST_LIST "DeclarableOpsTests2;DeclarableOpsTests3;TypedDeclarableOpsTests4;DeclarableOpsTests4;DeclarableOpsTests5;DeclarableOpsTests6")
+list(APPEND GTEST_LIST "DeclarableOpsTests7;TypedDeclarableOpsTests7;DeclarableOpsTests8;TypedDeclarableOpsTests8;DeclarableOpsTests9;EmptyTests")
+list(APPEND GTEST_LIST "ExtraArgumentsTests;FlatBuffersTest;FlatUtilsTests;GraphHolderTests;GraphRandomGeneratorTests;GraphStateTests;GraphTests")
+list(APPEND GTEST_LIST "HashUtilsTests;HelpersTests1;HelpersTests2;IndexingTests;JavaInteropTests;LegacyOpsTests;ListOperationsTests;LoopCoordsHelper;MemoryUtilsTests")
+list(APPEND GTEST_LIST "MmapTests;MultiDataTypeTests;MultiDeviceTests;NDArrayListTests;NDArrayTest;NDArrayTest2;NativeOpsTests;NlpTests;NodeTests;OmpLaunchHelperTests")
+list(APPEND GTEST_LIST "OneOffTests;OpTrackerTests;OpTupleTests;EqualsTest;ParityOpsTests;PlaygroundTests;PrimitivesTests;QuantizationTests;RNGTests;ResultSetTests")
+list(APPEND GTEST_LIST "SanityTests;ScalarTests;ScopeTests;ShapeTests;LeadingOnes;NormalThreeFourFive;DimensionWarning;FourDTest;SixDTest;TrailingTest;ThreeTest;BeginOneTadTest")
+list(APPEND GTEST_LIST "LabelTest;ExpectedValuesTest;OrderTest;ThreeDTest;NumTadTests;TADStall;LengthPerSliceTest;PermuteTest;ElementWiseStrideTest;SliceVectorTest;SliceTensorTest")
+list(APPEND GTEST_LIST "SliceMatrixTest;TestConcat;TestReverseCopy;TestRemoveIndex;TensorTwoFromFourDDimTest;TensorTwoDimTest;TensorOneDimTest;MatrixTest;VectorTest;ShapeTest")
+list(APPEND GTEST_LIST ";ShapeUtilsTests;SingleDimTests;SortCpuTests;SparseUtilsTest;StashTests;StringTests;SwitchTests;TadTests;ThreadsTests;TypeCastTests;VariableProxyTests")
+list(APPEND GTEST_LIST "VariableSpaceTest;VariableTests;WorkspaceTests")
+
+#Generate ctest from gtests entries
+foreach(GTEST_ENTRY ${GTEST_LIST})
+    add_test(NAME "${GTEST_ENTRY}" COMMAND runtests "--gtest_filter=${GTEST_ENTRY}.*" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tests_cpu)
+endforeach()

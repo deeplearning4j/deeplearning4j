@@ -98,26 +98,32 @@ extern const char *ORDERING_MSG_INPUT3;
 extern const char *RANK_MSG_OUTPUT;
 extern const char *RANK_MSG_OUTPUT0;
 extern const char *RANK_MSG_OUTPUT1;
+extern const char *RANK_MSG_OUTPUT2;
 
-extern const char *IS_EMPTY_OUTPUT;
-extern const char *IS_EMPTY_OUTPUT0;
-extern const char *IS_EMPTY_OUTPUT1;
+extern const char *IS_EMPTY_MSG_OUTPUT;
+extern const char *IS_EMPTY_MSG_OUTPUT0;
+extern const char *IS_EMPTY_MSG_OUTPUT1;
+extern const char *IS_EMPTY_MSG_OUTPUT2;
 
 extern const char *TYPE_MSG_OUTPUT;
 extern const char *TYPE_MSG_OUTPUT0;
 extern const char *TYPE_MSG_OUTPUT1;
+extern const char *TYPE_MSG_OUTPUT2;
 
 extern const char *EWS_MSG_OUTPUT;
 extern const char *EWS_MSG_OUTPUT0;
 extern const char *EWS_MSG_OUTPUT1;
+extern const char *EWS_MSG_OUTPUT2;
 
 extern const char *ORDERING_MSG_OUTPUT;
 extern const char *ORDERING_MSG_OUTPUT0;
 extern const char *ORDERING_MSG_OUTPUT1;
+extern const char *ORDERING_MSG_OUTPUT2;
 
 extern const char *SHAPE_MSG_OUTPUT;
 extern const char *SHAPE_MSG_OUTPUT0;
 extern const char *SHAPE_MSG_OUTPUT1;
+extern const char *SHAPE_MSG_OUTPUT2;
 
 extern const char *IS_USE_ONEDNN_MSG;
 extern const char *ONEDNN_STREAM_NOT_SUPPORTED;

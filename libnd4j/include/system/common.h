@@ -199,6 +199,11 @@ namespace sd {
 #define SD_MAX_COORD 3
 #define SD_PREALLOC_SIZE 33554432
 
+#if defined(__NEC__)
+//This will be used in determining maximum shape list size and also maximum op input size
+#define SD_MAX_INPUT_SIZE 256
+#endif
+
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_device_runtime_api.h>

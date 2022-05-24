@@ -61,29 +61,21 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
     }
   }
 #else
-  VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-  SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
+  VEDA_HANDLE& handle = VEDA::getInstance().getVEDA_HANDLE(0);
   auto func = handle.getFunctionByConstPtrName("vedaVednnLinearForwardExF32");
 
   VEDAdeviceptr vX, vY, vZ;
   const uint64_t xStride = x->rankOf() > 2 ? x->sizeAt(-1) * x->sizeAt(-2) : 0;
   const uint64_t yStride = y->rankOf() > 2 ? y->sizeAt(-1) * y->sizeAt(-2) : 0;
   const uint64_t zStride = z->rankOf() > 2 ? z->sizeAt(-1) * z->sizeAt(-2) : 0;
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vX, x->lengthOf() * x->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vY, y->lengthOf() * y->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaMemAllocAsync(&vZ, z->lengthOf() * z->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vX, x->buffer(), x->lengthOf() * x->sizeOfT(), 0));
-  VEDA_CALL_THROW(vedaMemcpyHtoDAsync(vY, y->buffer(), y->lengthOf() * y->sizeOfT(), 0));
+
+  vX = (VEDAdeviceptr)x->specialBuffer();
+  vY = (VEDAdeviceptr)y->specialBuffer();
+  vZ = (VEDAdeviceptr)z->specialBuffer();
 
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, bGemm, inDim, outDim, nBatch, vX, xStride, vY, yStride, vZ, zStride));
-  VEDA_CALL_THROW(vedaMemcpyDtoHAsync(z->buffer(), vZ, z->lengthOf() * z->sizeOfT(), 0));
 
-
-  VEDA_CALL_THROW(vedaMemFreeAsync(vX, 0));
-  VEDA_CALL_THROW(vedaMemFreeAsync(vY, 0));
-  VEDA_CALL_THROW(vedaMemFreeAsync(vZ, 0));
-  scopedContext.sync();
 #endif
   return sd::Status::OK;
 }
