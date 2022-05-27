@@ -53,6 +53,10 @@ DECLARE_PLATFORM(log_softmax, ENGINE_CPU);
 
 #if defined(HAVE_VEDA)
 DECLARE_PLATFORM(concat, ENGINE_CPU);
+DECLARE_PLATFORM(add, ENGINE_CPU);
+DECLARE_PLATFORM(multiply, ENGINE_CPU);
+DECLARE_PLATFORM(permute, ENGINE_CPU);
+DECLARE_PLATFORM(pad, ENGINE_CPU);
 #endif
 
 SD_INLINE vednnTensorParam_t getTensorFormat(const NDArray &in, bool isNCHW = true) {

@@ -3,9 +3,12 @@
 #include <veda_device.h>
 #include <vednn.h>
 
+#include <chrono>
 #include <cmath>
 #include <iostream>
 #include <memory>
+
+using LongType = long long;
 //#define SHOW_ON_FUNC_ENTRY 1
 #if !defined(SHOW_ON_FUNC_ENTRY)
 #define LOG_FUNC()
@@ -178,8 +181,6 @@ void showBufferVe(VEDAdeviceptr v) {
   std::cout << std::endl;
 #endif
 }
-
-
 
 uint64_t vedaVednnConvolutionForwardAddBias(const vednnTensorParam_t *paramIn, VEDAdeviceptr vDataIn,
                                             uint8_t isDataInNCHW, const vednnFilterParam_t *paramFilter,
@@ -430,7 +431,7 @@ uint64_t vedaConcatUpTo32(const uint64_t nInput, VEDAdeviceptr *inputList, VEDAd
       size_t size;
       vedaMemPtrSize(&in, &size, inputList[i]);
 #if defined(DEBUG_VEDA_LOGS)
-  showBufferVe(inputList[i]);
+      showBufferVe(inputList[i]);
 #endif
       auto sizeInFloats = size / sizeof(float);
       zPtrList[i].in = (float *)in;
@@ -453,5 +454,284 @@ uint64_t vedaConcatUpTo32(const uint64_t nInput, VEDAdeviceptr *inputList, VEDAd
 
   return -1;
 }
+
+uint64_t vedaAdd_A(uint64_t length0, VEDAdeviceptr vIn0, uint64_t length1, VEDAdeviceptr vIn1, VEDAdeviceptr vO) {
+  uint64_t min_len = 0;
+  uint64_t max_len = 0;
+  float *big = nullptr;
+  float *small = nullptr;
+  float *out = nullptr;
+  // auto timeStart = std::chrono::system_clock::now();
+  vedaMemPtr((void **)&out, vO);
+  if (length1 > length0) {
+    min_len = length0;
+    max_len = length1;
+    vedaMemPtr((void **)&small, vIn0);
+    vedaMemPtr((void **)&big, vIn1);
+
+  } else {
+    min_len = length1;
+    max_len = length0;
+    vedaMemPtr((void **)&small, vIn1);
+    vedaMemPtr((void **)&big, vIn0);
+  }
+
+  if (min_len == 1) {
+    auto val = small[0];
+    for (uint64_t i = 0L; i < max_len; i++) {
+      out[i] = big[i] + val;
+    }
+  } else {
+    int times = (int)(max_len / min_len);
+    auto copy_times = 4096 / min_len;
+    int times_k = (int)(times / copy_times);
+    if (min_len < 4096 && times_k > 10) {
+      float local_ll[4096];
+      // copy into buffer
+      float *ll = local_ll;
+
+      for (int i = 0; i < copy_times; i++) {
+        for (int j = 0; j < min_len; j++) {
+          ll[j] = small[j];
+        }
+        ll += min_len;
+      }
+      auto llen = ll - local_ll;
+
+      int times_tail = times % copy_times;
+      for (int i = 0; i < times_k; i++) {
+        auto out_inner = &(out[i * llen]);
+        auto big_inner = &(big[i * llen]);
+        for (uint64_t j = 0; j < llen; j++) {
+          out_inner[j] = big_inner[j] + local_ll[j];
+        }
+      }
+      if (times_tail > 0) {
+        auto out_inner = &(out[times_k * llen]);
+        auto big_inner = &(big[times_k * llen]);
+        for (uint64_t j = 0; j < times_tail * min_len; j++) {
+          out_inner[j] = big_inner[j] + local_ll[j];
+        }
+      }
+
+    } else {
+      for (int i = 0; i < times; i++) {
+        auto out_inner = &(out[i * min_len]);
+        auto big_inner = &(big[i * min_len]);
+        for (uint64_t j = 0; j < min_len; j++) {
+          out_inner[j] = big_inner[j] + small[j];
+        }
+      }
+    }
+  }
+  // auto timeEnd = std::chrono::system_clock::now();
+  // auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
+  // std::cout << "------------- " << max_len << ":" << min_len << " => " << outerTime << std::endl;
+
+  return 0;
+}
+
+uint64_t vedaMult_A(uint64_t length0, VEDAdeviceptr vIn0, uint64_t length1, VEDAdeviceptr vIn1, VEDAdeviceptr vO) {
+  uint64_t min_len = 0;
+  uint64_t max_len = 0;
+  float *big = nullptr;
+  float *small = nullptr;
+  float *out = nullptr;
+  // auto timeStart = std::chrono::system_clock::now();
+  vedaMemPtr((void **)&out, vO);
+  if (length1 > length0) {
+    min_len = length0;
+    max_len = length1;
+    vedaMemPtr((void **)&small, vIn0);
+    vedaMemPtr((void **)&big, vIn1);
+
+  } else {
+    min_len = length1;
+    max_len = length0;
+    vedaMemPtr((void **)&small, vIn1);
+    vedaMemPtr((void **)&big, vIn0);
+  }
+
+  if (min_len == 1) {
+    auto val = small[0];
+    for (uint64_t i = 0L; i < max_len; i++) {
+      out[i] = big[i] * val;
+    }
+  } else {
+    int times = (int)(max_len / min_len);
+    auto copy_times = 4096 / min_len;
+    int times_k = (int)(times / copy_times);
+    if (min_len < 4096 && times_k > 10) {
+      float local_ll[4096];
+      // copy into buffer
+      float *ll = local_ll;
+
+      for (int i = 0; i < copy_times; i++) {
+        for (int j = 0; j < min_len; j++) {
+          ll[j] = small[j];
+        }
+        ll += min_len;
+      }
+      auto llen = ll - local_ll;
+
+      int times_tail = times % copy_times;
+      for (int i = 0; i < times_k; i++) {
+        auto out_inner = &(out[i * llen]);
+        auto big_inner = &(big[i * llen]);
+        for (uint64_t j = 0; j < llen; j++) {
+          out_inner[j] = big_inner[j] * local_ll[j];
+        }
+      }
+      if (times_tail > 0) {
+        auto out_inner = &(out[times_k * llen]);
+        auto big_inner = &(big[times_k * llen]);
+        for (uint64_t j = 0; j < times_tail * min_len; j++) {
+          out_inner[j] = big_inner[j] * local_ll[j];
+        }
+      }
+
+    } else {
+      for (int i = 0; i < times; i++) {
+        auto out_inner = &(out[i * min_len]);
+        auto big_inner = &(big[i * min_len]);
+        for (uint64_t j = 0; j < min_len; j++) {
+          out_inner[j] = big_inner[j] * small[j];
+        }
+      }
+    }
+  }
+  // auto timeEnd = std::chrono::system_clock::now();
+  // auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
+  // std::cout << "------------- " << max_len << ":" << min_len << " => " << outerTime << std::endl;
+
+  return 0;
+}
+
+uint64_t vedaPermuteAssignRank2_4(LongType *inputShapeInfo, VEDAdeviceptr vIn, LongType *outputShapeInfo,
+                                  VEDAdeviceptr vO, const int *permutation) {
+  // C order and ews Unchecked call, caller should check for the conditions
+  float *in, *out;
+  // auto timeStart = std::chrono::system_clock::now();
+  vedaMemPtr((void **)&in, vIn);
+  vedaMemPtr((void **)&out, vO);
+
+  LongType rank = inputShapeInfo[0];
+  if (rank >= 2 && rank <= 4) {
+    auto shape = inputShapeInfo + 1;
+    auto shape2 = outputShapeInfo + 1;
+    if (rank == 2) {
+      // rank2 copy  [h, w] <- permute([a, b])
+      auto strideH = shape2[rank];
+      constexpr decltype(strideH) strideW = 1;
+
+      auto stridePermH = shape[rank + permutation[0]];
+      auto stridePermW = shape[rank + permutation[1]];
+      auto shapeH = shape2[0];
+      auto shapeW = shape2[1];
+
+#pragma omp parallel for
+      for (decltype(shapeH) h = 0; h < shapeH; h++)
+        for (decltype(shapeW) w = 0; w < shapeW; w++) {
+          out[h * strideH + w * strideW] = in[h * stridePermH + w * stridePermW];
+        }
+
+    } else if (rank == 3) {
+      // rank3 copy  [g, h, w] <- permute([a, b, c])
+      auto strideG = shape2[rank];
+      auto strideH = shape2[rank + 1];
+      constexpr decltype(strideH) strideW = 1;
+      auto stridePermG = shape[rank + permutation[0]];
+      auto stridePermH = shape[rank + permutation[1]];
+      auto stridePermW = shape[rank + permutation[2]];
+      auto shapeG = shape2[0];
+      auto shapeH = shape2[1];
+      auto shapeW = shape2[2];
+#pragma omp parallel for
+      for (decltype(shapeG) g = 0; g < shapeG; g++)
+        for (decltype(shapeH) h = 0; h < shapeH; h++)
+          for (decltype(shapeW) w = 0; w < shapeW; w++) {
+            out[g * strideG + h * strideH + w * strideW] = in[g * stridePermG + h * stridePermH + w * stridePermW];
+          }
+
+    } else {
+      // rank 4 copy  [f, g, h, w] <- permute([a, b, c, d])
+      auto strideF = shape2[rank];
+      auto strideG = shape2[rank + 1];
+      auto strideH = shape2[rank + 2];
+      constexpr decltype(strideH) strideW = 1;
+      auto stridePermF = shape[rank + permutation[0]];
+      auto stridePermG = shape[rank + permutation[1]];
+      auto stridePermH = shape[rank + permutation[2]];
+      auto stridePermW = shape[rank + permutation[3]];
+      auto shapeF = shape2[0];
+      auto shapeG = shape2[1];
+      auto shapeH = shape2[2];
+      auto shapeW = shape2[3];
+#pragma omp parallel for
+      for (decltype(shapeF) f = 0; f < shapeF; f++)
+        for (decltype(shapeG) g = 0; g < shapeG; g++)
+          for (decltype(shapeH) h = 0; h < shapeH; h++)
+            for (decltype(shapeW) w = 0; w < shapeW; w++) {
+              out[f * strideF + g * strideG + h * strideH + w * strideW] =
+                  in[f * stridePermF + g * stridePermG + h * stridePermH + w * stridePermW];
+            }
+    }
+    // auto timeEnd = std::chrono::system_clock::now();
+    // auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
+    // std::cout << "------------- perm => " << outerTime << std::endl;
+    return 0;
+  }
+
+  return 1;
+}
+
+uint64_t vedaPadConstantRank4(LongType *inputShapeInfo, VEDAdeviceptr vIn, LongType *outputShapeInfo, VEDAdeviceptr vO,
+                              const LongType paddingOffset, const float padValue) {
+  float *in, *out;
+  // auto timeStart = std::chrono::system_clock::now();
+  vedaMemPtr((void **)&in, vIn);
+  vedaMemPtr((void **)&out, vO);
+
+  LongType rank = inputShapeInfo[0];
+  if (rank == 4) {
+    auto shape = inputShapeInfo + 1;
+    auto shape2 = outputShapeInfo + 1;
+    // rank 4 copy  [f, g, h, w] <- permute([a, b, c, d])
+    auto strideInF = shape[rank + 0];
+    auto strideInG = shape[rank + 1];
+    auto strideInH = shape[rank + 2];
+    constexpr decltype(strideInH) strideInW = 1;
+    auto strideF = shape2[rank + 0];
+    auto strideG = shape2[rank + 1];
+    auto strideH = shape2[rank + 2];
+    constexpr decltype(strideH) strideW = 1;
+    auto shapeF = shape[0];
+    auto shapeG = shape[1];
+    auto shapeH = shape[2];
+    auto shapeW = shape[3];
+    if (paddingOffset != 0) {
+      // For now, assign value to the whole
+      LongType length = shape2[0] * shape2[1] * shape2[2] * shape2[3];
+      for (LongType i = 0L; i < length; i++) {
+        out[i] = padValue;
+      }
+    }
+    // copy the core into Output
+    auto offsetedOut = out + paddingOffset;
+#pragma omp parallel for
+    for (decltype(shapeF) f = 0; f < shapeF; f++)
+      for (decltype(shapeG) g = 0; g < shapeG; g++)
+        for (decltype(shapeH) h = 0; h < shapeH; h++)
+          for (decltype(shapeW) w = 0; w < shapeW; w++) {
+            offsetedOut[f * strideF + g * strideG + h * strideH + w * strideW] =
+                in[f * strideInF + g * strideInG + h * strideInH + w * strideInW];
+          }
+  }
+  // auto timeEnd = std::chrono::system_clock::now();
+  // auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
+  // std::cout << "------------- padd => " << outerTime << std::endl;
+  return 0;
+}
+
 
 }  // extern "C"

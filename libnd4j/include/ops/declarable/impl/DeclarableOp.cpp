@@ -596,7 +596,7 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
 
   return sd::Status::OK;
 }
-
+//#define DEBUG_VEDA_LOGS 1
 sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   sd_debug("Executing op: [%s]\n", this->getOpName()->c_str());
 
@@ -748,6 +748,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     timeEnd = std::chrono::system_clock::now();
     outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
     block->setInnerTime(outerTime);
+    sd_debug("%s [%s] prepTime %lld time %lld \n", hasHelper? "helper":"ordinary" , this->getOpName()->c_str(), (long long int)prepTime, (long long int) outerTime);
   }
 
   if (Environment::getInstance().isProfiling() && block->getVariableSpace() != nullptr) {
