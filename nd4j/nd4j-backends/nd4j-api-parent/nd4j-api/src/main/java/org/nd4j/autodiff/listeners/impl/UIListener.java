@@ -484,7 +484,7 @@ public class UIListener extends BaseListener {
             initalizeWriter(sd);
 
         if(updateRatioFrequency > 0 && at.iteration() % updateRatioFrequency == 0){
-            if(firstUpdateRatioIter < 0){
+            if(firstUpdateRatioIter < 0) {
                 firstUpdateRatioIter = at.iteration();
             }
 
@@ -498,7 +498,7 @@ public class UIListener extends BaseListener {
 
             double params;
             double updates;
-            if(updateRatioType == UpdateRatio.L2){
+            if(updateRatioType == UpdateRatio.L2) {
                 params = v.getVariable().getArr().norm2Number().doubleValue();
                 updates = update.norm2Number().doubleValue();
             } else {
@@ -508,7 +508,7 @@ public class UIListener extends BaseListener {
             }
 
             double ratio = updates / params;
-            if(params == 0.0){
+            if(params == 0.0) {
                 ratio = 0.0;
             } else {
                 ratio = Math.max(-10, Math.log10(ratio));   //Clip to -10, when updates are too small
