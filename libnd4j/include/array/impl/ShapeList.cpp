@@ -84,8 +84,8 @@ const sd::LongType* ShapeList::at(int idx) {
 
 void ShapeList::push_back(const sd::LongType* shape) {
 #if defined(__NEC__)
-  if (size_x + 1 >= SHAPE_LIST_MAX_SIZE) {
-    sd_printf("%s:%d Exceeded allowed limit of shapes.  ShapeList max size is (%d) \n", __FILE__, __LINE__,  SHAPE_LIST_MAX_SIZE);
+  if (size_x >= SD_MAX_INPUT_SIZE) {
+    sd_printf("%s:%d Exceeded allowed limit of shapes.  ShapeList max size is (%d) \n", __FILE__, __LINE__,  SD_MAX_INPUT_SIZE);
     throw std::runtime_error("Exceeded allowed limit of shapes. ShapeList container for Nec has fixed size");
   }
   _shapes[size_x] = shape;

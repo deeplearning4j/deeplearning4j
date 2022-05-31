@@ -5,29 +5,16 @@
 ### Vednn
 
 
-##### Installing vednn
+##### Prerequisites:
+
+- Veda: version <=  v1.2.0
+- Vednn:  https://github.com/mergian/vednn + patch
+
+###### Veda, Llvm-Ve, Vednn installation script
 
 ```
-#download llvm-ve
-wget https://github.com/sx-aurora-dev/llvm-project/releases/download/llvm-ve-rv-v.2.1.0/llvm-ve-rv-2.1-2.1-1.el8.x86_64.rpm
-#install llvm-ve
-sudo rpm -i llvm-ve-rv-2.1-2.1-1.el8.x86_64.rpm
-
-#find llvm path
-LLVM_PATH=$(rpm -ql llvm-ve-rv-2.1-2.1-1.el8.x86_64 | grep lib/cmake/llvm | head -n 1)
-
-#download vednn source files
-git clone https://github.com/mergian/vednn
-#revert the commit that disabled some kernels
-git revert ab93927d71dc6eed5e2c39aad1ae64d2a53e1764
-#build and install vednn
-cd vednn
-mkdir build
-cd build
-cmake -DLLVM_DIR=${LLVM_PATH} -DCMAKE_INSTALL_PREFIX=/opt/nec/ve ..
-make
-sudo make install
-
+#it may require sudo  user for installing veda and llvm-ve
+bash libnd4j/build_ve_prerequisites.sh
 ```
 
 ---------------------
@@ -52,24 +39,17 @@ Building libdn4j:
 ./buildnativeoperations.sh -o aurora -dt "float;double;int;int64;bool" -t -h vednn -j 120
 ```
 
+
+####### Additional notes
+If you are facing `Unable to grow stack` error while running the test, then set this environment variable
+```
+export OMP_STACKSIZE=1G
+```
 ---------------------
 
 ### libdn4j Cpu library with platform  Ve  Vednn acceleration
 
-##### Install VEDA
-1st option:
-
-    sudo yum install veoffload-veda.x86_64
-2nd option:
-install from the source
-
-    git clone https://github.com/SX-Aurora/veda.git
-    mkdir -p veda/src/build
-    cd veda/src/build
-    cmake ..
-    make && sudo make install
-
-##### Building libdn4j with Vednn helper:
+##### Libnd4j + Veda Vednn
 
 ```
 #build libnd4j and tests tuned for the current Cpu with Ve Vednn acceleration
@@ -90,6 +70,17 @@ ${PWD}/blasbuild/cpu/tests_cpu/layers_tests/runtests --gtest_filter=*conv2*
 
 There is not any need to set the device library path manually within nd4j framework. Loading and setting the right device library path are handled inside.
 
+##### Dl4j installation
+```
+export VEDNN_ROOT="your VEDNN root folder"
+helper=vednn
+extension=avx2
+mvn clean  install  -DskipTests  -Dlibnd4j.helper=${helper} -Dlibnd4j.extension=${extension} -Djavacpp.platform.extension=-${helper}-${extension} -Dlibnd4j.classifier=linux-x86_64-${helper}-${extension} -Pcpu
+
+#or if you followed Prerequisites section
+libnd4j/build_veda.sh
+
+```
 ###### Notes
    - vc/vcpp file extensions are used to diferentitate VE device files from c/cpp in cmake. Cmake will compile them using nec.
 

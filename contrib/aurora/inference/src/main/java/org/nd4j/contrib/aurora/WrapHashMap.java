@@ -26,11 +26,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.autodiff.samediff.config.SDValue;
 
-public class WrapHashMap<K extends INDArray, V> implements Map<INDArray, V> {
+public class WrapHashMap<K extends SDValue, V> implements Map<SDValue, V> {
 
-    private HashMap<WrapNDArray, V> map = new HashMap<>();
+    private HashMap<WrapSDValue, V> map = new HashMap<>();
 
     @Override
     public void clear() {
@@ -40,7 +40,7 @@ public class WrapHashMap<K extends INDArray, V> implements Map<INDArray, V> {
 
     @Override
     public boolean containsKey(Object key) {
-        return map.containsKey(new WrapNDArray((INDArray) key));
+        return map.containsKey(new WrapSDValue((SDValue) key));
     }
 
     @Override
@@ -49,7 +49,7 @@ public class WrapHashMap<K extends INDArray, V> implements Map<INDArray, V> {
     }
 
     @Override
-    public Set<Entry<INDArray, V>> entrySet() {
+    public Set<Entry<SDValue, V>> entrySet() {
         throw new java.lang.UnsupportedOperationException("Not supported yet.");
     }
 
@@ -59,22 +59,22 @@ public class WrapHashMap<K extends INDArray, V> implements Map<INDArray, V> {
     }
 
     @Override
-    public Set<INDArray> keySet() {
-        Set<INDArray> ret = new HashSet<>();
-        for (WrapNDArray x : map.keySet()) {
-            ret.add(x.arr);
+    public Set<SDValue> keySet() {
+        Set<SDValue> ret = new HashSet<>();
+        for (WrapSDValue x : map.keySet()) {
+            ret.add(x.value);
         }
         return ret;
     }
 
     @Override
-    public V put(INDArray key, V value) {
-        return map.put(new WrapNDArray((INDArray) key), value);
+    public V put(SDValue key, V value) {
+        return map.put(new WrapSDValue((SDValue) key), value);
     }
 
     @Override
-    public void putAll(Map<? extends INDArray, ? extends V> m) {
-        for (Map.Entry<? extends INDArray, ? extends V> x : m.entrySet()) {
+    public void putAll(Map<? extends SDValue, ? extends V> m) {
+        for (Map.Entry<? extends SDValue, ? extends V> x : m.entrySet()) {
             this.put(x.getKey(), x.getValue());
         }
 
@@ -82,7 +82,7 @@ public class WrapHashMap<K extends INDArray, V> implements Map<INDArray, V> {
 
     @Override
     public V remove(Object key) {
-        return map.remove(new WrapNDArray((INDArray) key));
+        return map.remove(new WrapSDValue((SDValue) key));
     }
 
     @Override
@@ -97,7 +97,7 @@ public class WrapHashMap<K extends INDArray, V> implements Map<INDArray, V> {
 
     @Override
     public V get(Object key) {
-        return map.get(new WrapNDArray((INDArray) key));
+        return map.get(new WrapSDValue((SDValue) key));
     }
 
 }

@@ -25,19 +25,19 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.autodiff.samediff.config.SDValue;
 
-public class WrapHashSet<K extends INDArray> implements Set<INDArray> {
+public class WrapHashSet<K extends SDValue> implements Set<SDValue> {
 
-    public HashSet<WrapNDArray> set = new HashSet<>();
+    public HashSet<WrapSDValue> set = new HashSet<>();
 
     @Override
-    public boolean add(INDArray e) {
-        return set.add(new WrapNDArray(e));
+    public boolean add(SDValue e) {
+        return set.add(new WrapSDValue(e));
     }
 
     @Override
-    public boolean addAll(Collection<? extends INDArray> c) {
+    public boolean addAll(Collection<? extends SDValue> c) {
         c.forEach(x -> add(x));
         return false;
     }
@@ -51,7 +51,7 @@ public class WrapHashSet<K extends INDArray> implements Set<INDArray> {
 
     @Override
     public boolean contains(Object o) {
-        return set.contains(new WrapNDArray((INDArray) o));
+        return set.contains(new WrapSDValue((SDValue) o));
     }
 
     @Override
@@ -69,13 +69,13 @@ public class WrapHashSet<K extends INDArray> implements Set<INDArray> {
     }
 
     @Override
-    public Iterator<INDArray> iterator() {
+    public Iterator<SDValue> iterator() {
         return new InnerIterator(set.iterator());
     }
 
     @Override
     public boolean remove(Object o) {
-        return set.remove(new WrapNDArray((INDArray) o));
+        return set.remove(new WrapSDValue((SDValue) o));
     }
 
     @Override
@@ -100,9 +100,9 @@ public class WrapHashSet<K extends INDArray> implements Set<INDArray> {
     @Override
     public Object[] toArray() {
         int s = 0;
-        INDArray[] to = new INDArray[size()];
-        for (WrapNDArray x : set) {
-            to[s] = x.arr;
+        SDValue[] to = new SDValue[size()];
+        for (WrapSDValue x : set) {
+            to[s] = x.value;
             ++s;
         }
         return null;
@@ -113,11 +113,11 @@ public class WrapHashSet<K extends INDArray> implements Set<INDArray> {
         throw new java.lang.UnsupportedOperationException("Not supported yet.");
     }
 
-    public static class InnerIterator implements Iterator<INDArray> {
+    public static class InnerIterator implements Iterator<SDValue> {
 
-        private Iterator<WrapNDArray> it;
+        private Iterator<WrapSDValue> it;
 
-        public InnerIterator(Iterator<WrapNDArray> it) {
+        public InnerIterator(Iterator<WrapSDValue> it) {
             this.it = it;
         }
 
@@ -127,9 +127,9 @@ public class WrapHashSet<K extends INDArray> implements Set<INDArray> {
         }
 
         @Override
-        public INDArray next() {
-            WrapNDArray x = it.next();
-            return x.arr;
+        public SDValue next() {
+            WrapSDValue x = it.next();
+            return x.value;
         }
 
     }
