@@ -78,7 +78,7 @@ public class KerasLossUtils {
             dl4jLoss = LossFunctions.LossFunction.SQUARED_HINGE;
         } else if (kerasLoss.equals(conf.getKERAS_LOSS_HINGE())) {
             dl4jLoss = LossFunctions.LossFunction.HINGE;
-        } else if (kerasLoss.equals(conf.getKERAS_LOSS_SPARSE_CATEGORICAL_CROSSENTROPY())) {
+        } else if (kerasLoss.equals(conf.getKERAS_LOSS_SPARSE_CATEGORICAL_CROSSENTROPY()) || kerasLoss.equals(conf.getTF_KERAS_LOSS_SPARSE_CATEGORICAL_CROSS_ENTROPY())) {
             dl4jLoss = LossFunctions.LossFunction.SPARSE_MCXENT;
         } else if (kerasLoss.equals(conf.getKERAS_LOSS_BINARY_CROSSENTROPY())) {
             dl4jLoss = LossFunctions.LossFunction.XENT;

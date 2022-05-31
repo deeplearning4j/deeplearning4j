@@ -357,6 +357,7 @@ public class KerasLayerConfiguration {
     private final String KERAS_LOSS_BINARY_CROSSENTROPY = "binary_crossentropy";
     private final String KERAS_LOSS_CATEGORICAL_CROSSENTROPY = "categorical_crossentropy";
     private final String KERAS_LOSS_SPARSE_CATEGORICAL_CROSSENTROPY = "sparse_categorical_crossentropy";
+    private final String TF_KERAS_LOSS_SPARSE_CATEGORICAL_CROSS_ENTROPY = "sparsecategoricalcrossentropy";
     private final String KERAS_LOSS_KULLBACK_LEIBLER_DIVERGENCE = "kullback_leibler_divergence";
     private final String KERAS_LOSS_KLD = "kld";
     private final String KERAS_LOSS_POISSON = "poisson";
