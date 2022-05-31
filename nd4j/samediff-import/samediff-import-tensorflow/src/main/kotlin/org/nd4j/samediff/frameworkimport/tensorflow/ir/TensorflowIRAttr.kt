@@ -56,7 +56,11 @@ class TensorflowIRAttr(inputAttributeDef: OpDef.AttrDef, inputAttributeValue: At
     }
 
     override fun listIntValue(): List<Long> {
-        return attributeValue.list.iList
+        if(attributeDef.type == "shape") {
+            return attributeValue.shape.dimList.toList().map { input -> input.size }
+        }
+        else
+            return attributeValue.list.iList
     }
 
     override fun boolValue(): Boolean {
@@ -69,6 +73,7 @@ class TensorflowIRAttr(inputAttributeDef: OpDef.AttrDef, inputAttributeValue: At
 
     override fun attributeValueType(): AttributeValueType {
         when(attributeDef.type) {
+            "shape" -> return AttributeValueType.LIST_INT
             "list(bool)" -> return AttributeValueType.LIST_BOOL
             "bool" -> return AttributeValueType.BOOL
             "string" -> return AttributeValueType.STRING

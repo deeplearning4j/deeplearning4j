@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -57,7 +56,6 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.custom.Invoke;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
@@ -137,6 +135,19 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         inputMap.put("w", weights);
         inputMap.put("y", labels);
         return inputMap;
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testAllInputsFor(Nd4jBackend backend) {
+        SameDiff sameDiff = SameDiff.create();
+        SDVariable constOne = sameDiff.constant(0);
+        SDVariable constTwo = sameDiff.constant(1);
+        SDVariable addOne = sameDiff.math().add(constOne,constTwo);
+        SDVariable addTwo = sameDiff.math().add(addOne,constTwo);
+        assertEquals(Arrays.asList(sameDiff.getOps().get(addOne.getCreator().getOwnName())),sameDiff.allOpsRequiredExecution(addTwo.getCreator().getOwnName()));
+        assertEquals(Arrays.asList(constOne,constTwo,addOne),sameDiff.allVariablesRequireExecution(addTwo.name()));
     }
 
     @ParameterizedTest

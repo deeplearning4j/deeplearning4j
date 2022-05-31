@@ -252,7 +252,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         Preconditions.checkNotNull(x, "Op.x() cannot be null: Was null for op %s", op);
         op.validateDataTypes(oc);
 
-        if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()){
+        if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()) {
             //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
             //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
             if(z != null){

@@ -52,6 +52,10 @@ public class TensorArray extends  BaseTensorOp {
     @Setter
     protected SDVariable flow;
 
+    @Getter
+    @Setter
+    protected boolean clearOnRead = true;
+
     @Override
     public String tensorflowName() {
         return "TensorArrayV3";
@@ -74,6 +78,14 @@ public class TensorArray extends  BaseTensorOp {
     public TensorArray(TensorArray ta, SDVariable[] inputs){
         super(ta.sameDiff, inputs);
         this.tensorArrayDataType = ta.tensorArrayDataType;
+    }
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        if(!bArguments.isEmpty()) {
+            this.clearOnRead = bArguments.get(0);
+        }
     }
 
     @Override

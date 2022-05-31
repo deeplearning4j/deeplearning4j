@@ -27,7 +27,7 @@
 
 namespace sd {
 namespace ops {
-LIST_OP_IMPL(create_list, 1, 2, 0, -2) {
+LIST_OP_IMPL(create_list, -2, 2, 0, -2) {
   int height = 0;
   bool expandable = false;
   if (block.numI() == 2) {
@@ -43,9 +43,24 @@ LIST_OP_IMPL(create_list, 1, 2, 0, -2) {
     expandable = true;
   }
 
+
+
+
+
+
+  auto clearOnRead = true;
+  if(block.numB() > 0) {
+    clearOnRead = B_ARG(0);
+  }
+
   auto list = new NDArrayList(height, expandable);
   // we receive input array for graph integrity purposes only
   auto input = INPUT_VARIABLE(0);
+  //mainly a marker for now, representing the fixed shape the elements can be
+  if(block.width() > 1) {
+    auto setShape = INPUT_VARIABLE(1);
+
+  }
   setupResultList(list, block);
   //            OVERWRITE_RESULT(list);
   auto scalar = NDArrayFactory::create_(list->counter());

@@ -9909,10 +9909,28 @@ mappings {
   opName: "create_list"
   inputFrameworkOpName: "TensorArrayV3"
   rule {
+    ruleName: "multiinputindex"
+    functionName: "multiinputindex"
+    inputTensorName: "size"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "size"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "TensorArrayV3"
+  }
+  rule {
     ruleName: "valuemapping"
     functionName: "valuemapping"
+    inputBooleanName: "clear_after_read"
+    outputBooleanName: "clearOnRead"
     inputDataTypeName: "dtype"
     outputDataTypeName: "importDataType"
+    inputToOutput {
+      key: "clearOnRead"
+      value: "clear_after_read"
+    }
     inputToOutput {
       key: "importDataType"
       value: "dtype"
@@ -9920,6 +9938,17 @@ mappings {
     ruleType: "attribute"
     inputFrameworkOpName: "TensorArrayV3"
   }
+  rule {
+    ruleName: "listnumbertondarray"
+    functionName: "listnumbertondarray"
+    inputToOutput {
+      key: "setShape"
+      value: "element_shape"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "TensorArrayV3"
+  }
+  variableResolutionType: OVERRIDE
 }
 mappings {
   frameworkName: "tensorflow"
@@ -14522,17 +14551,6 @@ mappings {
     ruleName: "passthrough"
     functionName: "passthrough"
     ruleType: "tensor"
-    inputFrameworkOpName: "ConcatV2"
-  }
-  rule {
-    ruleName: "ndarrayinputtonumericalattribute"
-    functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "concatDimension"
-    inputToOutput {
-      key: "concatDimension"
-      value: "axis"
-    }
-    ruleType: "attribute"
     inputFrameworkOpName: "ConcatV2"
   }
   rule {

@@ -51,7 +51,9 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.BaseCompatOp;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -60,6 +62,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFrameworkImporter;
 import org.nd4j.shade.guava.io.Files;
+import org.nd4j.tensorflow.conversion.graphrunner.GraphRunner;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -230,7 +233,7 @@ public class TFGraphTestAllHelper {
                                 //Already know they are both infinite, only question is whether they are both positive and negative
                                 double d1 = tfPred.getDouble(next);
                                 double d2 = nd4jPred.getDouble(next);
-                                if((d1 > 0) != (d2 > 0)){
+                                if((d1 > 0) != (d2 > 0)) {
                                     eq = false;
                                     break;
                                 }
@@ -248,7 +251,7 @@ public class TFGraphTestAllHelper {
                         }
                     }
 
-                    assertTrue(eq,"Predictions do not match on " + modelName + ", node " + outputNode);
+                    assertTrue(eq,"Predictions do not match on " + modelName + ", node " + outputNode + " with op of type " + graph.getOps().get(outputNode).getOp().getClass().getName() + " with graph \n ");
                 } else {
 
                     if(!tfPred.equalShapes(nd4jPred)) {
@@ -326,8 +329,13 @@ public class TFGraphTestAllHelper {
         Nd4j.EPS_THRESHOLD = 1e-3;
         OpExecOrderListener listener = new OpExecOrderListener();       //Used to collect exec order
         Pair<SameDiff, Map<String,INDArray>> p = getGraphAfterExec(baseDir, modelFileName, modelName, inputs, execType, loader, Collections.singletonList(listener), null, printArraysDebugging);
+
+
         SameDiff graph = p.getFirst();
         Map<String,INDArray> sdPredictions = p.getSecond();
+        Set<String> failures = new LinkedHashSet<>();
+        Set<String> nullVars = new LinkedHashSet<>();
+        Set<String> nonNullVars = new LinkedHashSet<>();
 
         //Collect coverage info about ops
         OpValidation.collectTensorflowImportCoverage(graph);
@@ -339,16 +347,49 @@ public class TFGraphTestAllHelper {
             List<String> varNames = new ArrayList<>();
             Map<String,SameDiffOp> fns = graph.getOps();
             List<String> execOrder = listener.getOpNamesList();
-            for(String opName : execOrder){
+            for(String opName : execOrder) {
+                DifferentialFunction op = fns.get(opName).getOp();
+                //skip control flow and tensor array ops
+                if((op instanceof BaseCompatOp || (op instanceof BaseTensorOp)))
+                    continue;
                 String[] outputs = graph.getOutputsForOp(fns.get(opName).getOp());
                 Collections.addAll(varNames, outputs);
             }
 
+            //mainly for manual intervention if we want to debug certain variables that may not be present
+            //context: some variables maybe missing from the generated set of variables and we need a workaround for
+            //when this happens. Does not impact the normal final output tests which are consistent.
+            //unfortunately it is not possible to just let this run in a generic way due to variables such as control flow
+            //being used multiple times within the runner. When specified as outputs TF just throws an error about the variable
+            //already being set
+            List<String> targetNodes = new ArrayList<>();
+
+            //targetNodes.add("stack_bidirectional_rnn/cell_0/concat");
+            //targetNodes.add("stack_bidirectional_rnn/cell_0/bidirectional_rnn/bw/bw/transpose_1");
+
+
+            Map<String,INDArray> intermediateValues = new LinkedHashMap<>();
+            Map<String, INDArray> run =  null;;
+            if(!targetNodes.isEmpty()) {
+                GraphRunner graphRunner = GraphRunner.builder()
+                        .graphPath(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFileName).getFile())
+                        .inputNames(new ArrayList<>(inputs.keySet()))
+                        .outputNames(targetNodes)
+                        .build();
+                run = graphRunner.run(inputs);
+            }
+
+
+
             for (String varName : varNames) {
                 if (!inputs.containsKey(varName)) { //avoiding placeholders
-                    INDArray tfValue = intermediateVars(modelName, baseDir, varName, localTestDir);
+                    INDArray tfValue =  run == null || run != null && run.containsKey(varName) ? intermediateVars(modelName, baseDir, varName, localTestDir) : run.get(varName);
                     if (tfValue == null) {
+                        nullVars.add(varName);
                         continue;
+                    } else {
+                        intermediateValues.put(varName,tfValue);
+                        nonNullVars.add(varName);
                     }
                     log.info("Starting check: variable {}", varName);
                     if (skipNode(modelName, varName)) {
@@ -356,7 +397,7 @@ public class TFGraphTestAllHelper {
                     } else {
                         //assertArrayEquals("Shape not equal on node " + varName, tfValue.shape(), graph.getVariable(varName).getShape());
                         INDArray sdVal = sdPredictions.get(varName);
-                        if(maxRelErrorOverride != null){
+                        if(maxRelErrorOverride != null) {
                             INDArray diff = Transforms.abs(tfValue.sub(sdVal), false);
                             INDArray absErrorMask = diff.gte(minAbsErrorOverride);   //value 1 if x[i] > minAbsError; value 0 otherwise. Used to get rid of 1e-30 vs. 1e-29 type failures
                             INDArray sumAbs = Transforms.abs(tfValue, true).addi(Transforms.abs(sdVal, true));
@@ -382,12 +423,13 @@ public class TFGraphTestAllHelper {
                                     + " with minAbsError=" + minAbsErrorOverride + "; largest observed relError=" + maxRE);
                         } else {
 //                            assertEquals("Value not equal on node " + varName, tfValue, sdVal);
-                            if(tfValue.equals(sdVal)){
+                            if(tfValue.equals(sdVal)) {
                                 System.out.println("Pass: " + varName);
                             } else {
                                 System.out.println("FAIL: " + varName);
                                 System.out.println("TF:\n" + tfValue);
                                 System.out.println("SD:\n" + sdVal);
+                                failures.add(varName);
                             }
 
                         }
@@ -401,6 +443,9 @@ public class TFGraphTestAllHelper {
             assertTrue(count > 0,"No intermediate variables were checked");
         }
 
+        System.out.println("Failures for intermediate: " + failures);
+        System.out.println("Missing variables for intermediate: " + nullVars);
+        System.out.println("Non null variables for intermediate: " + nonNullVars);
         Nd4j.EPS_THRESHOLD = 1e-5;
     }
 
@@ -409,8 +454,64 @@ public class TFGraphTestAllHelper {
                                                                          Set<String> requiredOutputs, boolean printArraysDebugging) throws IOException {
         log.info("RUNNING TEST {}...", modelName);
         ModelLoadResult result  = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
+       /* if(modelName.equals("rnn/bstack/d_b1_n3")) {
+            System.out.println("Graph was " + result.getGraphDef().toString());
+        }*/
         SameDiff graph = result.getSameDiff();
-        if(listeners != null){
+
+
+        int count = 0;
+        //Evaluate the nodes in their execution order - this is useful for debugging (as we want the *first* failure
+        // to be detected before later failures)
+        List<String> varNames = new ArrayList<>();
+        Map<String,SameDiffOp> fns = graph.getOps();
+        for(String opName : fns.keySet()) {
+            DifferentialFunction op = fns.get(opName).getOp();
+            //skip control flow and tensor array ops
+            if((op instanceof BaseCompatOp || (op instanceof BaseTensorOp)))
+                continue;
+            String[] outputs = graph.getOutputsForOp(fns.get(opName).getOp());
+            Collections.addAll(varNames, outputs);
+        }
+
+        //mainly for manual intervention if we want to debug certain variables that may not be present
+        //context: some variables maybe missing from the generated set of variables and we need a workaround for
+        //when this happens. Does not impact the normal final output tests which are consistent.
+        //unfortunately it is not possible to just let this run in a generic way due to variables such as control flow
+        //being used multiple times within the runner. When specified as outputs TF just throws an error about the variable
+        //already being set
+        List<String> targetNodes = new ArrayList<>();
+
+        //targetNodes.add("stack_bidirectional_rnn/cell_0/concat");
+        //targetNodes.add("stack_bidirectional_rnn/cell_0/bidirectional_rnn/bw/bw/transpose_1");
+
+
+        Map<String,INDArray> intermediateValues = new LinkedHashMap<>();
+        Map<String, INDArray> run =  null;;
+        if(!targetNodes.isEmpty()) {
+            GraphRunner graphRunner = GraphRunner.builder()
+                    .graphPath(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile())
+                    .inputNames(new ArrayList<>(inputs.keySet()))
+                    .outputNames(targetNodes)
+                    .build();
+            run = graphRunner.run(inputs);
+        }
+
+
+
+        for (String varName : varNames) {
+            if (!inputs.containsKey(varName)) { //avoiding placeholders
+                INDArray tfValue =  run == null || run != null && run.containsKey(varName) ? intermediateVars(modelName, baseDir, varName, new File(baseDir)) : run.get(varName);
+                if (tfValue == null) {
+                    continue;
+                } else {
+                    intermediateValues.put(varName,tfValue);
+                }
+            }
+        }
+
+
+        if(listeners != null) {
             graph.setListeners(listeners);
         }
 
@@ -439,7 +540,7 @@ public class TFGraphTestAllHelper {
 
             outMap = graph.output(inputs, new ArrayList<>(requiredOutputs));
 
-            graph.getSessions().clear();
+            //graph.getSessions().clear();
         } else if (executeWith.equals(ExecuteWith.LIBND4J)) {
             for (String input : inputs.keySet()) {
                 graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));
@@ -505,7 +606,7 @@ public class TFGraphTestAllHelper {
         Map<String, INDArray> nodeSepOutput = readVars(modelName, base_dir, name, true, localTestDir);
 
         boolean importNameWorkaround = false;
-        if(nodeSepOutput.isEmpty()){
+        if(nodeSepOutput.isEmpty()) {
             //Edge case: intermediates were generated with help of import_graph_def method, which by default adds "import/" to names
             // for some reason. https://www.tensorflow.org/api_docs/python/tf/graph_util/import_graph_def
             //So many of earlier intermediate nodes test data were generated with filenames like "import___X..." instead of "X..."

@@ -413,8 +413,10 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         }
 
         if (Nd4j.getExecutioner().isVerbose()) {
-            if (op.z() != null)
-                log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
+            if (op.z() != null) {
+                DifferentialFunction differentialFunction = (DifferentialFunction) op;
+                log.info("Op name: {}; Z shapeInfo: {}; Z values: {} own name: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10),differentialFunction.getOwnName());
+            }
         }
     }
 
@@ -535,8 +537,10 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         }
 
         if (Nd4j.getExecutioner().isVerbose()) {
-            if (op.z() != null)
-                log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
+            if (op.z() != null) {
+                DifferentialFunction differentialFunction = (DifferentialFunction) op;
+                log.info("Op name: {}; Z shapeInfo: {}; Z values: {}; own name: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10),differentialFunction.getOwnName());
+            }
         }
     }
 
@@ -875,7 +879,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         StringBuilder sb = new StringBuilder();
         sb.append("Class: ").append(op.getClass().getName()).append("; opNum: ").append(op.opNum())
                 .append("; opName: ").append(op.opName());
-        if(op instanceof DifferentialFunction){
+        if(op instanceof DifferentialFunction) {
             sb.append("; opType: ").append(((DifferentialFunction)op).opType());
         }
 

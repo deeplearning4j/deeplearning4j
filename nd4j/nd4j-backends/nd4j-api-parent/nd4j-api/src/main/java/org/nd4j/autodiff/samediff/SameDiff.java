@@ -47,7 +47,6 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.ArrayUtil;
-import org.nd4j.common.util.MultiValueMap;
 import org.nd4j.common.util.ND4JFileUtils;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
@@ -83,7 +82,6 @@ import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
-import org.nd4j.shade.guava.collect.Sets;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.NDArraySupplierInitScheme;
@@ -567,6 +565,80 @@ public class SameDiff extends SDBaseOps {
         return ns;
     }
 
+
+    /**
+     * Get all variables required to be computed
+     * before this variable. This includes all variables
+     * that are inputs and outputs fo every op as required to be executed
+     * according to {@link #allOpsRequiredExecution(String)}
+     * @param varName the target variable
+     * @return
+     */
+    public List<SDVariable> allVariablesRequireExecution(String varName) {
+        SDVariable getVar = getVariable(varName);
+        DifferentialFunction targetFunc = null;
+        //variables typically have the reference to the op that created them as a field
+        if(getVar.getCreator() != null)
+            targetFunc = getVar.getCreator();
+            //fairly common case where op output name also outputs the target variable
+        else if(getOps().containsKey(getVar.name()) && getOps().get(getVar.name()).getOutputsOfOp().contains(getVar.name())) {
+            targetFunc = getOps().get(getVar.name()).getOp();
+        }
+        else { //need to search
+            for(SameDiffOp targetOp : ops.values()) {
+                if(targetOp.getOutputsOfOp().contains(getVar.name())) {
+                    targetFunc = targetOp.getOp();
+                    break;
+                }
+            }
+        }
+
+        List<SameDiffOp> sameDiffOps = allOpsRequiredExecution(targetFunc.getOwnName());
+        //add all the inputs and outputs of every op as required for computation as pre requisites
+        //for this variable
+        List<SDVariable> ret =  sameDiffOps
+                .stream().map(input -> input.getInputsToOp()).flatMap(input -> input.stream())
+                .map(input -> getVariable(input))
+                .collect(Collectors.toList());
+        ret.addAll(sameDiffOps
+                .stream().map(input -> input.getOutputsOfOp()).flatMap(input -> input.stream())
+                .map(input -> getVariable(input))
+                .collect(Collectors.toList()));
+        return ret;
+    }
+
+    /**
+     * Returns all the inputs all the way to the root for a given op.
+     * @param opName the op to get all the inputs for
+     * @return all the ops for the given inputs if any exist
+     */
+    public List<SameDiffOp> allOpsRequiredExecution(String opName) {
+        return allOpsRequiredExecution(opName,new LinkedHashSet<>());
+    }
+
+    /**
+     * Returns all the inputs all the way to the root for a given op.
+     * @param opName the op to get all the inputs for
+     * @return all the ops for the given inputs if any exist
+     */
+    private List<SameDiffOp> allOpsRequiredExecution(String opName,Set<String> processed) {
+        Set<SameDiffOp> ops = new LinkedHashSet<>();
+        SameDiffOp sameDiffOp = getOps().get(opName);
+        processed.add(opName);
+        if(sameDiffOp.getInputsToOp() != null && !sameDiffOp.getInputsToOp().isEmpty()) {
+            for(String input : sameDiffOp.getInputsToOp()) {
+                if(getVariableOutputOp(input) != null && getVariableOutputOp(input).getOwnName() != null) {
+                    String opOwnName = getVariableOutputOp(input).getOwnName();
+                    ops.add(getOps().get(opOwnName));
+                    if(!processed.contains(opOwnName))
+                        ops.addAll(allOpsRequiredExecution(opOwnName,processed));
+                    processed.add(opOwnName);
+                }
+            }
+        }
+
+        return new ArrayList<>(ops);
+    }
 
     /**
      * Gets all operations in a given name scope.
@@ -3967,14 +4039,6 @@ public class SameDiff extends SDBaseOps {
             eagerArrays.rename(from,to);
         }
 
-        for(Map.Entry<Long,InferenceSession> sessionEntry : sessions.entrySet()) {
-            InferenceSession inferenceSession = sessionEntry.getValue();
-            for (Map.Entry<AbstractSession.VarId, List<INDArray>> var : inferenceSession.getTensorArrays().entrySet()) {
-                if (var.getKey().getVariable().equals(from)) {
-                    var.getKey().setVariable(to);
-                }
-            }
-        }
     }
 
 

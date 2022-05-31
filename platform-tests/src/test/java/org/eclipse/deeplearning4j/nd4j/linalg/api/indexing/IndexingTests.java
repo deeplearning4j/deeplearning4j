@@ -44,7 +44,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @NativeTag
 public class IndexingTests extends BaseNd4jTestWithBackends {
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testingPointAll(Nd4jBackend backend) {
+        INDArray x = Nd4j.linspace(1,6,6, DataType.DOUBLE).reshape('c',2,3).castTo(DataType.DOUBLE);
+        INDArrayIndex[] indices = new INDArrayIndex[2];
+        INDArray[] assertions = new INDArray[] {
+                Nd4j.createFromArray(1.0,2.0,3.0),
+                Nd4j.createFromArray(4.0,5.0,6.0)
+        };
+        indices[1] = NDArrayIndex.all();
+        for(int i = 0; i < x.rank(); i++) {
+            indices[0] = NDArrayIndex.point(i);
+            INDArray getTest = x.get(indices);
+            assertEquals(assertions[i],getTest);
+        }
 
+
+    }
 
 
     @ParameterizedTest
@@ -104,7 +121,7 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
         INDArray vals = Nd4j.valueArrayOf(new long[] {2,2,2,2},5, DataType.DOUBLE);
         assertEquals(vals,x);
     }
-    
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetScalar(Nd4jBackend backend) {

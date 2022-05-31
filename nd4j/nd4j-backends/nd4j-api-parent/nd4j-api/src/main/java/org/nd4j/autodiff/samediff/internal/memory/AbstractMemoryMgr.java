@@ -34,7 +34,9 @@ public abstract class AbstractMemoryMgr implements SessionMemMgr {
     @Override
     public INDArray dup(@NonNull INDArray arr) {
         INDArray out = ulike(arr);
-        out.assign(arr);
+        if(!arr.isEmpty()) {
+            out.assign(arr);
+        }
         return out;
     }
 }

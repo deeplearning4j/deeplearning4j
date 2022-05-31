@@ -145,8 +145,6 @@ public class SDValue {
      * @return the created value
      */
     public static SDValue create(List<INDArray> inputValue) {
-        if(listValues.containsKey(inputValue))
-            return listValues.get(inputValue);
         SDValue sdValue = new SDValue();
         sdValue.listValue = inputValue;
         sdValue.sdValueType = SDValueType.LIST;
