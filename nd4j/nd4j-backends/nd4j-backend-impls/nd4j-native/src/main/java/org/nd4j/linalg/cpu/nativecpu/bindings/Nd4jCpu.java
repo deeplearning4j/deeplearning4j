@@ -478,6 +478,13 @@ public static final int
 
   public native void setPrimaryBuffer(Pointer buffer, @Cast("size_t") long length);
   public native void setSpecialBuffer(Pointer buffer, @Cast("size_t") long length);
+// #ifndef __JAVACPP_HACK__
+// #endif
+
+  public native void showBufferLimited();
+  //for Debug purposes
+  public native void showCounters(@Cast("char*") String msg1, @Cast("char*") String msg2);
+  public native void showCounters(@Cast("char*") BytePointer msg1, @Cast("char*") BytePointer msg2);
 
   /**
    * This method deletes buffers, if we're owners
@@ -3974,6 +3981,7 @@ public static final int
   public native void syncToDevice();
   public native void syncShape();
 
+
   /**
    * This method can be used on architectures that use special buffers
    * @param writeList
@@ -3993,6 +4001,15 @@ public static final int
                                   @Const @ByRef(nullValue = "std::vector<const sd::NDArray*>{}") ConstNDArrayVector readList, @Cast("bool") boolean synchronizeWritables/*=false*/);
   public native void preparePrimaryUse(@Const @ByRef ConstNDArrayVector writeList);
 
+// #ifndef __JAVACPP_HACK__
+// #if defined(HAVE_VEDA)
+//   static void registerVedaUse(const std::vector<const NDArray *> &writeList,
+//                                  const std::vector<const NDArray *> &readList = {});
+//   static void prepareVedaUse(const std::vector<const NDArray *> &writeList,
+//                                 const std::vector<const NDArray *> &readList = {}, bool synchronizeWritables = false);
+
+// #endif
+// #endif
   /**
    * This method returns buffer pointer offset by given number of elements, wrt own data type
    * @param offset
@@ -9069,9 +9086,6 @@ public static final int
 // #include <system/common.h>
 
 // #include <vector>
-// #if defined(__NEC__)
-public static final int SHAPE_LIST_MAX_SIZE = 64;
-// #endif
 @Namespace("sd") @NoOffset public static class ShapeList extends Pointer {
     static { Loader.load(); }
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
