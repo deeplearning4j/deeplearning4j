@@ -143,6 +143,11 @@ public class KerasSequentialModel extends KerasModel {
                     " separately no training configuration is attached.");
         }
 
+
+        if(inputShape == null) {
+            inputShape = layersOrdered.get(0).getInputShape();
+        }
+
         this.outputTypes = inferOutputTypes(inputShape);
 
         if (weightsArchive != null)

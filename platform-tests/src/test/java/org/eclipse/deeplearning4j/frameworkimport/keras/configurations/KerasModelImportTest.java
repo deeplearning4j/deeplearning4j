@@ -35,6 +35,8 @@ import org.junit.jupiter.api.Test;
 import org.nd4j.common.resources.Resources;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,7 +57,15 @@ class KerasModelImportTest extends BaseDL4JTest {
     public long getTimeoutMilliseconds() {
         return 9999999999999L;
     }
-    
+
+
+    @Test
+    @DisplayName("Test H 5 Without Tensorflow Scope")
+    public void testLoss() throws Exception {
+        MultiLayerNetwork model = loadModel("modelimport/keras/tfkeras/some_loss.h5");
+        model.fit(new DataSet(Nd4j.rand(2,28,28),Nd4j.createFromArray(0,1).castTo(DataType.INT64)));
+        assertNotNull(model);
+    }
 
     @Test
     @DisplayName("Test H 5 Without Tensorflow Scope")
