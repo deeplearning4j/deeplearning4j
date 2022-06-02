@@ -447,7 +447,7 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
 #if defined(__NEC__)
   sd::DataType inputTypes[SD_MAX_INPUT_SIZE];
   if (block.width() > SD_MAX_INPUT_SIZE) {
-    sd_printf("%s:%d Exceeded allowed input size (%d) \n", __FILE__, __LINE__,  SD_MAX_INPUT_SIZE);
+    sd_printf("%s:%d Exceeded allowed input size (%d) \n", __FILE__, __LINE__, SD_MAX_INPUT_SIZE);
     throw std::runtime_error("Provided inputs are more than allowed");
   }
 #else
@@ -640,44 +640,14 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
           VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
           SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
 
-          auto allocVeda = [](const NDArray *x) {
-            auto buffer = x->getDataBuffer();
-            if (!x->isActualOnDeviceSide() && !buffer->special()) {
-              auto length = buffer->getLenInBytes();
-              if (buffer->primary() && length > 0) {
-#if defined(DEBUG_VEDA_LOGS)
-                sd_debug("allocVeda: store result in %p\n", (void *)buffer->getPtrToSpecial());
-#endif
-                VEDA_CALL_THROW(vedaMemAllocAsync((VEDAdeviceptr *)buffer->getPtrToSpecial(), length, 0));
-              } else {
-#if defined(DEBUG_VEDA_LOGS)
-                sd_debug("allocVeda: %s\n", "as the length is 0, its not important");
-#endif
-              }
-            }
-          };
-          auto asyncToVeda = [](const NDArray *x) {
-            if (!x->isActualOnDeviceSide()) {
-              auto buffer = x->getDataBuffer();
-              if (buffer->special()) {
-                auto hostPtr = buffer->primary();
-                auto length = buffer->getLenInBytes();
-#if defined(DEBUG_VEDA_LOGS)
-                sd_debug("asyncCopyToVeda: primary %p to special %p\n", hostPtr, buffer->special());
-#endif
-                VEDA_CALL_THROW(vedaMemcpyHtoDAsync((VEDAdeviceptr)buffer->special(), hostPtr, length, 0));
-              }
-              buffer->readSpecial();
-            }
-          };
           for (int i = 0; i < block.width(); i++) {
             auto a = INPUT_VARIABLE(i);
             if (a) {
 #if defined(DEBUG_VEDA_LOGS)
               a->getDataBuffer()->showCounters("helper: before read", helper->name().c_str());
 #endif
-              allocVeda(a);
-              asyncToVeda(a);
+              a->getDataBuffer()->allocVeda();
+              a->getDataBuffer()->asyncToVeda();
             }
           }
           for (int i = 0; i < numOutputs; i++) {
@@ -686,8 +656,11 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 #if defined(DEBUG_VEDA_LOGS)
               a->getDataBuffer()->showCounters("helper:  before write", helper->name().c_str());
 #endif
-              allocVeda(a);
-              // asyncToVeda(a);
+              a->getDataBuffer()->allocVeda();
+              // its probably better to sync it when we have view
+              if (a->isView() && a->lengthOf() * a->sizeOfT() != a->getDataBuffer()->getLenInBytes()) {
+                a->getDataBuffer()->asyncToVeda();
+              }
               a->getDataBuffer()->writeSpecial();
             }
           }
@@ -748,7 +721,8 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     timeEnd = std::chrono::system_clock::now();
     outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
     block->setInnerTime(outerTime);
-    sd_debug("%s [%s] prepTime %lld time %lld \n", hasHelper? "helper":"ordinary" , this->getOpName()->c_str(), (long long int)prepTime, (long long int) outerTime);
+    sd_debug("%s [%s] prepTime %lld time %lld \n", hasHelper ? "helper" : "ordinary", this->getOpName()->c_str(),
+             (long long int)prepTime, (long long int)outerTime);
   }
 
   if (Environment::getInstance().isProfiling() && block->getVariableSpace() != nullptr) {

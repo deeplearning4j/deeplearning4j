@@ -133,6 +133,8 @@ class SD_LIB_EXPORT DataBuffer {
 #ifndef __JAVACPP_HACK__
 #if defined(HAVE_VEDA)
   void** getPtrToSpecial() const;
+  void allocVeda();
+  void asyncToVeda();
 #endif
 #endif
 

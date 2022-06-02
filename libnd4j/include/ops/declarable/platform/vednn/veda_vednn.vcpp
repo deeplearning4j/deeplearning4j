@@ -733,5 +733,51 @@ uint64_t vedaPadConstantRank4(LongType *inputShapeInfo, VEDAdeviceptr vIn, LongT
   return 0;
 }
 
+void vedaExpF32(uint64_t length, VEDAdeviceptr vIn, VEDAdeviceptr vO) {
+  float *in, *out;
+  vedaMemPtr((void **)&in, vIn);
+  vedaMemPtr((void **)&out, vO);
+  for (uint64_t i = 0; i < length; i++) {
+    out[i] = exp(in[i]);
+  }
+}
+
+void vedaLogF32(uint64_t length, VEDAdeviceptr vIn, VEDAdeviceptr vO) {
+  float *in, *out;
+  vedaMemPtr((void **)&in, vIn);
+  vedaMemPtr((void **)&out, vO);
+  for (uint64_t i = 0; i < length; i++) {
+    out[i] = log(in[i]);
+  }
+}
+
+void vedaTanhF32(uint64_t length, VEDAdeviceptr vIn, VEDAdeviceptr vO) {
+  float *in, *out;
+  vedaMemPtr((void **)&in, vIn);
+  vedaMemPtr((void **)&out, vO);
+  for (uint64_t i = 0; i < length; i++) {
+    out[i] = tanh(in[i]);
+  }
+}
+
+void vedaSigmoidF32(uint64_t length, VEDAdeviceptr vIn, VEDAdeviceptr vO) {
+  float *in, *out;
+  vedaMemPtr((void **)&in, vIn);
+  vedaMemPtr((void **)&out, vO);
+  for (uint64_t i = 0; i < length; i++) {
+    out[i] = 1.0f / (1.0f + exp(-in[i]));
+  }
+}
+
+void vedaLeakyRELUF32(uint64_t length, VEDAdeviceptr vIn, VEDAdeviceptr vO, float alpha) {
+  float *in, *out;
+  vedaMemPtr((void **)&in, vIn);
+  vedaMemPtr((void **)&out, vO);
+  for (uint64_t i = 0; i < length; i++) {
+    auto val = in[i];
+    out[i] = val < 0.0f ? alpha * val : val;
+
+  }
+}
 
 }  // extern "C"

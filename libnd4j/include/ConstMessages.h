@@ -35,6 +35,9 @@ namespace sd {
 #define ORDERING_MSG_INPUT_ "the Ordering of the Input NDArray"
 #define ORDERING_MSG_OUTPUT_ "the Ordering of the Output NDArray"
 
+extern const char *UNIQUE_TRANSFORM_STRICT_PREFIX;
+extern const char *UNIQUE_SCALAROP_PREFIX;
+
 extern const char *OP_VALIDATION_FAIL_MSG;
 extern const char *HAVE_SEQLENARR;
 extern const char *HAVE_PEEPHOLE;

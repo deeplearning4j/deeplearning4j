@@ -183,6 +183,36 @@ bool DataBuffer::isSpecialActual() const {
   return (_writeSpecial.load() > _writePrimary.load() || _readSpecial.load() > _writePrimary.load());
 }
 
+void DataBuffer::allocVeda(){
+
+        if (!isSpecialActual() && !special()) {
+          auto length = getLenInBytes();
+          if (primary() && length > 0) {
+#if defined(DEBUG_VEDA_LOGS)
+            sd_debug("allocVeda: store result in %p\n", (void *)getPtrToSpecial());
+#endif
+            VEDA_CALL_THROW(vedaMemAllocAsync((VEDAdeviceptr *)getPtrToSpecial(), length, 0));
+          } else {
+#if defined(DEBUG_VEDA_LOGS)
+            sd_debug("allocVeda: %s\n", "as the length is 0, its not important");
+#endif
+          }
+        }
+}
+
+void DataBuffer::asyncToVeda(){
+        if (!isSpecialActual()) {
+          if (special()) {
+            auto hostPtr = primary();
+            auto length = getLenInBytes();
+#if defined(DEBUG_VEDA_LOGS)
+            sd_debug("asyncCopyToVeda: primary %p to special %p\n", hostPtr, special());
+#endif
+            VEDA_CALL_THROW(vedaMemcpyHtoDAsync((VEDAdeviceptr)special(), hostPtr, length, 0));
+          }
+          readSpecial();
+        }
+}
 #else
 
 ////////////////////////////////////////////////////////////////////////
