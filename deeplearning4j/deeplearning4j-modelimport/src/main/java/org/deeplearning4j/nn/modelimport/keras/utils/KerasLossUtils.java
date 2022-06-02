@@ -63,33 +63,42 @@ public class KerasLossUtils {
         LossFunctions.LossFunction dl4jLoss;
         kerasLoss = kerasLoss.toLowerCase();
         if (kerasLoss.equals(conf.getKERAS_LOSS_MEAN_SQUARED_ERROR()) ||
-                kerasLoss.equals(conf.getKERAS_LOSS_MSE())) {
+                kerasLoss.equals(conf.getKERAS_LOSS_MSE()) ||
+                kerasLoss.equals(conf.getTF_KERAS_LOSS_MEAN_SQUARED_ERROR())) {
             dl4jLoss = LossFunctions.LossFunction.SQUARED_LOSS;
         } else if (kerasLoss.equals(conf.getKERAS_LOSS_MEAN_ABSOLUTE_ERROR()) ||
-                kerasLoss.equals(conf.getKERAS_LOSS_MAE())) {
+                kerasLoss.equals(conf.getKERAS_LOSS_MAE()) ||
+                kerasLoss.equals(conf.getTF_KERAS_LOSS_MEAN_ABSOLUTE_ERROR())) {
             dl4jLoss = LossFunctions.LossFunction.MEAN_ABSOLUTE_ERROR;
         } else if (kerasLoss.equals(conf.getKERAS_LOSS_MEAN_ABSOLUTE_PERCENTAGE_ERROR()) ||
-                kerasLoss.equals(conf.getKERAS_LOSS_MAPE())) {
+                kerasLoss.equals(conf.getKERAS_LOSS_MAPE()) ||
+                kerasLoss.equals(conf.getTF_KERAS_LOSS_MEAN_ABSOLUTE_PERCENTAGE_ERROR())) {
             dl4jLoss = LossFunctions.LossFunction.MEAN_ABSOLUTE_PERCENTAGE_ERROR;
         } else if (kerasLoss.equals(conf.getKERAS_LOSS_MEAN_SQUARED_LOGARITHMIC_ERROR()) ||
-                kerasLoss.equals(conf.getKERAS_LOSS_MSLE())) {
+                kerasLoss.equals(conf.getKERAS_LOSS_MSLE()) ||
+                kerasLoss.equals(conf.getTF_KERAS_LOSS_MEAN_SQUARED_LOGARITHMIC_ERROR())) {
             dl4jLoss = LossFunctions.LossFunction.MEAN_SQUARED_LOGARITHMIC_ERROR;
-        } else if (kerasLoss.equals(conf.getKERAS_LOSS_SQUARED_HINGE())) {
+        } else if (kerasLoss.equals(conf.getKERAS_LOSS_SQUARED_HINGE()) ||
+                kerasLoss.equals(conf.getTF_KERAS_LOSS_SQUARED_HINGE())) {
             dl4jLoss = LossFunctions.LossFunction.SQUARED_HINGE;
         } else if (kerasLoss.equals(conf.getKERAS_LOSS_HINGE())) {
             dl4jLoss = LossFunctions.LossFunction.HINGE;
-        } else if (kerasLoss.equals(conf.getKERAS_LOSS_SPARSE_CATEGORICAL_CROSSENTROPY()) || kerasLoss.equals(conf.getTF_KERAS_LOSS_SPARSE_CATEGORICAL_CROSS_ENTROPY())) {
+        } else if (kerasLoss.equals(conf.getKERAS_LOSS_SPARSE_CATEGORICAL_CROSSENTROPY()) ||
+                kerasLoss.equals(conf.getTF_KERAS_LOSS_SPARSE_CATEGORICAL_CROSS_ENTROPY())) {
             dl4jLoss = LossFunctions.LossFunction.SPARSE_MCXENT;
-        } else if (kerasLoss.equals(conf.getKERAS_LOSS_BINARY_CROSSENTROPY())) {
+        } else if (kerasLoss.equals(conf.getKERAS_LOSS_BINARY_CROSSENTROPY()) ||
+                kerasLoss.equals(conf.getTF_KERAS_LOSS_BINARY_CROSSENTROPY())) {
             dl4jLoss = LossFunctions.LossFunction.XENT;
         } else if (kerasLoss.equals(conf.getKERAS_LOSS_CATEGORICAL_CROSSENTROPY())) {
             dl4jLoss = LossFunctions.LossFunction.MCXENT;
         } else if (kerasLoss.equals(conf.getKERAS_LOSS_KULLBACK_LEIBLER_DIVERGENCE()) ||
-                kerasLoss.equals(conf.getKERAS_LOSS_KLD())) {
+                kerasLoss.equals(conf.getKERAS_LOSS_KLD()) ||
+                kerasLoss.equals(conf.getTF_KERAS_LOSS_KLDIVERGENCE())) {
             dl4jLoss = LossFunctions.LossFunction.KL_DIVERGENCE;
         } else if (kerasLoss.equals(conf.getKERAS_LOSS_POISSON())) {
             dl4jLoss = LossFunctions.LossFunction.POISSON;
-        } else if (kerasLoss.equals(conf.getKERAS_LOSS_COSINE_PROXIMITY())) {
+        } else if (kerasLoss.equals(conf.getKERAS_LOSS_COSINE_PROXIMITY()) ||
+                kerasLoss.equals(conf.getTF_KERAS_LOSS_COSINE_SIMILARITY())) {
             dl4jLoss = LossFunctions.LossFunction.COSINE_PROXIMITY;
         } else {
             ILossFunction lossClass = customLoss.get(kerasLoss);
