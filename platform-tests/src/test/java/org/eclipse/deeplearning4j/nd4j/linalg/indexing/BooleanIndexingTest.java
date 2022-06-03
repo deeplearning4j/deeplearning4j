@@ -55,6 +55,23 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         1D array checks
      */
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDifferentDataType(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        INDArray test =
+                Nd4j.create(new double[] {1.0, 1.0, 2.0, 1.0}, new long[] {2, 2}, DataType.INT32);
+        INDArray intTest = test.dup();
+        BooleanIndexing.replaceWhere(intTest, 0, Conditions.greaterThan(0)); // test not updated
+        assertEquals(Nd4j.zeros(test.shape()).castTo(DataType.INT32),intTest);
+        INDArray testCasted = test.dup().castTo(DataType.FLOAT);
+        BooleanIndexing.replaceWhere(testCasted, 0.0, Conditions.greaterThan(0)); // testCasted is updated
+        assertEquals(Nd4j.zeros(test.shape()).castTo(DataType.FLOAT),test);
+    }
+
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAnd1(Nd4jBackend backend) {

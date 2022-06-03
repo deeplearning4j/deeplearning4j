@@ -81,7 +81,8 @@ public class BatchToSpaceND extends DynamicCustomOp {
             }
             if(args.length > 2) {
                 INDArray crops = args[2].getArr();
-                this.crops = crops.toIntMatrix();
+                if(crops != null)
+                   this.crops = crops.toIntMatrix();
             }
 
         }

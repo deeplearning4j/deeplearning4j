@@ -344,23 +344,32 @@ public class KerasLayerConfiguration {
 
     /* Keras loss functions. */
     private final String KERAS_LOSS_MEAN_SQUARED_ERROR = "mean_squared_error";
+    private final String TF_KERAS_LOSS_MEAN_SQUARED_ERROR = "meansquarederror";
     private final String KERAS_LOSS_MSE = "mse";
     private final String KERAS_LOSS_MEAN_ABSOLUTE_ERROR = "mean_absolute_error";
+    private final String TF_KERAS_LOSS_MEAN_ABSOLUTE_ERROR = "meanabsoluteerror";
     private final String KERAS_LOSS_MAE = "mae";
     private final String KERAS_LOSS_MEAN_ABSOLUTE_PERCENTAGE_ERROR = "mean_absolute_percentage_error";
+    private final String TF_KERAS_LOSS_MEAN_ABSOLUTE_PERCENTAGE_ERROR = "meanabsolutepercentageerror";
     private final String KERAS_LOSS_MAPE = "mape";
     private final String KERAS_LOSS_MEAN_SQUARED_LOGARITHMIC_ERROR = "mean_squared_logarithmic_error";
+    private final String TF_KERAS_LOSS_MEAN_SQUARED_LOGARITHMIC_ERROR = "meansquaredlogarithmicerror";
     private final String KERAS_LOSS_MSLE = "msle";
     private final String KERAS_LOSS_SQUARED_HINGE = "squared_hinge";
+    private final String TF_KERAS_LOSS_SQUARED_HINGE = "squaredhinge";
     private final String KERAS_LOSS_HINGE = "hinge";
     private final String KERAS_LOSS_CATEGORICAL_HINGE = "categorical_hinge"; // keras 2 only
     private final String KERAS_LOSS_BINARY_CROSSENTROPY = "binary_crossentropy";
+    private final String TF_KERAS_LOSS_BINARY_CROSSENTROPY = "binarycrossentropy";
     private final String KERAS_LOSS_CATEGORICAL_CROSSENTROPY = "categorical_crossentropy";
     private final String KERAS_LOSS_SPARSE_CATEGORICAL_CROSSENTROPY = "sparse_categorical_crossentropy";
+    private final String TF_KERAS_LOSS_SPARSE_CATEGORICAL_CROSS_ENTROPY = "sparsecategoricalcrossentropy";
     private final String KERAS_LOSS_KULLBACK_LEIBLER_DIVERGENCE = "kullback_leibler_divergence";
+    private final String TF_KERAS_LOSS_KLDIVERGENCE = "kldivergence";
     private final String KERAS_LOSS_KLD = "kld";
     private final String KERAS_LOSS_POISSON = "poisson";
     private final String KERAS_LOSS_COSINE_PROXIMITY = "cosine_proximity";
+    private final String TF_KERAS_LOSS_COSINE_SIMILARITY = "cosinesimilarity";
     private final String KERAS_LOSS_LOG_COSH = "logcosh"; // keras 2 only
 
 }

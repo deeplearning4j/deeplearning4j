@@ -407,13 +407,22 @@ public class KerasModel {
                 lossLayers.add(new KerasLoss(outputLayerName + "_loss", outputLayerName, kerasLoss));
         } else if (kerasLossObj instanceof Map) {
             Map<String, Object> kerasLossMap = (Map<String, Object>) kerasLossObj;
-            for (String outputLayerName : kerasLossMap.keySet()) {
-                Object kerasLoss = kerasLossMap.get(outputLayerName);
-                if (kerasLoss instanceof String)
-                    lossLayers.add(new KerasLoss(outputLayerName + "_loss", outputLayerName, (String) kerasLoss));
-                else
-                    throw new InvalidKerasConfigurationException("Unknown Keras loss " + kerasLoss.toString());
+            //tf.keras double nesting
+            if(kerasLossMap.containsKey("config")) {
+                kerasLossMap = (Map<String, Object>) kerasLossMap.get("config");
+                lossLayers.add(new KerasLoss(layersOrdered.get(layers.size() - 1).getLayerName() + "_loss",layersOrdered.get(layers.size() - 1).getLayerName(),kerasLossMap.get("name").toString()));
+
+
+            } else {
+                for (String outputLayerName : kerasLossMap.keySet()) {
+                    Object kerasLoss = kerasLossMap.get(outputLayerName);
+                    if (kerasLoss instanceof String)
+                        lossLayers.add(new KerasLoss(outputLayerName + "_loss", outputLayerName, (String) kerasLoss));
+                    else
+                        throw new InvalidKerasConfigurationException("Unknown Keras loss " + kerasLoss.toString());
+                }
             }
+
         }
         this.outputLayerNames.clear();
 
