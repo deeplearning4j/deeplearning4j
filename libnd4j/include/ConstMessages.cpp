@@ -18,6 +18,9 @@
 #include <ConstMessages.h>
 
 namespace sd {
+
+const char *UNIQUE_TRANSFORM_STRICT_PREFIX = "__transform__strict__";
+const char *UNIQUE_SCALAROP_PREFIX= "__scalarop__";
 const char *OP_VALIDATION_FAIL_MSG = "Op validation failed";
 const char *HAVE_PEEPHOLE = "Having the Peephole connections";
 const char *HAVE_SEQLENARR = "Having theSequence length array";

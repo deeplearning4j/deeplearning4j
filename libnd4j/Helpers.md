@@ -138,15 +138,9 @@ Requirement Helper Example#6: meets the requirements
 7. custom comparision lambda and also another usage of the custom wrapper written by us ```ShapeInfoVariable```. Note: we will use ```std::vector<int>```. this wrapper can be used with ```NDArray``` as well.
 ```cpp
 Requirements req7("Requirement Helper Example#7");
-req7.expect(makeShapeInfoVariable(std::vector<int>{2,3,4,5}, SHAPE_MSG_INPUT0), makeShapeInfoVariable(std::vector<int>{2,3,4,7}, SHAPE_MSG_INPUT1),
-                    [](const std::vector<int>& l, const std::vector<int>& r){
-                        if(l.size()!=r.size()) return false;
-                        for (int i = 0; i < l.size(); i++) {
-                            if (l.at(i) != r.at(i)) {
-                                return false;
-                            }
-                        }
-                        return true;
+req7.expect(makeShapeInfoVariable(std::vector<sd::LongType>{2,3,4,5}, SHAPE_MSG_INPUT0), makeShapeInfoVariable(std::vector<sd::LongType>{2,3,4,7}, SHAPE_MSG_INPUT1),
+                    [](const std::vector<sd::LongType>& l, const std::vector<sd::LongType>& r){
+                        return l == r;
                     }
                  , EXPECTED_EQ_MSG);
 }

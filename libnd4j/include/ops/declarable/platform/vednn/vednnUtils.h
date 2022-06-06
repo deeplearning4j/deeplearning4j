@@ -28,6 +28,8 @@
 #include <system/platform_boilerplate.h>
 #include <vednn.h>
 #if defined(HAVE_VEDA)
+#include <system/op_enums.h>
+
 #include "veda_helper.h"
 #endif
 using namespace samediff;
@@ -53,6 +55,17 @@ DECLARE_PLATFORM(log_softmax, ENGINE_CPU);
 
 #if defined(HAVE_VEDA)
 DECLARE_PLATFORM(concat, ENGINE_CPU);
+DECLARE_PLATFORM(add, ENGINE_CPU);
+DECLARE_PLATFORM(multiply, ENGINE_CPU);
+DECLARE_PLATFORM(permute, ENGINE_CPU);
+DECLARE_PLATFORM(pad, ENGINE_CPU);
+
+DECLARE_PLATFORM_TRANSFORM_STRICT(Exp, ENGINE_CPU);
+DECLARE_PLATFORM_TRANSFORM_STRICT(Log, ENGINE_CPU);
+DECLARE_PLATFORM_TRANSFORM_STRICT(Tanh, ENGINE_CPU);
+DECLARE_PLATFORM_TRANSFORM_STRICT(Sigmoid, ENGINE_CPU);
+
+DECLARE_PLATFORM_SCALAR_OP(LeakyRELU, ENGINE_CPU);
 #endif
 
 SD_INLINE vednnTensorParam_t getTensorFormat(const NDArray &in, bool isNCHW = true) {

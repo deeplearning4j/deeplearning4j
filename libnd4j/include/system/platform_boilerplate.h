@@ -22,6 +22,7 @@
 
 #ifndef SD_PLATFORM_BOILERPLATE_H
 #define SD_PLATFORM_BOILERPLATE_H
+#include <ConstMessages.h>
 #include <execution/Engine.h>
 
 #define CONCATP(A, B) A##_##B
@@ -50,5 +51,49 @@
 
 #define PLATFORM_CHECK_F(NAME, ENGINE, CNAME) bool PLATFORM_##CNAME::isUsable(graph::Context &block)
 #define PLATFORM_CHECK(NAME, ENGINE) PLATFORM_CHECK_F(NAME, ENGINE, NAME##_##ENGINE)
+
+#define DECLARE_PLATFORM_LEGACY_F(PREFIX, OPNUM, ENGINE, CNAME)                                                       \
+  class SD_LIB_EXPORT PLATFORM_LEGACY_##CNAME : public PlatformHelperLegacy {                                         \
+   public:                                                                                                            \
+    PLATFORM_LEGACY_##CNAME() : PlatformHelperLegacy(PREFIX, OPNUM, samediff::Engine::ENGINE) {}                      \
+    bool isUsable(void *extraParams, const sd::LongType *outShapeInfo, const sd::LongType *inArg0ShapeInfo,           \
+                  const sd::LongType *inArg1ShapeInfo) override;                                                      \
+    sd::Status invokeHelper(void *extraParams, const sd::LongType *outShapeInfo, sd::InteropDataBuffer *outputBuffer, \
+                            const sd::LongType *inArg0ShapeInfo, const sd::InteropDataBuffer *inArg0Buffer,           \
+                            const sd::LongType *inArg1ShapeInfo, const sd::InteropDataBuffer *inArg1Buffer) override; \
+  };
+
+#define PLATFORM_LEGACY_IMPL_F(CNAME)                                                           \
+  struct SD_LIB_EXPORT __registratorPlatformHelper_##CNAME {                                    \
+    __registratorPlatformHelper_##CNAME() {                                                     \
+      auto helper = new PLATFORM_LEGACY_##CNAME();                                              \
+      OpRegistrator::getInstance().registerHelperLegacy(helper);                                \
+    }                                                                                           \
+  };                                                                                            \
+  static __registratorPlatformHelper_##CNAME platformHelper_##CNAME;                            \
+  sd::Status PLATFORM_LEGACY_##CNAME::invokeHelper(                                             \
+      void *extraParams, const sd::LongType *outShapeInfo, sd::InteropDataBuffer *outputBuffer, \
+      const sd::LongType *inArg0ShapeInfo, const sd::InteropDataBuffer *inArg0Buffer,           \
+      const sd::LongType *inArg1ShapeInfo, const sd::InteropDataBuffer *inArg1Buffer)
+
+#define PLATFORM_LEGACY_CHECK_F(CNAME)                                                        \
+  bool PLATFORM_LEGACY_##CNAME::isUsable(void *extraParams, const sd::LongType *outShapeInfo, \
+                                         const sd::LongType *inArg0ShapeInfo, const sd::LongType *inArg1ShapeInfo)
+
+#define DECLARE_PLATFORM_TRANSFORM_STRICT(OP_ENUM_ENTRY, ENGINE)                                         \
+  DECLARE_PLATFORM_LEGACY_F(UNIQUE_TRANSFORM_STRICT_PREFIX, transform::StrictOps::OP_ENUM_ENTRY, ENGINE, \
+                            TRANSFORM_STRICT##_##OP_ENUM_ENTRY##_##ENGINE)
+#define PLATFORM_TRANSFORM_STRICT_IMPL(OP_ENUM_ENTRY, ENGINE) \
+  PLATFORM_LEGACY_IMPL_F(TRANSFORM_STRICT##_##OP_ENUM_ENTRY##_##ENGINE)
+#define PLATFORM_TRANSFORM_STRICT_CHECK(OP_ENUM_ENTRY, ENGINE) \
+  PLATFORM_LEGACY_CHECK_F(TRANSFORM_STRICT##_##OP_ENUM_ENTRY##_##ENGINE)
+
+  #define DECLARE_PLATFORM_SCALAR_OP(OP_ENUM_ENTRY, ENGINE)                                         \
+  DECLARE_PLATFORM_LEGACY_F(UNIQUE_SCALAROP_PREFIX, scalar::Ops::OP_ENUM_ENTRY, ENGINE, \
+                            SCALAR_OP##_##OP_ENUM_ENTRY##_##ENGINE)
+#define PLATFORM_SCALAR_OP_IMPL(OP_ENUM_ENTRY, ENGINE) \
+  PLATFORM_LEGACY_IMPL_F(SCALAR_OP##_##OP_ENUM_ENTRY##_##ENGINE)
+#define PLATFORM_SCALAR_OP_CHECK(OP_ENUM_ENTRY, ENGINE) \
+  PLATFORM_LEGACY_CHECK_F(SCALAR_OP##_##OP_ENUM_ENTRY##_##ENGINE)
 
 #endif  // SD_PLATFORM_BOILERPLATE_H
