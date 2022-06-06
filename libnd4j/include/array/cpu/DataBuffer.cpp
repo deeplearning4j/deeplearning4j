@@ -233,6 +233,7 @@ void DataBuffer::readPrimary() const {}
 void DataBuffer::readSpecial() const {}
 bool DataBuffer::isPrimaryActual() const { return true; }
 bool DataBuffer::isSpecialActual() const { return false; }
+void DataBuffer::showBufferLimited() {}
 #endif
 
 ////////////////////////////////////////////////////////////////////////
