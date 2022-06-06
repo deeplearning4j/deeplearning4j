@@ -54,6 +54,10 @@ class TensorflowIRTensor(input: TensorProto): IRTensor<TensorProto, DataType> {
             builder.addDims(tensor.tensorShape.getDim(i).size)
         }
 
+
+        var hasNormalData = false
+
+
         when(tensor.dtype) {
             DataType.DT_UINT8 -> builder.dataType = TensorNamespace.DataType.UINT8.ordinal
             DataType.DT_UINT16 -> builder.dataType = TensorNamespace.DataType.UINT16.ordinal
@@ -78,38 +82,46 @@ class TensorflowIRTensor(input: TensorProto): IRTensor<TensorProto, DataType> {
 
 
         if(tensor.doubleValList != null && tensor.doubleValCount > 0) {
+            hasNormalData = true
             builder.addAllDoubleData(tensor.doubleValList)
         }
 
         if(tensor.stringValList != null && tensor.stringValCount > 0) {
+            hasNormalData = true
             builder.addAllStringData(tensor.stringValList)
         }
 
         if(tensor.floatValList != null && tensor.floatValCount > 0) {
+            hasNormalData = true
             builder.addAllFloatData(tensor.floatValList)
         }
 
         if(tensor.intValList != null && tensor.intValCount > 0) {
+            hasNormalData = true
             builder.addAllInt32Data(tensor.intValList)
         }
 
         if(tensor.uint64ValList != null && tensor.uint64ValCount > 0) {
+            hasNormalData = true
             builder.addAllInt64Data(tensor.uint64ValList)
         }
 
         if(tensor.int64ValList != null && tensor.int64ValCount > 0) {
+            hasNormalData = true
             builder.addAllInt64Data(tensor.int64ValList)
         }
 
         if(tensor.halfValList != null && tensor.halfValCount > 0) {
+            hasNormalData = true
             builder.addAllHalfVal(tensor.halfValList)
         }
 
         if(tensor.boolValList != null && tensor.boolValCount > 0) {
+            hasNormalData = true
             builder.addAllBoolVal(tensor.boolValList)
         }
 
-        if(tensor.tensorContent != null) {
+        if(tensor.tensorContent != null && !hasNormalData) {
             builder.rawData = tensor.tensorContent
         }
 

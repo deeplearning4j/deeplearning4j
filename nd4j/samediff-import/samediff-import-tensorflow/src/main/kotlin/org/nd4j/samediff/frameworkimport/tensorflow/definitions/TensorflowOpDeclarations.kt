@@ -525,10 +525,14 @@ val parallelConcat = TensorflowMappingProcess(
 val tensorArrayV3 = TensorflowMappingProcess(
         opMappingRegistry = tensorflowOpRegistry,
         opName = "create_list",
+        //due to this adding variables from attributes that aren't in the original op we need to override the behavior
+        variableResolutionType = MapperNamespace.VariableResolutionType.OVERRIDE,
         inputFrameworkOpName = "TensorArrayV3",
-        tensorMappingRules = listOf(),
-        attributeMappingRules = listOf(valueMapping(mutableMapOf("importDataType" to "dtype")))
+        tensorMappingRules = listOf(mappingListNDArrays(mutableMapOf("input" to "size"))),
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("importDataType" to "dtype","clearOnRead" to "clear_after_read")),
+                listNumberToNDarray(mutableMapOf("setShape" to "element_shape")))
 )
+
 
 
 val mergeadd = TensorflowMappingProcess(
@@ -549,25 +553,17 @@ val mergeadd = TensorflowMappingProcess(
  * This is related to any getInputsForOp() call on any given variable.
  *
  */
-val mergeAdd = TensorflowMappingProcess(
+val concatV2 = TensorflowMappingProcess(
         opMappingRegistry = tensorflowOpRegistry,
         opName = "concat",
         variableResolutionType = MapperNamespace.VariableResolutionType.DIRECT,
                 inputFrameworkOpName = "ConcatV2",
         tensorMappingRules = listOf(passThroughNDArrayInputs()),
-        attributeMappingRules = listOf(convertNDArrayInputToNumericalAttr(mutableMapOf("concatDimension" to "axis")),
+        attributeMappingRules = listOf(
                 booleanConstant(inputName = "isDynamicAxis",constantValue = true,argumentIndex = 0)[0]))
 
 
-/*val parallelConcat = TensorflowMappingProcess(
-        opMappingRegistry = tensorflowOpRegistry,
-        opName = "concat",
-        inputFrameworkOpName = "ParallelConcat",
-        tensorMappingRules = listOf(mappingListNDArrays(mutableMapOf("input" to "values"))),
-        attributeMappingRules = listOf(
-                intConstant(inputName = "concatDimension",constantValue = 0 ,argumentIndex = 0)[0],
-                booleanConstant(inputName = "isDynamicAxis",constantValue = true,argumentIndex = 0)[0])
-)*/
+
 
 //TODO Reference ImportClassMapping.java
 //TODO: ParallelDynamicStitch, map to dynamic stitch
@@ -1738,6 +1734,20 @@ val statelessRandomUniform = multipleNameMapping(
                 dataTypeToInt(mutableMapOf("dtype" to "dtype")),
                 valueMapping(mutableMapOf("dataType" to "dtype")))
         ,tensorflowOpRegistry = tensorflowOpRegistry
+)
+
+
+
+val randomMultiNomial = TensorflowMappingProcess(
+        inputFrameworkOpName = "Multinomial",
+        opName = "random_multinomial",
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "logits","inputSamples" to "num_samples"))),
+        attributeMappingRules =  listOf(
+                valueMapping(mutableMapOf("dtype" to "output_dtype")), intConstant("dimC",
+                        constantValue = -1,
+                        argumentIndex = 0)[0]
+        )
+        ,opMappingRegistry = tensorflowOpRegistry
 )
 
 

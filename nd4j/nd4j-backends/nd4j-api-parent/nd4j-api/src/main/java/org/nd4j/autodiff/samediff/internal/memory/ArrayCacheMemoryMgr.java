@@ -117,7 +117,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
         DataType dataType = descriptor.dataType();
         long[] shape = descriptor.getShape();
-        if (arrayStores.containsKey(dataType)) {
+      /*  if (arrayStores.containsKey(dataType)) {
             INDArray arr = arrayStores.get(dataType).get(shape);
             if(arr != null && arr.ordering() != descriptor.getOrder()) {
                 arr.setOrder(descriptor.getOrder());
@@ -130,7 +130,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
                 return arr; //Allocated from cache
             }
-        }
+        }*/
 
         //Allocation failed, allocate new array
         return Nd4j.createUninitializedDetached(dataType, shape);

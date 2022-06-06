@@ -155,7 +155,7 @@ fun convertNameSpaceTensorDataTypeFromNd4jDataType(dataType: DataType): TensorNa
 
 fun ndarrayFromNameSpaceTensor(inputTensor: TensorNamespace.TensorProto): INDArray {
     val dtype = convertNd4jDataTypeFromNameSpaceTensorDataType(TensorNamespace.DataType.values()[inputTensor.dataType])
-    val shape = inputTensor.dimsList.toLongArray()
+    val shape = inputTensor.dimsList.filter { input -> input > 0 }.toLongArray()
     val totalLen = ArrayUtil.prod(*shape)
     //note for all cases here scalars can be either zero shape with 1 element or rank >= 1 with 1 element
     when(dtype) {

@@ -53,27 +53,24 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
      * the status of the test failing. No tests will run.
      */
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
+
+
     );
 
     public static final String[] IGNORE_REGEXES = new String[]{
             //crashes JVM
             "lstsq/.*",
-            "scatter_nd_sub/unique_idxs/rank3shape_2indices",
 
             "resize_bicubic/float64",
             "resize_bicubic/int32",
-            //
-            //invalid graph:  Unable to run session input_0:0 is both fed and fetched.
-            //also due to the dynamic inputs being -1 3 for the first matrix multiply for the first 2 inputs
-            //the only valid batch size is 3.
-            "math_mul_order",
-            //points to a file with a URL, needs additional work
-            "compression_residual_gru",
+
+            "multinomial/.*",
+
 
             //Failing 2019/09/11 - https://github.com/eclipse/deeplearning4j/issues/7965
             // Still failing 2020/04/27 java.lang.IllegalStateException: Requested output variable Bincount does not exist in SameDiff instance
             //Invalid test cases. Verified by running graph against actual TF.
-            "scatter_nd_sub/locking/rank1shape_1indices",
+
             "reductions/scatter_update_vector",
             "reductions/scatter_update_scalar",
             "emptyArrayTests/scatter_update/rank1_emptyIndices_emptyUpdates",
@@ -99,14 +96,8 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
             //2019/05/21 - Failing on windows-x86_64-cuda-9.2 only -
             "conv_4",
-            "g_09",
 
-            //2019/05/28 - JVM crash on ppc64le only - See issue 7657
-            "g_11",
 
-            //2019/07/09 - Need "Multinomial" op - https://github.com/eclipse/deeplearning4j/issues/7913
-            // Still failing 2020/04/27 java.lang.IllegalStateException: Could not find class for TF Ops: Multinomial
-            "multinomial/.*",
 
             //2019/11/04 AB - disabled, pending libnd4j deconv3d_tf implementation
             // Still failing 2020/04/27 java.lang.IllegalStateException: Could not find descriptor for op: deconv3d_tf - class: org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3DTF
@@ -192,9 +183,9 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
         }
 
         try {
-            // TFGraphTestAllHelper.checkIntermediate(inputs,modelName,BASE_DIR,MODEL_FILENAME,EXECUTE_WITH,TFGraphTestAllHelper.LOADER,maxRE,minAbs,localTestDir,true);
             Nd4j.getExecutioner().enableDebugMode(true);
             Nd4j.getExecutioner().enableVerboseMode(true);
+            //TFGraphTestAllHelper.checkIntermediate(inputs,modelName,BASE_DIR,MODEL_FILENAME,EXECUTE_WITH,new TFGraphTestAllHelper.DefaultGraphLoader(inputs),maxRE,minAbs,localTestDir,true);
             TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, new TFGraphTestAllHelper.DefaultGraphLoader(inputs), maxRE, minAbs, verboseDebugMode);
         } catch (Throwable t){
             log.error("ERROR Executing test: {} - input keys {}", modelName, (inputs == null ? null : inputs.keySet()), t);

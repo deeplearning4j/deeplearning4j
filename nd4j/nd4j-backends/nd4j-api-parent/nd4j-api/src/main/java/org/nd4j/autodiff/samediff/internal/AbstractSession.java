@@ -30,6 +30,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.config.ExecutionResult;
 import org.nd4j.autodiff.samediff.config.SDValue;
+import org.nd4j.autodiff.samediff.config.SDValueType;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
@@ -37,6 +38,7 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.common.function.Predicate;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.nd4j.imports.VariableUtils.stripVarSuffix;
 
@@ -54,19 +56,17 @@ public abstract class AbstractSession<T, O> {
     protected final Map<VarId, SDValue> nodeValueOutputs = new LinkedHashMap<>();        //Key: variable (at a given frame + iteration). Value: the calculated output for that variable
 
 
-    @Getter
-    protected final Map<VarId, List<T>> tensorArrays = new LinkedHashMap<>(); //Stores the underlying arrays for TensorArray ops
     /*
-    The dependency tracker is responsible for determining what ops (at what frame/iteration) can be executed next, given
-    what has been executed so far.
-    For static graphs, such as abstraction would not be necessary; for dynamic graphs (i.e., nested loops, of arbitrary
-    number of iterations and depth - and also switch ops which can cause whole subgraphs to not be executed) this is necessary
-    Note: the ExecStep represents one step for execution - some steps are as simple as "execute an op (at the given frame/iter)"
-    It works by adding dependencies (X -> Y - such as "op Y depends on the output of op X") and then marking them as
-    satisfied ("op X has been calculated"). Once all dependencies for an execution step have been satisfied, the execution step
-    is added to a queue - outputs of which can be accessed with dt.getNewAllSatisfied() and dt.getNewAllSatisfiedList(),
-    at which point it is removed from the dependency tracker
-     */
+   The dependency tracker is responsible for determining what ops (at what frame/iteration) can be executed next, given
+   what has been executed so far.
+   For static graphs, such as abstraction would not be necessary; for dynamic graphs (i.e., nested loops, of arbitrary
+   number of iterations and depth - and also switch ops which can cause whole subgraphs to not be executed) this is necessary
+   Note: the ExecStep represents one step for execution - some steps are as simple as "execute an op (at the given frame/iter)"
+   It works by adding dependencies (X -> Y - such as "op Y depends on the output of op X") and then marking them as
+   satisfied ("op X has been calculated"). Once all dependencies for an execution step have been satisfied, the execution step
+   is added to a queue - outputs of which can be accessed with dt.getNewAllSatisfied() and dt.getNewAllSatisfiedList(),
+   at which point it is removed from the dependency tracker
+    */
     protected final DependencyTracker<ExecStep, ExecStep> dt = new DependencyTracker<>();
 
     /**
@@ -199,7 +199,6 @@ public abstract class AbstractSession<T, O> {
         dt.clear();
         subgraph.clear();
         subgraphOps.clear();
-        tensorArrays.clear();
 
         //Step 1: determine subgraph structure we actually need to execute
         //Basic plan: work backwards from the variables we want, based on the graph structure, to work out what
@@ -354,7 +353,7 @@ public abstract class AbstractSession<T, O> {
                 VarId vid = new VarId(es.getName(), OUTER_FRAME, 0, null);
                 T arr = getConstantOrVariable(es.getName());
                 Preconditions.checkNotNull(arr, "Encountered null placeholder array for constant: %s", vid);
-                nodeValueOutputs.put(vid,SDValue.create((INDArray) arr));
+                putNodeValue(SDValue.create((INDArray) arr),vid);
                 outFrameIter = new FrameIter(OUTER_FRAME, 0, null);
                 if (userRequestedUnique.contains(es.getName())) {
                     //User requested const/variable as one of the outputs
@@ -370,18 +369,18 @@ public abstract class AbstractSession<T, O> {
                 if(placeholderValues != null && placeholderValues.containsKey(es.getName())) {
                     T phVal = placeholderValues == null ? null : placeholderValues.get(es.getName());
                     SDValue valueCreate = SDValue.create((INDArray) phVal);
-                    nodeValueOutputs.put(vid, valueCreate);
+                    putNodeValue(valueCreate,vid);
                 } else if(otherPlaceHolderValues != null && otherPlaceHolderValues.containsKey(es.getName())) {
                     SDValue value = otherPlaceHolderValues.get(es.getName());
                     switch(value.getSdValueType()) {
                         default:
-                            nodeValueOutputs.put(vid,value);
+                            putNodeValue(value,vid);
                             break;
                         case DICT:
                             throw new UnsupportedOperationException("Unable to process dictionary types.");
                     }
                 } else {
-                    nodeValueOutputs.put(vid,null);
+                    putNodeValue(null,vid);
                 }
 
                 outFrameIter = new FrameIter(OUTER_FRAME, 0, null);
@@ -505,23 +504,18 @@ public abstract class AbstractSession<T, O> {
                             switch(sdValue.getSdValueType()) {
                                 case LIST:
                                     //tensor array op
-                                    List<INDArray> tensorArraysInSession = tensorArrays.containsKey(vid) ? (List<INDArray>) tensorArrays.get(vid) :
-                                            getTensorArraysInSession(n,vid.getFrame(),vid.getIteration(),vid.getParentFrame());
-                                    //return the tensor array list as the result rather than the dummy variable
-                                    if(tensorArraysInSession != null) {
-                                        tensorArraysInSession.addAll(sdValue.getListValue());
-                                    } else {
-                                        tensorArrays.put(vid, (List<T>) sdValue.getListValue());
-                                    }
-                                    //note: we omit break on purpose
+                                    //note: we leave this out since we already update node value outputs earlier
+                                    putNodeValue(sdValue,vid);
+                                    break;
+                                //note: we omit break on purpose
                                 case TENSOR:
-                                    nodeValueOutputs.put(vid, sdValue);
+                                    putNodeValue(sdValue,vid);
                                     //tensorflow import case where 2 input names are the same and 1 output will be null
                                     if(op.getOp() instanceof Switch && inputNames.size() > 1 && inputNames.get(0).equals(inputNames.get(1))) {
-                                        nodeValueOutputs.put(vid,sdValue);
-                                        nodeValueOutputs.put(outFrameIter.toVarId(vid.getVariable() + ":1"),sdValue);
+                                        putNodeValue(sdValue,vid);
+                                        putNodeValue(sdValue,outFrameIter.toVarId(vid.getVariable() + ":1"));
                                     } else {
-                                        nodeValueOutputs.put(vid, sdValue);
+                                        putNodeValue(sdValue,vid);
                                     }
                                     break;
                             }
@@ -532,7 +526,7 @@ public abstract class AbstractSession<T, O> {
 
                     } else {
                         SDValue currValueOutput = SDValue.create(opOutputValues.resultAt(i));
-                        nodeValueOutputs.put(vid,currValueOutput);
+                        putNodeValue(currValueOutput,vid);
                         //ensure a singular value is populated in case the user uses the node value outputs
                         if (userRequestedUnique.contains(n)) {
                             outValues.put(n, currValueOutput);
@@ -671,6 +665,25 @@ public abstract class AbstractSession<T, O> {
                 dt.addDependency(es, controlES);    //Before this variable can be considered available for use, we need specified op to be executed
             }
         }
+    }
+
+    protected SDValue getSdValue(VarId tArr) {
+        return nodeValueOutputs.get(tArr);
+    }
+
+    protected void setArrayAtIndex(List<INDArray> l, int i, INDArray sub) {
+        l.set(i, sub);
+    }
+
+
+    protected void putNodeValue(SDValue sdValue, VarId varId) {
+        nodeValueOutputs.put(varId, sdValue);
+    }
+
+    protected INDArray getTensorFromOutputs(VarId varId) {
+        if(nodeValueOutputs.containsKey(varId) && getSdValue(varId).getTensorValue() != null)
+            return getSdValue(varId).getTensorValue();
+        return null;
     }
 
     /**
@@ -1146,20 +1159,21 @@ public abstract class AbstractSession<T, O> {
             varIds.add(varId);
         }
 
-        varIds.addAll(tensorArrays.keySet());
+        varIds.addAll(nodeValueOutputs.entrySet().stream().filter(input -> input.getValue() != null &&
+                input.getValue().getSdValueType() == SDValueType.LIST).map(input -> input.getKey()).collect(Collectors.toList()));
 
         VarId lookup = lookup(op.getOwnName(), varIds, false);
         if(lookup == null && op.args().length > 0) {
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
             lookup = lookup(inTensorArray.name(), varIds, false);
             if(lookup != null) {
-                List<INDArray> ret = (List<INDArray>) tensorArrays.get(lookup);
+                List<INDArray> ret = nodeValueOutputs.containsKey(lookup) ? nodeValueOutputs.get(lookup).getListValue() : null;
                 if(ret == null && parentFrame != null)
                     return getTensorArraysInSession(name);
             }
             return null;
         }
-        List<INDArray> ret =  (List<INDArray>) tensorArrays.get(lookup);
+        List<INDArray> ret = nodeValueOutputs.get(lookup).getListValue();
         if(ret == null && parentFrame != null)
             return getTensorArraysInSession(name);
         return null;

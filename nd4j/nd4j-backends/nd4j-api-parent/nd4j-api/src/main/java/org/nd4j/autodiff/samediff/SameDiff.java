@@ -33,6 +33,7 @@ import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.*;
+import org.nd4j.autodiff.listeners.debugging.ControlflowListener;
 import org.nd4j.autodiff.listeners.impl.HistoryListener;
 import org.nd4j.autodiff.listeners.records.History;
 import org.nd4j.autodiff.listeners.records.LossCurve;
@@ -2743,7 +2744,9 @@ public class SameDiff extends SDBaseOps {
      * Special case of {@link #batchOutput()}.
      */
     public Map<String, INDArray> output(Map<String, INDArray> placeholders, @NonNull List<String> outputs) {
-        return batchOutput().output(outputs.toArray(new String[0])).inputs(placeholders).output();
+        return batchOutput().output(outputs.toArray(new String[0]))
+                .listeners(new ControlflowListener())
+                .inputs(placeholders).output();
     }
 
     /**
@@ -3967,14 +3970,7 @@ public class SameDiff extends SDBaseOps {
             eagerArrays.rename(from,to);
         }
 
-        for(Map.Entry<Long,InferenceSession> sessionEntry : sessions.entrySet()) {
-            InferenceSession inferenceSession = sessionEntry.getValue();
-            for (Map.Entry<AbstractSession.VarId, List<INDArray>> var : inferenceSession.getTensorArrays().entrySet()) {
-                if (var.getKey().getVariable().equals(from)) {
-                    var.getKey().setVariable(to);
-                }
-            }
-        }
+
     }
 
 
