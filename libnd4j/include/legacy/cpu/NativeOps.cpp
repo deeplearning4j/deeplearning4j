@@ -75,6 +75,10 @@ bool experimentalSupport = false;
 #include <cpuinfo_x86.h>
 #endif
 
+#if defined(HAVE_VEDA)
+#include <ops/declarable/PlatformHelperLegacy.h>
+#endif
+
 using namespace sd;
 
 void setElementThreshold(int num) {
@@ -84,6 +88,51 @@ void setElementThreshold(int num) {
 void setTADThreshold(int num) {
   if (num > 0) sd::Environment::getInstance().setTadThreshold(num);
 }
+
+#if defined(HAVE_VEDA)
+static bool execHelper(const char *entryPrefix, int opNum, void *extraParams, const sd::LongType *hZShapeInfo,
+                       OpaqueDataBuffer *dbZ, const sd::LongType *hXShapeInfo, OpaqueDataBuffer *dbX,
+                       const sd::LongType *hYShapeInfo, OpaqueDataBuffer *dbY, bool syncDbY = true) {
+  if (sd::Environment::getInstance().helpersAllowed()) {
+    sd::ops::platforms::PlatformHelperLegacyEntry entry{entryPrefix, opNum, samediff::ENGINE_CPU};
+    auto helper = sd::ops::OpRegistrator::getInstance().getPlatformHelperLegacy(entry);
+    if (helper && helper->isUsable(extraParams, hZShapeInfo, hXShapeInfo, hYShapeInfo)) {
+      // make sure its synced before calling
+      VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
+      SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
+
+      dbX->getDataBuffer()->allocVeda();
+      dbX->getDataBuffer()->asyncToVeda();
+      if (dbY && syncDbY) {
+        dbY->getDataBuffer()->allocVeda();
+        dbY->getDataBuffer()->asyncToVeda();
+      }
+      dbZ->getDataBuffer()->allocVeda();
+      dbZ->getDataBuffer()->writeSpecial();
+
+      helper->invokeHelper(extraParams, hZShapeInfo, dbZ, hXShapeInfo, dbX, hYShapeInfo, dbY);
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool execHelperTransformStrict(int opNum, OpaqueDataBuffer *dbX, const sd::LongType *hXShapeInfo,
+                                      OpaqueDataBuffer *dbZ, const sd::LongType *hZShapeInfo, void *extraParams) {
+  // Note: output comes first with order (shapeInfo, buffer )
+  return execHelper(UNIQUE_TRANSFORM_STRICT_PREFIX, opNum, extraParams, hZShapeInfo, dbZ, hXShapeInfo, dbX, nullptr,
+                    nullptr);
+}
+
+static bool execHelperScalar(int opNum, OpaqueDataBuffer *dbX, const sd::LongType *hXShapeInfo, OpaqueDataBuffer *dbY,
+                             const sd::LongType *hYShapeInfo, OpaqueDataBuffer *dbZ, const sd::LongType *hZShapeInfo,
+                             void *extraParams) {
+  // Note: output comes first with order (shapeInfo, buffer )
+  //we will not sync dbY as its scalar and can be passed as argument
+  return execHelper(UNIQUE_SCALAROP_PREFIX, opNum, extraParams, hZShapeInfo, dbZ, hXShapeInfo, dbX, hYShapeInfo, dbY, false);
+}
+
+#endif
 
 /**
  *
@@ -591,11 +640,19 @@ void execScalar(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, co
                 const sd::LongType *dZShapeInfo, OpaqueDataBuffer *dbScalar, const sd::LongType *hScalarShapeInfo,
                 const sd::LongType *dScalarShapeInfo, void *extraParams) {
   try {
-    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
-    NativeOpExecutioner::execScalar(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
-                                    dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, dbScalar->primary(),
-                                    hScalarShapeInfo, dbScalar->special(), dScalarShapeInfo, extraParams);
-    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
+#if defined(HAVE_VEDA)
+    auto helperIsUsed =
+        execHelperScalar(opNum, dbX, hXShapeInfo, dbScalar, hScalarShapeInfo, dbZ, hZShapeInfo, extraParams);
+    if (!helperIsUsed) {
+#endif
+      OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX, dbScalar});
+      NativeOpExecutioner::execScalar(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
+                                      dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, dbScalar->primary(),
+                                      hScalarShapeInfo, dbScalar->special(), dScalarShapeInfo, extraParams);
+      OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX, dbScalar});
+#if defined(HAVE_VEDA)
+    }
+#endif
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -769,11 +826,18 @@ void execTransformStrict(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer
                          const sd::LongType *dXShapeInfo, OpaqueDataBuffer *dbZ, const sd::LongType *hZShapeInfo,
                          const sd::LongType *dZShapeInfo, void *extraParams) {
   try {
-    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
-    NativeOpExecutioner::execTransformStrict(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
-                                             dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, extraParams,
-                                             nullptr, nullptr);
-    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
+#if defined(HAVE_VEDA)
+    auto helperIsUsed = execHelperTransformStrict(opNum, dbX, hXShapeInfo, dbZ, hZShapeInfo, extraParams);
+    if (!helperIsUsed) {
+#endif
+      OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
+      NativeOpExecutioner::execTransformStrict(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
+                                               dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, extraParams,
+                                               nullptr, nullptr);
+      OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
+#if defined(HAVE_VEDA)
+    }
+#endif
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1700,8 +1764,8 @@ sd::ShapeList *calculateOutputShapesFromContext(sd::graph::Context *ctx, sd::Lon
  * @param hash , it it the hash of the operation
  * @param handleState  the state value to be checked
    @note It should be nullptr for the first time, if the returned handle state
- * is nullptr as well, it means all shapes were filled, if not the caller should call the function to consume all shapes
- until the handle state is nullptr
+ * is nullptr as well, it means all shapes were filled, if not the caller should call the function to consume all
+ shapes until the handle state is nullptr
  * @param outBufferSizeInBytes size of the Buffer for shapes in bytes. @Note It should be enough to fill shape of the
  biggest possible NDArray
  * @param outConcatenatedShapesBuffer pointer to the buffer
@@ -1726,7 +1790,8 @@ int calculateOutputShapesAndFill(sd::graph::Context *ctx, sd::LongType hash, voi
   int requiredMem = shape::shapeInfoLength(SD_MAX_RANK) * sizeof(sd::LongType);
   if (outBufferSizeInBytes < requiredMem) {
     sd_printf(
-        "Buffersize (%d bytes ) should be enough (%d bytes ) to fill shape of the biggest possible NDArray (max-rank: "
+        "Buffersize (%d bytes ) should be enough (%d bytes ) to fill shape of the biggest possible NDArray "
+        "(max-rank: "
         "%d )\n",
         outBufferSizeInBytes, requiredMem, SD_MAX_RANK);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(4);

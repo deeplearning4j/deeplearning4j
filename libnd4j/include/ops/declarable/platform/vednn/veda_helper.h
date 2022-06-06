@@ -27,6 +27,7 @@
 #include <veda.h>
 
 #include <mutex>
+#include <type_traits>
 
 #define MAX_DEVICE_USAGE 1
 #define VEDA_CALL(err) veda_check(err, __FILE__, __LINE__)
@@ -161,7 +162,8 @@ struct VEDA {
     return ve_handles[device_index];
   }
 
-  int getHandlesCount() const { return ve_handles.size();}
+  int getHandlesCount() const { return ve_handles.size(); }
+
  private:
   VEDA(const char* library_name);
 
@@ -174,5 +176,75 @@ struct VEDA {
  protected:
   virtual ~VEDA() {}
 };
+
+// re-write of vedaLaunchKernel internally
+inline VEDAresult vedaArgsSetLocal(VEDAargs args, const int idx, const VEDAdeviceptr value) {
+  return vedaArgsSetVPtr(args, idx, value);
+}
+
+inline VEDAresult vedaArgsSetLocal(VEDAargs args, const int idx, const uint8_t value) {
+  return vedaArgsSetU8(args, idx, value);
+}
+
+inline VEDAresult vedaArgsSetLocal(VEDAargs args, const int idx, const uint16_t value) {
+  return vedaArgsSetU16(args, idx, value);
+}
+
+inline VEDAresult vedaArgsSetLocal(VEDAargs args, const int idx, const uint32_t value) {
+  return vedaArgsSetU32(args, idx, value);
+}
+
+inline VEDAresult vedaArgsSetLocal(VEDAargs args, const int idx, const uint64_t value) {
+  return vedaArgsSetU64(args, idx, value);
+}
+
+inline VEDAresult vedaArgsSetLocal(VEDAargs args, const int idx, const int8_t value) {
+  return vedaArgsSetI8(args, idx, value);
+}
+
+inline VEDAresult vedaArgsSetLocal(VEDAargs args, const int idx, const int16_t value) {
+  return vedaArgsSetI16(args, idx, value);
+}
+
+inline VEDAresult vedaArgsSetLocal(VEDAargs args, const int idx, const int32_t value) {
+  return vedaArgsSetI32(args, idx, value);
+}
+
+inline VEDAresult vedaArgsSetLocal(VEDAargs args, const int idx, const int64_t value) {
+  return vedaArgsSetI64(args, idx, value);
+}
+
+inline VEDAresult vedaArgsSetLocal(VEDAargs args, const int idx, const float value) {
+  return vedaArgsSetF32(args, idx, value);
+}
+
+inline VEDAresult vedaArgsSetLocal(VEDAargs args, const int idx, const double value) {
+  return vedaArgsSetF64(args, idx, value);
+}
+
+inline VEDAresult vedaArgsSetLocal(VEDAargs args, const int idx, const VEDAstack stack) {
+  return vedaArgsSetStack(args, idx, stack.ptr, stack.intent, stack.size);
+}
+
+inline VEDAresult __vedaLaunchKernelLocal(VEDAfunction func, VEDAstream stream, uint64_t* result, VEDAargs args,
+                                          const int idx) {
+  return vedaLaunchKernelEx(func, stream, args, 1, result);
+}
+
+template <typename T, typename... Args>
+inline VEDAresult __vedaLaunchKernelLocal(VEDAfunction func, VEDAstream stream, uint64_t* result, VEDAargs args,
+                                          const int idx, const T value, Args... vargs) {
+  static_assert(!std::is_same<T, bool>::value,
+                "Don't use bool as data-type when calling a VE function, as it defined as 1B on VH and 4B on VE!");
+  CVEDA(vedaArgsSetLocal(args, idx, value));
+  return __vedaLaunchKernelLocal(func, stream, result, args, idx + 1, vargs...);
+}
+
+template <typename... Args>
+inline VEDAresult vedaLaunchKernelLocal(VEDAfunction func, VEDAstream stream, Args... vargs) {
+  VEDAargs args = 0;
+  CVEDA(vedaArgsCreate(&args));
+  return __vedaLaunchKernelLocal(func, stream, 0, args, 0, vargs...);
+}
 
 #endif

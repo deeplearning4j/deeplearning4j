@@ -105,6 +105,10 @@ OpRegistrator::~OpRegistrator() {
   _declarablesD.clear();
 
   _declarablesLD.clear();
+#if defined(HAVE_VEDA)
+  for (auto x : _uniqueHLegacy) delete x;
+  _helpersHLegacy.clear();
+#endif
 #endif
 }
 
@@ -168,6 +172,18 @@ void OpRegistrator::registerHelper(sd::ops::platforms::PlatformHelper* op) {
   _helpersLH.insert(pair2);
 }
 
+void OpRegistrator::registerHelperLegacy(sd::ops::platforms::PlatformHelperLegacy* op) {
+  auto entry = op->getEntry();
+  if (_helpersHLegacy.count(entry) > 0) throw std::runtime_error("Tried to double register PlatformHelper Legacy");
+
+  _uniqueHLegacy.emplace_back(op);
+
+  sd_debug("Adding legacy helper  for op prefix\"%s\" opNum: %d engine: [%i]\n", entry.prefix, entry.opNum,
+           entry.engine);
+
+  _helpersHLegacy.emplace(entry, op);
+}
+
 sd::ops::DeclarableOp* OpRegistrator::getOperation(const char* name) {
   std::string str(name);
   return getOperation(str);
@@ -216,6 +232,15 @@ sd::ops::platforms::PlatformHelper* OpRegistrator::getPlatformHelper(sd::LongTyp
 
   return _helpersLH[p];
 }
+
+#if defined(HAVE_VEDA)
+sd::ops::platforms::PlatformHelperLegacy* OpRegistrator::getPlatformHelperLegacy(
+    const platforms::PlatformHelperLegacyEntry& entry) {
+  // do not throw , just return nullptr
+  if (_helpersHLegacy.count(entry) < 1) return nullptr;
+  return _helpersHLegacy[entry];
+}
+#endif
 
 bool OpRegistrator::hasHelper(sd::LongType hash, samediff::Engine engine) {
   std::pair<sd::LongType, samediff::Engine> p = {hash, engine};
