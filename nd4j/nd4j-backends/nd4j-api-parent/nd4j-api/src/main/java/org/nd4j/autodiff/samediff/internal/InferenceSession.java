@@ -32,6 +32,7 @@ import org.nd4j.autodiff.samediff.config.ExecutionResult;
 import org.nd4j.autodiff.samediff.config.SDValue;
 import org.nd4j.autodiff.samediff.config.SDValueType;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
+import org.nd4j.autodiff.samediff.internal.memory.HashDependencyTracker;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.ArrayUtil;
@@ -83,7 +84,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      */
     @Getter
     @Setter
-    private AbstractDependencyTracker<SDValue, Dep> arrayUseTracker = new IdentityDependencyTracker<>();
+    private AbstractDependencyTracker<SDValue, Dep> arrayUseTracker = new HashDependencyTracker<>();
 
 
     private Map<String,OpContext> opContexts = new HashMap<>();
@@ -1359,7 +1360,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
                 //Always allocate new output array, rely on memory manager for efficient memory management and array reuse etc
                 boolean isOutput = allReqVariables.contains(outNames[i]);
-                INDArray out = mmgr.allocate(isOutput, reqShape).dup();
+                INDArray out = mmgr.allocate(isOutput, reqShape);
                 if(reqShape.isEmpty() && !out.isEmpty()) {
                     throw new IllegalStateException("Output shape was empty, but created array was not.");
                 }
