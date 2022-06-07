@@ -898,7 +898,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             INDArray out = list.get(i);
 
-            System.out.println("Reading item at index " + i + " for list " + v + " with value " + out + " with list of " + list);
+            log.trace("Reading item at index " + i + " for list " + v + " with value " + out + " with list of " + list);
             return ExecutionResult.createFrom(v.getVariable(),out);
         } else if (op instanceof TensorArrayWrite) {
             //TensorArrayWrite - also has a scalar 0.0 that it returns...
@@ -962,8 +962,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
 
             setArrayAtIndex(l, idx, arr);
-            System.out.println("Setting item at index " + idx + " for list " + tArr + " with value " + arr + " with whole list of after write " + l + " and value array " + arr);
-            System.out.println("Writing value " + inSDV + " to list " + tArr.getVariable() + " at iteration " + tArr.getIteration());
+            log.trace("Setting item at index " + idx + " for list " + tArr + " with value " + arr + " with whole list of after write " + l + " and value array " + arr);
+            log.trace("Writing value " + inSDV + " to list " + tArr.getVariable() + " at iteration " + tArr.getIteration());
 
             //Add a dependency
             Dep d = new ExecDoneDep();
@@ -1020,7 +1020,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             Preconditions.checkState(idxArr.dataType().isIntType(), "Indices variable for TensorArrayGather should be an integer type, got %s for array %s", idxArr.dataType(), indicesName);
 
             int[] idxArrInt = idxArr.toIntVector();
-            System.out.println("Gathering op " + op.getOwnName() + " from indices " + Arrays.toString(idxArrInt) + " named " + indicesName + " from list " + tArr.getVariable());
+            log.trace("Gathering op " + op.getOwnName() + " from indices " + Arrays.toString(idxArrInt) + " named " + indicesName + " from list " + tArr.getVariable());
             if(idxArrInt.length > 0) {
                 //Edge case: -1 means "all"
                 List<INDArray> newList = new ArrayList<>();
@@ -1030,7 +1030,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     for (int id : idxArrInt) {
                         Preconditions.checkState(id >= 0, "Index for TensorArrayGather must be >= 0, got %s", id);
                         if(l.get(id) != null) {
-                            System.out.println("Gathering op " + op.getOwnName() + " at index " + id + " adding value " + l.get(id).toStringFull() + " from full list " + l);
+                            log.trace("Gathering op " + op.getOwnName() + " at index " + id + " adding value " + l.get(id).toStringFull() + " from full list " + l);
                             newList.add(l.get(id));
 
                         }
@@ -1117,7 +1117,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     }
                 }
 
-                System.out.println("Scattering item at index " + i + " for list " + tArr + " with value " + get + " from whole list of " + l + " from values array " + valuesArr.toStringFull() + " named " + valuesSDV.name());
+                log.trace("Scattering item at index " + i + " for list " + tArr + " with value " + get + " from whole list of " + l + " from values array " + valuesArr.toStringFull() + " named " + valuesSDV.name());
                 setArrayAtIndex(l, outIdx, get);
 
                 //Add dependency for values array until end of execution
