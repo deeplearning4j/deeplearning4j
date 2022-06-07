@@ -24,6 +24,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.primitives.Counter;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -57,6 +58,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     private Table<DataType,String,List<INDArray>> arrays = HashBasedTable.create();
 
+    private boolean enableCache = Boolean.parseBoolean(System.getProperty(ND4JSystemProperties.SAMEDIFF_MEMORY_CACHE_DISABLE,"true"));
 
 
     /**
@@ -131,7 +133,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         DataType dataType = descriptor.dataType();
         long[] shape = descriptor.getShape();
         String arrayShape = Arrays.toString(shape);
-        if (arrays.contains(dataType,arrayShape)) {
+        if (arrays.contains(dataType,arrayShape) && enableCache) {
             INDArray arr = null;
             List<INDArray> arrays2 = arrays.get(dataType, arrayShape);
             while(arr == null && !arrays2.isEmpty()) {
@@ -229,7 +231,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     private void cacheArray(INDArray array) {
         DataType dt = array.dataType();
         String arrayShapeString = Arrays.toString(array.shape());
-        if (!arrays.contains(dt,arrayShapeString))
+        if (!arrays.contains(dt,arrayShapeString) && enableCache)
             arrays.put(dt,arrayShapeString,new ArrayList<>());
         arrays.get(dt,arrayShapeString).add(array);
         currentCacheSize += array.data().length() * dt.width();

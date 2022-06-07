@@ -165,6 +165,15 @@ public class ND4JSystemProperties {
      */
     public static final String RESOURCES_LOCAL_DIRS = "org.nd4j.strumpf.resource.dirs";
 
+    /**
+     * Whether caching should be enabled for samediff memory managers.
+     * This ia mainly for the default ArrayCacheMemoryMgr.
+     * Sometimes arrays for performance reasons get reused
+     * during a samediff inference session. This may have bad side effects (especially involving views)
+     * This allows enabling or disabling of that behavior.
+     */
+    public final static String SAMEDIFF_MEMORY_CACHE_DISABLE = "org.nd4j.autodiff.samediff";
+
     private ND4JSystemProperties() {
     }
 }
