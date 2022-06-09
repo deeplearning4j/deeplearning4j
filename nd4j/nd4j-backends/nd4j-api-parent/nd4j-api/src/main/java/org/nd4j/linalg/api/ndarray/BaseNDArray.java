@@ -1012,6 +1012,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if (dimension[0] == 0 && isColumnVector()) {
                 return this.transpose();
             } else if (dimension[0] == 1 && isRowVector()) {
+                if(this.rank() > 1)
+                    return this.reshape(length());
                 return this;
             }
         }
@@ -4367,9 +4369,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray getRow(long r) {
-        if (isRowVector() && r == 0)
-            return this;
-        else if (isRowVector() && r > 0)
+        if (isRowVector() && r > 0)
             throw new IllegalArgumentException("Illegal index for row: requested row " + r + " but this.size(0)=" + this.size(0));
 
         Preconditions.checkArgument(rank() == 2, "getRow() can be called on 2D arrays only");

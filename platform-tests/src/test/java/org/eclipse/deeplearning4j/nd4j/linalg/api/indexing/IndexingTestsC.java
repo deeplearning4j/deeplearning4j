@@ -292,6 +292,21 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(1.0, test.getScalar(0, 0, -1).sumNumber());
     }
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testGetRowSingle(Nd4jBackend backend) {
+        INDArray ones = Nd4j.ones(1, 8);
+        System.out.println(ones.shapeInfoToString());
+        ones = ones.getRow(0);
+        assertArrayEquals(new long[]{8},ones.shape());
+
+        ones = Nd4j.ones(2, 8);
+        System.out.println(ones.shapeInfoToString());
+        ones = ones.getRow(0);
+        assertArrayEquals(new long[]{8},ones.shape());
+    }
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetIndices2d(Nd4jBackend backend) {
