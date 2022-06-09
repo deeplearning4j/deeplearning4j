@@ -4857,10 +4857,21 @@ opList {
     argType: INT64
     argIndex: 1
   }
+
+ argDescriptor {
+      name: "clearOnRead"
+      argType: BOOL
+    }
+
   argDescriptor {
     name: "input"
     argType: INPUT_TENSOR
   }
+  argDescriptor {
+      name: "setShape"
+      argType: INPUT_TENSOR
+      argIndex: 1
+   }
   argDescriptor {
     name: "outputs"
     argType: OUTPUT_TENSOR

@@ -17,26 +17,33 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.nd4j.autodiff.samediff.internal.memory;
 
-import lombok.NonNull;
-import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
-import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.autodiff.samediff.config.SDValue;
+import org.nd4j.autodiff.samediff.internal.AbstractDependencyTracker;
 
-public abstract class AbstractMemoryMgr implements SessionMemMgr {
+import java.util.Map;
+import java.util.Set;
+
+public  class HashDependencyTracker<T extends SDValue, D> extends AbstractDependencyTracker<SDValue, D> {
 
     @Override
-    public INDArray ulike(@NonNull INDArray arr) {
-        return allocate(false, arr.dataType(), arr.shape());
+    protected Map<SDValue, ?> newTMap() {
+        return new WrapHashMap<>();
     }
 
     @Override
-    public INDArray dup(@NonNull INDArray arr) {
-        INDArray out = ulike(arr);
-        if(!arr.isEmpty()) {
-            out.assign(arr);
-        }
-        return out;
+    protected Set<SDValue> newTSet() {
+        return new WrapHashSet<>();
+    }
+
+    @Override
+    protected String toStringT(SDValue t) {
+        return " - " + t.toString();
+    }
+
+    @Override
+    protected String toStringD(D d) {
+        return d.toString();
     }
 }

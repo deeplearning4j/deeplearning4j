@@ -233,6 +233,8 @@ class TensorflowIRGraph(graphDef: GraphDef, opDef: OpList
     }
 
     override fun hasConstantInitializer(name: String): Boolean {
+        if(!cachedNodeList.contains(name))
+            return false
         val node = nodeByName(name)
         return node != null && node.op == "Const"
     }

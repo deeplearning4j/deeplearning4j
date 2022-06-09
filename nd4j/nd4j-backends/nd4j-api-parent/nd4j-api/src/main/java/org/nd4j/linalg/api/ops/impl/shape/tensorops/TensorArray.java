@@ -29,6 +29,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.AbstractSession;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -52,6 +53,10 @@ public class TensorArray extends  BaseTensorOp {
     @Setter
     protected SDVariable flow;
 
+    @Getter
+    @Setter
+    protected boolean clearOnRead = true;
+
     @Override
     public String tensorflowName() {
         return "TensorArrayV3";
@@ -74,6 +79,14 @@ public class TensorArray extends  BaseTensorOp {
     public TensorArray(TensorArray ta, SDVariable[] inputs){
         super(ta.sameDiff, inputs);
         this.tensorArrayDataType = ta.tensorArrayDataType;
+    }
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        if(!bArguments.isEmpty()) {
+            this.clearOnRead = bArguments.get(0);
+        }
     }
 
     @Override
@@ -270,6 +283,18 @@ public class TensorArray extends  BaseTensorOp {
     }
 
     /**
+     * Returns the required shape for elements in this tensor array.
+     * If a second input is not present an {@link IllegalArgumentException} is thrown.
+     * @return
+     */
+    public long[] requiredShape() {
+        Preconditions.checkState(args().length > 1,"Missing input shape.");
+        INDArray inputShape = arg(1).getArr();
+        long[] inputShapeArr = inputShape.toLongVector();
+        return inputShapeArr;
+    }
+
+    /**
      * Get the associated {@link TensorArray} instance
      * related to this op.
      * Sometimes when a TensorArray op is returned
@@ -283,13 +308,23 @@ public class TensorArray extends  BaseTensorOp {
      * @return
      */
     public static TensorArray getTensorArray(SameDiff sd, SDVariable sequenceVar) {
-        BaseTensorOp baseTensorOp = (BaseTensorOp) sd.getVariableOutputOp(sequenceVar.name());
+        DifferentialFunction baseTensorOp = sd.getVariableOutputOp(sequenceVar.name());
         TensorArray ta =  null;
         if(baseTensorOp instanceof TensorArray) {
             ta = (TensorArray)  baseTensorOp;
         } else {
-            SDVariable var2 = baseTensorOp.arg(0);
-            ta = (TensorArray)  sd.getVariableOutputOp(var2.name());
+            while(!(baseTensorOp instanceof TensorArray)) {
+                for(SDVariable input : baseTensorOp.args()) {
+                    if(sd.getVariableOutputOp(input.name()) instanceof TensorArray) {
+                        baseTensorOp = sd.getVariableOutputOp(input.name());
+                        ta = (TensorArray) baseTensorOp;
+                        return ta;
+                    } else {
+                        return getTensorArray(sd,input);
+                    }
+                }
+            }
+
         }
         return ta;
     }

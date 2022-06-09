@@ -599,6 +599,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative.class,
             org.nd4j.linalg.api.ops.persistence.RestoreV2.class,
             org.nd4j.linalg.api.ops.persistence.SaveV2.class,
+            org.nd4j.linalg.api.ops.random.impl.RandomMultinomial.class,
             org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal.class,
             org.nd4j.linalg.api.ops.random.custom.DistributionUniform.class,
             org.nd4j.linalg.api.ops.random.custom.RandomBernoulli.class,

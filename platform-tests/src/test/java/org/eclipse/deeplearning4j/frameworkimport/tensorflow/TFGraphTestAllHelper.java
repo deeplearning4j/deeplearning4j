@@ -36,6 +36,7 @@ import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.Listener;
+import org.nd4j.autodiff.listeners.debugging.ControlflowListener;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.validation.OpValidation;
@@ -420,7 +421,7 @@ public class TFGraphTestAllHelper {
 
 
         if(printArraysDebugging) {
-            graph.addListeners(new ExecPrintListener());
+            graph.addListeners(new ExecPrintListener(),new ControlflowListener());
         }
 
         if(requiredOutputs == null){

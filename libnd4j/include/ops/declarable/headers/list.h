@@ -82,7 +82,7 @@ DECLARE_LIST_OP(size_list, 1, 1, 0, 0);
  * This operation creates new empty NDArrayList
  */
 #if NOT_EXCLUDED(OP_create_list)
-DECLARE_LIST_OP(create_list, 1, 2, 0, -2);
+DECLARE_LIST_OP(create_list, -2, 2, 0, -2);
 #endif
 
 
