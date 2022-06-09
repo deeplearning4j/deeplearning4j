@@ -507,7 +507,7 @@ public abstract class AbstractSession<T, O> {
                                     //note: we leave this out since we already update node value outputs earlier
                                     putNodeValue(sdValue,vid);
                                     break;
-                                //note: we omit break on purpose
+
                                 case TENSOR:
                                     putNodeValue(sdValue,vid);
                                     //tensorflow import case where 2 input names are the same and 1 output will be null

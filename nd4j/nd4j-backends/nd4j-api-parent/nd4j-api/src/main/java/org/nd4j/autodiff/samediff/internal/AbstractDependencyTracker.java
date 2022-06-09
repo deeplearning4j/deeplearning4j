@@ -267,7 +267,9 @@ public abstract class AbstractDependencyTracker<T, D> {
                         sb.append(p).append(" - satisfied=(").append(isSatisfied(p.getFirst())).append(",").append(isSatisfied(p.getSecond())).append(")");
                     }
                 }
-                throw new IllegalStateException(sb.toString());
+
+                allSatisfiedQueue.add(y);
+                log.warn(sb.toString());
             }
 
             //Not satisfied, but is in the queue -> needs to be removed

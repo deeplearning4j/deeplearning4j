@@ -417,7 +417,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     }
                 }
 
-      /*          if(!(op.getOp() instanceof Switch))
+                if(!(op.getOp() instanceof Switch))
                     switch(value.getSdValueType()) {
                         case TENSOR:
                             if(!freedArrays.contains(value.getTensorValue().getId())) {
@@ -432,7 +432,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                     freedArrays.add(arr.getId());
                                 }
                             break;
-                    }*/
+                    }
 
             }
         }
@@ -967,7 +967,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             //Add a dependency
             Dep d = new ExecDoneDep();
-            //putNodeValue(sdValue1, tArr);
             arrayUseTracker.addDependency(sdValue1, d);
             return ExecutionResult.createValue(op.outputVariable().name(),sdValue1);
         } else if (op instanceof TensorArraySize) {

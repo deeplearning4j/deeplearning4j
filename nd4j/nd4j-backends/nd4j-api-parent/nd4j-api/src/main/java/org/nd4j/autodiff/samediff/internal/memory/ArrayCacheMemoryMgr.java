@@ -34,6 +34,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.shade.guava.collect.HashBasedTable;
 import org.nd4j.shade.guava.collect.Table;
+import org.nd4j.shade.guava.primitives.Longs;
 
 import java.util.*;
 
@@ -104,11 +105,11 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     public INDArray allocate(boolean detached, DataType dataType, long... shape) {
         String arrayShapeString = Arrays.toString(shape);
         if (arrays.contains(dataType,arrayShapeString)) {
-            INDArray arr = arrays.get(dataType,arrayShapeString).remove(0);
-            if (arr != null) {
+            INDArray arr = !arrays.get(dataType,arrayShapeString).isEmpty() ?  arrays.get(dataType,arrayShapeString).remove(0) : null;
+            if (arr != null && bufferReferences.getCount(arr.data().address()) < 1) {
                 //Decrement cache size
                 currentCacheSize -= dataType.width() * arr.data().length();
-                log.trace("Cache hit for data type " + dataType + " and shape " + Arrays.toString(shape));
+                log.info("Cache hit for data type " + dataType + " and shape " + Arrays.toString(shape));
                 return arr; //Allocated from cache
             }
         }
@@ -133,15 +134,25 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         DataType dataType = descriptor.dataType();
         long[] shape = descriptor.getShape();
         String arrayShape = Arrays.toString(shape);
-        if (arrays.contains(dataType,arrayShape) && enableCache) {
+        if (arrays.contains(dataType,arrayShape) && enableCache && shape.length > 0 && !Longs.contains(shape,0)) {
             INDArray arr = null;
             List<INDArray> arrays2 = arrays.get(dataType, arrayShape);
+            List<Long> refsGreaterThanTwo = new ArrayList<>();
+
             while(arr == null && !arrays2.isEmpty()) {
                 for(int i = 0; i < arrays2.size(); i++) {
                     //don't allow more than 1 buffer to be used from the cache to ensure we don't have clashes with views
                     if(bufferReferences.getCount(arrays2.get(i).data().address()) < 2) {
                         arr = arrays2.remove(i);
+                    }  else {
+                        refsGreaterThanTwo.add(arrays2.get(i).data().address());
                     }
+                }
+
+
+                //all greater than one, no point in continuing, break
+                if(refsGreaterThanTwo.size() == arrays2.size()) {
+                    break;
                 }
             }
 
@@ -151,10 +162,10 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
 
 
-            if (arr != null) {
+            if (arr != null && bufferReferences.getCount(arr.data().address()) < 1) {
                 //Decrement cache size
                 currentCacheSize -= dataType.width() * arr.data().length();
-                log.trace("Cache hit for data type " + dataType + " and shape " + Arrays.toString(arr.shape()));
+                log.info("Cache hit for data type " + dataType + " and shape " + Arrays.toString(arr.shape()));
                 return arr; //Allocated from cache
             }
         }

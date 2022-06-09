@@ -41,17 +41,14 @@ public class WrapSDValue {
                 List<INDArray> listValue = value.getListValue();
                 for (INDArray arr : listValue) {
                     if (arr != null)
-                        idList.add(arr.data().address());
+                        idList.add(arr.getId());
                 }
             }
             break;
             case TENSOR: {
                 INDArray arr = value.getTensorValue();
                 if (arr != null && arr.data() != null)
-                    idList.add(arr.data().address());
-                else if(arr != null && arr.data() == null) {
-                    idList.add(0L);
-                }
+                    idList.add(arr.getId());
             }
             break;
         }

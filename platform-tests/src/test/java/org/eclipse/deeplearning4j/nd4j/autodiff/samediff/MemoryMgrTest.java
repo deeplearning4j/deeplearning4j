@@ -51,7 +51,7 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArrayReuseTooLarge(Nd4jBackend backend) throws Exception {
 
-    /*    ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
+        ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
         mmgr.setMaxCacheBytes(1000);
         assertEquals(1000, mmgr.getMaxCacheBytes());
 
@@ -65,10 +65,6 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
         }
 
         assertEquals(1000, mmgr.getCurrentCacheSize());
-        ArrayCacheMemoryMgr.ArrayStore as = mmgr.getArrayStores().get(DataType.FLOAT);
-        assertEquals(1000, as.getBytesSum());
-        assertEquals(250, as.getLengthSum());
-        assertEquals(10, as.getSize());
         assertEquals(10, mmgr.getLruCache().size());
         assertEquals(10, mmgr.getLruCacheValues().size());
 
@@ -79,7 +75,7 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
             INDArray toRelease = Nd4j.create(DataType.FLOAT, 25);
             mmgr.release(toRelease);
             //oldest N only should be closed by this point...
-            for( int j=0; j<10; j++ ){
+            for( int j = 0; j < 10; j++) {
                 if(j <= i){
                     //Should have been closed
                     assertTrue(arrays[j].wasClosed());
@@ -92,9 +88,6 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
 
 
         assertEquals(1000, mmgr.getCurrentCacheSize());
-        assertEquals(1000, as.getBytesSum());
-        assertEquals(250, as.getLengthSum());
-        assertEquals(10, as.getSize());
         assertEquals(10, mmgr.getLruCache().size());
         assertEquals(10, mmgr.getLruCacheValues().size());
 
@@ -102,19 +95,17 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
         for( int i = 1; i <= 10; i++) {
             INDArray a1 = mmgr.allocate(true, DataType.FLOAT, 25);
             assertEquals(1000 - i * 100, mmgr.getCurrentCacheSize());
-            assertEquals(1000 - i * 100, as.getBytesSum());
-            assertEquals(250 - i * 25, as.getLengthSum());
-            assertEquals(10 - i, as.getSize());
             assertEquals(10 - i, mmgr.getLruCache().size());
             assertEquals(10 - i, mmgr.getLruCacheValues().size());
         }
 
-        assertEquals(0, mmgr.getCurrentCacheSize());
-        assertEquals(0, as.getBytesSum());
-        assertEquals(0, as.getLengthSum());
-        assertEquals(0, as.getSize());
-        assertEquals(0, mmgr.getLruCache().size());
-        assertEquals(0, mmgr.getLruCacheValues().size());*/
+        //note since M2 and later: cache size won't reach 0 and will be retained in there as long as a buffer is in use
+        //we keep references to buffers that could be reused later if they are ever released
+        //due to the way the cache was originally written, it was not views friendly
+        //however buffers that are used in control flow are now reference counted
+        //any buffer that is referenced at least once in use will not be returned as candidates
+        //for release as long as their reference count is at least 1. That is why the prior assertions
+        //on the cache being completely empty are now gone.
     }
 
     @ParameterizedTest

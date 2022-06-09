@@ -53,9 +53,7 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
      * the status of the test failing. No tests will run.
      */
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
-
-
-    );
+            );
 
     public static final String[] IGNORE_REGEXES = new String[]{
             //crashes JVM
@@ -103,7 +101,7 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             // Still failing 2020/04/27 java.lang.IllegalStateException: Could not find descriptor for op: deconv3d_tf - class: org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3DTF
             "conv3d_transpose.*",
 
-            //2019/11/15 - mapping is not present yet https://github.com/eclipse/deepleRaggedRange arning4j/issues/8397
+            //2019/11/15 - mapping is not present yet https://github.com/eclipse/deeplearning4j/issues/8397
             // Still failing 2020/04/27 java.lang.AssertionError: Predictions do not match on ragged/reduce_mean/2d_a1, node RaggedReduceMean/truediv
             "ragged/reduce_mean/.*",
 
@@ -116,8 +114,6 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
 
 
-            //12.05.2020 - https://github.com/eclipse/deeplearning4j/issues/8946
-            "non_max_suppression_v4/.*","non_max_suppression_v5/.*",
 
 
             // 18.05.2020 - :wq:wq
