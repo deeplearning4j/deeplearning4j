@@ -171,6 +171,7 @@ void OpRegistrator::registerHelper(sd::ops::platforms::PlatformHelper* op) {
   std::pair<std::pair<sd::LongType, samediff::Engine>, sd::ops::platforms::PlatformHelper*> pair2(p, op);
   _helpersLH.insert(pair2);
 }
+
 #if defined(HAVE_VEDA)
 void OpRegistrator::registerHelperLegacy(sd::ops::platforms::PlatformHelperLegacy* op) {
   auto entry = op->getEntry();
@@ -184,6 +185,7 @@ void OpRegistrator::registerHelperLegacy(sd::ops::platforms::PlatformHelperLegac
   _helpersHLegacy.emplace(entry, op);
 }
 #endif
+
 sd::ops::DeclarableOp* OpRegistrator::getOperation(const char* name) {
   std::string str(name);
   return getOperation(str);

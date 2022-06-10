@@ -186,10 +186,10 @@ public class ExecDebuggingListener extends BaseListener {
             sb.append("Nd4j.exec(op);\n");
         }
 
-        System.out.print(sb.toString());
+        System.out.print(sb);
     }
 
-    private static String createString(INDArray arr){
+    private static String createString(INDArray arr) {
         StringBuilder sb = new StringBuilder();
 
         if(arr.isEmpty()){

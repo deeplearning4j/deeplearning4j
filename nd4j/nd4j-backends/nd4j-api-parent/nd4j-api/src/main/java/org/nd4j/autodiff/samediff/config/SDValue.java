@@ -40,15 +40,6 @@ import java.util.*;
 @EqualsAndHashCode
 public class SDValue {
 
-
-    private static Map<INDArray,SDValue> values = new IdentityHashMap<>();
-    private static Map<Collection<INDArray>,SDValue> listValues = new LinkedHashMap<>();
-
-
-    private static Map<Map<String,INDArray>,SDValue> dictValues = new LinkedHashMap<>();
-
-
-
     private SDValueType sdValueType;
     private INDArray tensorValue;
     private Map<String,INDArray> dictValue;
@@ -111,13 +102,9 @@ public class SDValue {
      * @return the created value
      */
     public static SDValue create(INDArray inputValue) {
-        if(values.containsKey(inputValue))
-            return values.get(inputValue);
-
         SDValue sdValue = new SDValue();
         sdValue.tensorValue = inputValue;
         sdValue.sdValueType = SDValueType.TENSOR;
-        values.put(inputValue,sdValue);
         return sdValue;
     }
 
@@ -129,12 +116,9 @@ public class SDValue {
      * @return the created value
      */
     public static SDValue create(Collection<INDArray> inputValue) {
-        if(listValues.containsKey(inputValue))
-            return listValues.get(inputValue);
         SDValue sdValue = new SDValue();
         sdValue.listValue = (List<INDArray>) inputValue;
         sdValue.sdValueType = SDValueType.LIST;
-        listValues.put(inputValue,sdValue);
         return sdValue;
     }
 
@@ -145,12 +129,9 @@ public class SDValue {
      * @return the created value
      */
     public static SDValue create(List<INDArray> inputValue) {
-        if(listValues.containsKey(inputValue))
-            return listValues.get(inputValue);
         SDValue sdValue = new SDValue();
         sdValue.listValue = inputValue;
         sdValue.sdValueType = SDValueType.LIST;
-        listValues.put(inputValue,sdValue);
         return sdValue;
     }
 
@@ -161,12 +142,9 @@ public class SDValue {
      * @return the created value
      */
     public static SDValue create(Map<String,INDArray> inputValue) {
-        if(dictValues.containsKey(inputValue))
-            return dictValues.get(inputValue);
         SDValue sdValue = new SDValue();
         sdValue.dictValue = inputValue;
         sdValue.sdValueType = SDValueType.DICT;
-        dictValues.put(inputValue,sdValue);
         return sdValue;
     }
 

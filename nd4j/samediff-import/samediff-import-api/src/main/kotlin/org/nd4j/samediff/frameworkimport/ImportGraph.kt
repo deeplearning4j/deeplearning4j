@@ -600,11 +600,25 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                     op.inputsToOp = inNames
                                 }
                                 MapperNamespace.VariableResolutionType.OVERRIDE -> {
-                                    if(numInputsToTake < inNames.size && op.op.opName() != "noop")
+                                    if(numInputsToTake < inNames.size)
                                         op.inputsToOp = inNames.subList(0, numInputsToTake)
-                                    else if(numInputsToTake > inNames.size && op.op.opName() != "noop") {
-                                        op.inputsToOp = resolvedArgInputs.map { input -> input.name }
-                                    }  else if(op.op.opName() == "noop")
+                                    else if(numInputsToTake > inNames.size) {
+                                        val inputsAfterOriginal = resolvedArgInputs.size - numInputs
+                                        val newInputs = mutableListOf<String>()
+                                        newInputs.addAll(inNames)
+                                        op.inputsToOp = newInputs
+                                        resolvedArgInputs.subList(inputsAfterOriginal,resolvedArgInputs.size).forEach { arg ->
+                                            val newName = sd.generateNewVarName("${op.name}_${arg.name}",0)
+                                            op.inputsToOp.add(newName)
+                                            if(!sd.hasVariable(op.inputsToOp[arg.argIndex])) {
+                                                if(arg.inputValue != null) {
+                                                    sd.`var`(op.inputsToOp[arg.argIndex],ndarrayFromNameSpaceTensor(arg.inputValue))
+                                                } else {
+                                                    throw java.lang.IllegalArgumentException("No argument value found for op ${op.name} for value arg with name ${arg.name}")
+                                                }
+                                            }
+                                        }
+                                    }  else
                                         op.inputsToOp = inNames
 
                                     //clear out inputs for variables as well to reflect the actual graph structure
