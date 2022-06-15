@@ -2913,6 +2913,11 @@ OpaqueDataBuffer *dbCreateView(OpaqueDataBuffer *dataBuffer, sd::LongType length
   return new InteropDataBuffer(*dataBuffer, length, offset);
 }
 
+int dbUseCount(OpaqueDataBuffer* dataBuffer){
+ if(dataBuffer) return dataBuffer->useCount();
+ return 0;
+}
+
 void dbSyncToSpecial(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->syncToSpecial(); }
 
 void dbSyncToPrimary(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->syncToPrimary(nullptr); }

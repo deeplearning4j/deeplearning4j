@@ -1614,6 +1614,11 @@ public class Nd4jAuroraOps implements NativeOps {
     }
 
     @Override
+    int dbUseCount(OpaqueDataBuffer dataBuffer) {
+        return callInt("dbUseCount", dataBuffer);
+    }
+
+    @Override
     public Pointer dbPrimaryBuffer(OpaqueDataBuffer dataBuffer) {
         return callPointer("dbPrimaryBuffer", dataBuffer);
     }

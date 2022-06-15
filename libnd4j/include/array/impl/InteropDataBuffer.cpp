@@ -66,6 +66,10 @@ void InteropDataBuffer::setOffset(uint64_t offset) { _offset = offset; }
 
 int InteropDataBuffer::deviceId() const { return _dataBuffer->deviceId(); }
 
+int InteropDataBuffer::useCount() const{
+  return _dataBuffer.use_count();
+}
+
 void InteropDataBuffer::registerSpecialUse(const std::vector<const InteropDataBuffer*>& writeList,
                                            const std::vector<const InteropDataBuffer*>& readList) {
   for (const auto& v : writeList) {

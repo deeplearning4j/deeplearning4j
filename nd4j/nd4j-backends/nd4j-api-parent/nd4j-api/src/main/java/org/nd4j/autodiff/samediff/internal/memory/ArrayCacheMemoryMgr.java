@@ -55,7 +55,6 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     private LinkedHashSet<Long> lruCache = new LinkedHashSet<>();
     private Map<Long, INDArray> lruCacheValues = new HashMap<>();
 
-    private Counter<Long> bufferReferences = new Counter<>();
 
     private Table<DataType, String, List<INDArray>> arrays = HashBasedTable.create();
 
@@ -116,13 +115,12 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             INDArray arr = !arrays.get(dataType, arrayShapeString).isEmpty()
                     ? arrays.get(dataType, arrayShapeString).remove(0)
                     : null;
-            if (arr != null && bufferReferences.getCount(arr.data().address()) < 1) {
+            if (arr != null) {
                 // Decrement cache size
                 currentCacheSize -= dataType.width() * arr.data().length();
                 log.info("Cache hit for data type " + dataType + " and shape " + Arrays.toString(shape));
                 lruCache.remove(arr.getId());
                 lruCacheValues.remove(arr.getId());
-                bufferReferences.removeKey(arr.data().address());
                 // We need to assign new Id. this way we will break any possible relationship it
                 // had in Tracker.
                 // the old cache was recreating New Array using buffer and thus gaining new
@@ -134,8 +132,6 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
         // Allocation failed, allocate new array
         INDArray ret = Nd4j.createUninitializedDetached(dataType, shape);
-        if (ret.data() != null)
-            bufferReferences.incrementCount(ret.data().address(), 1.0);
         return ret;
     }
 
@@ -147,8 +143,6 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 ret = ret.detach();
             }
 
-            if (ret.data() != null)
-                bufferReferences.incrementCount(ret.data().address(), 1.0);
             return ret;
         }
 
@@ -160,28 +154,15 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             List<INDArray> arrays2 = arrays.get(dataType, arrayShape);
             List<Long> refsGreaterThanTwo = new ArrayList<>();
 
-            while (arr == null && !arrays2.isEmpty()) {
-                for (int i = 0; i < arrays2.size(); i++) {
-                    // don't allow more than 1 buffer to be used from the cache to ensure we don't
-                    // have clashes with views
-                    if (bufferReferences.getCount(arrays2.get(i).data().address()) < 2) {
-                        arr = arrays2.remove(i);
-                    } else {
-                        refsGreaterThanTwo.add(arrays2.get(i).data().address());
-                    }
-                }
-
-                // all greater than one, no point in continuing, break
-                if (refsGreaterThanTwo.size() == arrays2.size()) {
-                    break;
-                }
+            if(arrays2.size()>0){
+                arr = arrays2.remove(0);
             }
 
             if (arr != null && arr.ordering() != descriptor.getOrder()) {
                 arr.setOrder(descriptor.getOrder());
             }
 
-            if (arr != null && bufferReferences.getCount(arr.data().address()) <= 1) {
+            if (arr != null ) {
                 // Decrement cache size
                 currentCacheSize -= dataType.width() * arr.data().length();
                 log.info("Cache hit for data type " + dataType + " and shape " + Arrays.toString(arr.shape()));
@@ -200,14 +181,6 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         return Nd4j.createUninitializedDetached(dataType, shape);
     }
 
-    private void decrementCounter(INDArray array) {
-        long address = array.data().address();
-        if (bufferReferences.getCount(address) > 0.0)
-            bufferReferences.setCount(address, bufferReferences.getCount(address) - 1);
-
-        if (bufferReferences.getCount(address) < 1)
-            bufferReferences.removeKey(address);
-    }
 
     @Override
     public void release(@NonNull INDArray array) {
@@ -219,9 +192,14 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         DataType dt = array.dataType();
         if (array.data() == null && array.closeable()) {
             array.close();
-            if (array.data() != null)
-                bufferReferences.setCount(array.data().address(),
-                        bufferReferences.getCount(array.data().address()) - 1);
+            return;
+        }
+
+        if(array!=null && array.data()!=null && Nd4j.getExecutioner().useCount(array.data()) > 1){
+            //DataBuffer is used more than once. Close it and return
+            if(array.closeable()) {
+                array.close();
+            }
             return;
         }
 
@@ -229,12 +207,10 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         if (array.dataType() == DataType.UTF8) {
             // Don't cache string arrays due to variable length buffers
             if (array.closeable()) {
-                decrementCounter(array);
                 array.close();
             }
         } else if (currentCacheSize + thisBytes > maxCacheBytes) {
             if (thisBytes > maxCacheBytes) {
-                decrementCounter(array);
 
                 // Can't store even if we clear everything - too large
                 if (array.closeable())
@@ -255,7 +231,6 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 currentCacheSize -= nextBytes;
 
                 if (nextOldest.closeable()) {
-                    decrementCounter(nextOldest);
                     nextOldest.close();
                 }
             }

@@ -2214,6 +2214,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         return buffer;
     }
 
+    @Override
+    public int useCount(DataBuffer buffer){
+        return nativeOps.dbUseCount(((BaseCudaDataBuffer) buffer).getOpaqueDataBuffer());
+    }
+
 
 }
 

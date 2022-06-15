@@ -63,6 +63,8 @@ class SD_LIB_EXPORT InteropDataBuffer {
   int deviceId() const;
   void setDeviceId(int deviceId);
 
+  int useCount() const;
+
   static void registerSpecialUse(const std::vector<const InteropDataBuffer *> &writeList,
                                  const std::vector<const InteropDataBuffer *> &readList);
   static void prepareSpecialUse(const std::vector<const InteropDataBuffer *> &writeList,

@@ -972,6 +972,10 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public int useCount(DataBuffer buffer){
+        throw new UnsupportedOperationException();
+    }
 
 
     public void setX(INDArray x, Op op, OpContext oc){
