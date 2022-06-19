@@ -17,34 +17,34 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.nd4j.autodiff.samediff.internal.memory;
 
-import java.util.HashSet;
-import java.util.Set;
+package org.nd4j.autodiff.samediff.internal;
 
-import org.nd4j.autodiff.samediff.config.SDValue;
-import org.nd4j.autodiff.samediff.internal.AbstractDependencyTracker;
-import org.nd4j.autodiff.samediff.internal.IDependencyMap;
+import java.util.function.Predicate;
 
-public class HashDependencyTracker<T extends SDValue, D> extends AbstractDependencyTracker<T, D> {
+public interface IDependencyMap<T, D> {
+    void clear();
 
-    @Override
-    protected IDependencyMap<T, D> newTMap() {
-        return new DependencyMap<T, D>();
-    }
+    void add(T dependeeGroup, D element);
 
-    @Override
-    protected Set<T> newTSet() {
-        return (Set<T>) new HashSet<T>();
-    }
+    // return Iterable for each the dependeeGroup content
+    Iterable<D> getDependantsForEach(T dependeeGroup);
 
-    @Override
-    protected String toStringT(SDValue t) {
-        return " - " + t.toString();
-    }
+    Iterable<D> getDependantsForGroup(T dependeeGroup);
 
-    @Override
-    protected String toStringD(D d) {
-        return d.toString();
-    }
+    boolean containsAny(T dependeeGroup);
+
+    boolean containsAnyForGroup(T dependeeGroup);
+
+    boolean isEmpty();
+
+    void removeGroup(T dependeeGroup);
+
+    Iterable<D> removeGroupReturn(T dependeeGroup);
+
+    void removeForEach(T dependeeGroup);
+
+    Iterable<D> removeForEachResult(T dependeeGroup);
+
+    Iterable<D> removeGroupReturn(T dependeeGroup, Predicate<D> predicate);
 }

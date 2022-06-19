@@ -3140,6 +3140,7 @@ public native org.nd4j.nativeblas.OpaqueDataBuffer allocateDataBuffer(@Cast("sd:
 public native org.nd4j.nativeblas.OpaqueDataBuffer dbAllocateDataBuffer(@Cast("sd::LongType") long elements, int dataType, @Cast("bool") boolean allocateBoth);
 public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateExternalDataBuffer(@Cast("sd::LongType") long elements, int dataType, @Cast("sd::Pointer") Pointer primary,
                                                            @Cast("sd::Pointer") Pointer special);
+public native int dbUseCount(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateView(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast("sd::LongType") long length, @Cast("sd::LongType") long offset);
 public native @Cast("sd::Pointer") Pointer dbPrimaryBuffer(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native @Cast("sd::Pointer") Pointer dbSpecialBuffer(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
@@ -14070,6 +14071,7 @@ public static final int
 // #include <execution/Engine.h>
 // #include <ops/declarable/DeclarableOp.h>
 // #include <ops/declarable/PlatformHelper.h>
+// #include <ops/declarable/PlatformHelperLegacy.h>
 
 // #include <mutex>
 // #include <unordered_map>
@@ -14123,6 +14125,8 @@ public static final int
 
   public native PlatformHelper getPlatformHelper(@Cast("sd::LongType") long hash, @Cast("samediff::Engine") int engine);
 
+// #ifndef __JAVACPP_HACK__
+// #endif
   public native @Cast("sd::LongType*") @StdVector LongPointer getAllHashes();
 
   public native int numberOfOperations();

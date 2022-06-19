@@ -20,23 +20,31 @@
 
 package org.nd4j.autodiff.samediff.internal.memory;
 
-import lombok.*;
-import lombok.extern.slf4j.Slf4j;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.config.ND4JSystemProperties;
-import org.nd4j.common.primitives.Counter;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
-import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.shade.guava.collect.HashBasedTable;
 import org.nd4j.shade.guava.collect.Table;
 import org.nd4j.shade.guava.primitives.Longs;
-import org.nd4j.linalg.api.ndarray.BaseNDArray;
-import java.util.*;
+
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 @Getter
 @Setter
@@ -54,7 +62,6 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     private LinkedHashSet<Long> lruCache = new LinkedHashSet<>();
     private Map<Long, INDArray> lruCacheValues = new HashMap<>();
-
 
     private Table<DataType, String, List<INDArray>> arrays = HashBasedTable.create();
 
@@ -111,7 +118,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     @Override
     public INDArray allocate(boolean detached, DataType dataType, long... shape) {
         String arrayShapeString = Arrays.toString(shape);
-        if (arrays.contains(dataType, arrayShapeString)) {
+        if (arrays.contains(dataType, arrayShapeString) && enableCache) {
             INDArray arr = !arrays.get(dataType, arrayShapeString).isEmpty()
                     ? arrays.get(dataType, arrayShapeString).remove(0)
                     : null;
@@ -152,9 +159,8 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         if (arrays.contains(dataType, arrayShape) && enableCache && shape.length > 0 && !Longs.contains(shape, 0)) {
             INDArray arr = null;
             List<INDArray> arrays2 = arrays.get(dataType, arrayShape);
-            List<Long> refsGreaterThanTwo = new ArrayList<>();
 
-            if(arrays2.size()>0){
+            if (arrays2.size() > 0) {
                 arr = arrays2.remove(0);
             }
 
@@ -162,7 +168,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 arr.setOrder(descriptor.getOrder());
             }
 
-            if (arr != null ) {
+            if (arr != null) {
                 // Decrement cache size
                 currentCacheSize -= dataType.width() * arr.data().length();
                 log.info("Cache hit for data type " + dataType + " and shape " + Arrays.toString(arr.shape()));
@@ -181,7 +187,6 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         return Nd4j.createUninitializedDetached(dataType, shape);
     }
 
-
     @Override
     public void release(@NonNull INDArray array) {
         // Check for multiple releases of the array
@@ -189,15 +194,22 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         Preconditions.checkState(!lruCache.contains(id), "Array was released multiple times: id=%s, shape=%ndShape", id,
                 array);
 
+        if (enableCache == false) {
+            if (array.closeable()) {
+                array.close();
+            }
+            return;
+        }
+
         DataType dt = array.dataType();
         if (array.data() == null && array.closeable()) {
             array.close();
             return;
         }
 
-        if(array!=null && array.data()!=null && Nd4j.getExecutioner().useCount(array.data()) > 1){
-            //DataBuffer is used more than once. Close it and return
-            if(array.closeable()) {
+        if (array != null && array.data() != null && Nd4j.getExecutioner().useCount(array.data()) > 1) {
+            // DataBuffer is used more than once. Close it and return
+            if (array.closeable()) {
                 array.close();
             }
             return;
@@ -227,7 +239,9 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 INDArray nextOldest = lruCacheValues.remove(next);
                 DataType ndt = nextOldest.dataType();
                 long nextBytes = ndt.width() * nextOldest.data().length();
-                boolean remove = arrays.get(ndt, Arrays.toString(nextOldest.shape())).remove(nextOldest);
+                List<INDArray> listx = arrays.get(ndt, Arrays.toString(nextOldest.shape()));
+                if (listx != null)
+                    listx.remove(nextOldest);
                 currentCacheSize -= nextBytes;
 
                 if (nextOldest.closeable()) {
@@ -250,7 +264,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     private void cacheArray(INDArray array) {
         DataType dt = array.dataType();
         String arrayShapeString = Arrays.toString(array.shape());
-        if (!arrays.contains(dt, arrayShapeString) && enableCache)
+        if (!arrays.contains(dt, arrayShapeString))
             arrays.put(dt, arrayShapeString, new ArrayList<>());
         arrays.get(dt, arrayShapeString).add(array);
         currentCacheSize += array.data().length() * dt.width();
