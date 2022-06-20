@@ -56,10 +56,10 @@ PLATFORM_IMPL(pad, ENGINE_CPU) {
   vO = (VEDAdeviceptr)output->specialBuffer();
 
   auto func = handle.getFunctionByConstPtrName("vedaPadConstantRank4");
-  VEDA_CALL_THROW(vedaLaunchKernel(
+  VEDA_CALL_THROW(vedaLaunchKernelLocal(
       func, 0, VEDAstack((void*)input->shapeInfo(), VEDA_ARGS_INTENT_IN, shape::shapeInfoByteLength(input->rankOf())),
       vIn, VEDAstack((void*)output->shapeInfo(), VEDA_ARGS_INTENT_IN, shape::shapeInfoByteLength(output->rankOf())), vO,
-      paddingOffset, padValue));
+      (uint64_t)paddingOffset, padValue));
 
   return sd::Status::OK;
 }

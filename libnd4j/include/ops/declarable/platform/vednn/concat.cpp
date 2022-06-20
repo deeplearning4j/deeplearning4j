@@ -46,18 +46,20 @@ PLATFORM_IMPL(concat, ENGINE_CPU) {
   auto func = handle.getFunctionByConstPtrName("vedaConcatUpTo32");
 
   VEDAdeviceptr vO;
-
+  uint64_t elementSize = output->sizeOfT();
   std::vector<VEDAdeviceptr> inputList;
+  std::vector<uint64_t> inputLengthInBytesList;
   for (auto input : nonEmptyArrs) {
     inputList.push_back((VEDAdeviceptr)input->specialBuffer());
+    inputLengthInBytesList.push_back(input->lengthOf() * elementSize);
   }
   vO = (VEDAdeviceptr)output->specialBuffer();
 
-  VEDA_CALL_THROW(
-      vedaLaunchKernel(func, 0, (uint64_t)nonEmptyArrs.size(),
-                       VEDAstack(inputList.data(), VEDA_ARGS_INTENT_IN, inputList.size() * sizeof(VEDAdeviceptr)), vO));
-
-  // scopedContext.sync();
+  VEDA_CALL_THROW(vedaLaunchKernelLocal(
+      func, 0, (uint64_t)inputList.size(),
+      VEDAstack(inputList.data(), VEDA_ARGS_INTENT_IN, inputList.size() * sizeof(VEDAdeviceptr)),
+      VEDAstack(inputLengthInBytesList.data(), VEDA_ARGS_INTENT_IN, inputLengthInBytesList.size() * sizeof(uint64_t)),
+      vO));
 
   return sd::Status::OK;
 }
@@ -93,10 +95,10 @@ SD_INLINE int isShapeExtendedWithOnes(const NDArray &input, int axis) {
 }
 
 PLATFORM_CHECK(concat, ENGINE_CPU) {
-
   auto output = OUTPUT_VARIABLE(0);
   // sd::Environment::getInstance().setDebug(true);
   // sd::Environment::getInstance().setVerbose(true);
+  uint64_t elementSize = output->sizeOfT();
   const bool isAxisInLastArr = block.getBArguments()->size() == 0 ? false : B_ARG(0);
   const int numOfInArrs = isAxisInLastArr ? block.width() - 1 : block.width();
   Requirements req("VEDNN CONCAT OP");
@@ -104,7 +106,8 @@ PLATFORM_CHECK(concat, ENGINE_CPU) {
       req.expectGreater(makeInfoVariable(numOfInArrs, "numOfinArrs"), 0) &&
       req.expectEq(makeInfoVariable(output->ordering(), ORDERING_MSG_OUTPUT), 'c') &&
       req.expectEq(makeInfoVariable(output->ews(), EWS_MSG_OUTPUT), 1) &&
-      req.expectFalse(makeInfoVariable(output->isEmpty(), IS_EMPTY_MSG_OUTPUT));
+      req.expectFalse(makeInfoVariable(output->isEmpty(), IS_EMPTY_MSG_OUTPUT)) &&
+      req.expectEq(makeInfoVariable(elementSize % sizeof(uint32_t), "Element Size should be divisibly by 4 bytes"), 0);
 
   if (req) {
     int axis = isAxisInLastArr ? INPUT_VARIABLE(block.width() - 1)->e<int>(0) : INT_ARG(0);
@@ -147,7 +150,6 @@ PLATFORM_CHECK(concat, ENGINE_CPU) {
   }
   req.logTheSuccess();
   return req;
-
 }
 
 }  // namespace platforms

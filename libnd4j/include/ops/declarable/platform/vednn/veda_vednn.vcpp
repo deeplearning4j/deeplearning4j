@@ -3,7 +3,6 @@
 #include <veda_device.h>
 #include <vednn.h>
 
-#include <chrono>
 #include <cmath>
 #include <iostream>
 #include <memory>
@@ -15,6 +14,36 @@ using LongType = long long;
 #else
 #define LOG_FUNC() printf("%s in [%s %d]\n", __PRETTY_FUNCTION__, __FILE__, __LINE__)
 #endif
+
+// Note: it should be fine to use one status for veda OMP mode
+static uint64_t last_status = 0;
+
+#define CHECK_ERROR_BEFORE_EXEC()             \
+  do {                                        \
+    if (last_status != 0) return last_status; \
+  } while (0)
+
+#define CHECK_FUNC(res)     \
+  do {                      \
+    if (last_status == 0) { \
+      if (res != 0) {       \
+        RETURN(res);        \
+      }                     \
+    }                       \
+  } while (0)
+
+#define RETURN(res)                                                  \
+  do {                                                               \
+    return set_return((uint64_t)res, __PRETTY_FUNCTION__, __LINE__); \
+  } while (0)
+
+inline uint64_t set_return(uint64_t res, const char *msg, int line) {
+  last_status = res;
+  if (res != 0) {
+    printf("%s %d result code: [%d]\n", msg, line, (int)res);
+  }
+  return res;
+}
 
 inline void copyTo_nhwc_generic(const vednnTensorParam_t &p, const float *nchw, float *nhwc) {
   int hs = p.width;
@@ -164,7 +193,7 @@ void copyWf0ToWf1(const vednnFilterParam_t &paramFilter, const float *weight, fl
 
 extern "C" {
 
-void showBufferVe(VEDAdeviceptr v) {
+void showBufferVeAsFloat(VEDAdeviceptr v) {
 #if defined(DEBUG_VEDA_LOGS)
   size_t size = 0;
   void *in;
@@ -189,18 +218,19 @@ uint64_t vedaVednnConvolutionForwardAddBias(const vednnTensorParam_t *paramIn, V
                                             const vednnTensorParam_t *paramOut, VEDAdeviceptr vDataOut,
                                             uint8_t isDataOutNCHW, const vednnConvolutionParam_t *paramConv,
                                             vednnConvolutionAlgorithm_t algo) {
+  CHECK_ERROR_BEFORE_EXEC();
   LOG_FUNC();
   vednnError_t res;
   void *pDataIn, *pDataBias = nullptr, *pDataKernelPtr;
   void *pDataOutPtr, *pDataOut = nullptr;
-  vedaMemPtr((void **)&pDataIn, vDataIn);
-  vedaMemPtr((void **)&pDataKernelPtr, vDataKernel);
-  if (vDataBias) vedaMemPtr((void **)&pDataBias, vDataBias);
-  vedaMemPtr((void **)&pDataOutPtr, vDataOut);
+  CHECK_FUNC(vedaMemPtr((void **)&pDataIn, vDataIn));
+  CHECK_FUNC(vedaMemPtr((void **)&pDataKernelPtr, vDataKernel));
+  if (vDataBias) CHECK_FUNC(vedaMemPtr((void **)&pDataBias, vDataBias));
+  CHECK_FUNC(vedaMemPtr((void **)&pDataOutPtr, vDataOut));
 #if defined(DEBUG_VEDA_LOGS)
-  showBufferVe(vDataIn);
-  showBufferVe(vDataKernel);
-  showBufferVe(vDataBias);
+  showBufferVeAsFloat(vDataIn);
+  showBufferVeAsFloat(vDataKernel);
+  showBufferVeAsFloat(vDataBias);
 #endif
   std::unique_ptr<float[]> tempIn, tempOut, tempW;
 
@@ -228,7 +258,7 @@ uint64_t vedaVednnConvolutionForwardAddBias(const vednnTensorParam_t *paramIn, V
     copyIntoNHWC(*paramOut, (const float *)pDataOut, (float *)pDataOutPtr);
   }
 
-  return (uint64_t)res;
+  RETURN(res);
 }
 
 uint64_t vedaVednnConvolutionBackwardDataAndFilter(const vednnTensorParam_t *paramGradOut, VEDAdeviceptr vGradOutData,
@@ -238,15 +268,16 @@ uint64_t vedaVednnConvolutionBackwardDataAndFilter(const vednnTensorParam_t *par
                                                    VEDAdeviceptr vGradInData, uint8_t isNCHW, VEDAdeviceptr vGradBias,
                                                    const vednnConvolutionParam_t *paramConv,
                                                    vednnConvolutionAlgorithm_t algo) {
+  CHECK_ERROR_BEFORE_EXEC();
   LOG_FUNC();
   void *gradOutData, *weightData, *gradWeightsData, *inData, *gradInData, *gradInDataFormatted;
   float *gradBias = nullptr;
-  vedaMemPtr((void **)&gradOutData, vGradOutData);
-  vedaMemPtr((void **)&weightData, vWeightData);
-  vedaMemPtr((void **)&gradWeightsData, vGradWeightData);
-  vedaMemPtr((void **)&inData, vInData);
-  vedaMemPtr((void **)&gradInData, vGradInData);
-  if (vGradBias) vedaMemPtr((void **)&gradBias, vGradBias);
+  CHECK_FUNC(vedaMemPtr((void **)&gradOutData, vGradOutData));
+  CHECK_FUNC(vedaMemPtr((void **)&weightData, vWeightData));
+  CHECK_FUNC(vedaMemPtr((void **)&gradWeightsData, vGradWeightData));
+  CHECK_FUNC(vedaMemPtr((void **)&inData, vInData));
+  CHECK_FUNC(vedaMemPtr((void **)&gradInData, vGradInData));
+  if (vGradBias) CHECK_FUNC(vedaMemPtr((void **)&gradBias, vGradBias));
   gradInDataFormatted = gradInData;
 
   // temporary memory holders for the case when we need formatted buffers
@@ -311,58 +342,63 @@ uint64_t vedaVednnConvolutionBackwardDataAndFilter(const vednnTensorParam_t *par
       }
     }
   }
-  return (uint64_t)res;
+  RETURN(res);
 }
 
-vednnError_t vedaVednnActivationForward(const vednnActivationMode_t mode, VEDAdeviceptr vDataIn, VEDAdeviceptr vDataOut,
-                                        const uint64_t nElements) {
+uint64_t vedaVednnActivationForward(const vednnActivationMode_t mode, VEDAdeviceptr vDataIn, VEDAdeviceptr vDataOut,
+                                    const uint64_t nElements) {
   LOG_FUNC();
+  CHECK_ERROR_BEFORE_EXEC();
   void *pDataIn;
   void *pDataOut;
-  vedaMemPtr((void **)&pDataIn, vDataIn);
-  vedaMemPtr((void **)&pDataOut, vDataOut);
+  CHECK_FUNC(vedaMemPtr((void **)&pDataIn, vDataIn));
+  CHECK_FUNC(vedaMemPtr((void **)&pDataOut, vDataOut));
 
-  return vednnActivationForward(mode, pDataIn, pDataOut, nElements);
+  auto res = vednnActivationForward(mode, pDataIn, pDataOut, nElements);
+  RETURN(res);
 }
 
-vednnError_t vedaVednnActivationBackward(const vednnActivationMode_t mode, VEDAdeviceptr vDataGradOut,
-                                         VEDAdeviceptr vDataIn, VEDAdeviceptr vDataGradIn, const uint64_t nElements) {
+uint64_t vedaVednnActivationBackward(const vednnActivationMode_t mode, VEDAdeviceptr vDataGradOut,
+                                     VEDAdeviceptr vDataIn, VEDAdeviceptr vDataGradIn, const uint64_t nElements) {
   LOG_FUNC();
+  CHECK_ERROR_BEFORE_EXEC();
   void *pDataGradOut;
   void *pDataIn;
   void *pDataGradIn;
-  vedaMemPtr((void **)&pDataGradOut, vDataGradOut);
-  vedaMemPtr((void **)&pDataIn, vDataIn);
-  vedaMemPtr((void **)&pDataGradIn, vDataGradIn);
+  CHECK_FUNC(vedaMemPtr((void **)&pDataGradOut, vDataGradOut));
+  CHECK_FUNC(vedaMemPtr((void **)&pDataIn, vDataIn));
+  CHECK_FUNC(vedaMemPtr((void **)&pDataGradIn, vDataGradIn));
 
-  return vednnActivationBackward(mode, pDataGradOut, pDataIn, pDataGradIn, nElements);
+  auto res = vednnActivationBackward(mode, pDataGradOut, pDataIn, pDataGradIn, nElements);
+  RETURN(res);
 }
 
-vednnError_t vedaVednnSoftmaxForward(const vednnSoftmaxMode_t mode, VEDAdeviceptr vDataIn, VEDAdeviceptr vDataOut,
-                                     const uint64_t nBatch, const uint64_t nClass) {
+uint64_t vedaVednnSoftmaxForward(const vednnSoftmaxMode_t mode, VEDAdeviceptr vDataIn, VEDAdeviceptr vDataOut,
+                                 const uint64_t nBatch, const uint64_t nClass) {
+  CHECK_ERROR_BEFORE_EXEC();
   LOG_FUNC();
   void *pDataIn;
   void *pDataOut;
-  vedaMemPtr((void **)&pDataIn, vDataIn);
-  vedaMemPtr((void **)&pDataOut, vDataOut);
+  CHECK_FUNC(vedaMemPtr((void **)&pDataIn, vDataIn));
+  CHECK_FUNC(vedaMemPtr((void **)&pDataOut, vDataOut));
 
   return vednnSoftmaxForward(mode, pDataIn, pDataOut, nBatch, nClass);
 }
 
-vednnError_t vedaVednnLinearForwardExF32(uint64_t bGemm, const uint64_t inDim, const uint64_t outDim,
-                                         const uint64_t nBatch, VEDAdeviceptr vX, const uint64_t xStride,
-                                         VEDAdeviceptr vY, const uint64_t yStride, VEDAdeviceptr vZ,
-                                         const uint64_t zStride) {
+uint64_t vedaVednnLinearForwardExF32(uint64_t bGemm, const uint64_t inDim, const uint64_t outDim, const uint64_t nBatch,
+                                     VEDAdeviceptr vX, const uint64_t xStride, VEDAdeviceptr vY, const uint64_t yStride,
+                                     VEDAdeviceptr vZ, const uint64_t zStride) {
+  CHECK_ERROR_BEFORE_EXEC();
   LOG_FUNC();
   vednnError_t res;
   float *x, *y;
   float *z;
-  vedaMemPtr((void **)&x, vX);
-  vedaMemPtr((void **)&y, vY);
-  vedaMemPtr((void **)&z, vZ);
+  CHECK_FUNC(vedaMemPtr((void **)&x, vX));
+  CHECK_FUNC(vedaMemPtr((void **)&y, vY));
+  CHECK_FUNC(vedaMemPtr((void **)&z, vZ));
 
   if (bGemm == 1) {
-    return vednnLinearForward(inDim, outDim, nBatch, 1, x, y, z);
+    RETURN(vednnLinearForward(inDim, outDim, nBatch, 1, x, y, z));
   } else {
     // because of the bgemm did not work as expected, we will manually parallelize over bGemm
 
@@ -374,35 +410,37 @@ vednnError_t vedaVednnLinearForwardExF32(uint64_t bGemm, const uint64_t inDim, c
       vednnLinearForward(inDim, outDim, nBatch, 1, xPtr, yPtr, zPtr);
     }
     // WARNING: we will silently return success
-    return VEDNN_SUCCESS;
+    RETURN(VEDNN_SUCCESS);
   }
 }
 
-vednnError_t vedaVednnMaxPoolingForward(const vednnTensorParam_t *pParamIn, VEDAdeviceptr vDataIn,
-                                        const vednnTensorParam_t *pParamOut, VEDAdeviceptr vDataOut,
-                                        const vednnPoolingParam_t *pParamPool) {
+uint64_t vedaVednnMaxPoolingForward(const vednnTensorParam_t *pParamIn, VEDAdeviceptr vDataIn,
+                                    const vednnTensorParam_t *pParamOut, VEDAdeviceptr vDataOut,
+                                    const vednnPoolingParam_t *pParamPool) {
+  CHECK_ERROR_BEFORE_EXEC();
   LOG_FUNC();
   void *pDataIn;
   void *pDataOut;
-  vedaMemPtr((void **)&pDataIn, vDataIn);
-  vedaMemPtr((void **)&pDataOut, vDataOut);
+  CHECK_FUNC(vedaMemPtr((void **)&pDataIn, vDataIn));
+  CHECK_FUNC(vedaMemPtr((void **)&pDataOut, vDataOut));
 #if defined(DEBUG_VEDA_LOGS)
-  showBufferVe(vDataIn);
+  showBufferVeAsFloat(vDataIn);
 #endif
-  return vednnMaxPoolingForward(pParamIn, pDataIn, pParamOut, pDataOut, pParamPool);
+  RETURN(vednnMaxPoolingForward(pParamIn, pDataIn, pParamOut, pDataOut, pParamPool));
 }
 
-vednnError_t vedaVednnMaxPoolingBackwardEx(const vednnTensorParam_t *pParamGradOut, VEDAdeviceptr vDataGradOut,
-                                           const vednnTensorParam_t *pParamOut, VEDAdeviceptr vDataOut,
-                                           const vednnTensorParam_t *pParamIn, VEDAdeviceptr vDataIn,
-                                           const vednnTensorParam_t *pParamGradIn, VEDAdeviceptr vDataGradIn,
-                                           const vednnPoolingParam_t *pParamPool) {
+uint64_t vedaVednnMaxPoolingBackwardEx(const vednnTensorParam_t *pParamGradOut, VEDAdeviceptr vDataGradOut,
+                                       const vednnTensorParam_t *pParamOut, VEDAdeviceptr vDataOut,
+                                       const vednnTensorParam_t *pParamIn, VEDAdeviceptr vDataIn,
+                                       const vednnTensorParam_t *pParamGradIn, VEDAdeviceptr vDataGradIn,
+                                       const vednnPoolingParam_t *pParamPool) {
+  CHECK_ERROR_BEFORE_EXEC();
   LOG_FUNC();
   void *pDataGradOut, *pDataIn, *pDataGradIn, *pDataOut;
-  vedaMemPtr((void **)&pDataGradOut, vDataGradOut);
-  vedaMemPtr((void **)&pDataIn, vDataIn);
-  vedaMemPtr((void **)&pDataOut, vDataOut);
-  vedaMemPtr((void **)&pDataGradIn, vDataGradIn);
+  CHECK_FUNC(vedaMemPtr((void **)&pDataGradOut, vDataGradOut));
+  CHECK_FUNC(vedaMemPtr((void **)&pDataIn, vDataIn));
+  CHECK_FUNC(vedaMemPtr((void **)&pDataOut, vDataOut));
+  CHECK_FUNC(vedaMemPtr((void **)&pDataGradIn, vDataGradIn));
 
   vednnError_t res = vednnMaxPoolingForward(pParamIn, pDataIn, pParamOut, pDataOut, pParamPool);
 
@@ -410,70 +448,74 @@ vednnError_t vedaVednnMaxPoolingBackwardEx(const vednnTensorParam_t *pParamGradO
     vednnMaxPoolingBackward(pParamGradOut, pDataGradOut, pParamOut, pDataOut, pParamIn, pDataIn, pParamGradIn,
                             pDataGradIn, pParamPool);
   }
-  return res;
+  RETURN(res);
 }
 
-uint64_t vedaConcatUpTo32(const uint64_t nInput, VEDAdeviceptr *inputList, VEDAdeviceptr vO) {
+uint64_t vedaConcatUpTo32(const uint64_t nInput, VEDAdeviceptr *inputList, uint64_t *inputLengthInBytesList, 
+                          VEDAdeviceptr vO) {
+  CHECK_ERROR_BEFORE_EXEC();
+
   LOG_FUNC();
-  if (nInput > 0 && nInput < 32) {
-    void *output;
-    vedaMemPtr(&output, vO);
+  if (nInput > 0 && nInput <= 32) {
+    //WARNING: we make it as uint32_t* because it is vectorizable
+    //For now please pass only data types divisible by sizeof(uint32_t)
+    uint32_t *output;
+    CHECK_FUNC(vedaMemPtr((void **)&output, vO));
     struct OmpArgs {
-      float *in;
-      float *out;
-      int size;
+      uint32_t *in;
+      uint32_t *out;
+      uint64_t size;
     };
 
     OmpArgs zPtrList[32];
-    float *z = (float *)output;
-    for (int i = 0; i < nInput; i++) {
-      void *in;
-      size_t size;
-      vedaMemPtrSize(&in, &size, inputList[i]);
-#if defined(DEBUG_VEDA_LOGS)
-      showBufferVe(inputList[i]);
-#endif
-      auto sizeInFloats = size / sizeof(float);
-      zPtrList[i].in = (float *)in;
-      zPtrList[i].out = z;
-      zPtrList[i].size = (int)sizeInFloats;
-      z += sizeInFloats;
+    for (uint64_t i = 0; i < nInput; i++) {
+      uint32_t *in;
+      CHECK_FUNC(vedaMemPtr((void **)&in, inputList[i]));
+      auto lengthOf = inputLengthInBytesList[i]/sizeof(uint32_t);
+
+      zPtrList[i].in = in;
+      zPtrList[i].out = output;
+      zPtrList[i].size = lengthOf ;
+      output += lengthOf;
     }
 
 #pragma omp parallel for
     for (int i = 0; i < nInput; ++i) {
       auto inputPtr = zPtrList[i].in;
       auto outPtr = zPtrList[i].out;
-      int size = zPtrList[i].size;
-      for (size_t j = 0; j < size; j++) {
+      uint64_t size = zPtrList[i].size;
+      for (uint64_t j = 0; j < size; j++) {
         outPtr[j] = inputPtr[j];
       }
     }
-    return 0;
+    RETURN(0);
   }
 
-  return -1;
+  RETURN(-1);
+
 }
 
 uint64_t vedaAdd_A(uint64_t length0, VEDAdeviceptr vIn0, uint64_t length1, VEDAdeviceptr vIn1, VEDAdeviceptr vO) {
+  CHECK_ERROR_BEFORE_EXEC();
+
   uint64_t min_len = 0;
   uint64_t max_len = 0;
   float *big = nullptr;
   float *small = nullptr;
   float *out = nullptr;
-  // auto timeStart = std::chrono::system_clock::now();
-  vedaMemPtr((void **)&out, vO);
+
+  CHECK_FUNC(vedaMemPtr((void **)&out, vO));
   if (length1 > length0) {
     min_len = length0;
     max_len = length1;
-    vedaMemPtr((void **)&small, vIn0);
-    vedaMemPtr((void **)&big, vIn1);
+    CHECK_FUNC(vedaMemPtr((void **)&small, vIn0));
+    CHECK_FUNC(vedaMemPtr((void **)&big, vIn1));
 
   } else {
     min_len = length1;
     max_len = length0;
-    vedaMemPtr((void **)&small, vIn1);
-    vedaMemPtr((void **)&big, vIn0);
+    CHECK_FUNC(vedaMemPtr((void **)&small, vIn1));
+    CHECK_FUNC(vedaMemPtr((void **)&big, vIn0));
   }
 
   if (min_len == 1) {
@@ -524,11 +566,8 @@ uint64_t vedaAdd_A(uint64_t length0, VEDAdeviceptr vIn0, uint64_t length1, VEDAd
       }
     }
   }
-  // auto timeEnd = std::chrono::system_clock::now();
-  // auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
-  // std::cout << "------------- " << max_len << ":" << min_len << " => " << outerTime << std::endl;
 
-  return 0;
+  RETURN(0);
 }
 
 uint64_t vedaMult_A(uint64_t length0, VEDAdeviceptr vIn0, uint64_t length1, VEDAdeviceptr vIn1, VEDAdeviceptr vO) {
@@ -537,19 +576,21 @@ uint64_t vedaMult_A(uint64_t length0, VEDAdeviceptr vIn0, uint64_t length1, VEDA
   float *big = nullptr;
   float *small = nullptr;
   float *out = nullptr;
-  // auto timeStart = std::chrono::system_clock::now();
-  vedaMemPtr((void **)&out, vO);
+
+  CHECK_ERROR_BEFORE_EXEC();
+
+  CHECK_FUNC(vedaMemPtr((void **)&out, vO));
   if (length1 > length0) {
     min_len = length0;
     max_len = length1;
-    vedaMemPtr((void **)&small, vIn0);
-    vedaMemPtr((void **)&big, vIn1);
+    CHECK_FUNC(vedaMemPtr((void **)&small, vIn0));
+    CHECK_FUNC(vedaMemPtr((void **)&big, vIn1));
 
   } else {
     min_len = length1;
     max_len = length0;
-    vedaMemPtr((void **)&small, vIn1);
-    vedaMemPtr((void **)&big, vIn0);
+    CHECK_FUNC(vedaMemPtr((void **)&small, vIn1));
+    CHECK_FUNC(vedaMemPtr((void **)&big, vIn0));
   }
 
   if (min_len == 1) {
@@ -600,20 +641,18 @@ uint64_t vedaMult_A(uint64_t length0, VEDAdeviceptr vIn0, uint64_t length1, VEDA
       }
     }
   }
-  // auto timeEnd = std::chrono::system_clock::now();
-  // auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
-  // std::cout << "------------- " << max_len << ":" << min_len << " => " << outerTime << std::endl;
 
-  return 0;
+  RETURN(0);
 }
 
 uint64_t vedaPermuteAssignRank2_4(LongType *inputShapeInfo, VEDAdeviceptr vIn, LongType *outputShapeInfo,
                                   VEDAdeviceptr vO, const int *permutation) {
   // C order and ews Unchecked call, caller should check for the conditions
   float *in, *out;
-  // auto timeStart = std::chrono::system_clock::now();
-  vedaMemPtr((void **)&in, vIn);
-  vedaMemPtr((void **)&out, vO);
+  CHECK_ERROR_BEFORE_EXEC();
+
+  CHECK_FUNC(vedaMemPtr((void **)&in, vIn));
+  CHECK_FUNC(vedaMemPtr((void **)&out, vO));
 
   LongType rank = inputShapeInfo[0];
   if (rank >= 2 && rank <= 4) {
@@ -676,21 +715,20 @@ uint64_t vedaPermuteAssignRank2_4(LongType *inputShapeInfo, VEDAdeviceptr vIn, L
                   in[f * stridePermF + g * stridePermG + h * stridePermH + w * stridePermW];
             }
     }
-    // auto timeEnd = std::chrono::system_clock::now();
-    // auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
-    // std::cout << "------------- perm => " << outerTime << std::endl;
-    return 0;
+
+    RETURN(0);
   }
 
-  return 1;
+  RETURN(-1);
 }
 
 uint64_t vedaPadConstantRank4(LongType *inputShapeInfo, VEDAdeviceptr vIn, LongType *outputShapeInfo, VEDAdeviceptr vO,
-                              const LongType paddingOffset, const float padValue) {
+                              const LongType paddingOffset, float padValue) {
   float *in, *out;
-  // auto timeStart = std::chrono::system_clock::now();
-  vedaMemPtr((void **)&in, vIn);
-  vedaMemPtr((void **)&out, vO);
+  CHECK_ERROR_BEFORE_EXEC();
+
+  CHECK_FUNC(vedaMemPtr((void **)&in, vIn));
+  CHECK_FUNC(vedaMemPtr((void **)&out, vO));
 
   LongType rank = inputShapeInfo[0];
   if (rank == 4) {
@@ -727,57 +765,64 @@ uint64_t vedaPadConstantRank4(LongType *inputShapeInfo, VEDAdeviceptr vIn, LongT
                 in[f * strideInF + g * strideInG + h * strideInH + w * strideInW];
           }
   }
-  // auto timeEnd = std::chrono::system_clock::now();
-  // auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
-  // std::cout << "------------- padd => " << outerTime << std::endl;
-  return 0;
+
+  RETURN(0);
 }
 
-void vedaExpF32(uint64_t length, VEDAdeviceptr vIn, VEDAdeviceptr vO) {
+uint64_t vedaExpF32(uint64_t length, VEDAdeviceptr vIn, VEDAdeviceptr vO) {
+  CHECK_ERROR_BEFORE_EXEC();
   float *in, *out;
-  vedaMemPtr((void **)&in, vIn);
-  vedaMemPtr((void **)&out, vO);
+  CHECK_FUNC(vedaMemPtr((void **)&in, vIn));
+  CHECK_FUNC(vedaMemPtr((void **)&out, vO));
   for (uint64_t i = 0; i < length; i++) {
     out[i] = exp(in[i]);
   }
+  RETURN(0);
 }
 
-void vedaLogF32(uint64_t length, VEDAdeviceptr vIn, VEDAdeviceptr vO) {
+uint64_t vedaLogF32(uint64_t length, VEDAdeviceptr vIn, VEDAdeviceptr vO) {
   float *in, *out;
-  vedaMemPtr((void **)&in, vIn);
-  vedaMemPtr((void **)&out, vO);
+  CHECK_ERROR_BEFORE_EXEC();
+  CHECK_FUNC(vedaMemPtr((void **)&in, vIn));
+  CHECK_FUNC(vedaMemPtr((void **)&out, vO));
   for (uint64_t i = 0; i < length; i++) {
     out[i] = log(in[i]);
   }
+  RETURN(0);
 }
 
-void vedaTanhF32(uint64_t length, VEDAdeviceptr vIn, VEDAdeviceptr vO) {
+uint64_t vedaTanhF32(uint64_t length, VEDAdeviceptr vIn, VEDAdeviceptr vO) {
   float *in, *out;
-  vedaMemPtr((void **)&in, vIn);
-  vedaMemPtr((void **)&out, vO);
+  CHECK_ERROR_BEFORE_EXEC();
+  CHECK_FUNC(vedaMemPtr((void **)&in, vIn));
+  CHECK_FUNC(vedaMemPtr((void **)&out, vO));
   for (uint64_t i = 0; i < length; i++) {
     out[i] = tanh(in[i]);
   }
+  RETURN(0);
 }
 
-void vedaSigmoidF32(uint64_t length, VEDAdeviceptr vIn, VEDAdeviceptr vO) {
+uint64_t vedaSigmoidF32(uint64_t length, VEDAdeviceptr vIn, VEDAdeviceptr vO) {
   float *in, *out;
-  vedaMemPtr((void **)&in, vIn);
-  vedaMemPtr((void **)&out, vO);
+  CHECK_ERROR_BEFORE_EXEC();
+  CHECK_FUNC(vedaMemPtr((void **)&in, vIn));
+  CHECK_FUNC(vedaMemPtr((void **)&out, vO));
   for (uint64_t i = 0; i < length; i++) {
     out[i] = 1.0f / (1.0f + exp(-in[i]));
   }
+  RETURN(0);
 }
 
-void vedaLeakyRELUF32(uint64_t length, VEDAdeviceptr vIn, VEDAdeviceptr vO, float alpha) {
+uint64_t vedaLeakyRELUF32(uint64_t length, VEDAdeviceptr vIn, VEDAdeviceptr vO, float alpha) {
   float *in, *out;
-  vedaMemPtr((void **)&in, vIn);
-  vedaMemPtr((void **)&out, vO);
+  CHECK_ERROR_BEFORE_EXEC();
+  CHECK_FUNC(vedaMemPtr((void **)&in, vIn));
+  CHECK_FUNC(vedaMemPtr((void **)&out, vO));
   for (uint64_t i = 0; i < length; i++) {
     auto val = in[i];
     out[i] = val < 0.0f ? alpha * val : val;
-
   }
+  RETURN(0);
 }
 
 }  // extern "C"
