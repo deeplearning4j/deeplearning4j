@@ -46,6 +46,18 @@ public class TestDependencyTracker extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
+    private static <E> boolean isNullOrEmpty(Iterable<E> iterable) {
+        if (iterable != null) {
+
+            for (E e : iterable) {
+                if (e != null)
+                    return false;
+            }
+        }
+        return true;
+
+    }
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSimple(Nd4jBackend backend){
@@ -61,35 +73,35 @@ public class TestDependencyTracker extends BaseNd4jTestWithBackends {
         assertEquals("y", dl.getDependencyFor());
         assertNotNull(dl.getDependencies());
         assertNull(dl.getOrDependencies());
-        assertEquals(Collections.singletonList("x"), dl.getDependencies());
+        assertEquals(Collections.singletonList("x"), dl.getDependenciesAsCollection());
 
         dt.removeDependency("y", "x");
         assertFalse(dt.hasDependency("y"));
         assertFalse(dt.hasDependency("x"));
         dl = dt.getDependencies("y");
-        assertTrue(dl.getDependencies() == null || dl.getDependencies().isEmpty());
-        assertTrue(dl.getOrDependencies() == null || dl.getOrDependencies().isEmpty());
+        assertTrue(isNullOrEmpty(dl.getDependencies()));
+        assertTrue(isNullOrEmpty(dl.getOrDependencies()));
 
 
         //Or dep
         dt.addOrDependency("y", "x1", "x2");
         assertTrue(dt.hasDependency("y"));
         dl = dt.getDependencies("y");
-        assertTrue(dl.getDependencies() == null || dl.getDependencies().isEmpty());
-        assertTrue(dl.getOrDependencies() != null && !dl.getOrDependencies().isEmpty());
-        assertEquals(Collections.singletonList(new Pair<>("x1", "x2")), dl.getOrDependencies());
+        assertTrue(isNullOrEmpty(dl.getDependencies()));
+        assertTrue(!isNullOrEmpty(dl.getOrDependencies()));
+        assertEquals(Collections.singletonList(new Pair<>("x1", "x2")), dl.getOrDependenciesAsCollection());
 
         dt.removeDependency("y", "x1");
         assertFalse(dt.hasDependency("y"));
         dl = dt.getDependencies("y");
-        assertTrue(dl.getDependencies() == null || dl.getDependencies().isEmpty());
-        assertTrue(dl.getOrDependencies() == null || dl.getOrDependencies().isEmpty());
+        assertTrue(isNullOrEmpty(dl.getDependencies()));
+        assertTrue(isNullOrEmpty(dl.getOrDependencies()));
 
         dt.addOrDependency("y", "x1", "x2");
         dl = dt.getDependencies("y");
-        assertTrue(dl.getDependencies() == null || dl.getDependencies().isEmpty());
-        assertTrue(dl.getOrDependencies() != null && !dl.getOrDependencies().isEmpty());
-        assertEquals(Collections.singletonList(new Pair<>("x1", "x2")), dl.getOrDependencies());
+        assertTrue(isNullOrEmpty(dl.getDependencies()));
+        assertTrue(!isNullOrEmpty(dl.getOrDependencies()));
+        assertEquals(Collections.singletonList(new Pair<>("x1", "x2")), dl.getOrDependenciesAsCollection());
         dt.removeDependency("y", "x2");
         assertTrue(dt.isEmpty());
     }
@@ -186,7 +198,7 @@ public class TestDependencyTracker extends BaseNd4jTestWithBackends {
 
         DependencyList<INDArray, String> dl = dt.getDependencies(y1);
         assertSame(y1, dl.getDependencyFor());      //Should be same object
-        assertEquals(Collections.singletonList(x1), dl.getDependencies());
+        assertEquals(Collections.singletonList(x1), dl.getDependenciesAsCollection());
         assertNull(dl.getOrDependencies());
 
 

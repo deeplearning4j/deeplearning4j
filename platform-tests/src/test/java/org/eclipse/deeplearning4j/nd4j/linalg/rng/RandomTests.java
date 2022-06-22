@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.rng;
 
-;
+
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.util.FastMath;
 import org.junit.jupiter.api.*;

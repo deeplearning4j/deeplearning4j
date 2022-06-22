@@ -2046,6 +2046,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
     }
 
+    @Override
+    public int useCount(DataBuffer buffer){
+        return loop.dbUseCount(((BaseCpuDataBuffer) buffer).getOpaqueDataBuffer());
+    }
+
 
 
 }

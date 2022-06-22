@@ -1522,6 +1522,7 @@ SD_LIB_EXPORT OpaqueDataBuffer* allocateDataBuffer(sd::LongType elements, int da
 SD_LIB_EXPORT OpaqueDataBuffer* dbAllocateDataBuffer(sd::LongType elements, int dataType, bool allocateBoth);
 SD_LIB_EXPORT OpaqueDataBuffer* dbCreateExternalDataBuffer(sd::LongType elements, int dataType, sd::Pointer primary,
                                                            sd::Pointer special);
+SD_LIB_EXPORT int dbUseCount(OpaqueDataBuffer* dataBuffer);
 SD_LIB_EXPORT OpaqueDataBuffer* dbCreateView(OpaqueDataBuffer* dataBuffer, sd::LongType length, sd::LongType offset);
 SD_LIB_EXPORT sd::Pointer dbPrimaryBuffer(OpaqueDataBuffer* dataBuffer);
 SD_LIB_EXPORT sd::Pointer dbSpecialBuffer(OpaqueDataBuffer* dataBuffer);

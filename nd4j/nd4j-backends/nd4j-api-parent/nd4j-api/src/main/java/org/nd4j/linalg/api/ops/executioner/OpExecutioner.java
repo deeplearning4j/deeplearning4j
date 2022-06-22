@@ -470,5 +470,12 @@ public interface OpExecutioner {
     DataBuffer createConstantBuffer(float[] values, DataType desiredType);
     DataBuffer createConstantBuffer(double[] values, DataType desiredType);
 
+    /**
+     * This method returns reference use count from the Buffer
+     * @param buffer
+     * @return
+     */
+    int useCount(DataBuffer buffer);
+
 
 }

@@ -22,14 +22,31 @@ package org.nd4j.autodiff.samediff.internal;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.nd4j.common.primitives.Pair;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+
+import org.nd4j.common.primitives.Pair;
 
 @Data
 @AllArgsConstructor
 public class DependencyList<T, D> {
     private T dependencyFor;
-    private List<D> dependencies;
-    private List<Pair<D, D>> orDependencies;
+    private Iterable<D> dependencies;
+    private Iterable<Pair<D, D>> orDependencies;
+
+    public Collection<D> getDependenciesAsCollection() {
+        List<D> result = new ArrayList<>();
+        if (dependencies != null)
+            dependencies.forEach(result::add);
+        return result;
+    }
+
+    public Collection<Pair<D, D>> getOrDependenciesAsCollection() {
+        List<Pair<D, D>> result = new ArrayList<>();
+        if (orDependencies != null)
+            orDependencies.forEach(result::add);
+        return result;
+    }
 }

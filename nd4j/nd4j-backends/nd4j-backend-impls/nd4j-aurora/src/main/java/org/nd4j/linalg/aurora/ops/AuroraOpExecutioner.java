@@ -2155,4 +2155,10 @@ public class AuroraOpExecutioner extends DefaultOpExecutioner {
         }
     }
 
+    @Override
+    public int useCount(DataBuffer buffer){
+        return loop.dbUseCount(((BaseAuroraDataBuffer) buffer).getOpaqueDataBuffer());
+    }
+
+
 }
