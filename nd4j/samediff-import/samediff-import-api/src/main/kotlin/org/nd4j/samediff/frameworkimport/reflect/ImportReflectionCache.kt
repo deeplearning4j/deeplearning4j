@@ -33,14 +33,16 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 object ImportReflectionCache {
 
-    val scannedClasses =   ClassGraph().enableAllInfo().
-    disableModuleScanning() // added for GraalVM
-     .disableDirScanning() // added for GraalVM
-     .disableNestedJarScanning() // added for GraalVM
-     .disableRuntimeInvisibleAnnotations() // added for GraalVM
+    val scannedClasses =   ClassGraph()
+        .enableAnnotationInfo()
+        .enableClassInfo()
+        .disableModuleScanning() // added for GraalVM
+    .disableDirScanning() // added for GraalVM
+    .disableNestedJarScanning() // added for GraalVM
+    .disableRuntimeInvisibleAnnotations() // added for GraalVM
     .addClassLoader(ClassLoader.getSystemClassLoader()) // see
     // https://github.com/oracle/graal/issues/470#issuecomment-401022008
-        .scan()
+    .scan()
 
     //all relevant node names relevant for
     val preProcessRuleImplementationsByNode: Table<String,String,MutableList<PreImportHook>> = TreeBasedTable.create()
