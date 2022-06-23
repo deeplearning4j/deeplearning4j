@@ -23,7 +23,7 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/cross.h>
-
+#if NOT_EXCLUDED(OP_cross)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -55,3 +55,4 @@ void crossBatched(sd::LaunchContext *context, NDArray *a, NDArray *b, NDArray *o
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

@@ -23,7 +23,7 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/gammaMathFunc.h>
-
+#if NOT_EXCLUDED(OP_digamma)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -47,3 +47,4 @@ BUILD_SINGLE_TEMPLATE(template void diGamma_, (const NDArray& x, NDArray& z), SD
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

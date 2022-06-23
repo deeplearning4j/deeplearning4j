@@ -24,7 +24,7 @@
 #include <array/DataTypeUtils.h>
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/dilation2d.h>
-
+#if NOT_EXCLUDED(OP_dilation2d)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -100,3 +100,4 @@ void dilation2d(sd::LaunchContext* context, NDArray* input, NDArray* weights, ND
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

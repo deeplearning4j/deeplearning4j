@@ -26,6 +26,7 @@
 #include <system/Environment.h>
 
 #include <type_traits>
+#if NOT_EXCLUDED(OP_pad)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -546,3 +547,4 @@ tadOut.tadOffsets[outIdx + j]); subArrOut.assign(&subArr);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

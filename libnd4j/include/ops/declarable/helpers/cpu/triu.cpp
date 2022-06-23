@@ -22,7 +22,7 @@
 
 #include <helpers/Loops.h>
 #include <ops/declarable/helpers/transforms.h>
-
+#if NOT_EXCLUDED(OP_triu)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -63,3 +63,4 @@ void triuBP(sd::LaunchContext* context, const NDArray& input, const NDArray& gra
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

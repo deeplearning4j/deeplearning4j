@@ -27,7 +27,7 @@
 #include <ops/declarable/helpers/transforms.h>
 
 #include <numeric>
-
+#if NOT_EXCLUDED(OP_random_shuffle)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -175,3 +175,4 @@ void randomShuffle(sd::LaunchContext* context, NDArray& input, NDArray& output, 
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

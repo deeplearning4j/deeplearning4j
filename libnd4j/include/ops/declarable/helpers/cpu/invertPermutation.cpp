@@ -22,7 +22,7 @@
 
 #include <helpers/Loops.h>
 #include <ops/declarable/helpers/transforms.h>
-
+#if NOT_EXCLUDED(OP_invert_permutation)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -49,3 +49,4 @@ void invertPermutation(sd::LaunchContext* context, const NDArray& input, NDArray
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

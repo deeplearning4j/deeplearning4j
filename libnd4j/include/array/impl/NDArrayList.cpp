@@ -26,7 +26,7 @@
 #include <ops/declarable/helpers/stack.h>
 
 #include <iterator>
-
+#if NOT_EXCLUDED(OP_stack)
 namespace sd {
 NDArrayList::NDArrayList(int height, bool expandable) {
   _expandable = expandable;
@@ -266,3 +266,4 @@ bool NDArrayList::equals(NDArrayList& other) {
   return true;
 }
 }  // namespace sd
+#endif

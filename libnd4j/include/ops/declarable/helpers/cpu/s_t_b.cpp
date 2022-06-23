@@ -22,7 +22,7 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/s_t_b.h>
-
+#if NOT_EXCLUDED(OP_space_to_batch)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -483,3 +483,4 @@ SD_COMMON_TYPES, STB_DIM, STB_BOOL);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

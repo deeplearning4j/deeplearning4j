@@ -119,6 +119,31 @@ endif()
 
 set_property(GLOBAL PROPERTY JOB_POOLS one_jobs=1 two_jobs=2)
 
+# removeFileIfExcluded: removes the file from the given glob list
+# used for filtering files that shouldn't be included in compilation
+function(removeFileIfExcluded)
+    cmake_parse_arguments(
+            PARSED_ARGS # prefix of output variables
+            "" # list of names of the boolean arguments (only defined ones will be true)
+            "FILE_ITEM" # list of names of mono-valued arguments
+            "LIST_ITEM" # list of names of multi-valued arguments (output variables are lists)
+            ${ARGN} # arguments of the function to parse, here we take the all original ones
+    )
+    file(READ ${PARSED_ARGS_FILE_ITEM} FILE_CONTENTS)
+    string(FIND "${FILE_CONTENTS}" "NOT_EXCLUDED" NOT_EXCLUDED_IDX)
+    # found an exclusion, figure out if relevant
+    if(${NOT_EXCLUDED_IDX} GREATER_EQUAL 0)
+        foreach(OP ${SD_OPS_LIST})
+            string(FIND PARSED_ARGS_FILE_CONTENTS "NOT_EXCLUDED(OP_${OP})" NOT_EXCLUDED_OP_IDX)
+            # figure out if the exclusion contains the given op if not exclude the file
+            if(${NOT_EXCLUDED_OP_IDX} LESS 0)
+                list(REMOVE_ITEM "${PARSED_ARGS_LIST_ITEM}" "${PARSED_ARGS_FILE_ITEM}")
+            endif()
+
+        endforeach()
+    endif()
+
+endfunction()
 
 function(genCompilation FILE_ITEM)
     get_filename_component(FILE_ITEM_WE ${FL_ITEM} NAME_WE)
@@ -369,10 +394,10 @@ if (${HELPERS_vednn})
     find_package(VEDNN REQUIRED)
 
     if(VEDNN_FOUND)
-    message("Found VEDNN: ${VEDNN_LIBRARIES}")
-    set(HAVE_VEDNN 1)
-    list(APPEND EXTERNAL_INCLUDE_DIRS ${VEDNN_INCLUDE})
-    message("----${VEDNN_INCLUDE}---")
+        message("Found VEDNN: ${VEDNN_LIBRARIES}")
+        set(HAVE_VEDNN 1)
+        list(APPEND EXTERNAL_INCLUDE_DIRS ${VEDNN_INCLUDE})
+        message("----${VEDNN_INCLUDE}---")
     else()
         message( FATAL_ERROR "could not locate necessary VEDNN files")
     endif()

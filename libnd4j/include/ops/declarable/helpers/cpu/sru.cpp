@@ -25,7 +25,7 @@
 #include <execution/Threads.h>
 #include <helpers/MmulHelper.h>
 #include <ops/declarable/helpers/sru.h>
-
+#if NOT_EXCLUDED(OP_sru)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -404,3 +404,4 @@ BUILD_SINGLE_TEMPLATE(template void sruBIBP_,
 //     + dHdC*dCdX) + dLdC*dCdX dLdX->assign((*dLdH) * (oneMinusR + dHdR * (*w)({{},{2*inSize, 3*inSize}}) + dHdC *
 //     dCdX) + (*dLdC) * dCdX);
 // }
+#endif

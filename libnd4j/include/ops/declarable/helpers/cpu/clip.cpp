@@ -25,6 +25,7 @@
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/transforms.h>
 
+#if NOT_EXCLUDED(OP_clip)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -199,3 +200,5 @@ BUILD_SINGLE_TEMPLATE(template void clipByValue_,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+
+#endif

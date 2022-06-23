@@ -23,7 +23,7 @@
 #include <helpers/Loops.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/transforms.h>
-
+#if NOT_EXCLUDED(OP_tile)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -79,3 +79,4 @@ BUILD_SINGLE_TEMPLATE(template void tileBP_,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

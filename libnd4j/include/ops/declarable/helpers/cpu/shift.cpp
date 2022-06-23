@@ -22,7 +22,7 @@
 // @author raver119@gmail.com
 //
 #include <ops/declarable/helpers/shift.h>
-
+#if NOT_EXCLUDED(OP_shift)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -74,3 +74,4 @@ void cyclic_shift_bits(LaunchContext *launchContext, NDArray &x, NDArray &z, uin
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

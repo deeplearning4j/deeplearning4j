@@ -23,7 +23,7 @@
 #include <execution/Threads.h>
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/top_k.h>
-
+#if NOT_EXCLUDED(OP_top_k)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -178,3 +178,4 @@ BUILD_SINGLE_TEMPLATE(template sd::Status inTopKFunctor_,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

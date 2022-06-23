@@ -21,6 +21,8 @@
 
 #cmakedefine SD_COMMON_TYPES_GEN
 #include <ops/declarable/helpers/cpu/indexReductions.hpp>
+#include <system/op_boilerplate.h>
+#if NOT_EXCLUDED(OP_argmin)
 #if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
 namespace sd {
     namespace ops {
@@ -29,4 +31,5 @@ namespace sd {
         }
     }
 }
+#endif
 #endif

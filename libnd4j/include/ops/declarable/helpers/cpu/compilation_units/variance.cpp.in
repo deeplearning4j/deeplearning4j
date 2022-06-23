@@ -22,6 +22,9 @@
 //inform Cmake that each of LIBND4J_TYPE will be generated and used in separate cpp files.
 #cmakedefine SD_COMMON_TYPES_GEN 
 #include <ops/declarable/helpers/cpu/summaryReductions.hpp>
+#include <system/op_boilerplate.h>
+#if NOT_EXCLUDED(OP_variance)
+
 #if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
 namespace sd {
     namespace ops {
@@ -30,4 +33,5 @@ namespace sd {
         }
     }
 }
+#endif
 #endif

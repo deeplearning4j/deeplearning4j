@@ -24,7 +24,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <ops/declarable/helpers/nth_element.h>
-
+#if NOT_EXCLUDED(OP_nth_element)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -76,3 +76,4 @@ BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

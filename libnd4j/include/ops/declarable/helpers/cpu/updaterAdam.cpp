@@ -25,7 +25,7 @@
 #include <math/platformmath.h>
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/updatersHelpers.h>
-
+#if NOT_EXCLUDED(OP_adam_updater)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -115,3 +115,4 @@ void updaterAdam(sd::LaunchContext* context, const NDArray& gradient, const NDAr
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

@@ -21,7 +21,7 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/sequence_mask.h>
-
+#if NOT_EXCLUDED(OP_sequence_mask)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -47,3 +47,4 @@ BUILD_DOUBLE_TEMPLATE(template void sequenceMask_, (NDArray * input, NDArray* ou
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

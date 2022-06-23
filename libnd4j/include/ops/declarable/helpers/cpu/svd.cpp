@@ -23,7 +23,7 @@
 #include <helpers/biDiagonalUp.h>
 #include <helpers/jacobiSVD.h>
 #include <helpers/svd.h>
-
+#if NOT_EXCLUDED(OP_svd)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -76,3 +76,4 @@ void svd(sd::LaunchContext* context, const NDArray* x, const std::vector<NDArray
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

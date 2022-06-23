@@ -25,7 +25,7 @@
 #include <ops/declarable/helpers/gather.h>
 
 #include <numeric>
-
+#if NOT_EXCLUDED(OP_gather)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -155,3 +155,4 @@ void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* ind
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

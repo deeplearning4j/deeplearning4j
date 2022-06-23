@@ -25,7 +25,7 @@
 #include <math/platformmath.h>
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/updatersHelpers.h>
-
+#if NOT_EXCLUDED(OP_adadelta_updater)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -111,3 +111,4 @@ void updaterAdaDelta(sd::LaunchContext* context, const NDArray& gradient, const 
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

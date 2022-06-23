@@ -26,7 +26,7 @@
 #include <ops/declarable/helpers/activations.h>
 
 #include <numeric>
-
+#if NOT_EXCLUDED(OP_softmax)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -231,3 +231,4 @@ void softmax(sd::LaunchContext* context, const NDArray& input, NDArray& output, 
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

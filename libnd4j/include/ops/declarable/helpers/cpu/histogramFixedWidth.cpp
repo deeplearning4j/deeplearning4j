@@ -20,7 +20,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 31.08.2018
 //
 #include <ops/declarable/helpers/histogramFixedWidth.h>
-
+#if NOT_EXCLUDED(OP_histogram_fixed_width)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -65,3 +65,4 @@ BUILD_SINGLE_TEMPLATE(template void histogramFixedWidth_, (const NDArray& input,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

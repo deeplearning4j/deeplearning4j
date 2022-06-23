@@ -22,7 +22,7 @@
 
 #include <ops/declarable/helpers/transforms.h>
 #include <ops/specials.h>
-
+#if NOT_EXCLUDED(OP_concat)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -41,3 +41,5 @@ BUILD_SINGLE_TEMPLATE(template void concat_,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+
+#endif

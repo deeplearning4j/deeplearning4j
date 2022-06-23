@@ -18,7 +18,8 @@
 //
 // @author AbdelRauf
 //
-
+#include <system/op_boilerplate.h>
+#if NOT_EXCLUDED(OP_standard_deviation)
 //inform Cmake that each of LIBND4J_TYPE will be generated and used in separate cpp files.
 #cmakedefine SD_COMMON_TYPES_GEN 
 #include <ops/declarable/helpers/cpu/summaryReductions.hpp>
@@ -30,4 +31,5 @@ namespace sd {
         }
     }
 }
+#endif
 #endif

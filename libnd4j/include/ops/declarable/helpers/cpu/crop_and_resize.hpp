@@ -21,7 +21,7 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/crop_and_resize.h>
-
+#if NOT_EXCLUDED(OP_crop_and_resize)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -120,3 +120,4 @@ SD_LIB_HIDDEN void cropAndResizeFunctor_(NDArray const *images, NDArray const *b
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

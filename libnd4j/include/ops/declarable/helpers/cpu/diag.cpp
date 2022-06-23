@@ -21,7 +21,7 @@
 //
 #include <array/ResultSet.h>
 #include <ops/declarable/helpers/diag.h>
-
+#if NOT_EXCLUDED(OP_diag)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -59,3 +59,4 @@ void diagPartFunctor(sd::LaunchContext* context, NDArray const* input, NDArray* 
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

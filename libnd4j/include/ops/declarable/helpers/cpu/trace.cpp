@@ -22,7 +22,7 @@
 
 #include <helpers/Loops.h>
 #include <ops/declarable/helpers/transforms.h>
-
+#if NOT_EXCLUDED(OP_trace)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -45,3 +45,4 @@ void trace(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

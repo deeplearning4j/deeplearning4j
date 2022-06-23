@@ -26,7 +26,7 @@
 #include <array/NDArray.h>
 #include <execution/Threads.h>
 #include <system/op_boilerplate.h>
-
+#if NOT_EXCLUDED(OP_triangular_solve)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -174,3 +174,4 @@ void adjointMatrix(sd::LaunchContext* context, NDArray const* input, bool const 
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

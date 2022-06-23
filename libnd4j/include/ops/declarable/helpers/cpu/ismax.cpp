@@ -25,7 +25,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/TAD.h>
 #include <ops/declarable/helpers/ismax.h>
-
+#if NOT_EXCLUDED(OP_ismax)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -195,3 +195,4 @@ void ismax(sd::LaunchContext* context, const NDArray* input, NDArray* output, co
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

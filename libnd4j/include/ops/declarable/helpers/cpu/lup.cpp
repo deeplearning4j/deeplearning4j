@@ -23,7 +23,7 @@
 #include <execution/Threads.h>
 #include <helpers/MmulHelper.h>
 #include <ops/declarable/helpers/top_k.h>
-
+#if NOT_EXCLUDED(OP_lup)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -595,3 +595,4 @@ sd::Status lup(sd::LaunchContext* context, NDArray* input, NDArray* compound, ND
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

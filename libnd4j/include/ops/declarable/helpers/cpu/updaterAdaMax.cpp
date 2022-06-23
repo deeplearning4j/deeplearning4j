@@ -25,7 +25,7 @@
 #include <math/platformmath.h>
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/updatersHelpers.h>
-
+#if NOT_EXCLUDED(OP_adamax_updater)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -116,3 +116,4 @@ void updaterAdaMax(sd::LaunchContext* context, const NDArray& gradient, const ND
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

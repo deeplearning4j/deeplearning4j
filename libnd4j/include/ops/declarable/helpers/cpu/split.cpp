@@ -23,7 +23,7 @@
 //
 #include <helpers/Loops.h>
 #include <ops/declarable/helpers/transforms.h>
-
+#if NOT_EXCLUDED(OP_split)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -126,3 +126,4 @@ void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

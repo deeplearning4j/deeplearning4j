@@ -21,8 +21,11 @@
 //
 //  @author sgazeos@gmail.com
 //
+
 #include <ops/declarable/helpers/crop_and_resize.h>
 #include <ops/declarable/helpers/cpu/crop_and_resize.hpp>
+#include <system/op_boilerplate.h>
+#if NOT_EXCLUDED(OP_crop_and_resize)
 
 #cmakedefine SD_COMMON_TYPES_GEN
 #if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
@@ -33,4 +36,6 @@ namespace sd {
         }
     }
 }
+#endif
+
 #endif

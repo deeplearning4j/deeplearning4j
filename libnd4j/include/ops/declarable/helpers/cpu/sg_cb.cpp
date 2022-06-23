@@ -22,7 +22,6 @@
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/sg_cb.h>
 #include <ops/specials.h>
-
 #define HS_MAX_EXP 6.0f
 
 namespace sd {

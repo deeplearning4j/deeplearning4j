@@ -25,7 +25,7 @@
 #include <math/platformmath.h>
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/updatersHelpers.h>
-
+#if NOT_EXCLUDED(OP_nadam_updater)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -118,3 +118,4 @@ void updaterNadam(sd::LaunchContext* context, const NDArray& gradient, const NDA
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

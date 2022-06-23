@@ -19,8 +19,10 @@
 //
 // Created by raver119 on 30.11.17.
 //
+
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/col2im.h>
+#if NOT_EXCLUDED(OP_col2im)
 
 namespace sd {
 namespace ops {
@@ -135,3 +137,5 @@ void col2im(sd::LaunchContext& context, const NDArray& input, NDArray& output, c
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+
+#endif

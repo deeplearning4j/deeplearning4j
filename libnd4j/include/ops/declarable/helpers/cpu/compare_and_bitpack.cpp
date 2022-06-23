@@ -31,6 +31,8 @@
 #include <stdexcept>
 #include <type_traits>
 
+#if NOT_EXCLUDED(OP_compare_and_bitpack)
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -182,3 +184,4 @@ BUILD_SINGLE_TEMPLATE(template void compareAndBitpack_,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

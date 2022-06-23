@@ -20,7 +20,7 @@
 //  @author sgazeos@gmail.com
 //
 #include <ops/declarable/helpers/roll.h>
-
+#if NOT_EXCLUDED(OP_roll)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -159,3 +159,4 @@ BUILD_SINGLE_TEMPLATE(template void rollFunctorLinear_, (NDArray * input, NDArra
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

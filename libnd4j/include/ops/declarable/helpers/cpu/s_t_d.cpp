@@ -21,7 +21,7 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/s_t_d.h>
-
+#if NOT_EXCLUDED(OP_space_to_depth)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -108,3 +108,4 @@ BUILD_SINGLE_TEMPLATE(template void _spaceTodepth_,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

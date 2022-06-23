@@ -40,7 +40,7 @@
 #include <ops/declarable/helpers/transforms.h>
 
 #include <iterator>
-
+# if NOT_EXCLUDED(OP_concat) && NOT_EXCLUDED(OP_lstm_cell) && NOT_EXCLUDED(OP_sigmoid)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -242,3 +242,4 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

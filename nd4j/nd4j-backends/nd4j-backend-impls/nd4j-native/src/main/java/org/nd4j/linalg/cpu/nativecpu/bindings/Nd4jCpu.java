@@ -271,7 +271,9 @@ public class Nd4jCpu extends org.nd4j.presets.cpu.Nd4jCpuHelper {
 
 // #ifndef SD_DEFINITIONS_GEN_H_
 // #define SD_DEFINITIONS_GEN_H_
-// #define SD_ALL_OPS 1
+public static final int OP_add = 1;
+public static final int OP_matmul = 1;
+public static final int OP_softmax = 1;
 
 // #endif
 
@@ -14070,6 +14072,7 @@ public static final int
 // #include <execution/Engine.h>
 // #include <ops/declarable/DeclarableOp.h>
 // #include <ops/declarable/PlatformHelper.h>
+// #include <ops/declarable/PlatformHelperLegacy.h>
 
 // #include <mutex>
 // #include <unordered_map>
@@ -14123,6 +14126,8 @@ public static final int
 
   public native PlatformHelper getPlatformHelper(@Cast("sd::LongType") long hash, @Cast("samediff::Engine") int engine);
 
+// #ifndef __JAVACPP_HACK__
+// #endif
   public native @Cast("sd::LongType*") @StdVector LongPointer getAllHashes();
 
   public native int numberOfOperations();
