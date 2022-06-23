@@ -61,6 +61,7 @@
         <libnd4j.arch></libnd4j.arch>
         <openblas.artifactId></openblas.artifactId>
         <openblas.classifier></openblas.classifier>
+        <libnd4j.lto>OFF</libnd4j.lto>
     </properties>
 
     <build>
@@ -165,6 +166,8 @@
                                 <argument>${libnd4j.sanitize}</argument>
                                 <argument>--arch</argument>
                                 <argument>${libnd4j.arch}</argument>
+                                <argument>--use_lto</argument>
+                                <argument>${libnd4j.lto}</argument>
                             </buildCommand>
                             <workingDirectory>${project.basedir}</workingDirectory>
                         </configuration>
@@ -383,6 +386,8 @@
                                         <argument>${libnd4j.datatypes}</argument>
                                         <argument>--sanitize</argument>
                                         <argument>${libnd4j.sanitize}</argument>
+                                        <argument>--use_lto</argument>
+                                        <argument>${libnd4j.lto}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
