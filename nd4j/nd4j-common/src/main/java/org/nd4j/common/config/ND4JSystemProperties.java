@@ -174,6 +174,13 @@ public class ND4JSystemProperties {
      */
     public final static String SAMEDIFF_MEMORY_CACHE_DISABLE = "org.nd4j.autodiff.samediff";
 
+    /**
+     * Used to trigger loading the import reflection cache. This allows the user to control the initial scan
+     * of the ImportReflectionCache in samediff-import-onnx and samediff-import-tensorflow.
+     * Sometimes delayed initialization is favorable for use cases like graalvm AOT.
+     */
+    public final static String INIT_IMPORT_REFLECTION_CACHE = "org.nd4j.samediff.frameworkimport.initcache";
+
     private ND4JSystemProperties() {
     }
 }

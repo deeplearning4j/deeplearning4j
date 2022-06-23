@@ -20,6 +20,7 @@
 package org.nd4j.samediff.frameworkimport.reflect
 
 import io.github.classgraph.ClassGraph
+import org.nd4j.common.config.ND4JSystemProperties.INIT_IMPORT_REFLECTION_CACHE
 import org.nd4j.samediff.frameworkimport.hooks.NodePreProcessorHook
 import org.nd4j.samediff.frameworkimport.hooks.PostImportHook
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
@@ -33,16 +34,6 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 object ImportReflectionCache {
 
-    val scannedClasses =   ClassGraph()
-        .enableAnnotationInfo()
-        .enableClassInfo()
-        .disableModuleScanning() // added for GraalVM
-    .disableDirScanning() // added for GraalVM
-    .disableNestedJarScanning() // added for GraalVM
-    .disableRuntimeInvisibleAnnotations() // added for GraalVM
-    .addClassLoader(ClassLoader.getSystemClassLoader()) // see
-    // https://github.com/oracle/graal/issues/470#issuecomment-401022008
-    .scan()
 
     //all relevant node names relevant for
     val preProcessRuleImplementationsByNode: Table<String,String,MutableList<PreImportHook>> = TreeBasedTable.create()
@@ -53,6 +44,25 @@ object ImportReflectionCache {
     val nodePreProcessorRuleImplementationByOp: Table<String,String,MutableList<NodePreProcessorHook<GeneratedMessageV3,
             GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,ProtocolMessageEnum>>>  = TreeBasedTable.create()
     init {
+        if(java.lang.Boolean.parseBoolean(System.getProperty(INIT_IMPORT_REFLECTION_CACHE,"true"))) {
+            load()
+        }
+    }
+
+
+    @JvmStatic
+    fun load() {
+        val scannedClasses =   ClassGraph()
+            .enableAnnotationInfo()
+            .enableClassInfo()
+            .disableModuleScanning() // added for GraalVM
+            .disableDirScanning() // added for GraalVM
+            .disableNestedJarScanning() // added for GraalVM
+            .disableRuntimeInvisibleAnnotations() // added for GraalVM
+            .addClassLoader(ClassLoader.getSystemClassLoader()) // see
+            // https://github.com/oracle/graal/issues/470#issuecomment-401022008
+            .scan()
+
         scannedClasses.getClassesImplementing(PreImportHook::class.java.name).filter { input -> input.hasAnnotation(PreHookRule::class.java.name) }.forEach {
             val instance = Class.forName(it.name).getDeclaredConstructor().newInstance() as PreImportHook
             val rule = it.annotationInfo.first { input -> input.name == PreHookRule::class.java.name }
