@@ -55,10 +55,13 @@ object ImportReflectionCache {
         val scannedClasses =   ClassGraph()
             .enableAnnotationInfo()
             .enableClassInfo()
+            .enableMethodInfo()
+            .addClassLoader(ClassLoader.getSystemClassLoader())
             .disableModuleScanning() // added for GraalVM
             .disableDirScanning() // added for GraalVM
             .disableNestedJarScanning() // added for GraalVM
             .disableRuntimeInvisibleAnnotations() // added for GraalVM
+            .initializeLoadedClasses()
             .scan()
 
         scannedClasses.getClassesImplementing(PreImportHook::class.java.name).filter { input -> input.hasAnnotation(PreHookRule::class.java.name) }.forEach {
