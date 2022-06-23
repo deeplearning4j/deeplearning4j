@@ -59,8 +59,6 @@ object ImportReflectionCache {
             .disableDirScanning() // added for GraalVM
             .disableNestedJarScanning() // added for GraalVM
             .disableRuntimeInvisibleAnnotations() // added for GraalVM
-            .addClassLoader(ClassLoader.getSystemClassLoader()) // see
-            // https://github.com/oracle/graal/issues/470#issuecomment-401022008
             .scan()
 
         scannedClasses.getClassesImplementing(PreImportHook::class.java.name).filter { input -> input.hasAnnotation(PreHookRule::class.java.name) }.forEach {
