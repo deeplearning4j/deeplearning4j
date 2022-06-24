@@ -19,7 +19,6 @@
  */
 package org.nd4j.samediff.frameworkimport.process
 
-import io.github.classgraph.ClassGraph
 import org.apache.commons.lang3.reflect.TypeUtils
 import org.nd4j.ir.MapperNamespace
 import org.nd4j.ir.OpNamespace

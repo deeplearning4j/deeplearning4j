@@ -181,6 +181,16 @@ public class ND4JSystemProperties {
      */
     public final static String INIT_IMPORT_REFLECTION_CACHE = "org.nd4j.samediff.frameworkimport.initcache";
 
+
+    /**
+     * Used to point to a json resource that contains json for a ClassGraph ScanResult.
+     * This may be needed when using AOT. Graalvm can not handle classpath scanning very well.
+     * A pre scanned resource option will allow model import that relies on annotation scanning
+     * to operate even when using AOT.
+     */
+    public final static String CLASS_GRAPH_SCAN_RESOURCES = "org.nd4j.samediff.frameworkimport.classgraph.scan.json";
+
+
     private ND4JSystemProperties() {
     }
 }
