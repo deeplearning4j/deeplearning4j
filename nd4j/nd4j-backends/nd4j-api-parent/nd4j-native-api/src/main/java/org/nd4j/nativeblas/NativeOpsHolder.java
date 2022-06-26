@@ -23,6 +23,7 @@ package org.nd4j.nativeblas;
 import java.util.Properties;
 import java.io.File;
 import lombok.Getter;
+import lombok.Setter;
 import org.bytedeco.javacpp.Loader;
 import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.common.config.ND4JEnvironmentVars;
@@ -38,7 +39,8 @@ public class NativeOpsHolder {
     private static final NativeOpsHolder INSTANCE = new NativeOpsHolder();
 
     @Getter
-    private final NativeOps deviceNativeOps;
+    @Setter
+    private  NativeOps deviceNativeOps;
 
     public static int getCores(int totals) {
         // that's special case for Xeon Phi
@@ -84,57 +86,61 @@ public class NativeOpsHolder {
 
     private NativeOpsHolder() {
         try {
-            Properties props = Nd4jContext.getInstance().getConf();
 
-            String name = System.getProperty(Nd4j.NATIVE_OPS, props.get(Nd4j.NATIVE_OPS).toString());
-            Class<? extends NativeOps> nativeOpsClass = ND4JClassLoading
-                    .loadClassByName(name)
-                    .asSubclass(NativeOps.class);
-            deviceNativeOps = ReflectionUtils.newInstance(nativeOpsClass);
+           if(getDeviceNativeOps() == null) {
+               Properties props = Nd4jContext.getInstance().getConf();
 
-            deviceNativeOps.initializeDevicesAndFunctions();
-            int numThreads;
-            String numThreadsString = System.getenv(ND4JEnvironmentVars.OMP_NUM_THREADS);
-            if (numThreadsString != null && !numThreadsString.isEmpty()) {
-                numThreads = Integer.parseInt(numThreadsString);
-                deviceNativeOps.setOmpNumThreads(numThreads);
-            } else {
-                int cores = Loader.totalCores();
-                int chips = Loader.totalChips();
-                if (chips > 0 && cores > 0) {
-                    deviceNativeOps.setOmpNumThreads(Math.max(1, cores / chips));
-                } else
-                    deviceNativeOps.setOmpNumThreads(
-                            getCores(Runtime.getRuntime().availableProcessors()));
-            }
+               String name = System.getProperty(Nd4j.NATIVE_OPS, props.get(Nd4j.NATIVE_OPS).toString());
+               Class<? extends NativeOps> nativeOpsClass = ND4JClassLoading
+                       .loadClassByName(name)
+                       .asSubclass(NativeOps.class);
+               deviceNativeOps = ReflectionUtils.newInstance(nativeOpsClass);
 
-            String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
-            boolean logInit = Boolean.parseBoolean(logInitProperty);
+               deviceNativeOps.initializeDevicesAndFunctions();
+               int numThreads;
+               String numThreadsString = System.getenv(ND4JEnvironmentVars.OMP_NUM_THREADS);
+               if (numThreadsString != null && !numThreadsString.isEmpty()) {
+                   numThreads = Integer.parseInt(numThreadsString);
+                   deviceNativeOps.setOmpNumThreads(numThreads);
+               } else {
+                   int cores = Loader.totalCores();
+                   int chips = Loader.totalChips();
+                   if (chips > 0 && cores > 0) {
+                       deviceNativeOps.setOmpNumThreads(Math.max(1, cores / chips));
+                   } else
+                       deviceNativeOps.setOmpNumThreads(
+                               getCores(Runtime.getRuntime().availableProcessors()));
+               }
 
-            try {
-                String pPath = Loader.load(nativeOpsClass);
-                pPath = pPath.replace(File.separatorChar, '/');
-                String matchString = "org/nd4j/linalg/cpu/nativecpu/bindings/" + Loader.getPlatform();
-                int start = pPath.indexOf(matchString);
-                int end = pPath.lastIndexOf("/");
-                String bindingsFolder = pPath.substring(start, end);
-                if (bindingsFolder.startsWith(matchString + "-vednn")) {
-                    File file = Loader.cacheResource(bindingsFolder + "/libnd4jcpu_device.vso");
-                    if (file != null) {
-                        String path = file.getAbsoluteFile().getParent();
-                        if (logInit) {
-                            log.info("Veda device library cache path: {}", path);
-                        }
-                        deviceNativeOps.setVedaDeviceLibFolder(path);
-                    }
-                }
-            } catch (java.io.IOException exception) {
+               String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
+               boolean logInit = Boolean.parseBoolean(logInitProperty);
 
-            }
+               try {
+                   String pPath = Loader.load(nativeOpsClass);
+                   pPath = pPath.replace(File.separatorChar, '/');
+                   String matchString = "org/nd4j/linalg/cpu/nativecpu/bindings/" + Loader.getPlatform();
+                   int start = pPath.indexOf(matchString);
+                   int end = pPath.lastIndexOf("/");
+                   String bindingsFolder = pPath.substring(start, end);
+                   if (bindingsFolder.startsWith(matchString + "-vednn")) {
+                       File file = Loader.cacheResource(bindingsFolder + "/libnd4jcpu_device.vso");
+                       if (file != null) {
+                           String path = file.getAbsoluteFile().getParent();
+                           if (logInit) {
+                               log.info("Veda device library cache path: {}", path);
+                           }
+                           deviceNativeOps.setVedaDeviceLibFolder(path);
+                       }
+                   }
+               } catch (java.io.IOException exception) {
 
-            if (logInit) {
-                log.info("Number of threads used for linear algebra: {}", deviceNativeOps.ompGetMaxThreads());
-            }
+               }
+
+               if (logInit) {
+                   log.info("Number of threads used for linear algebra: {}", deviceNativeOps.ompGetMaxThreads());
+               }
+           }
+
         } catch (Exception | Error e) {
             throw new RuntimeException(
                     "ND4J is probably missing dependencies. For more information, please refer to: https://deeplearning4j.konduit.ai/nd4j/backend",
