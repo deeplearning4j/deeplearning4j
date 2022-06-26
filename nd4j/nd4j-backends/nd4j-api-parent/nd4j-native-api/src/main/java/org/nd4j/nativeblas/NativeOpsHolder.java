@@ -131,22 +131,41 @@ public class NativeOpsHolder {
         boolean logInit = Boolean.parseBoolean(logInitProperty);
 
         try {
-            String pPath = Loader.load(deviceNativeOps.getClass());
-            pPath = pPath.replace(File.separatorChar, '/');
-            String matchString = "org/nd4j/linalg/cpu/nativecpu/bindings/" + Loader.getPlatform();
-            int start = pPath.indexOf(matchString);
-            int end = pPath.lastIndexOf("/");
-            String bindingsFolder = pPath.substring(start, end);
-            if (bindingsFolder.startsWith(matchString + "-vednn")) {
-                File file = Loader.cacheResource(bindingsFolder + "/libnd4jcpu_device.vso");
-                if (file != null) {
-                    String path = file.getAbsoluteFile().getParent();
-                    if (logInit) {
-                        log.info("Veda device library cache path: {}", path);
-                    }
 
-                    deviceNativeOps.setVedaDeviceLibFolder(path);
-                }
+            if (Loader.getPlatform().contains("vednn")) {
+                String pPath = Loader.load(deviceNativeOps.getClass());
+                pPath = pPath.replace(File.separatorChar, '/');
+                String matchString = "org/nd4j/linalg/cpu/nativecpu/bindings/" + Loader.getPlatform();
+                int start = pPath.indexOf(matchString);
+               if(start < 0) {
+                   int end = pPath.lastIndexOf("/");
+                   String bindingsFolder = pPath.substring(start, end);
+                   File file = Loader.cacheResource(bindingsFolder + "/libnd4jcpu_device.vso");
+                   if (file != null) {
+                       String path = file.getAbsoluteFile().getParent();
+                       if (logInit) {
+                           log.info("Veda device library cache path: {}", path);
+                       }
+
+                       deviceNativeOps.setVedaDeviceLibFolder(path);
+                   }
+               } else { //graalvm
+                   matchString = "linux-x86_64";
+                   pPath = "linux-x86_64";
+                   start = pPath.indexOf(matchString);
+                   int end = pPath.lastIndexOf("/");
+                   String bindingsFolder = pPath.substring(start, end);
+                   File file = Loader.cacheResource(bindingsFolder + "/libnd4jcpu_device.vso");
+                   if (file != null) {
+                       String path = file.getAbsoluteFile().getParent();
+                       if (logInit) {
+                           log.info("Veda device library cache path: {}", path);
+                       }
+
+                       deviceNativeOps.setVedaDeviceLibFolder(path);
+                   }
+               }
+
             }
         } catch (java.io.IOException exception) {
 
