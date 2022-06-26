@@ -190,6 +190,14 @@ public class ND4JSystemProperties {
      */
     public final static String CLASS_GRAPH_SCAN_RESOURCES = "org.nd4j.samediff.frameworkimport.classgraph.scan.json";
 
+    /**
+     * Whether to initialize the native ops holder or not.
+     * Depending on whether we are running in native image or not, disabling automatic initialization
+     * and setting the relevant native ops elsewhere might be necessary.
+     * For more see {@link org.nd4j.nativeblas.NativeOpsHolder }
+     */
+    public final static String INIT_NATIVEOPS_HOLDER = "org.nd4j.nativeblas.nativeops.init";
+
 
     private ND4JSystemProperties() {
     }
