@@ -24,6 +24,7 @@
 
 #include <numeric>
 
+#if NOT_EXCLUDED(OP_triangular_solve)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -158,3 +159,4 @@ BUILD_SINGLE_TEMPLATE(template class FullPivLU, , SD_FLOAT_TYPES);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

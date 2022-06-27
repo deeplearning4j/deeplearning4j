@@ -37,7 +37,7 @@ limitations under the License.
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/crop_and_resize.h>
-
+#if NOT_EXCLUDED(OP_crop_and_resize)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -65,3 +65,4 @@ void cropAndResizeFunctor(sd::LaunchContext *context, NDArray const *images, NDA
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

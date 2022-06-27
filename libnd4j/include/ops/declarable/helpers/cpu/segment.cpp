@@ -26,7 +26,7 @@
 #include <ops/declarable/helpers/segment.h>
 
 #include <unordered_map>
-
+#if NOT_EXCLUDED(OP_segment)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -1093,3 +1093,4 @@ sd::Status unsortedSegmentSqrtNFunctorBP(sd::LaunchContext* context, NDArray* in
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

@@ -26,7 +26,7 @@
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
-
+#if NOT_EXCLUDED(OP_ctc_loss)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -430,3 +430,4 @@ BUILD_DOUBLE_TEMPLATE(template void ctc_loss_,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

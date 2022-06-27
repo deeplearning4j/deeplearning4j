@@ -22,7 +22,7 @@
 #include <array/ResultSet.h>
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/matrix_diag_part.h>
-
+#if NOT_EXCLUDED(OP_matrix_diag_part)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -63,3 +63,4 @@ BUILD_SINGLE_TEMPLATE(template sd::Status _matrixDiagPart, (const NDArray* input
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

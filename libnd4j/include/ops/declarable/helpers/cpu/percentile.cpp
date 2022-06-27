@@ -22,7 +22,7 @@
 #include <array/NDArrayFactory.h>
 #include <array/ResultSet.h>
 #include <ops/declarable/helpers/percentile.h>
-
+#if NOT_EXCLUDED(OP_percentile)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -85,3 +85,4 @@ BUILD_SINGLE_TEMPLATE(template void _percentile,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

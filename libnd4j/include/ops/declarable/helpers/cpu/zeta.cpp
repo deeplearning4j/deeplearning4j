@@ -21,7 +21,7 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/zeta.h>
-
+#if NOT_EXCLUDED(OP_zeta)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -76,3 +76,4 @@ BUILD_SINGLE_TEMPLATE(template void zeta_,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

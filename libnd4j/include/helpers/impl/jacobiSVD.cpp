@@ -22,7 +22,7 @@
 #include <helpers/MmulHelper.h>
 #include <helpers/hhColPivQR.h>
 #include <helpers/jacobiSVD.h>
-
+#if NOT_EXCLUDED(svd)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -386,3 +386,5 @@ BUILD_SINGLE_TEMPLATE(template class JacobiSVD, , SD_FLOAT_TYPES);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+
+#endif

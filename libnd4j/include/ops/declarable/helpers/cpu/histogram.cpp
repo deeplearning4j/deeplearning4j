@@ -20,7 +20,7 @@
 // @author raver119@gmail.com
 //
 #include <ops/declarable/helpers/histogram.h>
-
+#if NOT_EXCLUDED(OP_histogram)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -72,3 +72,4 @@ void histogramHelper(sd::LaunchContext *context, NDArray &input, NDArray &output
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

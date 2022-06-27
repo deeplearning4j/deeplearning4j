@@ -21,7 +21,7 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/axis.h>
-
+#if NOT_EXCLUDED(OP_extract_patches)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -103,3 +103,4 @@ BUILD_SINGLE_TEMPLATE(template void _extractPatches,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

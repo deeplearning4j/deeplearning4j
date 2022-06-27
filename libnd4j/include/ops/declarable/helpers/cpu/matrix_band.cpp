@@ -20,7 +20,7 @@
 //  @author George A. Shulinok <sgazeos@gmail.com>
 //
 #include <ops/declarable/helpers/matrix_band.h>
-
+#if NOT_EXCLUDED(OP_matrix_band)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -74,3 +74,4 @@ BUILD_SINGLE_TEMPLATE(template void matrixBandPart_,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

@@ -24,7 +24,7 @@
 #include <ops/declarable/helpers/scatter.h>
 
 #include <numeric>
-
+#if NOT_EXCLUDED(OP_scatter)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -188,3 +188,4 @@ void scatterForLoss(sd::LaunchContext* context, const NDArray& indices, NDArray&
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

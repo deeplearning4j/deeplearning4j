@@ -20,7 +20,7 @@
 //  @author raver119@gmail.com
 //
 #include <ops/declarable/helpers/flatten.h>
-
+#if NOT_EXCLUDED(OP_flatten)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -55,3 +55,4 @@ void flatten(sd::LaunchContext *context, std::vector<NDArray *> &inputs, NDArray
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

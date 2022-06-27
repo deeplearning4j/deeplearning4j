@@ -19,10 +19,10 @@
  */
 package org.nd4j.samediff.frameworkimport.process
 
-import io.github.classgraph.ClassGraph
 import org.apache.commons.lang3.reflect.TypeUtils
 import org.nd4j.ir.MapperNamespace
 import org.nd4j.ir.OpNamespace
+import org.nd4j.samediff.frameworkimport.reflect.ClassGraphHolder
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.samediff.frameworkimport.rule.MappingRule
 import org.nd4j.samediff.frameworkimport.rule.attribute.AttributeMappingRule
@@ -44,8 +44,7 @@ abstract class AbstractMappingProcessLoader<
     val tensorRules = HashMap<String,Class<out TensorMappingRule<GRAPH_TYPE,OP_DEF_TYPE,NODE_DEF_TYPE,ATTRIBUTE_TYPE,ATTRIBUTE_VALUE_TYPE,TENSOR_TYPE,DATA_TYPE>>>()
     val opMappingRegistry = opMappingRegistry
     init {
-        val scannedClasses =   ClassGraph().enableAllInfo()
-            .scan()
+        val scannedClasses =   ClassGraphHolder.scannedClasses
         scannedClasses.getClassesImplementing(AttributeMappingRule::class.java.name).filter {
                 clazz-> !clazz.isAbstract
                 && !clazz.isAnnotation

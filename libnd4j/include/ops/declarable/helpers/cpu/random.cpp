@@ -20,14 +20,12 @@
 //  @author sgazeos@gmail.com
 //
 #include <ops/declarable/helpers/random.h>
-//#include <vector>
 #include <memory>
-//#include <graph/Context.h>
 #include <execution/Threads.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/RandomLauncher.h>
 #include <helpers/ShapeUtils.h>
-
+#if NOT_EXCLUDED(OP_random)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -300,3 +298,4 @@ void fillRandomMultiNomial(LaunchContext* context, graph::RandomGenerator& rng, 
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

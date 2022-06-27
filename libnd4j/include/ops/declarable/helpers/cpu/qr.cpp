@@ -25,7 +25,7 @@
 #include <execution/Threads.h>
 #include <helpers/MmulHelper.h>
 #include <ops/declarable/helpers/qr.h>
-
+#if NOT_EXCLUDED(OP_qr)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -130,3 +130,4 @@ void qr(sd::LaunchContext* context, NDArray const* input, NDArray* outputQ, NDAr
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

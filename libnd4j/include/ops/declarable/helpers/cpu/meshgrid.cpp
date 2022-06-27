@@ -24,7 +24,7 @@
 #include <ops/declarable/helpers/meshgrid.h>
 
 #include <numeric>
-
+#if NOT_EXCLUDED(OP_meshgrid)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -50,3 +50,4 @@ void meshgrid(sd::LaunchContext* context, const std::vector<NDArray*>& inArrs, c
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

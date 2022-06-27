@@ -23,7 +23,7 @@
 #include <execution/Threads.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/reverse.h>
-
+#if NOT_EXCLUDED(OP_reverse)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -204,3 +204,4 @@ BUILD_SINGLE_TEMPLATE(template void reverseArray,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

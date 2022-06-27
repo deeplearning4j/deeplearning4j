@@ -19,6 +19,8 @@
 // @author AbdelRauf
 //
 #include <ops/declarable/helpers/cpu/indexReductions.hpp>
+#include <system/op_boilerplate.h>
+#if NOT_EXCLUDED(OP_argamax)
 
 
 #cmakedefine SD_COMMON_TYPES_GEN 
@@ -33,4 +35,5 @@ namespace sd {
         }
     }
 }
+#endif
 #endif

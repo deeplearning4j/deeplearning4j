@@ -21,7 +21,6 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/convolutions.h>
-
 namespace sd {
 namespace ops {
 

@@ -20,11 +20,9 @@
 //  @author sgazeos@gmail.com
 //
 #include <ops/declarable/helpers/random_crop.h>
-//#include <NativeOps.h>
 #include <graph/Context.h>
 
-#include <memory>
-#include <vector>
+#if NOT_EXCLUDED(OP_random_shuffle)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -76,3 +74,4 @@ BUILD_SINGLE_TEMPLATE(template sd::Status _randomCropFunctor,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

@@ -21,7 +21,7 @@
 //
 #include <helpers/BitwiseUtils.h>
 #include <ops/declarable/helpers/toggle_bits.h>
-
+#if NOT_EXCLUDED(OP_toggle_bits)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -38,3 +38,4 @@ void __toggle_bits(sd::LaunchContext* context, NDArray& in, NDArray& out) {
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

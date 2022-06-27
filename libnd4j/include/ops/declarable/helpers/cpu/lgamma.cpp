@@ -23,7 +23,7 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/lgamma.h>
-
+#if NOT_EXCLUDED(OP_lgamma)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -50,3 +50,4 @@ BUILD_SINGLE_TEMPLATE(template void lgamma_, (NDArray & x, NDArray& z), SD_FLOAT
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

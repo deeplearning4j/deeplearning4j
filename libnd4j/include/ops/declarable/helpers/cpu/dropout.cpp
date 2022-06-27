@@ -25,7 +25,7 @@
 
 #include <memory>
 #include <vector>
-
+#if NOT_EXCLUDED(OP_dropout)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -195,3 +195,4 @@ BUILD_SINGLE_TEMPLATE(template sd::Status alphaDropOutFunctorBP_,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

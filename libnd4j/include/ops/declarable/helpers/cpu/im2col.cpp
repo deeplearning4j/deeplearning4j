@@ -21,7 +21,7 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/im2col.h>
-
+#if NOT_EXCLUDED(OP_im2col)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -144,3 +144,4 @@ void im2col(sd::LaunchContext& context, const NDArray& im, NDArray& col, const i
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

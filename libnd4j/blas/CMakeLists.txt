@@ -311,6 +311,8 @@ if(SD_CUDA)
         file(GLOB_RECURSE COMPILATION_UNITS false ../include/loops/cuda/compilation_units/*.cu.in
                 ../include/ops/impl/compilation_units/*.cpp.in)
 
+
+
         foreach(FL_ITEM ${COMPILATION_UNITS})
             genCompilation(FL_ITEM)
         endforeach()
@@ -430,6 +432,109 @@ elseif(SD_CPU OR SD_AURORA)
 
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
+
+    if(NOT SD_ALL_OPS)
+        message("Not all SD OPS INCLUDED")
+        message("Scanning PERF_SOURCES")
+        foreach(SRC_FILE ${PERF_SOURCES})
+            message("SRC FILE ${SRC_FILE}")
+            removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" "${PERF_SOURCES}")
+        endforeach()
+
+        message("Scanning EXCEPTIONS_SOURCES")
+
+        foreach(SRC_FILE ${EXCEPTIONS_SOURCES})
+            message("SRC FILE ${SRC_FILE}")
+            removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${EXCEPTIONS_SOURCES}")
+        endforeach()
+        message("Scanning EXEC_SOURCES")
+
+        foreach(SRC_FILE ${EXEC_SOURCES})
+            removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${EXEC_SOURCES}")
+        endforeach()
+        message("Scanning TYPES_SOURCES")
+
+        foreach(SRC_FILE ${TYPES_SOURCES})
+            removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${TYPES_SOURCES}" )
+        endforeach()
+
+        message("Scanning ARRAY_SOURCES")
+
+        foreach(SRC_FILE ${ARRAY_SOURCES})
+            removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${ARRAY_SOURCES}")
+        endforeach()
+        message("Scanning MEMORY_SOURCES")
+
+        foreach(SRC_FILE ${MEMORY_SOURCES})
+            message("SRC FILE ${SRC_FILE}")
+            removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${MEMORY_SOURCES}")
+        endforeach()
+        message("Scanning GRAPH_SOURCES")
+
+        foreach(SRC_FILE ${GRAPH_SOURCES})
+            message("SRC FILE ${SRC_FILE}")
+            removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${GRAPH_SOURCES}")
+        endforeach()
+        message("Scanning CUSTOMOPS_SOURCES")
+
+        foreach(SRC_FILE ${CUSTOMOPS_SOURCES})
+            message("SRC FILE ${SRC_FILE}")
+
+            removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${CUSTOMOPS_SOURCES}" )
+        endforeach()
+        message("Scanning OPS_SOURCES")
+
+        foreach(SRC_FILE ${OPS_SOURCES})
+            message("SRC FILE ${SRC_FILE}")
+            removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${OPS_SOURCES}")
+        endforeach()
+        message("Scanning HELPERS_SOURCES")
+
+        foreach(SRC_FILE ${HELPERS_SOURCES})
+            message("SRC FILE ${SRC_FILE}")
+            removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${HELPERS_SOURCES}" )
+        endforeach()
+        message("Scanning INDEXING_SOURCES")
+
+
+        foreach(SRC_FILE ${INDEXING_SOURCES})
+            message("SRC FILE ${SRC_FILE}")
+            removeFileIfExcluded(FILE_ITEM "${SRC_FILE}"  LIST_ITEM "${INDEXING_SOURCES}")
+        endforeach()
+        message("Scanning LOOPS_SOURCES")
+
+        foreach(SRC_FILE ${LOOPS_SOURCES})
+            message("SRC FILE ${SRC_FILE}")
+            removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${LOOPS_SOURCES}" )
+        endforeach()
+        message("Scanning LEGACY_SOURCES")
+
+        foreach(SRC_FILE ${LEGACY_SOURCES})
+            message("SRC FILE ${SRC_FILE}")
+            removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${LEGACY_SOURCES}")
+        endforeach()
+        message("Scanning LOOPS_SOURCES_CUDA")
+
+        foreach(SRC_FILE ${LOOPS_SOURCES_CUDA})
+            message("SRC FILE ${SRC_FILE}")
+            removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${LOOPS_SOURCES_CUDA}")
+        endforeach()
+        message("Scanning HELPERS_CPP")
+
+        foreach(SRC_FILE ${HELPERS_CPP})
+            message("SRC FILE ${SRC_FILE}")
+            removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${HELPERS_CPP}")
+        endforeach()
+    endif()
+
+    foreach(FL_ITEM ${COMPILATION_UNITS})
+        genCompilation(FL_ITEM)
+    endforeach()
+
+    if (HAVE_CUDNN)
+        message("cuDNN included")
+        file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES false ../include/ops/declarable/platform/cudnn/*.cu)
+    endif()
 
     add_library(samediff_obj OBJECT ${LEGACY_SOURCES}
             ${LOOPS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}

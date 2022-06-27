@@ -31,7 +31,7 @@
 
 #include "../lup.h"
 #include "../triangular_solve.h"
-
+#if NOT_EXCLUDED(OP_solve)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -112,3 +112,4 @@ void adjointMatrix(sd::LaunchContext* context, NDArray const* input, NDArray* ou
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

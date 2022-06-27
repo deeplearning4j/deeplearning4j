@@ -23,7 +23,7 @@
 #include <execution/Threads.h>
 #include <helpers/ConstantTadHelper.h>
 #include <ops/declarable/helpers/lrn.h>
-
+#if NOT_EXCLUDED(OP_lrn)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -319,3 +319,4 @@ void lrnBP(sd::graph::Context& block, const NDArray& input, const NDArray& gradO
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

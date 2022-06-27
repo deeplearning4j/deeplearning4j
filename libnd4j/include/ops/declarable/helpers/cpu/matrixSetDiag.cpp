@@ -22,7 +22,7 @@
 #include <array/ResultSet.h>
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/matrixSetDiag.h>
-
+#if NOT_EXCLUDED(OP_matrix_set_diag)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -76,3 +76,4 @@ void matrixSetDiag(sd::LaunchContext* context, const NDArray& input, const NDArr
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

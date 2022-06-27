@@ -25,7 +25,7 @@
 #include <math/platformmath.h>
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/updatersHelpers.h>
-
+#if NOT_EXCLUDED(OP_amsgrad_updater)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -128,3 +128,4 @@ void updaterAmsGrad(sd::LaunchContext* context, const NDArray& gradient, const N
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

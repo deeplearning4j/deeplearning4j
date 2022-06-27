@@ -23,7 +23,7 @@
 #include <execution/Threads.h>
 #include <helpers/ConstantTadHelper.h>
 #include <ops/declarable/helpers/adjust_hue.h>
-
+#if NOT_EXCLUDED(OP_adjust_hue)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -191,3 +191,4 @@ float delta, bool isNHWC);, SD_FLOAT_TYPES);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

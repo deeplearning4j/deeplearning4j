@@ -21,7 +21,7 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/confusion.h>
-
+#if NOT_EXCLUDED(OP_confusion_matrix)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -58,3 +58,4 @@ BUILD_SINGLE_TEMPLATE(template void _confusionFunctor,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

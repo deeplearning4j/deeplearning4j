@@ -22,7 +22,7 @@
 #include <helpers/Loops.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/transforms.h>
-
+#if NOT_EXCLUDED(OP_scatter_update)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -107,3 +107,4 @@ void scatterSimple(sd::LaunchContext* context, const int opId, NDArray& input, c
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

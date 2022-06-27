@@ -25,6 +25,7 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/batchnorm.h>
 
+#if NOT_EXCLUDED(OP_batchnorm)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -186,3 +187,4 @@ BUILD_SINGLE_TEMPLATE(template void batchnorm_,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

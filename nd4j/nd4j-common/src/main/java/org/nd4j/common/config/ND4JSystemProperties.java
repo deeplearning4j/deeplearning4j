@@ -174,6 +174,31 @@ public class ND4JSystemProperties {
      */
     public final static String SAMEDIFF_MEMORY_CACHE_DISABLE = "org.nd4j.autodiff.samediff";
 
+    /**
+     * Used to trigger loading the import reflection cache. This allows the user to control the initial scan
+     * of the ImportReflectionCache in samediff-import-onnx and samediff-import-tensorflow.
+     * Sometimes delayed initialization is favorable for use cases like graalvm AOT.
+     */
+    public final static String INIT_IMPORT_REFLECTION_CACHE = "org.nd4j.samediff.frameworkimport.initcache";
+
+
+    /**
+     * Used to point to a json resource that contains json for a ClassGraph ScanResult.
+     * This may be needed when using AOT. Graalvm can not handle classpath scanning very well.
+     * A pre scanned resource option will allow model import that relies on annotation scanning
+     * to operate even when using AOT.
+     */
+    public final static String CLASS_GRAPH_SCAN_RESOURCES = "org.nd4j.samediff.frameworkimport.classgraph.scan.json";
+
+    /**
+     * Whether to initialize the native ops holder or not.
+     * Depending on whether we are running in native image or not, disabling automatic initialization
+     * and setting the relevant native ops elsewhere might be necessary.
+     * For more see {@link org.nd4j.nativeblas.NativeOpsHolder }
+     */
+    public final static String INIT_NATIVEOPS_HOLDER = "org.nd4j.nativeblas.nativeops.init";
+
+
     private ND4JSystemProperties() {
     }
 }

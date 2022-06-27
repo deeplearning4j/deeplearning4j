@@ -25,6 +25,7 @@
 #include <ops/declarable/helpers/col2im.h>
 #include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
+#if NOT_EXCLUDED(OP_col2im) && NOT_EXCLUDED(OP_im2col)
 
 namespace sd {
 namespace ops {
@@ -137,3 +138,4 @@ void ConvolutionUtils::conv2dBP(sd::graph::Context& block, const NDArray* input,
 
 }  // namespace ops
 }  // namespace sd
+#endif

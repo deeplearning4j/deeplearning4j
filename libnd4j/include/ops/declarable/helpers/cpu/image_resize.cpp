@@ -40,7 +40,7 @@ limitations under the License.
 #include <ops/declarable/helpers/image_resize.h>
 
 #include "../cross.h"
-
+#if NOT_EXCLUDED(OP_image_resize)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -905,3 +905,4 @@ sd::Status resizeFunctor(sd::LaunchContext* context, NDArray const* image, int c
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

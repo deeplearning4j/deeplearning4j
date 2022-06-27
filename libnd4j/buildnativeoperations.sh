@@ -154,7 +154,7 @@ case $key in
     shift # past argument
     ;;
     --use_lto)
-    USE_LTO="-DSD_USE_LTO=true"
+    USE_LTO="-DSD_USE_LTO=$value"
     ;;
     --name)
     NAME="$value"
@@ -253,7 +253,7 @@ case "$OS" in
       fi
       if [ ! -z ${RPI_BIN+set} ]; then
         export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/rpi.cmake"
-      fi      
+      fi
       export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_ARM_BUILD=true"
     ;;
 
@@ -490,7 +490,7 @@ OPERATIONS_ARG=
 if [ -z "$OPERATIONS" ]; then
   OPERATIONS_ARG="-DSD_ALL_OPS=true"
 else
-  OPERATIONS_ARG="-DSD_OPS_LIST=\"$OPERATIONS\""
+  OPERATIONS_ARG="-DSD_OPS_LIST=\"$OPERATIONS\" -DSD_ALL_OPS=false"
 fi
 
 DATATYPES_ARG=
@@ -690,7 +690,7 @@ fi
 
 exec 3>&1
 eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" 2>&1 >&3 3>&-  | python3 ../../auto_vectorization/auto_vect.py   && cd ../../..
-exec 3>&- 
+exec 3>&-
 else
 eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS"  && cd ../../..
 fi

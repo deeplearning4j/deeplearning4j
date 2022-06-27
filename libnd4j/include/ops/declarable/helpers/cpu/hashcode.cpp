@@ -21,7 +21,7 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/hashcode.h>
-
+#if NOT_EXCLUDED(OP_hashcode)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -101,3 +101,4 @@ void hashCode(LaunchContext *context, NDArray &array, NDArray &result) {
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

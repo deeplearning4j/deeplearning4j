@@ -271,7 +271,9 @@ public class Nd4jCpu extends org.nd4j.presets.cpu.Nd4jCpuHelper {
 
 // #ifndef SD_DEFINITIONS_GEN_H_
 // #define SD_DEFINITIONS_GEN_H_
-// #define SD_ALL_OPS 1
+public static final int OP_add = 1;
+public static final int OP_matmul = 1;
+public static final int OP_softmax = 1;
 
 // #endif
 

@@ -21,7 +21,7 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/convolutions.h>
-
+#if NOT_EXCLUDED(OP_col2im) && NOT_EXCLUDED(OP_im2col)
 namespace sd {
 namespace ops {
 
@@ -86,3 +86,4 @@ void ConvolutionUtils::sconv2d(sd::graph::Context& block, const NDArray* input, 
 
 }  // namespace ops
 }  // namespace sd
+#endif

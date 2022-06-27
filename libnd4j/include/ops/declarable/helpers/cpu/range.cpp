@@ -22,7 +22,7 @@
 
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/range.h>
-
+#if NOT_EXCLUDED(OP_range)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -53,3 +53,4 @@ BUILD_SINGLE_TEMPLATE(template void _range, (const NDArray& start, const NDArray
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

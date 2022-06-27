@@ -30,7 +30,7 @@
 #include <ops/declarable/helpers/qr.h>
 #include <ops/declarable/helpers/triangular_solve.h>
 #include <system/op_boilerplate.h>
-
+#if NOT_EXCLUDED(OP_lstsq)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -111,3 +111,4 @@ sd::Status leastSquaresSolveFunctor(sd::LaunchContext* context, NDArray const* l
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

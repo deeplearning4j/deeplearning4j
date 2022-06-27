@@ -24,7 +24,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/stack.h>
-
+#if NOT_EXCLUDED(OP_stack)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -109,3 +109,4 @@ BUILD_SINGLE_TEMPLATE(template void unstack_,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

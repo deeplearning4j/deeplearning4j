@@ -24,7 +24,7 @@
 #include <ops/declarable/helpers/batched_gemm.h>
 #include <system/op_boilerplate.h>
 #include <types/float16.h>
-
+#if NOT_EXCLUDED(OP_batched_gemm)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -141,3 +141,4 @@ BUILD_SINGLE_TEMPLATE(template void bgemm_,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

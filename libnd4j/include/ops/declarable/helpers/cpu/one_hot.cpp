@@ -24,7 +24,7 @@
 #include <execution/Threads.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/TAD.h>
-
+#if NOT_EXCLUDED(OP_onehot)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -106,3 +106,4 @@ void onehot(const sd::LaunchContext* context, const NDArray* indices, NDArray* o
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

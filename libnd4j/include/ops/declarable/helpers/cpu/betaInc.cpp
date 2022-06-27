@@ -25,7 +25,7 @@
 #include <ops/declarable/helpers/betaInc.h>
 
 #include <cmath>
-
+#if NOT_EXCLUDED(OP_betainc)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -129,3 +129,4 @@ BUILD_SINGLE_TEMPLATE(template void betaIncForArray,
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif

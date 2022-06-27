@@ -26,7 +26,7 @@
 #include <ops/declarable/helpers/col2im.h>
 #include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
-
+#if NOT_EXCLUDED(OP_col2im) && NOT_EXCLUDED(OP_im2col)
 namespace sd {
 namespace ops {
 
@@ -114,3 +114,4 @@ void ConvolutionUtils::depthwiseConv2d(sd::graph::Context& block, const NDArray*
 
 }  // namespace ops
 }  // namespace sd
+#endif

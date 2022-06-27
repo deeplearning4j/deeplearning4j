@@ -24,7 +24,7 @@
 //
 #include <helpers/Loops.h>
 #include <ops/declarable/helpers/transforms.h>
-
+#if NOT_EXCLUDED(OP_merge)
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -261,3 +261,4 @@ void mergeAddBp(sd::LaunchContext* context, const NDArray& gradient, std::vector
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+#endif
