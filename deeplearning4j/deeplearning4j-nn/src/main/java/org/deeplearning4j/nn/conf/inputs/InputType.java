@@ -29,7 +29,6 @@ import org.deeplearning4j.nn.conf.DataFormat;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
-import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.util.OneTimeLogger;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
@@ -323,17 +322,13 @@ public abstract class InputType implements Serializable {
             }
 
             if(width <= 0) {
-                OneTimeLogger.warn(log,"Assigning height of 0. Normally this is not valid. Exceptions for this are generally related" +
-                        "to model import and unknown dimensions");
-            }
-
-            if(width <= 0) {
                 OneTimeLogger.warn(log,"Assigning width of 0. Normally this is not valid. Exceptions for this are generally related" +
                         "to model import and unknown dimensions");
             }
+
 
             if(channels <= 0) {
-                OneTimeLogger.warn(log,"Assigning width of 0. Normally this is not valid. Exceptions for this are generally related" +
+                OneTimeLogger.warn(log,"Assigning channels of 0. Normally this is not valid. Exceptions for this are generally related" +
                         "to model import and unknown dimensions");
             }
 
