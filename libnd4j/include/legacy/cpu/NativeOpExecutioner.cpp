@@ -835,7 +835,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, const voi
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform,
                           ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams), SD_COMMON_TYPES,
-                          SD_COMMON_TYPES);
+                          SD_COMMON_TYPES_ALL);
 #else
   if (xType != yType || xType != zType)
     throw sd::datatype_exception::build("NativeOpExecutioner::execScalar", zType, xType, yType);
@@ -843,7 +843,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, const voi
   auto func = PRAGMA_THREADS_FOR {
     BUILD_SINGLE_SELECTOR_THRICE(
         xType, functions::scalar::ScalarTransform,
-        ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams, start, stop), SD_COMMON_TYPES);
+        ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams, start, stop), SD_COMMON_TYPES_ALL);
   };
 
   auto zLen = shape::length(hZShapeInfo);
@@ -885,7 +885,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, void cons
         xType, functions::scalar::ScalarTransform,
         ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension, dimensionLength,
                     tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ, start, stop),
-        SD_COMMON_TYPES);
+        SD_COMMON_TYPES_ALL);
   };
 
   auto yLen = shape::length(hScalarShapeInfo);
@@ -917,7 +917,7 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
   auto func = PRAGMA_THREADS_FOR {
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform,
                           ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams, start, stop),
-                          SD_COMMON_TYPES, SD_BOOL_TYPES);
+                          SD_COMMON_TYPES_ALL, SD_BOOL_TYPES);
   };
 
   auto zLen = shape::length(hZShapeInfo);
@@ -952,7 +952,7 @@ void NativeOpExecutioner::execScalarBool(
         xType, zType, functions::scalar::ScalarBoolTransform,
         ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension, dimensionLength,
                     tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ, start, stop),
-        SD_COMMON_TYPES, SD_BOOL_TYPES);
+        SD_COMMON_TYPES_ALL, SD_BOOL_TYPES);
   };
 
   auto yLen = shape::length(hScalarShapeInfo);
@@ -1124,7 +1124,7 @@ void NativeOpExecutioner::execTransformFloat(sd::LaunchContext *lc, int opNum, c
   auto func = PRAGMA_THREADS_DO {
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat,
                           ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
-                          SD_COMMON_TYPES, SD_FLOAT_TYPES);
+                          SD_COMMON_TYPES_ALL, SD_FLOAT_TYPES);
   };
 
   samediff::Threads::parallel_do(
@@ -1146,7 +1146,7 @@ void NativeOpExecutioner::execTransformBool(sd::LaunchContext *lc, int opNum, co
   auto func = PRAGMA_THREADS_DO {
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformBool,
                           ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
-                          SD_COMMON_TYPES, SD_BOOL_TYPES);
+                          SD_COMMON_TYPES_ALL, SD_BOOL_TYPES);
   };
 
   samediff::Threads::parallel_do(
@@ -1174,7 +1174,7 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
     auto func = PRAGMA_THREADS_DO {
       BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
                             ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
-                            SD_COMMON_TYPES, SD_COMMON_TYPES);
+                            SD_COMMON_TYPES_ALL, SD_COMMON_TYPES);
     };
 
     samediff::Threads::parallel_do(
@@ -1197,7 +1197,7 @@ void NativeOpExecutioner::execTransformSame(sd::LaunchContext *lc, int opNum, co
   auto func = PRAGMA_THREADS_DO {
     BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformSame,
                           ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
-                          SD_COMMON_TYPES);
+                          SD_COMMON_TYPES_ALL);
   };
 
   samediff::Threads::parallel_do(
@@ -1220,7 +1220,7 @@ void NativeOpExecutioner::execTransformStrict(sd::LaunchContext *lc, int opNum, 
   auto func = PRAGMA_THREADS_DO {
     BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict,
                           ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
-                          SD_FLOAT_TYPES);
+                          SD_COMMON_TYPES_ALL);
   };
 
   samediff::Threads::parallel_do(
@@ -1250,7 +1250,7 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext *lc, int opNum, sd::Point
 
   BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction,
                         ::execTransform(opNum, state, hX, hXShapeInfo, hZ, hZShapeInfo, extraArguments),
-                        SD_FLOAT_TYPES);
+                        SD_COMMON_TYPES_ALL);
 
   auto rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
   rng->rewindH(shape::length(hZShapeInfo));
