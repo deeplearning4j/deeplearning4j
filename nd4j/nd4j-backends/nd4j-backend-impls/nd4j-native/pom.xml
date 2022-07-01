@@ -177,12 +177,14 @@
                         <groupId>org.bytedeco</groupId>
                         <artifactId>openblas</artifactId>
                         <version>${openblas.version}-${javacpp-presets.version}</version>
+                        <optional>true</optional>
                     </dependency>
                     <dependency>
                         <groupId>org.bytedeco</groupId>
                         <artifactId>openblas</artifactId>
                         <version>${openblas.version}-${javacpp-presets.version}</version>
                         <classifier>${dependency.platform}</classifier>
+                        <optional>true</optional>
                     </dependency>
                 </dependencies>
                 <configuration>
@@ -390,12 +392,14 @@
                     <groupId>org.bytedeco</groupId>
                     <artifactId>openblas</artifactId>
                     <version>${openblas.version}-${javacpp-presets.version}</version>
+                    <optional>true</optional>
                 </dependency>
                 <dependency>
                     <groupId>org.bytedeco</groupId>
                     <artifactId>openblas</artifactId>
                     <version>${openblas.version}-${javacpp-presets.version}</version>
                     <classifier>linux-x86_64</classifier>
+                    <optional>true</optional>
                 </dependency>
             </dependencies>
         </profile>
@@ -416,12 +420,14 @@
                     <groupId>org.bytedeco</groupId>
                     <artifactId>openblas</artifactId>
                     <version>${openblas.version}-${javacpp-presets.version}</version>
+                    <optional>true</optional>
                 </dependency>
                 <dependency>
                     <groupId>org.bytedeco</groupId>
                     <artifactId>openblas</artifactId>
                     <version>${openblas.version}-${javacpp-presets.version}</version>
                     <classifier>${dependency.platform}</classifier>
+                    <optional>true</optional>
                 </dependency>
             </dependencies>
         </profile>
@@ -604,7 +610,7 @@
                 </property>
             </activation>
             <properties>
-                 <libnd4jhome>${env.LIBND4J_HOME}</libnd4jhome>
+                <libnd4jhome>${env.LIBND4J_HOME}</libnd4jhome>
             </properties>
         </profile>
 
