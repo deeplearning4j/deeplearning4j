@@ -68,6 +68,7 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native-preset</artifactId>
             <version>${project.version}</version>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 
