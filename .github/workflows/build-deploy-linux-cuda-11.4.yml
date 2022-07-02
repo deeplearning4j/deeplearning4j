@@ -176,7 +176,7 @@ jobs:
               sudo apt list --installed
       - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
         env:
-          cuda: 11.4
+          cuda: ${{ matrix.cuda_version }}
           GCC:  7
         if: steps.cache-cuda-114.outputs.cache-hit != 'true'
 
