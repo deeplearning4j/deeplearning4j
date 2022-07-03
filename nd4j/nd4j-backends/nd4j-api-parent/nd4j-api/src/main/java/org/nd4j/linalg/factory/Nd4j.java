@@ -5104,7 +5104,8 @@ public class Nd4j {
 
             Class<? extends BasicAffinityManager> affinityManagerClazz = ND4JClassLoading
                     .loadClassByName(pp.toString(AFFINITY_MANAGER));
-            affinityManager = affinityManagerClazz.newInstance();
+            if(affinityManagerClazz != null)
+                affinityManager = affinityManagerClazz.newInstance();
             Class<? extends NDArrayFactory> ndArrayFactoryClazz = ND4JClassLoading
                     .loadClassByName(pp.toString(NDARRAY_FACTORY_CLASS));
             Class<? extends ConvolutionInstance> convolutionInstanceClazz = ND4JClassLoading
@@ -5136,8 +5137,10 @@ public class Nd4j {
 
             memoryManager = memoryManagerClazz.newInstance();
             constantHandler = constantProviderClazz.newInstance();
-            shapeInfoProvider = shapeInfoProviderClazz.newInstance();
-            workspaceManager = workspaceManagerClazz.newInstance();
+            if(shapeInfoProviderClazz != null)
+                shapeInfoProvider = shapeInfoProviderClazz.newInstance();
+            if(workspaceManagerClazz != null)
+                workspaceManager = workspaceManagerClazz.newInstance();
 
             Class<? extends OpExecutioner> opExecutionerClazz = ND4JClassLoading
                     .loadClassByName(pp.toString(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));

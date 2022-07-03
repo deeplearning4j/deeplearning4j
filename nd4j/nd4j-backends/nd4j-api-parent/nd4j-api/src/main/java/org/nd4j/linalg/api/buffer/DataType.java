@@ -183,7 +183,7 @@ public enum DataType {
     /**
      * @return the max number of significant decimal digits
      */
-    public int precision(){
+    public int precision() {
         switch (this){
             case DOUBLE:
                 return 17;
