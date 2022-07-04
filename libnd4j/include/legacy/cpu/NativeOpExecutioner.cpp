@@ -1220,7 +1220,7 @@ void NativeOpExecutioner::execTransformStrict(sd::LaunchContext *lc, int opNum, 
   auto func = PRAGMA_THREADS_DO {
     BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict,
                           ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
-                          SD_COMMON_TYPES_ALL);
+                          SD_FLOAT_TYPES);
   };
 
   samediff::Threads::parallel_do(
@@ -1250,7 +1250,7 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext *lc, int opNum, sd::Point
 
   BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction,
                         ::execTransform(opNum, state, hX, hXShapeInfo, hZ, hZShapeInfo, extraArguments),
-                        SD_COMMON_TYPES_ALL);
+                        SD_FLOAT_TYPES);
 
   auto rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
   rng->rewindH(shape::length(hZShapeInfo));
