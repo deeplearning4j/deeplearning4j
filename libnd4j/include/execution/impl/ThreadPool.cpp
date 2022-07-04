@@ -117,6 +117,8 @@ ThreadPool::ThreadPool() {
 #endif
      */
   }
+  //add an extra ticket to minimize the risk of running out of tickets due to race conditions
+  _tickets.push(new Ticket());
 #endif
 }
 
@@ -154,7 +156,9 @@ Ticket *ThreadPool::tryAcquire(int numThreads) {
   {
     // we lock before checking availability
     std::unique_lock<std::mutex> lock(_lock);
-    if (_available >= numThreads) {
+    //test for both _available and _tickets in order to deal with race conditions caused by the
+    //fact that marking threads as available AND releasing tickets does not happen atomically
+    if (_available >= numThreads && !_tickets.empty()) {
       threaded = true;
       _available -= numThreads;
 
