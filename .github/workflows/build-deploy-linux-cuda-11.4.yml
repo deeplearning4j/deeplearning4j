@@ -46,13 +46,13 @@ on:
         required: false
         default: ubuntu-18.04
 
-      debug_enabled:
-        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+      cudaVersion:
+        description: 'Pick the cuda version'
         required: false
-        default: false
+        default: 11.4
 
 jobs:
-  linux-x86_64-cuda_11-4:
+  linux-x86_64-cuda:
     strategy:
       fail-fast: false
       matrix:
@@ -102,7 +102,9 @@ jobs:
             experimental: true
             name: The number of threads to build libnd4j with
 
-
+          - cuda_version: ${{ github.event.inputs.cudaVersion }}
+            experimental: true
+            name: CUDA version
     runs-on: ${{ matrix.runs_on }}
     steps:
       - name: Cancel Previous Runs
@@ -115,23 +117,23 @@ jobs:
         shell: bash
         run: |
               if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
-                 modules=':nd4j-cuda-11.4,:nd4j-cuda-11.4-preset'
+                 modules=':nd4j-cuda-${{ matrix.cuda_version }},:nd4j-cuda-${{ matrix.cuda_version }}-preset,:nd4j-cuda-${{ matrix.cuda_version }}-platform'
                 else 
                     echo "Building libnd4j from source"
-                    modules=':nd4j-cuda-11.4,:nd4j-cuda-11.4-preset,:libnd4j'
+                    modules=':nd4j-cuda-${{ matrix.cuda_version }},:nd4j-cuda-${{ matrix.cuda_version }}-preset,:libnd4j,:nd4j-cuda-${{ matrix.cuda_version }}-platform'
               fi
-              command="mvn ${{ matrix.mvn_ext }} --also-make  -pl ${modules}  -Dlibnd4j.compute='3.7 5.0 5.2 6.0 6.1 7.0 7.5 8.0 8.6' -Dlibnd4j.cpu.compile.skip=true  -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh -Dlibnd4j.buildthreads=${{ matrix.build_threads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda  -Pcuda clean --batch-mode package deploy -DskipTests"
+              command="mvn ${{ matrix.mvn_ext }} -Pcuda --also-make  -pl ${modules}  -Dlibnd4j.compute='3.7 5.0 5.2 6.0 6.1 7.0 7.5 8.0 8.6' -Dlibnd4j.cpu.compile.skip=true  -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh -Dlibnd4j.buildthreads=${{ matrix.build_threads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda  -Pcuda clean --batch-mode package deploy -DskipTests"
               libnd4j_download_file_url=""
               if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-                  mvn_ext= "-Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-cuda-11.4-${{ matrix.helper }}-${{matrix.extension}}"
-                  libnd4j_download_file_url="linux-cuda-11-${{ matrix.extension }}-${{ matrix.helper }}"
+                  mvn_ext= "-Pcuda -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-cuda-${{ matrix.cuda_version }}-${{ matrix.helper }}-${{matrix.extension}}"
+                  libnd4j_download_file_url="linux-cuda-${{ matrix.cuda_version }}-${{ matrix.extension }}-${{ matrix.helper }}"
               elif [ "${{ matrix.helper }}" != '' ]; then
-                  mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-cuda-11.4-${{ matrix.helper }}"
-                  libnd4j_download_file_url="linux-cuda-11-${{ matrix.helper }}"
+                  mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-cuda-${{ matrix.cuda_version }}-${{ matrix.helper }}"
+                  libnd4j_download_file_url="linux-cuda-${{ matrix.cuda_version }}-${{ matrix.helper }}"
 
               else
                   libnd4j_download_file_url="linux-cuda-11"
-                  mvn_ext=" -Dlibnd4j.classifier=linux-x86_64-cuda-11.4"
+                  mvn_ext=" -Pcuda -Dlibnd4j.classifier=linux-x86_64-cuda-${{ matrix.cuda_version }}"
               fi
 
               command="${command} ${mvn_ext}"
@@ -174,7 +176,7 @@ jobs:
               sudo apt list --installed
       - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
         env:
-          cuda: 11.4
+          cuda: ${{ matrix.cuda_version }}
           GCC:  7
         if: steps.cache-cuda-114.outputs.cache-hit != 'true'
 
@@ -193,8 +195,8 @@ jobs:
           SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
           RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
           MODULES: ${{ matrix.mvn_flags }}
-          CUDA_PATH: /usr/local/cuda-11.4
-          CUDNN_ROOT_DIR: /usr/local/cuda-11.4/
+          CUDA_PATH: /usr/local/cuda-${{ matrix.cuda_version }}
+          CUDNN_ROOT_DIR: /usr/local/cuda-${{ matrix.cuda_version }}/
           LIBND4J_HOME_SUFFIX: cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
@@ -204,17 +206,18 @@ jobs:
           echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
           echo "release version ${{ matrix.release_version }}"
           echo "snapshot version ${{ matrix.snapshot_version }}"
-          echo "debug enabled ${{ matrix.debug_enabled }}"
+          echo "cuda version ${{ matrix.cuda_version }}"
           echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
           echo "maven flags ${{ matrix.mvn_flags }}"
           echo "snapshot version ${{ matrix.snapshot_version }}"
           echo "server id ${{ matrix.server_id }}"
           echo "release repo id ${{ matrix.release_repo_id }}"
+          bash ./change-cuda-versions.sh ${{ matrix.cuda_version }}
 
           sudo apt list --installed
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          export CUDA_PATH=/usr/local/cuda-11.4
-          export PATH="/usr/local/cuda-11.4/bin:$PATH"
+          export CUDA_PATH=/usr/local/cuda-${{ matrix.cuda_version }}
+          export PATH="/usr/local/cuda-${{ matrix.cuda_version }}/bin:$PATH"
           # Note: we need this for the cudnn helpers, our cmake can't find it otherwise.
           # See here: https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/CMakeLists.txt#L298
           echo "Helper is ${HELPER}"
@@ -234,7 +237,7 @@ jobs:
           sudo apt-get autoremove
           sudo apt-get clean
           # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
-          bash ./bootstrap-libnd4j-from-url.sh linux cuda 11.4 "${{ matrix.helper }}"
+          bash ./bootstrap-libnd4j-from-url.sh linux cuda ${{ matrix.cuda_version }} "${{ matrix.helper }}"
           if [ "$PERFORM_RELEASE" == 1 ]; then
                echo "Performing release"
                bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
