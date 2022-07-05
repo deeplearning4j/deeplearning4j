@@ -33,14 +33,8 @@ BASE_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
 
 cd ${BASE_DIR}
-isVeda=$(rpm -q veoffload-veda.x86_64 | grep -o "is not installed")
-if [[ $isVeda == "is not installed" ]] ; then
-
-[ "$UID" -eq 0 ] || { message "This script must be run as root or with sudo to install Veda."; exit 1;}
-message "install Veda"
 sudo yum install veoffload-veda.x86_64 -y
 
-fi
 
 export VEDNN_ROOT=${BASE_DIR}/vednn_lib
 if [ ! -f "${VEDNN_ROOT}/lib/libvednn_openmp.a" ]; then
