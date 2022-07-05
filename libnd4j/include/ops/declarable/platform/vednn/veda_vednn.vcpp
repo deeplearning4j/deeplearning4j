@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include <stdio.h>
-#include <veda_device.h>
 #include <vednn.h>
 
 #include <cmath>
@@ -451,7 +450,7 @@ uint64_t vedaVednnMaxPoolingBackwardEx(const vednnTensorParam_t *pParamGradOut, 
   RETURN(res);
 }
 
-uint64_t vedaConcatUpTo32(const uint64_t nInput, VEDAdeviceptr *inputList, uint64_t *inputLengthInBytesList, 
+uint64_t vedaConcatUpTo32(const uint64_t nInput, VEDAdeviceptr *inputList, uint64_t *inputLengthInBytesList,
                           VEDAdeviceptr vO) {
   CHECK_ERROR_BEFORE_EXEC();
 
