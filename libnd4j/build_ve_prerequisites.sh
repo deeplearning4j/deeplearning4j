@@ -33,12 +33,14 @@ BASE_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
 
 cd ${BASE_DIR}
-isVeda=$(rpm -q veoffload-veda.x86_64 | grep -o "is not installed")
-if [[ $isVeda == "is not installed" ]] ; then
+
+if [[ ! -d "/usr/local/ve/veda" ]] ; then
 
 [ "$UID" -eq 0 ] || { message "This script must be run as root or with sudo to install Veda."; exit 1;}
 message "install Veda"
-sudo yum install veoffload-veda.x86_64 -y
+git clone --single-branch  --depth 1 --branch  v1.2.0 https://github.com/SX-Aurora/veda.git
+
+mkdir -p veda/src/build && cd veda/src/build && cmake .. && make && make install && cd -
 
 fi
 
