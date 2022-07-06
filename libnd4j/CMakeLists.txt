@@ -19,7 +19,7 @@ option(SD_SHARED_LIB "Build shared library" ON)
 option(SD_SANITIZE "Enable Address Sanitizer" OFF)
 option(SD_USE_LTO "Use link time optimization" OFF)
 option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OFF)
-option(USE_OLD_VEDA "Use old veda version" OFF)
+
 set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
 
 if(SD_AURORA)
@@ -414,8 +414,9 @@ if ( (NOT SD_AURORA) AND HAVE_VEDNN )
     SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/ve/veda/cmake /opt/nec/ve/share/veda/cmake)
 
     message("--VEDA--")
-    if(USE_OLD_VEDA)
-        FIND_PACKAGE(VEDA)
+    FIND_PACKAGE(VEDA)
+
+    if(VEDA_FOUND)
         ENABLE_LANGUAGE(VEDA_C VEDA_CXX)
         message("---${VEDA_INCLUDE_DIRS}--${VEDA_LIBRARY}-----")
         list(APPEND EXTERNAL_INCLUDE_DIRS ${VEDA_INCLUDE_DIRS} )
@@ -423,17 +424,25 @@ if ( (NOT SD_AURORA) AND HAVE_VEDNN )
 
         list(APPEND VEDA_INCLUDE_DIRS ${VEDNN_INCLUDE} ${VEDA_INCLUDE_DIRS} )
 
+        list(APPEND VEDA_DEPENDENCY_LIBS ${VEDNN_LIBRARIES} ${VEDA_DEVICE_LIBRARY})
+        set(HAVE_VEDA 1)
     else()
-        FIND_PACKAGE(VE)
+        #try older
+        message("---try to look for VE package-----")
+        FIND_PACKAGE(VE REQUIRED)
+
         ENABLE_LANGUAGE(VEDA_C VEDA_CXX)
+
         message("---${VEDA_INCLUDES}--${VEDA_LIBRARY}-----")
         list(APPEND EXTERNAL_INCLUDE_DIRS ${VEDA_INCLUDES} )
         list(APPEND EXTERNAL_DEPENDENCY_LIBS ${VEDA_LIBRARY} )
 
         list(APPEND VEDA_INCLUDE_DIRS ${VEDNN_INCLUDE} ${VEDA_INCLUDES} )
+
+        list(APPEND VEDA_DEPENDENCY_LIBS ${VEDNN_LIBRARIES} ${VEDA_DEVICE_LIBRARY})
+        set(HAVE_VEDA 1)
     endif()
-    list(APPEND VEDA_DEPENDENCY_LIBS ${VEDNN_LIBRARIES} ${VEDA_DEVICE_LIBRARY})
-    set(HAVE_VEDA 1)
+
 endif()
 
 if (${HELPERS_onednn})

@@ -33,8 +33,16 @@ BASE_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
 
 cd ${BASE_DIR}
-sudo yum install veoffload-veda.x86_64 -y
 
+if [[ ! -d "/usr/local/ve/veda" ]] ; then
+
+[ "$UID" -eq 0 ] || { message "This script must be run as root or with sudo to install Veda."; exit 1;}
+message "install Veda"
+git clone --single-branch  --depth 1 --branch  v1.2.0 https://github.com/SX-Aurora/veda.git
+
+mkdir -p veda/src/build && cd veda/src/build && cmake .. && make && make install && cd -
+
+fi
 
 export VEDNN_ROOT=${BASE_DIR}/vednn_lib
 if [ ! -f "${VEDNN_ROOT}/lib/libvednn_openmp.a" ]; then
