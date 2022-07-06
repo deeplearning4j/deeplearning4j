@@ -115,7 +115,7 @@ struct VEDA_HANDLE {
   VEDA_HANDLE(const char* library_name, VEDAdevice device_index, const char* dir_name = nullptr)
       : device(device_index) {
     sd_debug("it's loading veda device library: %s\n", library_name);
-    auto status = VEDA_CALL(vedaCtxCreate(&ctx, VEDA_CONTEXT_MODE_OMP, 0));
+    status = VEDA_CALL(vedaCtxCreate(&ctx, VEDA_CONTEXT_MODE_OMP, 0));
     if (status) {
       if (const char* env_p = std::getenv("DEVICE_LIB_LOADPATH")) {
         std::string path_lib = std::string(env_p) + "/" + library_name;
@@ -142,7 +142,10 @@ struct VEDA_HANDLE {
     // insert to our lookUp
     VEDAfunction func;
     auto local_status = VEDA_CALL(vedaModuleGetFunction(&func, mod, namePtr));
-    if (local_status) functionsLookUp.emplace(namePtr, func);
+    if (local_status)
+      functionsLookUp.emplace(namePtr, func);
+    else
+      veda_throw(local_status);
     return func;
   }
 
@@ -158,7 +161,7 @@ struct VEDA {
   }
 
   VEDA_HANDLE& getVEDA_HANDLE(int device_index) {
-    if (ve_handles.size() < 1){
+    if (ve_handles.size() < 1) {
       throw std::runtime_error("No Ve device found");
     }
     // we will let to throw out of range error for the other cases

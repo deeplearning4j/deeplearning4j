@@ -1,5 +1,5 @@
 #include <config.h>
-//make it visible if only if HAVE_VEDA defined
+// make it visible if only if HAVE_VEDA defined
 #if defined(HAVE_VEDA)
 #include "veda_helper.h"
 // https://github.com/SX-Aurora/veda/issues/16
@@ -30,7 +30,10 @@ VEDA::VEDA(const char* library_name) {
   auto status = scopedVeda.initVeda();
   if (status) {
     status = VEDA_CALL(vedaDeviceGetCount(&devcnt));
+  } else {
+    veda_throw(status);
   }
+
   const char* dir_name = sd::Environment::getInstance().getVedaDeviceDir();
   int use = (devcnt > MAX_DEVICE_USAGE) ? MAX_DEVICE_USAGE : devcnt;
   sd_debug("Veda devices: available %d \t will be in use %d\n", devcnt, use);
@@ -38,9 +41,13 @@ VEDA::VEDA(const char* library_name) {
     VEDAdevice device;
     vedaDeviceGet(&device, i);
     VEDA_HANDLE v(library_name, device, dir_name);
-    ve_handles.emplace_back(std::move(v));
+    if (v.status) {
+      ve_handles.emplace_back(std::move(v));
+    } else {
+      // let's throw error
+      veda_throw(v.status);
+    }
   }
-
 }
 
 #endif
