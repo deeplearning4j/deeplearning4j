@@ -146,7 +146,7 @@ public class NativeOpsHolder {
 
             }
 
-        
+
         } catch (java.io.IOException exception) {
 
         }
