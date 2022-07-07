@@ -20,6 +20,7 @@
 
 package org.nd4j.nativeblas;
 
+import java.io.IOException;
 import java.util.Properties;
 import java.io.File;
 import lombok.Getter;
@@ -28,6 +29,7 @@ import org.bytedeco.javacpp.Loader;
 import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.common.config.ND4JEnvironmentVars;
 import org.nd4j.common.config.ND4JSystemProperties;
+import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.io.ReflectionUtils;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.factory.Nd4j;
@@ -132,47 +134,40 @@ public class NativeOpsHolder {
 
         try {
 
-            if (Loader.getPlatform().contains("vednn")) {
-                String pPath = Loader.load(deviceNativeOps.getClass());
-                pPath = pPath.replace(File.separatorChar, '/');
-                String matchString = "org/nd4j/linalg/cpu/nativecpu/bindings/" + Loader.getPlatform();
-                int start = pPath.indexOf(matchString);
-               if(start < 0) {
-                   int end = pPath.lastIndexOf("/");
-                   String bindingsFolder = pPath.substring(start, end);
-                   File file = Loader.cacheResource(bindingsFolder + "/libnd4jcpu_device.vso");
-                   if (file != null) {
-                       String path = file.getAbsoluteFile().getParent();
-                       if (logInit) {
-                           log.info("Veda device library cache path: {}", path);
-                       }
+            //extract vednn in either graalvm or java
+            String vednnUrl = "org/nd4j/linalg/cpu/nativecpu/bindings/linux-x86_64-vednn-avx2/libnd4jcpu_device.vso";
+            String vednnUrlGraal = "linux-x86_64-vednn-avx2/libnd4jcpu_device.vso";
 
-                       deviceNativeOps.setVedaDeviceLibFolder(path);
-                   }
-               } else { //graalvm
-                   matchString = "linux-x86_64";
-                   pPath = "linux-x86_64";
-                   start = pPath.indexOf(matchString);
-                   int end = pPath.lastIndexOf("/");
-                   String bindingsFolder = pPath.substring(start, end);
-                   File file = Loader.cacheResource(bindingsFolder + "/libnd4jcpu_device.vso");
-                   if (file != null) {
-                       String path = file.getAbsoluteFile().getParent();
-                       if (logInit) {
-                           log.info("Veda device library cache path: {}", path);
-                       }
+            String vednnUrlStatic = "org/nd4j/linalg/cpu/nativecpu/bindings/linux-x86_64-vednn-avx2/libnd4jcpu_device.vsa";
+            String vednnUrlGraalStatic = "linux-x86_64-vednn-avx2/libnd4jcpu_device.vsa";
 
-                       deviceNativeOps.setVedaDeviceLibFolder(path);
-                   }
-               }
+            for(String url : new String[]{vednnUrl,vednnUrlGraal,vednnUrlStatic,vednnUrlGraalStatic}) {
+                extractVeIfNeeded(logInit, url);
 
             }
+
+
         } catch (java.io.IOException exception) {
 
         }
 
         if (logInit) {
             log.info("Number of threads used for linear algebra: {}", deviceNativeOps.ompGetMaxThreads());
+        }
+    }
+
+    private void extractVeIfNeeded(boolean logInit, String vednnUrl) throws IOException {
+        ClassPathResource vednnResource = new ClassPathResource(vednnUrl);
+        if(vednnResource.exists()) {
+            File file = Loader.cacheResource(vednnUrl);
+            if (file != null) {
+                String path = file.getAbsoluteFile().getParent();
+                if (logInit) {
+                    log.info("Veda device library cache path: {}", path);
+                }
+
+                deviceNativeOps.setVedaDeviceLibFolder(path);
+            }
         }
     }
 
