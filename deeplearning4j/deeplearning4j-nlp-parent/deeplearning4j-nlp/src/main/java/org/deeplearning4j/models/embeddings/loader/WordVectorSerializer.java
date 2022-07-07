@@ -2606,7 +2606,7 @@ public class WordVectorSerializer {
 
             String tokenPreProcessorClassName = configuration.getTokenPreProcessor();
             if (StringUtils.isNotEmpty(tokenPreProcessorClassName)) {
-                Object preProcessor = DL4JClassLoading.createNewInstance(tokenizerFactoryClassName);
+                Object preProcessor = DL4JClassLoading.createNewInstance(tokenPreProcessorClassName);
                 if(preProcessor instanceof TokenPreProcess) {
                     TokenPreProcess tokenPreProcess = (TokenPreProcess) preProcessor;
                     factory.setTokenPreProcessor(tokenPreProcess);
