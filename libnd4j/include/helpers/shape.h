@@ -2236,20 +2236,14 @@ SD_INLINE SD_DEVICE int tadOffset(sd::LongType *xInfo, int offset) {
     SD_INLINE SD_HOST_DEVICE sd::LongType getOffset(const sd::LongType *shapeInfo, const int *coords,
                                                     sd::LongType baseOffset) {
         sd::LongType offset = baseOffset;
-        if(shape::isVector(shapeInfo)) {
-            for (sd::Unsigned i = 0; i < shapeInfo[0]; ++i) {
-                    offset += coords[i] * shape::elementWiseStride(shapeInfo);
-            }
 
-        }
-        else {
-            for (sd::Unsigned i = 1; i <= shapeInfo[0]; ++i)
-                if (shapeInfo[i] != 1) offset += coords[i - 1] * shapeInfo[shapeInfo[0] + i];
-        }
+        for (sd::Unsigned i = 1; i <= shapeInfo[0]; ++i)
+            if (shapeInfo[i] != 1) offset += coords[i - 1] * shapeInfo[shapeInfo[0] + i];
 
 
         return offset;
     }
+
 
 //////////////////////////////////////////////////////////////////////////
     SD_INLINE SD_HOST_DEVICE sd::LongType getOffset(const sd::LongType *shapeInfo, const int *coords, const int *dims) {

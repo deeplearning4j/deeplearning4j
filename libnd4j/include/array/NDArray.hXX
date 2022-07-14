@@ -2793,10 +2793,12 @@ void NDArray::applyTrueBroadcast(sd::BroadcastOpsTuple op, const NDArray &other,
   sd::LongType const *yShapeInfoD = other.specialShapeInfo();
 
   if (!isSameShape(target)) {
+
     auto xPack = ConstantShapeHelper::getInstance().createShapeInfoWithUnitiesForBroadcast(
         target.shapeInfo(), shapeInfo(), getContext()->getWorkspace());
     xShapeInfoH = xPack.primary();
     xShapeInfoD = xPack.special();
+
   }
   if (!other.isSameShape(target)) {
     auto yPack = ConstantShapeHelper::getInstance().createShapeInfoWithUnitiesForBroadcast(
@@ -2809,7 +2811,7 @@ void NDArray::applyTrueBroadcast(sd::BroadcastOpsTuple op, const NDArray &other,
   NativeOpExecutioner::execBroadcast(getContext(), op.b, buffer(), xShapeInfoH, specialBuffer(), xShapeInfoD,
                                      other.buffer(), yShapeInfoH, other.specialBuffer(), yShapeInfoD, target.buffer(),
                                      target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
-  registerSpecialUse({&target}, {this, &other});
+  registerUse({&target}, {this, &other});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2868,7 +2870,7 @@ void NDArray::applyTrueBroadcast(sd::BroadcastBoolOpsTuple op, const NDArray &ot
                                          other.buffer(), yShapeInfoH, other.specialBuffer(), yShapeInfoD,
                                          target.buffer(), target.shapeInfo(), target.specialBuffer(),
                                          target.specialShapeInfo(), nullptr);
-  registerSpecialUse({&target}, {this, &other});
+  registerUse({&target}, {this, &other});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2927,7 +2929,7 @@ void NDArray::applyTrueBroadcast(sd::BroadcastIntOpsTuple op, const NDArray &oth
                                         other.buffer(), yShapeInfoH, other.specialBuffer(), yShapeInfoD,
                                         target.buffer(), target.shapeInfo(), target.specialBuffer(),
                                         target.specialShapeInfo());
-  registerSpecialUse({&target}, {this, &other});
+  registerUse({&target}, {this, &other});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3097,7 +3099,7 @@ void NDArray::applyBroadcast(sd::broadcast::Ops op, const std::vector<int> &dime
   NativeOpExecutioner::execBroadcast(getContext(), op, buffer(), xShapeInfoH, specialBuffer(), xShapeInfoD,
                                      other.buffer(), yShapeInfoH, other.specialBuffer(), yShapeInfoD, target.buffer(),
                                      target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
-  registerSpecialUse({&target}, {this, &other});
+  registerUse({&target}, {this, &other});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3158,7 +3160,7 @@ void NDArray::applyBroadcast(sd::broadcast::BoolOps op, const std::vector<int> &
                                          other.buffer(), yShapeInfoH, other.specialBuffer(), yShapeInfoD,
                                          target.buffer(), target.shapeInfo(), target.specialBuffer(),
                                          target.specialShapeInfo(), nullptr);
-  registerSpecialUse({&target}, {this, &other});
+  registerUse({&target}, {this, &other});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3220,7 +3222,7 @@ void NDArray::applyBroadcast(sd::broadcast::IntOps op, const std::vector<int> &d
                                         other.buffer(), yShapeInfoH, other.specialBuffer(), yShapeInfoD,
                                         target.buffer(), target.shapeInfo(), target.specialBuffer(),
                                         target.specialShapeInfo());
-  registerSpecialUse({&target}, {this, &other});
+  registerUse({&target}, {this, &other});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3378,6 +3380,7 @@ void NDArray::applyPairwiseTransform(sd::pairwise::Ops op, const NDArray &other,
       other.specialBuffer(), other.specialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(),
       target.specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr);
   registerUse({&target}, {this, &other});
+
 
   if (extraParams != nullptr) synchronize("NDArray::applyPairwiseTransform");
 }
