@@ -89,7 +89,7 @@ void NDArray::makeBothBuffersActual() const {
 template <typename T>
 SD_KERNEL static void fillAsTriangularCuda(const void* vx, const sd::LongType* xShapeInfo, void* vz,
                                            const sd::LongType* zShapeInfo, const T val, const int lower,
-                                           const int upper) {
+                                           const int upper, char direction, bool includeEdges) {
   const auto x = reinterpret_cast<const T*>(vx);
   auto z = reinterpret_cast<T*>(vz);
 
@@ -111,15 +111,18 @@ SD_KERNEL static void fillAsTriangularCuda(const void* vx, const sd::LongType* x
   auto coords = sharedMem + threadIdx.x * zRank;
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-
+  bool dirU = direction == 'u';
+  bool dirL = direction == 'l';
   for (sd::LongType i = tid; i < zLen; i += totalThreads) {
     shape::index2coords(i, zShapeInfo, coords);
     const auto zOffset = shape::getOffset(zShapeInfo, coords);
-
-    // if( (row + upper < col) || (row + lower > col) )
-    if ((coords[zRank - 2] + upper < coords[zRank - 1]) || (coords[zRank - 2] + lower > coords[zRank - 1]))
+    auto row = coords[zRank - 2];
+    auto col = coords[zRank - 1];
+    auto lCompare = includeEdges ? row + lower <= col : row + lower < col;
+    auto uCompare = includeEdges ? row + upper >= col : row + upper > col;
+    if (dirU && lCompare || dirL && uCompare) {
       z[zOffset] = val;
-    else if (vx != vz) {  // when x and z are different arrays
+    } else if (vx != vz) {  // when x and z are different arrays
       if (xRank != zRank) coords[0] = coords[1];
       const auto xOffset = areSameOffsets ? zOffset : shape::getOffset(xShapeInfo, coords);
       z[zOffset] = x[xOffset];
@@ -129,17 +132,13 @@ SD_KERNEL static void fillAsTriangularCuda(const void* vx, const sd::LongType* x
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& target, const char direction,const bool includeEdges) {
+void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& target, const char direction,
+                               const bool includeEdges) {
   if (isS()) throw std::runtime_error("NDArray::fillAsTriangular: you can't use this method on String array!");
 
   if (!isSameShape(target) &&
       !(rankOf() == 1 && target.rankOf() == 2 && sizeAt(0) == target.sizeAt(0) && sizeAt(0) == target.sizeAt(1)))
     throw std::string("NDArray::fillAsTriangular method: wrong shape of target array !");
-
-  if (direction == 'u')
-    lower = -target.sizeAt(-2);
-  else if (direction == 'l')
-    upper = target.sizeAt(-1);
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   const int blocksPerGrid = (target.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -150,13 +149,15 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
   NDArray::prepareSpecialUse({&target}, {this});
   fillAsTriangularCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *getContext()->getCudaStream()>>>(
       platformBuffer(), platformShapeInfo(), target.platformBuffer(), target.platformShapeInfo(), static_cast<T>(val),
-      lower, upper);
+      lower, upper, direction, includeEdges);
   NDArray::registerSpecialUse({&target}, {this});
 
   manager.synchronize();
 }
 BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::fillAsTriangular,
-                      (const float val, int lower, int upper, NDArray& target, const char direction,const bool includeEdges), SD_COMMON_TYPES);
+                      (const float val, int lower, int upper, NDArray& target, const char direction,
+                       const bool includeEdges),
+                      SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>

@@ -14,11 +14,28 @@
                 "SD_LIBRARY_NAME": "nd4jcpu",
                 "SD_CPU": true,
                 "SD_ALL_OPS": true,
-                "OPENBLAS_PATH": "/home/qwr/.javacpp/cache/openblas-0.3.19-1.5.7-linux-x86_64.jar/org/bytedeco/openblas/linux-x86_64"
+                "OPENBLAS_PATH": "$env{HOME}/.javacpp/cache/openblas-0.3.19-1.5.7-linux-x86_64.jar/org/bytedeco/openblas/linux-x86_64"
             }
         },
         {
-            "name": "Veda_vednn_base",
+            "name": "base_cuda",
+            "displayName": "Configure preset for the base Cuda",
+            "description": "Sets generator, build and install directory",
+            "hidden": true,
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/blasbuild/cuda",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+                "SD_LIBRARY_NAME": "nd4jcuda",
+                "SD_ALL_OPS": true,
+                "SD_CUDA": true,
+                "BLAS":true,
+                "COMPUTE": "auto"
+            }
+        },
+        {
+            "name": "veda_vednn_base",
             "displayName": "Configure preset for the Veda and Vednn",
             "description": "Sets Unix Makefile generator, build and install directory",
             "hidden": true,
@@ -32,18 +49,48 @@
                 "HELPERS_vednn": true
             },
             "environment": {
-                "VEDNN_ROOT": "/home/qwr/"
+                "VEDNN_ROOT": "${sourceDir}/vednn_lib"
             }
         },
         {
-            "name": "Veda_vednn_debug",
+            "name": "cuda_cudnn",
+            "displayName": "Configure preset for the CUDA and CUDNN",
+            "description": "Sets Unix Makefile generator, build and install directory",
+            "hidden": false,
+            "inherits": [
+                "base_cuda"
+            ],
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/blasbuild/cuda/${presetName}",
+            "cacheVariables": {
+                "SD_ARCH": "x86-64",
+                "HELPERS_cudnn": true
+            }
+        },
+        {
+            "name": "veda_vednn_debug",
             "displayName": "Configure Debug for the Veda and Vednn",
             "description": "Sets Unix Makefile generator, build and install directory",
             "inherits": [
-                "Veda_vednn_base"
+                "veda_vednn_base"
             ],
             "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/blasbuild/cpu/${presetName}",
+            "cacheVariables": {
+                "SD_BUILD_TESTS": "ON",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "cuda_cudnn_debug",
+            "displayName": "Configure Debug preset for the CUDA and CUDNN",
+            "description": "Sets Unix Makefile generator, build and install directory",
+            "hidden": false,
+            "inherits": [
+                "cuda_cudnn"
+            ],
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/blasbuild/cuda/${presetName}",
             "cacheVariables": {
                 "SD_BUILD_TESTS": "ON",
                 "CMAKE_BUILD_TYPE": "Debug"
@@ -55,7 +102,14 @@
             "name": "veda_vednn_debug_build",
             "description": "",
             "displayName": "",
-            "configurePreset": "Veda_vednn_debug",
+            "configurePreset": "veda_vednn_debug",
+            "jobs": 64
+        },
+        {
+            "name": "cuda_cudnn_debug_build",
+            "description": "",
+            "displayName": "",
+            "configurePreset": "cuda_cudnn_debug",
             "jobs": 64
         }
     ],
@@ -64,7 +118,13 @@
             "name": "veda_vednn_debug_test",
             "description": "",
             "displayName": "",
-            "configurePreset": "Veda_vednn_debug"
+            "configurePreset": "veda_vednn_debug"
+        },
+        {
+            "name": "cuda_cudnn_debug_test",
+            "description": "",
+            "displayName": "",
+            "configurePreset": "cuda_cudnn_debug"
         }
     ]
 }
