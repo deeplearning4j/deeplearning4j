@@ -233,6 +233,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
         auto var = ctx.variable(p);
         if (var->variableType() == VariableType::NDARRAY) {
           NDArray *array = var->getNDArray();
+          var->markRemovable(false);
           if (array == nullptr)
             throw unresolved_input_exception::build("Variable wasn't resolved prior shape calculation", p);
 
@@ -1158,9 +1159,34 @@ sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const
 
   if (!isInplace) {
     if(block.isFastPath()) {
-      for(int e = 0; e < block.fastpath_out().size(); e++) {
-        arrayList.push_back(block.fastpath_out()[e]);
+     //note this *is* similar to the code below but we use fast paths instead
+     //we need to ensure variables don't get freed allowing reuse of outputs
+     //as views
+      for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
+        std::pair<int, int> pair(1, e);
+        if (variableSpace.hasVariable(pair)) {
+          auto var = variableSpace.getVariable(pair);
+          auto arr = var->getNDArray();
+          if (!arr->isAttached()) {
+            var->markRemovable(false);
+            arr->setContext(sd::LaunchContext::defaultContext());
+          }
+        } else
+          break;
       }
+      for(int e = 0; e < block.fastpath_out().size(); e++) {
+        auto arr = block.fastpath_out()[e];
+        if (!arr->isAttached()) {
+          arr->setContext(sd::LaunchContext::defaultContext());
+          arrayList.push_back(arr);
+        } else {
+          arrayList.push_back(arr->detach());
+        }
+
+      }
+
+      arrayList.setNonRemovable();
+
     } else {
       for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
         std::pair<int, int> pair(1, e);
