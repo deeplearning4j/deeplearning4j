@@ -233,6 +233,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
         auto var = ctx.variable(p);
         if (var->variableType() == VariableType::NDARRAY) {
           NDArray *array = var->getNDArray();
+          var->markRemovable(false);
           if (array == nullptr)
             throw unresolved_input_exception::build("Variable wasn't resolved prior shape calculation", p);
 
@@ -731,8 +732,8 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       auto p = fp->profile();
       if (p != nullptr) {
         sd::LongType memoryAfter = block->workspace() == nullptr
-                                       ? 0L
-                                       : block->workspace()->getSpilledSize() + block->workspace()->getUsedSize();
+                                   ? 0L
+                                   : block->workspace()->getSpilledSize() + block->workspace()->getUsedSize();
         sd::LongType memoryUsed = memoryAfter - memoryBefore;
         p->nodeById(block->nodeId())->setPreparationTime(prepTime);
         p->nodeById(block->nodeId())->setExecutionTime(outerTime);
@@ -776,14 +777,13 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 }
 
 void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array, bool remove) {
-  sd_printf("Pushing variable\n", 0);
+  sd_debug("Pushing variable\n", 0);
   if (block.isFastPath()) {
     if (remove && block.fastpath_out()[outputIdx] != nullptr) {
       // delete reference/call destrucotr if remove is true
       delete block.fastpath_out()[outputIdx];
     }
-    sd_printf("In fast path, setting variable\n", 0);
-    array->printIndexedBuffer("setting variable\n");
+    sd_debug("In fast path, setting variable\n", 0);
     block.fastpath_out()[outputIdx] = array;
   } else if (block.getVariableSpace() == nullptr) {
     throw std::runtime_error("Var space should not be null before pushing variable!");
@@ -1158,21 +1158,53 @@ sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const
   if (status != sd::Status::OK) return arrayList;
 
   if (!isInplace) {
-    for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
-      std::pair<int, int> pair(1, e);
-      if (variableSpace.hasVariable(pair)) {
-        auto var = variableSpace.getVariable(pair);
-        auto arr = var->getNDArray();
+    if(block.isFastPath()) {
+     //note this *is* similar to the code below but we use fast paths instead
+     //we need to ensure variables don't get freed allowing reuse of outputs
+     //as views
+      for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
+        std::pair<int, int> pair(1, e);
+        if (variableSpace.hasVariable(pair)) {
+          auto var = variableSpace.getVariable(pair);
+          auto arr = var->getNDArray();
+          if (!arr->isAttached()) {
+            var->markRemovable(false);
+            arr->setContext(sd::LaunchContext::defaultContext());
+          }
+        } else
+          break;
+      }
+      for(int e = 0; e < block.fastpath_out().size(); e++) {
+        auto arr = block.fastpath_out()[e];
         if (!arr->isAttached()) {
-          var->markRemovable(false);
           arr->setContext(sd::LaunchContext::defaultContext());
           arrayList.push_back(arr);
         } else {
           arrayList.push_back(arr->detach());
         }
-      } else
-        break;
+
+      }
+
+      arrayList.setNonRemovable();
+
+    } else {
+      for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
+        std::pair<int, int> pair(1, e);
+        if (variableSpace.hasVariable(pair)) {
+          auto var = variableSpace.getVariable(pair);
+          auto arr = var->getNDArray();
+          if (!arr->isAttached()) {
+            var->markRemovable(false);
+            arr->setContext(sd::LaunchContext::defaultContext());
+            arrayList.push_back(arr);
+          } else {
+            arrayList.push_back(arr->detach());
+          }
+        } else
+          break;
+      }
     }
+
   } else {
     for (auto v : inputs) {
       arrayList.push_back(v);
