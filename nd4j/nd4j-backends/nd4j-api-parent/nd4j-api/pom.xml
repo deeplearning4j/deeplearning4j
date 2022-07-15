@@ -20,8 +20,8 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -128,6 +128,110 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+        <profile>
+            <activation>
+                <!-- By default protoc provided binaries don't need a protocCommand. One is downloaded. Protoc plugin does not support
+                protoc yet. This means we need to use a system protoc on non intel platforms. -->
+                <os>
+                    <arch>x86_64</arch>
+                </os>
+            </activation>
+            <id>protoc-provided-binaries</id>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.github.os72</groupId>
+                        <artifactId>protoc-jar-maven-plugin</artifactId>
+                        <version>${protoc-jar-maven-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>tensorflow</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <protocVersion>${google.protobuf.version}</protocVersion>
+                                    <extension>.proto</extension>
+                                    <includeDirectories>
+                                        <include>src/main/protobuf/tf</include>
+                                        <include>src/main/protobuf/onnx</include>
+                                        <include>src/main/protobuf/nd4j</include>
+                                    </includeDirectories>
+                                    <inputDirectories>
+                                        <include>src/main/protobuf/tf/tensorflow</include>
+                                        <include>src/main/protobuf/onnx</include>
+                                        <include>src/main/protobuf/nd4j</include>
+                                    </inputDirectories>
+                                    <addSources>main</addSources>
+                                    <cleanOutputFolder>false</cleanOutputFolder>
+                                    <outputDirectory>src/main/java/</outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+
+
+        </profile>
+
+        <profile>
+            <id>testresources</id>
+        </profile>
+
+        <!-- See: https://github.com/os72/protoc-jar/issues/93 We need to use a system compiled protoc since one is not provided
+        by the plugin.-->
+        <profile>
+            <id>osx-aarch64-protoc</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.github.os72</groupId>
+                        <artifactId>protoc-jar-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>tensorflow</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <protocVersion>${google.protobuf.version}</protocVersion>
+                                    <extension>.proto</extension>
+                                    <includeDirectories>
+                                        <include>src/main/protobuf/tf</include>
+                                        <include>src/main/protobuf/onnx</include>
+                                        <include>src/main/protobuf/nd4j</include>
+                                    </includeDirectories>
+                                    <inputDirectories>
+                                        <include>src/main/protobuf/tf/tensorflow</include>
+                                        <include>src/main/protobuf/onnx</include>
+                                        <include>src/main/protobuf/nd4j</include>
+                                    </inputDirectories>
+                                    <addSources>main</addSources>
+                                    <cleanOutputFolder>false</cleanOutputFolder>
+                                    <outputDirectory>src/main/java/</outputDirectory>
+                                    <protocCommand>protoc</protocCommand> <!-- brew install protobuf -->
+                                </configuration>
+                            </execution>
+
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+            <activation>
+                <os>
+                    <name>mac os x</name>
+                    <arch>aarch64</arch>
+                    <family>mac</family>
+                </os>
+            </activation>
+        </profile>
+    </profiles>
+
     <build>
         <plugins>
             <plugin>
@@ -150,47 +254,17 @@
                         <configuration>
                             <target>
                                 <delete
-                                    file="${project.build.sourceDirectory}/onnx/OnnxMlProto3.java"/>
+                                        file="${project.build.sourceDirectory}/onnx/OnnxMlProto3.java"/>
                                 <delete
-                                    file="${project.build.sourceDirectory}/onnx/OnnxOperatorsProto3.java"/>
+                                        file="${project.build.sourceDirectory}/onnx/OnnxOperatorsProto3.java"/>
                                 <delete
-                                    file="${project.build.sourceDirectory}/onnx/OnnxProto3.java"/>
+                                        file="${project.build.sourceDirectory}/onnx/OnnxProto3.java"/>
                             </target>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>com.github.os72</groupId>
-                <artifactId>protoc-jar-maven-plugin</artifactId>
-                <version>${protoc-jar-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>tensorflow</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <protocVersion>${google.protobuf.version}</protocVersion>
-                            <extension>.proto</extension>
-                            <includeDirectories>
-                                <include>src/main/protobuf/tf</include>
-                                <include>src/main/protobuf/onnx</include>
-                                <include>src/main/protobuf/nd4j</include>
-                            </includeDirectories>
-                            <inputDirectories>
-                                <include>src/main/protobuf/tf/tensorflow</include>
-                                <include>src/main/protobuf/onnx</include>
-                                <include>src/main/protobuf/nd4j</include>
-                            </inputDirectories>
-                            <addSources>main</addSources>
-                            <cleanOutputFolder>false</cleanOutputFolder>
-                            <outputDirectory>src/main/java/</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+
             <plugin>
                 <groupId>com.google.code.maven-replacer-plugin</groupId>
                 <artifactId>replacer</artifactId>
@@ -218,9 +292,5 @@
         </plugins>
     </build>
 
-    <profiles>
-        <profile>
-            <id>testresources</id>
-        </profile>
-    </profiles>
+
 </project>
