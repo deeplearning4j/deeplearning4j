@@ -131,11 +131,13 @@
     <profiles>
         <profile>
             <activation>
+                <!-- By default protoc provided binaries don't need a protocCommand. One is downloaded. Protoc plugin does not support
+                protoc yet. This means we need to use a system protoc on non intel platforms. -->
                 <os>
                     <arch>x86_64</arch>
                 </os>
             </activation>
-            <id>non-osx-aarch64</id>
+            <id>protoc-provided-binaries</id>
 
             <build>
                 <plugins>
@@ -180,9 +182,10 @@
             <id>testresources</id>
         </profile>
 
-        <!-- See: https://github.com/os72/protoc-jar/issues/93-->
+        <!-- See: https://github.com/os72/protoc-jar/issues/93 We need to use a system compiled protoc since one is not provided
+        by the plugin.-->
         <profile>
-            <id>osx-aarch64</id>
+            <id>osx-aarch64-protoc</id>
             <build>
                 <plugins>
                     <plugin>
@@ -214,7 +217,7 @@
                                     <protocCommand>protoc</protocCommand> <!-- brew install protobuf -->
                                 </configuration>
                             </execution>
-                          
+
                         </executions>
                     </plugin>
                 </plugins>
