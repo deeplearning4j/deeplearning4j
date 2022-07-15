@@ -134,7 +134,7 @@
                 <!-- By default protoc provided binaries don't need a protocCommand. One is downloaded. Protoc plugin does not support
                 protoc yet. This means we need to use a system protoc on non intel platforms. -->
                 <os>
-                    <arch>x86_64</arch>
+                    <arch>amd64</arch>
                 </os>
             </activation>
             <id>protoc-provided-binaries</id>
