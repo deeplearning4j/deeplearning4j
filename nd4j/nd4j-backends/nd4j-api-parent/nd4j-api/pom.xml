@@ -190,10 +190,31 @@
                         <artifactId>protoc-jar-maven-plugin</artifactId>
                         <executions>
                             <execution>
+                                <id>tensorflow</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
                                 <configuration>
+                                    <protocVersion>${google.protobuf.version}</protocVersion>
+                                    <extension>.proto</extension>
+                                    <includeDirectories>
+                                        <include>src/main/protobuf/tf</include>
+                                        <include>src/main/protobuf/onnx</include>
+                                        <include>src/main/protobuf/nd4j</include>
+                                    </includeDirectories>
+                                    <inputDirectories>
+                                        <include>src/main/protobuf/tf/tensorflow</include>
+                                        <include>src/main/protobuf/onnx</include>
+                                        <include>src/main/protobuf/nd4j</include>
+                                    </inputDirectories>
+                                    <addSources>main</addSources>
+                                    <cleanOutputFolder>false</cleanOutputFolder>
+                                    <outputDirectory>src/main/java/</outputDirectory>
                                     <protocCommand>protoc</protocCommand> <!-- brew install protobuf -->
                                 </configuration>
                             </execution>
+                          
                         </executions>
                     </plugin>
                 </plugins>
