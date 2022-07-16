@@ -134,7 +134,7 @@
                 <!-- By default protoc provided binaries don't need a protocCommand. One is downloaded. Protoc plugin does not support
                 protoc yet. This means we need to use a system protoc on non intel platforms. -->
                 <os>
-                    <arch>x86_64</arch>
+                    <arch>amd64</arch>
                 </os>
             </activation>
             <id>protoc-provided-binaries</id>
@@ -172,6 +172,32 @@
                             </execution>
                         </executions>
                     </plugin>
+
+                    <plugin>
+                        <groupId>com.google.code.maven-replacer-plugin</groupId>
+                        <artifactId>replacer</artifactId>
+                        <version>${maven-replacer-plugin.version}</version>
+                        <configuration>
+                            <includes>
+                                <include>${project.build.sourceDirectory}/org/tensorflow/**</include>
+                                <include>${project.build.sourceDirectory}/tensorflow/**</include>
+                                <include>${project.build.sourceDirectory}/onnx/**</include>
+                                <include>${project.build.sourceDirectory}/org/nd4j/ir/**</include>
+                            </includes>
+                            <token>com.google.protobuf.</token>
+                            <value>org.nd4j.shade.protobuf.</value>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>replace-imports</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>replace</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
                 </plugins>
             </build>
 
@@ -220,6 +246,32 @@
 
                         </executions>
                     </plugin>
+
+                    <plugin>
+                        <groupId>com.google.code.maven-replacer-plugin</groupId>
+                        <artifactId>replacer</artifactId>
+                        <version>${maven-replacer-plugin.version}</version>
+                        <configuration>
+                            <includes>
+                                <include>${project.build.sourceDirectory}/org/tensorflow/**</include>
+                                <include>${project.build.sourceDirectory}/tensorflow/**</include>
+                                <include>${project.build.sourceDirectory}/onnx/**</include>
+                                <include>${project.build.sourceDirectory}/org/nd4j/ir/**</include>
+                            </includes>
+                            <token>com.google.protobuf.</token>
+                            <value>org.nd4j.shade.protobuf.</value>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>replace-imports</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>replace</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
                 </plugins>
             </build>
             <activation>
