@@ -470,6 +470,8 @@ public final class TensorNamespace {
         }
       } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
+      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
         throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
             e).setUnfinishedMessage(this);
@@ -581,10 +583,10 @@ public final class TensorNamespace {
     @java.lang.Override
     public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      if (!getKeyBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(key_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 1, key_);
       }
-      if (!getValueBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(value_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 2, value_);
       }
       unknownFields.writeTo(output);
@@ -596,10 +598,10 @@ public final class TensorNamespace {
       if (size != -1) return size;
 
       size = 0;
-      if (!getKeyBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(key_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(1, key_);
       }
-      if (!getValueBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(value_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(2, value_);
       }
       size += unknownFields.getSerializedSize();
@@ -1202,6 +1204,8 @@ public final class TensorNamespace {
         }
       } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
+      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
         throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
             e).setUnfinishedMessage(this);
@@ -1339,6 +1343,8 @@ public final class TensorNamespace {
           }
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
           throw e.setUnfinishedMessage(this);
+        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
         } catch (java.io.IOException e) {
           throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
               e).setUnfinishedMessage(this);
@@ -2519,8 +2525,9 @@ public final class TensorNamespace {
         } else {
           if (valueCase_ == 1) {
             tensorTypeBuilder_.mergeFrom(value);
+          } else {
+            tensorTypeBuilder_.setMessage(value);
           }
-          tensorTypeBuilder_.setMessage(value);
         }
         valueCase_ = 1;
         return this;
@@ -2755,6 +2762,8 @@ public final class TensorNamespace {
         }
       } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
+      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
         throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
             e).setUnfinishedMessage(this);
@@ -2785,10 +2794,24 @@ public final class TensorNamespace {
 
       /**
        * <code>int64 dim_value = 1;</code>
+       * @return Whether the dimValue field is set.
+       */
+      boolean hasDimValue();
+      /**
+       * <code>int64 dim_value = 1;</code>
        * @return The dimValue.
        */
       long getDimValue();
 
+      /**
+       * <pre>
+       * namespace Shape
+       * </pre>
+       *
+       * <code>string dim_param = 2;</code>
+       * @return Whether the dimParam field is set.
+       */
+      boolean hasDimParam();
       /**
        * <pre>
        * namespace Shape
@@ -2857,8 +2880,8 @@ public final class TensorNamespace {
                 done = true;
                 break;
               case 8: {
-                valueCase_ = 1;
                 value_ = input.readInt64();
+                valueCase_ = 1;
                 break;
               }
               case 18: {
@@ -2878,6 +2901,8 @@ public final class TensorNamespace {
           }
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
           throw e.setUnfinishedMessage(this);
+        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
         } catch (java.io.IOException e) {
           throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
               e).setUnfinishedMessage(this);
@@ -2943,6 +2968,14 @@ public final class TensorNamespace {
       public static final int DIM_VALUE_FIELD_NUMBER = 1;
       /**
        * <code>int64 dim_value = 1;</code>
+       * @return Whether the dimValue field is set.
+       */
+      @java.lang.Override
+      public boolean hasDimValue() {
+        return valueCase_ == 1;
+      }
+      /**
+       * <code>int64 dim_value = 1;</code>
        * @return The dimValue.
        */
       @java.lang.Override
@@ -2954,6 +2987,17 @@ public final class TensorNamespace {
       }
 
       public static final int DIM_PARAM_FIELD_NUMBER = 2;
+      /**
+       * <pre>
+       * namespace Shape
+       * </pre>
+       *
+       * <code>string dim_param = 2;</code>
+       * @return Whether the dimParam field is set.
+       */
+      public boolean hasDimParam() {
+        return valueCase_ == 2;
+      }
       /**
        * <pre>
        * namespace Shape
@@ -3373,6 +3417,13 @@ public final class TensorNamespace {
 
         /**
          * <code>int64 dim_value = 1;</code>
+         * @return Whether the dimValue field is set.
+         */
+        public boolean hasDimValue() {
+          return valueCase_ == 1;
+        }
+        /**
+         * <code>int64 dim_value = 1;</code>
          * @return The dimValue.
          */
         public long getDimValue() {
@@ -3405,6 +3456,18 @@ public final class TensorNamespace {
           return this;
         }
 
+        /**
+         * <pre>
+         * namespace Shape
+         * </pre>
+         *
+         * <code>string dim_param = 2;</code>
+         * @return Whether the dimParam field is set.
+         */
+        @java.lang.Override
+        public boolean hasDimParam() {
+          return valueCase_ == 2;
+        }
         /**
          * <pre>
          * namespace Shape
@@ -4405,6 +4468,8 @@ public final class TensorNamespace {
         }
       } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
+      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
         throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
             e).setUnfinishedMessage(this);
@@ -4570,13 +4635,13 @@ public final class TensorNamespace {
     @java.lang.Override
     public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      if (!getNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(name_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 1, name_);
       }
       if (type_ != null) {
         output.writeMessage(2, getType());
       }
-      if (!getDocStringBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(docString_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 3, docString_);
       }
       unknownFields.writeTo(output);
@@ -4588,14 +4653,14 @@ public final class TensorNamespace {
       if (size != -1) return size;
 
       size = 0;
-      if (!getNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(name_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(1, name_);
       }
       if (type_ != null) {
         size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeMessageSize(2, getType());
       }
-      if (!getDocStringBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(docString_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(3, docString_);
       }
       size += unknownFields.getSerializedSize();
@@ -6136,6 +6201,8 @@ public final class TensorNamespace {
         }
       } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
+      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
         throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
             e).setUnfinishedMessage(this);
@@ -6389,6 +6456,8 @@ public final class TensorNamespace {
           }
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
           throw e.setUnfinishedMessage(this);
+        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
         } catch (java.io.IOException e) {
           throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
               e).setUnfinishedMessage(this);
@@ -7641,7 +7710,7 @@ public final class TensorNamespace {
       for (int i = 0; i < int64Data_.size(); i++) {
         output.writeInt64NoTag(int64Data_.getLong(i));
       }
-      if (!getNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(name_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 8, name_);
       }
       if (!rawData_.isEmpty()) {
@@ -7661,7 +7730,7 @@ public final class TensorNamespace {
       for (int i = 0; i < uint64Data_.size(); i++) {
         output.writeUInt64NoTag(uint64Data_.getLong(i));
       }
-      if (!getDocStringBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(docString_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 12, docString_);
       }
       for (int i = 0; i < externalData_.size(); i++) {
@@ -7763,7 +7832,7 @@ public final class TensorNamespace {
         }
         int64DataMemoizedSerializedSize = dataSize;
       }
-      if (!getNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(name_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(8, name_);
       }
       if (!rawData_.isEmpty()) {
@@ -7795,7 +7864,7 @@ public final class TensorNamespace {
         }
         uint64DataMemoizedSerializedSize = dataSize;
       }
-      if (!getDocStringBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(docString_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(12, docString_);
       }
       for (int i = 0; i < externalData_.size(); i++) {
