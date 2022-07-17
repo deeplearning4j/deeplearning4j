@@ -686,9 +686,11 @@ public final class MapperNamespace {
      * <code>map&lt;string, string&gt; inputToOutput = 17;</code>
      */
 
-    java.lang.String getInputToOutputOrDefault(
+    /* nullable */
+java.lang.String getInputToOutputOrDefault(
         java.lang.String key,
-        java.lang.String defaultValue);
+        /* nullable */
+java.lang.String defaultValue);
     /**
      * <code>map&lt;string, string&gt; inputToOutput = 17;</code>
      */
@@ -992,6 +994,8 @@ public final class MapperNamespace {
         }
       } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
+      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
         throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
             e).setUnfinishedMessage(this);
@@ -1669,7 +1673,7 @@ public final class MapperNamespace {
     @java.lang.Override
     public boolean containsInputToOutput(
         java.lang.String key) {
-      if (key == null) { throw new java.lang.NullPointerException(); }
+      if (key == null) { throw new NullPointerException("map key"); }
       return internalGetInputToOutput().getMap().containsKey(key);
     }
     /**
@@ -1696,7 +1700,7 @@ public final class MapperNamespace {
     public java.lang.String getInputToOutputOrDefault(
         java.lang.String key,
         java.lang.String defaultValue) {
-      if (key == null) { throw new java.lang.NullPointerException(); }
+      if (key == null) { throw new NullPointerException("map key"); }
       java.util.Map<java.lang.String, java.lang.String> map =
           internalGetInputToOutput().getMap();
       return map.containsKey(key) ? map.get(key) : defaultValue;
@@ -1708,7 +1712,7 @@ public final class MapperNamespace {
 
     public java.lang.String getInputToOutputOrThrow(
         java.lang.String key) {
-      if (key == null) { throw new java.lang.NullPointerException(); }
+      if (key == null) { throw new NullPointerException("map key"); }
       java.util.Map<java.lang.String, java.lang.String> map =
           internalGetInputToOutput().getMap();
       if (!map.containsKey(key)) {
@@ -1847,10 +1851,10 @@ public final class MapperNamespace {
     @java.lang.Override
     public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      if (!getRuleNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(ruleName_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 1, ruleName_);
       }
-      if (!getFunctionNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(functionName_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 2, functionName_);
       }
       for (int i = 0; i < inputStringAttrName_.size(); i++) {
@@ -1901,13 +1905,13 @@ public final class MapperNamespace {
           internalGetInputToOutput(),
           InputToOutputDefaultEntryHolder.defaultEntry,
           17);
-      if (!getRuleTypeBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(ruleType_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 18, ruleType_);
       }
       for (int i = 0; i < transformerArgs_.size(); i++) {
         output.writeMessage(19, transformerArgs_.get(i));
       }
-      if (!getInputFrameworkOpNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(inputFrameworkOpName_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 20, inputFrameworkOpName_);
       }
       unknownFields.writeTo(output);
@@ -1919,10 +1923,10 @@ public final class MapperNamespace {
       if (size != -1) return size;
 
       size = 0;
-      if (!getRuleNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(ruleName_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(1, ruleName_);
       }
-      if (!getFunctionNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(functionName_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(2, functionName_);
       }
       {
@@ -2047,14 +2051,14 @@ public final class MapperNamespace {
         size += org.nd4j.shade.protobuf.CodedOutputStream
             .computeMessageSize(17, inputToOutput__);
       }
-      if (!getRuleTypeBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(ruleType_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(18, ruleType_);
       }
       for (int i = 0; i < transformerArgs_.size(); i++) {
         size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeMessageSize(19, transformerArgs_.get(i));
       }
-      if (!getInputFrameworkOpNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(inputFrameworkOpName_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(20, inputFrameworkOpName_);
       }
       size += unknownFields.getSerializedSize();
@@ -4493,7 +4497,7 @@ public final class MapperNamespace {
       @java.lang.Override
       public boolean containsInputToOutput(
           java.lang.String key) {
-        if (key == null) { throw new java.lang.NullPointerException(); }
+        if (key == null) { throw new NullPointerException("map key"); }
         return internalGetInputToOutput().getMap().containsKey(key);
       }
       /**
@@ -4520,7 +4524,7 @@ public final class MapperNamespace {
       public java.lang.String getInputToOutputOrDefault(
           java.lang.String key,
           java.lang.String defaultValue) {
-        if (key == null) { throw new java.lang.NullPointerException(); }
+        if (key == null) { throw new NullPointerException("map key"); }
         java.util.Map<java.lang.String, java.lang.String> map =
             internalGetInputToOutput().getMap();
         return map.containsKey(key) ? map.get(key) : defaultValue;
@@ -4532,7 +4536,7 @@ public final class MapperNamespace {
 
       public java.lang.String getInputToOutputOrThrow(
           java.lang.String key) {
-        if (key == null) { throw new java.lang.NullPointerException(); }
+        if (key == null) { throw new NullPointerException("map key"); }
         java.util.Map<java.lang.String, java.lang.String> map =
             internalGetInputToOutput().getMap();
         if (!map.containsKey(key)) {
@@ -4552,7 +4556,7 @@ public final class MapperNamespace {
 
       public Builder removeInputToOutput(
           java.lang.String key) {
-        if (key == null) { throw new java.lang.NullPointerException(); }
+        if (key == null) { throw new NullPointerException("map key"); }
         internalGetMutableInputToOutput().getMutableMap()
             .remove(key);
         return this;
@@ -4571,8 +4575,11 @@ public final class MapperNamespace {
       public Builder putInputToOutput(
           java.lang.String key,
           java.lang.String value) {
-        if (key == null) { throw new java.lang.NullPointerException(); }
-        if (value == null) { throw new java.lang.NullPointerException(); }
+        if (key == null) { throw new NullPointerException("map key"); }
+        if (value == null) {
+  throw new NullPointerException("map value");
+}
+
         internalGetMutableInputToOutput().getMutableMap()
             .put(key, value);
         return this;
@@ -5146,6 +5153,8 @@ public final class MapperNamespace {
         }
       } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
+      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
         throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
             e).setUnfinishedMessage(this);
@@ -5262,7 +5271,7 @@ public final class MapperNamespace {
     @java.lang.Override
     public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      if (!getKeyBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(key_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 1, key_);
       }
       for (int i = 0; i < transformerArgs_.size(); i++) {
@@ -5277,7 +5286,7 @@ public final class MapperNamespace {
       if (size != -1) return size;
 
       size = 0;
-      if (!getKeyBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(key_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(1, key_);
       }
       for (int i = 0; i < transformerArgs_.size(); i++) {
@@ -6105,6 +6114,8 @@ public final class MapperNamespace {
         }
       } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
+      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
         throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
             e).setUnfinishedMessage(this);
@@ -7222,6 +7233,8 @@ public final class MapperNamespace {
         }
       } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
+      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
         throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
             e).setUnfinishedMessage(this);
@@ -7546,13 +7559,13 @@ public final class MapperNamespace {
     @java.lang.Override
     public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      if (!getFrameworkNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(frameworkName_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 1, frameworkName_);
       }
-      if (!getOpNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(opName_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 2, opName_);
       }
-      if (!getInputFrameworkOpNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(inputFrameworkOpName_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 3, inputFrameworkOpName_);
       }
       for (int i = 0; i < rule_.size(); i++) {
@@ -7576,13 +7589,13 @@ public final class MapperNamespace {
       if (size != -1) return size;
 
       size = 0;
-      if (!getFrameworkNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(frameworkName_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(1, frameworkName_);
       }
-      if (!getOpNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(opName_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(2, opName_);
       }
-      if (!getInputFrameworkOpNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(inputFrameworkOpName_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(3, inputFrameworkOpName_);
       }
       for (int i = 0; i < rule_.size(); i++) {

@@ -303,6 +303,8 @@ public final class OpNamespace {
         }
       } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
+      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
         throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
             e).setUnfinishedMessage(this);
@@ -774,13 +776,13 @@ public final class OpNamespace {
     @java.lang.Override
     public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      if (!getNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(name_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 1, name_);
       }
-      if (floatValue_ != 0F) {
+      if (java.lang.Float.floatToRawIntBits(floatValue_) != 0) {
         output.writeFloat(2, floatValue_);
       }
-      if (doubleValue_ != 0D) {
+      if (java.lang.Double.doubleToRawLongBits(doubleValue_) != 0) {
         output.writeDouble(3, doubleValue_);
       }
       if (int32Value_ != 0) {
@@ -807,7 +809,7 @@ public final class OpNamespace {
       if (argIndex_ != 0) {
         output.writeInt32(11, argIndex_);
       }
-      if (!getStringValueBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(stringValue_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 12, stringValue_);
       }
       if (argOptional_ != false) {
@@ -828,14 +830,14 @@ public final class OpNamespace {
       if (size != -1) return size;
 
       size = 0;
-      if (!getNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(name_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(1, name_);
       }
-      if (floatValue_ != 0F) {
+      if (java.lang.Float.floatToRawIntBits(floatValue_) != 0) {
         size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeFloatSize(2, floatValue_);
       }
-      if (doubleValue_ != 0D) {
+      if (java.lang.Double.doubleToRawLongBits(doubleValue_) != 0) {
         size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeDoubleSize(3, doubleValue_);
       }
@@ -871,7 +873,7 @@ public final class OpNamespace {
         size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeInt32Size(11, argIndex_);
       }
-      if (!getStringValueBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(stringValue_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(12, stringValue_);
       }
       if (argOptional_ != false) {
@@ -2298,6 +2300,8 @@ public final class OpNamespace {
         }
       } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
+      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
         throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
             e).setUnfinishedMessage(this);
@@ -2631,7 +2635,7 @@ public final class OpNamespace {
     @java.lang.Override
     public void writeTo(org.nd4j.shade.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
-      if (!getNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(name_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 1, name_);
       }
       for (int i = 0; i < argDescriptor_.size(); i++) {
@@ -2649,7 +2653,7 @@ public final class OpNamespace {
       if (size != -1) return size;
 
       size = 0;
-      if (!getNameBytes().isEmpty()) {
+      if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(name_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(1, name_);
       }
       for (int i = 0; i < argDescriptor_.size(); i++) {
@@ -3513,6 +3517,8 @@ public final class OpNamespace {
         }
       } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
+      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
         throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
             e).setUnfinishedMessage(this);
