@@ -780,7 +780,8 @@ void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array
   sd_debug("Pushing variable\n", 0);
   if (block.isFastPath()) {
     if (remove && block.fastpath_out()[outputIdx] != nullptr) {
-      // delete reference/call destrucotr if remove is true
+      // delete reference/call destructor if remove is true
+      sd_debug("Deleting extra reference in fast path at idx %d\n",outputIdx);
       delete block.fastpath_out()[outputIdx];
     }
     sd_debug("In fast path, setting variable\n", 0);
@@ -789,25 +790,25 @@ void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array
     throw std::runtime_error("Var space should not be null before pushing variable!");
   } else {
     block.pushNDArrayToVariableSpace(block.nodeId(), outputIdx, array, remove);
-    sd_printf("After pushing variable\n", 0);
+    sd_debug("After pushing variable\n", 0);
     auto varSpace = block.getVariableSpace();
     if (varSpace == nullptr) {
       throw std::runtime_error("Var space should not be null!");
     }
-    sd_printf("After getting var space\n", 0);
+    sd_debug("After getting var space\n", 0);
     if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
-      sd_printf("calling get variable\n", 0);
+      sd_debug("calling get variable\n", 0);
       auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
-      sd_printf("after calling get variable", 0);
+      sd_debug("after calling get variable", 0);
       if (var->getNDArray() != nullptr && var->isRemovable()) delete var->getNDArray();
 
       var->setNDArray(array);
       var->markRemovable(true);
     } else {
-      sd_printf("Creating new variable\n", 0);
+      sd_debug("Creating new variable\n", 0);
       auto var = new Variable(array, nullptr, block.getNodeId(), outputIdx);
       varSpace->putVariable(block.getNodeId(), outputIdx, var);
-      sd_printf("Putting variable\n", 0);
+      sd_debug("Putting variable\n", 0);
     }
   }
 }

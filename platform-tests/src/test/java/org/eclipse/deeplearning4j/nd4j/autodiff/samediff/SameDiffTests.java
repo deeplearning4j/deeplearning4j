@@ -2242,10 +2242,27 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     }
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCreateView(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        SameDiff sd = SameDiff.create();
+        INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
+        SDVariable newOne = sd.constant(Nd4j.linspace(1,4,4).reshape(2,2));
+        SDVariable view = sd.createView(newOne,CreateView.createPoint(sd,1));
+        INDArray eval = view.eval();
+        assertEquals(input.getRow(1),eval);
+        SDVariable putResult = view.put(sd.constant(1),sd.constant(Nd4j.ones(2)),sd.constant(0));
+        System.out.println(putResult.eval());
+    }
+
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArrayIndicesPut(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
         SameDiff sd = SameDiff.create();
         INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L);
         SDVariable x = sd.var(arr);
@@ -2256,7 +2273,9 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable putInTo = sd.zerosLike(x);
         SDVariable putIndices = sd.range(sd.constant(0),sd.sizeAt(x,0),sd.constant(1),DataType.INT64);
         SDVariable put = putInTo.put(putIndices, x, putIndices);
-        assertEquals(x.eval(),put.eval());
+        INDArray xEval = x.eval();
+        INDArray putEval = put.eval();
+        assertEquals(xEval,putEval);
 
     }
 
@@ -2271,7 +2290,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(assertion,get.eval());
 
         SDVariable putInTo = sd.zerosLike(x);
-        SDVariable putIndices = sd.range(sd.constant(0),sd.constant(3),sd.constant(1),DataType.INT64);
+        SDVariable putIndices = sd.range(sd.constant(0),sd.constant(5),sd.constant(1),DataType.INT64);
         SDVariable put = putInTo.put(putIndices, x, putIndices);
         INDArray eval = put.eval();
         assertEquals(arr,eval);

@@ -139,7 +139,11 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
   //note we pass in delete false here so we don't cause a double free
   //overwrite first calls push ndarray which has an option to delete the array if it's not relevant
   //we also call delete later when it's removable.
-  OVERWRITE_RESULT_NO_DELETE(newResult);
+  if(block.isFastPath() && block.fastpath_out().size() > 0) {
+    OVERWRITE_RESULT_NO_DELETE(newResult);
+  } else if(block.isFastPath() && block.fastpath_out().size() < 1) {
+    STORE_RESULT(newResult);
+  }
   return sd::Status::OK;
 }
 

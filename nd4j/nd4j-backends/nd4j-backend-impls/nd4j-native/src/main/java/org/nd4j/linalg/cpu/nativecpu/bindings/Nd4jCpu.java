@@ -6939,157 +6939,157 @@ public static final int
  * Shape information approximating
  * the information on an ndarray
  */
-    @Namespace("shape") @NoOffset public static class ShapeInformation extends Pointer {
-        static { Loader.load(); }
-        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-        public ShapeInformation(Pointer p) { super(p); }
-        /** Native array allocator. Access with {@link Pointer#position(long)}. */
-        public ShapeInformation(long size) { super((Pointer)null); allocateArray(size); }
-        private native void allocateArray(long size);
-        @Override public ShapeInformation position(long position) {
-            return (ShapeInformation)super.position(position);
-        }
-        @Override public ShapeInformation getPointer(long i) {
-            return new ShapeInformation((Pointer)this).offsetAddress(i);
-        }
-    
-        public ShapeInformation(@Cast("sd::LongType*") LongPointer shape_/*=nullptr*/, @Cast("sd::LongType*") LongPointer stride_/*=nullptr*/, char order_/*=0*/,
-                                                int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/) { super((Pointer)null); allocate(shape_, stride_, order_, rank_, offset_, elementWiseStride_); }
-        private native void allocate(@Cast("sd::LongType*") LongPointer shape_/*=nullptr*/, @Cast("sd::LongType*") LongPointer stride_/*=nullptr*/, char order_/*=0*/,
-                                                int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/);
-        public ShapeInformation() { super((Pointer)null); allocate(); }
-        private native void allocate();
-        public ShapeInformation(@Cast("sd::LongType*") LongBuffer shape_/*=nullptr*/, @Cast("sd::LongType*") LongBuffer stride_/*=nullptr*/, char order_/*=0*/,
-                                                int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/) { super((Pointer)null); allocate(shape_, stride_, order_, rank_, offset_, elementWiseStride_); }
-        private native void allocate(@Cast("sd::LongType*") LongBuffer shape_/*=nullptr*/, @Cast("sd::LongType*") LongBuffer stride_/*=nullptr*/, char order_/*=0*/,
-                                                int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/);
-        public ShapeInformation(@Cast("sd::LongType*") long[] shape_/*=nullptr*/, @Cast("sd::LongType*") long[] stride_/*=nullptr*/, char order_/*=0*/,
-                                                int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/) { super((Pointer)null); allocate(shape_, stride_, order_, rank_, offset_, elementWiseStride_); }
-        private native void allocate(@Cast("sd::LongType*") long[] shape_/*=nullptr*/, @Cast("sd::LongType*") long[] stride_/*=nullptr*/, char order_/*=0*/,
-                                                int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/);
-
-        public native @Cast("sd::LongType*") LongPointer shape(); public native ShapeInformation shape(LongPointer setter);
-        public native @Cast("sd::LongType*") LongPointer stride(); public native ShapeInformation stride(LongPointer setter);
-        public native char order(); public native ShapeInformation order(char setter);
-        public native int rank(); public native ShapeInformation rank(int setter);
-        public native int offset(); public native ShapeInformation offset(int setter);
-        public native int elementWiseStride(); public native ShapeInformation elementWiseStride(int setter);
+@Namespace("shape") @NoOffset public static class ShapeInformation extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public ShapeInformation(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public ShapeInformation(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public ShapeInformation position(long position) {
+        return (ShapeInformation)super.position(position);
     }
+    @Override public ShapeInformation getPointer(long i) {
+        return new ShapeInformation((Pointer)this).offsetAddress(i);
+    }
+
+  public ShapeInformation(@Cast("sd::LongType*") LongPointer shape_/*=nullptr*/, @Cast("sd::LongType*") LongPointer stride_/*=nullptr*/, char order_/*=0*/,
+                                    int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/) { super((Pointer)null); allocate(shape_, stride_, order_, rank_, offset_, elementWiseStride_); }
+  private native void allocate(@Cast("sd::LongType*") LongPointer shape_/*=nullptr*/, @Cast("sd::LongType*") LongPointer stride_/*=nullptr*/, char order_/*=0*/,
+                                    int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/);
+  public ShapeInformation() { super((Pointer)null); allocate(); }
+  private native void allocate();
+  public ShapeInformation(@Cast("sd::LongType*") LongBuffer shape_/*=nullptr*/, @Cast("sd::LongType*") LongBuffer stride_/*=nullptr*/, char order_/*=0*/,
+                                    int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/) { super((Pointer)null); allocate(shape_, stride_, order_, rank_, offset_, elementWiseStride_); }
+  private native void allocate(@Cast("sd::LongType*") LongBuffer shape_/*=nullptr*/, @Cast("sd::LongType*") LongBuffer stride_/*=nullptr*/, char order_/*=0*/,
+                                    int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/);
+  public ShapeInformation(@Cast("sd::LongType*") long[] shape_/*=nullptr*/, @Cast("sd::LongType*") long[] stride_/*=nullptr*/, char order_/*=0*/,
+                                    int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/) { super((Pointer)null); allocate(shape_, stride_, order_, rank_, offset_, elementWiseStride_); }
+  private native void allocate(@Cast("sd::LongType*") long[] shape_/*=nullptr*/, @Cast("sd::LongType*") long[] stride_/*=nullptr*/, char order_/*=0*/,
+                                    int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/);
+
+  public native @Cast("sd::LongType*") LongPointer shape(); public native ShapeInformation shape(LongPointer setter);
+  public native @Cast("sd::LongType*") LongPointer stride(); public native ShapeInformation stride(LongPointer setter);
+  public native char order(); public native ShapeInformation order(char setter);
+  public native int rank(); public native ShapeInformation rank(int setter);
+  public native int offset(); public native ShapeInformation offset(int setter);
+  public native int elementWiseStride(); public native ShapeInformation elementWiseStride(int setter);
+}
 
 /**
  * Indexing information
  * for bounds checking
  */
-    @Namespace("shape") public static class CurrentIndexing extends Pointer {
-        static { Loader.load(); }
-        /** Default native constructor. */
-        public CurrentIndexing() { super((Pointer)null); allocate(); }
-        /** Native array allocator. Access with {@link Pointer#position(long)}. */
-        public CurrentIndexing(long size) { super((Pointer)null); allocateArray(size); }
-        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-        public CurrentIndexing(Pointer p) { super(p); }
-        private native void allocate();
-        private native void allocateArray(long size);
-        @Override public CurrentIndexing position(long position) {
-            return (CurrentIndexing)super.position(position);
-        }
-        @Override public CurrentIndexing getPointer(long i) {
-            return new CurrentIndexing((Pointer)this).offsetAddress(i);
-        }
-    
-        public native int numElementsPerThread(); public native CurrentIndexing numElementsPerThread(int setter);
-        public native int blockStartingIndex(); public native CurrentIndexing blockStartingIndex(int setter);
-        public native int startingThreadIndex(); public native CurrentIndexing startingThreadIndex(int setter);
-        public native int endingThreadIndex(); public native CurrentIndexing endingThreadIndex(int setter);
+@Namespace("shape") public static class CurrentIndexing extends Pointer {
+    static { Loader.load(); }
+    /** Default native constructor. */
+    public CurrentIndexing() { super((Pointer)null); allocate(); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public CurrentIndexing(long size) { super((Pointer)null); allocateArray(size); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public CurrentIndexing(Pointer p) { super(p); }
+    private native void allocate();
+    private native void allocateArray(long size);
+    @Override public CurrentIndexing position(long position) {
+        return (CurrentIndexing)super.position(position);
+    }
+    @Override public CurrentIndexing getPointer(long i) {
+        return new CurrentIndexing((Pointer)this).offsetAddress(i);
     }
 
-    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const sd::LongType*") LongPointer shape1, int shape2Rank,
-                                                      @Cast("const sd::LongType*") LongPointer shape2);
-    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const sd::LongType*") LongBuffer shape1, int shape2Rank,
-                                                      @Cast("const sd::LongType*") LongBuffer shape2);
-    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const sd::LongType*") long[] shape1, int shape2Rank,
-                                                      @Cast("const sd::LongType*") long[] shape2);
+  public native int numElementsPerThread(); public native CurrentIndexing numElementsPerThread(int setter);
+  public native int blockStartingIndex(); public native CurrentIndexing blockStartingIndex(int setter);
+  public native int startingThreadIndex(); public native CurrentIndexing startingThreadIndex(int setter);
+  public native int endingThreadIndex(); public native CurrentIndexing endingThreadIndex(int setter);
+}
 
-    @Namespace("shape") public native @Cast("const sd::LongType*") LongPointer detachShape(@Cast("const sd::LongType*") LongPointer originalShape);
-    @Namespace("shape") public native @Cast("const sd::LongType*") LongBuffer detachShape(@Cast("const sd::LongType*") LongBuffer originalShape);
-    @Namespace("shape") public native @Cast("const sd::LongType*") long[] detachShape(@Cast("const sd::LongType*") long[] originalShape);
+@Namespace("shape") public native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const sd::LongType*") LongPointer shape1, int shape2Rank,
+                                              @Cast("const sd::LongType*") LongPointer shape2);
+@Namespace("shape") public native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const sd::LongType*") LongBuffer shape1, int shape2Rank,
+                                              @Cast("const sd::LongType*") LongBuffer shape2);
+@Namespace("shape") public native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const sd::LongType*") long[] shape1, int shape2Rank,
+                                              @Cast("const sd::LongType*") long[] shape2);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer copyShape(@Cast("const sd::LongType*") LongPointer originalShape);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer copyShape(@Cast("const sd::LongType*") LongBuffer originalShape);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] copyShape(@Cast("const sd::LongType*") long[] originalShape);
+@Namespace("shape") public native @Cast("const sd::LongType*") LongPointer detachShape(@Cast("const sd::LongType*") LongPointer originalShape);
+@Namespace("shape") public native @Cast("const sd::LongType*") LongBuffer detachShape(@Cast("const sd::LongType*") LongBuffer originalShape);
+@Namespace("shape") public native @Cast("const sd::LongType*") long[] detachShape(@Cast("const sd::LongType*") long[] originalShape);
 
-    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const sd::LongType*") LongPointer shapeInfo1, @Cast("const sd::LongType*") LongPointer shapeInfo2);
-    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const sd::LongType*") LongBuffer shapeInfo1, @Cast("const sd::LongType*") LongBuffer shapeInfo2);
-    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const sd::LongType*") long[] shapeInfo1, @Cast("const sd::LongType*") long[] shapeInfo2);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer copyShape(@Cast("const sd::LongType*") LongPointer originalShape);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer copyShape(@Cast("const sd::LongType*") LongBuffer originalShape);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] copyShape(@Cast("const sd::LongType*") long[] originalShape);
 
-    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const sd::LongType*") LongPointer shapeInfo1, @Cast("const sd::LongType*") LongPointer shapeInfo2,
-                                                      @Cast("const sd::LongType*") LongPointer shapeInfo3);
-    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const sd::LongType*") LongBuffer shapeInfo1, @Cast("const sd::LongType*") LongBuffer shapeInfo2,
-                                                      @Cast("const sd::LongType*") LongBuffer shapeInfo3);
-    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const sd::LongType*") long[] shapeInfo1, @Cast("const sd::LongType*") long[] shapeInfo2,
-                                                      @Cast("const sd::LongType*") long[] shapeInfo3);
+@Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const sd::LongType*") LongPointer shapeInfo1, @Cast("const sd::LongType*") LongPointer shapeInfo2);
+@Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const sd::LongType*") LongBuffer shapeInfo1, @Cast("const sd::LongType*") LongBuffer shapeInfo2);
+@Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const sd::LongType*") long[] shapeInfo1, @Cast("const sd::LongType*") long[] shapeInfo2);
 
-    @Namespace("shape") public native @Cast("bool") boolean strideEquals(int shape1Rank, @Cast("const sd::LongType*") LongPointer shape1, int shape2Rank,
-                                                       @Cast("const sd::LongType*") LongPointer shape2);
-    @Namespace("shape") public native @Cast("bool") boolean strideEquals(int shape1Rank, @Cast("const sd::LongType*") LongBuffer shape1, int shape2Rank,
-                                                       @Cast("const sd::LongType*") LongBuffer shape2);
-    @Namespace("shape") public native @Cast("bool") boolean strideEquals(int shape1Rank, @Cast("const sd::LongType*") long[] shape1, int shape2Rank,
-                                                       @Cast("const sd::LongType*") long[] shape2);
+@Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const sd::LongType*") LongPointer shapeInfo1, @Cast("const sd::LongType*") LongPointer shapeInfo2,
+                                              @Cast("const sd::LongType*") LongPointer shapeInfo3);
+@Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const sd::LongType*") LongBuffer shapeInfo1, @Cast("const sd::LongType*") LongBuffer shapeInfo2,
+                                              @Cast("const sd::LongType*") LongBuffer shapeInfo3);
+@Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const sd::LongType*") long[] shapeInfo1, @Cast("const sd::LongType*") long[] shapeInfo2,
+                                              @Cast("const sd::LongType*") long[] shapeInfo3);
 
-    @Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const sd::LongType*") LongPointer shapeInfo1, @Cast("const sd::LongType*") LongPointer shapeInfo2);
-    @Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const sd::LongType*") LongBuffer shapeInfo1, @Cast("const sd::LongType*") LongBuffer shapeInfo2);
-    @Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const sd::LongType*") long[] shapeInfo1, @Cast("const sd::LongType*") long[] shapeInfo2);
+@Namespace("shape") public native @Cast("bool") boolean strideEquals(int shape1Rank, @Cast("const sd::LongType*") LongPointer shape1, int shape2Rank,
+                                               @Cast("const sd::LongType*") LongPointer shape2);
+@Namespace("shape") public native @Cast("bool") boolean strideEquals(int shape1Rank, @Cast("const sd::LongType*") LongBuffer shape1, int shape2Rank,
+                                               @Cast("const sd::LongType*") LongBuffer shape2);
+@Namespace("shape") public native @Cast("bool") boolean strideEquals(int shape1Rank, @Cast("const sd::LongType*") long[] shape1, int shape2Rank,
+                                               @Cast("const sd::LongType*") long[] shape2);
 
-    @Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const sd::LongType*") LongPointer stride1, int rank1,
-                                                       @Cast("const sd::LongType*") LongPointer stride2, int rank2);
-    @Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const sd::LongType*") LongBuffer stride1, int rank1,
-                                                       @Cast("const sd::LongType*") LongBuffer stride2, int rank2);
-    @Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const sd::LongType*") long[] stride1, int rank1,
-                                                       @Cast("const sd::LongType*") long[] stride2, int rank2);
+@Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const sd::LongType*") LongPointer shapeInfo1, @Cast("const sd::LongType*") LongPointer shapeInfo2);
+@Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const sd::LongType*") LongBuffer shapeInfo1, @Cast("const sd::LongType*") LongBuffer shapeInfo2);
+@Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const sd::LongType*") long[] shapeInfo1, @Cast("const sd::LongType*") long[] shapeInfo2);
 
-    @Namespace("shape") public native @Cast("bool") boolean equalsSoft(@Cast("const sd::LongType*") LongPointer shapeA, @Cast("const sd::LongType*") LongPointer shapeB);
-    @Namespace("shape") public native @Cast("bool") boolean equalsSoft(@Cast("const sd::LongType*") LongBuffer shapeA, @Cast("const sd::LongType*") LongBuffer shapeB);
-    @Namespace("shape") public native @Cast("bool") boolean equalsSoft(@Cast("const sd::LongType*") long[] shapeA, @Cast("const sd::LongType*") long[] shapeB);
+@Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const sd::LongType*") LongPointer stride1, int rank1,
+                                               @Cast("const sd::LongType*") LongPointer stride2, int rank2);
+@Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const sd::LongType*") LongBuffer stride1, int rank1,
+                                               @Cast("const sd::LongType*") LongBuffer stride2, int rank2);
+@Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const sd::LongType*") long[] stride1, int rank1,
+                                               @Cast("const sd::LongType*") long[] stride2, int rank2);
 
-    @Namespace("shape") public native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const sd::LongType*") LongPointer shapeA, @Cast("const sd::LongType*") LongPointer shapeB);
-    @Namespace("shape") public native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const sd::LongType*") LongBuffer shapeA, @Cast("const sd::LongType*") LongBuffer shapeB);
-    @Namespace("shape") public native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const sd::LongType*") long[] shapeA, @Cast("const sd::LongType*") long[] shapeB);
+@Namespace("shape") public native @Cast("bool") boolean equalsSoft(@Cast("const sd::LongType*") LongPointer shapeA, @Cast("const sd::LongType*") LongPointer shapeB);
+@Namespace("shape") public native @Cast("bool") boolean equalsSoft(@Cast("const sd::LongType*") LongBuffer shapeA, @Cast("const sd::LongType*") LongBuffer shapeB);
+@Namespace("shape") public native @Cast("bool") boolean equalsSoft(@Cast("const sd::LongType*") long[] shapeA, @Cast("const sd::LongType*") long[] shapeB);
 
-    @Namespace("shape") public native @Cast("bool") boolean equalsStrict(@Cast("const sd::LongType*") LongPointer shapeA, @Cast("const sd::LongType*") LongPointer shapeB);
-    @Namespace("shape") public native @Cast("bool") boolean equalsStrict(@Cast("const sd::LongType*") LongBuffer shapeA, @Cast("const sd::LongType*") LongBuffer shapeB);
-    @Namespace("shape") public native @Cast("bool") boolean equalsStrict(@Cast("const sd::LongType*") long[] shapeA, @Cast("const sd::LongType*") long[] shapeB);
+@Namespace("shape") public native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const sd::LongType*") LongPointer shapeA, @Cast("const sd::LongType*") LongPointer shapeB);
+@Namespace("shape") public native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const sd::LongType*") LongBuffer shapeA, @Cast("const sd::LongType*") LongBuffer shapeB);
+@Namespace("shape") public native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const sd::LongType*") long[] shapeA, @Cast("const sd::LongType*") long[] shapeB);
+
+@Namespace("shape") public native @Cast("bool") boolean equalsStrict(@Cast("const sd::LongType*") LongPointer shapeA, @Cast("const sd::LongType*") LongPointer shapeB);
+@Namespace("shape") public native @Cast("bool") boolean equalsStrict(@Cast("const sd::LongType*") LongBuffer shapeA, @Cast("const sd::LongType*") LongBuffer shapeB);
+@Namespace("shape") public native @Cast("bool") boolean equalsStrict(@Cast("const sd::LongType*") long[] shapeA, @Cast("const sd::LongType*") long[] shapeB);
 
 // returns true if ranks, shapes and strides are the same
-    @Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const sd::LongType*") LongPointer shapeInfo1,
-                                                                  @Cast("const sd::LongType*") LongPointer shapeInfo2);
-    @Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const sd::LongType*") LongBuffer shapeInfo1,
-                                                                  @Cast("const sd::LongType*") LongBuffer shapeInfo2);
-    @Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const sd::LongType*") long[] shapeInfo1,
-                                                                  @Cast("const sd::LongType*") long[] shapeInfo2);
-    @Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const sd::LongType*") LongPointer shapeInfo1,
-                                                                  @Cast("const sd::LongType*") LongPointer shapeInfo2,
-                                                                  @Cast("const sd::LongType*") LongPointer shapeInfo3);
-    @Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const sd::LongType*") LongBuffer shapeInfo1,
-                                                                  @Cast("const sd::LongType*") LongBuffer shapeInfo2,
-                                                                  @Cast("const sd::LongType*") LongBuffer shapeInfo3);
-    @Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const sd::LongType*") long[] shapeInfo1,
-                                                                  @Cast("const sd::LongType*") long[] shapeInfo2,
-                                                                  @Cast("const sd::LongType*") long[] shapeInfo3);
+@Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const sd::LongType*") LongPointer shapeInfo1,
+                                                          @Cast("const sd::LongType*") LongPointer shapeInfo2);
+@Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const sd::LongType*") LongBuffer shapeInfo1,
+                                                          @Cast("const sd::LongType*") LongBuffer shapeInfo2);
+@Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const sd::LongType*") long[] shapeInfo1,
+                                                          @Cast("const sd::LongType*") long[] shapeInfo2);
+@Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const sd::LongType*") LongPointer shapeInfo1,
+                                                          @Cast("const sd::LongType*") LongPointer shapeInfo2,
+                                                          @Cast("const sd::LongType*") LongPointer shapeInfo3);
+@Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const sd::LongType*") LongBuffer shapeInfo1,
+                                                          @Cast("const sd::LongType*") LongBuffer shapeInfo2,
+                                                          @Cast("const sd::LongType*") LongBuffer shapeInfo3);
+@Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const sd::LongType*") long[] shapeInfo1,
+                                                          @Cast("const sd::LongType*") long[] shapeInfo2,
+                                                          @Cast("const sd::LongType*") long[] shapeInfo3);
 
-    @Namespace("shape") public native int sizeAt(@Cast("const sd::LongType*") LongPointer shapeInfo, int dim);
-    @Namespace("shape") public native int sizeAt(@Cast("const sd::LongType*") LongBuffer shapeInfo, int dim);
-    @Namespace("shape") public native int sizeAt(@Cast("const sd::LongType*") long[] shapeInfo, int dim);
-    @Namespace("shape") public native @Cast("sd::LongType") long strideAt(@Cast("const sd::LongType*") LongPointer shapeInfo, int dim);
-    @Namespace("shape") public native @Cast("sd::LongType") long strideAt(@Cast("const sd::LongType*") LongBuffer shapeInfo, int dim);
-    @Namespace("shape") public native @Cast("sd::LongType") long strideAt(@Cast("const sd::LongType*") long[] shapeInfo, int dim);
+@Namespace("shape") public native int sizeAt(@Cast("const sd::LongType*") LongPointer shapeInfo, int dim);
+@Namespace("shape") public native int sizeAt(@Cast("const sd::LongType*") LongBuffer shapeInfo, int dim);
+@Namespace("shape") public native int sizeAt(@Cast("const sd::LongType*") long[] shapeInfo, int dim);
+@Namespace("shape") public native @Cast("sd::LongType") long strideAt(@Cast("const sd::LongType*") LongPointer shapeInfo, int dim);
+@Namespace("shape") public native @Cast("sd::LongType") long strideAt(@Cast("const sd::LongType*") LongBuffer shapeInfo, int dim);
+@Namespace("shape") public native @Cast("sd::LongType") long strideAt(@Cast("const sd::LongType*") long[] shapeInfo, int dim);
 
-    @Namespace("shape") public native void traceNew(int id);
+@Namespace("shape") public native void traceNew(int id);
 
-    @Namespace("shape") public native int tadIndexForLinear(int linearIndex, int tadLength);
+@Namespace("shape") public native int tadIndexForLinear(int linearIndex, int tadLength);
 
-    @Namespace("shape") public native @Cast("sd::LongType") long tadLength(@Cast("const sd::LongType*") LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
-    @Namespace("shape") public native @Cast("sd::LongType") long tadLength(@Cast("const sd::LongType*") LongBuffer shapeInfo, IntBuffer dimension, int dimensionLength);
-    @Namespace("shape") public native @Cast("sd::LongType") long tadLength(@Cast("const sd::LongType*") long[] shapeInfo, int[] dimension, int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long tadLength(@Cast("const sd::LongType*") LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long tadLength(@Cast("const sd::LongType*") LongBuffer shapeInfo, IntBuffer dimension, int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long tadLength(@Cast("const sd::LongType*") long[] shapeInfo, int[] dimension, int dimensionLength);
 
 /**
  * Tad element wise stride:
@@ -7117,64 +7117,63 @@ public static final int
  * Again: this may not preserve ordering of the tad
  * but maybe used for reductions.
  */
-    @Namespace("shape") public native int tadElementWiseStride(@Cast("sd::LongType*") LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
-    @Namespace("shape") public native int tadElementWiseStride(@Cast("sd::LongType*") LongBuffer shapeInfo, IntBuffer dimension, int dimensionLength);
-    @Namespace("shape") public native int tadElementWiseStride(@Cast("sd::LongType*") long[] shapeInfo, int[] dimension, int dimensionLength);
+@Namespace("shape") public native int tadElementWiseStride(@Cast("sd::LongType*") LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
+@Namespace("shape") public native int tadElementWiseStride(@Cast("sd::LongType*") LongBuffer shapeInfo, IntBuffer dimension, int dimensionLength);
+@Namespace("shape") public native int tadElementWiseStride(@Cast("sd::LongType*") long[] shapeInfo, int[] dimension, int dimensionLength);
 
+@Namespace("shape") public native @Cast("bool") boolean canReshape(int oldRank, @Cast("sd::LongType*") LongPointer oldShape, int newRank,
+                                      @Cast("sd::LongType*") LongPointer newShape, @Cast("bool") boolean isFOrder);
+@Namespace("shape") public native @Cast("bool") boolean canReshape(int oldRank, @Cast("sd::LongType*") LongBuffer oldShape, int newRank,
+                                      @Cast("sd::LongType*") LongBuffer newShape, @Cast("bool") boolean isFOrder);
+@Namespace("shape") public native @Cast("bool") boolean canReshape(int oldRank, @Cast("sd::LongType*") long[] oldShape, int newRank,
+                                      @Cast("sd::LongType*") long[] newShape, @Cast("bool") boolean isFOrder);
 
-    @Namespace("shape") public native @Cast("bool") boolean canReshape(int oldRank, @Cast("sd::LongType*") LongPointer oldShape, int newRank,
-                                              @Cast("sd::LongType*") LongPointer newShape, @Cast("bool") boolean isFOrder);
-    @Namespace("shape") public native @Cast("bool") boolean canReshape(int oldRank, @Cast("sd::LongType*") LongBuffer oldShape, int newRank,
-                                              @Cast("sd::LongType*") LongBuffer newShape, @Cast("bool") boolean isFOrder);
-    @Namespace("shape") public native @Cast("bool") boolean canReshape(int oldRank, @Cast("sd::LongType*") long[] oldShape, int newRank,
-                                              @Cast("sd::LongType*") long[] newShape, @Cast("bool") boolean isFOrder);
-
-    @Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const sd::LongType*") LongPointer oldShapeInfo, byte newOrder, int newRank,
-                                            @Cast("const sd::LongType*") LongPointer newShape, @Cast("sd::LongType*") LongPointer newShapeInfo);
-    @Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const sd::LongType*") LongBuffer oldShapeInfo, byte newOrder, int newRank,
-                                            @Cast("const sd::LongType*") LongBuffer newShape, @Cast("sd::LongType*") LongBuffer newShapeInfo);
-    @Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const sd::LongType*") long[] oldShapeInfo, byte newOrder, int newRank,
-                                            @Cast("const sd::LongType*") long[] newShape, @Cast("sd::LongType*") long[] newShapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const sd::LongType*") LongPointer oldShapeInfo, byte newOrder, int newRank,
+                                    @Cast("const sd::LongType*") LongPointer newShape, @Cast("sd::LongType*") LongPointer newShapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const sd::LongType*") LongBuffer oldShapeInfo, byte newOrder, int newRank,
+                                    @Cast("const sd::LongType*") LongBuffer newShape, @Cast("sd::LongType*") LongBuffer newShapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const sd::LongType*") long[] oldShapeInfo, byte newOrder, int newRank,
+                                    @Cast("const sd::LongType*") long[] newShape, @Cast("sd::LongType*") long[] newShapeInfo);
 /**
  * newShapeInfo contains rank, shape and order only, no strides/ews/type
  */
-    @Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const sd::LongType*") LongPointer oldShapeInfo, @Cast("sd::LongType*") LongPointer newShapeInfo);
-    @Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const sd::LongType*") LongBuffer oldShapeInfo, @Cast("sd::LongType*") LongBuffer newShapeInfo);
-    @Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const sd::LongType*") long[] oldShapeInfo, @Cast("sd::LongType*") long[] newShapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const sd::LongType*") LongPointer oldShapeInfo, @Cast("sd::LongType*") LongPointer newShapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const sd::LongType*") LongBuffer oldShapeInfo, @Cast("sd::LongType*") LongBuffer newShapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const sd::LongType*") long[] oldShapeInfo, @Cast("sd::LongType*") long[] newShapeInfo);
 
 /**
  * Get the shape info buffer
  * for the given rank and shape.
  */
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongPointer shape);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongBuffer shape);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") long[] shape);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongPointer shape);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongBuffer shape);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") long[] shape);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongPointer shape,
-                                                        @Cast("sd::LongType*") LongPointer buffer);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongBuffer shape,
-                                                        @Cast("sd::LongType*") LongBuffer buffer);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") long[] shape,
-                                                        @Cast("sd::LongType*") long[] buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongPointer shape,
+                                                @Cast("sd::LongType*") LongPointer buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongBuffer shape,
+                                                @Cast("sd::LongType*") LongBuffer buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") long[] shape,
+                                                @Cast("sd::LongType*") long[] buffer);
 
-    @Namespace("shape") public native void transposeInplace(@Cast("sd::LongType*") LongPointer shapeBuffer);
-    @Namespace("shape") public native void transposeInplace(@Cast("sd::LongType*") LongBuffer shapeBuffer);
-    @Namespace("shape") public native void transposeInplace(@Cast("sd::LongType*") long[] shapeBuffer);
+@Namespace("shape") public native void transposeInplace(@Cast("sd::LongType*") LongPointer shapeBuffer);
+@Namespace("shape") public native void transposeInplace(@Cast("sd::LongType*") LongBuffer shapeBuffer);
+@Namespace("shape") public native void transposeInplace(@Cast("sd::LongType*") long[] shapeBuffer);
 
 /**
  * Get the shape info buffer
  * for the given rank and shape.
  */
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongPointer shape);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongBuffer shape);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") long[] shape);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongPointer shape);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongBuffer shape);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") long[] shape);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongPointer shape,
-                                                               @Cast("sd::LongType*") LongPointer output);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongBuffer shape,
-                                                               @Cast("sd::LongType*") LongBuffer output);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") long[] shape,
-                                                               @Cast("sd::LongType*") long[] output);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongPointer shape,
+                                                       @Cast("sd::LongType*") LongPointer output);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") LongBuffer shape,
+                                                       @Cast("sd::LongType*") LongBuffer output);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const sd::LongType*") long[] shape,
+                                                       @Cast("sd::LongType*") long[] output);
 
 // #ifdef __CUDACC__
 // #endif
@@ -7186,13 +7185,13 @@ public static final int
  * @param startNum the start number for the strides
  * @return the strides for a matrix of n dimensions
  */
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStridesFortran(@Cast("const sd::LongType*") LongPointer shape, int rank);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStridesFortran(@Cast("const sd::LongType*") LongBuffer shape, int rank);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] calcStridesFortran(@Cast("const sd::LongType*") long[] shape, int rank);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStridesFortran(@Cast("const sd::LongType*") LongPointer shape, int rank);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStridesFortran(@Cast("const sd::LongType*") LongBuffer shape, int rank);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] calcStridesFortran(@Cast("const sd::LongType*") long[] shape, int rank);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStridesFortran(@Cast("const sd::LongType*") LongPointer shape, int rank, @Cast("sd::LongType*") LongPointer ret);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStridesFortran(@Cast("const sd::LongType*") LongBuffer shape, int rank, @Cast("sd::LongType*") LongBuffer ret);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] calcStridesFortran(@Cast("const sd::LongType*") long[] shape, int rank, @Cast("sd::LongType*") long[] ret);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStridesFortran(@Cast("const sd::LongType*") LongPointer shape, int rank, @Cast("sd::LongType*") LongPointer ret);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStridesFortran(@Cast("const sd::LongType*") LongBuffer shape, int rank, @Cast("sd::LongType*") LongBuffer ret);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] calcStridesFortran(@Cast("const sd::LongType*") long[] shape, int rank, @Cast("sd::LongType*") long[] ret);
 
 /**
  * Computes the standard packed array strides for a given shape.
@@ -7202,23 +7201,23 @@ public static final int
  * @return the strides for a matrix of n dimensions
  */
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStrides(@Cast("const sd::LongType*") LongPointer shape, int rank);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStrides(@Cast("const sd::LongType*") LongBuffer shape, int rank);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] calcStrides(@Cast("const sd::LongType*") long[] shape, int rank);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStrides(@Cast("const sd::LongType*") LongPointer shape, int rank);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStrides(@Cast("const sd::LongType*") LongBuffer shape, int rank);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] calcStrides(@Cast("const sd::LongType*") long[] shape, int rank);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStrides(@Cast("const sd::LongType*") LongPointer shape, int rank, @Cast("sd::LongType*") LongPointer ret);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStrides(@Cast("const sd::LongType*") LongBuffer shape, int rank, @Cast("sd::LongType*") LongBuffer ret);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] calcStrides(@Cast("const sd::LongType*") long[] shape, int rank, @Cast("sd::LongType*") long[] ret);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStrides(@Cast("const sd::LongType*") LongPointer shape, int rank, @Cast("sd::LongType*") LongPointer ret);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStrides(@Cast("const sd::LongType*") LongBuffer shape, int rank, @Cast("sd::LongType*") LongBuffer ret);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] calcStrides(@Cast("const sd::LongType*") long[] shape, int rank, @Cast("sd::LongType*") long[] ret);
 
-    @Namespace("shape") public native void updateStrides(@Cast("sd::LongType*") LongPointer shape, byte order);
-    @Namespace("shape") public native void updateStrides(@Cast("sd::LongType*") LongBuffer shape, byte order);
-    @Namespace("shape") public native void updateStrides(@Cast("sd::LongType*") long[] shape, byte order);
-    @Namespace("shape") public native void updateStrides(int rank, @Cast("const sd::LongType*") LongPointer shapeOnly,
-                                                 @Cast("sd::LongType*") LongPointer stridesOnly, byte order);
-    @Namespace("shape") public native void updateStrides(int rank, @Cast("const sd::LongType*") LongBuffer shapeOnly,
-                                                 @Cast("sd::LongType*") LongBuffer stridesOnly, byte order);
-    @Namespace("shape") public native void updateStrides(int rank, @Cast("const sd::LongType*") long[] shapeOnly,
-                                                 @Cast("sd::LongType*") long[] stridesOnly, byte order);
+@Namespace("shape") public native void updateStrides(@Cast("sd::LongType*") LongPointer shape, byte order);
+@Namespace("shape") public native void updateStrides(@Cast("sd::LongType*") LongBuffer shape, byte order);
+@Namespace("shape") public native void updateStrides(@Cast("sd::LongType*") long[] shape, byte order);
+@Namespace("shape") public native void updateStrides(int rank, @Cast("const sd::LongType*") LongPointer shapeOnly, @Cast("sd::LongType*") LongPointer stridesOnly,
+                                         byte order);
+@Namespace("shape") public native void updateStrides(int rank, @Cast("const sd::LongType*") LongBuffer shapeOnly, @Cast("sd::LongType*") LongBuffer stridesOnly,
+                                         byte order);
+@Namespace("shape") public native void updateStrides(int rank, @Cast("const sd::LongType*") long[] shapeOnly, @Cast("sd::LongType*") long[] stridesOnly,
+                                         byte order);
 
 // check whether input dimensions are permuted, not permuted dimensions order have to be 0,....,rank-1
 
@@ -7229,16 +7228,16 @@ public static final int
  * @param startNum the start number for the strides
  * @return the strides for a matrix of n dimensions
  */
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStridesFortran(@Cast("const sd::LongType*") LongPointer shape, int rank, int startNum);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStridesFortran(@Cast("const sd::LongType*") LongBuffer shape, int rank, int startNum);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] calcStridesFortran(@Cast("const sd::LongType*") long[] shape, int rank, int startNum);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStridesFortran(@Cast("const sd::LongType*") LongPointer shape, int rank, int startNum);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStridesFortran(@Cast("const sd::LongType*") LongBuffer shape, int rank, int startNum);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] calcStridesFortran(@Cast("const sd::LongType*") long[] shape, int rank, int startNum);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStridesFortran(@Cast("const sd::LongType*") LongPointer shape, int rank, int startNum,
-                                                                      @Cast("sd::LongType*") LongPointer ret);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStridesFortran(@Cast("const sd::LongType*") LongBuffer shape, int rank, int startNum,
-                                                                      @Cast("sd::LongType*") LongBuffer ret);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] calcStridesFortran(@Cast("const sd::LongType*") long[] shape, int rank, int startNum,
-                                                                      @Cast("sd::LongType*") long[] ret);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStridesFortran(@Cast("const sd::LongType*") LongPointer shape, int rank, int startNum,
+                                                              @Cast("sd::LongType*") LongPointer ret);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStridesFortran(@Cast("const sd::LongType*") LongBuffer shape, int rank, int startNum,
+                                                              @Cast("sd::LongType*") LongBuffer ret);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] calcStridesFortran(@Cast("const sd::LongType*") long[] shape, int rank, int startNum,
+                                                              @Cast("sd::LongType*") long[] ret);
 
 /**
  * Computes the standard packed array strides for a given shape.
@@ -7247,38 +7246,38 @@ public static final int
  * @param startNum the start number for the strides
  * @return the strides for a matrix of n dimensions
  */
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStrides(@Cast("const sd::LongType*") LongPointer shape, int rank, int startNum);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStrides(@Cast("const sd::LongType*") LongBuffer shape, int rank, int startNum);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] calcStrides(@Cast("const sd::LongType*") long[] shape, int rank, int startNum);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStrides(@Cast("const sd::LongType*") LongPointer shape, int rank, int startNum);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStrides(@Cast("const sd::LongType*") LongBuffer shape, int rank, int startNum);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] calcStrides(@Cast("const sd::LongType*") long[] shape, int rank, int startNum);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStrides(@Cast("const sd::LongType*") LongPointer shape, int rank, int startNum,
-                                                               @Cast("sd::LongType*") LongPointer ret);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStrides(@Cast("const sd::LongType*") LongBuffer shape, int rank, int startNum,
-                                                               @Cast("sd::LongType*") LongBuffer ret);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] calcStrides(@Cast("const sd::LongType*") long[] shape, int rank, int startNum,
-                                                               @Cast("sd::LongType*") long[] ret);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer calcStrides(@Cast("const sd::LongType*") LongPointer shape, int rank, int startNum,
+                                                       @Cast("sd::LongType*") LongPointer ret);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer calcStrides(@Cast("const sd::LongType*") LongBuffer shape, int rank, int startNum,
+                                                       @Cast("sd::LongType*") LongBuffer ret);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] calcStrides(@Cast("const sd::LongType*") long[] shape, int rank, int startNum,
+                                                       @Cast("sd::LongType*") long[] ret);
 
 /**
  * @param toCopy the shape to copy
  * @return a copy of the original struct
  */
-    @Namespace("shape") public native ShapeInformation shapeCopy(ShapeInformation toCopy);
+@Namespace("shape") public native ShapeInformation shapeCopy(ShapeInformation toCopy);
 
-    @Namespace("shape") public native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const sd::LongType*") LongPointer shapeBuffer);
-    @Namespace("shape") public native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const sd::LongType*") LongBuffer shapeBuffer);
-    @Namespace("shape") public native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const sd::LongType*") long[] shapeBuffer);
+@Namespace("shape") public native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const sd::LongType*") LongPointer shapeBuffer);
+@Namespace("shape") public native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const sd::LongType*") LongBuffer shapeBuffer);
+@Namespace("shape") public native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const sd::LongType*") long[] shapeBuffer);
 
-    @Namespace("shape") public native @Cast("bool") boolean isContiguous(@Cast("const sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native @Cast("bool") boolean isContiguous(@Cast("const sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native @Cast("bool") boolean isContiguous(@Cast("const sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isContiguous(@Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isContiguous(@Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isContiguous(@Cast("const sd::LongType*") long[] shapeInfo);
 
 /**
  * copy-past from java hasDefaultStridesForShape function
  * check whether array is not permuted and has contiguous elements in memory
  */
-    @Namespace("shape") public native @Cast("bool") boolean areStridesDefault(@Cast("const sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native @Cast("bool") boolean areStridesDefault(@Cast("const sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native @Cast("bool") boolean areStridesDefault(@Cast("const sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean areStridesDefault(@Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean areStridesDefault(@Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean areStridesDefault(@Cast("const sd::LongType*") long[] shapeInfo);
 
 /**
  * Compute the element wise stride
@@ -7291,12 +7290,12 @@ public static final int
  * @return 0 if there is no element wise stride the
  * element wise stride of reshape(1,length) otherwise
  */
-    @Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const sd::LongType*") LongPointer shape,
-                                                           @Cast("const sd::LongType*") LongPointer stride, int isFOrder);
-    @Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const sd::LongType*") LongBuffer shape,
-                                                           @Cast("const sd::LongType*") LongBuffer stride, int isFOrder);
-    @Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const sd::LongType*") long[] shape,
-                                                           @Cast("const sd::LongType*") long[] stride, int isFOrder);
+@Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const sd::LongType*") LongPointer shape, @Cast("const sd::LongType*") LongPointer stride,
+                                                   int isFOrder);
+@Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const sd::LongType*") LongBuffer shape, @Cast("const sd::LongType*") LongBuffer stride,
+                                                   int isFOrder);
+@Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const sd::LongType*") long[] shape, @Cast("const sd::LongType*") long[] stride,
+                                                   int isFOrder);
 
 /**
  * Compute the element wise stride
@@ -7309,35 +7308,29 @@ public static final int
  * @return 0 if there is no element wise stride the
  * element wise stride of reshape(1,length) otherwise
  */
-    @Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const sd::LongType*") LongPointer shape,
-                                                           @Cast("const sd::LongType*") LongPointer stride, int isFOrder,
-                                                           @Cast("const sd::LongType*") LongPointer dimension, int dimensionLength);
-    @Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const sd::LongType*") LongBuffer shape,
-                                                           @Cast("const sd::LongType*") LongBuffer stride, int isFOrder,
-                                                           @Cast("const sd::LongType*") LongBuffer dimension, int dimensionLength);
-    @Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const sd::LongType*") long[] shape,
-                                                           @Cast("const sd::LongType*") long[] stride, int isFOrder,
-                                                           @Cast("const sd::LongType*") long[] dimension, int dimensionLength);
+@Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const sd::LongType*") LongPointer shape, @Cast("const sd::LongType*") LongPointer stride,
+                                                   int isFOrder, @Cast("const sd::LongType*") LongPointer dimension, int dimensionLength);
+@Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const sd::LongType*") LongBuffer shape, @Cast("const sd::LongType*") LongBuffer stride,
+                                                   int isFOrder, @Cast("const sd::LongType*") LongBuffer dimension, int dimensionLength);
+@Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const sd::LongType*") long[] shape, @Cast("const sd::LongType*") long[] stride,
+                                                   int isFOrder, @Cast("const sd::LongType*") long[] dimension, int dimensionLength);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeInfoOnlyShapeAndStride(@Cast("const sd::LongType*") LongPointer shapeInfo,
-                                                                        @Cast("sd::LongType*") LongPointer dimension, int dimensionLength,
-                                                                        @Cast("bool") boolean reverseCopyStride);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer shapeInfoOnlyShapeAndStride(@Cast("const sd::LongType*") LongBuffer shapeInfo,
-                                                                        @Cast("sd::LongType*") LongBuffer dimension, int dimensionLength,
-                                                                        @Cast("bool") boolean reverseCopyStride);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] shapeInfoOnlyShapeAndStride(@Cast("const sd::LongType*") long[] shapeInfo,
-                                                                        @Cast("sd::LongType*") long[] dimension, int dimensionLength,
-                                                                        @Cast("bool") boolean reverseCopyStride);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeInfoOnlyShapeAndStride(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("sd::LongType*") LongPointer dimension,
+                                                                int dimensionLength, @Cast("bool") boolean reverseCopyStride);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer shapeInfoOnlyShapeAndStride(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Cast("sd::LongType*") LongBuffer dimension,
+                                                                int dimensionLength, @Cast("bool") boolean reverseCopyStride);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] shapeInfoOnlyShapeAndStride(@Cast("const sd::LongType*") long[] shapeInfo, @Cast("sd::LongType*") long[] dimension,
+                                                                int dimensionLength, @Cast("bool") boolean reverseCopyStride);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeInfoOnlyShapeAndStride(@Cast("const sd::LongType*") LongPointer shapeInfo,
-                                                                        @Cast("sd::LongType*") LongPointer dimension, int dimensionLength,
-                                                                        @Cast("bool") boolean reverseCopyStride, @Cast("sd::LongType*") LongPointer buffer);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer shapeInfoOnlyShapeAndStride(@Cast("const sd::LongType*") LongBuffer shapeInfo,
-                                                                        @Cast("sd::LongType*") LongBuffer dimension, int dimensionLength,
-                                                                        @Cast("bool") boolean reverseCopyStride, @Cast("sd::LongType*") LongBuffer buffer);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] shapeInfoOnlyShapeAndStride(@Cast("const sd::LongType*") long[] shapeInfo,
-                                                                        @Cast("sd::LongType*") long[] dimension, int dimensionLength,
-                                                                        @Cast("bool") boolean reverseCopyStride, @Cast("sd::LongType*") long[] buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeInfoOnlyShapeAndStride(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("sd::LongType*") LongPointer dimension,
+                                                                int dimensionLength, @Cast("bool") boolean reverseCopyStride,
+                                                                @Cast("sd::LongType*") LongPointer buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer shapeInfoOnlyShapeAndStride(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Cast("sd::LongType*") LongBuffer dimension,
+                                                                int dimensionLength, @Cast("bool") boolean reverseCopyStride,
+                                                                @Cast("sd::LongType*") LongBuffer buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] shapeInfoOnlyShapeAndStride(@Cast("const sd::LongType*") long[] shapeInfo, @Cast("sd::LongType*") long[] dimension,
+                                                                int dimensionLength, @Cast("bool") boolean reverseCopyStride,
+                                                                @Cast("sd::LongType*") long[] buffer);
 /**
  *
  * @param length
@@ -7345,9 +7338,9 @@ public static final int
  * @param rearrange
  * @return
  */
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer doPermuteSwap(int length, @Cast("sd::LongType*") LongPointer shape, IntPointer rearrange);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer doPermuteSwap(int length, @Cast("sd::LongType*") LongBuffer shape, IntBuffer rearrange);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] doPermuteSwap(int length, @Cast("sd::LongType*") long[] shape, int[] rearrange);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer doPermuteSwap(int length, @Cast("sd::LongType*") LongPointer shape, IntPointer rearrange);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer doPermuteSwap(int length, @Cast("sd::LongType*") LongBuffer shape, IntBuffer rearrange);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] doPermuteSwap(int length, @Cast("sd::LongType*") long[] shape, int[] rearrange);
 
 /**
  * In place permute swap
@@ -7355,28 +7348,22 @@ public static final int
  * @param shape
  * @param rearrange
  */
-    @Namespace("shape") public native void doPermuteSwap(int length, @Cast("sd::LongType**") PointerPointer shape, IntPointer rearrange);
+@Namespace("shape") public native void doPermuteSwap(int length, @Cast("sd::LongType**") PointerPointer shape, IntPointer rearrange);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer permuteShapeBuffer(@Cast("const sd::LongType*") LongPointer shapeBuffer, IntPointer rearrange);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer permuteShapeBuffer(@Cast("const sd::LongType*") LongBuffer shapeBuffer, IntBuffer rearrange);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] permuteShapeBuffer(@Cast("const sd::LongType*") long[] shapeBuffer, int[] rearrange);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer permuteShapeBuffer(@Cast("const sd::LongType*") LongPointer shapeBuffer, IntPointer rearrange);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer permuteShapeBuffer(@Cast("const sd::LongType*") LongBuffer shapeBuffer, IntBuffer rearrange);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] permuteShapeBuffer(@Cast("const sd::LongType*") long[] shapeBuffer, int[] rearrange);
 
-    @Namespace("shape") public native void permuteShapeBufferInPlace(@Cast("sd::LongType*") LongPointer shapeBuffer, IntPointer rearrange,
-                                                             @Cast("sd::LongType*") LongPointer out);
-    @Namespace("shape") public native void permuteShapeBufferInPlace(@Cast("sd::LongType*") LongBuffer shapeBuffer, IntBuffer rearrange,
-                                                             @Cast("sd::LongType*") LongBuffer out);
-    @Namespace("shape") public native void permuteShapeBufferInPlace(@Cast("sd::LongType*") long[] shapeBuffer, int[] rearrange,
-                                                             @Cast("sd::LongType*") long[] out);
+@Namespace("shape") public native void permuteShapeBufferInPlace(@Cast("sd::LongType*") LongPointer shapeBuffer, IntPointer rearrange, @Cast("sd::LongType*") LongPointer out);
+@Namespace("shape") public native void permuteShapeBufferInPlace(@Cast("sd::LongType*") LongBuffer shapeBuffer, IntBuffer rearrange, @Cast("sd::LongType*") LongBuffer out);
+@Namespace("shape") public native void permuteShapeBufferInPlace(@Cast("sd::LongType*") long[] shapeBuffer, int[] rearrange, @Cast("sd::LongType*") long[] out);
 
-    @Namespace("shape") public native void doPermuteShapeInfo(@Cast("sd::LongType*") LongPointer shapeBuffer, @Const IntPointer rearrange,
-                                                      @Cast("sd::LongType") long len/*=-1*/);
-    @Namespace("shape") public native void doPermuteShapeInfo(@Cast("sd::LongType*") LongPointer shapeBuffer, @Const IntPointer rearrange);
-    @Namespace("shape") public native void doPermuteShapeInfo(@Cast("sd::LongType*") LongBuffer shapeBuffer, @Const IntBuffer rearrange,
-                                                      @Cast("sd::LongType") long len/*=-1*/);
-    @Namespace("shape") public native void doPermuteShapeInfo(@Cast("sd::LongType*") LongBuffer shapeBuffer, @Const IntBuffer rearrange);
-    @Namespace("shape") public native void doPermuteShapeInfo(@Cast("sd::LongType*") long[] shapeBuffer, @Const int[] rearrange,
-                                                      @Cast("sd::LongType") long len/*=-1*/);
-    @Namespace("shape") public native void doPermuteShapeInfo(@Cast("sd::LongType*") long[] shapeBuffer, @Const int[] rearrange);
+@Namespace("shape") public native void doPermuteShapeInfo(@Cast("sd::LongType*") LongPointer shapeBuffer, @Const IntPointer rearrange, @Cast("sd::LongType") long len/*=-1*/);
+@Namespace("shape") public native void doPermuteShapeInfo(@Cast("sd::LongType*") LongPointer shapeBuffer, @Const IntPointer rearrange);
+@Namespace("shape") public native void doPermuteShapeInfo(@Cast("sd::LongType*") LongBuffer shapeBuffer, @Const IntBuffer rearrange, @Cast("sd::LongType") long len/*=-1*/);
+@Namespace("shape") public native void doPermuteShapeInfo(@Cast("sd::LongType*") LongBuffer shapeBuffer, @Const IntBuffer rearrange);
+@Namespace("shape") public native void doPermuteShapeInfo(@Cast("sd::LongType*") long[] shapeBuffer, @Const int[] rearrange, @Cast("sd::LongType") long len/*=-1*/);
+@Namespace("shape") public native void doPermuteShapeInfo(@Cast("sd::LongType*") long[] shapeBuffer, @Const int[] rearrange);
 
 /**
  * Rearrange the permute indexes
@@ -7393,17 +7380,16 @@ public static final int
  * wise stride.
  */
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer createPermuteIndexes(int originalRank, IntPointer dimension, int dimensionLength);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer createPermuteIndexes(int originalRank, IntBuffer dimension, int dimensionLength);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] createPermuteIndexes(int originalRank, int[] dimension, int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer createPermuteIndexes(int originalRank, IntPointer dimension, int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer createPermuteIndexes(int originalRank, IntBuffer dimension, int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] createPermuteIndexes(int originalRank, int[] dimension, int dimensionLength);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer computeResultShape(@Cast("const sd::LongType*") LongPointer originalShapeBuffer, IntPointer dimension,
-                                                               int dimensionLength);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer computeResultShape(@Cast("const sd::LongType*") LongBuffer originalShapeBuffer, IntBuffer dimension,
-                                                               int dimensionLength);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] computeResultShape(@Cast("const sd::LongType*") long[] originalShapeBuffer, int[] dimension,
-                                                               int dimensionLength);
-
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer computeResultShape(@Cast("const sd::LongType*") LongPointer originalShapeBuffer, IntPointer dimension,
+                                                       int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer computeResultShape(@Cast("const sd::LongType*") LongBuffer originalShapeBuffer, IntBuffer dimension,
+                                                       int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] computeResultShape(@Cast("const sd::LongType*") long[] originalShapeBuffer, int[] dimension,
+                                                       int dimensionLength);
 
 /**
  * Get the ordering for the device
@@ -7413,9 +7399,9 @@ public static final int
  * @param elementStride
  * @return
  */
-    @Namespace("shape") public native char getOrder(int length, @Cast("sd::LongType*") LongPointer shape, @Cast("sd::LongType*") LongPointer stride, int elementStride);
-    @Namespace("shape") public native char getOrder(int length, @Cast("sd::LongType*") LongBuffer shape, @Cast("sd::LongType*") LongBuffer stride, int elementStride);
-    @Namespace("shape") public native char getOrder(int length, @Cast("sd::LongType*") long[] shape, @Cast("sd::LongType*") long[] stride, int elementStride);
+@Namespace("shape") public native char getOrder(int length, @Cast("sd::LongType*") LongPointer shape, @Cast("sd::LongType*") LongPointer stride, int elementStride);
+@Namespace("shape") public native char getOrder(int length, @Cast("sd::LongType*") LongBuffer shape, @Cast("sd::LongType*") LongBuffer stride, int elementStride);
+@Namespace("shape") public native char getOrder(int length, @Cast("sd::LongType*") long[] shape, @Cast("sd::LongType*") long[] stride, int elementStride);
 
 /**
  * Ensure that every value in the re arrange
@@ -7433,10 +7419,10 @@ public static final int
  * @param rearrange the order to re arrange
  * @param rank the rank of the rearrange array
  */
-    @Namespace("shape") public native void permute(@Cast("shape::ShapeInformation**") PointerPointer info, IntPointer rearrange, int rank);
-    @Namespace("shape") public native void permute(@ByPtrPtr ShapeInformation info, IntPointer rearrange, int rank);
-    @Namespace("shape") public native void permute(@ByPtrPtr ShapeInformation info, IntBuffer rearrange, int rank);
-    @Namespace("shape") public native void permute(@ByPtrPtr ShapeInformation info, int[] rearrange, int rank);
+@Namespace("shape") public native void permute(@Cast("shape::ShapeInformation**") PointerPointer info, IntPointer rearrange, int rank);
+@Namespace("shape") public native void permute(@ByPtrPtr ShapeInformation info, IntPointer rearrange, int rank);
+@Namespace("shape") public native void permute(@ByPtrPtr ShapeInformation info, IntBuffer rearrange, int rank);
+@Namespace("shape") public native void permute(@ByPtrPtr ShapeInformation info, int[] rearrange, int rank);
 
 /**
  * Returns whether the
@@ -7444,49 +7430,49 @@ public static final int
  * @param shape the shape of the array
  * @param rank the rank of cthe shape
  */
-    @Namespace("shape") public native int isVector(@Cast("const sd::LongType*") LongPointer shape, int rank);
-    @Namespace("shape") public native int isVector(@Cast("const sd::LongType*") LongBuffer shape, int rank);
-    @Namespace("shape") public native int isVector(@Cast("const sd::LongType*") long[] shape, int rank);
+@Namespace("shape") public native int isVector(@Cast("const sd::LongType*") LongPointer shape, int rank);
+@Namespace("shape") public native int isVector(@Cast("const sd::LongType*") LongBuffer shape, int rank);
+@Namespace("shape") public native int isVector(@Cast("const sd::LongType*") long[] shape, int rank);
 
 /**
  * When 1 dimension is the whole length of the
  * array
  */
-    @Namespace("shape") public native int oneDimEqualToLength(@Cast("sd::LongType*") LongPointer shape, int rank);
-    @Namespace("shape") public native int oneDimEqualToLength(@Cast("sd::LongType*") LongBuffer shape, int rank);
-    @Namespace("shape") public native int oneDimEqualToLength(@Cast("sd::LongType*") long[] shape, int rank);
+@Namespace("shape") public native int oneDimEqualToLength(@Cast("sd::LongType*") LongPointer shape, int rank);
+@Namespace("shape") public native int oneDimEqualToLength(@Cast("sd::LongType*") LongBuffer shape, int rank);
+@Namespace("shape") public native int oneDimEqualToLength(@Cast("sd::LongType*") long[] shape, int rank);
 
-    @Namespace("shape") public native int oneDimEqualToLength(@Cast("sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native int oneDimEqualToLength(@Cast("sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native int oneDimEqualToLength(@Cast("sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native int oneDimEqualToLength(@Cast("sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native int oneDimEqualToLength(@Cast("sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native int oneDimEqualToLength(@Cast("sd::LongType*") long[] shapeInfo);
 
-    @Namespace("shape") public native int isVector(@Cast("const sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native int isVector(@Cast("const sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native int isVector(@Cast("const sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native int isVector(@Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native int isVector(@Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native int isVector(@Cast("const sd::LongType*") long[] shapeInfo);
 
-    @Namespace("shape") public native @Cast("bool") boolean isLikeVector(@Cast("const sd::LongType*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
-    @Namespace("shape") public native @Cast("bool") boolean isLikeVector(@Cast("const sd::LongType*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
-    @Namespace("shape") public native @Cast("bool") boolean isLikeVector(@Cast("const sd::LongType*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
+@Namespace("shape") public native @Cast("bool") boolean isLikeVector(@Cast("const sd::LongType*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
+@Namespace("shape") public native @Cast("bool") boolean isLikeVector(@Cast("const sd::LongType*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
+@Namespace("shape") public native @Cast("bool") boolean isLikeVector(@Cast("const sd::LongType*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
 
-    @Namespace("shape") public native @Cast("bool") boolean isCommonVector(@Cast("const sd::LongType*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
-    @Namespace("shape") public native @Cast("bool") boolean isCommonVector(@Cast("const sd::LongType*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
-    @Namespace("shape") public native @Cast("bool") boolean isCommonVector(@Cast("const sd::LongType*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
+@Namespace("shape") public native @Cast("bool") boolean isCommonVector(@Cast("const sd::LongType*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
+@Namespace("shape") public native @Cast("bool") boolean isCommonVector(@Cast("const sd::LongType*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
+@Namespace("shape") public native @Cast("bool") boolean isCommonVector(@Cast("const sd::LongType*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
 
-    @Namespace("shape") public native @Cast("bool") boolean isRowVector(@Cast("const sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native @Cast("bool") boolean isRowVector(@Cast("const sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native @Cast("bool") boolean isRowVector(@Cast("const sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isRowVector(@Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isRowVector(@Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isRowVector(@Cast("const sd::LongType*") long[] shapeInfo);
 
-    @Namespace("shape") public native @Cast("bool") boolean isColumnVector(@Cast("const sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native @Cast("bool") boolean isColumnVector(@Cast("const sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native @Cast("bool") boolean isColumnVector(@Cast("const sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isColumnVector(@Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isColumnVector(@Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isColumnVector(@Cast("const sd::LongType*") long[] shapeInfo);
 
 /**
  * shape - input inShape is shape only, not shapeInfo
  * returns number of non-unity dimensions in inShape
  */
-    @Namespace("shape") public native int numOfNonUnitDims(int rank, @Cast("const sd::LongType*") LongPointer inShape);
-    @Namespace("shape") public native int numOfNonUnitDims(int rank, @Cast("const sd::LongType*") LongBuffer inShape);
-    @Namespace("shape") public native int numOfNonUnitDims(int rank, @Cast("const sd::LongType*") long[] inShape);
+@Namespace("shape") public native int numOfNonUnitDims(int rank, @Cast("const sd::LongType*") LongPointer inShape);
+@Namespace("shape") public native int numOfNonUnitDims(int rank, @Cast("const sd::LongType*") LongBuffer inShape);
+@Namespace("shape") public native int numOfNonUnitDims(int rank, @Cast("const sd::LongType*") long[] inShape);
 
 /**
  * Returns whether the
@@ -7495,20 +7481,20 @@ public static final int
  * @param rank the rank of the shape
  */
 
-    @Namespace("shape") public native int isMatrix(@Cast("const sd::LongType*") LongPointer shape, int rank);
-    @Namespace("shape") public native int isMatrix(@Cast("const sd::LongType*") LongBuffer shape, int rank);
-    @Namespace("shape") public native int isMatrix(@Cast("const sd::LongType*") long[] shape, int rank);
+@Namespace("shape") public native int isMatrix(@Cast("const sd::LongType*") LongPointer shape, int rank);
+@Namespace("shape") public native int isMatrix(@Cast("const sd::LongType*") LongBuffer shape, int rank);
+@Namespace("shape") public native int isMatrix(@Cast("const sd::LongType*") long[] shape, int rank);
 
-    @Namespace("shape") public native int isMatrix(@Cast("const sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native int isMatrix(@Cast("const sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native int isMatrix(@Cast("const sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native int isMatrix(@Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native int isMatrix(@Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native int isMatrix(@Cast("const sd::LongType*") long[] shapeInfo);
 /**
  * Returns the shape portion of an information
  * buffer
  */
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeOf(@Cast("sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer shapeOf(@Cast("sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] shapeOf(@Cast("sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeOf(@Cast("sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer shapeOf(@Cast("sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] shapeOf(@Cast("sd::LongType*") long[] shapeInfo);
 
 /**
  * Return a copy of a buffer.
@@ -7526,26 +7512,26 @@ public static final int
  * This buffer allocates memory
  * that must be freed elsewhere.
  */
-    @Namespace("shape") public native void copyTo(int length, @Cast("const sd::LongType*") LongPointer from, @Cast("sd::LongType*") LongPointer to, @Cast("sd::LongType*") LongPointer indexes);
-    @Namespace("shape") public native void copyTo(int length, @Cast("const sd::LongType*") LongBuffer from, @Cast("sd::LongType*") LongBuffer to, @Cast("sd::LongType*") LongBuffer indexes);
-    @Namespace("shape") public native void copyTo(int length, @Cast("const sd::LongType*") long[] from, @Cast("sd::LongType*") long[] to, @Cast("sd::LongType*") long[] indexes);
+@Namespace("shape") public native void copyTo(int length, @Cast("const sd::LongType*") LongPointer from, @Cast("sd::LongType*") LongPointer to, @Cast("sd::LongType*") LongPointer indexes);
+@Namespace("shape") public native void copyTo(int length, @Cast("const sd::LongType*") LongBuffer from, @Cast("sd::LongType*") LongBuffer to, @Cast("sd::LongType*") LongBuffer indexes);
+@Namespace("shape") public native void copyTo(int length, @Cast("const sd::LongType*") long[] from, @Cast("sd::LongType*") long[] to, @Cast("sd::LongType*") long[] indexes);
 
 /**
  * Return the slice (shape + 1 in pointer arithmetic)
  * @param shape the shape to take the slice of
  * @return the shape array - the first entry
  */
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer slice(@Cast("sd::LongType*") LongPointer shape);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer slice(@Cast("sd::LongType*") LongBuffer shape);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] slice(@Cast("sd::LongType*") long[] shape);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer slice(@Cast("sd::LongType*") LongPointer shape);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer slice(@Cast("sd::LongType*") LongBuffer shape);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] slice(@Cast("sd::LongType*") long[] shape);
 
-    @Namespace("shape") public native int slices(@Cast("sd::LongType*") LongPointer shapeBuffer);
-    @Namespace("shape") public native int slices(@Cast("sd::LongType*") LongBuffer shapeBuffer);
-    @Namespace("shape") public native int slices(@Cast("sd::LongType*") long[] shapeBuffer);
+@Namespace("shape") public native int slices(@Cast("sd::LongType*") LongPointer shapeBuffer);
+@Namespace("shape") public native int slices(@Cast("sd::LongType*") LongBuffer shapeBuffer);
+@Namespace("shape") public native int slices(@Cast("sd::LongType*") long[] shapeBuffer);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer sliceOfShapeBuffer(@Cast("sd::LongType") long sliceIdx, @Cast("sd::LongType*") LongPointer shapeBuffer);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer sliceOfShapeBuffer(@Cast("sd::LongType") long sliceIdx, @Cast("sd::LongType*") LongBuffer shapeBuffer);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] sliceOfShapeBuffer(@Cast("sd::LongType") long sliceIdx, @Cast("sd::LongType*") long[] shapeBuffer);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer sliceOfShapeBuffer(@Cast("sd::LongType") long sliceIdx, @Cast("sd::LongType*") LongPointer shapeBuffer);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer sliceOfShapeBuffer(@Cast("sd::LongType") long sliceIdx, @Cast("sd::LongType*") LongBuffer shapeBuffer);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] sliceOfShapeBuffer(@Cast("sd::LongType") long sliceIdx, @Cast("sd::LongType*") long[] shapeBuffer);
 /**
  * Returns the length of the
  * shape information buffer:
@@ -7554,35 +7540,35 @@ public static final int
  * info length for
  * @return rank * 2 + 4
  */
-    @Namespace("shape") public native int shapeInfoLength(int rank);
+@Namespace("shape") public native int shapeInfoLength(int rank);
 
-    @Namespace("shape") public native int shapeInfoLength(@Cast("sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native int shapeInfoLength(@Cast("sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native int shapeInfoLength(@Cast("sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native int shapeInfoLength(@Cast("sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native int shapeInfoLength(@Cast("sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native int shapeInfoLength(@Cast("sd::LongType*") long[] shapeInfo);
 
-    @Namespace("shape") public native @Cast("size_t") long shapeInfoByteLength(int rank);
+@Namespace("shape") public native @Cast("size_t") long shapeInfoByteLength(int rank);
 
-    @Namespace("shape") public native @Cast("size_t") long shapeInfoByteLength(@Cast("const sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native @Cast("size_t") long shapeInfoByteLength(@Cast("const sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native @Cast("size_t") long shapeInfoByteLength(@Cast("const sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native @Cast("size_t") long shapeInfoByteLength(@Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native @Cast("size_t") long shapeInfoByteLength(@Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native @Cast("size_t") long shapeInfoByteLength(@Cast("const sd::LongType*") long[] shapeInfo);
 
 /**
  * Returns the rank portion of
  * an information buffer
  */
-    @Namespace("shape") public native int rank(@Cast("const sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native int rank(@Cast("const sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native int rank(@Cast("const sd::LongType*") long[] shapeInfo);
-    @Namespace("shape") public native int rank(@Const IntPointer shapeInfo);
-    @Namespace("shape") public native int rank(@Const IntBuffer shapeInfo);
-    @Namespace("shape") public native int rank(@Const int[] shapeInfo);
+@Namespace("shape") public native int rank(@Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native int rank(@Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native int rank(@Cast("const sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native int rank(@Const IntPointer shapeInfo);
+@Namespace("shape") public native int rank(@Const IntBuffer shapeInfo);
+@Namespace("shape") public native int rank(@Const int[] shapeInfo);
 
 /**
  *  returns pointer on elementWiseStride
  */
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer ews(@Cast("sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer ews(@Cast("sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] ews(@Cast("sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer ews(@Cast("sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer ews(@Cast("sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] ews(@Cast("sd::LongType*") long[] shapeInfo);
 
 /**
  * Converts a raw int buffer of the layout:
@@ -7594,83 +7580,83 @@ public static final int
  *
  * where shape and stride are both straight int pointers
  */
-    @Namespace("shape") public native ShapeInformation infoFromBuffer(@Cast("sd::LongType*") LongPointer buffer);
-    @Namespace("shape") public native ShapeInformation infoFromBuffer(@Cast("sd::LongType*") LongBuffer buffer);
-    @Namespace("shape") public native ShapeInformation infoFromBuffer(@Cast("sd::LongType*") long[] buffer);
+@Namespace("shape") public native ShapeInformation infoFromBuffer(@Cast("sd::LongType*") LongPointer buffer);
+@Namespace("shape") public native ShapeInformation infoFromBuffer(@Cast("sd::LongType*") LongBuffer buffer);
+@Namespace("shape") public native ShapeInformation infoFromBuffer(@Cast("sd::LongType*") long[] buffer);
 
 /**
  * Returns the stride portion of an information
  * buffer
  */
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer stride(@Cast("sd::LongType*") LongPointer buffer);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer stride(@Cast("sd::LongType*") LongBuffer buffer);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] stride(@Cast("sd::LongType*") long[] buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer stride(@Cast("sd::LongType*") LongPointer buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer stride(@Cast("sd::LongType*") LongBuffer buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] stride(@Cast("sd::LongType*") long[] buffer);
 
 /**
  * Compute the length of the given shape
  */
-    @Namespace("shape") public native @Cast("bool") boolean isEmpty(@Cast("const sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native @Cast("bool") boolean isEmpty(@Cast("const sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native @Cast("bool") boolean isEmpty(@Cast("const sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isEmpty(@Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isEmpty(@Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean isEmpty(@Cast("const sd::LongType*") long[] shapeInfo);
 
-    @Namespace("shape") public native @Cast("sd::LongType") long length(@Cast("const sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType") long length(@Cast("const sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType") long length(@Cast("const sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long length(@Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long length(@Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long length(@Cast("const sd::LongType*") long[] shapeInfo);
 
 /***
  * Returns the offset portion of an information buffer
  */
-    @Namespace("shape") public native @Cast("sd::LongType") long offset(@Cast("sd::LongType*") LongPointer buffer);
-    @Namespace("shape") public native @Cast("sd::LongType") long offset(@Cast("sd::LongType*") LongBuffer buffer);
-    @Namespace("shape") public native @Cast("sd::LongType") long offset(@Cast("sd::LongType*") long[] buffer);
+@Namespace("shape") public native @Cast("sd::LongType") long offset(@Cast("sd::LongType*") LongPointer buffer);
+@Namespace("shape") public native @Cast("sd::LongType") long offset(@Cast("sd::LongType*") LongBuffer buffer);
+@Namespace("shape") public native @Cast("sd::LongType") long offset(@Cast("sd::LongType*") long[] buffer);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") @ByRef LongPointer extra(@Cast("sd::LongType*") LongPointer buffer);
-    @Namespace("shape") public native @Cast("sd::LongType*") @ByRef LongBuffer extra(@Cast("sd::LongType*") LongBuffer buffer);
-    @Namespace("shape") public native @Cast("sd::LongType*") @ByRef long[] extra(@Cast("sd::LongType*") long[] buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") @ByRef LongPointer extra(@Cast("sd::LongType*") LongPointer buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") @ByRef LongBuffer extra(@Cast("sd::LongType*") LongBuffer buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") @ByRef long[] extra(@Cast("sd::LongType*") long[] buffer);
 
 /**
  * Returns the ordering
  * for this shape information buffer
  */
-    @Namespace("shape") public native char order(@Cast("const sd::LongType*") LongPointer buffer);
-    @Namespace("shape") public native char order(@Cast("const sd::LongType*") LongBuffer buffer);
-    @Namespace("shape") public native char order(@Cast("const sd::LongType*") long[] buffer);
+@Namespace("shape") public native char order(@Cast("const sd::LongType*") LongPointer buffer);
+@Namespace("shape") public native char order(@Cast("const sd::LongType*") LongBuffer buffer);
+@Namespace("shape") public native char order(@Cast("const sd::LongType*") long[] buffer);
 
 /**
  * Returns the type
  */
-    @Namespace("shape") public native @Cast("sd::LongType") long type(@Cast("const sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType") long type(@Cast("const sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType") long type(@Cast("const sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long type(@Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long type(@Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long type(@Cast("const sd::LongType*") long[] shapeInfo);
 
 /**
  * Returns the element wise stride for this information
  * buffer
  */
-    @Namespace("shape") public native @Cast("sd::LongType") long elementWiseStride(@Cast("const sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType") long elementWiseStride(@Cast("const sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType") long elementWiseStride(@Cast("const sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long elementWiseStride(@Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long elementWiseStride(@Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long elementWiseStride(@Cast("const sd::LongType*") long[] shapeInfo);
 
 /**
  * Returns the element wise stride for this information
  * buffer
  * relative to a dimension and ordering for a reduction index
  */
-    @Namespace("shape") public native @Cast("sd::LongType") long reductionIndexElementWiseStride(@Cast("sd::LongType*") LongPointer buffer, IntPointer dimension,
-                                                                           int dimensionLength);
-    @Namespace("shape") public native @Cast("sd::LongType") long reductionIndexElementWiseStride(@Cast("sd::LongType*") LongBuffer buffer, IntBuffer dimension,
-                                                                           int dimensionLength);
-    @Namespace("shape") public native @Cast("sd::LongType") long reductionIndexElementWiseStride(@Cast("sd::LongType*") long[] buffer, int[] dimension,
-                                                                           int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long reductionIndexElementWiseStride(@Cast("sd::LongType*") LongPointer buffer, IntPointer dimension,
+                                                                   int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long reductionIndexElementWiseStride(@Cast("sd::LongType*") LongBuffer buffer, IntBuffer dimension,
+                                                                   int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long reductionIndexElementWiseStride(@Cast("sd::LongType*") long[] buffer, int[] dimension,
+                                                                   int dimensionLength);
 
 /**
  * Returns whether
  * the given shape info buffer
  * represents a scalar shape
  */
-    @Namespace("shape") public native int isScalar(@Cast("const sd::LongType*") LongPointer info);
-    @Namespace("shape") public native int isScalar(@Cast("const sd::LongType*") LongBuffer info);
-    @Namespace("shape") public native int isScalar(@Cast("const sd::LongType*") long[] info);
+@Namespace("shape") public native int isScalar(@Cast("const sd::LongType*") LongPointer info);
+@Namespace("shape") public native int isScalar(@Cast("const sd::LongType*") LongBuffer info);
+@Namespace("shape") public native int isScalar(@Cast("const sd::LongType*") long[] info);
 
 /**
  * Returns whether
@@ -7678,7 +7664,7 @@ public static final int
  * represents a scalar
  * shape or not
  */
-    @Namespace("shape") public native int isScalar(ShapeInformation info);
+@Namespace("shape") public native int isScalar(ShapeInformation info);
 
 /**
  * Return a copy of this array with the
@@ -7717,12 +7703,9 @@ public static final int
  * indexes should be the indexes to exclude
  * indexes length should be the length of indexes
  */
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer everyIndexBut(@Cast("const sd::LongType*") LongPointer indexes, int indexesLength, int begin,
-                                                          int end);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer everyIndexBut(@Cast("const sd::LongType*") LongBuffer indexes, int indexesLength, int begin,
-                                                          int end);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] everyIndexBut(@Cast("const sd::LongType*") long[] indexes, int indexesLength, int begin,
-                                                          int end);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer everyIndexBut(@Cast("const sd::LongType*") LongPointer indexes, int indexesLength, int begin, int end);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer everyIndexBut(@Cast("const sd::LongType*") LongBuffer indexes, int indexesLength, int begin, int end);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] everyIndexBut(@Cast("const sd::LongType*") long[] indexes, int indexesLength, int begin, int end);
 
 /**
  * Computes the offset for accessing
@@ -7742,15 +7725,15 @@ public static final int
  * for the shape to be returned as
  * @return the new shape
  */
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer ensureVectorShape(@Cast("sd::LongType*") LongPointer shape);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer ensureVectorShape(@Cast("sd::LongType*") LongBuffer shape);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] ensureVectorShape(@Cast("sd::LongType*") long[] shape);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer ensureVectorShape(@Cast("sd::LongType*") LongPointer shape);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer ensureVectorShape(@Cast("sd::LongType*") LongBuffer shape);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] ensureVectorShape(@Cast("sd::LongType*") long[] shape);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer createScalarShapeInfo();
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer createScalarShapeInfo();
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer createScalarShapeInfo(@Cast("sd::LongType*") LongPointer ret);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer createScalarShapeInfo(@Cast("sd::LongType*") LongBuffer ret);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] createScalarShapeInfo(@Cast("sd::LongType*") long[] ret);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer createScalarShapeInfo(@Cast("sd::LongType*") LongPointer ret);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer createScalarShapeInfo(@Cast("sd::LongType*") LongBuffer ret);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] createScalarShapeInfo(@Cast("sd::LongType*") long[] ret);
 
 /**
  * Generate an int buffer
@@ -7768,12 +7751,12 @@ public static final int
  * Keep the given indexes
  * in the data
  */
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer keep(@Cast("sd::LongType*") LongPointer data, @Const IntPointer index, int indexLength,
-                                                 int dataLength);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer keep(@Cast("sd::LongType*") LongBuffer data, @Const IntBuffer index, int indexLength,
-                                                 int dataLength);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] keep(@Cast("sd::LongType*") long[] data, @Const int[] index, int indexLength,
-                                                 int dataLength);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer keep(@Cast("sd::LongType*") LongPointer data, @Const IntPointer index, int indexLength,
+                                         int dataLength);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer keep(@Cast("sd::LongType*") LongBuffer data, @Const IntBuffer index, int indexLength,
+                                         int dataLength);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] keep(@Cast("sd::LongType*") long[] data, @Const int[] index, int indexLength,
+                                         int dataLength);
 
 /**
  * Generate reverse copy of the data
@@ -7811,12 +7794,12 @@ public static final int
  * @return the length per slice of the given shape
  * along the given dimension
  */
-    @Namespace("shape") public native @Cast("sd::LongType") long lengthPerSlice(int rank, @Cast("const sd::LongType*") LongPointer shape, @Const IntPointer dimension,
-                                                          int dimensionLength);
-    @Namespace("shape") public native @Cast("sd::LongType") long lengthPerSlice(int rank, @Cast("const sd::LongType*") LongBuffer shape, @Const IntBuffer dimension,
-                                                          int dimensionLength);
-    @Namespace("shape") public native @Cast("sd::LongType") long lengthPerSlice(int rank, @Cast("const sd::LongType*") long[] shape, @Const int[] dimension,
-                                                          int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long lengthPerSlice(int rank, @Cast("const sd::LongType*") LongPointer shape, @Const IntPointer dimension,
+                                                  int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long lengthPerSlice(int rank, @Cast("const sd::LongType*") LongBuffer shape, @Const IntBuffer dimension,
+                                                  int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long lengthPerSlice(int rank, @Cast("const sd::LongType*") long[] shape, @Const int[] dimension,
+                                                  int dimensionLength);
 
 /**
  * calculates the offset for a tensor
@@ -7825,15 +7808,15 @@ public static final int
  * @param tensorShape
  * @return
  */
-    @Namespace("shape") public native @Cast("sd::LongType") long sliceOffsetForTensor(int rank, int index, @Cast("const sd::LongType*") LongPointer shape,
-                                                                @Cast("const sd::LongType*") LongPointer tensorShape, int tensorShapeLength,
-                                                                @Const IntPointer dimension, int dimensionLength);
-    @Namespace("shape") public native @Cast("sd::LongType") long sliceOffsetForTensor(int rank, int index, @Cast("const sd::LongType*") LongBuffer shape,
-                                                                @Cast("const sd::LongType*") LongBuffer tensorShape, int tensorShapeLength,
-                                                                @Const IntBuffer dimension, int dimensionLength);
-    @Namespace("shape") public native @Cast("sd::LongType") long sliceOffsetForTensor(int rank, int index, @Cast("const sd::LongType*") long[] shape,
-                                                                @Cast("const sd::LongType*") long[] tensorShape, int tensorShapeLength,
-                                                                @Const int[] dimension, int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long sliceOffsetForTensor(int rank, int index, @Cast("const sd::LongType*") LongPointer shape,
+                                                        @Cast("const sd::LongType*") LongPointer tensorShape, int tensorShapeLength,
+                                                        @Const IntPointer dimension, int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long sliceOffsetForTensor(int rank, int index, @Cast("const sd::LongType*") LongBuffer shape,
+                                                        @Cast("const sd::LongType*") LongBuffer tensorShape, int tensorShapeLength,
+                                                        @Const IntBuffer dimension, int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long sliceOffsetForTensor(int rank, int index, @Cast("const sd::LongType*") long[] shape,
+                                                        @Cast("const sd::LongType*") long[] tensorShape, int tensorShapeLength,
+                                                        @Const int[] dimension, int dimensionLength);
 
 /**
  * calculates the offset for a tensor
@@ -7842,7 +7825,7 @@ public static final int
  * @param tensorShape
  * @return
  */
-    @Namespace("shape") public native @Cast("sd::LongType") long sliceOffsetForTensor(int index, int tensorLength, int lengthPerSlice2);
+@Namespace("shape") public native @Cast("sd::LongType") long sliceOffsetForTensor(int index, int tensorLength, int lengthPerSlice2);
 /**
  * Computes the tensor along dimension
  * offset
@@ -7862,27 +7845,21 @@ public static final int
  * of tensors along
  * a given dimension
  */
-    @Namespace("shape") public native @Cast("sd::LongType") long tensorsAlongDimension(int rank, int length,
-                                                                 @Cast("sd::LongType*") LongPointer shape, IntPointer dimension,
-                                                                 int dimensionLength);
-    @Namespace("shape") public native @Cast("sd::LongType") long tensorsAlongDimension(int rank, int length,
-                                                                 @Cast("sd::LongType*") LongBuffer shape, IntBuffer dimension,
-                                                                 int dimensionLength);
-    @Namespace("shape") public native @Cast("sd::LongType") long tensorsAlongDimension(int rank, int length,
-                                                                 @Cast("sd::LongType*") long[] shape, int[] dimension,
-                                                                 int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long tensorsAlongDimension(int rank, int length, @Cast("sd::LongType*") LongPointer shape,
+                                                         IntPointer dimension, int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long tensorsAlongDimension(int rank, int length, @Cast("sd::LongType*") LongBuffer shape,
+                                                         IntBuffer dimension, int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long tensorsAlongDimension(int rank, int length, @Cast("sd::LongType*") long[] shape,
+                                                         int[] dimension, int dimensionLength);
 
 /**
  * Computes the number
  * of tensors along
  * a given dimension
  */
-    @Namespace("shape") public native @Cast("sd::LongType") long tensorsAlongDimension(@Cast("sd::LongType*") LongPointer shapeInfo, IntPointer dimension,
-                                                                 int dimensionLength);
-    @Namespace("shape") public native @Cast("sd::LongType") long tensorsAlongDimension(@Cast("sd::LongType*") LongBuffer shapeInfo, IntBuffer dimension,
-                                                                 int dimensionLength);
-    @Namespace("shape") public native @Cast("sd::LongType") long tensorsAlongDimension(@Cast("sd::LongType*") long[] shapeInfo, int[] dimension,
-                                                                 int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long tensorsAlongDimension(@Cast("sd::LongType*") LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long tensorsAlongDimension(@Cast("sd::LongType*") LongBuffer shapeInfo, IntBuffer dimension, int dimensionLength);
+@Namespace("shape") public native @Cast("sd::LongType") long tensorsAlongDimension(@Cast("sd::LongType*") long[] shapeInfo, int[] dimension, int dimensionLength);
 
 /**
  * Returns the tensor along dimension
@@ -7892,13 +7869,13 @@ public static final int
  * @param i
  * @return
  */
-    @Namespace("shape") public native int tadForBlockIndex(int blockSize, int blockIdx, int i);
+@Namespace("shape") public native int tadForBlockIndex(int blockSize, int blockIdx, int i);
 
 /**
  * Computes the number of tads per block
  *
  */
-    @Namespace("shape") public native int tadsPerBlock(int blockSize, int tads);
+@Namespace("shape") public native int tadsPerBlock(int blockSize, int tads);
 
 //    SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *tadShapeInfo(int index, sd::LongType *xShapeInfo, sd::LongType
 //    *dimension,
@@ -7908,11 +7885,11 @@ public static final int
  * Returns a shape buffer
  * for the shape information metadata.
  */
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer toShapeBuffer(ShapeInformation info);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer toShapeBuffer(ShapeInformation info);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer toShapeBuffer(ShapeInformation info, @Cast("sd::LongType*") LongPointer ret);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer toShapeBuffer(ShapeInformation info, @Cast("sd::LongType*") LongBuffer ret);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] toShapeBuffer(ShapeInformation info, @Cast("sd::LongType*") long[] ret);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer toShapeBuffer(ShapeInformation info, @Cast("sd::LongType*") LongPointer ret);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer toShapeBuffer(ShapeInformation info, @Cast("sd::LongType*") LongBuffer ret);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] toShapeBuffer(ShapeInformation info, @Cast("sd::LongType*") long[] ret);
 
 /**
  * Returns the number of elements per thread
@@ -7963,7 +7940,7 @@ public static final int
  * @param numElementsPerTad the number of elements
  * per tad
  */
-    @Namespace("shape") public native int tadIndex(int i, int elementWiseStride, int numElementsPerTad);
+@Namespace("shape") public native int tadIndex(int i, int elementWiseStride, int numElementsPerTad);
 
 /**
  * Map a tad to a
@@ -7973,14 +7950,14 @@ public static final int
  * @param tadsForReduced the number of tads for the shrunk down problem (eg: 2,3)
  * @param tadsForOriginal the number of tads for the smaller problem (eg: 3)
  */
-    @Namespace("shape") public native int reductionIndexForTad(int tadIndexForOriginal, int tadsForReduced, int tadsForOriginal);
+@Namespace("shape") public native int reductionIndexForTad(int tadIndexForOriginal, int tadsForReduced, int tadsForOriginal);
 
 /**
  * Computes the number of tads
  * per reduce index for the
  * reduction tad.
  */
-    @Namespace("shape") public native int tadsPerReduceIndex(int tadsForReduce, int tadsForOriginal);
+@Namespace("shape") public native int tadsPerReduceIndex(int tadsForReduce, int tadsForOriginal);
 
 /**
  * Maps a linear index to a reduction index
@@ -7990,16 +7967,16 @@ public static final int
  * @param tadNum the number of tads for the shrunken problem
  * @param originalTadNum the tad number for the reduced version of the problem
  */
-    @Namespace("shape") public native int reductionIndexForLinear(int i, int elementWiseStride, int numElementsPerTad,
-                                                                 int tadNum, int originalTadNum);
+@Namespace("shape") public native int reductionIndexForLinear(int i, int elementWiseStride, int numElementsPerTad,
+                                                         int tadNum, int originalTadNum);
 
 /**
  * Returns the prod of the data
  * up to the given length
  */
-    @Namespace("shape") public native @Cast("sd::LongType") long prodLong(@Cast("const sd::LongType*") LongPointer data, int length);
-    @Namespace("shape") public native @Cast("sd::LongType") long prodLong(@Cast("const sd::LongType*") LongBuffer data, int length);
-    @Namespace("shape") public native @Cast("sd::LongType") long prodLong(@Cast("const sd::LongType*") long[] data, int length);
+@Namespace("shape") public native @Cast("sd::LongType") long prodLong(@Cast("const sd::LongType*") LongPointer data, int length);
+@Namespace("shape") public native @Cast("sd::LongType") long prodLong(@Cast("const sd::LongType*") LongBuffer data, int length);
+@Namespace("shape") public native @Cast("sd::LongType") long prodLong(@Cast("const sd::LongType*") long[] data, int length);
 
 /**
  * Get an offset for retrieval
@@ -8013,131 +7990,131 @@ public static final int
  * @return the double at the specified index
  */
 
-    @Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("const sd::LongType*") LongPointer coords,
-                                                            @Cast("sd::LongType") long baseOffset/*=0*/);
-    @Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("const sd::LongType*") LongPointer coords);
-    @Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Cast("const sd::LongType*") LongBuffer coords,
-                                                            @Cast("sd::LongType") long baseOffset/*=0*/);
-    @Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Cast("const sd::LongType*") LongBuffer coords);
-    @Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") long[] shapeInfo, @Cast("const sd::LongType*") long[] coords,
-                                                            @Cast("sd::LongType") long baseOffset/*=0*/);
-    @Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") long[] shapeInfo, @Cast("const sd::LongType*") long[] coords);
-    @Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongPointer shapeInfo, @Const IntPointer coords,
-                                                            @Cast("sd::LongType") long baseOffset/*=0*/);
-    @Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongPointer shapeInfo, @Const IntPointer coords);
-    @Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Const IntBuffer coords,
-                                                            @Cast("sd::LongType") long baseOffset/*=0*/);
-    @Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Const IntBuffer coords);
-    @Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") long[] shapeInfo, @Const int[] coords,
-                                                            @Cast("sd::LongType") long baseOffset/*=0*/);
-    @Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") long[] shapeInfo, @Const int[] coords);
-    @Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongPointer shapeInfo, @Const IntPointer coords,
-                                                            @Const IntPointer dims);
-    @Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Const IntBuffer coords,
-                                                            @Const IntBuffer dims);
-    @Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") long[] shapeInfo, @Const int[] coords,
-                                                            @Const int[] dims);  // length of dims is equal to rank of shapeInfo
+@Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("const sd::LongType*") LongPointer coords,
+                                                    @Cast("sd::LongType") long baseOffset/*=0*/);
+@Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("const sd::LongType*") LongPointer coords);
+@Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Cast("const sd::LongType*") LongBuffer coords,
+                                                    @Cast("sd::LongType") long baseOffset/*=0*/);
+@Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Cast("const sd::LongType*") LongBuffer coords);
+@Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") long[] shapeInfo, @Cast("const sd::LongType*") long[] coords,
+                                                    @Cast("sd::LongType") long baseOffset/*=0*/);
+@Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") long[] shapeInfo, @Cast("const sd::LongType*") long[] coords);
+@Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongPointer shapeInfo, @Const IntPointer coords,
+                                                    @Cast("sd::LongType") long baseOffset/*=0*/);
+@Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongPointer shapeInfo, @Const IntPointer coords);
+@Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Const IntBuffer coords,
+                                                    @Cast("sd::LongType") long baseOffset/*=0*/);
+@Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Const IntBuffer coords);
+@Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") long[] shapeInfo, @Const int[] coords,
+                                                    @Cast("sd::LongType") long baseOffset/*=0*/);
+@Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") long[] shapeInfo, @Const int[] coords);
+@Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongPointer shapeInfo, @Const IntPointer coords,
+                                                    @Const IntPointer dims);
+@Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Const IntBuffer coords,
+                                                    @Const IntBuffer dims);
+@Namespace("shape") public native @Cast("sd::LongType") long getOffset(@Cast("const sd::LongType*") long[] shapeInfo, @Const int[] coords,
+                                                    @Const int[] dims);  // length of dims is equal to rank of shapeInfo
 
 // all three arrays should have same rank
 // all three arrays should have same dimensions or some of them are 1 (that is satisfy broadcasting principle), strides
 // may be different shapeInfo1 - first array should have max length compared to rest of two arrays
-    @Namespace("shape") public native void getOffsetBroadcast(@Cast("const sd::LongType") long startInd, @Cast("const sd::LongType") long ind,
-                                                      @Cast("const sd::LongType*") LongPointer shapeInfo1, @Cast("const sd::LongType*") LongPointer shapeInfo2,
-                                                      @Cast("const sd::LongType*") LongPointer shapeInfo3, @Cast("const bool") boolean sameOffsets12,
-                                                      @Cast("const bool") boolean sameOffsets13, IntPointer coords, @Cast("sd::LongType*") @ByRef LongPointer offset1,
-                                                      @Cast("sd::LongType*") @ByRef LongPointer offset2, @Cast("sd::LongType*") @ByRef LongPointer offset3);
-    @Namespace("shape") public native void getOffsetBroadcast(@Cast("const sd::LongType") long startInd, @Cast("const sd::LongType") long ind,
-                                                      @Cast("const sd::LongType*") LongBuffer shapeInfo1, @Cast("const sd::LongType*") LongBuffer shapeInfo2,
-                                                      @Cast("const sd::LongType*") LongBuffer shapeInfo3, @Cast("const bool") boolean sameOffsets12,
-                                                      @Cast("const bool") boolean sameOffsets13, IntBuffer coords, @Cast("sd::LongType*") @ByRef LongBuffer offset1,
-                                                      @Cast("sd::LongType*") @ByRef LongBuffer offset2, @Cast("sd::LongType*") @ByRef LongBuffer offset3);
-    @Namespace("shape") public native void getOffsetBroadcast(@Cast("const sd::LongType") long startInd, @Cast("const sd::LongType") long ind,
-                                                      @Cast("const sd::LongType*") long[] shapeInfo1, @Cast("const sd::LongType*") long[] shapeInfo2,
-                                                      @Cast("const sd::LongType*") long[] shapeInfo3, @Cast("const bool") boolean sameOffsets12,
-                                                      @Cast("const bool") boolean sameOffsets13, int[] coords, @Cast("sd::LongType*") @ByRef long[] offset1,
-                                                      @Cast("sd::LongType*") @ByRef long[] offset2, @Cast("sd::LongType*") @ByRef long[] offset3);
+@Namespace("shape") public native void getOffsetBroadcast(@Cast("const sd::LongType") long startInd, @Cast("const sd::LongType") long ind,
+                                              @Cast("const sd::LongType*") LongPointer shapeInfo1, @Cast("const sd::LongType*") LongPointer shapeInfo2,
+                                              @Cast("const sd::LongType*") LongPointer shapeInfo3, @Cast("const bool") boolean sameOffsets12,
+                                              @Cast("const bool") boolean sameOffsets13, IntPointer coords, @Cast("sd::LongType*") @ByRef LongPointer offset1,
+                                              @Cast("sd::LongType*") @ByRef LongPointer offset2, @Cast("sd::LongType*") @ByRef LongPointer offset3);
+@Namespace("shape") public native void getOffsetBroadcast(@Cast("const sd::LongType") long startInd, @Cast("const sd::LongType") long ind,
+                                              @Cast("const sd::LongType*") LongBuffer shapeInfo1, @Cast("const sd::LongType*") LongBuffer shapeInfo2,
+                                              @Cast("const sd::LongType*") LongBuffer shapeInfo3, @Cast("const bool") boolean sameOffsets12,
+                                              @Cast("const bool") boolean sameOffsets13, IntBuffer coords, @Cast("sd::LongType*") @ByRef LongBuffer offset1,
+                                              @Cast("sd::LongType*") @ByRef LongBuffer offset2, @Cast("sd::LongType*") @ByRef LongBuffer offset3);
+@Namespace("shape") public native void getOffsetBroadcast(@Cast("const sd::LongType") long startInd, @Cast("const sd::LongType") long ind,
+                                              @Cast("const sd::LongType*") long[] shapeInfo1, @Cast("const sd::LongType*") long[] shapeInfo2,
+                                              @Cast("const sd::LongType*") long[] shapeInfo3, @Cast("const bool") boolean sameOffsets12,
+                                              @Cast("const bool") boolean sameOffsets13, int[] coords, @Cast("sd::LongType*") @ByRef long[] offset1,
+                                              @Cast("sd::LongType*") @ByRef long[] offset2, @Cast("sd::LongType*") @ByRef long[] offset3);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer createShapeInfo(@Cast("sd::LongType*") LongPointer shape, @Cast("sd::LongType*") LongPointer stride, int rank);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer createShapeInfo(@Cast("sd::LongType*") LongBuffer shape, @Cast("sd::LongType*") LongBuffer stride, int rank);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] createShapeInfo(@Cast("sd::LongType*") long[] shape, @Cast("sd::LongType*") long[] stride, int rank);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer createShapeInfo(@Cast("sd::LongType*") LongPointer shape, @Cast("sd::LongType*") LongPointer stride, int rank);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer createShapeInfo(@Cast("sd::LongType*") LongBuffer shape, @Cast("sd::LongType*") LongBuffer stride, int rank);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] createShapeInfo(@Cast("sd::LongType*") long[] shape, @Cast("sd::LongType*") long[] stride, int rank);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer createShapeInfo(@Cast("sd::LongType*") LongPointer shape, @Cast("sd::LongType*") LongPointer stride, int rank,
-                                                            @Cast("sd::LongType*") LongPointer buffer);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer createShapeInfo(@Cast("sd::LongType*") LongBuffer shape, @Cast("sd::LongType*") LongBuffer stride, int rank,
-                                                            @Cast("sd::LongType*") LongBuffer buffer);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] createShapeInfo(@Cast("sd::LongType*") long[] shape, @Cast("sd::LongType*") long[] stride, int rank,
-                                                            @Cast("sd::LongType*") long[] buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer createShapeInfo(@Cast("sd::LongType*") LongPointer shape, @Cast("sd::LongType*") LongPointer stride, int rank,
+                                                    @Cast("sd::LongType*") LongPointer buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer createShapeInfo(@Cast("sd::LongType*") LongBuffer shape, @Cast("sd::LongType*") LongBuffer stride, int rank,
+                                                    @Cast("sd::LongType*") LongBuffer buffer);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] createShapeInfo(@Cast("sd::LongType*") long[] shape, @Cast("sd::LongType*") long[] stride, int rank,
+                                                    @Cast("sd::LongType*") long[] buffer);
 
 /**
  * Convert a linear index to the corresponding coordinates
  * for example if shape is {2, 4}, then index 5 corresponds to coordinates [1, 1]
  */
-    @Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("sd::LongType*") LongPointer coords);
-    @Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongBuffer shapeInfo, @Cast("sd::LongType*") LongBuffer coords);
-    @Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") long[] shapeInfo, @Cast("sd::LongType*") long[] coords);
-    @Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongPointer shapeInfo, IntPointer coords);
-    @Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongBuffer shapeInfo, IntBuffer coords);
-    @Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") long[] shapeInfo, int[] coords);
-    @Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, int rank, @Cast("const sd::LongType*") LongPointer shape,
-                                                       @Cast("sd::LongType*") LongPointer coords);
-    @Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, int rank, @Cast("const sd::LongType*") LongBuffer shape,
-                                                       @Cast("sd::LongType*") LongBuffer coords);
-    @Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, int rank, @Cast("const sd::LongType*") long[] shape,
-                                                       @Cast("sd::LongType*") long[] coords);
-    @Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, int rank, @Cast("const sd::LongType*") LongPointer shape,
-                                                       IntPointer coords);
-    @Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, int rank, @Cast("const sd::LongType*") LongBuffer shape,
-                                                       IntBuffer coords);
-    @Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, int rank, @Cast("const sd::LongType*") long[] shape,
-                                                       int[] coords);
+@Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("sd::LongType*") LongPointer coords);
+@Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongBuffer shapeInfo, @Cast("sd::LongType*") LongBuffer coords);
+@Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") long[] shapeInfo, @Cast("sd::LongType*") long[] coords);
+@Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongPointer shapeInfo, IntPointer coords);
+@Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongBuffer shapeInfo, IntBuffer coords);
+@Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") long[] shapeInfo, int[] coords);
+@Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, int rank, @Cast("const sd::LongType*") LongPointer shape,
+                                               @Cast("sd::LongType*") LongPointer coords);
+@Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, int rank, @Cast("const sd::LongType*") LongBuffer shape,
+                                               @Cast("sd::LongType*") LongBuffer coords);
+@Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, int rank, @Cast("const sd::LongType*") long[] shape,
+                                               @Cast("sd::LongType*") long[] coords);
+@Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, int rank, @Cast("const sd::LongType*") LongPointer shape,
+                                               IntPointer coords);
+@Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, int rank, @Cast("const sd::LongType*") LongBuffer shape,
+                                               IntBuffer coords);
+@Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, int rank, @Cast("const sd::LongType*") long[] shape,
+                                               int[] coords);
 
-    @Namespace("shape") public native void index2coordsCPU(@Cast("const sd::LongType") long startIndex, @Cast("const sd::LongType") long index,
-                                                          @Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("sd::LongType*") LongPointer coords);
-    @Namespace("shape") public native void index2coordsCPU(@Cast("const sd::LongType") long startIndex, @Cast("const sd::LongType") long index,
-                                                          @Cast("const sd::LongType*") LongBuffer shapeInfo, @Cast("sd::LongType*") LongBuffer coords);
-    @Namespace("shape") public native void index2coordsCPU(@Cast("const sd::LongType") long startIndex, @Cast("const sd::LongType") long index,
-                                                          @Cast("const sd::LongType*") long[] shapeInfo, @Cast("sd::LongType*") long[] coords);
-    @Namespace("shape") public native void index2coordsCPU(@Cast("const sd::LongType") long startIndex, @Cast("const sd::LongType") long index,
-                                                          @Cast("const sd::LongType*") LongPointer shapeInfo, IntPointer coords);
-    @Namespace("shape") public native void index2coordsCPU(@Cast("const sd::LongType") long startIndex, @Cast("const sd::LongType") long index,
-                                                          @Cast("const sd::LongType*") LongBuffer shapeInfo, IntBuffer coords);
-    @Namespace("shape") public native void index2coordsCPU(@Cast("const sd::LongType") long startIndex, @Cast("const sd::LongType") long index,
-                                                          @Cast("const sd::LongType*") long[] shapeInfo, int[] coords);
+@Namespace("shape") public native void index2coordsCPU(@Cast("const sd::LongType") long startIndex, @Cast("const sd::LongType") long index,
+                                                  @Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("sd::LongType*") LongPointer coords);
+@Namespace("shape") public native void index2coordsCPU(@Cast("const sd::LongType") long startIndex, @Cast("const sd::LongType") long index,
+                                                  @Cast("const sd::LongType*") LongBuffer shapeInfo, @Cast("sd::LongType*") LongBuffer coords);
+@Namespace("shape") public native void index2coordsCPU(@Cast("const sd::LongType") long startIndex, @Cast("const sd::LongType") long index,
+                                                  @Cast("const sd::LongType*") long[] shapeInfo, @Cast("sd::LongType*") long[] coords);
+@Namespace("shape") public native void index2coordsCPU(@Cast("const sd::LongType") long startIndex, @Cast("const sd::LongType") long index,
+                                                  @Cast("const sd::LongType*") LongPointer shapeInfo, IntPointer coords);
+@Namespace("shape") public native void index2coordsCPU(@Cast("const sd::LongType") long startIndex, @Cast("const sd::LongType") long index,
+                                                  @Cast("const sd::LongType*") LongBuffer shapeInfo, IntBuffer coords);
+@Namespace("shape") public native void index2coordsCPU(@Cast("const sd::LongType") long startIndex, @Cast("const sd::LongType") long index,
+                                                  @Cast("const sd::LongType*") long[] shapeInfo, int[] coords);
 // SD_LIB_EXPORT SD_HOST_DEVICE void index2coordsCPU(const sd::LongType& startIndex, const sd::LongType& index, const
 // sd::LongType *shapeInfo, const int* dims, sd::LongType *coords);
 
 /**
  * take into account only dimensions stored in tadDims, tadDims must be sorted in increasing order!
  */
-    @Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongPointer shapeInfo, @Const IntPointer dims,
-                                                       int dimsLen, IntPointer coords);
-    @Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongBuffer shapeInfo, @Const IntBuffer dims,
-                                                       int dimsLen, IntBuffer coords);
-    @Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") long[] shapeInfo, @Const int[] dims,
-                                                       int dimsLen, int[] coords);
+@Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongPointer shapeInfo, @Const IntPointer dims,
+                                               int dimsLen, IntPointer coords);
+@Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongBuffer shapeInfo, @Const IntBuffer dims,
+                                               int dimsLen, IntBuffer coords);
+@Namespace("shape") public native void index2coords(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") long[] shapeInfo, @Const int[] dims,
+                                               int dimsLen, int[] coords);
 
 /**
  * Convert coordinates to the corresponding linear index (sequence number in other words)
  * for example if shape is {2, 4} and coordinates [1, 1] then index 5 is returned
  */
-    @Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("const sd::LongType*") LongPointer coords);
-    @Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Cast("const sd::LongType*") LongBuffer coords);
-    @Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") long[] shapeInfo, @Cast("const sd::LongType*") long[] coords);
-    @Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") LongPointer shapeInfo, @Const IntPointer coords);
-    @Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Const IntBuffer coords);
-    @Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") long[] shapeInfo, @Const int[] coords);
-    @Namespace("shape") public native @Cast("sd::LongType") long coords2index(int rank, @Cast("const sd::LongType*") LongPointer shape, @Const IntPointer coords);
-    @Namespace("shape") public native @Cast("sd::LongType") long coords2index(int rank, @Cast("const sd::LongType*") LongBuffer shape, @Const IntBuffer coords);
-    @Namespace("shape") public native @Cast("sd::LongType") long coords2index(int rank, @Cast("const sd::LongType*") long[] shape, @Const int[] coords);
+@Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("const sd::LongType*") LongPointer coords);
+@Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Cast("const sd::LongType*") LongBuffer coords);
+@Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") long[] shapeInfo, @Cast("const sd::LongType*") long[] coords);
+@Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") LongPointer shapeInfo, @Const IntPointer coords);
+@Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Const IntBuffer coords);
+@Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") long[] shapeInfo, @Const int[] coords);
+@Namespace("shape") public native @Cast("sd::LongType") long coords2index(int rank, @Cast("const sd::LongType*") LongPointer shape, @Const IntPointer coords);
+@Namespace("shape") public native @Cast("sd::LongType") long coords2index(int rank, @Cast("const sd::LongType*") LongBuffer shape, @Const IntBuffer coords);
+@Namespace("shape") public native @Cast("sd::LongType") long coords2index(int rank, @Cast("const sd::LongType*") long[] shape, @Const int[] coords);
 /**
  * take into account only dimensions stored in tadDims, tadDims must be sorted in increasing order!
  */
-    @Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") LongPointer shapeInfo, @Const IntPointer dims,
-                                                               int dimsSize, @Const IntPointer coords);
-    @Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Const IntBuffer dims,
-                                                               int dimsSize, @Const IntBuffer coords);
-    @Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") long[] shapeInfo, @Const int[] dims,
-                                                               int dimsSize, @Const int[] coords);
+@Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") LongPointer shapeInfo, @Const IntPointer dims,
+                                                       int dimsSize, @Const IntPointer coords);
+@Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Const IntBuffer dims,
+                                                       int dimsSize, @Const IntBuffer coords);
+@Namespace("shape") public native @Cast("sd::LongType") long coords2index(@Cast("const sd::LongType*") long[] shapeInfo, @Const int[] dims,
+                                                       int dimsSize, @Const int[] coords);
 
 /**
  * increment n-dimensional array by one iteration by changing coord appropriately
@@ -8150,216 +8127,210 @@ public static final int
 /* calculates an array buffer offset for given "index" using following formula: offset = coord_0*stride_0 +
  * coord_1*stride_1 + ... + coord_{rank-1}*stride_{rank-1}
  */
-    @Namespace("shape") public native @Cast("sd::Unsigned") int getIndexOffset(@Cast("sd::Unsigned") int index, @Cast("const sd::Unsigned*") IntPointer shapeInfo);
-    @Namespace("shape") public native @Cast("sd::Unsigned") int getIndexOffset(@Cast("sd::Unsigned") int index, @Cast("const sd::Unsigned*") IntBuffer shapeInfo);
-    @Namespace("shape") public native @Cast("sd::Unsigned") int getIndexOffset(@Cast("sd::Unsigned") int index, @Cast("const sd::Unsigned*") int[] shapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType") long getIndexOffset(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType") long getIndexOffset(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType") long getIndexOffset(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") long[] shapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType") long indexOffset(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongPointer lShapeInfo,
-                                                              @Cast("const sd::Unsigned*") IntPointer uShapeInfo, @Cast("const bool") boolean useUnsigned);
-    @Namespace("shape") public native @Cast("sd::LongType") long indexOffset(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongBuffer lShapeInfo,
-                                                              @Cast("const sd::Unsigned*") IntBuffer uShapeInfo, @Cast("const bool") boolean useUnsigned);
-    @Namespace("shape") public native @Cast("sd::LongType") long indexOffset(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") long[] lShapeInfo,
-                                                              @Cast("const sd::Unsigned*") int[] uShapeInfo, @Cast("const bool") boolean useUnsigned);
+@Namespace("shape") public native @Cast("sd::Unsigned") int getIndexOffset(@Cast("sd::Unsigned") int index, @Cast("const sd::Unsigned*") IntPointer shapeInfo);
+@Namespace("shape") public native @Cast("sd::Unsigned") int getIndexOffset(@Cast("sd::Unsigned") int index, @Cast("const sd::Unsigned*") IntBuffer shapeInfo);
+@Namespace("shape") public native @Cast("sd::Unsigned") int getIndexOffset(@Cast("sd::Unsigned") int index, @Cast("const sd::Unsigned*") int[] shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long getIndexOffset(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long getIndexOffset(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long getIndexOffset(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long indexOffset(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongPointer lShapeInfo,
+                                                      @Cast("const sd::Unsigned*") IntPointer uShapeInfo, @Cast("const bool") boolean useUnsigned);
+@Namespace("shape") public native @Cast("sd::LongType") long indexOffset(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") LongBuffer lShapeInfo,
+                                                      @Cast("const sd::Unsigned*") IntBuffer uShapeInfo, @Cast("const bool") boolean useUnsigned);
+@Namespace("shape") public native @Cast("sd::LongType") long indexOffset(@Cast("sd::LongType") long index, @Cast("const sd::LongType*") long[] lShapeInfo,
+                                                      @Cast("const sd::Unsigned*") int[] uShapeInfo, @Cast("const bool") boolean useUnsigned);
 
-    @Namespace("shape") public native void printShapeInfo(@Cast("const sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native void printShapeInfo(@Cast("const sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native void printShapeInfo(@Cast("const sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native void printShapeInfo(@Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native void printShapeInfo(@Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native void printShapeInfo(@Cast("const sd::LongType*") long[] shapeInfo);
 
-    @Namespace("shape") public native void printShapeInfoLinear(@Cast("const sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native void printShapeInfoLinear(@Cast("const sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native void printShapeInfoLinear(@Cast("const sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native void printShapeInfoLinear(@Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native void printShapeInfoLinear(@Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native void printShapeInfoLinear(@Cast("const sd::LongType*") long[] shapeInfo);
 
-    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, @Cast("const sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, @Cast("const sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, @Cast("const sd::LongType*") long[] shapeInfo);
-    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, @Cast("const sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, @Cast("const sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, @Cast("const sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, @Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, @Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, @Cast("const sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, @Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, @Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, @Cast("const sd::LongType*") long[] shapeInfo);
 
-    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, int rank, @Cast("const sd::LongType*") LongPointer shape,
-                                                        @Cast("const sd::LongType*") LongPointer strides);
-    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, int rank, @Cast("const sd::LongType*") LongBuffer shape,
-                                                        @Cast("const sd::LongType*") LongBuffer strides);
-    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, int rank, @Cast("const sd::LongType*") long[] shape,
-                                                        @Cast("const sd::LongType*") long[] strides);
-    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, int rank, @Cast("const sd::LongType*") LongPointer shape,
-                                                        @Cast("const sd::LongType*") LongPointer strides);
-    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, int rank, @Cast("const sd::LongType*") LongBuffer shape,
-                                                        @Cast("const sd::LongType*") LongBuffer strides);
-    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, int rank, @Cast("const sd::LongType*") long[] shape,
-                                                        @Cast("const sd::LongType*") long[] strides);
+@Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, int rank, @Cast("const sd::LongType*") LongPointer shape,
+                                                @Cast("const sd::LongType*") LongPointer strides);
+@Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, int rank, @Cast("const sd::LongType*") LongBuffer shape,
+                                                @Cast("const sd::LongType*") LongBuffer strides);
+@Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, int rank, @Cast("const sd::LongType*") long[] shape,
+                                                @Cast("const sd::LongType*") long[] strides);
+@Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, int rank, @Cast("const sd::LongType*") LongPointer shape,
+                                                @Cast("const sd::LongType*") LongPointer strides);
+@Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, int rank, @Cast("const sd::LongType*") LongBuffer shape,
+                                                @Cast("const sd::LongType*") LongBuffer strides);
+@Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, int rank, @Cast("const sd::LongType*") long[] shape,
+                                                @Cast("const sd::LongType*") long[] strides);
 
-    @Namespace("shape") public native void printIntArray(@Cast("const sd::LongType*") LongPointer arr, int length);
-    @Namespace("shape") public native void printIntArray(@Cast("const sd::LongType*") LongBuffer arr, int length);
-    @Namespace("shape") public native void printIntArray(@Cast("const sd::LongType*") long[] arr, int length);
-    @Namespace("shape") public native void printIntArray(@Const IntPointer arr, int length);
-    @Namespace("shape") public native void printIntArray(@Const IntBuffer arr, int length);
-    @Namespace("shape") public native void printIntArray(@Const int[] arr, int length);
+@Namespace("shape") public native void printIntArray(@Cast("const sd::LongType*") LongPointer arr, int length);
+@Namespace("shape") public native void printIntArray(@Cast("const sd::LongType*") LongBuffer arr, int length);
+@Namespace("shape") public native void printIntArray(@Cast("const sd::LongType*") long[] arr, int length);
+@Namespace("shape") public native void printIntArray(@Const IntPointer arr, int length);
+@Namespace("shape") public native void printIntArray(@Const IntBuffer arr, int length);
+@Namespace("shape") public native void printIntArray(@Const int[] arr, int length);
 
-    @Namespace("shape") public native void printArray(FloatPointer arr, int length);
-    @Namespace("shape") public native void printArray(FloatBuffer arr, int length);
-    @Namespace("shape") public native void printArray(float[] arr, int length);
+@Namespace("shape") public native void printArray(FloatPointer arr, int length);
+@Namespace("shape") public native void printArray(FloatBuffer arr, int length);
+@Namespace("shape") public native void printArray(float[] arr, int length);
 
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeBufferOfNpy(int rank, @Cast("unsigned int*") IntPointer shape, @Cast("bool") boolean fortranOrder);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer shapeBufferOfNpy(int rank, @Cast("unsigned int*") IntBuffer shape, @Cast("bool") boolean fortranOrder);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] shapeBufferOfNpy(int rank, @Cast("unsigned int*") int[] shape, @Cast("bool") boolean fortranOrder);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer shapeBufferOfNpy(int rank, @Cast("unsigned int*") IntPointer shape, @Cast("bool") boolean fortranOrder);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer shapeBufferOfNpy(int rank, @Cast("unsigned int*") IntBuffer shape, @Cast("bool") boolean fortranOrder);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] shapeBufferOfNpy(int rank, @Cast("unsigned int*") int[] shape, @Cast("bool") boolean fortranOrder);
 
 //    SD_LIB_EXPORT SD_HOST sd::LongType *shapeBufferOfNpyBuffer(char *buffer);
 
 // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too
 // big number of dimensions) also sort input array of dimensions, this operation is also necessary for creating TAD
 // object
-    @Namespace("shape") public native void checkDimensions(int rank, @StdVector IntPointer dimensions);
-    @Namespace("shape") public native void checkDimensions(int rank, @StdVector IntBuffer dimensions);
-    @Namespace("shape") public native void checkDimensions(int rank, @StdVector int[] dimensions);
+@Namespace("shape") public native void checkDimensions(int rank, @StdVector IntPointer dimensions);
+@Namespace("shape") public native void checkDimensions(int rank, @StdVector IntBuffer dimensions);
+@Namespace("shape") public native void checkDimensions(int rank, @StdVector int[] dimensions);
 
 // function calculates linear index of array min, min is sub-array of max, index to be returned is min-array's index and
 // corresponds to maxIdx of max array dimsToExclude - should be sorted in increasing order
-    @Namespace("shape") public native @Cast("sd::LongType") long subArrayIndex(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
-                                                         @Cast("const sd::LongType*") LongPointer minShapeInfo,
-                                                         @Const IntPointer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
-    @Namespace("shape") public native @Cast("sd::LongType") long subArrayIndex(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
-                                                         @Cast("const sd::LongType*") LongPointer minShapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType") long subArrayIndex(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
-                                                         @Cast("const sd::LongType*") LongBuffer minShapeInfo,
-                                                         @Const IntBuffer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
-    @Namespace("shape") public native @Cast("sd::LongType") long subArrayIndex(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
-                                                         @Cast("const sd::LongType*") LongBuffer minShapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType") long subArrayIndex(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") long[] maxShapeInfo,
-                                                         @Cast("const sd::LongType*") long[] minShapeInfo,
-                                                         @Const int[] dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
-    @Namespace("shape") public native @Cast("sd::LongType") long subArrayIndex(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") long[] maxShapeInfo,
-                                                         @Cast("const sd::LongType*") long[] minShapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long subArrayIndex(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
+                                                 @Cast("const sd::LongType*") LongPointer minShapeInfo, @Const IntPointer dimsToExclude/*=nullptr*/,
+                                                 int dimsLen/*=-1*/);
+@Namespace("shape") public native @Cast("sd::LongType") long subArrayIndex(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
+                                                 @Cast("const sd::LongType*") LongPointer minShapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long subArrayIndex(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
+                                                 @Cast("const sd::LongType*") LongBuffer minShapeInfo, @Const IntBuffer dimsToExclude/*=nullptr*/,
+                                                 int dimsLen/*=-1*/);
+@Namespace("shape") public native @Cast("sd::LongType") long subArrayIndex(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
+                                                 @Cast("const sd::LongType*") LongBuffer minShapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long subArrayIndex(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") long[] maxShapeInfo,
+                                                 @Cast("const sd::LongType*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/,
+                                                 int dimsLen/*=-1*/);
+@Namespace("shape") public native @Cast("sd::LongType") long subArrayIndex(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") long[] maxShapeInfo,
+                                                 @Cast("const sd::LongType*") long[] minShapeInfo);
 
 // function calculates absolute offset of min array, min is sub-array of max, offset to be returned corresponds to
 // maxIdx of max array dimsToExclude - should be sorted in increasing order
-    @Namespace("shape") public native @Cast("sd::LongType") long subArrayOffset(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
-                                                                 @Cast("const sd::LongType*") LongPointer minShapeInfo,
-                                                                 @Const IntPointer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
-    @Namespace("shape") public native @Cast("sd::LongType") long subArrayOffset(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
-                                                                 @Cast("const sd::LongType*") LongPointer minShapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType") long subArrayOffset(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
-                                                                 @Cast("const sd::LongType*") LongBuffer minShapeInfo,
-                                                                 @Const IntBuffer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
-    @Namespace("shape") public native @Cast("sd::LongType") long subArrayOffset(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
-                                                                 @Cast("const sd::LongType*") LongBuffer minShapeInfo);
-    @Namespace("shape") public native @Cast("sd::LongType") long subArrayOffset(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") long[] maxShapeInfo,
-                                                                 @Cast("const sd::LongType*") long[] minShapeInfo,
-                                                                 @Const int[] dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
-    @Namespace("shape") public native @Cast("sd::LongType") long subArrayOffset(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") long[] maxShapeInfo,
-                                                                 @Cast("const sd::LongType*") long[] minShapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long subArrayOffset(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
+                                                         @Cast("const sd::LongType*") LongPointer minShapeInfo,
+                                                         @Const IntPointer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
+@Namespace("shape") public native @Cast("sd::LongType") long subArrayOffset(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
+                                                         @Cast("const sd::LongType*") LongPointer minShapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long subArrayOffset(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
+                                                         @Cast("const sd::LongType*") LongBuffer minShapeInfo,
+                                                         @Const IntBuffer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
+@Namespace("shape") public native @Cast("sd::LongType") long subArrayOffset(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
+                                                         @Cast("const sd::LongType*") LongBuffer minShapeInfo);
+@Namespace("shape") public native @Cast("sd::LongType") long subArrayOffset(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") long[] maxShapeInfo,
+                                                         @Cast("const sd::LongType*") long[] minShapeInfo,
+                                                         @Const int[] dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
+@Namespace("shape") public native @Cast("sd::LongType") long subArrayOffset(@Cast("const sd::LongType") long maxIdx, @Cast("const sd::LongType*") long[] maxShapeInfo,
+                                                         @Cast("const sd::LongType*") long[] minShapeInfo);
 
 // max array is outer for min array, min array is sub-array of max array
 // function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array
 // (already stored in maxIdxs) dimsToExclude - should be sorted in increasing order dimsLen - length of dimsToExclude,
 // if not set (= -1), then it is calculated as maxRank - minRank
-    @Namespace("shape") public native void maxIndToMinInd(IntPointer maxIdxs, IntPointer minIdxs, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
-                                                         @Cast("const sd::LongType*") LongPointer minShapeInfo, @Const IntPointer dimsToExclude/*=nullptr*/,
-                                                         int dimsLen/*=-1*/);
-    @Namespace("shape") public native void maxIndToMinInd(IntPointer maxIdxs, IntPointer minIdxs, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
-                                                         @Cast("const sd::LongType*") LongPointer minShapeInfo);
-    @Namespace("shape") public native void maxIndToMinInd(IntBuffer maxIdxs, IntBuffer minIdxs, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
-                                                         @Cast("const sd::LongType*") LongBuffer minShapeInfo, @Const IntBuffer dimsToExclude/*=nullptr*/,
-                                                         int dimsLen/*=-1*/);
-    @Namespace("shape") public native void maxIndToMinInd(IntBuffer maxIdxs, IntBuffer minIdxs, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
-                                                         @Cast("const sd::LongType*") LongBuffer minShapeInfo);
-    @Namespace("shape") public native void maxIndToMinInd(int[] maxIdxs, int[] minIdxs, @Cast("const sd::LongType*") long[] maxShapeInfo,
-                                                         @Cast("const sd::LongType*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/,
-                                                         int dimsLen/*=-1*/);
-    @Namespace("shape") public native void maxIndToMinInd(int[] maxIdxs, int[] minIdxs, @Cast("const sd::LongType*") long[] maxShapeInfo,
-                                                         @Cast("const sd::LongType*") long[] minShapeInfo);
+@Namespace("shape") public native void maxIndToMinInd(IntPointer maxIdxs, IntPointer minIdxs, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
+                                                 @Cast("const sd::LongType*") LongPointer minShapeInfo, @Const IntPointer dimsToExclude/*=nullptr*/,
+                                                 int dimsLen/*=-1*/);
+@Namespace("shape") public native void maxIndToMinInd(IntPointer maxIdxs, IntPointer minIdxs, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
+                                                 @Cast("const sd::LongType*") LongPointer minShapeInfo);
+@Namespace("shape") public native void maxIndToMinInd(IntBuffer maxIdxs, IntBuffer minIdxs, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
+                                                 @Cast("const sd::LongType*") LongBuffer minShapeInfo, @Const IntBuffer dimsToExclude/*=nullptr*/,
+                                                 int dimsLen/*=-1*/);
+@Namespace("shape") public native void maxIndToMinInd(IntBuffer maxIdxs, IntBuffer minIdxs, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
+                                                 @Cast("const sd::LongType*") LongBuffer minShapeInfo);
+@Namespace("shape") public native void maxIndToMinInd(int[] maxIdxs, int[] minIdxs, @Cast("const sd::LongType*") long[] maxShapeInfo,
+                                                 @Cast("const sd::LongType*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/,
+                                                 int dimsLen/*=-1*/);
+@Namespace("shape") public native void maxIndToMinInd(int[] maxIdxs, int[] minIdxs, @Cast("const sd::LongType*") long[] maxShapeInfo,
+                                                 @Cast("const sd::LongType*") long[] minShapeInfo);
 
 // calculate indexes of max-array, these output indexes correspond to one minIdx index of min-array which is sub-array
 // of max-array dimsToExclude - should be sorted in increasing order
-    @Namespace("shape") public native int outerArrayIndexes(IntPointer maxIdxs, @Cast("const sd::LongType") long minIdx,
-                                                    @Cast("const sd::LongType*") LongPointer maxShapeInfo, @Cast("const sd::LongType*") LongPointer minShapeInfo,
-                                                    @Const IntPointer dimsToExclude/*=nullptr*/);
-    @Namespace("shape") public native int outerArrayIndexes(IntPointer maxIdxs, @Cast("const sd::LongType") long minIdx,
-                                                    @Cast("const sd::LongType*") LongPointer maxShapeInfo, @Cast("const sd::LongType*") LongPointer minShapeInfo);
-    @Namespace("shape") public native int outerArrayIndexes(IntBuffer maxIdxs, @Cast("const sd::LongType") long minIdx,
-                                                    @Cast("const sd::LongType*") LongBuffer maxShapeInfo, @Cast("const sd::LongType*") LongBuffer minShapeInfo,
-                                                    @Const IntBuffer dimsToExclude/*=nullptr*/);
-    @Namespace("shape") public native int outerArrayIndexes(IntBuffer maxIdxs, @Cast("const sd::LongType") long minIdx,
-                                                    @Cast("const sd::LongType*") LongBuffer maxShapeInfo, @Cast("const sd::LongType*") LongBuffer minShapeInfo);
-    @Namespace("shape") public native int outerArrayIndexes(int[] maxIdxs, @Cast("const sd::LongType") long minIdx,
-                                                    @Cast("const sd::LongType*") long[] maxShapeInfo, @Cast("const sd::LongType*") long[] minShapeInfo,
-                                                    @Const int[] dimsToExclude/*=nullptr*/);
-    @Namespace("shape") public native int outerArrayIndexes(int[] maxIdxs, @Cast("const sd::LongType") long minIdx,
-                                                    @Cast("const sd::LongType*") long[] maxShapeInfo, @Cast("const sd::LongType*") long[] minShapeInfo);
+@Namespace("shape") public native int outerArrayIndexes(IntPointer maxIdxs, @Cast("const sd::LongType") long minIdx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
+                                            @Cast("const sd::LongType*") LongPointer minShapeInfo, @Const IntPointer dimsToExclude/*=nullptr*/);
+@Namespace("shape") public native int outerArrayIndexes(IntPointer maxIdxs, @Cast("const sd::LongType") long minIdx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
+                                            @Cast("const sd::LongType*") LongPointer minShapeInfo);
+@Namespace("shape") public native int outerArrayIndexes(IntBuffer maxIdxs, @Cast("const sd::LongType") long minIdx, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
+                                            @Cast("const sd::LongType*") LongBuffer minShapeInfo, @Const IntBuffer dimsToExclude/*=nullptr*/);
+@Namespace("shape") public native int outerArrayIndexes(IntBuffer maxIdxs, @Cast("const sd::LongType") long minIdx, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
+                                            @Cast("const sd::LongType*") LongBuffer minShapeInfo);
+@Namespace("shape") public native int outerArrayIndexes(int[] maxIdxs, @Cast("const sd::LongType") long minIdx, @Cast("const sd::LongType*") long[] maxShapeInfo,
+                                            @Cast("const sd::LongType*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/);
+@Namespace("shape") public native int outerArrayIndexes(int[] maxIdxs, @Cast("const sd::LongType") long minIdx, @Cast("const sd::LongType*") long[] maxShapeInfo,
+                                            @Cast("const sd::LongType*") long[] minShapeInfo);
 
 // calculate offsets of max-array, these offsets correspond to one minIdx index of min-array which is sub-array of
 // max-array maxOffsets - will contain calculated offsets of max-array, buffer for maxOffsets should be allocated
 // beforehand dimsToExclude - should be sorted in increasing order memBuff - auxiliary memory buffer (size = 2 *
 // max_rank) for coordinates and increments storing, should be allocated beforehand
-    @Namespace("shape") public native int outerArrayOffsets(@Cast("sd::LongType*") LongPointer maxOffsets, @Cast("const sd::LongType") long minIdx,
-                                                           @Cast("const sd::LongType*") LongPointer maxShapeInfo, @Cast("const sd::LongType*") LongPointer minShapeInfo,
-                                                           IntPointer memBuff, @Const IntPointer dimsToExclude/*=nullptr*/);
-    @Namespace("shape") public native int outerArrayOffsets(@Cast("sd::LongType*") LongPointer maxOffsets, @Cast("const sd::LongType") long minIdx,
-                                                           @Cast("const sd::LongType*") LongPointer maxShapeInfo, @Cast("const sd::LongType*") LongPointer minShapeInfo,
-                                                           IntPointer memBuff);
-    @Namespace("shape") public native int outerArrayOffsets(@Cast("sd::LongType*") LongBuffer maxOffsets, @Cast("const sd::LongType") long minIdx,
-                                                           @Cast("const sd::LongType*") LongBuffer maxShapeInfo, @Cast("const sd::LongType*") LongBuffer minShapeInfo,
-                                                           IntBuffer memBuff, @Const IntBuffer dimsToExclude/*=nullptr*/);
-    @Namespace("shape") public native int outerArrayOffsets(@Cast("sd::LongType*") LongBuffer maxOffsets, @Cast("const sd::LongType") long minIdx,
-                                                           @Cast("const sd::LongType*") LongBuffer maxShapeInfo, @Cast("const sd::LongType*") LongBuffer minShapeInfo,
-                                                           IntBuffer memBuff);
-    @Namespace("shape") public native int outerArrayOffsets(@Cast("sd::LongType*") long[] maxOffsets, @Cast("const sd::LongType") long minIdx,
-                                                           @Cast("const sd::LongType*") long[] maxShapeInfo, @Cast("const sd::LongType*") long[] minShapeInfo,
-                                                           int[] memBuff, @Const int[] dimsToExclude/*=nullptr*/);
-    @Namespace("shape") public native int outerArrayOffsets(@Cast("sd::LongType*") long[] maxOffsets, @Cast("const sd::LongType") long minIdx,
-                                                           @Cast("const sd::LongType*") long[] maxShapeInfo, @Cast("const sd::LongType*") long[] minShapeInfo,
-                                                           int[] memBuff);
+@Namespace("shape") public native int outerArrayOffsets(@Cast("sd::LongType*") LongPointer maxOffsets, @Cast("const sd::LongType") long minIdx,
+                                                   @Cast("const sd::LongType*") LongPointer maxShapeInfo, @Cast("const sd::LongType*") LongPointer minShapeInfo,
+                                                   IntPointer memBuff, @Const IntPointer dimsToExclude/*=nullptr*/);
+@Namespace("shape") public native int outerArrayOffsets(@Cast("sd::LongType*") LongPointer maxOffsets, @Cast("const sd::LongType") long minIdx,
+                                                   @Cast("const sd::LongType*") LongPointer maxShapeInfo, @Cast("const sd::LongType*") LongPointer minShapeInfo,
+                                                   IntPointer memBuff);
+@Namespace("shape") public native int outerArrayOffsets(@Cast("sd::LongType*") LongBuffer maxOffsets, @Cast("const sd::LongType") long minIdx,
+                                                   @Cast("const sd::LongType*") LongBuffer maxShapeInfo, @Cast("const sd::LongType*") LongBuffer minShapeInfo,
+                                                   IntBuffer memBuff, @Const IntBuffer dimsToExclude/*=nullptr*/);
+@Namespace("shape") public native int outerArrayOffsets(@Cast("sd::LongType*") LongBuffer maxOffsets, @Cast("const sd::LongType") long minIdx,
+                                                   @Cast("const sd::LongType*") LongBuffer maxShapeInfo, @Cast("const sd::LongType*") LongBuffer minShapeInfo,
+                                                   IntBuffer memBuff);
+@Namespace("shape") public native int outerArrayOffsets(@Cast("sd::LongType*") long[] maxOffsets, @Cast("const sd::LongType") long minIdx,
+                                                   @Cast("const sd::LongType*") long[] maxShapeInfo, @Cast("const sd::LongType*") long[] minShapeInfo,
+                                                   int[] memBuff, @Const int[] dimsToExclude/*=nullptr*/);
+@Namespace("shape") public native int outerArrayOffsets(@Cast("sd::LongType*") long[] maxOffsets, @Cast("const sd::LongType") long minIdx,
+                                                   @Cast("const sd::LongType*") long[] maxShapeInfo, @Cast("const sd::LongType*") long[] minShapeInfo,
+                                                   int[] memBuff);
 
 // calculates offsets for entities (elements or sub-arrays), shape in context of sub-array means dimensions excluded
 // from outer array rank is equal to size of shape
-    @Namespace("shape") public native void calcOffsets(int rank, @Cast("const sd::LongType*") LongPointer shape, @Cast("const sd::LongType*") LongPointer strides,
-                                       @Cast("sd::LongType*") LongPointer offsets, byte order/*='c'*/);
-    @Namespace("shape") public native void calcOffsets(int rank, @Cast("const sd::LongType*") LongPointer shape, @Cast("const sd::LongType*") LongPointer strides,
-                                       @Cast("sd::LongType*") LongPointer offsets);
-    @Namespace("shape") public native void calcOffsets(int rank, @Cast("const sd::LongType*") LongBuffer shape, @Cast("const sd::LongType*") LongBuffer strides,
-                                       @Cast("sd::LongType*") LongBuffer offsets, byte order/*='c'*/);
-    @Namespace("shape") public native void calcOffsets(int rank, @Cast("const sd::LongType*") LongBuffer shape, @Cast("const sd::LongType*") LongBuffer strides,
-                                       @Cast("sd::LongType*") LongBuffer offsets);
-    @Namespace("shape") public native void calcOffsets(int rank, @Cast("const sd::LongType*") long[] shape, @Cast("const sd::LongType*") long[] strides,
-                                       @Cast("sd::LongType*") long[] offsets, byte order/*='c'*/);
-    @Namespace("shape") public native void calcOffsets(int rank, @Cast("const sd::LongType*") long[] shape, @Cast("const sd::LongType*") long[] strides,
-                                       @Cast("sd::LongType*") long[] offsets);
-    @Namespace("shape") public native void calcOffsets(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("sd::LongType*") LongPointer offsets, byte order/*='c'*/);
-    @Namespace("shape") public native void calcOffsets(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("sd::LongType*") LongPointer offsets);
-    @Namespace("shape") public native void calcOffsets(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Cast("sd::LongType*") LongBuffer offsets, byte order/*='c'*/);
-    @Namespace("shape") public native void calcOffsets(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Cast("sd::LongType*") LongBuffer offsets);
-    @Namespace("shape") public native void calcOffsets(@Cast("const sd::LongType*") long[] shapeInfo, @Cast("sd::LongType*") long[] offsets, byte order/*='c'*/);
-    @Namespace("shape") public native void calcOffsets(@Cast("const sd::LongType*") long[] shapeInfo, @Cast("sd::LongType*") long[] offsets);
+@Namespace("shape") public native void calcOffsets(int rank, @Cast("const sd::LongType*") LongPointer shape, @Cast("const sd::LongType*") LongPointer strides,
+                               @Cast("sd::LongType*") LongPointer offsets, byte order/*='c'*/);
+@Namespace("shape") public native void calcOffsets(int rank, @Cast("const sd::LongType*") LongPointer shape, @Cast("const sd::LongType*") LongPointer strides,
+                               @Cast("sd::LongType*") LongPointer offsets);
+@Namespace("shape") public native void calcOffsets(int rank, @Cast("const sd::LongType*") LongBuffer shape, @Cast("const sd::LongType*") LongBuffer strides,
+                               @Cast("sd::LongType*") LongBuffer offsets, byte order/*='c'*/);
+@Namespace("shape") public native void calcOffsets(int rank, @Cast("const sd::LongType*") LongBuffer shape, @Cast("const sd::LongType*") LongBuffer strides,
+                               @Cast("sd::LongType*") LongBuffer offsets);
+@Namespace("shape") public native void calcOffsets(int rank, @Cast("const sd::LongType*") long[] shape, @Cast("const sd::LongType*") long[] strides,
+                               @Cast("sd::LongType*") long[] offsets, byte order/*='c'*/);
+@Namespace("shape") public native void calcOffsets(int rank, @Cast("const sd::LongType*") long[] shape, @Cast("const sd::LongType*") long[] strides,
+                               @Cast("sd::LongType*") long[] offsets);
+@Namespace("shape") public native void calcOffsets(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("sd::LongType*") LongPointer offsets, byte order/*='c'*/);
+@Namespace("shape") public native void calcOffsets(@Cast("const sd::LongType*") LongPointer shapeInfo, @Cast("sd::LongType*") LongPointer offsets);
+@Namespace("shape") public native void calcOffsets(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Cast("sd::LongType*") LongBuffer offsets, byte order/*='c'*/);
+@Namespace("shape") public native void calcOffsets(@Cast("const sd::LongType*") LongBuffer shapeInfo, @Cast("sd::LongType*") LongBuffer offsets);
+@Namespace("shape") public native void calcOffsets(@Cast("const sd::LongType*") long[] shapeInfo, @Cast("sd::LongType*") long[] offsets, byte order/*='c'*/);
+@Namespace("shape") public native void calcOffsets(@Cast("const sd::LongType*") long[] shapeInfo, @Cast("sd::LongType*") long[] offsets);
 // SD_LIB_EXPORT void calcOffsets(const sd::LongType *xShapeInfo, sd::LongType*& xOffsets, const sd::LongType
 // *yShapeInfo, sd::LongType*& yOffsets, const char order = 'c'); SD_LIB_EXPORT void calcOffsets(const sd::LongType
 // *xShapeInfo, sd::LongType*& xOffsets, const sd::LongType *yShapeInfo, sd::LongType*& yOffsets, const sd::LongType*
 // zShapeInfo, sd::LongType*& zOffsets, const char order = 'c');
-    @Namespace("shape") public native void shapeOldScalar(@Cast("sd::DataType") int dtype, @Cast("sd::LongType*const") LongPointer buffer, byte order);
-    @Namespace("shape") public native void shapeOldScalar(@Cast("sd::DataType") int dtype, @Cast("sd::LongType*const") LongBuffer buffer, byte order);
-    @Namespace("shape") public native void shapeOldScalar(@Cast("sd::DataType") int dtype, @Cast("sd::LongType*const") long[] buffer, byte order);
+@Namespace("shape") public native void shapeOldScalar(@Cast("sd::DataType") int dtype, @Cast("sd::LongType*const") LongPointer buffer, byte order);
+@Namespace("shape") public native void shapeOldScalar(@Cast("sd::DataType") int dtype, @Cast("sd::LongType*const") LongBuffer buffer, byte order);
+@Namespace("shape") public native void shapeOldScalar(@Cast("sd::DataType") int dtype, @Cast("sd::LongType*const") long[] buffer, byte order);
 
 // deduce order and element-wise stride
 // if array is scalar or unit length vector then ews = 1 and order is preserved
 // if array is common vector then ews = stride of non-unity dimension and order is preserved
 // if strides are normal/contiguous then ews = 1 and corresponding order is set, otherwise ews = 0 and order is
 // preserved
-    @Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("sd::LongType*") LongPointer shapeInfo, byte proposedOrder,
-                                                           int numOfNonUnitDims,
-                                                           @Cast("const sd::LongType*") LongPointer shapeNoUnities,
-                                                           @Cast("const sd::LongType*") LongPointer stridesNoUnities);
-    @Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("sd::LongType*") LongBuffer shapeInfo, byte proposedOrder,
-                                                           int numOfNonUnitDims,
-                                                           @Cast("const sd::LongType*") LongBuffer shapeNoUnities,
-                                                           @Cast("const sd::LongType*") LongBuffer stridesNoUnities);
-    @Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("sd::LongType*") long[] shapeInfo, byte proposedOrder,
-                                                           int numOfNonUnitDims,
-                                                           @Cast("const sd::LongType*") long[] shapeNoUnities,
-                                                           @Cast("const sd::LongType*") long[] stridesNoUnities);
-    @Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("sd::LongType*") LongPointer shapeInfo);
-    @Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("sd::LongType*") LongBuffer shapeInfo);
-    @Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("sd::LongType*") long[] shapeInfo);
+@Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("sd::LongType*") LongPointer shapeInfo, byte proposedOrder,
+                                                   int numOfNonUnitDims, @Cast("const sd::LongType*") LongPointer shapeNoUnities,
+                                                   @Cast("const sd::LongType*") LongPointer stridesNoUnities);
+@Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("sd::LongType*") LongBuffer shapeInfo, byte proposedOrder,
+                                                   int numOfNonUnitDims, @Cast("const sd::LongType*") LongBuffer shapeNoUnities,
+                                                   @Cast("const sd::LongType*") LongBuffer stridesNoUnities);
+@Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("sd::LongType*") long[] shapeInfo, byte proposedOrder,
+                                                   int numOfNonUnitDims, @Cast("const sd::LongType*") long[] shapeNoUnities,
+                                                   @Cast("const sd::LongType*") long[] stridesNoUnities);
+@Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("sd::LongType*") long[] shapeInfo);
 
 /**
  * processes whole set of sub-arrays
@@ -8373,24 +8344,30 @@ public static final int
  * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
  * keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
  */
-    @Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(
-                @Cast("const sd::LongType*") LongPointer wholeShapeInfo, @Cast("const sd::LongType") long numOfSubArrs, int dimsSize, @Const IntPointer dimsToExclude,
-                @Cast("sd::LongType*") LongPointer subArrShapeInfo, @Cast("sd::LongType*") LongPointer subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-    @Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(
-                @Cast("const sd::LongType*") LongPointer wholeShapeInfo, @Cast("const sd::LongType") long numOfSubArrs, int dimsSize, @Const IntPointer dimsToExclude,
-                @Cast("sd::LongType*") LongPointer subArrShapeInfo, @Cast("sd::LongType*") LongPointer subArrOffsets);
-    @Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(
-                @Cast("const sd::LongType*") LongBuffer wholeShapeInfo, @Cast("const sd::LongType") long numOfSubArrs, int dimsSize, @Const IntBuffer dimsToExclude,
-                @Cast("sd::LongType*") LongBuffer subArrShapeInfo, @Cast("sd::LongType*") LongBuffer subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-    @Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(
-                @Cast("const sd::LongType*") LongBuffer wholeShapeInfo, @Cast("const sd::LongType") long numOfSubArrs, int dimsSize, @Const IntBuffer dimsToExclude,
-                @Cast("sd::LongType*") LongBuffer subArrShapeInfo, @Cast("sd::LongType*") LongBuffer subArrOffsets);
-    @Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(
-                @Cast("const sd::LongType*") long[] wholeShapeInfo, @Cast("const sd::LongType") long numOfSubArrs, int dimsSize, @Const int[] dimsToExclude,
-                @Cast("sd::LongType*") long[] subArrShapeInfo, @Cast("sd::LongType*") long[] subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-    @Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(
-                @Cast("const sd::LongType*") long[] wholeShapeInfo, @Cast("const sd::LongType") long numOfSubArrs, int dimsSize, @Const int[] dimsToExclude,
-                @Cast("sd::LongType*") long[] subArrShapeInfo, @Cast("sd::LongType*") long[] subArrOffsets);
+@Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(@Cast("const sd::LongType*") LongPointer wholeShapeInfo,
+                                                          @Cast("const sd::LongType") long numOfSubArrs, int dimsSize,
+                                                          @Const IntPointer dimsToExclude, @Cast("sd::LongType*") LongPointer subArrShapeInfo,
+                                                          @Cast("sd::LongType*") LongPointer subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+@Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(@Cast("const sd::LongType*") LongPointer wholeShapeInfo,
+                                                          @Cast("const sd::LongType") long numOfSubArrs, int dimsSize,
+                                                          @Const IntPointer dimsToExclude, @Cast("sd::LongType*") LongPointer subArrShapeInfo,
+                                                          @Cast("sd::LongType*") LongPointer subArrOffsets);
+@Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(@Cast("const sd::LongType*") LongBuffer wholeShapeInfo,
+                                                          @Cast("const sd::LongType") long numOfSubArrs, int dimsSize,
+                                                          @Const IntBuffer dimsToExclude, @Cast("sd::LongType*") LongBuffer subArrShapeInfo,
+                                                          @Cast("sd::LongType*") LongBuffer subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+@Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(@Cast("const sd::LongType*") LongBuffer wholeShapeInfo,
+                                                          @Cast("const sd::LongType") long numOfSubArrs, int dimsSize,
+                                                          @Const IntBuffer dimsToExclude, @Cast("sd::LongType*") LongBuffer subArrShapeInfo,
+                                                          @Cast("sd::LongType*") LongBuffer subArrOffsets);
+@Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(@Cast("const sd::LongType*") long[] wholeShapeInfo,
+                                                          @Cast("const sd::LongType") long numOfSubArrs, int dimsSize,
+                                                          @Const int[] dimsToExclude, @Cast("sd::LongType*") long[] subArrShapeInfo,
+                                                          @Cast("sd::LongType*") long[] subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+@Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(@Cast("const sd::LongType*") long[] wholeShapeInfo,
+                                                          @Cast("const sd::LongType") long numOfSubArrs, int dimsSize,
+                                                          @Const int[] dimsToExclude, @Cast("sd::LongType*") long[] subArrShapeInfo,
+                                                          @Cast("sd::LongType*") long[] subArrOffsets);
 
 /**
  * processes only one sub-array, evaluates shapeInfo of sub-array and its buffer offset from original array
@@ -8406,24 +8383,24 @@ public static final int
  * numbers which correspond to stride between dimStart and dimEnd, numOfUntiesInMinShape - input argument, number of
  * occurrences in idx when (dimEnd - dimStart) = 1
  */
-    @Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const sd::LongType*") LongPointer idx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
-                                                        @Cast("sd::LongType*") LongPointer minShapeInfo, @Cast("sd::LongType*") @ByRef LongPointer minOffset,
-                                                        @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/,
-                                                        int numOfUntiesInMinShape/*=0*/);
-    @Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const sd::LongType*") LongPointer idx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
-                                                        @Cast("sd::LongType*") LongPointer minShapeInfo, @Cast("sd::LongType*") @ByRef LongPointer minOffset);
-    @Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const sd::LongType*") LongBuffer idx, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
-                                                        @Cast("sd::LongType*") LongBuffer minShapeInfo, @Cast("sd::LongType*") @ByRef LongBuffer minOffset,
-                                                        @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/,
-                                                        int numOfUntiesInMinShape/*=0*/);
-    @Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const sd::LongType*") LongBuffer idx, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
-                                                        @Cast("sd::LongType*") LongBuffer minShapeInfo, @Cast("sd::LongType*") @ByRef LongBuffer minOffset);
-    @Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const sd::LongType*") long[] idx, @Cast("const sd::LongType*") long[] maxShapeInfo,
-                                                        @Cast("sd::LongType*") long[] minShapeInfo, @Cast("sd::LongType*") @ByRef long[] minOffset,
-                                                        @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/,
-                                                        int numOfUntiesInMinShape/*=0*/);
-    @Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const sd::LongType*") long[] idx, @Cast("const sd::LongType*") long[] maxShapeInfo,
-                                                        @Cast("sd::LongType*") long[] minShapeInfo, @Cast("sd::LongType*") @ByRef long[] minOffset);
+@Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const sd::LongType*") LongPointer idx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
+                                                @Cast("sd::LongType*") LongPointer minShapeInfo, @Cast("sd::LongType*") @ByRef LongPointer minOffset,
+                                                @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/,
+                                                int numOfUntiesInMinShape/*=0*/);
+@Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const sd::LongType*") LongPointer idx, @Cast("const sd::LongType*") LongPointer maxShapeInfo,
+                                                @Cast("sd::LongType*") LongPointer minShapeInfo, @Cast("sd::LongType*") @ByRef LongPointer minOffset);
+@Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const sd::LongType*") LongBuffer idx, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
+                                                @Cast("sd::LongType*") LongBuffer minShapeInfo, @Cast("sd::LongType*") @ByRef LongBuffer minOffset,
+                                                @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/,
+                                                int numOfUntiesInMinShape/*=0*/);
+@Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const sd::LongType*") LongBuffer idx, @Cast("const sd::LongType*") LongBuffer maxShapeInfo,
+                                                @Cast("sd::LongType*") LongBuffer minShapeInfo, @Cast("sd::LongType*") @ByRef LongBuffer minOffset);
+@Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const sd::LongType*") long[] idx, @Cast("const sd::LongType*") long[] maxShapeInfo,
+                                                @Cast("sd::LongType*") long[] minShapeInfo, @Cast("sd::LongType*") @ByRef long[] minOffset,
+                                                @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/,
+                                                int numOfUntiesInMinShape/*=0*/);
+@Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const sd::LongType*") long[] idx, @Cast("const sd::LongType*") long[] maxShapeInfo,
+                                                @Cast("sd::LongType*") long[] minShapeInfo, @Cast("sd::LongType*") @ByRef long[] minOffset);
 
 /**
  * for example inShapeInfo is {3, 2,1,4, 4,4,1, 16384,1,99}
@@ -8433,26 +8410,23 @@ public static final int
  * if there is no unities in inShapeInfo, then no copy procedure will be performed and shapeNoUnities/stridesNoUnities
  * will point on corresponding places in inShapeInfo
  */
-    @Namespace("shape") public native int excludeUnitiesFromShapeInfo(@Cast("const sd::LongType*") LongPointer inShapeInfo,
-                                                              @Cast("sd::LongType*&") @ByPtrRef LongPointer shapeNoUnities,
-                                                              @Cast("sd::LongType*&") @ByPtrRef LongPointer stridesNoUnities);
-    @Namespace("shape") public native int excludeUnitiesFromShapeInfo(@Cast("const sd::LongType*") LongBuffer inShapeInfo,
-                                                              @Cast("sd::LongType*&") @ByPtrRef LongBuffer shapeNoUnities,
-                                                              @Cast("sd::LongType*&") @ByPtrRef LongBuffer stridesNoUnities);
-    @Namespace("shape") public native int excludeUnitiesFromShapeInfo(@Cast("const sd::LongType*") long[] inShapeInfo,
-                                                              @Cast("sd::LongType*&") @ByPtrRef long[] shapeNoUnities,
-                                                              @Cast("sd::LongType*&") @ByPtrRef long[] stridesNoUnities);
+@Namespace("shape") public native int excludeUnitiesFromShapeInfo(@Cast("const sd::LongType*") LongPointer inShapeInfo, @Cast("sd::LongType*&") @ByPtrRef LongPointer shapeNoUnities,
+                                                      @Cast("sd::LongType*&") @ByPtrRef LongPointer stridesNoUnities);
+@Namespace("shape") public native int excludeUnitiesFromShapeInfo(@Cast("const sd::LongType*") LongBuffer inShapeInfo, @Cast("sd::LongType*&") @ByPtrRef LongBuffer shapeNoUnities,
+                                                      @Cast("sd::LongType*&") @ByPtrRef LongBuffer stridesNoUnities);
+@Namespace("shape") public native int excludeUnitiesFromShapeInfo(@Cast("const sd::LongType*") long[] inShapeInfo, @Cast("sd::LongType*&") @ByPtrRef long[] shapeNoUnities,
+                                                      @Cast("sd::LongType*&") @ByPtrRef long[] stridesNoUnities);
 
 /**
  * for example inShapeInfo is {3, 2,1,3,1,4,  12,12,4,4,1, 16384,1,99}, dimsToExclude(points on unity dimensions) =
  * {1,3}, dimsSize = 2 then outShapeInfo will contain {3, 2,3,4, 12,4,1, 16384,1,99}
  */
-    @Namespace("shape") public native void excludeUnitiesFromShapeInfo(@Cast("const sd::LongType*") LongPointer inShapeInfo, @Const IntPointer dimsToExclude,
-                                                               int dimsSize, @Cast("sd::LongType*") LongPointer outShapeInfo);
-    @Namespace("shape") public native void excludeUnitiesFromShapeInfo(@Cast("const sd::LongType*") LongBuffer inShapeInfo, @Const IntBuffer dimsToExclude,
-                                                               int dimsSize, @Cast("sd::LongType*") LongBuffer outShapeInfo);
-    @Namespace("shape") public native void excludeUnitiesFromShapeInfo(@Cast("const sd::LongType*") long[] inShapeInfo, @Const int[] dimsToExclude,
-                                                               int dimsSize, @Cast("sd::LongType*") long[] outShapeInfo);
+@Namespace("shape") public native void excludeUnitiesFromShapeInfo(@Cast("const sd::LongType*") LongPointer inShapeInfo, @Const IntPointer dimsToExclude,
+                                                       int dimsSize, @Cast("sd::LongType*") LongPointer outShapeInfo);
+@Namespace("shape") public native void excludeUnitiesFromShapeInfo(@Cast("const sd::LongType*") LongBuffer inShapeInfo, @Const IntBuffer dimsToExclude,
+                                                       int dimsSize, @Cast("sd::LongType*") LongBuffer outShapeInfo);
+@Namespace("shape") public native void excludeUnitiesFromShapeInfo(@Cast("const sd::LongType*") long[] inShapeInfo, @Const int[] dimsToExclude,
+                                                       int dimsSize, @Cast("sd::LongType*") long[] outShapeInfo);
 
 /**
  * get stride over contiguous axis (contiguous axis must have stride = 1)
@@ -8483,7 +8457,6 @@ public static final int
  * @param startNum the start number for the strides
  * @return the strides for a matrix of n dimensions
  */
-
 
 // check whether input dimensions are permuted, not permuted dimensions order have to be 0,....,rank-1
 
@@ -8549,7 +8522,6 @@ public static final int
 
 //////////////////////////////////////////////////////////////////////
 
-
 /**
  * Get the ordering for the device
  * @param length
@@ -8568,7 +8540,6 @@ public static final int
  * @param shapeLength
  * @return
  */
-
 
 /**
  * Returns whether the
@@ -8602,7 +8573,6 @@ public static final int
  * This buffer allocates memory
  * that must be freed elsewhere.
  */
-
 
 /**
  * Return the slice (shape + 1 in pointer arithmetic)
@@ -8702,7 +8672,6 @@ public static final int
  * item
  */
 
-
 /**
  * Computes the offset for accessing
  * a global element given the shape information
@@ -8719,9 +8688,9 @@ public static final int
  * for the shape to be returned as
  * @return the new shape
  */
-    @Namespace("shape") public native @Cast("sd::LongType*") LongPointer ensureVectorShape(@Cast("sd::LongType*") LongPointer shape, int dimension);
-    @Namespace("shape") public native @Cast("sd::LongType*") LongBuffer ensureVectorShape(@Cast("sd::LongType*") LongBuffer shape, int dimension);
-    @Namespace("shape") public native @Cast("sd::LongType*") long[] ensureVectorShape(@Cast("sd::LongType*") long[] shape, int dimension);
+@Namespace("shape") public native @Cast("sd::LongType*") LongPointer ensureVectorShape(@Cast("sd::LongType*") LongPointer shape, int dimension);
+@Namespace("shape") public native @Cast("sd::LongType*") LongBuffer ensureVectorShape(@Cast("sd::LongType*") LongBuffer shape, int dimension);
+@Namespace("shape") public native @Cast("sd::LongType*") long[] ensureVectorShape(@Cast("sd::LongType*") long[] shape, int dimension);
 
 /**
  * Returns a shape
@@ -8766,7 +8735,6 @@ public static final int
  * @return the int array starting at from and ending at to
  */
 
-
 /**
  * Generate a reverse
  * copy of the data
@@ -8789,7 +8757,6 @@ public static final int
  * @param lengths
  * @return
  */
-
 
 /**
  * calculates the offset for a tensor
@@ -8885,7 +8852,6 @@ public static final int
 // #ifdef __CUDACC__
 // #endif
 
-
 // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too
 // big number of dimensions) also it sorts input array of dimensions, this operation is also necessary for creating TAD
 // object
@@ -8906,11 +8872,10 @@ public static final int
 
 //////////////////////////////////////////////////////////////////////
 
-//host device codes which were duplicated in shape.cpp but guarded from inclusion
+// host device codes which were duplicated in shape.cpp but guarded from inclusion
 // #if defined(SD_CUDA)
 
-
-    /**
+/**
  * Length of a tad given
  * the shape information
  */
@@ -8921,11 +8886,9 @@ public static final int
 // function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array
 // (already stored in maxIdxs)
 
-
 //////////////////////////////////////////////////////////////////////
 
 // #endif
-
 
   // namespace shape
 

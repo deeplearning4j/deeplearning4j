@@ -1815,6 +1815,7 @@ public class SDVariable implements Serializable {
         SDVariable indicesLength = indices.length();
         //sub graph that uses invoke
         SameDiff loop = createLoopPut(this,indices);
+        loop.setEnableCache(false);
         //collect slices along the first dimension concatenating the result along the way
         return this.sameDiff.loopWithConditions(ControlFlow.LoopParams.builder()
                 .functionBody(loop)
@@ -1906,6 +1907,7 @@ public class SDVariable implements Serializable {
         SDVariable assignOutput = loop.assign(sliceOutput,toAssign);
         SDVariable outputIdentity = loop.identity("assignOutput",assignTo);
         //ensure the output depends on the final assign so it gets executed, return the final output as a view
+
         outputIdentity.addControlDependency(assignOutput);
         return loop;
 

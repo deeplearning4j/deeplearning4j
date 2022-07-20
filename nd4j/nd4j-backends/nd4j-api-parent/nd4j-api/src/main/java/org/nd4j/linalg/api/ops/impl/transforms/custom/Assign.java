@@ -39,7 +39,7 @@ import java.util.Map;
 
 public class Assign extends DynamicCustomOp {
 
-    public Assign(){
+    public Assign() {
 
     }
 
@@ -56,9 +56,10 @@ public class Assign extends DynamicCustomOp {
         super.addIArgument(arg);
     }
 
-    public Assign(SameDiff sameDiff, SDVariable x, SDVariable y){
+    public Assign(SameDiff sameDiff, SDVariable x, SDVariable y) {
         super(null, sameDiff, new SDVariable[]{x,y});
     }
+
 
 
     @Override

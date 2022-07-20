@@ -154,6 +154,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param offset the offset for the view
      */
     protected BaseDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
+        if(underlyingBuffer != null && underlyingBuffer.wasClosed()) {
+            throw new IllegalArgumentException("Unable to wrap closed buffer.");
+        }
         if (length < 0)
             throw new IllegalArgumentException("Length must be >= 0");
 
@@ -383,7 +386,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
             throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
-                            + length() + " where the indices are of length " + data.length);
+                    + length() + " where the indices are of length " + data.length);
         for (int i = 0; i < indices.length; i++) {
             put(indices[i], data[i]);
         }
@@ -446,7 +449,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
             throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
-                            + length() + " where the indices are of length " + data.length);
+                    + length() + " where the indices are of length " + data.length);
         for (int i = 0; i < indices.length; i += inc) {
             put(indices[i], data[i]);
         }
@@ -456,7 +459,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public void assign(DataBuffer data) {
         if (data.length() != length())
             throw new IllegalArgumentException("Unable to assign buffer of length " + data.length()
-                            + " to this buffer of length " + length());
+                    + " to this buffer of length " + length());
 
         for (int i = 0; i < data.length(); i++) {
             put(i, data.getDouble(i));
@@ -668,7 +671,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case SHORT:
                 try{
                     for (int i = 0; i < length(); i++) {
-                            dos.writeShort(getShort(i));
+                        dos.writeShort(getShort(i));
                     }
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -1396,7 +1399,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public void assign(long[] offsets, long[] strides, long n, DataBuffer... buffers) {
         if (offsets.length != strides.length || strides.length != buffers.length)
             throw new IllegalArgumentException(
-                            "Unable to assign buffers, please specify equal lengths strides, offsets, and buffers");
+                    "Unable to assign buffers, please specify equal lengths strides, offsets, and buffers");
         int count = 0;
         for (int i = 0; i < buffers.length; i++) {
             //note here that the final put will take care of the offset
@@ -1753,8 +1756,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
             mant &= 0x3ff; // discard subnormal bit
         } // else +/-0 -> +/-0
         return Float.intBitsToFloat( // combine all parts
-                        (hbits & 0x8000) << 16 // sign  << ( 31 - 15 )
-                                        | (exp | mant) << 13); // value << ( 23 - 10 )
+                (hbits & 0x8000) << 16 // sign  << ( 31 - 15 )
+                        | (exp | mant) << 13); // value << ( 23 - 10 )
     }
 
 

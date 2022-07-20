@@ -122,7 +122,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             INDArray arr = !arrays.get(dataType, arrayShapeString).isEmpty()
                     ? arrays.get(dataType, arrayShapeString).remove(0)
                     : null;
-            if (arr != null) {
+            if (arr != null && !arr.wasClosed()) {
                 // Decrement cache size
                 currentCacheSize -= dataType.width() * arr.data().length();
                 log.info("Cache hit for data type " + dataType + " and shape " + Arrays.toString(shape));
@@ -168,7 +168,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 arr.setOrder(descriptor.getOrder());
             }
 
-            if (arr != null) {
+            if (arr != null && !arr.wasClosed()) {
                 // Decrement cache size
                 currentCacheSize -= dataType.width() * arr.data().length();
                 log.info("Cache hit for data type " + dataType + " and shape " + Arrays.toString(arr.shape()));
