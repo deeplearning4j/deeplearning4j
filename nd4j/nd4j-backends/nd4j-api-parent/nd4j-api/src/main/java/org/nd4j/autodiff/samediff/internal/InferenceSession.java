@@ -73,7 +73,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     protected static final String KERAS_TRAIN_TEST = "keras_learning_phase";
     //freed array ids to track for allocation, sometimes SDValues contain dup arrays that get freed twice.
     //we track the ids to avoid double frees
-    protected static Set<Long> freedArrays = new LinkedHashSet<>();
+    protected  Set<Long> freedArrays = new LinkedHashSet<>();
 
     @Getter
     @Setter

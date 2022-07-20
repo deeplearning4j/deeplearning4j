@@ -2403,8 +2403,10 @@ public class Nd4j {
      * Read line via input streams
      *
      * @param ndarray the input stream ndarray
+     * @deprecated To be removed in 1.0
      * @return NDArray
      */
+    @Deprecated
     @SuppressWarnings("WeakerAccess")
     public static INDArray readTxtString(InputStream ndarray) {
         String sep = ",";
@@ -2516,8 +2518,10 @@ public class Nd4j {
      * Read line via input streams
      *
      * @param filePath the input stream ndarray
+     * @deprecated to be removed in 1.0
      * @return NDArray
      */
+    @Deprecated()
     public static INDArray readTxt(String filePath) {
         File file = new File(filePath);
         InputStream is = null;
