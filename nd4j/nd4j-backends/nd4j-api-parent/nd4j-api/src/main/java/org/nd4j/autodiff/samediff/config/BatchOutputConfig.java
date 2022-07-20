@@ -52,7 +52,7 @@ public class BatchOutputConfig {
     @NonNull
     private List<Listener> listeners = new ArrayList<>();
 
-    public BatchOutputConfig(@NonNull SameDiff sd){
+    public BatchOutputConfig(@NonNull SameDiff sd) {
         this.sd = sd;
     }
 

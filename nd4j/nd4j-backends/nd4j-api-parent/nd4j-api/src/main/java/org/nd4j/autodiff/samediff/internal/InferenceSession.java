@@ -73,7 +73,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     protected static final String KERAS_TRAIN_TEST = "keras_learning_phase";
     //freed array ids to track for allocation, sometimes SDValues contain dup arrays that get freed twice.
     //we track the ids to avoid double frees
-    protected Set<Long> freedArrays = new LinkedHashSet<>();
+    protected  Set<Long> freedArrays = new LinkedHashSet<>();
 
     @Getter
     @Setter
@@ -205,13 +205,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 switch(value.getSdValueType()) {
                     case LIST:
                         for(INDArray arr : value.getListValue())
-                            if(arr != null && !freedArrays.contains(arr.getId())) {
+                            if(arr != null && !freedArrays.contains(arr.getId()) && sameDiff.isEnableCache()) {
                                 mmgr.release(arr);
                                 freedArrays.add(arr.getId());
                             }
                         break;
                     case TENSOR:
-                        if(!freedArrays.contains(value.getTensorValue().getId())) {
+                        if(!freedArrays.contains(value.getTensorValue().getId()) && sameDiff.isEnableCache()) {
                             mmgr.release(value.getTensorValue());
                             freedArrays.add(value.getTensorValue().getId());
                         }
@@ -420,14 +420,14 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 if(!(op.getOp() instanceof Switch))
                     switch(value.getSdValueType()) {
                         case TENSOR:
-                            if(!freedArrays.contains(value.getTensorValue().getId())) {
+                            if(!freedArrays.contains(value.getTensorValue().getId()) && sameDiff.isEnableCache()) {
                                 mmgr.release(value.getTensorValue());
                                 freedArrays.add(value.getTensorValue().getId());
                             }
                             break;
                         case LIST:
                             for(INDArray arr : value.getListValue())
-                                if(arr != null && !freedArrays.contains(arr.getId())) {
+                                if(arr != null && !freedArrays.contains(arr.getId()) && sameDiff.isEnableCache()) {
                                     mmgr.release(arr);
                                     freedArrays.add(arr.getId());
                                 }
@@ -706,8 +706,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             for(int i = 1; i < argNames.length; i++) {
                 indices[i - 1] = getSdValue(inputVars.get(argNames[i])).getTensorValue();
             }
-            return ExecutionResult.createFrom(op.outputVariablesNames()[0],
-                    CreateView.createFrom(sdValue.getTensorValue(),indices));
+
+            INDArray from = CreateView.createFrom(sdValue.getTensorValue(), indices);
+            return ExecutionResult.createFrom(op.outputVariablesNames()[0], from);
         } else if (op instanceof ExternalErrorsFunction) {
             ExternalErrorsFunction fn = (ExternalErrorsFunction) op;
             String n = fn.getGradPlaceholderName();
@@ -1334,38 +1335,47 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 if (args != null) {
                     oc.setInputArrays(args);
                 }
+
+                //set a dummy result to be replaced
+                oc.setOutputArrays(args[0]);
                 //We don't need to allocate an output array for Identity, we pass through the input array without copying
                 return new Pair<>(sdo, oc);
             }
 
             oc.setArgs(args, customOp.iArgs(), customOp.dArgs() , customOp.tArgs(), customOp.bArgs() );
 
+            //input and output should be same for assign
+            if((df instanceof Assign)) {
+                oc.setOutputArray(0, oc.getInputArray(0));
 
-            List<LongShapeDescriptor> outShape = customOp.calculateOutputShape(oc);
-            Preconditions.checkState(outShape != null && outShape.size() > 0, "Failed to calculate output shapes for op %s (%s) - no shapes were returned by calculateOutputShape()", customOp.opName(), customOp.getOwnName());
-            String[] outNames = df.outputVariablesNames();
-            Preconditions.checkState(outNames.length == outShape.size(), "Error in operation shape calculation for op \"%s\": Got %s op output shapes for an operation" +
-                    " with %s outputs (number of shapes and outputs must be equal)", df.opName(), outShape.size(), outNames.length);
-            for (int i = 0; i < outShape.size(); i++) {
-                LongShapeDescriptor reqShape = outShape.get(i);
+            } else {
+                List<LongShapeDescriptor> outShape = customOp.calculateOutputShape(oc);
+                Preconditions.checkState(outShape != null && outShape.size() > 0, "Failed to calculate output shapes for op %s (%s) - no shapes were returned by calculateOutputShape()", customOp.opName(), customOp.getOwnName());
+                String[] outNames = df.outputVariablesNames();
+                Preconditions.checkState(outNames.length == outShape.size(), "Error in operation shape calculation for op \"%s\": Got %s op output shapes for an operation" +
+                        " with %s outputs (number of shapes and outputs must be equal)", df.opName(), outShape.size(), outNames.length);
+                for (int i = 0; i < outShape.size(); i++) {
+                    LongShapeDescriptor reqShape = outShape.get(i);
 
-                //Issue: many ops have multiple valid output datatypes, and output shape calc can't at present know which: https://github.com/eclipse/deeplearning4j/issues/6872
-                //As a workaround, we'll use the output variable datatype instead.
-                DataType dt = sameDiff.getVariable(outNames[i]).dataType();
-                DataType currDT = reqShape.dataType();
-                if (dt != currDT) {
-                    reqShape = reqShape.asDataType(dt);
+                    //Issue: many ops have multiple valid output datatypes, and output shape calc can't at present know which: https://github.com/eclipse/deeplearning4j/issues/6872
+                    //As a workaround, we'll use the output variable datatype instead.
+                    DataType dt = sameDiff.getVariable(outNames[i]).dataType();
+                    DataType currDT = reqShape.dataType();
+                    if (dt != currDT) {
+                        reqShape = reqShape.asDataType(dt);
+                    }
+
+                    //Always allocate new output array, rely on memory manager for efficient memory management and array reuse etc
+                    boolean isOutput = allReqVariables.contains(outNames[i]);
+                    INDArray out = mmgr.allocate(isOutput, reqShape);
+                    if(reqShape.isEmpty() && !out.isEmpty()) {
+                        throw new IllegalStateException("Output shape was empty, but created array was not.");
+                    }
+
+                    oc.setOutputArray(i, out);
                 }
-
-                //Always allocate new output array, rely on memory manager for efficient memory management and array reuse etc
-                boolean isOutput = allReqVariables.contains(outNames[i]);
-                INDArray out = mmgr.allocate(isOutput, reqShape);
-                if(reqShape.isEmpty() && !out.isEmpty()) {
-                    throw new IllegalStateException("Output shape was empty, but created array was not.");
-                }
-
-                oc.setOutputArray(i, out);
             }
+
 
         } else if (df instanceof Op) {
             Op op = (Op) df;

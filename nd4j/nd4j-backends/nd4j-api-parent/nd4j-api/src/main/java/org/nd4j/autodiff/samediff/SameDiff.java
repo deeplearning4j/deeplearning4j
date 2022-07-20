@@ -152,6 +152,10 @@ public class SameDiff extends SDBaseOps {
     @Setter
     private boolean eagerMode = false;
 
+    @Getter
+    @Setter
+    private boolean enableCache = true;
+
     ///////////////////////////////////////
     //Fields related to training
     @Getter

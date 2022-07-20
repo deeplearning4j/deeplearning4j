@@ -92,6 +92,8 @@ public class Invoke extends DynamicCustomOp {
         Invoke invoke = (Invoke) op;
         String funcName = invoke.getFunctionName();
         SameDiff instance = op.getSameDiff().getFunction(funcName);
+        //invoke can have state bugs and should not free arrays on its own
+        instance.setEnableCache(false);
         SDVariable[] args = op.args();
         String[] inputVarNameMappings = invoke.getInputVarNames();
 
