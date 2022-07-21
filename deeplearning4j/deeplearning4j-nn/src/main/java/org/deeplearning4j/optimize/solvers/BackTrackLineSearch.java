@@ -140,6 +140,7 @@ public class BackTrackLineSearch implements LineOptimizer {
         minObjectiveFunction = (stepFunction instanceof NegativeDefaultStepFunction
                         || stepFunction instanceof NegativeGradientStepFunction);
 
+        parameters = parameters.reshape(parameters.length());
         Level1 l1Blas = Nd4j.getBlasWrapper().level1();
 
         double sum = l1Blas.nrm2(searchDirection);
