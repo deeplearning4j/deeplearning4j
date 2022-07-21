@@ -196,8 +196,8 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNewAxis(Nd4jBackend backend) {
         INDArray tensor = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
-        INDArray assertion = Nd4j.create(new double[][] {{1, 7}, {4, 10}}).reshape(1, 2, 2);
-        INDArray tensorGet = tensor.get(NDArrayIndex.point(0), NDArrayIndex.newAxis(), all(), all());
+        INDArray assertion = tensor.reshape(1,3,2,2);
+        INDArray tensorGet = tensor.get( NDArrayIndex.newAxis(), all(), all());
         assertEquals(assertion, tensorGet);
 
     }

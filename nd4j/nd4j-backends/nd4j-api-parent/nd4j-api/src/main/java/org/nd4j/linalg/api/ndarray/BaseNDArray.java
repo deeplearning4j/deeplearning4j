@@ -4211,7 +4211,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     return out.get(subIndices);
                 }
             }
-
             if(indexes[i] instanceof PointIndex) {
                 //Point indexes don't appear in output
                 PointIndex pi = (PointIndex) indexes[i];
