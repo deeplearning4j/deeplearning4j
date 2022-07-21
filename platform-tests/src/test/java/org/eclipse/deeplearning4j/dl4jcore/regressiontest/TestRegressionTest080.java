@@ -104,9 +104,9 @@ public class TestRegressionTest080 extends BaseDL4JTest {
         assertEquals(0.15, n.getLearningRate(), 1e-6);
 
         int numParams = (int)net.numParams();
-        assertEquals(Nd4j.linspace(1, numParams, numParams, Nd4j.dataType()).reshape(1,numParams), net.params());
+        assertEquals(Nd4j.linspace(1, numParams, numParams, Nd4j.dataType()).reshape(numParams), net.params());
         int updaterSize = (int) new Nesterovs().stateSize(numParams);
-        assertEquals(Nd4j.linspace(1, updaterSize, updaterSize, Nd4j.dataType()).reshape(1,numParams), net.getUpdater().getStateViewArray());
+        assertEquals(Nd4j.linspace(1, updaterSize, updaterSize, Nd4j.dataType()).reshape(numParams), net.getUpdater().getStateViewArray());
     }
 
     @Test
@@ -153,9 +153,9 @@ public class TestRegressionTest080 extends BaseDL4JTest {
         assertEquals(1.5, l1.getGradientNormalizationThreshold(), 1e-5);
 
         int numParams = (int)net.numParams();
-        assertEquals(Nd4j.linspace(1, numParams, numParams, Nd4j.dataType()).reshape(1,numParams), net.params());
+        assertEquals(Nd4j.linspace(1, numParams, numParams, Nd4j.dataType()).reshape(numParams), net.params());
         int updaterSize = (int) new RmsProp().stateSize(numParams);
-        assertEquals(Nd4j.linspace(1, updaterSize, updaterSize, Nd4j.dataType()).reshape(1,numParams), net.getUpdater().getStateViewArray());
+        assertEquals(Nd4j.linspace(1, updaterSize, updaterSize, Nd4j.dataType()).reshape(numParams), net.getUpdater().getStateViewArray());
     }
 
     @Test
@@ -204,9 +204,9 @@ public class TestRegressionTest080 extends BaseDL4JTest {
         assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
 
         int numParams = (int)net.numParams();
-        assertEquals(Nd4j.linspace(1, numParams, numParams, Nd4j.dataType()).reshape(1,numParams), net.params());
+        assertEquals(Nd4j.linspace(1, numParams, numParams, Nd4j.dataType()).reshape(numParams), net.params());
         int updaterSize = (int) new RmsProp().stateSize(numParams);
-        assertEquals(Nd4j.linspace(1, updaterSize, updaterSize, Nd4j.dataType()).reshape(1,numParams), net.getUpdater().getStateViewArray());
+        assertEquals(Nd4j.linspace(1, updaterSize, updaterSize, Nd4j.dataType()).reshape(numParams), net.getUpdater().getStateViewArray());
     }
 
     @Test
