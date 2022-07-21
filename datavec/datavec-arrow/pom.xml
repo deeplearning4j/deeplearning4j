@@ -74,7 +74,4 @@
         </dependency>
     </dependencies>
 
-            <id>nd4j-tests-aurora</id>
-        </profile>
-    </profiles>
 </project>

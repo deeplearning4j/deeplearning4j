@@ -136,17 +136,6 @@
 
     <profiles>
         <profile>
-            <id>aurora</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <modules>
-                <module>nd4j-aurora-presets</module>
-                <module>nd4j-aurora</module>
-            </modules>
-        </profile>
-
-        <profile>
             <id>cpu</id>
            <activation>
                <activeByDefault>false</activeByDefault>
