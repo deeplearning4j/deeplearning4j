@@ -1193,8 +1193,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
             SDVariable index = op.arg(1);
             List<INDArray> l = getTensorArraysInSession(inTensorArray.name());
-            l.remove(index.getArr(true).getInt(0));
-            INDArray scalar = mmgr.allocate(false, DataType.FLOAT).assign(0.0);
+            if(l == null)
+                l = new ArrayList<>();
+            else if(l != null)
+                l.remove(index.getArr(true).getInt(0));
             VarId tArr = (opInputs == null ? null : lookup(inTensorArray.name(), opInputs, false));
             if (tArr == null && allIterInputs != null) {
                 tArr = lookup(inTensorArray.name(), allIterInputs, false);
@@ -1208,8 +1210,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
 
             //setup an extra reference to the removed list
-            //putNodeValue(SDValue.create(l), tArr);
-            return ExecutionResult.createValue(tArr.getVariable(),Arrays.asList(scalar));
+            putNodeValue(SDValue.create(l), tArr);
+            return ExecutionResult.createValue(tArr.getVariable(),l);
         }
 
         else {

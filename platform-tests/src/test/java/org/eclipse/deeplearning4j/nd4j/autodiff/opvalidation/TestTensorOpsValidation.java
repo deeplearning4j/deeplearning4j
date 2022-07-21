@@ -61,7 +61,8 @@ public class TestTensorOpsValidation extends BaseOpValidation {
         assertEquals(Nd4j.ones(DataType.DOUBLE,1).reshape(1),output.get(read.name()).reshape(1));
         SDVariable remove = tensorArray.remove(tensorArray.getVar(), 0);
         remove.addControlDependency(read);
-        SDVariable read2  = tensorArray.size(tensorArray.getVar());
+        SDVariable read2  = tensorArray.size(tensorArray.outputVariable());
+        read2.addControlDependency(remove);
         output = sameDiff.output((Map<String, INDArray>) null, read2.name());
         assertEquals(Nd4j.zeros(DataType.INT32,1).reshape(1),output.get(read2.name()).reshape(1));
     }
