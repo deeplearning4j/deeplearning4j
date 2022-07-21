@@ -81,7 +81,7 @@ public class TestTensorAlongDimension extends BaseNd4jTestWithBackends {
         INDArray row = Nd4j.create(DataType.DOUBLE, 1, 5);
         INDArray col = Nd4j.create(DataType.DOUBLE, 5, 1);
 
-        assertArrayEquals(new long[] {1, 5}, row.tensorAlongDimension(0, 1).shape());
+        assertArrayEquals(new long[] { 5}, row.tensorAlongDimension(0, 1).shape());
         assertArrayEquals(new long[] {1, 5}, col.tensorAlongDimension(0, 0).shape());
     }
 
