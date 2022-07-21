@@ -43,7 +43,7 @@ import javax.annotation.concurrent.NotThreadSafe
 data class InputDataset(val dataSetIndex: Int,val inputPaths: List<String>,val outputPaths: List<String>)
 @Tag(TagNames.ONNX)
 @NotThreadSafe
-@Disabled
+@Disabled("Crashes in multi threaded context. Run manually.")
 class TestPretrainedModels {
 
     val modelBaseUrl = "https://media.githubusercontent.com/media/onnx/models/master"
