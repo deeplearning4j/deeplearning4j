@@ -35,7 +35,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
-import org.nd4j.autodiff.validation.listeners.NonInplaceValidationListener;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
@@ -146,18 +145,6 @@ public class OpValidation {
         SameDiff sameDiff = testCase.sameDiff();
         List<Listener> listeners = sameDiff.getListeners();
         if(listeners.isEmpty()) {
-            sameDiff.addListeners(new NonInplaceValidationListener());
-        } else {
-            boolean found = false;
-            for(Listener l : listeners){
-                if(l instanceof NonInplaceValidationListener) {
-                    found = true;
-                    break;
-                }
-            }
-            if(!found){
-                sameDiff.addListeners(new NonInplaceValidationListener());
-            }
         }
 
         //Check forward pass:
@@ -236,7 +223,7 @@ public class OpValidation {
         } catch (IOException e){
             throw new RuntimeException("IOException deserializing from FlatBuffers", e);
         }
-        
+
         //Check variables:
         List<SDVariable> vars = original.variables();
         List<SDVariable> varsDe = deserialized.variables();

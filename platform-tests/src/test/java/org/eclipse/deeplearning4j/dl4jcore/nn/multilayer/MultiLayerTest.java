@@ -312,12 +312,12 @@ public class MultiLayerTest extends BaseDL4JTest {
         }
         /*
         System.out.println(pair);
-        
+
         //Use updater to go from raw gradients -> updates
         //Apply learning rate, gradient clipping, adagrad/momentum/rmsprop etc
         Updater updater = UpdaterCreator.getUpdater(net);
         updater.update(net, g, 0, miniBatch);
-        
+
         StepFunction stepFunction = new NegativeGradientStepFunction();
         INDArray params = net.params();
         System.out.println(Arrays.toString(params.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 10)).dup().data().asFloat()));
@@ -493,7 +493,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         assertEquals(expectedGradient.gradient(), actualParams);
         net.update(expectedGradient);
         actualParams = net.params().castTo(DataType.DOUBLE);
-        assertEquals(Nd4j.ones(1, 43).addi(1).castTo(DataType.DOUBLE), actualParams);
+        assertEquals(Nd4j.ones( 43).addi(1).castTo(DataType.DOUBLE), actualParams);
     }
 
     @Test
@@ -531,7 +531,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         aePre.setParam("0_vb", Nd4j.ones(10));
         params = aePre.getParam("0_vb");
         // check set params for vb
-        assertEquals(Nd4j.ones(1, 10), params);
+        assertEquals(Nd4j.ones( 10), params);
         // Test pretrain false, expect same for true because its not changed when applying update
         MultiLayerNetwork aeNoPre = getAeModel(false, nIn, nOut);
         actualNP = (int) aeNoPre.numParams();
@@ -760,7 +760,7 @@ public class MultiLayerTest extends BaseDL4JTest {
             e.feedForward(true, false);
             Pair<Gradient, INDArray> extErrorGrad = e.backpropGradient(olEpsilon, LayerWorkspaceMgr.noWorkspaces());
             int nParamsDense = 10 * 10 + 10;
-            assertEquals(sGrad.gradient().get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(0, nParamsDense)), extErrorGrad.getFirst().gradient());
+            assertEquals(sGrad.gradient().get( NDArrayIndex.interval(0, nParamsDense)), extErrorGrad.getFirst().gradient());
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         }
     }
@@ -966,57 +966,57 @@ public class MultiLayerTest extends BaseDL4JTest {
         // [m0w, m0b, m1w, m1b, m2w, m2b][v0w, v0b, v1w, v1b, v2w, v2b]
         long soFar = 0;
         // m0w
-        INDArray m0w = viewArray.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(soFar, soFar + 5 * 3)).assign(0);
+        INDArray m0w = viewArray.get( NDArrayIndex.interval(soFar, soFar + 5 * 3)).assign(0);
         soFar += 5 * 3;
         // m0b
-        INDArray m0b = viewArray.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(soFar, soFar + 3)).assign(1);
+        INDArray m0b = viewArray.get( NDArrayIndex.interval(soFar, soFar + 3)).assign(1);
         soFar += 3;
         // m1w
-        INDArray m1w = viewArray.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(soFar, soFar + 3 * 2)).assign(2);
+        INDArray m1w = viewArray.get(NDArrayIndex.interval(soFar, soFar + 3 * 2)).assign(2);
         soFar += 3 * 2;
         // m1b
-        INDArray m1b = viewArray.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(soFar, soFar + 2)).assign(3);
+        INDArray m1b = viewArray.get(NDArrayIndex.interval(soFar, soFar + 2)).assign(3);
         soFar += 2;
         // m2w
-        INDArray m2w = viewArray.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(soFar, soFar + 2 * 1)).assign(4);
+        INDArray m2w = viewArray.get(NDArrayIndex.interval(soFar, soFar + 2 * 1)).assign(4);
         soFar += 2 * 1;
         // m2b
-        INDArray m2b = viewArray.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(soFar, soFar + 1)).assign(5);
+        INDArray m2b = viewArray.get( NDArrayIndex.interval(soFar, soFar + 1)).assign(5);
         soFar += 1;
         // v0w
-        INDArray v0w = viewArray.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(soFar, soFar + 5 * 3)).assign(6);
+        INDArray v0w = viewArray.get( NDArrayIndex.interval(soFar, soFar + 5 * 3)).assign(6);
         soFar += 5 * 3;
         // v0b
-        INDArray v0b = viewArray.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(soFar, soFar + 3)).assign(7);
+        INDArray v0b = viewArray.get( NDArrayIndex.interval(soFar, soFar + 3)).assign(7);
         soFar += 3;
         // v1w
-        INDArray v1w = viewArray.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(soFar, soFar + 3 * 2)).assign(8);
+        INDArray v1w = viewArray.get( NDArrayIndex.interval(soFar, soFar + 3 * 2)).assign(8);
         soFar += 3 * 2;
         // v1b
-        INDArray v1b = viewArray.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(soFar, soFar + 2)).assign(9);
+        INDArray v1b = viewArray.get( NDArrayIndex.interval(soFar, soFar + 2)).assign(9);
         soFar += 2;
         // v2w
-        INDArray v2w = viewArray.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(soFar, soFar + 2 * 1)).assign(10);
+        INDArray v2w = viewArray.get( NDArrayIndex.interval(soFar, soFar + 2 * 1)).assign(10);
         soFar += 2 * 1;
         // v2b
-        INDArray v2b = viewArray.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(soFar, soFar + 1)).assign(11);
+        INDArray v2b = viewArray.get( NDArrayIndex.interval(soFar, soFar + 1)).assign(11);
         soFar += 1;
         net.setLearningRate(0, 0.0);
         // Expect new updater state to look like:
         // [m0w, m0b][v0w,v0b], [m1w, m1b, m2w, m2b][v1w, v1b, v2w, v2b]
-        INDArray exp = Nd4j.concat(1, m0w, m0b, v0w, v0b, m1w, m1b, m2w, m2b, v1w, v1b, v2w, v2b);
+        INDArray exp = Nd4j.concat(0, m0w, m0b, v0w, v0b, m1w, m1b, m2w, m2b, v1w, v1b, v2w, v2b);
         INDArray act = net.getUpdater().getStateViewArray();
         // System.out.println(exp);
         // System.out.println(act);
         assertEquals(exp, act);
         // And set layer 1 LR:
         net.setLearningRate(1, 0.2);
-        exp = Nd4j.concat(1, m0w, m0b, v0w, v0b, m1w, m1b, v1w, v1b, m2w, m2b, v2w, v2b);
+        exp = Nd4j.concat(0, m0w, m0b, v0w, v0b, m1w, m1b, v1w, v1b, m2w, m2b, v2w, v2b);
         assertEquals(exp, net.getUpdater().getStateViewArray());
         // Set all back to original LR and check again:
         net.setLearningRate(1, lr);
         net.setLearningRate(0, lr);
-        exp = Nd4j.concat(1, m0w, m0b, m1w, m1b, m2w, m2b, v0w, v0b, v1w, v1b, v2w, v2b);
+        exp = Nd4j.concat(0, m0w, m0b, m1w, m1b, m2w, m2b, v0w, v0b, v1w, v1b, v2w, v2b);
         assertEquals(exp, net.getUpdater().getStateViewArray());
         // Finally, training sanity check (if things are wrong, we get -ve values in adam V, which causes NaNs)
         net.getUpdater().getStateViewArray().assign(viewArrayCopy);

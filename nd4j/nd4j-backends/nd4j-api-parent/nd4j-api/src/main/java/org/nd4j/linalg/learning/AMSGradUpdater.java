@@ -69,14 +69,14 @@ public class AMSGradUpdater implements GradientUpdater<AMSGrad> {
 
     @Override
     public void setStateViewArray(INDArray viewArray, long[] gradientShape, char gradientOrder, boolean initialize) {
-        if (!viewArray.isRowVector())
-            throw new IllegalArgumentException("Invalid input: expect row vector input");
+        viewArray = viewArray.reshape(viewArray.length());
+
         if (initialize)
             viewArray.assign(0);
         val n = viewArray.length() / 3;
-        this.m = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, n));
-        this.v = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(n, 2*n));
-        this.vHat = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(2*n, 3*n));
+        this.m = viewArray.get(NDArrayIndex.interval(0, n));
+        this.v = viewArray.get(NDArrayIndex.interval(n, 2 * n));
+        this.vHat = viewArray.get(NDArrayIndex.interval(2 * n, 3 * n));
 
         //Reshape to match the expected shape of the input gradient arrays
         this.m = Shape.newShapeNoCopy(this.m, gradientShape, gradientOrder == 'f');

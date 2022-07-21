@@ -30,7 +30,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
-import org.nd4j.autodiff.validation.listeners.NonInplaceValidationListener;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -93,6 +92,7 @@ public class GradCheckUtil {
             sd.enableDebugMode();
         }
 
+        sd.setEnableCache(false);
         //Validation sanity checks:
         if(!skipValidation) {
             validateInternalState(sd, true);
@@ -139,35 +139,10 @@ public class GradCheckUtil {
             }
         }
 
-        //Add non-inplace validation listener, to check that non-inplace ops don't modify their inputs
-        List<Listener> listenersBefore = new ArrayList<>(sd.getListeners());
-        int listenerIdx = -1;
-        if(listenersBefore.isEmpty()) {
-            sd.addListeners(new NonInplaceValidationListener());
-            listenerIdx = 0;
-        } else {
-            boolean found = false;
-            int i = 0;
-            for(Listener l : listenersBefore) {
-                if(l instanceof NonInplaceValidationListener) {
-                    found = true;
-                    listenerIdx = i;
-                    break;
-                }
-                i++;
-            }
-            if(!found) {
-                sd.addListeners(new NonInplaceValidationListener());
-                listenerIdx = i;
-            }
-        }
 
 
         Map<String,INDArray> gm = sd.calculateGradients(placeholderValues, varsNeedingGrads);
 
-        //Remove listener, to reduce overhead
-        if(!sd.getListeners().isEmpty())
-            sd.getListeners().remove(listenerIdx);
 
         Map<String,INDArray> grad = new HashMap<>();
         for(SDVariable v : sd.variables()) {

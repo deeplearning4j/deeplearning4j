@@ -128,12 +128,12 @@ public class NonInplaceValidationListener extends BaseListener {
                     "for op %s - input %s", op.getOp().getClass(), i);
 
             //Deallocate:
-            if(dealloc && after.closeable()) {
+         /*   if(dealloc && after.closeable()) {
                 after.close();
-            }
-            if(opInputs[i].closeable()){
+            }*/
+          /*  if(opInputs[i].closeable()){
                 opInputs[i].close();
-            }
+            }*/
         }
     }
 

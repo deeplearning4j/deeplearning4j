@@ -836,15 +836,24 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         if (op instanceof TensorArray) {
             //Create a TensorArray
             VarId vid = outputFrameIter.toVarId(op.outputVariable().name());
-            Preconditions.checkState(!nodeValueOutputs.containsKey(vid), "TensorArray already exists for %s when executing TensorArrayV3", vid);
-            SDVariable size = op.arg(0);
-            INDArray arr = size.getArr();
-            List<INDArray> createList = new ArrayList<>();
-            TensorArray tensorArray = (TensorArray) op;
-            long[] requiredShape = tensorArray.args().length > 1 ? tensorArray.requiredShape() : null;
-            for(int i = 0; i  < arr.getInt(0); i++) {
-                createList.add(null);
+            if(nodeValueOutputs.containsKey(vid)) {
+                // Note that TensorArray has 2 outputs - a 'dummy' SDVariable that represents it, and a second output (return a scalar 0.0)
+                return ExecutionResult.createValue(vid.getVariable(),nodeValueOutputs.get(vid));
             }
+            Preconditions.checkState(!nodeValueOutputs.containsKey(vid), "TensorArray already exists for %s when executing TensorArrayV3", vid);
+            List<INDArray> createList = new ArrayList<>();
+
+            if(op.args().length > 0) {
+                SDVariable size = op.arg(0);
+                INDArray arr = size.getArr();
+                TensorArray tensorArray = (TensorArray) op;
+                long[] requiredShape = tensorArray.args().length > 1 ? tensorArray.requiredShape() : null;
+                for(int i = 0; i  < arr.getInt(0); i++) {
+                    createList.add(null);
+                }
+
+            }
+
 
             SDValue listValue = SDValue.create(createList);
             putNodeValue(listValue, vid);

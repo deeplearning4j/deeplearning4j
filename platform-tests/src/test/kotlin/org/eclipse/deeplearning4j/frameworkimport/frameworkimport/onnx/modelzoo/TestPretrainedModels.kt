@@ -20,6 +20,7 @@ package org.eclipse.deeplearning4j.frameworkimport.frameworkimport.onnx.modelzoo
 import onnx.Onnx
 import org.apache.commons.io.FileUtils
 import org.eclipse.deeplearning4j.testinit.convertedModelDirectory
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -37,9 +38,12 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import java.io.File
 import java.net.URI
 import java.nio.file.Path
+import javax.annotation.concurrent.NotThreadSafe
 
 data class InputDataset(val dataSetIndex: Int,val inputPaths: List<String>,val outputPaths: List<String>)
 @Tag(TagNames.ONNX)
+@NotThreadSafe
+@Disabled
 class TestPretrainedModels {
 
     val modelBaseUrl = "https://media.githubusercontent.com/media/onnx/models/master"
