@@ -34,8 +34,8 @@ import org.nd4j.parameterserver.distributed.v2.util.MessageSplitter;
 
 import java.util.ArrayList;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
+
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.DIST_SYSTEMS)
 @NativeTag

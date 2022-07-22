@@ -38,6 +38,7 @@ import org.nd4j.common.tests.tags.TagNames;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag(TagNames.FILE_IO)
 @NativeTag

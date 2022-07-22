@@ -22,6 +22,7 @@ package org.datavec.excel;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.writable.Writable;
+import org.datavec.poi.excel.ExcelRecordReader;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
