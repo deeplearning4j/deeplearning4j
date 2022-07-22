@@ -79,10 +79,6 @@ public class TestRepartitioning extends BaseSparkTest {
 
     @Test
     public void testRepartitioning2() throws Exception {
-        if(Platform.isWindows()) {
-            //Spark tests don't run on windows
-            return;
-        }
         int[] ns;
         if(isIntegrationTests()){
             ns = new int[]{320, 321, 25600, 25601, 25615};
@@ -106,25 +102,18 @@ public class TestRepartitioning extends BaseSparkTest {
             int nPartitions = 32;
 
             JavaRDD<String>[] splits = org.deeplearning4j.spark.util.SparkUtils.balancedRandomSplit(
-                            totalDataSetObjectCount, dataSetObjectsPerSplit, rdd, new Random().nextLong());
+                    totalDataSetObjectCount, dataSetObjectsPerSplit, rdd, new Random().nextLong());
 
             List<Integer> counts = new ArrayList<>();
             List<List<Tuple2<Integer, Integer>>> partitionCountList = new ArrayList<>();
-            //            System.out.println("------------------------");
-            //            System.out.println("Partitions Counts:");
             for (JavaRDD<String> split : splits) {
                 JavaRDD<String> repartitioned = SparkUtils.repartition(split, Repartition.Always,
-                                RepartitionStrategy.Balanced, valuesPerPartition, nPartitions);
+                        RepartitionStrategy.Balanced, valuesPerPartition, nPartitions);
                 List<Tuple2<Integer, Integer>> partitionCounts = repartitioned
-                                .mapPartitionsWithIndex(new CountPartitionsFunction<String>(), true).collect();
-                //                System.out.println(partitionCounts);
+                        .mapPartitionsWithIndex(new CountPartitionsFunction<String>(), true).collect();
                 partitionCountList.add(partitionCounts);
                 counts.add((int) split.count());
             }
-
-            //            System.out.println(counts.size());
-            //            System.out.println(counts);
-
 
             int expNumPartitionsWithMore = totalDataSetObjectCount % nPartitions;
             int actNumPartitionsWithMore = 0;

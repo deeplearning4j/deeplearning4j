@@ -242,10 +242,6 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
 
     @Test
     public void testListeners() {
-        if(Platform.isWindows()) {
-            //Spark tests don't run on windows
-            return;
-        }
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd()).weightInit(WeightInit.XAVIER).list()
