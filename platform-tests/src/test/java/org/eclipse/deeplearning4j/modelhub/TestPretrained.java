@@ -1,5 +1,6 @@
 package org.eclipse.deeplearning4j.modelhub;
 
+import org.eclipse.deeplearning4j.omnihub.models.Pretrained;
 import org.junit.jupiter.api.Test;
 
 public class TestPretrained {

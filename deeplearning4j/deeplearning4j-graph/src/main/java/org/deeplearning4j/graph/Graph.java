@@ -18,11 +18,10 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.graph.graph;
+package org.deeplearning4j.graph;
 
 import org.deeplearning4j.graph.api.BaseGraph;
 import org.deeplearning4j.graph.api.Edge;
-import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.api.Vertex;
 import org.deeplearning4j.graph.exception.NoEdgesException;
 import org.deeplearning4j.graph.vertexfactory.VertexFactory;

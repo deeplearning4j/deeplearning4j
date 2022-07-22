@@ -22,7 +22,7 @@ package org.deeplearning4j.graph.models.deepwalk;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.graph.data.GraphLoader;
-import org.deeplearning4j.graph.graph.Graph;
+import org.deeplearning4j.graph.Graph;
 import org.deeplearning4j.graph.iterator.GraphWalkIterator;
 import org.deeplearning4j.graph.iterator.RandomWalkIterator;
 import org.deeplearning4j.graph.models.embeddings.InMemoryGraphLookupTable;

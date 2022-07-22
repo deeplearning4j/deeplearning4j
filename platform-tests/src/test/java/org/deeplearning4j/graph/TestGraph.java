@@ -18,10 +18,11 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.graph.graph;
+package org.deeplearning4j.graph;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.graph.api.*;
 import org.deeplearning4j.graph.data.GraphLoader;
 import org.deeplearning4j.graph.iterator.RandomWalkIterator;
 import org.deeplearning4j.graph.iterator.WeightedRandomWalkIterator;

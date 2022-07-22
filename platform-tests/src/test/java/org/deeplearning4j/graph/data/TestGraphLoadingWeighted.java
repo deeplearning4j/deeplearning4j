@@ -25,7 +25,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.graph.api.Edge;
 import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.data.impl.WeightedEdgeLineProcessor;
-import org.deeplearning4j.graph.graph.Graph;
+import org.deeplearning4j.graph.Graph;
 import org.deeplearning4j.graph.vertexfactory.StringVertexFactory;
 import org.deeplearning4j.graph.vertexfactory.VertexFactory;
 import org.junit.jupiter.api.Disabled;

@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.graph.graph;
+package org.deeplearning4j.graph;
 
 import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.api.IVertexSequence;
