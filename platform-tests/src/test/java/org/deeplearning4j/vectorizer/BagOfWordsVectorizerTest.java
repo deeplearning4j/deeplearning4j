@@ -24,6 +24,7 @@ package org.deeplearning4j.vectorizer;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.bagofwords.vectorizer.BagOfWordsVectorizer;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
