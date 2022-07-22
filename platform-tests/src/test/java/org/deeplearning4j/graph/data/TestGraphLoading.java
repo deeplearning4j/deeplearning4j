@@ -39,8 +39,7 @@ import org.nd4j.common.tests.tags.TagNames;
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Disabled("Permissions issues on CI")
 @Tag(TagNames.JAVA_ONLY)
