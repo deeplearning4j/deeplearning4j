@@ -31,8 +31,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.*;
+
 @NativeTag
 @Tag(TagNames.FILE_IO)
 public class TestGraphHuffman extends BaseDL4JTest {
