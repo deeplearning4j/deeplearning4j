@@ -47,9 +47,10 @@ public abstract class BaseTextVectorizer implements TextVectorizer {
     protected Collection<String> stopWords = new ArrayList<>();
     @Getter
     protected transient InvertedIndex<VocabWord> index;
-    protected boolean isParallel = true;
+  @Getter
+  protected boolean isParallel = true;
 
-    protected LabelsSource getLabelsSource() {
+    public LabelsSource getLabelsSource() {
         return labelsSource;
     }
 
