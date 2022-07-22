@@ -223,6 +223,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-local</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-graph</artifactId>
             <version>${project.version}</version>
