@@ -39,8 +39,8 @@ import org.nd4j.common.tests.tags.TagNames;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+
 @Tag(TagNames.FILE_IO)
 @NativeTag
 public class RandomWalkerTest extends BaseDL4JTest {
