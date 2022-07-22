@@ -26,6 +26,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectorsTest;
+import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -34,6 +35,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.text.documentiterator.FileLabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
+import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.util.ModelSerializer;
@@ -102,7 +104,7 @@ public class Word2VecTestsSmall extends BaseDL4JTest {
     public void testUnkSerialization_1() throws Exception {
         val inputFile = Resources.asFile("big/raw_sentences.txt");
 //        val iter = new BasicLineIterator(inputFile);
-        val iter = ParagraphVectorsTest.getIterator(isIntegrationTests(), inputFile);
+        SentenceIterator iter = ParagraphVectorsTest.getIterator(isIntegrationTests(), inputFile);
         val t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
@@ -186,7 +188,7 @@ public class Word2VecTestsSmall extends BaseDL4JTest {
                 .iterations(1)
                 .useUnknown(true) // Using UNK with limited vocab size causes the issue
                 .seed(42)
-                .iterate(iter)
+                .iterate((SequenceIterator<VocabWord>) iter)
                 .workers(4)
                 .tokenizerFactory(t).build();
 

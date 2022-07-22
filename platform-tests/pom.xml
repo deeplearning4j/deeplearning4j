@@ -218,6 +218,8 @@
             <version>${project.version}</version>
         </dependency>
 
+
+
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>omnihub</artifactId>
