@@ -212,6 +212,12 @@
 
         <dependency>
             <groupId>org.deeplearning4j</groupId>
+            <artifactId>dl4j-spark_2.12</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-graph</artifactId>
             <version>${project.version}</version>
         </dependency>
