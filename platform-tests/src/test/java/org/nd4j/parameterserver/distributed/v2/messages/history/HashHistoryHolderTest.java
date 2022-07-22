@@ -28,6 +28,9 @@ import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @Slf4j
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.DIST_SYSTEMS)

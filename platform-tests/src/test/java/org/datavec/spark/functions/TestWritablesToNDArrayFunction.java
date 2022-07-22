@@ -34,6 +34,9 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.SPARK)
 @Tag(TagNames.DIST_SYSTEMS)

@@ -30,6 +30,8 @@ import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.common.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 @Slf4j
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.DIST_SYSTEMS)

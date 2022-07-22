@@ -34,8 +34,7 @@ import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMess
 
 import java.util.ArrayList;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @Tag(TagNames.FILE_IO)

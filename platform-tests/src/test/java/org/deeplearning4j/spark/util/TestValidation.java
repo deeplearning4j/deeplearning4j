@@ -39,8 +39,8 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.SPARK)
 @Tag(TagNames.DIST_SYSTEMS)
