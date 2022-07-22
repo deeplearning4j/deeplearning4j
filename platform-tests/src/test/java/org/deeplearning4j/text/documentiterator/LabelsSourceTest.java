@@ -28,6 +28,9 @@ import org.nd4j.common.tests.tags.TagNames;
 
 import java.util.Arrays;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.JAVA_ONLY)
 public class LabelsSourceTest extends BaseDL4JTest {
