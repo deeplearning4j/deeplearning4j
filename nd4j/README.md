@@ -60,7 +60,7 @@ To run tests using CPU or CUDA backend run the following.
 For CPU:
 
 ```shell script
-$ mvn clean test -P testresources -P nd4j-testresources -P nd4j-tests-cpu -P nd4j-tf-cpu
+$ mvn clean test 
 ```
 
 For CUDA:

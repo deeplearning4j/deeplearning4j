@@ -994,21 +994,7 @@
          to enforce only when actually running tests - so we'll skip the enforcement (using profiles skipTestRun and skipTestCompileAndRun)
          when -DskipTests or -Dmaven.test.skip=true is used
          -->
-        <profile>
-            <id>testresources</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                    <artifactId>dl4j-test-resources</artifactId>
-                    <version>${dl4j-test-resources.version}</version>
-                    <classifier>${dl4j-test-resources.classifier}</classifier>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-        </profile>
+
         <profile>
             <id>qa</id>
             <build>

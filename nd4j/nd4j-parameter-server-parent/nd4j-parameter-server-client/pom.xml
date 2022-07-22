@@ -91,12 +91,5 @@
         </dependency>
     </dependencies>
 
-    <profiles>
-        <profile>
-            <id>testresources</id>
-        </profile>
-        <profile>
-            <id>nd4j-testresources</id>
-        </profile>
-    </profiles>
+
 </project>

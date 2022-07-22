@@ -515,9 +515,6 @@
 
 
         <profile>
-            <id>testresources</id>
-        </profile>
-        <profile>
             <id>avx2</id>
             <activation>
                 <property>
