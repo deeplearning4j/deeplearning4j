@@ -1,4 +1,4 @@
-package org.eclipse.deeplearning4j.omnihub.models;
+package org.eclipse.deeplearning4j.modelhub;
 
 import org.junit.jupiter.api.Test;
 
