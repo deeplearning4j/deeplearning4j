@@ -18,44 +18,43 @@
  *  *****************************************************************************
  */
 
-package org.datavec.local.transforms.transforms.functions;
-
+package org.datavec.local.transforms.functions;
 
 import org.datavec.api.writable.DoubleWritable;
-import org.datavec.api.writable.Text;
+import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
-import org.datavec.local.transforms.misc.SequenceWritablesToStringFunction;
-import org.datavec.local.transforms.misc.WritablesToStringFunction;
+import org.datavec.local.transforms.misc.NDArrayToWritablesFunction;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 @Tag(TagNames.FILE_IO)
-@Tag(TagNames.JAVA_ONLY)
-public class TestWritablesToStringFunctions  {
-
-
+@NativeTag
+public class TestNDArrayToWritablesFunction {
 
     @Test
-    public void testWritablesToString() throws Exception {
-
-        List<Writable> l = Arrays.asList(new DoubleWritable(1.5), new Text("someValue"));
-        String expected = l.get(0).toString() + "," + l.get(1).toString();
-
-        assertEquals(expected, new WritablesToStringFunction(",").apply(l));
+    public void testNDArrayToWritablesScalars() throws Exception {
+        INDArray arr = Nd4j.arange(5);
+        List<Writable> expected = new ArrayList<>();
+        for (int i = 0; i < 5; i++)
+            expected.add(new DoubleWritable(i));
+        List<Writable> actual = new NDArrayToWritablesFunction().apply(arr);
+        assertEquals(expected, actual);
     }
 
     @Test
-    public void testSequenceWritablesToString() throws Exception {
-
-        List<List<Writable>> l = Arrays.asList(Arrays.asList(new DoubleWritable(1.5), new Text("someValue")),
-                        Arrays.asList(new DoubleWritable(2.5), new Text("otherValue")));
-
-        String expected = l.get(0).get(0).toString() + "," + l.get(0).get(1).toString() + "\n"
-                        + l.get(1).get(0).toString() + "," + l.get(1).get(1).toString();
-
-        assertEquals(expected, new SequenceWritablesToStringFunction(",").apply(l));
+    public void testNDArrayToWritablesArray() throws Exception {
+        INDArray arr = Nd4j.arange(5);
+        List<Writable> expected = Arrays.asList(new NDArrayWritable(arr));
+        List<Writable> actual = new NDArrayToWritablesFunction(true).apply(arr);
+        assertEquals(expected, actual);
     }
 }

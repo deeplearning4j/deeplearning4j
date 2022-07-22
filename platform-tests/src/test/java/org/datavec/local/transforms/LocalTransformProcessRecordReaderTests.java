@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.datavec.local.transforms.transforms;
+package org.datavec.local.transforms;
 
 import org.datavec.api.records.Record;
 import org.datavec.api.records.reader.RecordReader;

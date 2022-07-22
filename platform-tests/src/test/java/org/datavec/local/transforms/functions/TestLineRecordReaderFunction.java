@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.datavec.local.transforms.transforms.functions;
+package org.datavec.local.transforms.functions;
 
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;

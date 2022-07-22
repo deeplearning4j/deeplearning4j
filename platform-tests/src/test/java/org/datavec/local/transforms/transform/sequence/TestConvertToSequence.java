@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.datavec.local.transforms.transforms.transform.sequence;
+package org.datavec.local.transforms.transform.sequence;
 
 
 import org.datavec.api.transform.TransformProcess;

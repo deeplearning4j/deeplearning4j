@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.datavec.local.transforms.transforms.functions;
+package org.datavec.local.transforms.functions;
 
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.NDArrayWritable;

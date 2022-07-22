@@ -17,7 +17,7 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.datavec.local.transforms.transforms.transform;
+package org.datavec.local.transforms.transform;
 
 import org.datavec.api.transform.MathFunction;
 import org.datavec.api.transform.MathOp;

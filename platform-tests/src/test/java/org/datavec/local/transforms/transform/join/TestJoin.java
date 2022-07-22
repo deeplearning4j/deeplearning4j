@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.datavec.local.transforms.transforms.transform.join;
+package org.datavec.local.transforms.transform.join;
 
 
 import org.datavec.api.transform.ColumnType;

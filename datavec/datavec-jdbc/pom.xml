@@ -66,12 +66,7 @@
             <artifactId>HikariCP-java7</artifactId>
             <version>${hikaricp.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.derby</groupId>
-            <artifactId>derby</artifactId>
-            <version>${derby.version}</version>
-            <scope>test</scope>
-        </dependency>
+
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-common-tests</artifactId>

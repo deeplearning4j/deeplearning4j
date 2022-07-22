@@ -47,6 +47,8 @@
         <platform.classifier>${javacpp.platform}</platform.classifier>
         <backend.artifactId>nd4j-native</backend.artifactId>
         <lombok.version>1.18.22</lombok.version>
+        <derby.version>10.13.1.1</derby.version>
+        <maven-surefire-plugin.version>3.0.0-M1</maven-surefire-plugin.version>
 
         <logback.version>1.1.7</logback.version>
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
@@ -226,6 +228,19 @@
             <groupId>org.datavec</groupId>
             <artifactId>datavec-local</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>dl4j-spark-parameterserver_2.12</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.derby</groupId>
+            <artifactId>derby</artifactId>
+            <version>${derby.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
