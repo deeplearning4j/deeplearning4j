@@ -42,7 +42,7 @@ import org.nd4j.common.tests.tags.TagNames;
 import java.io.File;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Tag(TagNames.FILE_IO)
 @NativeTag

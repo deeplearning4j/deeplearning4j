@@ -25,6 +25,8 @@ import org.datavec.api.split.partition.NumberOfRecordsPartitioner;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
+import org.datavec.poi.excel.ExcelRecordReader;
+import org.datavec.poi.excel.ExcelRecordWriter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
