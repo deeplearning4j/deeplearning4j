@@ -37,6 +37,9 @@ import scala.Tuple2;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.JAVA_ONLY)
 @Tag(TagNames.SPARK)
