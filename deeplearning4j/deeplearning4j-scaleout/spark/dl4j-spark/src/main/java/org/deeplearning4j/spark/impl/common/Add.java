@@ -32,7 +32,7 @@ public class Add implements Function2<INDArray, INDArray, INDArray> {
     @Override
     public INDArray call(INDArray v1, INDArray v2) throws Exception {
         INDArray res = v1.addi(v2);
-
+        res.setCloseable(false);
         Nd4j.getExecutioner().commit();
 
         return res;

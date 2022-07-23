@@ -48,7 +48,7 @@ public class CGVaeReconstructionProbWithKeyFunction<K> extends BaseVaeReconstruc
         ComputationGraph network =
                         new ComputationGraph(ComputationGraphConfiguration.fromJson((String) jsonConfig.getValue()));
         network.init();
-        INDArray val = ((INDArray) params.value()).unsafeDuplication();
+        INDArray val = params.value().dup();
         if (val.length() != network.numParams(false))
             throw new IllegalStateException(
                             "Network did not have same number of parameters as the broadcasted set parameters");

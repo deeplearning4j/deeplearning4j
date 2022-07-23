@@ -47,7 +47,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return Shape info
      */
     DataBuffer shapeInfoDataBuffer();
-    
+
     /**
      * Shape info
      * @return Shape info
@@ -1009,7 +1009,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * In place division of a column vector
      *
      * @param columnVector the column vector used for division
-     * @return the result of the division 
+     * @return the result of the division
      */
     INDArray diviColumnVector(INDArray columnVector);
 
@@ -1017,7 +1017,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * Division of a column vector (copy)
      *
      * @param columnVector the column vector used for division
-     * @return the result of the division 
+     * @return the result of the division
      */
     INDArray divColumnVector(INDArray columnVector);
 
@@ -1025,7 +1025,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * In place division of a row vector
      *
      * @param rowVector the row vector used for division
-     * @return the result of the division 
+     * @return the result of the division
      */
     INDArray diviRowVector(INDArray rowVector);
 
@@ -1033,7 +1033,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * Division of a row vector (copy)
      *
      * @param rowVector the row vector used for division
-     * @return the result of the division 
+     * @return the result of the division
      */
     INDArray divRowVector(INDArray rowVector);
 
@@ -1041,7 +1041,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * In place reverse divison of a column vector
      *
      * @param columnVector the column vector used for division
-     * @return the result of the division 
+     * @return the result of the division
      */
     INDArray rdiviColumnVector(INDArray columnVector);
 
@@ -1049,7 +1049,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * Reverse division of a column vector (copy)
      *
      * @param columnVector the column vector used for division
-     * @return the result of the division 
+     * @return the result of the division
      */
     INDArray rdivColumnVector(INDArray columnVector);
 
@@ -1057,7 +1057,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * In place reverse division of a column vector
      *
      * @param rowVector the row vector used for division
-     * @return the result of the division 
+     * @return the result of the division
      */
     INDArray rdiviRowVector(INDArray rowVector);
 
@@ -1066,7 +1066,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * Reverse division of a column vector (copy)
      *
      * @param rowVector the row vector used for division
-     * @return the result of the division 
+     * @return the result of the division
      */
     INDArray rdivRowVector(INDArray rowVector);
 
@@ -1906,7 +1906,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param order the ordering to set
      */
     void setOrder(char order);
-    
+
     /**
      * Returns the elements at the specified indices
      *
@@ -2405,7 +2405,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return the number of elements in the ndarray
      */
     long length();
-    
+
     /**
      * Broadcasts this ndarray to be the specified shape
      *
@@ -2776,6 +2776,13 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return true if array can be released, false otherwise
      */
     boolean closeable();
+
+    /**
+     * Mainly for overriding closeable in specific situations
+     * where a user does not want an ndarray closed.
+     * @param closeable
+     */
+    void setCloseable(boolean closeable);
 
     /**
      * This method releases exclusive off-heap resources uses by this INDArray instance.

@@ -23,6 +23,7 @@ package org.deeplearning4j.spark;
 import com.sun.jna.Platform;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingModelSaver;
@@ -69,11 +70,11 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
             return;
         }
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd()).weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd()).weightInit(WeightInit.XAVIER).list()
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(5));
 
@@ -82,18 +83,18 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
 
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
-                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
-                                        .iterationTerminationConditions(
-                                                        new MaxTimeIterationTerminationCondition(2, TimeUnit.MINUTES))
-                                        .scoreCalculator(new SparkDataSetLossCalculator(irisData, true, sc.sc()))
-                                        .modelSaver(saver).build();
+                new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                        .iterationTerminationConditions(
+                                new MaxTimeIterationTerminationCondition(2, TimeUnit.MINUTES))
+                        .scoreCalculator(new SparkDataSetLossCalculator(irisData, true, sc.sc()))
+                        .modelSaver(saver).build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer =
-                        new SparkEarlyStoppingTrainer(
-                                        getContext().sc(), new ParameterAveragingTrainingMaster.Builder(irisBatchSize())
-                                                        .saveUpdater(true).averagingFrequency(1).build(),
-                                        esConf, net, irisData);
+                new SparkEarlyStoppingTrainer(
+                        getContext().sc(), new ParameterAveragingTrainingMaster.Builder(irisBatchSize())
+                        .saveUpdater(true).averagingFrequency(1).build(),
+                        esConf, net, irisData);
 
         EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
         System.out.println(result);
@@ -124,33 +125,33 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
         }
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(10.0)) //Intentionally huge LR
-                        .weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY)
-                                        .lossFunction(LossFunctions.LossFunction.MSE).build())
-                        .build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(10.0)) //Intentionally huge LR
+                .weightInit(WeightInit.XAVIER).list()
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY)
+                        .lossFunction(LossFunctions.LossFunction.MSE).build())
+                .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(5));
 
         JavaRDD<DataSet> irisData = getIris();
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
-                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5000))
-                                        .iterationTerminationConditions(
-                                                        new MaxTimeIterationTerminationCondition(2, TimeUnit.MINUTES),
-                                                        new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
-                                        .scoreCalculator(new SparkDataSetLossCalculator(irisData, true, sc.sc()))
-                                        .modelSaver(saver).build();
+                new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5000))
+                        .iterationTerminationConditions(
+                                new MaxTimeIterationTerminationCondition(2, TimeUnit.MINUTES),
+                                new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
+                        .scoreCalculator(new SparkDataSetLossCalculator(irisData, true, sc.sc()))
+                        .modelSaver(saver).build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),
-                        new ParameterAveragingTrainingMaster(true, 4, 1, 150 / 4, 1, 0), esConf, net, irisData);
+                new ParameterAveragingTrainingMaster(true, 4, 1, 150 / 4, 1, 0), esConf, net, irisData);
         EarlyStoppingResult result = trainer.fit();
 
         assertTrue(result.getTotalEpochs() < 5);
         assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
-                        result.getTerminationReason());
+                result.getTerminationReason());
         String expDetails = new MaxScoreIterationTerminationCondition(7.5).toString();
         assertEquals(expDetails, result.getTerminationDetails());
     }
@@ -164,11 +165,11 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
         }
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(1e-6)).weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(1e-6)).weightInit(WeightInit.XAVIER).list()
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(5));
 
@@ -176,16 +177,16 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
 
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
-                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(10000))
-                                        .iterationTerminationConditions(
-                                                        new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
-                                                        new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
-                                        .scoreCalculator(new SparkDataSetLossCalculator(irisData, true, sc.sc()))
-                                        .modelSaver(saver).build();
+                new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(10000))
+                        .iterationTerminationConditions(
+                                new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
+                                new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
+                        .scoreCalculator(new SparkDataSetLossCalculator(irisData, true, sc.sc()))
+                        .modelSaver(saver).build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),
-                        new ParameterAveragingTrainingMaster(true, 4, 1, 150 / 15, 1, 0), esConf, net, irisData);
+                new ParameterAveragingTrainingMaster(true, 4, 1, 150 / 15, 1, 0), esConf, net, irisData);
         long startTime = System.currentTimeMillis();
         EarlyStoppingResult result = trainer.fit();
         long endTime = System.currentTimeMillis();
@@ -195,7 +196,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
         assertTrue(durationSeconds <= 20, "durationSeconds = " + durationSeconds);
 
         assertEquals(EarlyStoppingResult.TerminationReason.IterationTerminationCondition,
-                        result.getTerminationReason());
+                result.getTerminationReason());
         String expDetails = new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS).toString();
         assertEquals(expDetails, result.getTerminationDetails());
     }
@@ -210,11 +211,11 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
         }
         Nd4j.getRandom().setSeed(12345);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(0.0)).weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(0.0)).weightInit(WeightInit.XAVIER).list()
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(5));
 
@@ -222,15 +223,15 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
 
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
-                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(100),
-                                                        new ScoreImprovementEpochTerminationCondition(5))
-                                        .iterationTerminationConditions(new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
-                                        .scoreCalculator(new SparkDataSetLossCalculator(irisData, true, sc.sc()))
-                                        .modelSaver(saver).build();
+                new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(100),
+                                new ScoreImprovementEpochTerminationCondition(5))
+                        .iterationTerminationConditions(new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
+                        .scoreCalculator(new SparkDataSetLossCalculator(irisData, true, sc.sc()))
+                        .modelSaver(saver).build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(getContext().sc(),
-                        new ParameterAveragingTrainingMaster(true, 4, 1, 150 / 10, 1, 0), esConf, net, irisData);
+                new ParameterAveragingTrainingMaster(true, 4, 1, 150 / 10, 1, 0), esConf, net, irisData);
         EarlyStoppingResult result = trainer.fit();
 
         //Expect no score change due to 0 LR -> terminate after 6 total epochs
@@ -242,12 +243,14 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
 
     @Test
     public void testListeners() {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd()).weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd()).weightInit(WeightInit.XAVIER).list()
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.setListeners(new ScoreIterationListener(5));
 
@@ -256,19 +259,19 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
 
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
-                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
-                                        .iterationTerminationConditions(
-                                                        new MaxTimeIterationTerminationCondition(2, TimeUnit.MINUTES))
-                                        .scoreCalculator(new SparkDataSetLossCalculator(irisData, true, sc.sc()))
-                                        .modelSaver(saver).build();
+                new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                        .iterationTerminationConditions(
+                                new MaxTimeIterationTerminationCondition(2, TimeUnit.MINUTES))
+                        .scoreCalculator(new SparkDataSetLossCalculator(irisData, true, sc.sc()))
+                        .modelSaver(saver).build();
 
         LoggingEarlyStoppingListener listener = new LoggingEarlyStoppingListener();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new SparkEarlyStoppingTrainer(
-                        getContext().sc(), new ParameterAveragingTrainingMaster(true,
-                                        Runtime.getRuntime().availableProcessors(), 1, 10, 1, 0),
-                        esConf, net, irisData);
+                getContext().sc(), new ParameterAveragingTrainingMaster(true,
+                Runtime.getRuntime().availableProcessors(), 1, 10, 1, 0),
+                esConf, net, irisData);
         trainer.setListener(listener);
 
         trainer.fit();
@@ -309,7 +312,6 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
     }
 
     private JavaRDD<DataSet> getIris() {
-
         JavaSparkContext sc = getContext();
 
         IrisDataSetIterator iter = new IrisDataSetIterator(irisBatchSize(), 150);
@@ -317,6 +319,8 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
         while (iter.hasNext())
             list.add(iter.next());
 
-        return sc.parallelize(list);
+        JavaRDD<DataSet> parallelize = sc.parallelize(list);
+        parallelize.persist(StorageLevel.MEMORY_ONLY());
+        return parallelize;
     }
 }

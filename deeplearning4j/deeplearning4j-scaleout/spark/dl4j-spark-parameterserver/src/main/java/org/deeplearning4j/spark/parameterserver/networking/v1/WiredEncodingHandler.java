@@ -63,7 +63,7 @@ public class WiredEncodingHandler extends EncodingHandler {
             long updateId = updatesCounter.getAndIncrement();
 
             VoidParameterServer.getInstance().execDistributedImmediately(
-                            new SilentUpdatesMessage(message.unsafeDuplication(), updateId));
+                            new SilentUpdatesMessage(message.dup(), updateId));
         }
 
 

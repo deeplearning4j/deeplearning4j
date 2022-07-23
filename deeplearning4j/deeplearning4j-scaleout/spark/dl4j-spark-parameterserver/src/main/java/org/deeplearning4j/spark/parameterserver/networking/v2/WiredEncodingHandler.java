@@ -61,7 +61,7 @@ public class WiredEncodingHandler extends EncodingHandler {
         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             long updateId = updatesCounter.getAndIncrement();
 
-            val m = message.unsafeDuplication();
+            val m = message.dup();
             ModelParameterServer.getInstance().sendUpdate(m, iterationNumber, epochNumber);
         }
 
