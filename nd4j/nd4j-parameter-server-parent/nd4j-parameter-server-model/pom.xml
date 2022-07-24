@@ -49,10 +49,4 @@
         <module.name>nd4j.parameter.server.model</module.name>
     </properties>
 
-
-    <profiles>
-        <profile>
-            <id>testresources</id>
-        </profile>
-    </profiles>
 </project>

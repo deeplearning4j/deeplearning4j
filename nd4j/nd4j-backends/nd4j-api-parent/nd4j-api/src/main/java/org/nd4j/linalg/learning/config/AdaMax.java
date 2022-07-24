@@ -86,10 +86,12 @@ public class AdaMax implements IUpdater {
 
     @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
+        if(viewArray.rank() > 1 && viewArray.size(0) == 1)
+            viewArray = viewArray.reshape(viewArray.length());
         AdaMaxUpdater a = new AdaMaxUpdater(this);
         long[] gradientShape = viewArray.shape();
         gradientShape = Arrays.copyOf(gradientShape, gradientShape.length);
-        gradientShape[0] /= 2;
+        gradientShape[0] = Math.max(1,gradientShape[0] / 2);
         a.setStateViewArray(viewArray, gradientShape, viewArray.ordering(), initializeViewArray);
         return a;
     }

@@ -21,6 +21,8 @@
 package org.nd4j.linalg.api.ndarray;
 
 
+import lombok.Getter;
+import lombok.Setter;
 import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
@@ -103,6 +105,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     //protected transient DataBuffer stride;
     protected transient boolean compressed = false;
 
+    @Getter
+    @Setter
+    protected transient boolean closeable = true;
     protected transient boolean released = false;
 
     // this field holds jvm copy of shapeInfo
@@ -4211,7 +4216,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     return out.get(subIndices);
                 }
             }
-
             if(indexes[i] instanceof PointIndex) {
                 //Point indexes don't appear in output
                 PointIndex pi = (PointIndex) indexes[i];
@@ -5623,7 +5627,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public boolean closeable() {
-        if (released || isAttached())
+        if (released || isAttached() || !closeable)
             return false;
 
         // empty arrays have no buffer at all
@@ -5639,7 +5643,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public void close() {
         // empty arrays have no buffer at all
-        if (released || isEmpty())
+        if (released || isEmpty() || !closeable())
             return;
 
         Nd4j.getExecutioner().commit();

@@ -2197,11 +2197,9 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         int jaxis = 1;
         SDVariable paramsShape = sd.var(arr);
         SDVariable innerShape = paramsShape.getView(
-                SDIndex.interval(sd.constant(jaxis),sd.constant(-1)),
-                SDIndex.interval(sd.constant(1),
-                        sd.constant(-1)));
+                SDIndex.interval(sd.constant(jaxis),sd.constant(-1)));
 
-        assertEquals(Nd4j.createFromArray(10),innerShape.eval());
+        assertEquals(Nd4j.createFromArray(10,10),innerShape.eval());
     }
 
     @ParameterizedTest

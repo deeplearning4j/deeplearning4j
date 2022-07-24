@@ -136,17 +136,6 @@
 
     <profiles>
         <profile>
-            <id>aurora</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <modules>
-                <module>nd4j-aurora-presets</module>
-                <module>nd4j-aurora</module>
-            </modules>
-        </profile>
-
-        <profile>
             <id>cpu</id>
            <activation>
                <activeByDefault>false</activeByDefault>
@@ -489,9 +478,7 @@
                 <dependency.classifier></dependency.classifier>
             </properties>
         </profile>
-        <profile>
-            <id>testresources</id>
-        </profile>
+
         <!-- Profiles to modify the transitive dependencies when picked up from other pom.xml files, for example:
              mvn -Djavacpp.platform.custom -Djavacpp.platform.host -Djavacpp.platform.linux-x86_64 -Djavacpp.platform.windows-x86_64 ... -->
         <profile>

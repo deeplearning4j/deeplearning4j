@@ -184,29 +184,6 @@
                     </directories>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>test</phase>
-                        <id>enforce-test-resources</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${skipTestResourceEnforcement}</skip>
-                            <rules>
-                                <requireActiveProfile>
-                                    <profiles>testresources</profiles>
-                                    <all>false</all>
-                                </requireActiveProfile>
-                            </rules>
-                            <fail>true</fail>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
 
         <pluginManagement>
@@ -239,23 +216,4 @@
         </pluginManagement>
     </build>
 
-    <profiles>
-        <profile>
-            <id>testresources</id>
-        </profile>
-        <profile>
-            <id>nd4j-testresources</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                    <artifactId>dl4j-test-resources</artifactId>
-                    <version>${dl4j-test-resources.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
 </project>

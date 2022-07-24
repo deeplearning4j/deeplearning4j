@@ -101,11 +101,16 @@ public class CloseNetworkTests extends BaseDL4JTest {
                     assertTrue(msg.contains("released"),msg);
                 }
 
+                catch (IllegalArgumentException e) {
+                    String msg = e.getMessage();
+                    assertTrue(msg.contains("closed"),msg);
+                }
+
                 try {
                     net.fit(f, l);
-                } catch (IllegalStateException e) {
+                } catch (Exception e) {
                     String msg = e.getMessage();
-                    assertTrue(msg.contains("released"),msg);
+                    assertTrue( msg.contains("released") || msg.contains("closed"),msg);
                 }
             }
         }
@@ -144,16 +149,16 @@ public class CloseNetworkTests extends BaseDL4JTest {
 
 
                     net.output(f);
-                } catch (IllegalStateException e) {
+                } catch (Exception e) {
                     String msg = e.getMessage();
-                    assertTrue( msg.contains("released"),msg);
+                    assertTrue( msg.contains("released") || msg.contains("closed"),msg);
                 }
 
                 try {
                     net.fit(new INDArray[]{f}, new INDArray[]{l});
-                } catch (IllegalStateException e) {
+                } catch (Exception e) {
                     String msg = e.getMessage();
-                    assertTrue(msg.contains("released"),msg);
+                    assertTrue( msg.contains("released") || msg.contains("closed"),msg);
                 }
             }
         }

@@ -204,9 +204,7 @@
 
         </profile>
 
-        <profile>
-            <id>testresources</id>
-        </profile>
+
 
         <!-- See: https://github.com/os72/protoc-jar/issues/93 We need to use a system compiled protoc since one is not provided
         by the plugin.-->

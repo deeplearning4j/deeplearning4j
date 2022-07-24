@@ -113,10 +113,10 @@ public class ParameterAveragingTrainingWorker extends BaseTrainingWorker<Paramet
         //Don't want to have shared configuration object: each may update its iteration count (for LR schedule etc) individually
         MultiLayerNetwork net = new MultiLayerNetwork(tuple.getConfiguration().clone());
         //Can't have shared parameter array across executors for parameter averaging, hence the 'true' for clone parameters array arg
-        net.init(tuple.getParameters().unsafeDuplication(), false);
+        net.init(tuple.getParameters().dup(), false);
 
         if (tuple.getUpdaterState() != null) {
-            net.setUpdater(new MultiLayerUpdater(net, tuple.getUpdaterState().unsafeDuplication())); //Can't have shared updater state
+            net.setUpdater(new MultiLayerUpdater(net, tuple.getUpdaterState().dup())); //Can't have shared updater state
         }
 
         Nd4j.getExecutioner().commit();
@@ -143,10 +143,10 @@ public class ParameterAveragingTrainingWorker extends BaseTrainingWorker<Paramet
         //Don't want to have shared configuration object: each may update its iteration count (for LR schedule etc) individually
         ComputationGraph net = new ComputationGraph(tuple.getGraphConfiguration().clone());
         //Can't have shared parameter array across executors for parameter averaging, hence the 'true' for clone parameters array arg
-        net.init(tuple.getParameters().unsafeDuplication(), false);
+        net.init(tuple.getParameters().dup(), false);
 
         if (tuple.getUpdaterState() != null) {
-            net.setUpdater(new ComputationGraphUpdater(net, tuple.getUpdaterState().unsafeDuplication())); //Again: can't have shared updater state
+            net.setUpdater(new ComputationGraphUpdater(net, tuple.getUpdaterState().dup())); //Again: can't have shared updater state
         }
 
         Nd4j.getExecutioner().commit();

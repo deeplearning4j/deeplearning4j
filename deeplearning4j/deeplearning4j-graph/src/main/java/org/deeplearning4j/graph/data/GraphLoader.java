@@ -24,7 +24,7 @@ import org.deeplearning4j.graph.api.Edge;
 import org.deeplearning4j.graph.api.Vertex;
 import org.deeplearning4j.graph.data.impl.DelimitedEdgeLineProcessor;
 import org.deeplearning4j.graph.data.impl.WeightedEdgeLineProcessor;
-import org.deeplearning4j.graph.graph.Graph;
+import org.deeplearning4j.graph.Graph;
 import org.deeplearning4j.graph.vertexfactory.StringVertexFactory;
 import org.deeplearning4j.graph.vertexfactory.VertexFactory;
 

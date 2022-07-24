@@ -48,7 +48,7 @@ public class SlicingTests extends BaseNd4jTestWithBackends {
     public void testSlices() {
         INDArray arr = Nd4j.create(Nd4j.linspace(1, 24, 24, DataType.DOUBLE).data(), new int[] {4, 3, 2});
         for (int i = 0; i < arr.slices(); i++) {
-            INDArray slice = arr.slice(i).slice(1);
+            INDArray slice = arr.slice(i).slice(0);
             val slices = slice.slices();
             assertEquals(2, slices);
         }

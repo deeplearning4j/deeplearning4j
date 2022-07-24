@@ -300,18 +300,19 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
         //1. Training config is serialized/deserialized correctly
         //2. Updater state
 
-        for(IUpdater u : new IUpdater[]{
+        for(IUpdater u : new IUpdater[] {
                 new AdaDelta(), new AdaGrad(2e-3), new Adam(2e-3), new AdaMax(2e-3),
-                new AMSGrad(2e-3), new Nadam(2e-3), new Nesterovs(2e-3), new NoOp(),
+                new AMSGrad(2e-3), new Nadam(2e-3),
+                new Nesterovs(2e-3), new NoOp(),
                 new RmsProp(2e-3), new Sgd(2e-3)}) {
 
             log.info("Testing: {}", u.getClass().getName());
 
             SameDiff sd = SameDiff.create();
-            SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 4);
-            SDVariable label = sd.placeHolder("label", DataType.FLOAT, -1, 3);
-            SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 4, 3));
-            SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 1, 3));
+            SDVariable in = sd.placeHolder("in", DataType.DOUBLE, -1, 4);
+            SDVariable label = sd.placeHolder("label", DataType.DOUBLE, -1, 3);
+            SDVariable w = sd.var("w", Nd4j.rand(DataType.DOUBLE, 4, 3));
+            SDVariable b = sd.var("b", Nd4j.rand(DataType.DOUBLE, 1, 3));
 
             SDVariable mmul = in.mmul(w).add(b);
             SDVariable softmax = sd.nn().softmax(mmul, 0);
@@ -324,8 +325,8 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
                     .dataSetLabelMapping("label")
                     .build());
 
-            INDArray inArr = Nd4j.rand(DataType.FLOAT, 3, 4);
-            INDArray labelArr = Nd4j.rand(DataType.FLOAT, 3, 3);
+            INDArray inArr = Nd4j.rand(DataType.DOUBLE, 3, 4);
+            INDArray labelArr = Nd4j.rand(DataType.DOUBLE, 3, 3);
 
             DataSet ds = new DataSet(inArr, labelArr);
 
@@ -348,7 +349,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
             Map<String, GradientUpdater> m1 = sd.getUpdaterMap();
             Map<String, GradientUpdater> m2 = sd2.getUpdaterMap();
             assertEquals(m1.keySet(), m2.keySet());
-            for(String s : m1.keySet()){
+            for(String s : m1.keySet()) {
                 GradientUpdater g1 = m1.get(s);
                 GradientUpdater g2 = m2.get(s);
                 assertEquals(g1.getState(), g2.getState());
@@ -362,7 +363,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
                 sd2.fit(ds);
             }
 
-            for(SDVariable v : sd.variables()){
+            for(SDVariable v : sd.variables()) {
                 if(v.isPlaceHolder() || v.getVariableType() == VariableType.ARRAY)
                     continue;
 
@@ -371,7 +372,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
                 INDArray a1 = v.getArr();
                 INDArray a2 = v2.getArr();
 
-                assertEquals(a1, a2);
+                assertTrue(a1.equalsWithEps(a2,1e-3));
             }
         }
     }

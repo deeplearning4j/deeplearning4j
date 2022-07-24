@@ -2507,7 +2507,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
         SDVariable input = sd.var("in", Nd4j.arange(6).castTo(DataType.DOUBLE).reshape(2,3));
         SDVariable indices = sd.constant("indices", Nd4j.createFromArray(0));
 
-        SDVariable gathered = sd.gather(input, indices, 1);
+        SDVariable gathered = sd.gather(input, indices, 0);
         SDVariable loss = gathered.std(true);
 
         Map<String, INDArray> output = sd.output((Map<String, INDArray>) null, gathered.name());

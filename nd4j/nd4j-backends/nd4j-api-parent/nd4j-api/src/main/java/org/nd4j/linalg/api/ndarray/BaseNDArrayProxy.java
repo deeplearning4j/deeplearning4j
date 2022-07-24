@@ -49,6 +49,7 @@ public class BaseNDArrayProxy implements java.io.Serializable {
         if (anInstance.isView()) {
             anInstance = anInstance.dup(anInstance.ordering());
         }
+        anInstance.setCloseable(false);
         this.arrayShape = anInstance.shape();
         this.length = anInstance.length();
         this.arrayOrdering = anInstance.ordering();
@@ -57,7 +58,9 @@ public class BaseNDArrayProxy implements java.io.Serializable {
 
     // READ DONE HERE - return an NDArray using the available backend
     private Object readResolve() throws java.io.ObjectStreamException {
-        return Nd4j.create(data, arrayShape, Nd4j.getStrides(arrayShape, arrayOrdering), 0, arrayOrdering);
+        INDArray ret =  Nd4j.create(data, arrayShape, Nd4j.getStrides(arrayShape, arrayOrdering), 0, arrayOrdering);
+        ret.setCloseable(false);
+        return ret;
     }
 
     private void readObject(ObjectInputStream s) throws IOException, ClassNotFoundException {

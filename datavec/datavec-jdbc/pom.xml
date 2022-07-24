@@ -66,12 +66,7 @@
             <artifactId>HikariCP-java7</artifactId>
             <version>${hikaricp.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.derby</groupId>
-            <artifactId>derby</artifactId>
-            <version>${derby.version}</version>
-            <scope>test</scope>
-        </dependency>
+
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-common-tests</artifactId>
@@ -80,15 +75,5 @@
         </dependency>
     </dependencies>
 
-    <profiles>
-        <profile>
-            <id>nd4j-tests-cpu</id>
-        </profile>
-        <profile>
-            <id>nd4j-tests-cuda</id>
-        </profile>
-  <profile>
-            <id>nd4j-tests-aurora</id>
-        </profile>
-    </profiles>
+
 </project>

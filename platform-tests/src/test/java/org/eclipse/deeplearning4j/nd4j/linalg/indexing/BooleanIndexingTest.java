@@ -68,7 +68,7 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
         assertEquals(Nd4j.zeros(test.shape()).castTo(DataType.INT32),intTest);
         INDArray testCasted = test.dup().castTo(DataType.FLOAT);
         BooleanIndexing.replaceWhere(testCasted, 0.0, Conditions.greaterThan(0)); // testCasted is updated
-        assertEquals(Nd4j.zeros(test.shape()).castTo(DataType.FLOAT),test);
+        assertEquals(Nd4j.zeros(test.shape()).castTo(DataType.FLOAT),testCasted);
     }
 
 

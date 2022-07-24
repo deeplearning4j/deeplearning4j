@@ -80,7 +80,7 @@ public class DefaultGradient implements Gradient {
             List<INDArray> toFlatten = new ArrayList<>();
             for (Map.Entry<String, INDArray> entry : gradients.entrySet()) {
                 if (flatteningOrders.containsKey(entry.getKey())
-                                && flatteningOrders.get(entry.getKey()) != DEFAULT_FLATTENING_ORDER) {
+                        && flatteningOrders.get(entry.getKey()) != DEFAULT_FLATTENING_ORDER) {
                     //Specific flattening order for this array, that isn't the default
                     toFlatten.add(Nd4j.toFlattened(flatteningOrders.get(entry.getKey()), entry.getValue()));
                 } else {
@@ -102,7 +102,10 @@ public class DefaultGradient implements Gradient {
     @Override
     public INDArray gradient() {
         if (flattenedGradient != null)
-            return flattenedGradient;
+            return flattenedGradient.reshape(flattenedGradient.length());
+        if(flattenedGradient != null && flattenedGradient.rank() > 1)
+            return flattenedGradient.reshape(flattenedGradient.length());
+
         flattenGradient();
         return flattenedGradient;
     }

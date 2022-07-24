@@ -97,14 +97,14 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                     INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
                     if (paramSizeThisVariable > 0) {
                         paramsViewSubset = paramsViewReshape.get(NDArrayIndex.interval(paramsViewSoFar,
-                                        paramsViewSoFar + paramSizeThisVariable));
+                                paramsViewSoFar + paramSizeThisVariable));
                         gradientViewSubset = gradientViewReshape.get( NDArrayIndex
-                                        .interval(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable));
+                                .interval(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable));
                     }
 
                     //First: decide whether to add to the existing updater block, or create a new one
                     if (currentBlock == null || !UpdaterUtils.updaterConfigurationsEquals(lastLayer, lastVariable,
-                                    layers[i], var)) {
+                            layers[i], var)) {
 
                         if (paramsViewSoFar + paramSizeThisVariable > Integer.MAX_VALUE || paramsViewSoFar + paramSizeThisVariable > Integer.MAX_VALUE)
                             throw new ND4JArraySizeException();
@@ -113,8 +113,8 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                         list.add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSoFar,
                                 (int) (paramsViewSoFar + paramSizeThisVariable), paramsViewSubset, gradientViewSubset));
                         currentBlock = new UpdaterBlock(paramsViewSoFar, (int) (paramsViewSoFar + paramSizeThisVariable),
-                                        currentUpdaterOffset, currentUpdaterOffset + updaterStateSizeThisVariable,
-                                        list);
+                                currentUpdaterOffset, currentUpdaterOffset + updaterStateSizeThisVariable,
+                                list);
 
                         updaterBlocks.add(currentBlock);
                     } else {
@@ -124,11 +124,11 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                         //Add to existing updater block
                         currentBlock.setParamOffsetEnd((int) newOffset);
                         currentBlock.setUpdaterViewOffsetEnd(
-                                        currentBlock.getUpdaterViewOffsetEnd() + updaterStateSizeThisVariable);
+                                currentBlock.getUpdaterViewOffsetEnd() + updaterStateSizeThisVariable);
                         currentBlock.getLayersAndVariablesInBlock()
-                                        .add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSoFar,
-                                                (int) (paramsViewSoFar + paramSizeThisVariable), paramsViewSubset,
-                                                        gradientViewSubset));
+                                .add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSoFar,
+                                        (int) (paramsViewSoFar + paramSizeThisVariable), paramsViewSubset,
+                                        gradientViewSubset));
                     }
 
                     lastLayer = layers[i];
@@ -162,14 +162,14 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
             if (viewStateSize > 0) {
                 INDArray updaterViewSubset = updaterStateViewArray.get(
-                                NDArrayIndex.interval(updaterViewSoFar, updaterViewSoFar + viewStateSize));
+                        NDArrayIndex.interval(updaterViewSoFar, updaterViewSoFar + viewStateSize));
                 ub.setUpdaterView(updaterViewSubset);
                 ub.setUpdaterViewRequiresInitialization(updaterRequiresInit);
             }
 
             if (gradSize > 0) {
                 INDArray gradientViewSubset = gradientView.reshape(gradientView.length()).get(
-                                NDArrayIndex.interval(paramsViewSoFar, paramsViewSoFar + gradSize));
+                        NDArrayIndex.interval(paramsViewSoFar, paramsViewSoFar + gradSize));
                 ub.setGradientView(gradientViewSubset);
             }
 
@@ -217,7 +217,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
         }
         if (this.updaterStateViewArray.length() != viewArray.length())
             throw new IllegalStateException("Invalid input: view arrays differ in length. " + "Expected length "
-                            + this.updaterStateViewArray.length() + ", got length " + viewArray.length());
+                    + this.updaterStateViewArray.length() + ", got length " + viewArray.length());
         this.updaterStateViewArray.assign(viewArray);
     }
 
@@ -277,7 +277,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 int idx = key.lastIndexOf('_');
                 if (idx == -1)
                     throw new IllegalStateException(
-                                    "Invalid key: Gradient key does not have layer separator: \"" + key + "\"");
+                            "Invalid key: Gradient key does not have layer separator: \"" + key + "\"");
                 String layerName = key.substring(0, idx);
 
                 Gradient g = layerGradients.get(layerName);
@@ -348,6 +348,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
     }
 
     protected List<INDArray> getMinibatchDivisionSubsets(INDArray from){
+        from = from.reshape(from.length());
         List<INDArray> out = new ArrayList<>();
         long paramsSoFar = 0;
         long currentStart = 0;
@@ -362,7 +363,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 } else {
                     //This param/gradient subset should be excluded
                     if(currentEnd > currentStart) {
-                        INDArray subset = from.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.interval(currentStart, currentEnd));
+                        INDArray subset = from.get( NDArrayIndex.interval(currentStart, currentEnd));
                         out.add(subset);
                     }
                     currentStart = paramsSoFar + paramTable.get(s).length();
@@ -452,7 +453,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 break;
             default:
                 throw new RuntimeException(
-                                "Unknown (or not implemented) gradient normalization strategy: " + normalization);
+                        "Unknown (or not implemented) gradient normalization strategy: " + normalization);
         }
     }
 
@@ -465,7 +466,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
         BaseMultiLayerUpdater<?> that = (BaseMultiLayerUpdater<?>) o;
         return updaterStateViewArray != null ? updaterStateViewArray.equals(that.updaterStateViewArray)
-                        : that.updaterStateViewArray == null;
+                : that.updaterStateViewArray == null;
     }
 
     @Override

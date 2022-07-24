@@ -836,15 +836,24 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         if (op instanceof TensorArray) {
             //Create a TensorArray
             VarId vid = outputFrameIter.toVarId(op.outputVariable().name());
-            Preconditions.checkState(!nodeValueOutputs.containsKey(vid), "TensorArray already exists for %s when executing TensorArrayV3", vid);
-            SDVariable size = op.arg(0);
-            INDArray arr = size.getArr();
-            List<INDArray> createList = new ArrayList<>();
-            TensorArray tensorArray = (TensorArray) op;
-            long[] requiredShape = tensorArray.args().length > 1 ? tensorArray.requiredShape() : null;
-            for(int i = 0; i  < arr.getInt(0); i++) {
-                createList.add(null);
+            if(nodeValueOutputs.containsKey(vid)) {
+                // Note that TensorArray has 2 outputs - a 'dummy' SDVariable that represents it, and a second output (return a scalar 0.0)
+                return ExecutionResult.createValue(vid.getVariable(),nodeValueOutputs.get(vid));
             }
+            Preconditions.checkState(!nodeValueOutputs.containsKey(vid), "TensorArray already exists for %s when executing TensorArrayV3", vid);
+            List<INDArray> createList = new ArrayList<>();
+
+            if(op.args().length > 0) {
+                SDVariable size = op.arg(0);
+                INDArray arr = size.getArr();
+                TensorArray tensorArray = (TensorArray) op;
+                long[] requiredShape = tensorArray.args().length > 1 ? tensorArray.requiredShape() : null;
+                for(int i = 0; i  < arr.getInt(0); i++) {
+                    createList.add(null);
+                }
+
+            }
+
 
             SDValue listValue = SDValue.create(createList);
             putNodeValue(listValue, vid);
@@ -1184,8 +1193,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
             SDVariable index = op.arg(1);
             List<INDArray> l = getTensorArraysInSession(inTensorArray.name());
-            l.remove(index.getArr(true).getInt(0));
-            INDArray scalar = mmgr.allocate(false, DataType.FLOAT).assign(0.0);
+            if(l == null)
+                l = new ArrayList<>();
+            else if(l != null)
+                l.remove(index.getArr(true).getInt(0));
             VarId tArr = (opInputs == null ? null : lookup(inTensorArray.name(), opInputs, false));
             if (tArr == null && allIterInputs != null) {
                 tArr = lookup(inTensorArray.name(), allIterInputs, false);
@@ -1199,8 +1210,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
 
             //setup an extra reference to the removed list
-            //putNodeValue(SDValue.create(l), tArr);
-            return ExecutionResult.createValue(tArr.getVariable(),Arrays.asList(scalar));
+            putNodeValue(SDValue.create(l), tArr);
+            return ExecutionResult.createValue(tArr.getVariable(),l);
         }
 
         else {

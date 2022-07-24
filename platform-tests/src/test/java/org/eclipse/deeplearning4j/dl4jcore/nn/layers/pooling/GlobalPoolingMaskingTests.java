@@ -187,7 +187,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
             assertArrayEquals(new long[] {1, depthIn, height, 5}, subset.shape());
 
             INDArray outSubset = net.output(subset);
-            INDArray outMaskedSubset = outMasked.getRow(0);
+            INDArray outMaskedSubset = outMasked;
 
             assertEquals(outSubset, outMaskedSubset);
 
@@ -250,7 +250,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
             assertArrayEquals(new long[] {1, depthIn, 5, width}, subset.shape());
 
             INDArray outSubset = net.output(subset);
-            INDArray outMaskedSubset = outMasked.getRow(0);
+            INDArray outMaskedSubset = outMasked;
 
             assertEquals(outSubset, outMaskedSubset);
 

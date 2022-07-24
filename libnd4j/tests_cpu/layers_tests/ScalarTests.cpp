@@ -171,19 +171,6 @@ TEST_F(ScalarTests, Test_Squeeze_1) {
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
-TEST_F(ScalarTests, Test_Permute_1) {
-  auto x = NDArrayFactory::create<float>(3.0f);
-  auto exp = NDArrayFactory::create<float>(3.0f);
-
-  sd::ops::permute op;
-  auto result = op.evaluate({&x}, {}, {0});
-  ASSERT_EQ(sd::Status::OK, result.status());
-
-  auto z = result.at(0);
-
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
-}
 
 TEST_F(ScalarTests, Test_Concat_Scalar_1) {
   auto t = NDArrayFactory::create<float>('c', {1, 1}, {1.0f});

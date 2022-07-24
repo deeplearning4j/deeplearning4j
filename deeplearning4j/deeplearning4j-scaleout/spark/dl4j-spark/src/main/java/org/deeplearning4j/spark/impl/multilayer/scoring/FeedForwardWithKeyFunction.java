@@ -67,7 +67,7 @@ public class FeedForwardWithKeyFunction<K>
 
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(jsonConfig.getValue()));
         network.init();
-        INDArray val = params.value().unsafeDuplication();
+        INDArray val = params.value().dup();
         if (val.length() != network.numParams(false))
             throw new IllegalStateException(
                             "Network did not have same number of parameters as the broadcasted set parameters");

@@ -70,7 +70,7 @@ public class AdaMaxUpdater implements GradientUpdater<AdaMax> {
 
     @Override
     public void setStateViewArray(INDArray viewArray, long[] gradientShape, char gradientOrder, boolean initialize) {
-       viewArray = viewArray.reshape(viewArray.length());
+        viewArray = viewArray.reshape(viewArray.length());
         if (initialize)
             viewArray.assign(0);
         long length = viewArray.length();

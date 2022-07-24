@@ -25,7 +25,7 @@ import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.api.IVertexSequence;
 import org.deeplearning4j.graph.api.NoEdgeHandling;
 import org.deeplearning4j.graph.exception.NoEdgesException;
-import org.deeplearning4j.graph.graph.VertexSequence;
+import org.deeplearning4j.graph.VertexSequence;
 
 import java.util.List;
 import java.util.NoSuchElementException;
