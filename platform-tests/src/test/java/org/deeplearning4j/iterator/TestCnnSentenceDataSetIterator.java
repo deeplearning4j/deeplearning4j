@@ -57,10 +57,6 @@ public class TestCnnSentenceDataSetIterator extends BaseDL4JTest {
 
         int vectorSize = w2v.lookupTable().layerSize();
 
-        //        Collection<String> words = w2v.lookupTable().getVocabCache().words();
-        //        for(String s : words){
-        //            System.out.println(s);
-        //        }
 
         List<String> sentences = new ArrayList<>();
         //First word: all present
@@ -134,15 +130,15 @@ public class TestCnnSentenceDataSetIterator extends BaseDL4JTest {
 
                 INDArray s1F = dsi.loadSingleSentence(sentences.get(0));
                 INDArray s2F = dsi.loadSingleSentence(sentences.get(1));
-                INDArray sub1 = ds.getFeatures().get(NDArrayIndex.all(),
+                INDArray sub1 = ds.getFeatures().get(NDArrayIndex.interval(0, 0, true),
                         NDArrayIndex.all(), NDArrayIndex.all());
+
                 INDArray sub2;
                 if (alongHeight) {
-
-                    sub2 = ds.getFeatures().get(NDArrayIndex.interval(1, 1, true), NDArrayIndex.all(),
+                    sub2 = ds.getFeatures().get(NDArrayIndex.all(), NDArrayIndex.all(),
                             NDArrayIndex.interval(0, 3), NDArrayIndex.all());
                 } else {
-                    sub2 = ds.getFeatures().get(NDArrayIndex.interval(1, 1, true), NDArrayIndex.all(), NDArrayIndex.all(),
+                    sub2 = ds.getFeatures().get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(),
                             NDArrayIndex.interval(0, 3));
                 }
 

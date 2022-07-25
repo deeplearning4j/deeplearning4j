@@ -207,7 +207,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         MultiLayerNetwork network = sparkNet.fit(data);
         INDArray actualParams = network.params();
 
-        assertEquals(expectedParams.size(1), actualParams.size(1));
+        assertEquals(expectedParams.size(-1), actualParams.size(-1));
     }
 
     @Test
