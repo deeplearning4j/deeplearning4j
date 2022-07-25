@@ -50,7 +50,7 @@ public class TestCnnSentenceDataSetIterator extends BaseDL4JTest {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
     }
 
-  
+
 
     @Test
     public void testSentenceIteratorCNN1D_RNN() throws Exception {

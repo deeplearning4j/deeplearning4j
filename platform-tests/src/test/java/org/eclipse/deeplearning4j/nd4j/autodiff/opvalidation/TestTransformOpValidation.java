@@ -1632,21 +1632,22 @@ public class TestTransformOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTopK(Nd4jBackend backend) {
-        INDArray in = Nd4j.create(new double[]{7, 3, 1, 2, 5, 0, 4, 6, 9, 8});
+        INDArray in = Nd4j.create(new double[]{7, 3, 1, 2, 5, 0, 4, 6, 9, 8}).castTo(DataType.DOUBLE);
 
-        INDArray expTopK = Nd4j.create(new double[]{7, 5, 6, 9, 8});
-        INDArray expIndices = Nd4j.create(new double[]{0, 4, 7, 8, 9});
+        INDArray expTopK = Nd4j.create(new double[]{7, 5, 6, 9, 8}).castTo(DataType.DOUBLE);
+        INDArray expIndices = Nd4j.create(new double[]{0, 4, 7, 8, 9}).castTo(DataType.INT64);
 
-        INDArray expTopK_sorted = Nd4j.create(new double[]{9, 8, 7, 6, 5});
-        INDArray expIndices_sorted = Nd4j.create(new double[]{8, 9, 0, 7, 4});
+        INDArray expTopK_sorted = Nd4j.create(new double[]{9, 8, 7, 6, 5}).castTo(DataType.DOUBLE);
+        INDArray expIndices_sorted = Nd4j.create(new double[]{8, 9, 0, 7, 4}).castTo(DataType.INT64);
 
         for (boolean sort : new boolean[]{false, true}) {
-            INDArray outUnique = Nd4j.create(expTopK.shape());
-            INDArray outUniqueIdxs = Nd4j.create(expIndices.shape());
+            INDArray outUnique = Nd4j.create(expTopK.shape()).castTo(DataType.DOUBLE);
+            INDArray outUniqueIdxs = Nd4j.create(expIndices.shape()).castTo(DataType.INT64);
 
             DynamicCustomOp op = DynamicCustomOp.builder("top_k")
                     .addInputs(in)
                     .addOutputs(outUnique, outUniqueIdxs)
+                    .addBooleanArguments(sort)
                     .addIntegerArguments(5, sort ? 1 : 0)  //k=5, sort
                     .build();
 
