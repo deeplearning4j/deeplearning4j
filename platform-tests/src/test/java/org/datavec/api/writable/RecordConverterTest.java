@@ -60,16 +60,16 @@ class RecordConverterTest extends BaseND4JTest {
     @Test
     @DisplayName("To Records _ Pass In Regression Data Set _ Expect ND Array And Double Writables")
     void toRecords_PassInRegressionDataSet_ExpectNDArrayAndDoubleWritables() {
-        INDArray feature = Nd4j.create(new double[] { 4, -5.7, 10, -0.1 }, new long[] { 1, 4 }, DataType.FLOAT);
-        INDArray label = Nd4j.create(new double[] { .5, 2, 3, .5 }, new long[] { 1, 4 }, DataType.FLOAT);
+        INDArray feature = Nd4j.create(new double[] { 4, -5.7, 10, -0.1 }, new long[] {  4 }, DataType.FLOAT);
+        INDArray label = Nd4j.create(new double[] { .5, 2, 3, .5 }, new long[] {  4 }, DataType.FLOAT);
         DataSet dataSet = new DataSet(feature, label);
         List<List<Writable>> writableList = RecordConverter.toRecords(dataSet);
         List<Writable> results = writableList.get(0);
         NDArrayWritable ndArrayWritable = (NDArrayWritable) results.get(0);
-        assertEquals(1, writableList.size());
+        assertEquals(4, writableList.size());
         assertEquals(5, results.size());
         assertEquals(feature, ndArrayWritable.get());
-        for (int i = 0; i < label.shape()[1]; i++) {
+        for (int i = 0; i < label.size(-1); i++) {
             DoubleWritable doubleWritable = (DoubleWritable) results.get(i + 1);
             assertEquals(label.getDouble(i), doubleWritable.get(), 0);
         }
