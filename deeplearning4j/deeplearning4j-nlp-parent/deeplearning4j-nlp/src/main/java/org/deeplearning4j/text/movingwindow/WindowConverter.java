@@ -95,7 +95,7 @@ public class WindowConverter {
 
             // if there's null elements
             if (data[i] == null)
-                data[i] = Nd4j.zeros(1, vec.getLayerSize());
+                data[i] = Nd4j.zeros(vec.getLayerSize());
         }
         return Nd4j.hstack(data);
     }
