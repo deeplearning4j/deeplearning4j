@@ -85,7 +85,7 @@ jobs:
       - name: Set up Java for publishing to OSSRH
         uses: actions/setup-java@v2
         with:
-          java-version: 8
+          java-version: 11
           distribution: 'temurin'
           server-id: ossrh
           server-username: MAVEN_USERNAME

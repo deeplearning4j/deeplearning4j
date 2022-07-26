@@ -160,7 +160,7 @@ jobs:
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v2
         with:
-          java-version: 8
+          java-version: 11
           distribution: 'temurin'
           server-id:  ${{ github.event.inputs.serverId }}
           server-username: MAVEN_USERNAME
