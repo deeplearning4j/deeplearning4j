@@ -62,10 +62,8 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             //crashes JVM
             "lstsq/.*",
             //expects 2 outputs we only output 1
-            "non_max_suppression_v4/float16_with_thresholds",
-            "non_max_suppression_v4/float32_with_thresholds",
-            "non_max_suppression_v4/float32_with_thresholds_pad_to_max_output_size",
-            "non_max_suppression_v5/.*",
+            "non_max_suppression_v4/.*",
+              "non_max_suppression_v5/.*",
             "resize_bicubic/float64",
             "resize_bicubic/int32",
 
