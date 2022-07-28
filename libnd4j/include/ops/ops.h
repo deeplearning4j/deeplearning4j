@@ -2404,11 +2404,12 @@ class ShannonEntropy {
   SD_OP_DEF static InterType update(InterType old, InterType opOutput, Z *extraParams) { return opOutput + old; }
 
   SD_OP_DEF static InterType op(X d1, Z *extraParams) {
-    auto p = d1 * d1;
-    return static_cast<Z>(p) * sd::math::sd_log<X, Z>(p);
+    return static_cast<InterType>(d1) * sd::math::sd_log2<X, InterType>(d1);
   }
 
-  SD_OP_DEF static Z postProcess(InterType reduction, sd::LongType n, Z *extraParams) { return -reduction; }
+  SD_OP_DEF static Z postProcess(InterType reduction, sd::LongType n, Z *extraParams) {
+    return static_cast<Z>(-reduction); 
+  }
 };
 
 template <typename X, typename Z>

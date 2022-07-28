@@ -34,13 +34,9 @@ public class SigmoidCrossEntropyLossBp extends BaseLossBp {
                                      SDVariable labels, double labelSmoothing) {
         super(sameDiff, lossReduce, logits, weights, labels);
         this.labelSmoothing = labelSmoothing;
-        addArgs();
+        tArguments.add(labelSmoothing);
     }
 
-    public void addArgs() {
-        super.addArgs();
-        addTArgument(labelSmoothing);
-    }
 
     @Override
     public String opName() {

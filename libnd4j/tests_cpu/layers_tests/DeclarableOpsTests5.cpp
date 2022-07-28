@@ -2637,7 +2637,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test12) {
 TEST_F(DeclarableOpsTests5, log_softmax_bp_test1) {
   auto input = NDArrayFactory::create<double>('c', {2, 2}, {1, 2, 3, 4});
   auto epsilon = NDArrayFactory::create<double>('c', {2, 2}, {0.1, 0.2, 0.3, 0.4});
-  auto exp = NDArrayFactory::create<double>('c', {2, 2}, {-0.07311, 0.02689, -0.07311, 0.02689});
+  auto exp = NDArrayFactory::create<double>('c', {2, 2}, {0.01931757, -0.01931757, 0.11174101, -0.11174101});
 
   sd::ops::log_softmax_bp op;
   auto results = op.evaluate({&input, &epsilon});
@@ -2652,7 +2652,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_bp_test1) {
 TEST_F(DeclarableOpsTests5, log_softmax_bp_test2) {
   auto input = NDArrayFactory::create<double>('c', {2, 2}, {1, 2, 3, 4});
   auto epsilon = NDArrayFactory::create<double>('c', {2, 2}, {0.1, 0.2, 0.3, 0.4});
-  auto exp = NDArrayFactory::create<double>('c', {2, 2}, {-0.17616, -0.17616, 0.02384, 0.02384});
+  auto exp = NDArrayFactory::create<double>('c', {2, 2}, {0.05231883, 0.12847825, -0.05231883, -0.12847825});
 
   sd::ops::log_softmax_bp op;
   auto results = op.evaluate({&input, &epsilon}, {}, {0});

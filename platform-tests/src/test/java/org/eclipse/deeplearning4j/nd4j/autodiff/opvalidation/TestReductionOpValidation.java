@@ -1492,10 +1492,13 @@ public class TestReductionOpValidation extends BaseOpValidation {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShannonEntropy(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
-
+        // We are testing for numerical computations only.
+        // As the op itself does not normalize inputs,
+        // Actually, the input should be normalized probabilities to make sense
         INDArray in = Nd4j.linspace(1, 4, 4).castTo(DataType.DOUBLE);
+
         SDVariable input = sameDiff.var(in);
-        INDArray expected = Nd4j.scalar(-69.68162);
+        INDArray expected = Nd4j.scalar(-14.754887502163468);
 
         SDVariable output = new ShannonEntropy(sameDiff, input, new int[]{0}).outputVariable();
 
@@ -1514,6 +1517,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SameDiff sameDiff = SameDiff.create();
 
         INDArray in = Nd4j.linspace(1, 4, 4);
+
         SDVariable input = sameDiff.var(in);
         double expected = -10.2273;
 

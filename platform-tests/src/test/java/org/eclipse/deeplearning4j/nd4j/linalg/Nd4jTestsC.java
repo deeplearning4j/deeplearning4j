@@ -5502,7 +5502,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     protected double getShannonEntropy(double[] array) {
         double ret = 0;
         for (double x : array) {
-            ret += FastMath.pow(x, 2) * FastMath.log(FastMath.pow(x, 2));
+            ret += x * FastMath.log(2., x);
         }
 
         return -ret;
