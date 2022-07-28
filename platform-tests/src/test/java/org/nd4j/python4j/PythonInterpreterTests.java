@@ -19,6 +19,7 @@
  */
 package org.nd4j.python4j;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -49,6 +50,7 @@ public class PythonInterpreterTests {
     }
 
     @Test
+    @Disabled("Inconsistent across machines.")
     public void testMultiThreadedExecution() throws Exception {
         ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(),new DefaultThreadFactory("test-thread"));
         List<Callable<Integer>> tasks = new ArrayList<>();

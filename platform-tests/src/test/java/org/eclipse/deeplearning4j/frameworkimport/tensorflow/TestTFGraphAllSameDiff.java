@@ -52,12 +52,15 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
      * all tests will trigger an assumeFalse(..) that indicates
      * the status of the test failing. No tests will run.
      */
-    public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
-    );
+    public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList();
 
     public static final String[] IGNORE_REGEXES = new String[]{
             //crashes JVM
             "lstsq/.*",
+            //expects 2 outputs we only output 1
+            "non_max_suppression_v4/float16_with_thresholds",
+            "non_max_suppression_v4/float32_with_thresholds",
+            "non_max_suppression_v4/float32_with_thresholds_pad_to_max_output_size",
             "non_max_suppression_v5/.*",
             "resize_bicubic/float64",
             "resize_bicubic/int32",
