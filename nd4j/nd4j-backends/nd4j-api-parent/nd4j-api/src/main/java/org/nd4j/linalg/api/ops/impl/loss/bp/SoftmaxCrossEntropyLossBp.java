@@ -39,14 +39,10 @@ public class SoftmaxCrossEntropyLossBp extends BaseLossBp {
                                      double labelSmoothing) {
         super(sameDiff, lossReduce, logits, weights, labels);
         this.labelSmoothing = labelSmoothing;
-        addArgs();
+        tArguments.add(labelSmoothing);
     }
 
 
-    public void addArgs() {
-        super.addArgs();
-        addTArgument(labelSmoothing);
-    }
     @Override
     public String opName() {
         return "softmax_cross_entropy_loss_grad";

@@ -21,7 +21,9 @@
 package org.nd4j.linalg.api.ops.impl.loss;
 
 import lombok.NoArgsConstructor;
-
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -31,37 +33,36 @@ import org.nd4j.linalg.api.ops.impl.loss.bp.SigmoidCrossEntropyLossBp;
 
 import java.util.*;
 
-
 @NoArgsConstructor
 public class SigmoidCrossEntropyLoss extends BaseLoss {
     public static final double DEFAULT_LABEL_SMOOTHING = 0.0;
-    private double labelSmoothing = 0.0;
+
+    @Getter
+    @Setter
+    protected double labelSmoothing;
 
     public SigmoidCrossEntropyLoss(SameDiff sameDiff, SDVariable labels, SDVariable logits, SDVariable weights,
-                                    LossReduce lossReduce, double labelSmoothing) {
+            LossReduce lossReduce, double labelSmoothing) {
         this(sameDiff, lossReduce, logits, weights, labels, labelSmoothing);
     }
 
     public SigmoidCrossEntropyLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable logits, SDVariable weights,
-                                   SDVariable labels, double labelSmoothing) {
+            SDVariable labels, double labelSmoothing) {
         super(sameDiff, lossReduce, logits, weights, labels);
         this.labelSmoothing = labelSmoothing;
-        addArgs();
+        tArguments.add(labelSmoothing);
     }
 
-    public SigmoidCrossEntropyLoss(SameDiff sameDiff, LossReduce reductionMode, SDVariable logits, SDVariable weights, SDVariable labels) {
+    public SigmoidCrossEntropyLoss(SameDiff sameDiff, LossReduce reductionMode, SDVariable logits, SDVariable weights,
+            SDVariable labels) {
         this(sameDiff, reductionMode, logits, weights, labels, 0.0);
     }
 
-    public SigmoidCrossEntropyLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce, double labelSmoothing){
+    public SigmoidCrossEntropyLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce,
+            double labelSmoothing) {
         super(lossReduce, predictions, weights, labels);
         this.labelSmoothing = labelSmoothing;
-        addArgs();
-    }
-
-    public void addArgs() {
-        super.addArgs();
-        addTArgument(labelSmoothing);
+        tArguments.add(labelSmoothing);
     }
 
     @Override
@@ -70,9 +71,13 @@ public class SigmoidCrossEntropyLoss extends BaseLoss {
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> grad){
-        //No external gradient
-        //Args are: predictions, weights, label
-        return new SigmoidCrossEntropyLossBp(sameDiff, lossReduce, arg(0), arg(1), arg(2), labelSmoothing).outputs();
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
+        // No external gradient
+        // Args are: predictions, weights, label
+        if (tArguments.size() > 0) {
+            this.labelSmoothing = tArguments.get(tArguments.size() - 1);
+        }
+        return new SigmoidCrossEntropyLossBp(sameDiff, lossReduce, arg(0), arg(1), arg(2), this.labelSmoothing)
+                .outputs();
     }
 }

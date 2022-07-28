@@ -681,6 +681,11 @@ namespace sd {
             return static_cast<Z>(p_log<X>(val));
         }
 
+        template <typename X, typename Z>
+        SD_HOST_DEVICE inline Z sd_log2(X val) {
+            return static_cast<Z>(p_log2<X>(val));
+        }
+
 /**
  * This func is special case - it must return floating point value, and optionally Y arg can be floating point argument
  * @tparam X

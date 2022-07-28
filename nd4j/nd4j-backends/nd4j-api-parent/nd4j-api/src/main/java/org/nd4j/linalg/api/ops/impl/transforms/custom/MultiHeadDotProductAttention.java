@@ -76,6 +76,10 @@ public class MultiHeadDotProductAttention extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient) {
+        if (iArguments.size() > 0) {
+            this.scaled = iArguments.get(0).intValue() == 1 ? true : false;
+            this.withWeights = iArguments.size() > 0 && iArguments.get(1).intValue() == 1 ? true : false ;
+        }
         return Arrays.asList(new MultiHeadDotProductAttentionBp(sameDiff, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5), arg(6), gradient.get(0), args().length > 7 ? arg(7) : null, scaled).outputVariables());
     }
 

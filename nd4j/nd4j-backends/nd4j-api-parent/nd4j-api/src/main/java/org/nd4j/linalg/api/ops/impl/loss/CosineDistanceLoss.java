@@ -20,6 +20,9 @@
 
 package org.nd4j.linalg.api.ops.impl.loss;
 
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -29,26 +32,31 @@ import java.util.List;
 
 public class CosineDistanceLoss extends BaseLoss {
 
-    private int dimension;
+    @Getter
+    @Setter
+    protected int dimension;
 
-    public CosineDistanceLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable predictions, SDVariable weights, SDVariable labels, int dimension){
+    public CosineDistanceLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable predictions, SDVariable weights,
+            SDVariable labels, int dimension) {
         super(sameDiff, lossReduce, predictions, weights, labels);
         this.dimension = dimension;
         this.addIArgument(dimension);
     }
 
     public CosineDistanceLoss(SameDiff sameDiff, SDVariable labels, SDVariable predictions, SDVariable weights,
-                            LossReduce lossReduce, int dimension) {
+            LossReduce lossReduce, int dimension) {
         this(sameDiff, lossReduce, predictions, weights, labels, dimension);
     }
 
-    public CosineDistanceLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce, int dimension){
+    public CosineDistanceLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce,
+            int dimension) {
         super(lossReduce, predictions, weights, labels);
         this.dimension = dimension;
         this.addIArgument(dimension);
     }
 
-    public CosineDistanceLoss(){ }
+    public CosineDistanceLoss() {
+    }
 
     @Override
     public String opName() {
@@ -56,9 +64,12 @@ public class CosineDistanceLoss extends BaseLoss {
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> grad){
-        //No external gradient.
-        //Args are: predictions, weights, label
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
+        // No external gradient.
+        // Args are: predictions, weights, label
+        if (iArguments.size() > 1) {
+            this.dimension = iArguments.get(iArguments.size() - 1).intValue();
+        }
         return new CosineDistanceLossBp(sameDiff, lossReduce, arg(0), arg(1), arg(2), dimension).outputs();
     }
 
