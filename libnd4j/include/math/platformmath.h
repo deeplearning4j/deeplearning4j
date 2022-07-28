@@ -91,6 +91,10 @@ template <typename T>
 SD_INLINE SD_HOST_DEVICE T p_log(T value);
 
 template <typename T>
+SD_INLINE SD_HOST_DEVICE T p_log2(T value);
+
+
+template <typename T>
 SD_INLINE SD_HOST_DEVICE T p_floor(T value);
 
 template <typename T>
@@ -313,6 +317,22 @@ SD_INLINE SD_HOST_DEVICE double p_log(double value) {
 template <typename T>
 SD_INLINE SD_HOST_DEVICE T p_log(T value) {
   return static_cast<T>(logf(static_cast<float>(value)));
+}
+
+
+template <>
+SD_INLINE SD_HOST_DEVICE float p_log2(float value) {
+  return log2f(value);
+}
+
+template <>
+SD_INLINE SD_HOST_DEVICE double p_log2(double value) {
+  return log2(value);
+}
+
+template <typename T>
+SD_INLINE SD_HOST_DEVICE T p_log2(T value) {
+  return static_cast<T>(log2f(static_cast<float>(value)));
 }
 
 /////////

@@ -35,7 +35,6 @@ import org.tensorflow.framework.NodeDef;
 import java.util.List;
 import java.util.Map;
 
-
 @NoArgsConstructor
 public class SoftmaxCrossEntropyLoss extends BaseLoss {
     public static final double DEFAULT_LABEL_SMOOTHING = 0.0;
@@ -43,37 +42,36 @@ public class SoftmaxCrossEntropyLoss extends BaseLoss {
     private double labelSmoothing = 0.0;
 
     public SoftmaxCrossEntropyLoss(SameDiff sameDiff, SDVariable labels, SDVariable logits,
-                                   SDVariable weights, LossReduce lossReduce, double labelSmoothing) {
-        this(sameDiff, lossReduce, logits, weights,  labels, labelSmoothing);
+            SDVariable weights, LossReduce lossReduce, double labelSmoothing) {
+        this(sameDiff, lossReduce, logits, weights, labels, labelSmoothing);
     }
 
-    public SoftmaxCrossEntropyLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable logits, SDVariable weights, SDVariable labels,
-                                   double labelSmoothing) {
+    public SoftmaxCrossEntropyLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable logits, SDVariable weights,
+            SDVariable labels,
+            double labelSmoothing) {
         super(sameDiff, lossReduce, logits, weights, labels);
         this.labelSmoothing = labelSmoothing;
-
-        addArgs();
+        tArguments.add(labelSmoothing);
     }
 
-    public SoftmaxCrossEntropyLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable logits, SDVariable weights, SDVariable labels) {
+    public SoftmaxCrossEntropyLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable logits, SDVariable weights,
+            SDVariable labels) {
         this(sameDiff, lossReduce, logits, weights, labels, 0.0);
     }
 
-    public SoftmaxCrossEntropyLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce, double labelSmoothing){
+    public SoftmaxCrossEntropyLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce,
+            double labelSmoothing) {
         super(lossReduce, predictions, weights, labels);
         this.labelSmoothing = labelSmoothing;
-        addArgs();
-    }
-
-    public void addArgs() {
-        super.addArgs();
-        addTArgument(labelSmoothing);
+        tArguments.add(labelSmoothing);
     }
 
     @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode,
+            GraphDef graph) {
         TFGraphMapper.initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
-        addArgs();
+        super.addArgs();
+        tArguments.add(labelSmoothing);
     }
 
     @Override
@@ -91,11 +89,14 @@ public class SoftmaxCrossEntropyLoss extends BaseLoss {
         return "SoftmaxCrossEntropy";
     }
 
-
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> grad){
-        //No external gradient
-        //Args are: predictions, weights, label
-        return new SoftmaxCrossEntropyLossBp(sameDiff, lossReduce, arg(0), arg(1), arg(2), labelSmoothing).outputs();
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
+        // No external gradient
+        // Args are: predictions, weights, label
+        if (tArguments.size() > 0) {
+            this.labelSmoothing = tArguments.get(tArguments.size() - 1);
+        }
+        return new SoftmaxCrossEntropyLossBp(sameDiff, lossReduce, arg(0), arg(1), arg(2), this.labelSmoothing)
+                .outputs();
     }
 }
