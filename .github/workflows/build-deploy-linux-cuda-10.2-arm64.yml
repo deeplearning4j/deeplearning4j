@@ -141,7 +141,7 @@ jobs:
           cmake --version
           protoc --version
           if ! [[ -z "$LIBND4J_FILE_NAME" ]]; then
-              export MODULES="$MODULES -pl :nd4j-cuda-10.2-preset,:nd4j-cuda-10.2,:nd4j-cuda-10.2-platform"
+              export MODULES="$MODULES -pl :nd4j-cuda-10.2-preset,:nd4j-cuda-10.2,:nd4j-cuda-10.2-platform,:nd4j-native-api"
              else
                  export MODULES="$MODULES -pl :nd4j-cuda-10.2-preset,:nd4j-cuda-10.2,libnd4j,:nd4j-cuda-10.2-platform,:nd4j-native-api"
           fi
