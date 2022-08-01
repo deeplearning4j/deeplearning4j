@@ -132,17 +132,6 @@ jobs:
               echo "COMMAND=${command}" >> "$GITHUB_ENV"
 
       - uses: ./.github/actions/update-deps-linux
-      - name: Set up Java for publishing to GitHub Packages
-        uses: actions/setup-java@v2
-        with:
-            java-version: 11
-            distribution: 'temurin'
-            server-id: ${{ github.event.inputs.serverId }}
-            server-username: MAVEN_USERNAME
-            server-password: MAVEN_PASSWORD
-            gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-            gpg-passphrase: MAVEN_GPG_PASSPHRASE
-            cache: 'maven'
 
       - name: Build on  linux-x86_64
         uses: ./.github/actions/build-centos
@@ -162,6 +151,17 @@ jobs:
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
           MAVEN_OPTS: -Xmx2g
+      - name: Set up Java for publishing to GitHub Packages
+          uses: actions/setup-java@v2
+          with:
+            java-version: 11
+            distribution: 'temurin'
+            server-id: ${{ github.event.inputs.serverId }}
+            server-username: MAVEN_USERNAME
+            server-password: MAVEN_PASSWORD
+            gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+            gpg-passphrase: MAVEN_GPG_PASSPHRASE
+            cache: 'maven'
 
 
       - name: Deploy
