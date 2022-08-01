@@ -27,7 +27,8 @@ curl -fsSL https://github.com/google/protobuf/releases/download/v3.8.0/protobuf-
                        rm -rf protobuf-3.8.0
 echo "/opt/protobuf/bin" >> $GITHUB_PATH
 
-export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+export PATH=/opt/protobuf/bin:/opt/cmake/bin:$JAVA_HOME/bin:$PATH
+echo "JAVA_HOME ${JAVA_HOME}"
 mvn --version
 cmake --version
 protoc --version
