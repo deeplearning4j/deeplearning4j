@@ -26,7 +26,8 @@ curl -fsSL https://github.com/google/protobuf/releases/download/v3.8.0/protobuf-
                        cd .. && \
                        rm -rf protobuf-3.8.0
 echo "/opt/protobuf/bin" >> $GITHUB_PATH
-
+# need to hardcode due to conflicting java home being set
+export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.8.10-1.el7.x86_64
 export PATH=/opt/protobuf/bin:/opt/cmake/bin:$JAVA_HOME/bin:$PATH
 echo "JAVA_HOME ${JAVA_HOME}"
 mvn --version
