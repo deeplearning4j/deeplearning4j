@@ -21,6 +21,7 @@
 package org.deeplearning4j.ui.model.stats.impl;
 
 import lombok.Data;
+
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;

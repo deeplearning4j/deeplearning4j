@@ -70,12 +70,7 @@
             <artifactId>nd4j-native-api</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
-        <!-- Agrona. Used for Stats listener encoding/decoding via SBE -->
-        <dependency>
-            <groupId>org.agrona</groupId>
-            <artifactId>Agrona</artifactId>
-            <version>${agrona.version}</version>
-        </dependency>
+
         <!-- MapDB - Used for StatsListener storage -->
         <dependency>
             <groupId>org.mapdb</groupId>
@@ -118,6 +113,12 @@
             <artifactId>deeplearning4j-common-tests</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.aeron</groupId>
+            <artifactId>aeron-all</artifactId>
+            <version>1.39.0</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 
