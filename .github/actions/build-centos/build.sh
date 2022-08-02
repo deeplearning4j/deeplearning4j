@@ -3,6 +3,9 @@ env
 ## Based on the javacpp presets github actions centos 7 build at https://github.com/bytedeco/javacpp-presets/
 SCL_ENABLE="devtoolset-7"
 yum -y update && yum -y install centos-release-scl-rh epel-release
+wget -o /opt/zulu11.58.15-ca-jdk11.0.16-linux_x64.tar.gz https://cdn.azul.com/zulu/bin/zulu11.58.15-ca-jdk11.0.16-linux_x64.tar.gz
+cd /opt && tar xvf zulu11.58.15-ca-jdk11.0.16-linux_x64.tar.gz
+#zulu11.58.15-ca-jdk11.0.16-linux_x64
 yum -y install $SCL_ENABLE rh-java-common-ant boost-devel ccache clang gcc-c++ gcc-gfortran java-11-openjdk-devel ant python python36-devel python36-pip swig file which wget unzip tar bzip2 gzip xz patch autoconf-archive automake make libtool bison flex perl nasm alsa-lib-devel freeglut-devel gtk2-devel libusb-devel libusb1-devel curl-devel expat-devel gettext-devel openssl-devel bzip2-devel zlib-devel SDL-devel libva-devel libxkbcommon-devel libxkbcommon-x11-devel xcb-util* fontconfig-devel libffi-devel ragel ocl-icd-devel GeoIP-devel pcre-devel ssdeep-devel yajl-devel
 sed -i 's/_mm512_abs_pd (__m512 __A)/_mm512_abs_pd (__m512d __A)/g' /opt/rh/devtoolset-7/root/usr/lib/gcc/x86_64-redhat-linux/7/include/avx512fintrin.h
 source scl_source enable $SCL_ENABLE || true
@@ -27,7 +30,7 @@ curl -fsSL https://github.com/google/protobuf/releases/download/v3.8.0/protobuf-
                        rm -rf protobuf-3.8.0
 echo "/opt/protobuf/bin" >> $GITHUB_PATH
 # need to hardcode due to conflicting java home being set
-export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
+export JAVA_HOME=/opt/zulu11.58.15-ca-jdk11.0.16-linux_x64
 export PATH=/opt/protobuf/bin:/opt/cmake/bin:$JAVA_HOME/bin:$PATH
 echo "JAVA_HOME ${JAVA_HOME}"
 mvn --version
