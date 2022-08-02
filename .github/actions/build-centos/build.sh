@@ -2,7 +2,7 @@
 env
 ## Based on the javacpp presets github actions centos 7 build at https://github.com/bytedeco/javacpp-presets/
 SCL_ENABLE="devtoolset-7"
-yum -y update && yum -y install centos-release-scl-rh epel-release
+yum -y update && yum -y install wget centos-release-scl-rh epel-release
 wget -o /opt/zulu11.58.15-ca-jdk11.0.16-linux_x64.tar.gz https://cdn.azul.com/zulu/bin/zulu11.58.15-ca-jdk11.0.16-linux_x64.tar.gz
 cd /opt && tar xvf zulu11.58.15-ca-jdk11.0.16-linux_x64.tar.gz
 #zulu11.58.15-ca-jdk11.0.16-linux_x64
