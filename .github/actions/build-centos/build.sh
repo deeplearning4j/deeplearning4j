@@ -3,6 +3,7 @@ env
 ## Based on the javacpp presets github actions centos 7 build at https://github.com/bytedeco/javacpp-presets/
 SCL_ENABLE="devtoolset-7"
 yum -y update && yum -y install wget unzip centos-release-scl-rh epel-release
+yum -y remove *openjdk*
 echo "Downloading java from azul"
 wget -o /opt/zulu11.58.15-ca-jdk11.0.16-linux_x64.zip https://cdn.azul.com/zulu/bin/zulu11.58.15-ca-jdk11.0.16-linux_x64.zip
 cd /opt && unzip zulu11.58.15-ca-jdk11.0.16-linux_x64.zip
