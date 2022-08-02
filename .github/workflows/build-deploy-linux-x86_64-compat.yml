@@ -136,6 +136,7 @@ jobs:
       - name: Build on  linux-x86_64
         uses: ./.github/actions/build-centos
         env:
+          JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64/
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
