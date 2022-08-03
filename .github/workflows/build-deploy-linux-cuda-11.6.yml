@@ -121,7 +121,7 @@ jobs:
             elif [ "${{ matrix.helper }}" == '' ]; then
                echo "Building libnd4j from source"
                modules=':nd4j-cuda-11.6,:nd4j-cuda-11.6-preset,:libnd4j,:nd4j-cuda-11.6-platform'
-           else 
+            else 
                  echo "Building libnd4j from source"
                  modules=':nd4j-cuda-11.6,:nd4j-cuda-11.6-preset,:libnd4j'
             fi
