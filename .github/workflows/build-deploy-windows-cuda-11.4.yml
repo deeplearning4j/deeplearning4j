@@ -116,11 +116,12 @@ jobs:
         run: |
               if ( "${{ matrix.libnd4j_file_download }}" -ne "" ) {
                   $modules=" :nd4j-cuda-11.4-preset,:nd4j-cuda-11.4"
-              } else {
+               } elseif ( "${{ matrix.helper }}" -ne "" ) {
                   $modules=":nd4j-cuda-11.4-preset,:nd4j-cuda-11.4,libnd4j"
-              }
-              
-
+              } elseif ( "${{ matrix.helper }}" -eq "" ) {
+                $modules=":nd4j-cuda-11.4-preset,:nd4j-cuda-11.4,libnd4j,:nd4j-cuda-11.4-platform"
+               }
+ 
               $command="mvn ${{ matrix.mvn_ext }}  -Pcuda --also-make -pl  $modules -Dlibnd4j.compute=`"5.0 5.2 6.1 7.5 8.6`" -Dlibnd4j.cpu.compile.skip=true  -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh  -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64    -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
 
     
