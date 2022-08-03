@@ -117,7 +117,7 @@ jobs:
             if ( "${{ matrix.libnd4j_file_download }}" -ne "" ) {
               $modules=" :nd4j-native-preset,:nd4j-native"
             } else {
-              $modules=":nd4j-native-preset,:nd4j-native,libnd4j,:nd4j-native-api"
+              $modules=":nd4j-native-preset,:nd4j-native,libnd4j"
             }
           
             $command="mvn  ${{ matrix.mvn_ext }} -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64 deploy -DskipTests"
