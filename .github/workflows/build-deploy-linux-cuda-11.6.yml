@@ -120,7 +120,7 @@ jobs:
                  modules=':nd4j-cuda-11.6,:nd4j-cuda-11.6-preset'
              else 
                  echo "Building libnd4j from source"
-                 modules=':nd4j-cuda-11.6,:nd4j-cuda-11.6-preset,:libnd4j'
+                 modules=':nd4j-cuda-11.6,:nd4j-cuda-11.6-preset,:libnd4j,:nd4j-cuda-${{ matrix.cuda_version }}-platform'
             fi
             command="mvn ${{ matrix.mvn_ext }} -Pcuda --also-make  -pl ${modules} -Dlibnd4j.compute='3.7 5.0 5.2 6.0 6.1 7.0 7.5 8.0 8.6' -Dlibnd4j.cpu.compile.skip=true -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ matrix.build_threads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda --also-make -Pcuda clean --batch-mode package deploy -DskipTests"
             libnd4j_download_file_url=""
