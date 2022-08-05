@@ -36,10 +36,7 @@
     <name>nd4j-aeron</name>
 
     <properties>
-
-
-        <sbe.version>1.5.4</sbe.version>
-        <aeron.version>1.38.1</aeron.version>
+        <aeron.version>1.39.0</aeron.version>
         <module.name>nd4j.aeron</module.name>
     </properties>
 

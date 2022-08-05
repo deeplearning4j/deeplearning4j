@@ -4,7 +4,7 @@ on:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
-        default: 1
+        default: 4
 
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
@@ -14,7 +14,7 @@ on:
       releaseVersion:
         description: 'Release version target'
         required: false
-        default: 1.0.0-M2
+        default: 1.0.0-M2.1
 
       snapshotVersion:
         description: 'Snapshot version target'
@@ -118,9 +118,13 @@ jobs:
         run: |
               if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
                  modules=':nd4j-cuda-${{ matrix.cuda_version }},:nd4j-cuda-${{ matrix.cuda_version }}-preset,:nd4j-cuda-${{ matrix.cuda_version }}-platform'
-                else 
+                 elif [ "${{ matrix.helper }}" == '' ]; then
+                   echo "Building libnd4j from source"
+                   modules=':nd4j-cuda-${{ matrix.cuda_version }},:nd4j-cuda-${{ matrix.cuda_version }}-preset,:libnd4j,:nd4j-cuda-${{ matrix.cuda_version }}-platform'
+                  
+                 else 
                     echo "Building libnd4j from source"
-                    modules=':nd4j-cuda-${{ matrix.cuda_version }},:nd4j-cuda-${{ matrix.cuda_version }}-preset,:libnd4j,:nd4j-cuda-${{ matrix.cuda_version }}-platform'
+                    modules=':nd4j-cuda-${{ matrix.cuda_version }},:nd4j-cuda-${{ matrix.cuda_version }}-preset,:libnd4j'
               fi
               command="mvn ${{ matrix.mvn_ext }} -Pcuda --also-make  -pl ${modules}  -Dlibnd4j.compute='3.7 5.0 5.2 6.0 6.1 7.0 7.5 8.0 8.6' -Dlibnd4j.cpu.compile.skip=true  -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh -Dlibnd4j.buildthreads=${{ matrix.build_threads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda  -Pcuda clean --batch-mode package deploy -DskipTests"
               libnd4j_download_file_url=""

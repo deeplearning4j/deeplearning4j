@@ -4,7 +4,7 @@ on:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
-        default: 1
+        default: 4
 
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
@@ -14,7 +14,7 @@ on:
       releaseVersion:
         description: 'Release version target'
         required: false
-        default: 1.0.0-M2
+        default: 1.0.0-M2.1
 
       serverId:
         description: 'Server id to publish to'
@@ -141,9 +141,9 @@ jobs:
           cmake --version
           protoc --version
           if ! [[ -z "$LIBND4J_FILE_NAME" ]]; then
-              export MODULES="$MODULES -pl :nd4j-cuda-10.2-preset,:nd4j-cuda-10.2,:nd4j-cuda-10.2-platform"
+              export MODULES="$MODULES -pl :nd4j-cuda-10.2-preset,:nd4j-cuda-10.2,:nd4j-cuda-10.2-platform,:nd4j-native-api"
              else
-                 export MODULES="$MODULES -pl :nd4j-cuda-10.2-preset,:nd4j-cuda-10.2,libnd4j,:nd4j-cuda-10.2-platform"
+                 export MODULES="$MODULES -pl :nd4j-cuda-10.2-preset,:nd4j-cuda-10.2,libnd4j,:nd4j-cuda-10.2-platform,:nd4j-native-api"
           fi
           
           # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined

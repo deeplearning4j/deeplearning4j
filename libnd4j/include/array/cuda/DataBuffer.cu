@@ -65,6 +65,24 @@ void DataBuffer::expand(const uint64_t size) {
   }
 }
 
+void DataBuffer::showBufferLimited() {
+#if defined(DEBUG_VEDA_LOGS)
+  float* x = (float*)_primaryBuffer;
+  size_t size = getLenInBytes();
+  size = size > 80 ? 80 : 0;
+  sd_debug("cpu: %p\n", (void*)x);
+  for (int i = 0; i < size / sizeof(float); i++) sd_debug("%f, ", x[i]);
+  sd_debug("%s", "\n");
+#endif
+}
+
+void DataBuffer::showCounters(const char* msg1, const char* msg2) {
+#if defined(HAVE_VEDA) && defined(DEBUG_VEDA_LOGS)
+  sd_debug("%s %s || primary %p special %p :: wP: %d wS: %d rP: %d rS: %d\n", msg1, msg2, _primaryBuffer,
+           _specialBuffer, (int)_writePrimary.load(), (int)_writeSpecial.load(), (int)_readPrimary.load(),
+           (int)_readSpecial.load());
+#endif
+}
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateSpecial() {
   if (_specialBuffer == nullptr && getLenInBytes() > 0) {

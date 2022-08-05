@@ -4,7 +4,7 @@ on:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
-        default: 1
+        default: 4
 
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
@@ -14,7 +14,7 @@ on:
       releaseVersion:
         description: 'Release version target'
         required: false
-        default: 1.0.0-M2
+        default: 1.0.0-M2.1
 
       snapshotVersion:
         description: 'Snapshot version target'
@@ -118,7 +118,10 @@ jobs:
         run: |
             if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
                  modules=':nd4j-cuda-11.6,:nd4j-cuda-11.6-preset'
-             else 
+            elif [ "${{ matrix.helper }}" == '' ]; then
+               echo "Building libnd4j from source"
+               modules=':nd4j-cuda-11.6,:nd4j-cuda-11.6-preset,:libnd4j,:nd4j-cuda-11.6-platform'
+            else 
                  echo "Building libnd4j from source"
                  modules=':nd4j-cuda-11.6,:nd4j-cuda-11.6-preset,:libnd4j'
             fi
