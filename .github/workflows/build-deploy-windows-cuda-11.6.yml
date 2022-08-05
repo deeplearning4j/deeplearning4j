@@ -116,10 +116,15 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: powershell
         run: |
-              if ( "${{ matrix.libnd4j_file_download }}" -ne "" ) {
-                  $modules=" :nd4j-cuda-11.6-preset,:nd4j-cuda-11.6,:nd4j-cuda-11.6-platform"
-              } else {
-                $modules=":nd4j-cuda-11.6-preset,:nd4j-cuda-11.6,libnd4j,:nd4j-cuda-11.6-platform"
+          if ( "${{ matrix.helper }}" -ne "" -And "${{ matrix.extension }}" -ne "" ) {
+                    $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-11.6-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}   -Dlibnd4j.helper=${{ matrix.helper }}   -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
+                    $libnd4j_download_file_url="windows-cuda-11-${{ matrix.extension }}-${{ matrix.helper }}"
+               } elseif ( "${{ matrix.helper }}" -ne "" ) {
+                    $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-11.6-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
+                    $libnd4j_download_file_url="windows-cuda-11-${{ matrix.helper }}"
+               } else {
+                      $libnd4j_download_file_url="windows-cuda-11"
+                      $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-11.6"
               }
           
               $command="mvn  ${{ matrix.mvn_ext }}   --also-make -pl $modules -Dlibnd4j.compute=`"5.0 5.2 6.1 7.5 8.6`" -Dlibnd4j.cpu.compile.skip=true -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh  -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Djavacpp.platform=windows-x86_64    -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
