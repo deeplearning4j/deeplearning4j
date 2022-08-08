@@ -886,7 +886,7 @@ public class FlatBuffersMapper {
         for (SDVariable input : inputs) {
             String varName = input.name();
             int outIdx;
-            if (sameDiff.getVariables().get(varName).getOutputOfOp() != null) {
+            if (sameDiff.getVariables().get(varName).getOutputOfOp() != null && sameDiff.getOps().containsKey(sameDiff.getVariables().get(varName).getOutputOfOp())) {
                 DifferentialFunction df = sameDiff.getOps().get(sameDiff.getVariables().get(varName).getOutputOfOp()).getOp();
                 outIdx = sameDiff.getOps().get(df.getOwnName()).getOutputsOfOp().indexOf(varName);
             } else {
