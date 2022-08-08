@@ -207,8 +207,12 @@ public class LSTMLayer extends DynamicCustomOp {
         boolean  retLastH = bArguments.get(6);    // indicates whether gradient vs. output at last time step (dLdhL) is given
         boolean  retLastC = bArguments.get(7);    // indicates whether gradient vs. cell state at last time step (dLdcL) is given
 
-        builder.weights(sameDiff.getVariable(inputsForOp[1]));
-        builder.rWeights(sameDiff.getVariable(inputsForOp[2]));
+        if(inputsForOp.length > 1)
+            builder.weights(sameDiff.getVariable(inputsForOp[1]));
+        if(inputsForOp.length > 2)
+            builder.rWeights(sameDiff.getVariable(inputsForOp[2]));
+
+        
         if(hasBiases) {
             builder.bias(sameDiff.getVariable(inputsForOp[3]));
         }
