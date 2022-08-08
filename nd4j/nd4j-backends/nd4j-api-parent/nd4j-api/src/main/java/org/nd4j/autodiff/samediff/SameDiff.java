@@ -5533,6 +5533,10 @@ public class SameDiff extends SDBaseOps {
             int outputNum;
             if (variables.get(varName).getOutputOfOp() != null) {
                 //This variable is the output of a node
+                if(!ops.containsKey(variables.get(varName).getOutputOfOp())) {
+                    log.info("Requested op from output " + variables.get(varName).getOutputOfOp() + "not found. Skipping.");
+                    continue;
+                }
                 DifferentialFunction df = ops.get(variables.get(varName).getOutputOfOp()).getOp();
                 if (!idxForOps.containsKey(df)) {
                     varIdx = idCounter.incrementAndGet();
