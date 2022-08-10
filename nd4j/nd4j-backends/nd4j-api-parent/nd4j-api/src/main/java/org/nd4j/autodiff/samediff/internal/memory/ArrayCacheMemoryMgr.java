@@ -171,7 +171,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             if (arr != null && !arr.wasClosed()) {
                 // Decrement cache size
                 currentCacheSize -= dataType.width() * arr.data().length();
-                log.info("Cache hit for data type " + dataType + " and shape " + Arrays.toString(arr.shape()));
+                log.debug("Cache hit for data type " + dataType + " and shape " + Arrays.toString(arr.shape()));
                 // We need to assign new Id. this way we will break any possible relationship it
                 // had in Tracker.
                 // the old cache was recreating New Array using buffer and thus gaining new
