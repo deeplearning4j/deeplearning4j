@@ -285,7 +285,7 @@ public class CharacterIterator implements DataSetIterator {
         //The Complete Works of William Shakespeare
         //5.3MB file in UTF-8 Encoding, ~5.4 million characters
         //https://www.gutenberg.org/ebooks/100
-        String url = "https://s3.amazonaws.com/dl4j-distribution/pg100.txt";
+        String url = "https://raw.githubusercontent.com/KonduitAI/dl4j-test-resources/master/src/main/resources/word2vec/shakespeare.txt";
         String tempDir = System.getProperty("java.io.tmpdir");
         String fileLocation = tempDir + "/Shakespeare.txt";    //Storage location from downloaded file
         File f = new File(fileLocation);
