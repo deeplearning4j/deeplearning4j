@@ -118,7 +118,9 @@ jobs:
               $modules=" :nd4j-native-preset,:nd4j-native"
             } elseif ( "${{ matrix.helper }}" -ne "" ) {
               $modules=":nd4j-native-preset,:nd4j-native,libnd4j"
-            } else {
+            }  elseif ( "${{ matrix.extension }}" -ne "" ) {
+              $modules=":nd4j-native-preset,:nd4j-native,libnd4j"
+          }  else {
               $modules=":nd4j-native-preset,:nd4j-native,libnd4j,:nd4j-native-platform"
             }
           
