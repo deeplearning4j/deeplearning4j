@@ -118,7 +118,9 @@ jobs:
               $modules=" :nd4j-native-preset,:nd4j-native"
             } elseif ( "${{ matrix.helper }}" -ne "" ) {
               $modules=":nd4j-native-preset,:nd4j-native,libnd4j"
-            } else {
+            }  elseif ( "${{ matrix.extension }}" -ne "" ) {
+              $modules=":nd4j-native-preset,:nd4j-native,libnd4j"
+            }  else {
               $modules=":nd4j-native-preset,:nd4j-native,libnd4j,:nd4j-native-platform"
             }
           
@@ -126,9 +128,9 @@ jobs:
             if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
                $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
             } elseif ( "${{ matrix.helper }}" -ne "" ) {
-                $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64   deploy -DskipTests"
+                $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64   deploy -DskipTests"
             }  elseif ( "${{ matrix.extension }}" -ne "" ) {
-                 $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
+                  $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
             } else {
                $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64"
             }
