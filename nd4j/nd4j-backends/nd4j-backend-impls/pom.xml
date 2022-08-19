@@ -26,6 +26,9 @@
     <modelVersion>4.0.0</modelVersion>
     <modules>
         <module>nd4j-presets-common</module>
+        <module>nd4j-minimizer</module>
+        <module>nd4j-minimizer-preset</module>
+        <module>nd4j-cpu-backend-common</module>
     </modules>
 
     <parent>
