@@ -37,6 +37,7 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
     <maven-shade-plugin.version>3.1.1</maven-shade-plugin.version>
+  <javaparser.version>3.24.4</javaparser.version>
   </properties>
 
   <dependencies>
@@ -48,12 +49,12 @@
     <dependency>
       <groupId>com.github.javaparser</groupId>
       <artifactId>javaparser-core-serialization</artifactId>
-      <version>3.17.0</version>
+      <version>${javaparser.version}</version>
     </dependency>
     <dependency>
       <groupId>com.github.javaparser</groupId>
       <artifactId>javaparser-symbol-solver-core</artifactId>
-      <version>3.17.0</version>
+      <version>${javaparser.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
