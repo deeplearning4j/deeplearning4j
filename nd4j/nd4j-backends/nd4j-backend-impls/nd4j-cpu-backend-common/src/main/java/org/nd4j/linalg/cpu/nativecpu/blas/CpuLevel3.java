@@ -29,7 +29,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateGEMM;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.Nd4jBlas;
 
 import static org.nd4j.linalg.cpu.nativecpu.blas.CpuBlas.*;
 
@@ -41,8 +40,6 @@ import static org.nd4j.linalg.cpu.nativecpu.blas.CpuBlas.*;
  * @author Adam Gibson
  */
 public class CpuLevel3 extends BaseLevel3 {
-    private Nd4jBlas nd4jBlas = (Nd4jBlas) Nd4j.factory().blas();
-    private BLASDelegator blasDelegator;
 
     @Override
     protected void hgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda,
@@ -73,7 +70,7 @@ public class CpuLevel3 extends BaseLevel3 {
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda,
                     INDArray B, int ldb, float beta, INDArray C, int ldc) {
         if (!Nd4j.isFallbackModeEnabled()) {
-            blasDelegator.cblas_sgemm(convertOrder('f'), convertTranspose(TransA), convertTranspose(TransB), M, N, K, alpha,
+            Nd4j.getBlasLapackDelegator(). cblas_sgemm(convertOrder('f'), convertTranspose(TransA), convertTranspose(TransB), M, N, K, alpha,
                             (FloatPointer) A.data().addressPointer(), lda, (FloatPointer) B.data().addressPointer(),
                             ldb, beta, (FloatPointer) C.data().addressPointer(), ldc);
         } else {
@@ -85,7 +82,7 @@ public class CpuLevel3 extends BaseLevel3 {
     @Override
     protected void ssymm(char Order, char Side, char Uplo, int M, int N, float alpha, INDArray A, int lda, INDArray B,
                     int ldb, float beta, INDArray C, int ldc) {
-        blasDelegator.cblas_ssymm(convertOrder('f'), convertSide(Side), convertUplo(Uplo), M, N, alpha,
+        Nd4j.getBlasLapackDelegator(). cblas_ssymm(convertOrder('f'), convertSide(Side), convertUplo(Uplo), M, N, alpha,
                         (FloatPointer) A.data().addressPointer(), lda, (FloatPointer) B.data().addressPointer(), ldb,
                         beta, (FloatPointer) C.data().addressPointer(), ldc);
     }
@@ -93,7 +90,7 @@ public class CpuLevel3 extends BaseLevel3 {
     @Override
     protected void ssyrk(char Order, char Uplo, char Trans, int N, int K, float alpha, INDArray A, int lda, float beta,
                     INDArray C, int ldc) {
-        blasDelegator.cblas_ssyrk(convertOrder('f'), convertUplo(Uplo), convertTranspose(Trans), N, K, alpha,
+        Nd4j.getBlasLapackDelegator().cblas_ssyrk(convertOrder('f'), convertUplo(Uplo), convertTranspose(Trans), N, K, alpha,
                         (FloatPointer) A.data().addressPointer(), lda, beta, (FloatPointer) C.data().addressPointer(),
                         ldc);
     }
@@ -101,7 +98,7 @@ public class CpuLevel3 extends BaseLevel3 {
     @Override
     protected void ssyr2k(char Order, char Uplo, char Trans, int N, int K, float alpha, INDArray A, int lda, INDArray B,
                     int ldb, float beta, INDArray C, int ldc) {
-        blasDelegator.cblas_ssyr2k(convertOrder('f'), convertUplo(Uplo), convertTranspose(Trans), N, K, alpha,
+        Nd4j.getBlasLapackDelegator(). cblas_ssyr2k(convertOrder('f'), convertUplo(Uplo), convertTranspose(Trans), N, K, alpha,
                         (FloatPointer) A.data().addressPointer(), lda, (FloatPointer) B.data().addressPointer(), ldb,
                         beta, (FloatPointer) C.data().addressPointer(), ldc);
     }
@@ -109,7 +106,7 @@ public class CpuLevel3 extends BaseLevel3 {
     @Override
     protected void strmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha,
                     INDArray A, int lda, INDArray B, int ldb) {
-        blasDelegator.cblas_strmm(convertOrder('f'), convertSide(Side), convertUplo(Uplo), convertTranspose(TransA), Diag, M, N,
+        Nd4j.getBlasLapackDelegator(). cblas_strmm(convertOrder('f'), convertSide(Side), convertUplo(Uplo), convertTranspose(TransA), Diag, M, N,
                         alpha, (FloatPointer) A.data().addressPointer(), lda, (FloatPointer) B.data().addressPointer(),
                         ldb);
     }
@@ -117,7 +114,7 @@ public class CpuLevel3 extends BaseLevel3 {
     @Override
     protected void strsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha,
                     INDArray A, int lda, INDArray B, int ldb) {
-        blasDelegator.cblas_strsm(convertOrder('f'), convertSide(Side), convertUplo(Uplo), convertTranspose(TransA), Diag, M, N,
+        Nd4j.getBlasLapackDelegator(). cblas_strsm(convertOrder('f'), convertSide(Side), convertUplo(Uplo), convertTranspose(TransA), Diag, M, N,
                         alpha, (FloatPointer) A.data().addressPointer(), lda, (FloatPointer) B.data().addressPointer(),
                         ldb);
     }
@@ -126,7 +123,7 @@ public class CpuLevel3 extends BaseLevel3 {
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda,
                     INDArray B, int ldb, double beta, INDArray C, int ldc) {
         if (!Nd4j.isFallbackModeEnabled()) {
-            blasDelegator.cblas_dgemm(convertOrder('f'), convertTranspose(TransA), convertTranspose(TransB), M, N, K, alpha,
+            Nd4j.getBlasLapackDelegator().cblas_dgemm(convertOrder('f'), convertTranspose(TransA), convertTranspose(TransB), M, N, K, alpha,
                             (DoublePointer) A.data().addressPointer(), lda, (DoublePointer) B.data().addressPointer(),
                             ldb, beta, (DoublePointer) C.data().addressPointer(), ldc);
         } else {
@@ -138,7 +135,7 @@ public class CpuLevel3 extends BaseLevel3 {
     @Override
     protected void dsymm(char Order, char Side, char Uplo, int M, int N, double alpha, INDArray A, int lda, INDArray B,
                     int ldb, double beta, INDArray C, int ldc) {
-        blasDelegator.cblas_dsymm(convertOrder('f'), convertSide(Side), convertUplo(Uplo), M, N, alpha,
+        Nd4j.getBlasLapackDelegator().cblas_dsymm(convertOrder('f'), convertSide(Side), convertUplo(Uplo), M, N, alpha,
                         (DoublePointer) A.data().addressPointer(), lda, (DoublePointer) B.data().addressPointer(), ldb,
                         beta, (DoublePointer) C.data().addressPointer(), ldc);
     }
@@ -146,7 +143,7 @@ public class CpuLevel3 extends BaseLevel3 {
     @Override
     protected void dsyrk(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda,
                     double beta, INDArray C, int ldc) {
-        blasDelegator.cblas_dsyrk(convertOrder('f'), convertUplo(Uplo), convertTranspose(Trans), N, K, alpha,
+        Nd4j.getBlasLapackDelegator().cblas_dsyrk(convertOrder('f'), convertUplo(Uplo), convertTranspose(Trans), N, K, alpha,
                         (DoublePointer) A.data().addressPointer(), lda, beta, (DoublePointer) C.data().addressPointer(),
                         ldc);
     }
@@ -154,7 +151,7 @@ public class CpuLevel3 extends BaseLevel3 {
     @Override
     protected void dsyr2k(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda,
                     INDArray B, int ldb, double beta, INDArray C, int ldc) {
-        blasDelegator.cblas_dsyr2k(convertOrder('f'), convertUplo(Uplo), convertTranspose(Trans), N, K, alpha,
+        Nd4j.getBlasLapackDelegator().cblas_dsyr2k(convertOrder('f'), convertUplo(Uplo), convertTranspose(Trans), N, K, alpha,
                         (DoublePointer) A.data().addressPointer(), lda, (DoublePointer) B.data().addressPointer(), ldb,
                         beta, (DoublePointer) C.data().addressPointer(), ldc);
     }
@@ -162,7 +159,7 @@ public class CpuLevel3 extends BaseLevel3 {
     @Override
     protected void dtrmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha,
                     INDArray A, int lda, INDArray B, int ldb) {
-        blasDelegator.cblas_dtrmm(convertOrder('f'), convertSide(Side), convertUplo(Uplo), convertTranspose(TransA), Diag, M, N,
+        Nd4j.getBlasLapackDelegator().cblas_dtrmm(convertOrder('f'), convertSide(Side), convertUplo(Uplo), convertTranspose(TransA), Diag, M, N,
                         alpha, (DoublePointer) A.data().addressPointer(), lda,
                         (DoublePointer) B.data().addressPointer(), ldb);
     }
@@ -170,7 +167,7 @@ public class CpuLevel3 extends BaseLevel3 {
     @Override
     protected void dtrsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha,
                     INDArray A, int lda, INDArray B, int ldb) {
-        blasDelegator.cblas_dtrsm(convertOrder('f'), convertSide(Side), convertUplo(Uplo), convertTranspose(TransA), Diag, M, N,
+        Nd4j.getBlasLapackDelegator(). cblas_dtrsm(convertOrder('f'), convertSide(Side), convertUplo(Uplo), convertTranspose(TransA), Diag, M, N,
                         alpha, (DoublePointer) A.data().addressPointer(), lda,
                         (DoublePointer) B.data().addressPointer(), ldb);
     }

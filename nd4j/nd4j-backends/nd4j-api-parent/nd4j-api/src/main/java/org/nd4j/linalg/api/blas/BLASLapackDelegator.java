@@ -17,7 +17,7 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.nd4j.linalg.cpu.cpu.blas;
+package org.nd4j.linalg.api.blas;
 
 
 import org.bytedeco.javacpp.FloatPointer;

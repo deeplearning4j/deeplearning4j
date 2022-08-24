@@ -2,13 +2,14 @@ package org.nd4j.linalg.cpu.nativecpu.blas;
 
 
 import org.bytedeco.javacpp.*;
+import org.nd4j.linalg.api.blas.BLASLapackDelegator;
 
 import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
-public class BLASDelegator implements org.nd4j.linalg.cpu.cpu.blas.BLASLapackDelegator {
+public class NoOpBLASDelegator implements BLASLapackDelegator {
 
 
     @Override
@@ -55,7 +56,7 @@ public class BLASDelegator implements org.nd4j.linalg.cpu.cpu.blas.BLASLapackDel
     public float cblas_sdot(int var0, float[] var1, int var2, float[] var3, int var4) {
         return 0;
             }
-        
+
             @Override
     public double cblas_ddot(int var0, DoublePointer var1, int var2, DoublePointer var3, int var4) {
         return 0;
