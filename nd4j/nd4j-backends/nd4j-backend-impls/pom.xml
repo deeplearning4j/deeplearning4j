@@ -26,7 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
     <modules>
         <module>nd4j-presets-common</module>
-    </modules>
+      </modules>
 
     <parent>
         <groupId>org.nd4j</groupId>
@@ -135,6 +135,21 @@
     </build>
 
     <profiles>
+
+        <profile>
+            <id>minimial-cpu</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j-minimizer</module>
+                <module>nd4j-minimizer-preset</module>
+                <module>nd4j-cpu-backend-common</module>
+            </modules>
+
+
+        </profile>
+
         <profile>
             <id>cpu</id>
            <activation>
@@ -144,6 +159,7 @@
                 <module>nd4j-native</module>
                 <module>nd4j-native-preset</module>
                 <module>nd4j-native-platform</module>
+                <module>nd4j-cpu-backend-common</module>
             </modules>
 
 

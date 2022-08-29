@@ -21,6 +21,7 @@
 package org.nd4j.linalg.factory;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.blas.BLASLapackDelegator;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
 import org.nd4j.common.config.ND4JClassLoading;
@@ -238,6 +239,10 @@ public class Nd4j {
     private final static String AFFINITY_MANAGER = "affinitymanager";
     //disable toString() on compressed arrays for debugging. Should be off by default.
     private final static String COMPRESSION_DEBUG = "compressiondebug";
+
+    private final static String BLAS_LAPACK_DELEGATOR = "blaslapackdelegator";
+
+
     private final static String MEMORY_MANAGER = "memorymanager";
     private final static String WORKSPACE_MANAGER = "workspacemanager";
     private final static String RANDOM_PROVIDER = "random";
@@ -270,6 +275,7 @@ public class Nd4j {
     private static AffinityManager affinityManager;
     private static MemoryManager memoryManager;
 
+    private static BLASLapackDelegator BLAS_HANDLER;
     private static AtomicBoolean fallbackMode;
 
     protected static Properties props = new Properties();
@@ -5149,6 +5155,11 @@ public class Nd4j {
             Class<? extends OpExecutioner> opExecutionerClazz = ND4JClassLoading
                     .loadClassByName(pp.toString(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
 
+
+            Class<? extends BLASLapackDelegator> blasLapackDelegator = ND4JClassLoading
+                    .loadClassByName(pp.toString(BLAS_LAPACK_DELEGATOR));
+            BLAS_HANDLER = blasLapackDelegator.newInstance();
+
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
             Constructor c2 = ndArrayFactoryClazz.getConstructor(DataType.class, char.class);
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
@@ -5288,6 +5299,13 @@ public class Nd4j {
         return BasicNDArrayCompressor.getInstance();
     }
 
+    /**
+     * This method returns backend-specific MemoryManager implementation, for low-level memory management
+     * @return MemoryManager
+     */
+    public static BLASLapackDelegator getBlasLapackDelegator() {
+        return BLAS_HANDLER;
+    }
     /**
      * This method returns backend-specific MemoryManager implementation, for low-level memory management
      * @return MemoryManager

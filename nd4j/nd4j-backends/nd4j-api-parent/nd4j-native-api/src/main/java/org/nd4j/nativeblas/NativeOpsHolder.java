@@ -91,8 +91,11 @@ public class NativeOpsHolder {
 
            if(getDeviceNativeOps() == null && Boolean.parseBoolean(System.getProperty(ND4JSystemProperties.INIT_NATIVEOPS_HOLDER,"true")) ){
                Properties props = Nd4jContext.getInstance().getConf();
-
-               String name = System.getProperty(Nd4j.NATIVE_OPS, props.get(Nd4j.NATIVE_OPS).toString());
+               Object nativeOpsDefault = props.get(Nd4j.NATIVE_OPS);
+               if(!System.getProperties().containsKey(Nd4j.NATIVE_OPS) && nativeOpsDefault == null) {
+                   throw new IllegalStateException("No native operations class found. Please either define native.ops as a system property or fix your relevant backend properties file.");
+               }
+               String name = System.getProperty(Nd4j.NATIVE_OPS, nativeOpsDefault.toString());
                Class<? extends NativeOps> nativeOpsClass = ND4JClassLoading
                        .loadClassByName(name)
                        .asSubclass(NativeOps.class);
