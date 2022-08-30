@@ -31,6 +31,10 @@ import org.bytedeco.javacpp.*;
 
 public interface BLASLapackDelegator {
 
+    int blas_get_vendor();
+    void blas_set_num_threads(int numThreads);
+
+    public int blas_get_num_threads();
     float cblas_sdsdot(int var0, float var1, FloatPointer var2, int var3, FloatPointer var4, int var5);
 
     float cblas_sdsdot( int var0, float var1,  FloatBuffer var2,  int var3,  FloatBuffer var4,  int var5);
