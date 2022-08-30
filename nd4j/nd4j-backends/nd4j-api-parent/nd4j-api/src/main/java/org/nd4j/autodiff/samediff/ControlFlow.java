@@ -304,9 +304,9 @@ public class ControlFlow {
         Preconditions.checkState(functionBodyInputs != null && functionBodyOutputs != null && functionBodyInputs.length == functionBodyOutputs.length,"Sub graph input and output names must  be defined and equal in length.");
         Preconditions.checkState(loopVars.length == functionBodyInputs.length,"Loop variables and function body inputs must be equal in length.");
         for(SDVariable variable : loopVars) {
-           if(variable.getSameDiff() != parent) {
-               throw new IllegalArgumentException("Variable named " + variable.name() +  " does not have correct samediff instance. Must have parent outer samediff instance.");
-           }
+            if(variable.getSameDiff() != parent) {
+                throw new IllegalArgumentException("Variable named " + variable.name() +  " does not have correct samediff instance. Must have parent outer samediff instance.");
+            }
         }
 
         SameDiffSingleLambda cond = condBody();
@@ -421,7 +421,8 @@ public class ControlFlow {
                                           String[] subGraphInputNames,
                                           String[] subGraphOutputNames) {
         Preconditions.checkState(subGraphInputNames != null && subGraphOutputNames != null && subGraphInputNames.length == subGraphOutputNames.length,"Sub graph input and output names must  be defined and equal in length.");
-        parent.putSubFunction(functionName,functionBody);
+        if(parent.getFunction(functionName) == null)
+            parent.putSubFunction(functionName,functionBody);
         return (sameDiff, inputs) -> {
             LoopLambdaArgs loopLambdaArgs = ControlFlow.argsFromInputs(inputs);
             Invoke.InvokeParams invokeParams = loopLambdaArgs.invokeParams(functionName, subGraphInputNames, subGraphOutputNames);

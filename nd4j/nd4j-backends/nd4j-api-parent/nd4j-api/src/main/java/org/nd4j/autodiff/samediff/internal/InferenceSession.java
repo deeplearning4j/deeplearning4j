@@ -708,6 +708,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
 
             INDArray from = CreateView.createFrom(sdValue.getTensorValue(), indices);
+            from.setCloseable(false);
+            sdValue.getTensorValue().setCloseable(false);
+            for(INDArray arr : indices)
+                arr.setCloseable(false);
             return ExecutionResult.createFrom(op.outputVariablesNames()[0], from);
         } else if (op instanceof ExternalErrorsFunction) {
             ExternalErrorsFunction fn = (ExternalErrorsFunction) op;
