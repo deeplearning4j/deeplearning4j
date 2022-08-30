@@ -32,9 +32,11 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import static org.bytedeco.openblas.global.openblas.*;
 
 public class CpuLapack extends BaseLapack {
+    public static final int LAPACK_ROW_MAJOR = 101;
+    public static final int LAPACK_COL_MAJOR = 102;
+
     protected static int getColumnOrder(INDArray A) {
         return A.ordering() == 'f' ? LAPACK_COL_MAJOR : LAPACK_ROW_MAJOR;
     }
