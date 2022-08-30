@@ -1866,10 +1866,12 @@ public class SameDiff extends SDBaseOps {
 
 
         SameDiff gradInstance = getFunction(GRAD_FN_KEY);
-        if(gradInstance == null){
+        if(gradInstance == null) {
             createGradFunction();
             gradInstance = getFunction(GRAD_FN_KEY);
         }
+
+
         TrainingSession ts = new TrainingSession(gradInstance);
         gradInstance.setTrainingConfig(trainingConfig);     //In case any listeners want to use it
 
@@ -4061,8 +4063,6 @@ public class SameDiff extends SDBaseOps {
     public SDVariable getGradForVariable(String varName) {
         Preconditions.checkState(variables.containsKey(varName), "No variable with name \"%s\" exists", varName);
         SDVariable v = getVariable(varName);
-        Preconditions.checkState(v.dataType().isFPType(), "Cannot get gradient of %s variable \"%s\": only floating" +
-                " point variables have gradients", varName, v.dataType());
         //Gradients are being placed in the inner "grad" function SameDiff instance, but not the outer one
         if (variables.containsKey(varName) && variables.get(varName).getGradient() != null) {
             return variables.get(varName).getGradient();
