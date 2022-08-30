@@ -21,9 +21,9 @@
 package org.nd4j.linalg.cpu.nativecpu.blas;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.Nd4jBlas;
 
-import static org.bytedeco.openblas.global.openblas_nolapack.*;
 
 /**
  * Implementation of Nd4jBlas with OpenBLAS/MKL
@@ -32,6 +32,14 @@ import static org.bytedeco.openblas.global.openblas_nolapack.*;
  */
 @Slf4j
 public class CpuBlas extends Nd4jBlas {
+    public static final int CblasRowMajor = 101, CblasColMajor = 102;
+    public static final int CblasUpper = 121, CblasLower = 122;
+
+    /** enum CBLAS_TRANSPOSE */
+    public static final int CblasNoTrans = 111, CblasTrans = 112, CblasConjTrans = 113, CblasConjNoTrans = 114;
+
+    public static final int CblasNonUnit = 131, CblasUnit = 132;
+    public static final int CblasLeft = 141, CblasRight = 142;
 
     /**
      * Converts a character
@@ -136,16 +144,16 @@ public class CpuBlas extends Nd4jBlas {
 
     @Override
     public void setMaxThreads(int num) {
-        blas_set_num_threads(num);
+        Nd4j.getBlasLapackDelegator().blas_set_num_threads(num);
     }
 
     @Override
     public int getMaxThreads() {
-        return blas_get_num_threads();
+        return Nd4j.getBlasLapackDelegator().blas_get_num_threads();
     }
 
     @Override
     public int getBlasVendorId() {
-        return blas_get_vendor();
+        return Nd4j.getBlasLapackDelegator().blas_get_vendor();
     }
 }
