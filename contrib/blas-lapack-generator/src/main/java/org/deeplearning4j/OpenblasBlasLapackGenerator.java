@@ -10,23 +10,68 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeS
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
 import com.github.javaparser.utils.SourceRoot;
 import com.squareup.javapoet.*;
+import org.apache.commons.io.FileUtils;
+import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.openblas.global.openblas;
-import org.nd4j.linalg.cpu.cpu.blas.BLASLapackDelegator;
-import org.nd4j.linalg.cpu.nativecpu.blas.BLASDelegator;
-import org.reflections.Reflections;
+import org.bytedeco.openblas.global.openblas_nolapack;
+import org.nd4j.linalg.api.blas.BLASLapackDelegator;
+
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.List;
+import java.nio.charset.Charset;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class OpenblasBlasLapackGenerator {
 
     private SourceRoot sourceRoot;
     private File rootDir;
+    private File targetFile;
 
+    private Map<String,String> casting = new HashMap<String,String>(){{
+        put("LAPACKE_sgees","openblas.LAPACK_S_SELECT2");
+        put("LAPACKE_dgees","openblas.LAPACK_D_SELECT2");
+        put("LAPACKE_cgees","openblas.LAPACK_C_SELECT1");
+        put("LAPACKE_zgees","openblas.LAPACK_Z_SELECT1");
+        put("LAPACKE_sgeesx","openblas.LAPACK_S_SELECT2");
+        put("LAPACKE_dgeesx","openblas.LAPACK_D_SELECT2");
+        put("LAPACKE_cgeesx","openblas.LAPACK_C_SELECT1");
+        put("LAPACKE_zgeesx","openblas.LAPACK_Z_SELECT1");
+        put("LAPACKE_sgges","openblas.LAPACK_S_SELECT3");
+        put("LAPACKE_dgges","openblas.LAPACK_D_SELECT3");
+        put("LAPACKE_cgges","openblas.LAPACK_C_SELECT2");
+        put("LAPACKE_zgges","openblas.LAPACK_Z_SELECT2");
+        put("LAPACKE_sgges3","openblas.LAPACK_S_SELECT3");
+        put("LAPACKE_dgges3","openblas.LAPACK_D_SELECT3");
+        put("LAPACKE_cgges3","openblas.LAPACK_C_SELECT2");
+        put("LAPACKE_zgges3","openblas.LAPACK_Z_SELECT2");
+        put("LAPACKE_sggesx","openblas.LAPACK_S_SELECT3");
+        put("LAPACKE_dggesx","openblas.LAPACK_D_SELECT3");
+        put("LAPACKE_cggesx","openblas.LAPACK_C_SELECT2");
+        put("LAPACKE_zggesx","openblas.LAPACK_Z_SELECT2");
+        put("LAPACKE_sgees_work","openblas.LAPACK_S_SELECT2");
+        put("LAPACKE_dgees_work","openblas.LAPACK_D_SELECT2");
+        put("LAPACKE_cgees_work","openblas.LAPACK_C_SELECT1");
+        put("LAPACKE_zgees_work","openblas.LAPACK_Z_SELECT1");
+        put("LAPACKE_sgeesx_work","openblas.LAPACK_S_SELECT2");
+        put("LAPACKE_dgeesx_work","openblas.LAPACK_D_SELECT2");
+        put("LAPACKE_cgeesx_work","openblas.LAPACK_C_SELECT1");
+        put("LAPACKE_zgeesx_work","openblas.LAPACK_Z_SELECT1");
+        put("LAPACKE_sgges_work","openblas.LAPACK_S_SELECT3");
+        put("LAPACKE_dgges_work","openblas.LAPACK_D_SELECT3");
+        put("LAPACKE_cgges_work","openblas.LAPACK_C_SELECT2");
+        put("LAPACKE_zgges_work","openblas.LAPACK_Z_SELECT2");
+        put("LAPACKE_sgges3_work","openblas.LAPACK_S_SELECT3");
+        put("LAPACKE_dgges3_work","openblas.LAPACK_D_SELECT3");
+        put("LAPACKE_cgges3_work","openblas.LAPACK_C_SELECT2");
+        put("LAPACKE_zgges3_work","openblas.LAPACK_Z_SELECT2");
+        put("LAPACKE_sggesx_work","openblas.LAPACK_S_SELECT3");
+        put("LAPACKE_dggesx_work","openblas.LAPACK_D_SELECT3");
+        put("LAPACKE_cggesx_work","openblas.LAPACK_C_SELECT2");
+        put("LAPACKE_zggesx_work","openblas.LAPACK_Z_SELECT2");
+    }};
 
     private static String copyright =
             "/*\n" +
@@ -59,49 +104,79 @@ public class OpenblasBlasLapackGenerator {
 
 
     public void parse() throws Exception {
-        File targetFile = new File(rootDir,"nd4j/nd4j-backend-impls/nd4j-cpu-backend-common/");
+        targetFile = new File(rootDir,"org/nd4j/linalg/cpu/nativecpu/OpenblasLapackDelegator.java");
         String packageName = "org.nd4j.linalg.cpu.nativecpu";
         TypeSpec.Builder openblasLapackDelegator = TypeSpec.classBuilder("OpenblasLapackDelegator");
         openblasLapackDelegator.addModifiers(Modifier.PUBLIC);
         openblasLapackDelegator.addSuperinterface(BLASLapackDelegator.class);
-        Class<BLASDelegator> clazz = BLASDelegator.class;
+
+        Class<BLASLapackDelegator> clazz = BLASLapackDelegator.class;
         List<Method> objectMethods = Arrays.asList(Object.class.getMethods());
+        Set<MethodSpec> addedCodeLines = new HashSet<>();
         Arrays.stream(clazz.getMethods())
                 .filter(input -> !objectMethods.contains(input))
                 .forEach(method -> {
-            MethodSpec.Builder builder = MethodSpec.methodBuilder(
-                            method.getName()
-                    ).addModifiers(Modifier.PUBLIC)
-                    .returns(method.getReturnType())
-                    .addAnnotation(Override.class);
-            StringBuilder codeStatement = new StringBuilder();
-            //don't return anything when void
-            if(method.getReturnType().equals(Void.TYPE)) {
-                codeStatement.append(method.getName() + "(");
+                    MethodSpec.Builder builder = MethodSpec.methodBuilder(
+                                    method.getName()
+                            ).addModifiers(Modifier.PUBLIC)
+                            .returns(method.getReturnType())
+                            .addAnnotation(Override.class);
+                    StringBuilder codeStatement = new StringBuilder();
+                    //don't return anything when void
+                    if(method.getReturnType().equals(Void.TYPE)) {
+                        codeStatement.append(method.getName() + "(");
 
-            } else {
-                codeStatement.append("return " + method.getName() + "(");
+                    } else if(method.getReturnType().equals(int.class)){
+                        //codeStatement.append("return 0;");
+                        codeStatement.append("return openblas." + method.getName() + "(");
 
-            }
-            Arrays.stream(method.getParameters()).forEach(param -> {
-                codeStatement.append(param.getName());
-                codeStatement.append(",");
-                builder.addParameter(ParameterSpec.builder(param.getType(),param.getName())
-                        .build());
-            });
+                    } else if(method.getReturnType().equals(double.class)) {
+                        //codeStatement.append("return 0.0;");
+                        codeStatement.append("return openblas." + method.getName() + "(");
 
-            codeStatement.append(")");
+                    } else if(method.getReturnType().equals(float.class)) {
+                        //codeStatement.append("return 0.0f;");
+                        codeStatement.append("return openblas." + method.getName() + "(");
 
-            builder.addCode(CodeBlock
-                    .builder()
-                    .addStatement(codeStatement.toString().replace(",)",")"))
-                    .build());
+                    }
+                    else if(method.getReturnType().equals(long.class)) {
+                        //codeStatement.append("return 0L;");
+                        codeStatement.append("return openblas." + method.getName() + "(");
 
-            openblasLapackDelegator.addMethod(builder.build());
-        });
+                    }
+
+                    Arrays.stream(method.getParameters()).forEach(param -> {
+                        if(casting.containsKey(method.getName()) && param.getType().equals(Pointer.class)) {
+                            codeStatement.append("(" + casting.get(method.getName()) + ")" + param.getName());
+                            codeStatement.append(",");
+                        } else {
+                            codeStatement.append(param.getName());
+                            codeStatement.append(",");
+                        }
+
+                        builder.addParameter(ParameterSpec.builder(param.getType(),param.getName())
+                                .build());
+
+                    });
+
+                    codeStatement.append(")");
+
+                    builder.addCode(CodeBlock
+                            .builder()
+                            .addStatement(codeStatement.toString().replace(",)",")"))
+                            .build());
+
+                    MethodSpec build = builder.build();
+                    openblasLapackDelegator.addMethod(build);
+                    addedCodeLines.add(build);
+
+
+                });
 
         JavaFile.builder(packageName,openblasLapackDelegator.build())
+                .addFileComment(copyright)
                 .addStaticImport(openblas.class,"*")
+                .addStaticImport(openblas_nolapack.class,"*")
                 .build()
                 .writeTo(rootDir);
     }
@@ -117,9 +192,27 @@ public class OpenblasBlasLapackGenerator {
         return sourceRoot;
     }
 
+    public SourceRoot getSourceRoot() {
+        return sourceRoot;
+    }
+
+    public File getRootDir() {
+        return rootDir;
+    }
+
+    public File getTargetFile() {
+        return targetFile;
+    }
 
     public static void main(String...args) throws Exception {
-        new OpenblasBlasLapackGenerator(new File("../../../nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/src/main/java")).parse();
+        OpenblasBlasLapackGenerator openblasBlasLapackGenerator = new OpenblasBlasLapackGenerator(new File("../../nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/src/main/java"));
+        openblasBlasLapackGenerator.parse();
+        String generated = FileUtils.readFileToString(openblasBlasLapackGenerator.getTargetFile(), Charset.defaultCharset());
+        generated = generated.replace(";;",";");
+        generated = generated.replaceAll("import static org.bytedeco.openblas.global.openblas\\.\\*","import org.bytedeco.openblas.global.openblas");
+        generated = generated.replaceAll("import static org.bytedeco.openblas.global.openblas_nolapack\\.\\*","import org.bytedeco.openblas.global.openblas_nolapack");
+        FileUtils.write(openblasBlasLapackGenerator.getTargetFile(),generated);
+
     }
 
 }
