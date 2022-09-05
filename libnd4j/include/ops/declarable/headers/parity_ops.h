@@ -234,6 +234,19 @@ DECLARE_OP(scatter_add, 3, 1, true);
 #endif
 
 /**
+ * This operation returns index of max element in a given NDArray (optionally: along given dimension(s))
+ * Expected input:
+ * 0: N-dimensional array
+ * 1: optional axis vector
+ *
+ * Int args:
+ * 0: optional axis
+ */
+#if NOT_EXCLUDED(OP_einsum)
+DECLARE_CUSTOM_OP(einsum, -2, 1, false, 0, -2);
+#endif
+
+/**
  * This operation applies Subtract operation to specific inputs wrt indices
  * Expected arguments:
  * input: array to be updated
