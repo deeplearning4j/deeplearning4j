@@ -3581,6 +3581,8 @@ public class SDBaseOps {
 
   /**
    * Scatter max operation.<br>
+   * Maximizes values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3601,6 +3603,8 @@ public class SDBaseOps {
 
   /**
    * Scatter max operation.<br>
+   * Maximizes values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3624,6 +3628,8 @@ public class SDBaseOps {
 
   /**
    * Scatter min operation.<br>
+   *  Minimizes values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3644,6 +3650,8 @@ public class SDBaseOps {
 
   /**
    * Scatter min operation.<br>
+   *  Minimizes values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3667,6 +3675,8 @@ public class SDBaseOps {
 
   /**
    * Scatter multiplication operation.<br>
+   *  Multiplies values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3687,6 +3697,8 @@ public class SDBaseOps {
 
   /**
    * Scatter multiplication operation.<br>
+   *  Multiplies values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3709,7 +3721,10 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter update operation.<br>
+   * Scatter ND Add.<br>
+   * Multiple dimension version of scatter add<br>
+   * that allows addition along multi dimensional<br>
+   * indexes.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3729,7 +3744,10 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter update operation.<br>
+   * Scatter ND Add.<br>
+   * Multiple dimension version of scatter add<br>
+   * that allows addition along multi dimensional<br>
+   * indexes.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3752,7 +3770,10 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter update operation.<br>
+   * Scatter ND Subtraction operation.<br>
+   *  Subtract dimension version of scatter add<br>
+   * that allows addition along multi dimensional<br>
+   * indexes.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3772,7 +3793,10 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter update operation.<br>
+   * Scatter ND Subtraction operation.<br>
+   *  Subtract dimension version of scatter add<br>
+   * that allows addition along multi dimensional<br>
+   * indexes.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3795,7 +3819,10 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter update operation.<br>
+   * Scatter ND update operation.<br>
+   *  Assign dimension version of scatter add<br>
+   * that allows addition along multi dimensional<br>
+   * indexes.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3815,7 +3842,10 @@ public class SDBaseOps {
   }
 
   /**
-   * Scatter update operation.<br>
+   * Scatter ND update operation.<br>
+   *  Assign dimension version of scatter add<br>
+   * that allows addition along multi dimensional<br>
+   * indexes.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3839,6 +3869,8 @@ public class SDBaseOps {
 
   /**
    * Scatter subtraction operation.<br>
+   *  Subtracts values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3859,6 +3891,8 @@ public class SDBaseOps {
 
   /**
    * Scatter subtraction operation.<br>
+   *  Subtracts values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3882,6 +3916,8 @@ public class SDBaseOps {
 
   /**
    * Scatter update operation.<br>
+   *  Assigns values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3902,6 +3938,8 @@ public class SDBaseOps {
 
   /**
    * Scatter update operation.<br>
+   *  Assigns values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
