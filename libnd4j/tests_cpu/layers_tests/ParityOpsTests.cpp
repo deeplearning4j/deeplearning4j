@@ -1614,6 +1614,10 @@ TEST_F(ParityOpsTests, scatter_update_2) {
   NDArray exp('c', {2, 2}, {20, 10, 40, 30}, sd::DataType::INT32);
 
   sd::ops::scatter_update op;
+  //op type
+  //number of tads
+  //dimension of tad
+  //TAD indices to do update for
   auto results = op.evaluate({&x, &updates}, {}, {6, 1, 0, 2, 1, 0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1653,3 +1657,4 @@ TEST_F(ParityOpsTests, scatter_update_4) {
   ASSERT_TRUE(exp.isSameShape(x));
   ASSERT_TRUE(exp.equalsTo(x));
 }
+

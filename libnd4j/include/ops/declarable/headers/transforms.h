@@ -92,7 +92,7 @@ DECLARE_CUSTOM_OP(mergeavg_bp, 2, 1, false, 0, 0);
 #endif
 
 #if NOT_EXCLUDED(OP_scatter_update)
-DECLARE_CONFIGURABLE_OP(scatter_update, 2, 1, true, 0, -1);
+DECLARE_CONFIGURABLE_OP(scatter_update, -2, 1, true, 0, -2);
 #endif
 
 #if NOT_EXCLUDED(OP_Floor)

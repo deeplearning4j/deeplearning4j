@@ -40,7 +40,8 @@ namespace ops {
  *
  * @tparam T
  */
-CONFIGURABLE_OP_IMPL(scatter_update, 2, 1, true, 0, -1) {
+CONFIGURABLE_OP_IMPL(scatter_update, -2, 1, true, 0, -2) {
+  //NOTE: DO NOT USE. USE scatter_upd instead.
   auto operand = INPUT_VARIABLE(0);
   auto updates = INPUT_VARIABLE(1);
 

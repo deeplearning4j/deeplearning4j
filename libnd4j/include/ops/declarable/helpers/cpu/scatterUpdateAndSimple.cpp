@@ -47,7 +47,8 @@ void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates,
     for (auto i = start; i < stop; i++) {
       auto inSubArr = input(indices[i], dimsToExclude, true);
       auto updSubArr = updates(i, dimsToExclude, true);
-
+      inSubArr.printIndexedBuffer("In sub %d",i);
+      updSubArr.printIndexedBuffer("Up sub %d",i);
       if (inSubArr.lengthOf() != updSubArr.lengthOf()) continue;
 
       switch (opCode) {

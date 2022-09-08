@@ -60,7 +60,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Input(NUMERIC, "ref") { description = "Initial/source variable" }
         Input(NUMERIC, "indices") { description = "Indices array" }
         Input(NUMERIC, "updates") { description = "Updates to add to the initial/source array" }
-        Output(NUMERIC, "output"){ description = "The updated variable" }
+        Output(NUMERIC, "output") { description = "The updated variable" }
     }
 
     val scatterDoc = Mixin("scatterDoc "){
@@ -1425,6 +1425,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Doc(Language.ANY, DocScope.ALL){
             """
                 Scatter max operation.
+                Maximizes values from the input tensor
+                along the indices specified.
             """.trimIndent()
         }
         useMixin(scatterDoc)
@@ -1435,6 +1437,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Doc(Language.ANY, DocScope.ALL){
             """
                 Scatter min operation.
+                 Minimizes values from the input tensor
+                along the indices specified.
             """.trimIndent()
         }
         useMixin(scatterDoc)
@@ -1445,6 +1449,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Doc(Language.ANY, DocScope.ALL){
             """
                 Scatter multiplication operation.
+                 Multiplies values from the input tensor
+                along the indices specified.
             """.trimIndent()
         }
         useMixin(scatterDoc)
@@ -1455,6 +1461,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Doc(Language.ANY, DocScope.ALL){
             """
                 Scatter subtraction operation.
+                 Subtracts values from the input tensor
+                along the indices specified.
             """.trimIndent()
         }
         useMixin(scatterDoc)
@@ -1465,6 +1473,47 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Doc(Language.ANY, DocScope.ALL){
             """
                 Scatter update operation.
+                 Assigns values from the input tensor
+                along the indices specified.
+            """.trimIndent()
+        }
+        useMixin(scatterDoc)
+    }
+
+    Op("scatterNdAdd") {
+        useMixin(scatterOp)
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Scatter ND Add.
+                Multiple dimension version of scatter add
+                that allows addition along multi dimensional
+                indexes.
+            """.trimIndent()
+        }
+        useMixin(scatterDoc)
+    }
+
+    Op("scatterNdSub") {
+        useMixin(scatterOp)
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Scatter ND Subtraction operation.
+                 Subtract dimension version of scatter add
+                that allows addition along multi dimensional
+                indexes.
+            """.trimIndent()
+        }
+        useMixin(scatterDoc)
+    }
+
+    Op("scatterNdUpdate") {
+        useMixin(scatterOp)
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Scatter ND update operation.
+                 Assign dimension version of scatter add
+                that allows addition along multi dimensional
+                indexes.
             """.trimIndent()
         }
         useMixin(scatterDoc)

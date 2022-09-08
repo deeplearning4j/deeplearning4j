@@ -1698,6 +1698,8 @@ public class NDBase {
 
   /**
    * Scatter max operation.<br>
+   * Maximizes values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -1718,6 +1720,8 @@ public class NDBase {
 
   /**
    * Scatter min operation.<br>
+   *  Minimizes values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -1738,6 +1742,8 @@ public class NDBase {
 
   /**
    * Scatter multiplication operation.<br>
+   *  Multiplies values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -1757,7 +1763,78 @@ public class NDBase {
   }
 
   /**
+   * Scatter ND Add.<br>
+   * Multiple dimension version of scatter add<br>
+   * that allows addition along multi dimensional<br>
+   * indexes.<br>
+   *
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   *
+   * @param ref Initial/source variable (NUMERIC type)
+   * @param indices Indices array (NUMERIC type)
+   * @param updates Updates to add to the initial/source array (NUMERIC type)
+   * @return output The updated variable (NUMERIC type)
+   */
+  public INDArray scatterNdAdd(INDArray ref, INDArray indices, INDArray updates) {
+    NDValidation.validateNumerical("scatterNdAdd", "ref", ref);
+    NDValidation.validateNumerical("scatterNdAdd", "indices", indices);
+    NDValidation.validateNumerical("scatterNdAdd", "updates", updates);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterNdAdd(ref, indices, updates))[0];
+  }
+
+  /**
+   * Scatter ND Subtraction operation.<br>
+   *  Subtract dimension version of scatter add<br>
+   * that allows addition along multi dimensional<br>
+   * indexes.<br>
+   *
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   *
+   * @param ref Initial/source variable (NUMERIC type)
+   * @param indices Indices array (NUMERIC type)
+   * @param updates Updates to add to the initial/source array (NUMERIC type)
+   * @return output The updated variable (NUMERIC type)
+   */
+  public INDArray scatterNdSub(INDArray ref, INDArray indices, INDArray updates) {
+    NDValidation.validateNumerical("scatterNdSub", "ref", ref);
+    NDValidation.validateNumerical("scatterNdSub", "indices", indices);
+    NDValidation.validateNumerical("scatterNdSub", "updates", updates);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterNdSub(ref, indices, updates))[0];
+  }
+
+  /**
+   * Scatter ND update operation.<br>
+   *  Assign dimension version of scatter add<br>
+   * that allows addition along multi dimensional<br>
+   * indexes.<br>
+   *
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   *
+   * @param ref Initial/source variable (NUMERIC type)
+   * @param indices Indices array (NUMERIC type)
+   * @param updates Updates to add to the initial/source array (NUMERIC type)
+   * @return output The updated variable (NUMERIC type)
+   */
+  public INDArray scatterNdUpdate(INDArray ref, INDArray indices, INDArray updates) {
+    NDValidation.validateNumerical("scatterNdUpdate", "ref", ref);
+    NDValidation.validateNumerical("scatterNdUpdate", "indices", indices);
+    NDValidation.validateNumerical("scatterNdUpdate", "updates", updates);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scatter.ScatterNdUpdate(ref, indices, updates))[0];
+  }
+
+  /**
    * Scatter subtraction operation.<br>
+   *  Subtracts values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -1778,6 +1855,8 @@ public class NDBase {
 
   /**
    * Scatter update operation.<br>
+   *  Assigns values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>

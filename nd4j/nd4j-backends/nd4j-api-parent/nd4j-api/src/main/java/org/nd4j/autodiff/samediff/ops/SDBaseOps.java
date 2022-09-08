@@ -3581,6 +3581,8 @@ public class SDBaseOps {
 
   /**
    * Scatter max operation.<br>
+   * Maximizes values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3601,6 +3603,8 @@ public class SDBaseOps {
 
   /**
    * Scatter max operation.<br>
+   * Maximizes values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3624,6 +3628,8 @@ public class SDBaseOps {
 
   /**
    * Scatter min operation.<br>
+   *  Minimizes values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3644,6 +3650,8 @@ public class SDBaseOps {
 
   /**
    * Scatter min operation.<br>
+   *  Minimizes values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3667,6 +3675,8 @@ public class SDBaseOps {
 
   /**
    * Scatter multiplication operation.<br>
+   *  Multiplies values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3687,6 +3697,8 @@ public class SDBaseOps {
 
   /**
    * Scatter multiplication operation.<br>
+   *  Multiplies values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3709,7 +3721,156 @@ public class SDBaseOps {
   }
 
   /**
+   * Scatter ND Add.<br>
+   * Multiple dimension version of scatter add<br>
+   * that allows addition along multi dimensional<br>
+   * indexes.<br>
+   *
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   *
+   * @param ref Initial/source variable (NUMERIC type)
+   * @param indices Indices array (NUMERIC type)
+   * @param updates Updates to add to the initial/source array (NUMERIC type)
+   * @return output The updated variable (NUMERIC type)
+   */
+  public SDVariable scatterNdAdd(SDVariable ref, SDVariable indices, SDVariable updates) {
+    SDValidation.validateNumerical("scatterNdAdd", "ref", ref);
+    SDValidation.validateNumerical("scatterNdAdd", "indices", indices);
+    SDValidation.validateNumerical("scatterNdAdd", "updates", updates);
+    return new org.nd4j.linalg.api.ops.impl.scatter.ScatterNdAdd(sd,ref, indices, updates).outputVariable();
+  }
+
+  /**
+   * Scatter ND Add.<br>
+   * Multiple dimension version of scatter add<br>
+   * that allows addition along multi dimensional<br>
+   * indexes.<br>
+   *
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param ref Initial/source variable (NUMERIC type)
+   * @param indices Indices array (NUMERIC type)
+   * @param updates Updates to add to the initial/source array (NUMERIC type)
+   * @return output The updated variable (NUMERIC type)
+   */
+  public SDVariable scatterNdAdd(String name, SDVariable ref, SDVariable indices,
+      SDVariable updates) {
+    SDValidation.validateNumerical("scatterNdAdd", "ref", ref);
+    SDValidation.validateNumerical("scatterNdAdd", "indices", indices);
+    SDValidation.validateNumerical("scatterNdAdd", "updates", updates);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.scatter.ScatterNdAdd(sd,ref, indices, updates).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Scatter ND Subtraction operation.<br>
+   *  Subtract dimension version of scatter add<br>
+   * that allows addition along multi dimensional<br>
+   * indexes.<br>
+   *
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   *
+   * @param ref Initial/source variable (NUMERIC type)
+   * @param indices Indices array (NUMERIC type)
+   * @param updates Updates to add to the initial/source array (NUMERIC type)
+   * @return output The updated variable (NUMERIC type)
+   */
+  public SDVariable scatterNdSub(SDVariable ref, SDVariable indices, SDVariable updates) {
+    SDValidation.validateNumerical("scatterNdSub", "ref", ref);
+    SDValidation.validateNumerical("scatterNdSub", "indices", indices);
+    SDValidation.validateNumerical("scatterNdSub", "updates", updates);
+    return new org.nd4j.linalg.api.ops.impl.scatter.ScatterNdSub(sd,ref, indices, updates).outputVariable();
+  }
+
+  /**
+   * Scatter ND Subtraction operation.<br>
+   *  Subtract dimension version of scatter add<br>
+   * that allows addition along multi dimensional<br>
+   * indexes.<br>
+   *
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param ref Initial/source variable (NUMERIC type)
+   * @param indices Indices array (NUMERIC type)
+   * @param updates Updates to add to the initial/source array (NUMERIC type)
+   * @return output The updated variable (NUMERIC type)
+   */
+  public SDVariable scatterNdSub(String name, SDVariable ref, SDVariable indices,
+      SDVariable updates) {
+    SDValidation.validateNumerical("scatterNdSub", "ref", ref);
+    SDValidation.validateNumerical("scatterNdSub", "indices", indices);
+    SDValidation.validateNumerical("scatterNdSub", "updates", updates);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.scatter.ScatterNdSub(sd,ref, indices, updates).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Scatter ND update operation.<br>
+   *  Assign dimension version of scatter add<br>
+   * that allows addition along multi dimensional<br>
+   * indexes.<br>
+   *
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   *
+   * @param ref Initial/source variable (NUMERIC type)
+   * @param indices Indices array (NUMERIC type)
+   * @param updates Updates to add to the initial/source array (NUMERIC type)
+   * @return output The updated variable (NUMERIC type)
+   */
+  public SDVariable scatterNdUpdate(SDVariable ref, SDVariable indices, SDVariable updates) {
+    SDValidation.validateNumerical("scatterNdUpdate", "ref", ref);
+    SDValidation.validateNumerical("scatterNdUpdate", "indices", indices);
+    SDValidation.validateNumerical("scatterNdUpdate", "updates", updates);
+    return new org.nd4j.linalg.api.ops.impl.scatter.ScatterNdUpdate(sd,ref, indices, updates).outputVariable();
+  }
+
+  /**
+   * Scatter ND update operation.<br>
+   *  Assign dimension version of scatter add<br>
+   * that allows addition along multi dimensional<br>
+   * indexes.<br>
+   *
+   * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
+   * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
+   * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = out[indices[i], ..., indices[k], ...]  + op(updates[i, ..., k, ...]) <br>
+   * Note that if multiple indices refer to the same location, the contributions from each is handled correctly. <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param ref Initial/source variable (NUMERIC type)
+   * @param indices Indices array (NUMERIC type)
+   * @param updates Updates to add to the initial/source array (NUMERIC type)
+   * @return output The updated variable (NUMERIC type)
+   */
+  public SDVariable scatterNdUpdate(String name, SDVariable ref, SDVariable indices,
+      SDVariable updates) {
+    SDValidation.validateNumerical("scatterNdUpdate", "ref", ref);
+    SDValidation.validateNumerical("scatterNdUpdate", "indices", indices);
+    SDValidation.validateNumerical("scatterNdUpdate", "updates", updates);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.scatter.ScatterNdUpdate(sd,ref, indices, updates).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Scatter subtraction operation.<br>
+   *  Subtracts values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3730,6 +3891,8 @@ public class SDBaseOps {
 
   /**
    * Scatter subtraction operation.<br>
+   *  Subtracts values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3753,6 +3916,8 @@ public class SDBaseOps {
 
   /**
    * Scatter update operation.<br>
+   *  Assigns values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -3773,6 +3938,8 @@ public class SDBaseOps {
 
   /**
    * Scatter update operation.<br>
+   *  Assigns values from the input tensor<br>
+   * along the indices specified.<br>
    *
    * If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])<br>
    * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = out[indices[i], ...] + op(updates[i, ...])<br>
@@ -4112,10 +4279,11 @@ public class SDBaseOps {
   /**
    * Returns the shape of the specified INDArray  as a 1D INDArray <br>
    *
-   * @param input Input variable (NDARRAY type)
+   * @param input Input variable (NUMERIC type)
    * @return output 1D output variable with contents equal to the shape of the input (NUMERIC type)
    */
   public SDVariable shape(SDVariable input) {
+    SDValidation.validateNumerical("shape", "input", input);
     return new org.nd4j.linalg.api.ops.impl.shape.Shape(sd,input).outputVariable();
   }
 
@@ -4123,10 +4291,11 @@ public class SDBaseOps {
    * Returns the shape of the specified INDArray  as a 1D INDArray <br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input Input variable (NDARRAY type)
+   * @param input Input variable (NUMERIC type)
    * @return output 1D output variable with contents equal to the shape of the input (NUMERIC type)
    */
   public SDVariable shape(String name, SDVariable input) {
+    SDValidation.validateNumerical("shape", "input", input);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Shape(sd,input).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -4134,10 +4303,11 @@ public class SDBaseOps {
   /**
    * Returns the size (number of elements, i.e., prod(shape)) of the specified INDArray  as a 0D scalar variable<br>
    *
-   * @param in Input variable (NDARRAY type)
+   * @param in Input variable (NUMERIC type)
    * @return output 0D (scalar) output variable with value equal to the number of elements in the specified array (NUMERIC type)
    */
   public SDVariable size(SDVariable in) {
+    SDValidation.validateNumerical("size", "in", in);
     return new org.nd4j.linalg.api.ops.impl.shape.Size(sd,in).outputVariable();
   }
 
@@ -4145,10 +4315,11 @@ public class SDBaseOps {
    * Returns the size (number of elements, i.e., prod(shape)) of the specified INDArray  as a 0D scalar variable<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param in Input variable (NDARRAY type)
+   * @param in Input variable (NUMERIC type)
    * @return output 0D (scalar) output variable with value equal to the number of elements in the specified array (NUMERIC type)
    */
   public SDVariable size(String name, SDVariable in) {
+    SDValidation.validateNumerical("size", "in", in);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Size(sd,in).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
@@ -4157,11 +4328,12 @@ public class SDBaseOps {
    * Returns a rank 0 (scalar) variable for the size of the specified dimension.<br>
    * For example, if X has shape [10,20,30] then sizeAt(X,1)=20. Similarly, sizeAt(X,-1)=30<br>
    *
-   * @param in Input variable (NDARRAY type)
+   * @param in Input variable (NUMERIC type)
    * @param dimension Dimension to get size of
    * @return output Scalar INDArray  for size at specified variable (NUMERIC type)
    */
   public SDVariable sizeAt(SDVariable in, int dimension) {
+    SDValidation.validateNumerical("sizeAt", "in", in);
     return new org.nd4j.linalg.api.ops.impl.shape.SizeAt(sd,in, dimension).outputVariable();
   }
 
@@ -4170,11 +4342,12 @@ public class SDBaseOps {
    * For example, if X has shape [10,20,30] then sizeAt(X,1)=20. Similarly, sizeAt(X,-1)=30<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param in Input variable (NDARRAY type)
+   * @param in Input variable (NUMERIC type)
    * @param dimension Dimension to get size of
    * @return output Scalar INDArray  for size at specified variable (NUMERIC type)
    */
   public SDVariable sizeAt(String name, SDVariable in, int dimension) {
+    SDValidation.validateNumerical("sizeAt", "in", in);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.SizeAt(sd,in, dimension).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }

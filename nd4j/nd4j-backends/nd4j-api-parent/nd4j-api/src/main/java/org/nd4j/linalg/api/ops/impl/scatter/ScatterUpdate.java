@@ -38,7 +38,7 @@ import java.util.Map;
 
 
 public class ScatterUpdate extends DynamicCustomOp {
-    public static enum UpdateOp {
+    public enum UpdateOp {
         ADD,
         SUBTRACT,
         MULTIPLY,
@@ -54,13 +54,13 @@ public class ScatterUpdate extends DynamicCustomOp {
 
     public ScatterUpdate(){}
 
-    public ScatterUpdate(INDArray ref, INDArray indices, INDArray update){
-        super(new INDArray[]{ref, indices, update}, null);
+    public ScatterUpdate(INDArray ref, INDArray indices, INDArray update) {
+        super(new INDArray[]{ref, indices, update},null);
     }
 
     @Override
     public String opName() {
-        return "scatter_update";
+        return "scatter_upd";
     }
 
     @Override
