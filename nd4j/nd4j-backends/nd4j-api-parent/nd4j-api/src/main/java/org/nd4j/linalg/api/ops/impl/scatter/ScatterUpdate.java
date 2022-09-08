@@ -38,7 +38,7 @@ import java.util.Map;
 
 
 public class ScatterUpdate extends DynamicCustomOp {
-    public static enum UpdateOp {
+    public enum UpdateOp {
         ADD,
         SUBTRACT,
         MULTIPLY,

@@ -1653,3 +1653,19 @@ TEST_F(ParityOpsTests, scatter_update_4) {
   ASSERT_TRUE(exp.isSameShape(x));
   ASSERT_TRUE(exp.equalsTo(x));
 }
+
+TEST_F(ParityOpsTests, scatter_update_5) {
+  NDArray x('c', {2, 2}, {1, 2, 3, 4}, sd::DataType::INT32);
+  NDArray indices('c',{6},{6, 1, 0, 2, 1, 0},sd::DataType::INT32);
+  NDArray updates('c', {2, 2}, {10, 20, 30, 40}, sd::DataType::INT32);
+
+  NDArray exp('c', {2, 2}, {20, 10, 40, 30}, sd::DataType::INT32);
+
+  sd::ops::scatter_update op;
+  auto results = op.evaluate({&x, &indices,&updates}, {}, {});
+
+  ASSERT_EQ(sd::Status::OK, results.status());
+
+  ASSERT_TRUE(exp.isSameShape(x));
+  ASSERT_TRUE(exp.equalsTo(x));
+}

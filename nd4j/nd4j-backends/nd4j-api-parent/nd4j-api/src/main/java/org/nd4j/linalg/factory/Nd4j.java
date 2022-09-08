@@ -127,6 +127,10 @@ public class Nd4j {
      */
     public static final NDLinalg linalg = new NDLinalg();
 
+    /**
+     * Bitwise namespace - operations related to bitwise manipulation of arrays
+     */
+    public static final NDBase base = new NDBase();
 
     /**
      * Math namespace - general mathematical operations
@@ -175,6 +179,11 @@ public class Nd4j {
         return math;
     }
 
+
+    /**
+     * Linalg namespace - operations related to linear algebra (lapack operations)
+     */
+    public static NDBase base() { return base; }
 
     /**
      * Linalg namespace - operations related to linear algebra (lapack operations)

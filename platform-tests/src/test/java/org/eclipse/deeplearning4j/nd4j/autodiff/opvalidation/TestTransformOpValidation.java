@@ -217,6 +217,15 @@ public class TestTransformOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+
+    public void testScatterUpdate(Nd4jBackend backend) {
+        INDArray v1 = Nd4j.zeros(5);
+        INDArray v2 = Nd4j.base().scatterUpdate(v1, Nd4j.scalar(2), Nd4j.scalar(1f));
+        System.out.println(v2); // expected result: [0, 0, 1, 0, 0]
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarMulCF(Nd4jBackend backend) {
 
         INDArray in = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 3, 4);

@@ -60,7 +60,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Input(NUMERIC, "ref") { description = "Initial/source variable" }
         Input(NUMERIC, "indices") { description = "Indices array" }
         Input(NUMERIC, "updates") { description = "Updates to add to the initial/source array" }
-        Output(NUMERIC, "output"){ description = "The updated variable" }
+        Output(NUMERIC, "output") { description = "The updated variable" }
     }
 
     val scatterDoc = Mixin("scatterDoc "){
@@ -1461,6 +1461,36 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     }
 
     Op("scatterUpdate") {
+        useMixin(scatterOp)
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Scatter update operation.
+            """.trimIndent()
+        }
+        useMixin(scatterDoc)
+    }
+
+    Op("scatterNdAdd") {
+        useMixin(scatterOp)
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Scatter update operation.
+            """.trimIndent()
+        }
+        useMixin(scatterDoc)
+    }
+
+    Op("scatterNdSub") {
+        useMixin(scatterOp)
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Scatter update operation.
+            """.trimIndent()
+        }
+        useMixin(scatterDoc)
+    }
+
+    Op("scatterNdUpdate") {
         useMixin(scatterOp)
         Doc(Language.ANY, DocScope.ALL){
             """

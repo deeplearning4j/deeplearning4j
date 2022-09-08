@@ -40,11 +40,28 @@ namespace ops {
  *
  * @tparam T
  */
-CONFIGURABLE_OP_IMPL(scatter_update, 2, 1, true, 0, -1) {
-  auto operand = INPUT_VARIABLE(0);
-  auto updates = INPUT_VARIABLE(1);
+CONFIGURABLE_OP_IMPL(scatter_update, -2, 1, true, 0, -2) {
+  if(block.inputs()->size() < 3) {
+    auto operand = INPUT_VARIABLE(0);
+    auto updates = INPUT_VARIABLE(1);
 
-  helpers::scatterUpdate(block.launchContext(), *operand, *updates, block.getIArguments());
+    helpers::scatterUpdate(block.launchContext(), *operand, *updates, block.getIArguments());
+
+  } else {
+    auto operand = INPUT_VARIABLE(0);
+    auto indices = INPUT_VARIABLE(1);
+    auto updates = INPUT_VARIABLE(2);
+    std::vector<int> *intIndices;
+    intIndices = new std::vector<int>();
+
+
+    for(LongType i = 0; i < indices->lengthOf(); i++) {
+      auto idx = indices->dataBuffer()->primaryAsT<int>()[i];
+      intIndices->push_back(idx);
+    }
+    helpers::scatterUpdate(block.launchContext(), *operand, *updates,intIndices);
+    delete[] intIndices;
+  }
 
   return sd::Status::OK;
 }
