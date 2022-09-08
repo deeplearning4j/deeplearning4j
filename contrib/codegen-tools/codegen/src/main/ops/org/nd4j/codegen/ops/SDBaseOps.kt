@@ -1425,6 +1425,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Doc(Language.ANY, DocScope.ALL){
             """
                 Scatter max operation.
+                Maximizes values from the input tensor
+                along the indices specified.
             """.trimIndent()
         }
         useMixin(scatterDoc)
@@ -1435,6 +1437,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Doc(Language.ANY, DocScope.ALL){
             """
                 Scatter min operation.
+                 Minimizes values from the input tensor
+                along the indices specified.
             """.trimIndent()
         }
         useMixin(scatterDoc)
@@ -1445,6 +1449,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Doc(Language.ANY, DocScope.ALL){
             """
                 Scatter multiplication operation.
+                 Multiplies values from the input tensor
+                along the indices specified.
             """.trimIndent()
         }
         useMixin(scatterDoc)
@@ -1455,6 +1461,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Doc(Language.ANY, DocScope.ALL){
             """
                 Scatter subtraction operation.
+                 Subtracts values from the input tensor
+                along the indices specified.
             """.trimIndent()
         }
         useMixin(scatterDoc)
@@ -1465,6 +1473,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Doc(Language.ANY, DocScope.ALL){
             """
                 Scatter update operation.
+                 Assigns values from the input tensor
+                along the indices specified.
             """.trimIndent()
         }
         useMixin(scatterDoc)
@@ -1474,7 +1484,10 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         useMixin(scatterOp)
         Doc(Language.ANY, DocScope.ALL){
             """
-                Scatter update operation.
+                Scatter ND Add.
+                Multiple dimension version of scatter add
+                that allows addition along multi dimensional
+                indexes.
             """.trimIndent()
         }
         useMixin(scatterDoc)
@@ -1484,7 +1497,10 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         useMixin(scatterOp)
         Doc(Language.ANY, DocScope.ALL){
             """
-                Scatter update operation.
+                Scatter ND Subtraction operation.
+                 Subtract dimension version of scatter add
+                that allows addition along multi dimensional
+                indexes.
             """.trimIndent()
         }
         useMixin(scatterDoc)
@@ -1494,7 +1510,10 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         useMixin(scatterOp)
         Doc(Language.ANY, DocScope.ALL){
             """
-                Scatter update operation.
+                Scatter ND update operation.
+                 Assign dimension version of scatter add
+                that allows addition along multi dimensional
+                indexes.
             """.trimIndent()
         }
         useMixin(scatterDoc)

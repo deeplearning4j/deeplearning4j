@@ -217,7 +217,6 @@ public class TestTransformOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-
     public void testScatterUpdate(Nd4jBackend backend) {
         INDArray v1 = Nd4j.zeros(DataType.FLOAT,5);
         INDArray v2 = Nd4j.base().scatterUpdate(v1, Nd4j.createFromArray(2), Nd4j.createFromArray(1f));
