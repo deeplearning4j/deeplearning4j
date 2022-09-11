@@ -413,13 +413,7 @@ public class Nd4j {
      * @return the array with the new axis dimension
      */
     public static INDArray expandDims(INDArray input, int dimension) {
-        if (dimension < 0)
-            dimension += input.rank();
-        long[] shape = input.shape();
-        long[] indexes = new long[input.rank() + 1];
-        for (int i = 0; i < indexes.length; i++)
-            indexes[i] = i < dimension ? shape[i] : i == dimension ? 1 : shape[i - 1];
-        return input.reshape(input.ordering(), indexes);
+       return base().expandDims(input,dimension);
     }
 
     /**

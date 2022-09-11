@@ -30,12 +30,6 @@ namespace ops {
 CUSTOM_OP_IMPL(expand_dims, 1, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-
-  if (input->isScalar()) {
-    output->assign(input);
-    return sd::Status::OK;
-  }
-
   sd::LongType axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->e<int>(0);
 
   if (axis < 0) axis += input->rankOf() + 1;
@@ -70,13 +64,6 @@ DECLARE_SHAPE_FN(expand_dims) {
   if (shape::rank(inShape) == 0) {
     sd::LongType x = 1;
     auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), 'c', 1, &x);
-    return SHAPELIST(newShape);
-  }
-
-  // FIXME: temp workaround for TF
-  if (shape::isScalar(inShape)) {
-    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), 'c', 2,
-                                                                       shape::shapeOf(inShape));
     return SHAPELIST(newShape);
   }
 

@@ -27,6 +27,7 @@ import lombok.val;
 import org.apache.commons.math3.linear.LUDecomposition;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -228,6 +229,28 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
             assertNull(err);
         }
+    }
+
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @ParameterizedTest
+    public void scalarExpandDims(Nd4jBackend backend) {
+        INDArray v1 = Nd4j.scalar(0); // shape is []
+        INDArray v2 = Nd4j.expandDims(v1, -1); // throws exception
+        System.out.println(java.util.Arrays.toString(v2.shape())); // shape should now be [1]
+    }
+
+
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @ParameterizedTest
+    public void testExpandDimsSameDiff(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        SameDiff sd = SameDiff.create();
+        SDVariable v1 = sd.zero(null, 1, 1);
+        SDVariable v2 = sd.expandDims(v1, -1);
+        assertArrayEquals(new long[]{1,1,1},v2.eval().shape());
+        System.out.println(v1.shape().eval()); // [1, 1]
+        System.out.println(v2.shape().eval()); // should be [1, 1, 1] but is [1, 1]
     }
 
     @ParameterizedTest
