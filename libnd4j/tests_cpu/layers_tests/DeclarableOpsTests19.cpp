@@ -543,3 +543,17 @@ TEST_F(DeclarableOpsTests19,test_create_view_9) {
   auto subColumnShape = resultSubColumn[0]->getShapeAsVectorInt();
   ASSERT_EQ(subColumnsAssertion,subColumnShape);
 }
+
+
+TEST_F(DeclarableOpsTests19,test_einsum_1) {
+  sd::ops::einsum op;
+  auto fiveByFiveSubColumns = NDArrayFactory::linspace<double>(1,25,25);
+  auto reshapedFiveByFiveSubColumns = fiveByFiveSubColumns->reshape('c',{5,5});
+  auto columns2 = NDIndexUtils::createInterval(0,1,1,0);
+  auto newAll3 = NDIndexUtils::createPoint(1);
+  auto subColumnsAssertion = std::vector<int>({1});
+  auto resultSubColumn = op.evaluate({&reshapedFiveByFiveSubColumns,&columns2,&newAll3});
+  resultSubColumn.setNonRemovable();
+  auto subColumnShape = resultSubColumn[0]->getShapeAsVectorInt();
+  ASSERT_EQ(subColumnsAssertion,subColumnShape);
+}

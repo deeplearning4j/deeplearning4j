@@ -20,8 +20,6 @@
 #include <helpers/EigenValsAndVecs.h>
 #include <helpers/FullPivLU.h>
 #include <helpers/HessenbergAndSchur.h>
-#include <helpers/Sqrtm.h>
-#include <ops/declarable/helpers/triangular_solve.h>
 
 #include "testlayers.h"
 

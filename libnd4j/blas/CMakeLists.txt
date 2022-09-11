@@ -105,7 +105,7 @@ if(SD_TYPES_LIST_COUNT GREATER 0)
         string(APPEND DEFINITIONS_CONTENT  "#define HAS_${SD_TYPE_UPPERCASE}\n")
     endforeach()
 endif()
-if(OP_OUTPUT_FILE MATCHES "\.h$")
+if(OP_OUTPUT_FILE MATCHES "\\.h$")
     message("definitions will be written to \"${OP_OUTPUT_FILE}\"")
     file(WRITE "${OP_OUTPUT_FILE}" "#ifndef SD_DEFINITIONS_GEN_H_\n#define SD_DEFINITIONS_GEN_H_\n${DEFINITIONS_CONTENT}\n#endif\n")
 endif()
@@ -321,7 +321,6 @@ if(SD_CUDA)
             message("cuDNN included")
             file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES false ../include/ops/declarable/platform/cudnn/*.cu)
         endif()
-
         add_library(samediff_obj OBJECT ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES} ${HELPERS_CPP}
                 ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES}
                 ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
