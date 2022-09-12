@@ -2,8 +2,6 @@ package org.deeplearning4j;
 
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.StaticJavaParser;
-import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
@@ -15,14 +13,14 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.openblas.global.openblas;
 import org.bytedeco.openblas.global.openblas_nolapack;
 import org.nd4j.linalg.api.blas.BLASLapackDelegator;
-
+import org.nd4j.shade.guava.collect.HashBasedTable;
+import org.nd4j.shade.guava.collect.Table;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class OpenblasBlasLapackGenerator {
 
@@ -71,8 +69,37 @@ public class OpenblasBlasLapackGenerator {
         put("LAPACKE_dggesx_work","openblas.LAPACK_D_SELECT3");
         put("LAPACKE_cggesx_work","openblas.LAPACK_C_SELECT2");
         put("LAPACKE_zggesx_work","openblas.LAPACK_Z_SELECT2");
-    }};
 
+        put("LAPACK_sgges3","openblas.LAPACK_S_SELECT3");
+        put("LAPACK_dgges3","openblas.LAPACK_D_SELECT3");
+        put("LAPACK_cgges3","openblas.LAPACK_C_SELECT2");
+        put("LAPACK_zgges3","openblas.LAPACK_Z_SELECT2");
+
+
+        put("LAPACK_sgges","openblas.LAPACK_S_SELECT3");
+        put("LAPACK_dgges","openblas.LAPACK_D_SELECT3");
+        put("LAPACK_cgges","openblas.LAPACK_C_SELECT2");
+        put("LAPACK_zgges","openblas.LAPACK_Z_SELECT2");
+
+
+        put("LAPACK_sggesx","openblas.LAPACK_S_SELECT3");
+        put("LAPACK_dggesx","openblas.LAPACK_D_SELECT3");
+        put("LAPACK_cggesx","openblas.LAPACK_C_SELECT2");
+        put("LAPACK_zggesx","openblas.LAPACK_Z_SELECT2");
+
+        //LAPACK_zgeesx
+        put("LAPACK_cgees","openblas.LAPACK_C_SELECT1");
+        put("LAPACK_dgees","openblas.LAPACK_D_SELECT2");
+        put("LAPACK_zgees","openblas.LAPACK_Z_SELECT1");
+        put("LAPACK_sgees","openblas.LAPACK_S_SELECT2");
+
+
+        put("LAPACK_cgeesx","openblas.LAPACK_C_SELECT1");
+        put("LAPACK_dgeesx","openblas.LAPACK_D_SELECT2");
+        put("LAPACK_zgeesx","openblas.LAPACK_Z_SELECT1");
+        put("LAPACK_sgeesx","openblas.LAPACK_S_SELECT2");
+
+    }};
     private static String copyright =
             "/*\n" +
                     " *  ******************************************************************************\n" +
@@ -102,7 +129,6 @@ public class OpenblasBlasLapackGenerator {
         this.rootDir = nd4jApiRootDir;
     }
 
-
     public void parse() throws Exception {
         targetFile = new File(rootDir,"org/nd4j/linalg/cpu/nativecpu/OpenblasLapackDelegator.java");
         String packageName = "org.nd4j.linalg.cpu.nativecpu";
@@ -124,7 +150,7 @@ public class OpenblasBlasLapackGenerator {
                     StringBuilder codeStatement = new StringBuilder();
                     //don't return anything when void
                     if(method.getReturnType().equals(Void.TYPE)) {
-                        codeStatement.append(method.getName() + "(");
+                        codeStatement.append("openblas." + method.getName() + "(");
 
                     } else if(method.getReturnType().equals(int.class)){
                         //codeStatement.append("return 0;");
@@ -145,9 +171,33 @@ public class OpenblasBlasLapackGenerator {
 
                     }
 
+                    //TODO: LAPACK_cgees
+                    //TODO: LAPACK_dgees
+                    //TODO: LAPACK_zgees
+                    //TODO: LAPACK_cgeesx
+                    //TODO: LAPACK_dgeesx
+                    //TODO: LAPACK_sgeesx
+                    //TODO: LAPACK_zgeesx
+                    //TODO: LAPACK_cgges
+                    //TODO: LAPACK_dgges
+                    //TODO: LAPACK_sgges
+                    //TODO: LAPACK_zgges
+                    //TODO: LAPACK_cgges3
+                    //TODO: LAPACK_dgges3
+                    //TODO: LAPACK_sgges3
+                    //TODO: LAPACK_zgges3
+                    //TODO: LAPACK_cggesx
+                    //TODO: LAPACK_dggesx
+                    //TODO: LAPACK_sggesx
+                    //TODO: LAPACK_zggesx
+
+
+                    //TODO: issue could be LAPACK_Z_SELECT_2
+                    //TODO: LAPACK_S_SELECT_3
                     Arrays.stream(method.getParameters()).forEach(param -> {
                         if(casting.containsKey(method.getName()) && param.getType().equals(Pointer.class)) {
-                            codeStatement.append("(" + casting.get(method.getName()) + ")" + param.getName());
+                            System.out.println("In function casting for " + method.getName());
+                            codeStatement.append("((" + casting.get(method.getName()) + ")" + param.getName() + ")");
                             codeStatement.append(",");
                         } else {
                             codeStatement.append(param.getName());
@@ -211,7 +261,7 @@ public class OpenblasBlasLapackGenerator {
         generated = generated.replace(";;",";");
         generated = generated.replaceAll("import static org.bytedeco.openblas.global.openblas\\.\\*","import org.bytedeco.openblas.global.openblas");
         generated = generated.replaceAll("import static org.bytedeco.openblas.global.openblas_nolapack\\.\\*","import org.bytedeco.openblas.global.openblas_nolapack");
-        FileUtils.write(openblasBlasLapackGenerator.getTargetFile(),generated);
+        FileUtils.write(openblasBlasLapackGenerator.getTargetFile(),generated,Charset.defaultCharset());
 
     }
 
