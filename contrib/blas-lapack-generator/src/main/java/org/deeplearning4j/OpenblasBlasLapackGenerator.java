@@ -2,8 +2,6 @@ package org.deeplearning4j;
 
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.StaticJavaParser;
-import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
@@ -18,13 +16,11 @@ import org.nd4j.linalg.api.blas.BLASLapackDelegator;
 import org.nd4j.shade.guava.collect.HashBasedTable;
 import org.nd4j.shade.guava.collect.Table;
 
-
 import javax.lang.model.element.Modifier;
 import java.io.File;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class OpenblasBlasLapackGenerator {
 
@@ -104,11 +100,6 @@ public class OpenblasBlasLapackGenerator {
         put("LAPACK_sgeesx","openblas.LAPACK_S_SELECT2");
 
     }};
-
-    private Table<String,Integer,String> multiCastTable = HashBasedTable.create();
-
-
-
     private static String copyright =
             "/*\n" +
                     " *  ******************************************************************************\n" +
@@ -136,20 +127,8 @@ public class OpenblasBlasLapackGenerator {
     public OpenblasBlasLapackGenerator(File nd4jApiRootDir) {
         this.sourceRoot = initSourceRoot(nd4jApiRootDir);
         this.rootDir = nd4jApiRootDir;
-        initMultiCast();
     }
 
-    private void initMultiCast() {
-        multiCastTable.put("LAPACK_cgees",15,"LAPACK_C_SELECT1");
-        multiCastTable.put("",0,"");
-        multiCastTable.put("",0,"");
-        multiCastTable.put("",0,"");
-        multiCastTable.put("",0,"");
-        multiCastTable.put("",0,"");
-        multiCastTable.put("",0,"");
-        multiCastTable.put("",0,"");
-
-    }
     public void parse() throws Exception {
         targetFile = new File(rootDir,"org/nd4j/linalg/cpu/nativecpu/OpenblasLapackDelegator.java");
         String packageName = "org.nd4j.linalg.cpu.nativecpu";
