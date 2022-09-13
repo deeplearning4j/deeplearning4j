@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ValidationUtils;
+import org.nd4j.enums.RnnDataFormat;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -98,6 +99,9 @@ public class GlobalPoolingLayer extends NoParamLayer {
             case RNN:
                 InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
                 //Return 3d activations, with shape [minibatch, timeStepSize, 1]
+                if(collapseDimensions) {
+                    return InputType.feedForward(recurrent.getSize(), recurrent.getFormat());
+                }
                 return recurrent;
             case CNN:
                 InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;

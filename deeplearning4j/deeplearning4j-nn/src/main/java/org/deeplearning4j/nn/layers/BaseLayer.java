@@ -323,7 +323,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         input.castTo(ret.dataType()).mmuli(W, ret);     //TODO Can we avoid this cast? (It sohuld be a no op if not required, however)
 
         INDArray preNorm = ret;
-        if(hasLayerNorm()){
+        if(hasLayerNorm()) {
             preNorm = (forBackprop ? ret.dup(ret.ordering()) : ret);
             Nd4j.getExecutioner().exec(new LayerNorm(preNorm, g, ret, true, 1));
         }
