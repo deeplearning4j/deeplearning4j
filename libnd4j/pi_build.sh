@@ -81,6 +81,15 @@ LIBND4J_PLATFORM_EXT_LIST=( armhf arm64 arm arm64 x86 x86_64 arm64)
 PREFIXES=( arm-linux-gnueabihf aarch64-linux-gnu arm-linux-androideabi aarch64-linux-android  i686-linux-android x86_64-linux-android aarch64-linux-gnu)
 TARGET_INDEX=-1
 
+if [ ${CURRENT_TARGET} == "linux-arm64" ];then
+    export CURRENT_TARGET="arm64"
+fi
+
+
+if [ ${CURRENT_TARGET} == "linux-arm32" ];then
+    export CURRENT_TARGET="arm32"
+fi
+
 for i in "${!TARGET_ARRS[@]}"; do
    if [[ "${TARGET_ARRS[$i]}" = "${CURRENT_TARGET}" ]]; then
        TARGET_INDEX="${i}"
@@ -172,10 +181,10 @@ function download_extract_base {
         message "download ${down_url}"
         wget  --show-progress -O "${down_file}" "${down_url}"
     fi
- 
+
     message "extract $@"
     #extract
-    mkdir -p "${down_dir}" 
+    mkdir -p "${down_dir}"
     if [ ${xtract_arg} = "-unzip" ]; then
         command="unzip -qq \"${down_file}\" -d \"${down_dir}\" "
     else
@@ -203,7 +212,7 @@ function git_check {
     command=
     if [ -n "$3" ]; then
         command="git clone --quiet --depth 1 --branch \"${3}\" \"${1}\" \"${2}\""
-    else 
+    else
     command="git clone --quiet \"${1}\" \"${2}\""
     fi
     message "$command"
@@ -219,7 +228,7 @@ function fix_pi_linker {
   fi
   rm -f "${1}/ld"
   printf '#!/usr/bin/env bash\n'"\"${1}\"/ld.gold --long-plt \"\$@\"">"${1}/ld"
-  chmod +x "${1}/ld" 
+  chmod +x "${1}/ld"
 }
 
 function cuda_cross_setup {
@@ -240,10 +249,10 @@ function cuda_cross_setup {
         if [ ! -d "${loc_DIR}/cuda/bin" ];then
             mkdir -p "${loc_DIR}/cuda/bin"
             cd "${CUDA_DIR}/bin/"
-            # we are obliged to symlink inner files and folders to avoid errors happening 
-            # when  relative folders are used from symlinks 
+            # we are obliged to symlink inner files and folders to avoid errors happening
+            # when  relative folders are used from symlinks
             for i in $(find . -maxdepth 1)
-            do 
+            do
                 ln -s "${CUDA_DIR}/bin/""${i}" "${loc_DIR}/cuda/bin/""${i}"
             done
             cd -
@@ -288,7 +297,7 @@ if [ "${TARGET_OS}" = "android" ];then
         SUFFIX=${ANDROID_VERSION}
         ABI_PREFIX="v7a"
     fi
-    
+
     COMPILER_PREFIX_DIR="${ANDROID_TOOLCHAIN}/bin/"
     NDK_TARGET="${PREFIX}${SUFFIX}"
     export TOOLCHAIN_PREFIX="${ANDROID_TOOLCHAIN}/bin/${PREFIX}"
@@ -302,7 +311,7 @@ if [ "${TARGET_OS}" = "android" ];then
     export CXX_EXE="clang++"
     export AR="${TOOLCHAIN_PREFIX}-ar"
     export RANLIB="${TOOLCHAIN_PREFIX}-ranlib"
-    export COMPILER="${COMPILER_PREFIX}-${CC_EXE}"    
+    export COMPILER="${COMPILER_PREFIX}-${CC_EXE}"
     export BLAS_XTRA="CC=\"${COMPILER}\" AR=\"${AR}\" RANLIB=\"${RANLIB}\" ${BLAS_XTRA}"
 else
     export BINUTILS_BIN="${CROSS_COMPILER_DIR}/${PREFIX}/bin"
@@ -322,14 +331,14 @@ fi
 check_requirements "${COMPILER}"
 
 if [ -z "${BUILD_USING_MAVEN}" ] ;then
-#lets build OpenBlas 
+#lets build OpenBlas
 if [ ! -d "${OPENBLAS_DIR}" ]; then
     message "download OpenBLAS"
     git_check "${OPENBLAS_GIT_URL}" "${OPENBLAS_DIR}" "v0.3.19"
 fi
 
 if [ ! -f "${THIRD_PARTY}/lib/libopenblas.so" ]; then
-    message "build and install OpenBLAS" 
+    message "build and install OpenBLAS"
     cd "${OPENBLAS_DIR}"
 
     command="make TARGET=${BLAS_TARGET_NAME} HOSTCC=gcc  NOFORTRAN=1 ${BLAS_XTRA} "
@@ -364,9 +373,9 @@ if [ ! -d "${SCONS_LOCAL_DIR}" ]; then
 fi
 check_requirements "${SCONS_LOCAL_DIR}"/scons.py
 
-if [ ! -d "${ARMCOMPUTE_DIR}" ]; then 
-    message "download ArmCompute Source" 
-    git_check ${ARMCOMPUTE_GIT_URL} "${ARMCOMPUTE_DIR}" "${ARMCOMPUTE_TAG}" 
+if [ ! -d "${ARMCOMPUTE_DIR}" ]; then
+    message "download ArmCompute Source"
+    git_check ${ARMCOMPUTE_GIT_URL} "${ARMCOMPUTE_DIR}" "${ARMCOMPUTE_TAG}"
 fi
 
 #build armcompute
@@ -374,7 +383,7 @@ if [ ! -f "${ARMCOMPUTE_DIR}/build/libarm_compute-static.a" ]; then
 message "build arm compute"
 cd "${ARMCOMPUTE_DIR}"
 command="CC=\"${CC_EXE}\" CXX=\"${CXX_EXE}\" python3 \"${SCONS_LOCAL_DIR}/scons.py\" Werror=1 -j$(nproc) toolchain_prefix=\"${TOOLCHAIN_PREFIX}-\"  compiler_prefix=\"${COMPILER_PREFIX}-\" debug=${ARMCOMPUTE_DEBUG}  neon=1 opencl=0 extra_cxx_flags=-fPIC os=${TARGET_OS} build=cross_compile arch=${ARMCOMPUTE_TARGET} "
-message $command 
+message $command
 eval $command &>/dev/null
 cd "${BASE_DIR}"
 fi
@@ -424,7 +433,7 @@ fi
 
 if [ -z "${BUILD_USING_MAVEN}" ] ;then
 message "Building using bash script"
-bash ./buildnativeoperations.sh -o ${LIBND4J_PLATFORM} -t -j $(nproc) ${XTRA_ARGS} 
+bash ./buildnativeoperations.sh -o ${LIBND4J_PLATFORM} -t -j $(nproc) ${XTRA_ARGS}
 else
 message "cd $BASE_DIR/.. "
 cd "$BASE_DIR/.."
