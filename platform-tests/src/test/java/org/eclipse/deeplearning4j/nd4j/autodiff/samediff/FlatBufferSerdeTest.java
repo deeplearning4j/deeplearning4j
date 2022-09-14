@@ -44,6 +44,11 @@ import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMActivations;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDataFormat;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDirectionMode;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMLayerConfig;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -90,6 +95,38 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
     }
 
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+
+    public void testLateConfigureWithSameDiff(Nd4jBackend backend) {
+        int numLabelClasses = 6;
+        int numFeatrues = 100 * 6;
+        int numUnits = numLabelClasses * 1;
+        int timeSteps = 100;
+
+        SameDiff sameDiff = SameDiff.create();
+
+        SDVariable input = sameDiff.placeHolder("input", DataType.FLOAT, -1, timeSteps, numFeatrues);
+        SDVariable label = sameDiff.placeHolder("label", DataType.FLOAT, -1, 100, numLabelClasses);
+        // SDVariable label2 = sameDiff.reshape(label, -1, numLabelClasses);
+
+        LSTMLayerConfig lstmLayerConfig = LSTMLayerConfig.builder().lstmdataformat(LSTMDataFormat.NTS).directionMode(LSTMDirectionMode.FWD).gateAct(LSTMActivations.SIGMOID)
+                .cellAct(LSTMActivations.TANH).outAct(LSTMActivations.TANH).retFullSequence(true).retLastC(true).retLastH(true).build();
+
+        LSTMLayerWeights lstmLayerWeights = LSTMLayerWeights.builder().weights(sameDiff.var("weights", Nd4j.rand(DataType.FLOAT, numFeatrues, 4 * numUnits)))
+                .rWeights(sameDiff.var("rWeights", Nd4j.rand(DataType.FLOAT, numUnits, 4 * numUnits))).peepholeWeights(sameDiff.var("inputPeepholeWeights", Nd4j.rand(DataType.FLOAT, 3 * numUnits)))
+                .build();
+
+        SDVariable[] outputs = sameDiff.rnn.lstmLayer(new String[] { "out", "lstm2", "lstm3" }, input, lstmLayerWeights, lstmLayerConfig);
+        SDVariable out = outputs[0];
+        sameDiff.loss.softmaxCrossEntropy("loss", label, out, sameDiff.var(Nd4j.create(100)));
+        sameDiff.setLossVariables("loss");
+        sameDiff.save(new File("tmp-bert-input.fb"),true);
+
+        SameDiff sd2 = SameDiff.load(new File("tmp-bert-input.fb"),true);
+        assertNotNull(sd2);
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
