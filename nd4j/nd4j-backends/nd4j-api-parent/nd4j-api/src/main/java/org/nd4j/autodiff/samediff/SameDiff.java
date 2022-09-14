@@ -2384,6 +2384,21 @@ public class SameDiff extends SDBaseOps {
 
         while (iterator.hasNext()) {
             MultiDataSet ds = iterator.next();
+            if(ds.getFeatures() != null)
+                for(INDArray arr : ds.getFeatures()) {
+                    arr.setCloseable(false);
+                }
+
+            if(ds.getLabels() != null)
+                for(INDArray arr : ds.getLabels()) {
+                    arr.setCloseable(false);
+                }
+
+            if(ds.getFeaturesMaskArrays() != null)
+                for(INDArray arr : ds.getFeaturesMaskArrays()) {
+                    arr.setCloseable(false);
+                }
+
             Map<String, INDArray> placeholderMap = toPlaceholderMap(ds);
 
             ExecutionResult m = directExecHelper(placeholderMap, at, ds, Collections.<String>emptyList(), activeListeners, requiredVarsArr);
@@ -2665,6 +2680,9 @@ public class SameDiff extends SDBaseOps {
         while (iterator.hasNext()) {
             long dataStart = hasListeners ? System.currentTimeMillis() : 0;
             MultiDataSet ds = iterator.next();
+            //ensure that input arrays are not cached.
+            //caching inputs and outputs has side effects on results
+            ds.setCloseable(false);
             long dataEnd = hasListeners ? System.currentTimeMillis() : 0;
             Map<String, INDArray> placeholderMap = toPlaceholderMap(ds);
 
@@ -2675,7 +2693,8 @@ public class SameDiff extends SDBaseOps {
                 }
 
                 ExecutionResult outs = directExecHelper(placeholderMap, at, ds, requiredVars, activeListeners, neededOutputsArr);
-
+                //ensure outputs are not cached as this has side effects on results
+                outs.setCloseable(false);
                 for (Listener l : activeListeners) {
                     l.iterationDone(this, at, ds, null);
                 }
@@ -2904,6 +2923,20 @@ public class SameDiff extends SDBaseOps {
                                                String... outputs) {
         if (at == null)
             at = At.defaultAt();
+
+        //ensure arrays passed in are not chaced
+        if(placeholders != null) {
+            placeholders.values().forEach(array -> array.setCloseable(false));
+        }
+
+        if(batch != null) {
+            batch.setCloseable(false);
+        }
+
+        if(otherPlaceHolders != null) {
+            otherPlaceHolders.values().forEach(value -> value.setCloseable(false));
+        }
+
 
         Preconditions.checkState(outputs != null && outputs.length > 0, "No outputs were specified");
         long threadId = Thread.currentThread().getId();

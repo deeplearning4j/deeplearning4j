@@ -335,20 +335,20 @@ public abstract class AbstractSession<T, O> {
          * variables - just the placeholders,
          * constants and variables (assuming no control dependencies) at the start of
          * execution.
-         * 
+         *
          * Then, we remove an "available to execute" node and execute it. Execution may
          * be:
          * (a) For constants, variable type SDVariables, and placeholders: just look up
          * the value
          * (b) For variables as outputs of ops: actually execute the op
-         * 
+         *
          * After execution, we look at the graph structure and determine what that now
          * executed/calculated variable is
          * an input to. If all inputs are available for the op, we mark all output
          * variables of that op as available for execution.
          * Both parts of this (tracking dependencies, and also what's now available to
          * execute) are handled in the dependency tracker
-         * 
+         *
          * We stop computation once all the required outputs are available. At this
          * point, subgraph may NOT be empty - for example,
          * switch ops may cause entire branches of the graph to be skipped.
@@ -1161,9 +1161,27 @@ public abstract class AbstractSession<T, O> {
      * @return Post processed output
      */
     protected Map<String, SDValue> postProcessOutputValues(Map<String, SDValue> output) {
+        for (Map.Entry<String, SDValue> entry : output.entrySet()) {
+            switch (entry.getValue().getSdValueType()) {
+                case DICT:
+                    for (Map.Entry<String, INDArray> arr : entry.getValue().getDictValue().entrySet()) {
+                        arr.getValue().setCloseable(false);
+                    }
+                    break;
+                case LIST:
+                    for (INDArray arr : entry.getValue().getListValue()) {
+                        arr.setCloseable(false);
+                    }
+                    break;
+                case TENSOR:
+                    entry.getValue().getTensorValue().setCloseable(false);
+                    break;
+            }
+
+        }
+
         return output;
     }
-
     /**
      * Post process the session output values, if required.
      * Override if required in session subclasses
@@ -1247,7 +1265,7 @@ public abstract class AbstractSession<T, O> {
     /**
      * Get the {@link INDArray}
      * associated with the given variable name
-     * 
+     *
      * @param name the variable name
      * @return the list of {@link INDArray}
      */
@@ -1288,7 +1306,7 @@ public abstract class AbstractSession<T, O> {
     /**
      * Get the {@link INDArray}
      * associated with the given variable name
-     * 
+     *
      * @param name the variable name
      * @return the list of {@link INDArray}
      */
@@ -1337,7 +1355,7 @@ public abstract class AbstractSession<T, O> {
 
         /**
          * Creates the default outer frame
-         * 
+         *
          * @param name the name of the variable ot create an id for
          * @return
          */
