@@ -21,6 +21,24 @@ public class ExecutionResult {
 
 
 
+    public void setCloseable(boolean closeable) {
+        if(valueOutputs != null) {
+            for(Map.Entry<String,SDValue> outputValue : valueOutputs.entrySet()) {
+                outputValue.getValue().setCloseable(closeable);
+            }
+        }
+
+        if(outputs != null) {
+            for(Map.Entry<String,Optional<INDArray>> entry : outputs.entrySet()) {
+                if(entry.getValue().isPresent()) {
+                    entry.getValue().get().setCloseable(closeable);
+                }
+            }
+        }
+
+    }
+
+
     public static  ExecutionResult createFrom(List<String> names,List<INDArray> input) {
         Preconditions.checkState(names.size() == input.size(),"Inputs and names must be equal size!");
         Map<String,Optional<INDArray>> outputs = new LinkedHashMap<>();

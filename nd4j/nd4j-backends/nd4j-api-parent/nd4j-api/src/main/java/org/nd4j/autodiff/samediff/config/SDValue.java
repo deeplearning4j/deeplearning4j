@@ -50,6 +50,25 @@ public class SDValue implements IDependeeGroup<INDArray> {
     private SDValue() {
     }
 
+    public void setCloseable(boolean closeable) {
+        if(tensorValue != null) {
+            tensorValue.setCloseable(closeable);
+        }
+
+        if(listValue != null) {
+            for(INDArray arr : listValue) {
+                if(arr != null)
+                    arr.setCloseable(closeable);
+            }
+        }
+
+        if(dictValue != null) {
+            for(Map.Entry<String,INDArray> entry : dictValue.entrySet()) {
+                entry.getValue().setCloseable(closeable);
+            }
+        }
+    }
+
     public long getId() {
         return id;
     }
@@ -61,7 +80,7 @@ public class SDValue implements IDependeeGroup<INDArray> {
     /**
      * Create an empty value for the given
      * {@link DataType}
-     * 
+     *
      * @param valueType the value type to create {@link SDValue} for
      * @param dataType  the data type of the empty value
      * @return an empty ({@link Nd4j#empty(DataType)} for {@link SDValueType#TENSOR}
@@ -85,7 +104,7 @@ public class SDValue implements IDependeeGroup<INDArray> {
      * if the value type is {@link SDValueType#LIST}
      * and the number of elements is 1 otherwise
      * return the {@link #tensorValue}
-     * 
+     *
      * @return
      */
     public INDArray getTensorValue() {
@@ -98,7 +117,7 @@ public class SDValue implements IDependeeGroup<INDArray> {
      * Return an {@link INDArray[]}
      * if the value type is {@link SDValueType#TENSOR}
      * else return the list type
-     * 
+     *
      * @return
      */
     public List<INDArray> getListValue() {
@@ -110,7 +129,7 @@ public class SDValue implements IDependeeGroup<INDArray> {
     /**
      * Wrap an {@link INDArray} in a tensor
      * with an {@link SDValueType#TENSOR} type
-     * 
+     *
      * @param inputValue the input value for the {@link SDValue}
      * @return the created value
      */
@@ -124,7 +143,7 @@ public class SDValue implements IDependeeGroup<INDArray> {
     /**
      * Wrap an {@link INDArray[]} in a value
      * with an {@link SDValueType#LIST} type
-     * 
+     *
      * @param inputValue the input value
      * @return the created value
      */
@@ -138,7 +157,7 @@ public class SDValue implements IDependeeGroup<INDArray> {
     /**
      * Wrap an {@link INDArray[]} in a value
      * with an {@link SDValueType#LIST} type
-     * 
+     *
      * @param inputValue the input value
      * @return the created value
      */
@@ -152,7 +171,7 @@ public class SDValue implements IDependeeGroup<INDArray> {
     /**
      * Wrap an {@link Map<String<INDArray>} in a value
      * with an {@link SDValueType#DICT} type
-     * 
+     *
      * @param inputValue the input value
      * @return the created value
      */

@@ -91,9 +91,9 @@ public class EvaluationConfig {
      * @param param     The param to evaluate
      * @param evaluations The evaluations to preform
      */
-    public EvaluationConfig evaluate(@NonNull String param, @NonNull IEvaluation... evaluations){
+    public EvaluationConfig evaluate(@NonNull String param, @NonNull IEvaluation... evaluations) {
         if(this.evaluations.get(param) == null){
-            this.evaluations.put(param, new ArrayList<IEvaluation>());
+            this.evaluations.put(param, new ArrayList<>());
         }
 
         this.evaluations.get(param).addAll(Arrays.asList(evaluations));
@@ -161,7 +161,7 @@ public class EvaluationConfig {
         return this;
     }
 
-    private void validateConfig(){
+    private void validateConfig() {
         Preconditions.checkNotNull(data, "Must specify data.  It may not be null.");
 
         if(!singleInput){

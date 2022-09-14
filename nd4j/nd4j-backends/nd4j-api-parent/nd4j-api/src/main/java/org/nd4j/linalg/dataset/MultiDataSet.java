@@ -122,6 +122,35 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
 
 
     @Override
+    public void setCloseable(boolean closeable) {
+        if(features != null) {
+            for(INDArray arr : features) {
+                arr.setCloseable(closeable);
+            }
+        }
+
+        if(labels != null) {
+            for(INDArray label : labels) {
+                label.setCloseable(closeable);
+            }
+        }
+
+
+        if(labelsMaskArrays != null) {
+            for (INDArray arr : labelsMaskArrays) {
+                arr.setCloseable(closeable);
+            }
+        }
+
+        if(featuresMaskArrays != null) {
+            for(INDArray arr : featuresMaskArrays) {
+                arr.setCloseable(closeable);
+            }
+        }
+
+    }
+
+    @Override
     public int numFeatureArrays() {
         return (features != null ? features.length : 0);
     }
@@ -301,7 +330,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
             if(i == 1){
                 ObjectInputStream ois = new ObjectInputStream(dis);
                 try{
-                this.exampleMetaData = (List<Serializable>)ois.readObject();
+                    this.exampleMetaData = (List<Serializable>)ois.readObject();
                 } catch (ClassNotFoundException e){
                     throw new RuntimeException("Error reading metadata from serialized MultiDataSet");
                 }
@@ -336,7 +365,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
             INDArray[] thisFeatures = new INDArray[features.length];
             INDArray[] thisLabels = new INDArray[labels.length];
             INDArray[] thisFeaturesMaskArray =
-                            (featuresMaskArrays != null ? new INDArray[featuresMaskArrays.length] : null);
+                    (featuresMaskArrays != null ? new INDArray[featuresMaskArrays.length] : null);
             INDArray[] thisLabelsMaskArray = (labelsMaskArrays != null ? new INDArray[labelsMaskArrays.length] : null);
 
             for (int j = 0; j < features.length; j++) {
@@ -378,7 +407,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
                 return array.get(NDArrayIndex.interval(idx, idx, true), NDArrayIndex.all(), NDArrayIndex.all());
             case 4:
                 return array.get(NDArrayIndex.interval(idx, idx, true), NDArrayIndex.all(), NDArrayIndex.all(),
-                                NDArrayIndex.all());
+                        NDArrayIndex.all());
             default:
                 throw new IllegalStateException("Cannot get subset for rank " + array.rank() + " array");
         }
@@ -425,7 +454,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
                 return (MultiDataSet) mds;
             else
                 return new MultiDataSet(mds.getFeatures(), mds.getLabels(), mds.getFeaturesMaskArrays(),
-                                mds.getLabelsMaskArrays());
+                        mds.getLabelsMaskArrays());
         }
 
         List<org.nd4j.linalg.dataset.api.MultiDataSet> list;
@@ -463,15 +492,15 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
 
             if (features[i] == null || features[i].length != nInArrays) {
                 throw new IllegalStateException(
-                                "Cannot merge MultiDataSets with different number of input arrays: toMerge[0] has "
-                                                + nInArrays + " input arrays; toMerge[" + i + "] has "
-                                                + (features[i] != null ? features[i].length : null) + " arrays");
+                        "Cannot merge MultiDataSets with different number of input arrays: toMerge[0] has "
+                                + nInArrays + " input arrays; toMerge[" + i + "] has "
+                                + (features[i] != null ? features[i].length : null) + " arrays");
             }
             if (labels[i] == null || labels[i].length != nOutArrays) {
                 throw new IllegalStateException(
-                                "Cannot merge MultiDataSets with different number of output arrays: toMerge[0] has "
-                                                + nOutArrays + " output arrays; toMerge[" + i + "] has "
-                                                + (labels[i] != null ? labels[i].length : null) + " arrays");
+                        "Cannot merge MultiDataSets with different number of output arrays: toMerge[0] has "
+                                + nOutArrays + " output arrays; toMerge[" + i + "] has "
+                                + (labels[i] != null ? labels[i].length : null) + " arrays");
             }
 
             i++;
