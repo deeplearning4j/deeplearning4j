@@ -187,7 +187,7 @@ public class SDVariable implements Serializable {
      * @return Shape of the variable
      */
     public long[] getShape() {
-        if (variableType == VariableType.PLACEHOLDER  || sameDiff.isEagerMode() && shape != null) {
+        if (variableType == VariableType.PLACEHOLDER  || shape != null) {
             return shape;
         } else if(variableType == VariableType.VARIABLE || variableType == VariableType.CONSTANT) {
             if(getArr() != null)

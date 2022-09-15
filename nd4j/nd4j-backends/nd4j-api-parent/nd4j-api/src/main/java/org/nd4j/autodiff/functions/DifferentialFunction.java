@@ -904,4 +904,9 @@ public abstract class DifferentialFunction {
      * Clear the input and output INDArrays, if any are set
      */
     public abstract void clearArrays();
+
+    public boolean needsConfigure() {
+        return false;
+    }
+
 }

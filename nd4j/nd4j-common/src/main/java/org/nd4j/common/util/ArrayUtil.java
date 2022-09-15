@@ -43,6 +43,27 @@ public class ArrayUtil {
 
 
     /**
+     * Concat all the elements
+     * @param arrs the input arrays
+     * @return
+     * @param <T>
+     */
+    public static <T> T[] concat(Class<T> clazz,T[]...arrs) {
+        int totalLength = 0;
+        for(T[] arr : arrs) totalLength += arr.length;
+        T[] ret  = (T[]) Array.newInstance(clazz,totalLength);
+        int count = 0;
+        for(T[] arr : arrs) {
+            for(T input : arr) {
+                ret[count] = input;
+                count++;
+            }
+        }
+
+        return ret;
+    }
+
+    /**
      * Returns true if any array elements are negative.
      * If the array is null, it returns false
      * @param arr the array to test
@@ -184,10 +205,10 @@ public class ArrayUtil {
     }
 
     /**
-     * Returns true if all of the elements in the
+     * Returns true if all the elements in the
      * given int array are unique
      * @param toTest the array to test
-     * @return true if all o fthe items
+     * @return true if all the items
      * are unique false otherwise
      */
     public static boolean allUnique(int[] toTest) {
@@ -295,7 +316,7 @@ public class ArrayUtil {
     public static long[] toLongs(byte[] data) {
         val ret = new long[data.length];
         for (int i = 0; i < ret.length; i++) {
-            ret[i] = (long) data[i];
+            ret[i] = data[i];
         }
         return ret;
     }
@@ -311,7 +332,7 @@ public class ArrayUtil {
     public static long[] toLongs(short[] data) {
         val ret = new long[data.length];
         for (int i = 0; i < ret.length; i++) {
-            ret[i] = (long) data[i];
+            ret[i] = data[i];
         }
         return ret;
     }
@@ -319,7 +340,7 @@ public class ArrayUtil {
     public static long[] toLongs(int[] data) {
         val ret = new long[data.length];
         for (int i = 0; i < ret.length; i++) {
-            ret[i] = (long) data[i];
+            ret[i] = data[i];
         }
         return ret;
     }
@@ -1288,8 +1309,8 @@ public class ArrayUtil {
         int offset = 0;
         /*
             workaround for non-existent indexes (such as Integer.MAX_VALUE)
-        
-        
+
+
         for (int i = 0; i < index.length; i ++) {
             if (index[i] >= data.length || index[i] < 0) offset++;
         }
@@ -2524,9 +2545,9 @@ public class ArrayUtil {
     public static boolean[][][] reshapeBoolean(boolean[] in, int d0, int d1, int d2){
         boolean[][][] out = new boolean[d0][d1][d2];
         int x = 0;
-        for(int i=0; i<d0; i++ ){
-            for( int j=0; j<d1; j++ ){
-                for( int k=0; k<d2; k++ ) {
+        for(int i = 0; i < d0; i++) {
+            for( int j = 0; j < d1; j++) {
+                for( int k = 0; k < d2; k++) {
                     out[i][j][k] = in[x++];
                 }
             }
@@ -2537,8 +2558,8 @@ public class ArrayUtil {
     public static <T> T[][] reshapeObject(T[] in, int rows, int cols){
         Object[][] out = new Object[rows][cols];
         int x = 0;
-        for(int i=0; i<rows; i++ ){
-            for( int j=0; j<cols; j++ ){
+        for(int i = 0; i < rows; i++) {
+            for( int j = 0; j<cols; j++) {
                 out[i][j] = in[x++];
             }
         }
@@ -2548,9 +2569,9 @@ public class ArrayUtil {
     public static <T> T[][][] reshapeObject(T[] in, int d0, int d1, int d2){
         Object[][][] out = new Object[d0][d1][d2];
         int x = 0;
-        for(int i=0; i<d0; i++ ){
-            for( int j=0; j<d1; j++ ){
-                for( int k=0; k<d2; k++ ) {
+        for(int i = 0; i < d0; i++) {
+            for( int j = 0; j < d1; j++) {
+                for( int k=0; k < d2; k++) {
                     out[i][j][k] = in[x++];
                 }
             }

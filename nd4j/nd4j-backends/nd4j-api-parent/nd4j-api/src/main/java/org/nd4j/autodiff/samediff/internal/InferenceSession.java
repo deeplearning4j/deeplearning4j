@@ -1332,6 +1332,16 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
         }
 
+        if(df.needsConfigure()) {
+            SDVariable[] vars = df.args();
+            for(int i = 0; i < vars.length; i++) {
+                vars[i].setShape(args[i].shape());
+            }
+
+            df.configureWithSameDiff(sameDiff);
+        }
+
+
         //Set the op inputs and output arguments
         //Note that when we are in a loop (and non-first iteration), we want to allocate new arrays even if shapes are
         // ok: this is because we need the values in past iterations for backprop (potentially)

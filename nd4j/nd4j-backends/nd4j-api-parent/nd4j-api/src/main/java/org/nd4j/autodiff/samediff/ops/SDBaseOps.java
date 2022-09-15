@@ -325,18 +325,22 @@ public class SDBaseOps {
    * The result of this operation will be a batch of multiplied matrices. The<br>
    * result has the same length as both input batches and each output matrix is of shape (M, K).<br>
    *
+   * @param alphas Alphas for the gemm equation. (NUMERIC type)
+   * @param betas Betas for the gemm equation. (NUMERIC type)
    * @param inputsA First array of input matrices, all of shape (M, N) or (N, M) (NUMERIC type)
    * @param inputsB  Second array of input matrices, all of shape (N, K) or (K, N) (NUMERIC type)
    * @param transposeA Whether to transpose A arrays or not
    * @param transposeB Whether to transpose B arrays or not
    */
-  public SDVariable[] batchMmul(SDVariable[] inputsA, SDVariable[] inputsB, boolean transposeA,
-      boolean transposeB) {
+  public SDVariable[] batchMmul(SDVariable alphas, SDVariable betas, SDVariable[] inputsA,
+      SDVariable[] inputsB, boolean transposeA, boolean transposeB) {
+    SDValidation.validateNumerical("batchMmul", "alphas", alphas);
+    SDValidation.validateNumerical("batchMmul", "betas", betas);
     SDValidation.validateNumerical("batchMmul", "inputsA", inputsA);
     Preconditions.checkArgument(inputsA.length >= 1, "inputsA has incorrect size/length. Expected: inputsA.length >= 1, got %s", inputsA.length);
     SDValidation.validateNumerical("batchMmul", "inputsB", inputsB);
     Preconditions.checkArgument(inputsB.length >= 1, "inputsB has incorrect size/length. Expected: inputsB.length >= 1, got %s", inputsB.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul(sd,inputsA, inputsB, transposeA, transposeB).outputVariables();
+    return new org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul(sd,alphas, betas, inputsA, inputsB, transposeA, transposeB).outputVariables();
   }
 
   /**
@@ -349,18 +353,22 @@ public class SDBaseOps {
    * result has the same length as both input batches and each output matrix is of shape (M, K).<br>
    *
    * @param names names May be null. Arrays of names for the output variables.
+   * @param alphas Alphas for the gemm equation. (NUMERIC type)
+   * @param betas Betas for the gemm equation. (NUMERIC type)
    * @param inputsA First array of input matrices, all of shape (M, N) or (N, M) (NUMERIC type)
    * @param inputsB  Second array of input matrices, all of shape (N, K) or (K, N) (NUMERIC type)
    * @param transposeA Whether to transpose A arrays or not
    * @param transposeB Whether to transpose B arrays or not
    */
-  public SDVariable[] batchMmul(String[] names, SDVariable[] inputsA, SDVariable[] inputsB,
-      boolean transposeA, boolean transposeB) {
+  public SDVariable[] batchMmul(String[] names, SDVariable alphas, SDVariable betas,
+      SDVariable[] inputsA, SDVariable[] inputsB, boolean transposeA, boolean transposeB) {
+    SDValidation.validateNumerical("batchMmul", "alphas", alphas);
+    SDValidation.validateNumerical("batchMmul", "betas", betas);
     SDValidation.validateNumerical("batchMmul", "inputsA", inputsA);
     Preconditions.checkArgument(inputsA.length >= 1, "inputsA has incorrect size/length. Expected: inputsA.length >= 1, got %s", inputsA.length);
     SDValidation.validateNumerical("batchMmul", "inputsB", inputsB);
     Preconditions.checkArgument(inputsB.length >= 1, "inputsB has incorrect size/length. Expected: inputsB.length >= 1, got %s", inputsB.length);
-    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul(sd,inputsA, inputsB, transposeA, transposeB).outputVariables();
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul(sd,alphas, betas, inputsA, inputsB, transposeA, transposeB).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 
@@ -373,15 +381,20 @@ public class SDBaseOps {
    * The result of this operation will be a batch of multiplied matrices. The<br>
    * result has the same length as both input batches and each output matrix is of shape (M, K).<br>
    *
+   * @param alphas Alphas for the gemm equation. (NUMERIC type)
+   * @param betas Betas for the gemm equation. (NUMERIC type)
    * @param inputsA First array of input matrices, all of shape (M, N) or (N, M) (NUMERIC type)
    * @param inputsB  Second array of input matrices, all of shape (N, K) or (K, N) (NUMERIC type)
    */
-  public SDVariable[] batchMmul(SDVariable[] inputsA, SDVariable... inputsB) {
+  public SDVariable[] batchMmul(SDVariable alphas, SDVariable betas, SDVariable[] inputsA,
+      SDVariable... inputsB) {
+    SDValidation.validateNumerical("batchMmul", "alphas", alphas);
+    SDValidation.validateNumerical("batchMmul", "betas", betas);
     SDValidation.validateNumerical("batchMmul", "inputsA", inputsA);
     Preconditions.checkArgument(inputsA.length >= 1, "inputsA has incorrect size/length. Expected: inputsA.length >= 1, got %s", inputsA.length);
     SDValidation.validateNumerical("batchMmul", "inputsB", inputsB);
     Preconditions.checkArgument(inputsB.length >= 1, "inputsB has incorrect size/length. Expected: inputsB.length >= 1, got %s", inputsB.length);
-    return new org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul(sd,inputsA, inputsB, false, false).outputVariables();
+    return new org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul(sd,alphas, betas, inputsA, inputsB, false, false).outputVariables();
   }
 
   /**
@@ -394,15 +407,20 @@ public class SDBaseOps {
    * result has the same length as both input batches and each output matrix is of shape (M, K).<br>
    *
    * @param names names May be null. Arrays of names for the output variables.
+   * @param alphas Alphas for the gemm equation. (NUMERIC type)
+   * @param betas Betas for the gemm equation. (NUMERIC type)
    * @param inputsA First array of input matrices, all of shape (M, N) or (N, M) (NUMERIC type)
    * @param inputsB  Second array of input matrices, all of shape (N, K) or (K, N) (NUMERIC type)
    */
-  public SDVariable[] batchMmul(String[] names, SDVariable[] inputsA, SDVariable... inputsB) {
+  public SDVariable[] batchMmul(String[] names, SDVariable alphas, SDVariable betas,
+      SDVariable[] inputsA, SDVariable... inputsB) {
+    SDValidation.validateNumerical("batchMmul", "alphas", alphas);
+    SDValidation.validateNumerical("batchMmul", "betas", betas);
     SDValidation.validateNumerical("batchMmul", "inputsA", inputsA);
     Preconditions.checkArgument(inputsA.length >= 1, "inputsA has incorrect size/length. Expected: inputsA.length >= 1, got %s", inputsA.length);
     SDValidation.validateNumerical("batchMmul", "inputsB", inputsB);
     Preconditions.checkArgument(inputsB.length >= 1, "inputsB has incorrect size/length. Expected: inputsB.length >= 1, got %s", inputsB.length);
-    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul(sd,inputsA, inputsB, false, false).outputVariables();
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul(sd,alphas, betas, inputsA, inputsB, false, false).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 

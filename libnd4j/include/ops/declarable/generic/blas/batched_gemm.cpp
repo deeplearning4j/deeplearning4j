@@ -18,6 +18,7 @@
 
 //
 //  @author raver119@gmail.com
+//   @author Adam Gibson
 //
 
 #include <system/op_boilerplate.h>
@@ -40,6 +41,7 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
   int ldC = INT_ARG(7);
   int batchSize = INT_ARG(8);
 
+
   if (transA == 0) transA = 111;
 
   if (transB == 0) transB = 111;
@@ -48,18 +50,14 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
 
   if (transB == 1) transB = 112;
 
-  // basically A+B and 2 arrays of alpha and beta
-  int expectedWidth = batchSize * 2 + 2;
 
   REQUIRE_TRUE((transA == 111 || transA == 112) && (transB == 111 || transB == 112), 0,
                "BatchedGemm: valid values for transA and transB are: 0/1 or 111/112, for NoTrans/Trans respectively")
   REQUIRE_TRUE(M > 0 && N > 0 && K > 0 && ldA > 0 && ldB > 0 && ldC > 0 && batchSize > 0, 0, "");
-  REQUIRE_TRUE(block.width() == expectedWidth, 0,
-               "BatchedGemm: expected number of input arrays is %i, but got %i instead", expectedWidth, block.width());
+
 
   auto alpha = INPUT_VARIABLE(0);
   auto beta = INPUT_VARIABLE(1);
-
   std::vector<NDArray*> vA(batchSize);
   std::vector<NDArray*> vB(batchSize);
   std::vector<NDArray*> vC(batchSize);
@@ -80,12 +78,15 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
     REQUIRE_TRUE(N == vB[e]->sizeAt(1), 0, "BatchedGemm: batch %i, number of B.columns() should be equal to N", e);
     REQUIRE_TRUE(K == vA[e]->sizeAt(1) && K == vB[e]->sizeAt(0), 0,
                  "BatchedGemm: batch %i, number of A.columns() and B.rows() should be equal to K", e);
-  };
+  }
 
   REQUIRE_TRUE(vA.size() == vB.size() && vA.size() == vC.size() && vA.size() == batchSize, 0,
                "BatchedGemm: mismatched numbers of A, B, C for unknown reason");
 
   sd::ops::helpers::bgemm(vA, vB, vC, alpha, beta, transA, transB, M, N, K, ldA, ldB, ldC);
+
+
+
 
   return sd::Status::OK;
 };
@@ -129,7 +130,7 @@ DECLARE_SHAPE_FN(batched_gemm) {
 DECLARE_TYPES(batched_gemm) {
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_FLOATS})
-      //                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+          //                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
       ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
