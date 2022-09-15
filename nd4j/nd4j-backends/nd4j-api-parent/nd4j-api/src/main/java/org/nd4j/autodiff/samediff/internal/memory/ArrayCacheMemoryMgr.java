@@ -122,7 +122,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             INDArray arr = !arrays.get(dataType, arrayShapeString).isEmpty()
                     ? arrays.get(dataType, arrayShapeString).remove(0)
                     : null;
-            if (arr != null && !arr.wasClosed()) {
+            if (arr != null && !arr.wasClosed() && !arr.isView()) {
                 // Decrement cache size
                 currentCacheSize -= dataType.width() * arr.data().length();
                 lruCache.remove(arr.getId());
@@ -133,6 +133,10 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 // reference . Note that it had IdentityHash with references being keys
                 ((BaseNDArray) arr).assignNewId();
                 return arr; // Allocated from cache
+            } else if(arr.isView()) {
+                //set closeable to prevent reuse elsewhere
+                arr.setCloseable(false);
+                log.trace("Found view array with id " + arr.getId() + " in cache. Avoiding return. Allocating new array.");
             }
         }
 
@@ -159,8 +163,15 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             INDArray arr = null;
             List<INDArray> arrays2 = arrays.get(dataType, arrayShape);
 
-            if (arrays2.size() > 0) {
+            while (arrays2.size() > 0) {
                 arr = arrays2.remove(0);
+                if(arr.isView()) {
+                    //set closeable to prevent reuse elsewhere
+                    arr.setCloseable(false);
+                    log.trace("Found view array with id " + arr.getId() + " in cache. Avoiding allocation.");
+                } else {
+                    break;
+                }
             }
 
             if (arr != null && arr.ordering() != descriptor.getOrder()) {
