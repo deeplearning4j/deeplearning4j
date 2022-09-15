@@ -4377,6 +4377,10 @@ public class SameDiff extends SDBaseOps {
      * @return the set of names generated for each output of the function.
      */
     public SDVariable[] generateOutputVariableForOp(DifferentialFunction function, String baseName, boolean isImport) {
+
+        if(function.needsConfigure()) {
+            function.configureWithSameDiff(this);
+        }
         if (baseName == null)
             baseName = function.getOwnName();
 

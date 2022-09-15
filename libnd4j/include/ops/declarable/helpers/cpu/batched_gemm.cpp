@@ -34,7 +34,6 @@ static void bgemm_(const std::vector<NDArray *> &vA, const std::vector<NDArray *
                    const NDArray *alphas, const NDArray *betas, int transA, int transB, int M, int N, int K,
                    const int lda, const int ldb, const int ldc) {
   int batchSize = vA.size();
-
   if (BlasHelper::getInstance().hasBatchedGEMM<T>()) {
     auto arr = vA.at(0);
     CBLAS_TRANSPOSE *tA, *tB;
@@ -95,9 +94,7 @@ static void bgemm_(const std::vector<NDArray *> &vA, const std::vector<NDArray *
   } else {
     CBLAS_TRANSPOSE tA = (CBLAS_TRANSPOSE)transA;
     CBLAS_TRANSPOSE tB = (CBLAS_TRANSPOSE)transB;
-
     int vaSize = vA.size();
-
     auto func = PRAGMA_THREADS_FOR {
       for (auto p = start; p < stop; p++) {
         auto A = reinterpret_cast<T *>(vA.at(p)->buffer());
@@ -105,14 +102,18 @@ static void bgemm_(const std::vector<NDArray *> &vA, const std::vector<NDArray *
         auto C = reinterpret_cast<T *>(vC.at(p)->buffer());
         auto alpha = alphas->e<T>(p);
         auto beta = betas->e<T>(p);
+
         for (int m = 0; m < M; ++m) {
           for (int n = 0; n < N; ++n) {
             T c_mnp = 0;
-
             PRAGMA_OMP_SIMD
-            for (int k = 0; k < K; ++k)
+            for (int k = 0; k < K; ++k) {
+              int aidx = tA == CblasNoTrans ? (m + k * lda) : (m * lda + k);
+              int bIdx = tB == CblasNoTrans ? (k + n * ldb) : (k * ldb + n);
               c_mnp += A[tA == CblasNoTrans ? (m + k * lda) : (m * lda + k)] *
                        B[tB == CblasNoTrans ? (k + n * ldb) : (k * ldb + n)];
+            }
+
 
             C[m + n * ldc] = alpha * c_mnp + beta * C[m + n * ldc];
           }
@@ -134,8 +135,8 @@ void bgemm(const std::vector<NDArray *> &vA, const std::vector<NDArray *> &vB, s
 
 BUILD_SINGLE_TEMPLATE(template void bgemm_,
                       (const std::vector<NDArray *> &vA, const std::vector<NDArray *> &vB, std::vector<NDArray *> &vC,
-                       const NDArray *alphas, const NDArray *betas, int transA, int transB, int M, int N, int K,
-                       const int lda, const int ldb, const int ldc),
+                          const NDArray *alphas, const NDArray *betas, int transA, int transB, int M, int N, int K,
+                          const int lda, const int ldb, const int ldc),
                       SD_FLOAT_TYPES);
 
 }  // namespace helpers
