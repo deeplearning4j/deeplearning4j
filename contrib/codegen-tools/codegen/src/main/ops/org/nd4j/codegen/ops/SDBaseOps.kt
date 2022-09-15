@@ -2142,6 +2142,8 @@ fun SDBaseOps() =  Namespace("BaseOps"){
 
     Op("batchMmul"){
         javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.custom"
+        Input(NUMERIC, "alphas"){  description = "Alphas for the gemm equation."}
+        Input(NUMERIC, "betas"){  description = "Betas for the gemm equation."}
         Input(NUMERIC, "inputsA"){ count = AtLeast(1); description = "First array of input matrices, all of shape (M, N) or (N, M)"}
         Input(NUMERIC, "inputsB"){ count = AtLeast(1); description = " Second array of input matrices, all of shape (N, K) or (K, N)"}
         Arg(BOOL, "transposeA"){ description = "Whether to transpose A arrays or not"; defaultValue=false}

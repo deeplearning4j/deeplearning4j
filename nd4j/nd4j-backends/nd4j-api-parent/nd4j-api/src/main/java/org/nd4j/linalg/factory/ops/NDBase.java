@@ -177,18 +177,22 @@ public class NDBase {
    * The result of this operation will be a batch of multiplied matrices. The<br>
    * result has the same length as both input batches and each output matrix is of shape (M, K).<br>
    *
+   * @param alphas Alphas for the gemm equation. (NUMERIC type)
+   * @param betas Betas for the gemm equation. (NUMERIC type)
    * @param inputsA First array of input matrices, all of shape (M, N) or (N, M) (NUMERIC type)
    * @param inputsB  Second array of input matrices, all of shape (N, K) or (K, N) (NUMERIC type)
    * @param transposeA Whether to transpose A arrays or not
    * @param transposeB Whether to transpose B arrays or not
    */
-  public INDArray[] batchMmul(INDArray[] inputsA, INDArray[] inputsB, boolean transposeA,
-      boolean transposeB) {
+  public INDArray[] batchMmul(INDArray alphas, INDArray betas, INDArray[] inputsA,
+      INDArray[] inputsB, boolean transposeA, boolean transposeB) {
+    NDValidation.validateNumerical("batchMmul", "alphas", alphas);
+    NDValidation.validateNumerical("batchMmul", "betas", betas);
     NDValidation.validateNumerical("batchMmul", "inputsA", inputsA);
     Preconditions.checkArgument(inputsA.length >= 1, "inputsA has incorrect size/length. Expected: inputsA.length >= 1, got %s", inputsA.length);
     NDValidation.validateNumerical("batchMmul", "inputsB", inputsB);
     Preconditions.checkArgument(inputsB.length >= 1, "inputsB has incorrect size/length. Expected: inputsB.length >= 1, got %s", inputsB.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul(inputsA, inputsB, transposeA, transposeB));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul(alphas, betas, inputsA, inputsB, transposeA, transposeB));
   }
 
   /**
@@ -200,15 +204,20 @@ public class NDBase {
    * The result of this operation will be a batch of multiplied matrices. The<br>
    * result has the same length as both input batches and each output matrix is of shape (M, K).<br>
    *
+   * @param alphas Alphas for the gemm equation. (NUMERIC type)
+   * @param betas Betas for the gemm equation. (NUMERIC type)
    * @param inputsA First array of input matrices, all of shape (M, N) or (N, M) (NUMERIC type)
    * @param inputsB  Second array of input matrices, all of shape (N, K) or (K, N) (NUMERIC type)
    */
-  public INDArray[] batchMmul(INDArray[] inputsA, INDArray... inputsB) {
+  public INDArray[] batchMmul(INDArray alphas, INDArray betas, INDArray[] inputsA,
+      INDArray... inputsB) {
+    NDValidation.validateNumerical("batchMmul", "alphas", alphas);
+    NDValidation.validateNumerical("batchMmul", "betas", betas);
     NDValidation.validateNumerical("batchMmul", "inputsA", inputsA);
     Preconditions.checkArgument(inputsA.length >= 1, "inputsA has incorrect size/length. Expected: inputsA.length >= 1, got %s", inputsA.length);
     NDValidation.validateNumerical("batchMmul", "inputsB", inputsB);
     Preconditions.checkArgument(inputsB.length >= 1, "inputsB has incorrect size/length. Expected: inputsB.length >= 1, got %s", inputsB.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul(inputsA, inputsB, false, false));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul(alphas, betas, inputsA, inputsB, false, false));
   }
 
   /**

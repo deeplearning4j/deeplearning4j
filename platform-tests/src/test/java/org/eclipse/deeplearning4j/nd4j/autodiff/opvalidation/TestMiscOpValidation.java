@@ -782,13 +782,43 @@ public class TestMiscOpValidation extends BaseOpValidation {
         SDVariable B1 = sd.var("B1", B);
         SDVariable B2 = sd.var("B2", B);
 
-        SDVariable[] batchMul = sd.batchMmul(new SDVariable[] {A1, A2}, new SDVariable[] {B1, B2});
+        SDVariable[] batchMul = sd.batchMmul(sd.zero(null,M,N),sd.one(null,N,K),
+                new SDVariable[] {A1, A2}, new SDVariable[] {B1, B2});
         Map<String,INDArray> m = sd.output(Collections.emptyMap(),Arrays.stream(batchMul).map(input -> input.name()).collect(Collectors.toList()));
 
         INDArray resultingMatrix = m.get(batchMul[0].name());
-        //System.out.print(resultingMatrix);
+        assertArrayEquals(new long[]{5,4},resultingMatrix.shape());
     }
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+
+    public void testBatchMMul(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        INDArray a = Nd4j.ones(2, 6);
+        INDArray b = Nd4j.ones(6, 4);
+        // 1. batchMmul in Nd4j causes an error in LibND4J
+        INDArray assertion = a.mmul(b);
+        INDArray[] res1 = Nd4j.base.batchMmul(a,b,new INDArray[]{a,a},  new INDArray[]{b,b}); // throws exception
+        assertEquals(assertion,res1[0]);
+        assertEquals(2,res1.length);
+
+        // 2. batchMmul in SameDiff produces a wrong result and sometimes even crashes (harder to reproduce; crash log linked below)
+        SameDiff sd = SameDiff.create();
+        SDVariable[] res2 = sd.batchMmul(sd.constant(a),
+                sd.constant(b),
+                new SDVariable[]{sd.constant(a),sd.constant(a)},new SDVariable[]{sd.constant(b),sd.constant(b)});
+        assertEquals(assertion,res2[0].eval()); // wrong result (or crash)
+
+
+// 3. batchMmul in SameDiff on SDVariables of type ARRAY causes a NullPointerException
+        sd = SameDiff.create();
+        SDVariable[] res3 = sd.batchMmul(sd.constant(a).add(0),sd.constant(b).add(0),
+                new SDVariable[]{sd.constant(a).add(0),sd.constant(a).add(0)}, new SDVariable[]{sd.constant(b).add(0),sd.constant(b).add(0)}); // throws exception
+        assertEquals(assertion,res3[0].eval());
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
