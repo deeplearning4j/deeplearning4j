@@ -116,15 +116,15 @@ public class TensorMmul extends DynamicCustomOp {
         this.sameDiff = sameDiff;
         this.axes = new int[][]{dimensionsX, dimensionsY};
         addIArgument(dimensionsX.length);
-        addIArgument(dimensionsX[0]);
+        addIArgument(dimensionsX);
         addIArgument(dimensionsY.length);
-        addIArgument(dimensionsY[0]);
+        addIArgument(dimensionsY);
         addBArgument(transposeX, transposeY, transposeZ);
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients) {
-        return Arrays.asList(new TensorMmulBp(sameDiff, larg(), rarg(), gradients.get(0), axes ).outputVariables());
+        return Arrays.asList(new TensorMmulBp(sameDiff, larg(), rarg(), gradients.get(0), axes).outputVariables());
     }
 
     @Override
@@ -136,32 +136,6 @@ public class TensorMmul extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
-        /**
-         * name: "MatMul"
-         op: "MatMul"
-         input: "input"
-         input: "Variable/read"
-         attr {
-         key: "transpose_b"
-         value {
-         b: false
-         }
-         }
-         attr {
-         key: "transpose_a"
-         value {
-         b: false
-         }
-         }
-         attr {
-         key: "T"
-         value {
-         type: DT_FLOAT
-         }
-         }
-
-         */
-
         val isTransposeA = attributesForNode.get("transpose_a").getB();
         val isTransposeB = attributesForNode.get("transpose_b").getB();
         MMulTranspose mMulTranspose = MMulTranspose.builder()
@@ -209,13 +183,17 @@ public class TensorMmul extends DynamicCustomOp {
             long numDimensionsX = iArguments.get(0);
             List<Long> xDims = new ArrayList<>();
             List<Long> yDims = new ArrayList<>();
+            int currCount = 1;
             for(int i = 0; i < numDimensionsX; i++) {
                 xDims.add(iArguments.get(i));
+                currCount++;
             }
 
-            long numDimensionsY = iArguments.get((int) numDimensionsX + 1);
+            long numDimensionsY = iArguments.get(currCount);
+            currCount++;
             for(int i = 0; i < numDimensionsY; i++) {
-                yDims.add(i + numDimensionsX + 1);
+                yDims.add(iArguments.get(currCount));
+                currCount++;
             }
 
 

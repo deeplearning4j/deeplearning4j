@@ -48,7 +48,7 @@ public class TensorMmulBp  extends DynamicCustomOp  {
     }
 
     public TensorMmulBp(INDArray x, INDArray y, INDArray gradAtOutput, int[][] axes) {
-        this(x, y, gradAtOutput, axes[0], axes[1] );
+        this(x, y, gradAtOutput, axes[0], axes[1]);
     }
 
     public TensorMmulBp(INDArray x, INDArray y, INDArray gradAtOutput, int[] axesX, int[] axesY ) {

@@ -195,13 +195,13 @@ public class RecordConverter {
                     throw new UnsupportedOperationException("NDArrayWritable must have leading dimension 1 for this " +
                             "method. Received array with shape: " + Arrays.toString(a.shape()));
                 }
-                if(toConcat == null){
+                if(toConcat == null) {
                     toConcat = new ArrayList<>();
                 }
                 toConcat.add(a);
             } else {
                 //Assume all others are single value
-                if(list == null){
+                if(list == null) {
                     list = new DoubleArrayList();
                 }
                 list.add(w.toDouble());
