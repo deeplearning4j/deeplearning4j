@@ -1576,7 +1576,7 @@ fun Math() =  Namespace("Math") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape.tensorops"
         javaOpClass = "EmbeddingLookup"
         Input(NUMERIC, "x") {description = "Input tensor"}
-        Input(INT, "indices") {description = "A Tensor containing the ids to be looked up."}
+        Input(INT, "indices") {count = AtLeast(1); description = "A Tensor containing the ids to be looked up."}
         Arg(ENUM, "PartitionMode") { possibleValues = listOf( "MOD","DIV"); description ="partition_mode == 0 - i.e. 'mod' , 1 - 'div'"}
         Output(NUMERIC, "output") {description = "Shifted output"}
 

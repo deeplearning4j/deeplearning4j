@@ -75,9 +75,11 @@ public class SDMath extends SDOps {
    * @param PartitionMode partition_mode == 0 - i.e. 'mod' , 1 - 'div'
    * @return output Shifted output (NUMERIC type)
    */
-  public SDVariable embeddingLookup(SDVariable x, SDVariable indices, PartitionMode PartitionMode) {
+  public SDVariable embeddingLookup(SDVariable x, SDVariable[] indices,
+      PartitionMode PartitionMode) {
     SDValidation.validateNumerical("EmbeddingLookup", "x", x);
     SDValidation.validateInteger("EmbeddingLookup", "indices", indices);
+    Preconditions.checkArgument(indices.length >= 1, "indices has incorrect size/length. Expected: indices.length >= 1, got %s", indices.length);
     return new org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup(sd,x, indices, PartitionMode).outputVariable();
   }
 
@@ -90,10 +92,11 @@ public class SDMath extends SDOps {
    * @param PartitionMode partition_mode == 0 - i.e. 'mod' , 1 - 'div'
    * @return output Shifted output (NUMERIC type)
    */
-  public SDVariable embeddingLookup(String name, SDVariable x, SDVariable indices,
+  public SDVariable embeddingLookup(String name, SDVariable x, SDVariable[] indices,
       PartitionMode PartitionMode) {
     SDValidation.validateNumerical("EmbeddingLookup", "x", x);
     SDValidation.validateInteger("EmbeddingLookup", "indices", indices);
+    Preconditions.checkArgument(indices.length >= 1, "indices has incorrect size/length. Expected: indices.length >= 1, got %s", indices.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup(sd,x, indices, PartitionMode).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }

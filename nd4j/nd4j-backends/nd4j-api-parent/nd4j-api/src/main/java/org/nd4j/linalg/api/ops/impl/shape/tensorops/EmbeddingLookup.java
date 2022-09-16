@@ -24,6 +24,7 @@ import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.enums.PartitionMode;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -35,7 +36,12 @@ import java.util.List;
 
 @NoArgsConstructor
 public class EmbeddingLookup extends DynamicCustomOp {
+    public EmbeddingLookup(SameDiff sd, SDVariable x, SDVariable[] indices, PartitionMode partitionMode) {
+        super(null, sd, ArrayUtil.concat(SDVariable.class,
+                new SDVariable[]{x},indices));
+        addIArgument(partitionMode.ordinal());
 
+    }
      public EmbeddingLookup(@NonNull SameDiff sameDiff, @NonNull SDVariable in, @NonNull SDVariable indices, PartitionMode partitionMode) {
         super("embedding_lookup", sameDiff, new SDVariable[]{in, indices});
         addIArgument(partitionMode.ordinal());
@@ -47,12 +53,14 @@ public class EmbeddingLookup extends DynamicCustomOp {
 
     }
 
-    public EmbeddingLookup(@NonNull INDArray in, INDArray output, PartitionMode partitionMode, @NonNull int... indices) {
-        super("embedding_lookup", new INDArray[]{in, Nd4j.createFromArray(indices)}, wrapOrNull(output));
+    public EmbeddingLookup(INDArray in,@NonNull INDArray[] indices, PartitionMode partitionMode) {
+        super("embedding_lookup", ArrayUtil.concat(INDArray.class,
+                new INDArray[]{in},indices), null);
         addIArgument(partitionMode.ordinal());
-
-
     }
+
+
+
 
     @Override
     public String opName() {

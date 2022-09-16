@@ -23,7 +23,8 @@
 package org.nd4j.enums;
 
 /**
- * partition_mode == 0 - i.e. 'mod' , 1 - 'div' */
+ * partition_mode == 0 - i.e. 'mod' , 1 - 'div'
+ */
 public enum PartitionMode {
   MOD,
 
