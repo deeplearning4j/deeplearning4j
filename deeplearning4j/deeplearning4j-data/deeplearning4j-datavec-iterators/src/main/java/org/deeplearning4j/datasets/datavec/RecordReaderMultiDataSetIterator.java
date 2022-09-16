@@ -137,7 +137,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
                 List<List<Writable>> batchWritables = rr.next(num);
 
                 List<INDArray> batch;
-                if(batchWritables instanceof NDArrayRecordBatch){
+                if(batchWritables instanceof NDArrayRecordBatch) {
                     //ImageRecordReader etc case
                     batch = ((NDArrayRecordBatch)batchWritables).getArrays();
                 } else {
@@ -145,11 +145,12 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
                     batch = new ArrayList<>();
                     List<Writable> temp = new ArrayList<>();
                     int sz = batchWritables.get(0).size();
-                    for( int i=0; i<sz; i++ ){
+                    for( int i = 0; i < sz; i++) {
                         temp.clear();
-                        for( int j=0; j<batchWritables.size(); j++ ){
+                        for( int j = 0; j < batchWritables.size(); j++) {
                             temp.add(batchWritables.get(j).get(i));
                         }
+
                         batch.add(RecordConverter.toMinibatchArray(temp));
                     }
                 }

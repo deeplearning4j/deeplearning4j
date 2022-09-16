@@ -23,6 +23,10 @@ package org.eclipse.deeplearning4j.nd4j.autodiff.opvalidation;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.impl.collection.CollectionRecordReader;
+import org.datavec.api.writable.IntWritable;
+import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -69,6 +73,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorDivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorModOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -818,6 +823,38 @@ public class TestMiscOpValidation extends BaseOpValidation {
         SDVariable[] res3 = sd.batchMmul(sd.constant(a).add(0),sd.constant(b).add(0),
                 new SDVariable[]{sd.constant(a).add(0),sd.constant(a).add(0)}, new SDVariable[]{sd.constant(b).add(0),sd.constant(b).add(0)}); // throws exception
         assertEquals(assertion,res3[0].eval());
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testTensorMMulBp(Nd4jBackend backend) {
+        int batchSize = 4;
+        int seqLength = 8;
+
+        SameDiff sd = SameDiff.create();
+
+        SDVariable features = sd.placeHolder("features", DataType.DOUBLE, batchSize, seqLength);
+        SDVariable labels = sd.placeHolder("labels", DataType.DOUBLE, batchSize, batchSize);
+        SDVariable var = sd.var("variable", seqLength, batchSize);
+        SDVariable predictions = sd.tensorMmul("predictions", features, var, new int[]{1}, 0);
+        sd.loss.meanSquaredError("loss", labels, predictions, null);
+
+        TrainingConfig config = new TrainingConfig.Builder()
+                .updater(new Adam(0.1))
+                .dataSetFeatureMapping("features")
+                .dataSetLabelMapping("labels")
+                .build();
+        sd.setTrainingConfig(config);
+
+        RecordReader reader = new CollectionRecordReader(
+                Collections.nCopies(batchSize, Collections.nCopies(seqLength + batchSize, new IntWritable(1))));
+        DataSetIterator iterator = new RecordReaderDataSetIterator(
+                reader, batchSize, seqLength, seqLength + batchSize - 1, true);
+
+        System.out.println(sd.output(iterator, "predictions").get("predictions")); // forward pass works
+
+        sd.fit(iterator, 1); // backward pass throws exception
     }
 
     @ParameterizedTest

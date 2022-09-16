@@ -40,7 +40,6 @@ public class TensorMmulBp  extends DynamicCustomOp  {
 
     public TensorMmulBp(SameDiff samediff, SDVariable x, SDVariable y, SDVariable gradAtOutput, int[] axesX, int[] axesY ) {
         super(null, samediff, new SDVariable[]{x,y, gradAtOutput});
-        int[][] axes = new int[][]{axesX, axesY};
         addIArgument(axesX.length);
         addIArgument(axesX);
         addIArgument(axesY.length);
@@ -48,12 +47,11 @@ public class TensorMmulBp  extends DynamicCustomOp  {
     }
 
     public TensorMmulBp(INDArray x, INDArray y, INDArray gradAtOutput, int[][] axes) {
-        this(x, y, gradAtOutput, axes[0], axes[1] );
+        this(x, y, gradAtOutput, axes[0], axes[1]);
     }
 
     public TensorMmulBp(INDArray x, INDArray y, INDArray gradAtOutput, int[] axesX, int[] axesY ) {
         super(null,new INDArray[]{x, y, gradAtOutput},null);
-        int[][] axes = new int[][]{axesX, axesY};
         addIArgument(axesX.length);
         addIArgument(axesX);
         addIArgument(axesY.length);
@@ -66,7 +64,6 @@ public class TensorMmulBp  extends DynamicCustomOp  {
 
     public TensorMmulBp(INDArray x, INDArray y, INDArray gradAtOutput, INDArray dldx, INDArray dldy, int[] axesX, int[] axesY  ) {
             super(null, new INDArray[]{x, y, gradAtOutput}, new INDArray[]{dldx, dldy});
-            int[][] axes = new int[][]{axesX, axesY};
             addIArgument(axesX.length);
             addIArgument(axesX);
             addIArgument(axesY.length);

@@ -129,9 +129,9 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndexFrom, int labelIndexTo,
                                        boolean regression) {
 		this(recordReader, new SelfWritableConverter(), batchSize, labelIndexFrom, labelIndexTo, -1, -1, regression);
-		if (!regression) { 
+		if (!regression) {
             throw new IllegalArgumentException("This constructor is only for creating regression iterators. " +
-                                               "If you're doing classification you need to use another constructor that " + 
+                                               "If you're doing classification you need to use another constructor that " +
                                                "(implicitly) specifies numPossibleLabels");
         }
     }
@@ -189,7 +189,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         this.collectMetaData = collectMetaData;
     }
 
-    private void initializeUnderlying(){
+    private void initializeUnderlying() {
         if (underlying == null) {
             Record next = recordReader.nextRecord();
             initializeUnderlying(next);
@@ -228,7 +228,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             builder.addOutputOneHot(READER_KEY, labelIndex, numPossibleLabels);
         }
 
-        //Inputs: assume to be all of the other writables
+        //Inputs: assume to be all the other writables
         //In general: can't assume label indices are all at the start or end (event though 99% of the time they are)
         //If they are: easy. If not: use 2 inputs in the underlying as a workaround, and concat them
 

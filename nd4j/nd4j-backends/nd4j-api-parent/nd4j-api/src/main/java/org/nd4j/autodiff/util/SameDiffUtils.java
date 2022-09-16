@@ -63,7 +63,7 @@ public class SameDiffUtils {
         }
 
         Map<String, INDArray> ret = new HashMap<>();
-        for(String k : outs.keySet()){
+        for(String k : outs.keySet()) {
             try {
                 ret.put(k, Nd4j.concat(0, outs.get(k).toArray(new INDArray[0])));
             } catch(Exception e){
