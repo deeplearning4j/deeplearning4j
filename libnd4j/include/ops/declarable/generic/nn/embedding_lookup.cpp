@@ -59,7 +59,7 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
   } else {
     int indexRank = indices->rankOf();
     REQUIRE_TRUE(indexRank > 0, 0,
-                 "embeded_lookup: input array of indexes can't be single scalar, the requirement is: rank > 0 !");
+                 "embedded_lookup: input array of indexes can't be single scalar, the requirement is: rank > 0 !");
 
     int inputRank = input->rankOf();
     int lastIndDim = indices->lengthOf();

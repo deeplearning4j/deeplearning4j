@@ -58,9 +58,10 @@ public class NDMath {
    * @param PartitionMode partition_mode == 0 - i.e. 'mod' , 1 - 'div'
    * @return output Shifted output (NUMERIC type)
    */
-  public INDArray embeddingLookup(INDArray x, INDArray indices, PartitionMode PartitionMode) {
+  public INDArray embeddingLookup(INDArray x, INDArray[] indices, PartitionMode PartitionMode) {
     NDValidation.validateNumerical("EmbeddingLookup", "x", x);
     NDValidation.validateInteger("EmbeddingLookup", "indices", indices);
+    Preconditions.checkArgument(indices.length >= 1, "indices has incorrect size/length. Expected: indices.length >= 1, got %s", indices.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup(x, indices, PartitionMode))[0];
   }
 

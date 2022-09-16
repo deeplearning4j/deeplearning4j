@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.internal.matchers.Same;
 import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -40,6 +41,7 @@ import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.tests.tags.TagNames;
+import org.nd4j.enums.PartitionMode;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -855,6 +857,26 @@ public class TestMiscOpValidation extends BaseOpValidation {
         System.out.println(sd.output(iterator, "predictions").get("predictions")); // forward pass works
 
         sd.fit(iterator, 1); // backward pass throws exception
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testEmbedding() {
+        SameDiff sd = SameDiff.create();
+        SDVariable input = sd.placeHolder("input", DataType.INT32, -1, 2);
+        SDVariable input2 = sd.placeHolder("input2", INT32,2,2);
+        SDVariable lookUpDict = sd.var("lookUpDict",new XavierInitScheme('c', 4, 8), DataType.FLOAT, 4, 8);
+        SDVariable embeddingResult = sd.math.embeddingLookup("embeddingResult", lookUpDict, new SDVariable[]{input}, PartitionMode.MOD);
+        //
+        Map<String,INDArray> map = new HashMap<>();
+        INDArray inputArr = Nd4j.createFromArray(0, 3);
+        INDArray inputArr2 = Nd4j.createFromArray(2,3);
+        System.out.println(inputArr.shapeInfoToString());
+        map.put("input", inputArr);
+        map.put("input2",inputArr2);
+        //forward
+        Map<String,INDArray> result = sd.output(map, "embeddingResult");
+        System.out.println(result);
     }
 
     @ParameterizedTest
