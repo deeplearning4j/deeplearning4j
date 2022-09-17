@@ -20,14 +20,7 @@
 
 package org.nd4j.autodiff.samediff.internal.memory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.common.base.Preconditions;
@@ -50,6 +43,8 @@ import lombok.extern.slf4j.Slf4j;
 @Setter
 @Slf4j
 public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
+
+    private Map<INDArray,INDArray> released = new IdentityHashMap<>();
 
     private final double maxMemFrac;
     private long smallArrayThreshold;
@@ -119,25 +114,35 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     public INDArray allocate(boolean detached, DataType dataType, long... shape) {
         String arrayShapeString = Arrays.toString(shape);
         if (arrays.contains(dataType, arrayShapeString) && enableCache) {
-            INDArray arr = !arrays.get(dataType, arrayShapeString).isEmpty()
-                    ? arrays.get(dataType, arrayShapeString).remove(0)
-                    : null;
-            if (arr != null && !arr.wasClosed() && !arr.isView()) {
-                // Decrement cache size
-                currentCacheSize -= dataType.width() * arr.data().length();
-                lruCache.remove(arr.getId());
-                lruCacheValues.remove(arr.getId());
-                // We need to assign new Id. this way we will break any possible relationship it
-                // had in Tracker.
-                // the old cache was recreating New Array using buffer and thus gaining new
-                // reference . Note that it had IdentityHash with references being keys
-                ((BaseNDArray) arr).assignNewId();
-                return arr; // Allocated from cache
-            } else if(arr.isView()) {
-                //set closeable to prevent reuse elsewhere
-                arr.setCloseable(false);
-                log.trace("Found view array with id " + arr.getId() + " in cache. Avoiding return. Allocating new array.");
+            INDArray arr = null;
+            boolean arrFound = false;
+            while(!arrFound) {
+                arr = !arrays.get(dataType, arrayShapeString).isEmpty()
+                        ? arrays.get(dataType, arrayShapeString).remove(0)
+                        : null;
+                if(arr != null && !arr.closeable() || arr.wasClosed() || arr.isView()) {
+                    log.trace("Found array closeable, not returning from cache. Only closeable arrays are returnable from the cache.");
+                    if(arr.isView())
+                        arr.setCloseable(false);
+                    log.trace("Found view array with id " + arr.getId() + " in cache. Avoiding return. Allocating new array.");
+
+                    continue;
+                }
+
+                if (arr != null) {
+                    // Decrement cache size
+                    currentCacheSize -= dataType.width() * arr.data().length();
+                    lruCache.remove(arr.getId());
+                    lruCacheValues.remove(arr.getId());
+                    // We need to assign new Id. this way we will break any possible relationship it
+                    // had in Tracker.
+                    // the old cache was recreating New Array using buffer and thus gaining new
+                    // reference . Note that it had IdentityHash with references being keys
+                    ((BaseNDArray) arr).assignNewId();
+                    return arr; // Allocated from cache
+                }
             }
+
         }
 
         // Allocation failed, allocate new array

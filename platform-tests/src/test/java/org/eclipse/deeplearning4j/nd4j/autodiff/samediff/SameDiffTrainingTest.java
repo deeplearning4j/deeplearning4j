@@ -83,11 +83,13 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
     public void irisTrainingSanityCheck(Nd4jBackend backend) {
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
+        DataSet d = iter.next();
         NormalizerStandardize std = new NormalizerStandardize();
-        std.fit(iter);
+        std.fit(d);
         iter.setPreProcessor(std);
-
-        for (String u : new String[]{"adam", "nesterov"}) {
+        std.preProcess(d);
+        DataSetIterator singleton = new SingletonDataSetIterator(d);
+        for (String u : new String[]{"adam"}) {
             Nd4j.getRandom().setSeed(12345);
             log.info("Starting: " + u);
             SameDiff sd = SameDiff.create();
@@ -115,7 +117,7 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
                     updater = new Sgd(3e-1);
                     break;
                 case "adam":
-                    updater = new Adam(1e-2);
+                    updater = new Adam(1e-1);
                     break;
                 case "nesterov":
                     updater = new Nesterovs(1e-1);
@@ -125,7 +127,6 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
             }
 
             TrainingConfig conf = new TrainingConfig.Builder()
-                    .l2(1e-4)
                     .updater(updater)
                     .dataSetFeatureMapping("input")
                     .dataSetLabelMapping("label")
@@ -135,7 +136,7 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
 
             sd.setListeners(new ScoreListener(1));
 
-            sd.fit(iter, 50);
+            sd.fit(singleton, 50);
 
             Evaluation e = new Evaluation();
             Map<String, List<IEvaluation>> evalMap = new HashMap<>();

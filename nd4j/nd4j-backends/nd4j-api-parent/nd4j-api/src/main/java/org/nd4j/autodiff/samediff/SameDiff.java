@@ -2235,6 +2235,7 @@ public class SameDiff extends SDBaseOps {
         for (String s : variableEvals.keySet()) {
             map.put(s, 0);  //Only 1 possible output here with DataSetIterator
         }
+
         evaluate(new MultiDataSetIteratorAdapter(iterator), variableEvals, map, listeners);
     }
 
@@ -3166,6 +3167,8 @@ public class SameDiff extends SDBaseOps {
         if(variableType == VariableType.VARIABLE){
             try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                 INDArray vArr = weightInitScheme.create(dataType, shape);
+                //variables can be used anywhere and should not be closeable in the context of the instance
+                vArr.setCloseable(false);
                 variablesArrays.setArray(name, vArr);
             }
         }
@@ -3524,6 +3527,7 @@ public class SameDiff extends SDBaseOps {
     public SDVariable var(String name, @NonNull INDArray arr) {
         if (variables.containsKey(name) && variables.get(name).getVariable().getArr() != null)
             throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
+
         Preconditions.checkArgument(!arr.isEmpty(), "Empty arrays cannot be used when creating variables. Array shape: %ndShape", arr);
 
         if (name == null || name.length() < 1)
@@ -3544,7 +3548,8 @@ public class SameDiff extends SDBaseOps {
             }
         }
 
-
+        //avoid closing variables so they don't get returned from cache
+        arr.setCloseable(false);
         SDVariable ret = new SDVariable(name, VariableType.VARIABLE, this, arr.shape(), arr.dataType());
         associateArrayWithVariable(arr, ret);
 
@@ -3568,7 +3573,7 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * Convert all of the specified variables to constants. This is equivalent to "freezing" the variables so that their values
+     * Convert all the specified variables to constants. This is equivalent to "freezing" the variables so that their values
      * won't be changed by further training.<br>
      * This can only be done for variables and placeholders, not ARRAY type variables (which are usually network activations).
      * As constants, these variables will no longer be modified by any subsequent training.<br>
@@ -3601,7 +3606,8 @@ public class SameDiff extends SDBaseOps {
             String n = variable.name();
             INDArray arr = variable.getArr();
             Preconditions.checkNotNull(arr, "Could not get array for variable %s: if this is a placeholder, use SDVariable.setArray before converting", variable);
-
+            //constants are reusable and should not be reused
+            arr.setCloseable(false);
             constantArrays.setArray(n, arr);   //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
             variablesArrays.removeArray(n);
             if (!placeholdersPerThread.isEmpty()) {
@@ -3672,7 +3678,7 @@ public class SameDiff extends SDBaseOps {
     /**
      * Convert the specified variables to VARIABLE type SDVariables.<br>
      * This can only be done for constants and placeholders, not ARRAY type variables (which are usually network activations).
-     * As variables, this variable will modified during any subsequent training.<br>
+     * As variables, this variable will modify during any subsequent training.<br>
      * See also: {@link VariableType}
      */
     public void convertToVariables(@NonNull List<SDVariable> constants) {

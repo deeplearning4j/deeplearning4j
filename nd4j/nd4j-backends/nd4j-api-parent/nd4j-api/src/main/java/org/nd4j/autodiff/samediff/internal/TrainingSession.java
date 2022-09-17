@@ -75,6 +75,16 @@ public class TrainingSession extends InferenceSession {
                                   MultiDataSet batch, List<String> lossVariables, List<Listener> listeners, At at) {
         this.config = config;
         this.updaters = updaters;
+        if(batch != null) {
+            batch.setCloseable(false);
+        }
+
+        //ensure input arrays aren't closed
+        if(placeholders != null) {
+            placeholders.entrySet().stream().forEach(entry -> {
+                entry.getValue().setCloseable(false);
+            });
+        }
 
         //Preprocess listeners, get the relevant ones
         if (listeners == null) {
