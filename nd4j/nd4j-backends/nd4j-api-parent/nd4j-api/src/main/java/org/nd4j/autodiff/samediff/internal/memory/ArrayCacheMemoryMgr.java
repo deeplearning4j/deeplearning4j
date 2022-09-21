@@ -50,8 +50,59 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     private static Map<INDArray,INDArray> released = new IdentityHashMap<>();
 
+    @Getter
+    @Setter
     private static  AtomicDouble maxMemFrac;
+   @Getter
+   @Setter
     private static AtomicLong smallArrayThreshold;
+
+    public static Set<Long> getLruCache() {
+        return lruCache;
+    }
+
+    public static Map<Long, INDArray> getLruCacheValues() {
+        return lruCacheValues;
+    }
+
+    public static AtomicDouble getMaxMemFrac() {
+        return maxMemFrac;
+    }
+
+    public static void setMaxMemFrac(AtomicDouble maxMemFrac) {
+        ArrayCacheMemoryMgr.maxMemFrac = maxMemFrac;
+    }
+
+    public static void setMaxMemFrac(double maxMemFrac) {
+        ArrayCacheMemoryMgr.maxMemFrac.set(maxMemFrac);
+    }
+
+    public static AtomicDouble getLargerArrayMaxMultiple() {
+        return largerArrayMaxMultiple;
+    }
+
+    public static void setLargerArrayMaxMultiple(AtomicDouble largerArrayMaxMultiple) {
+        ArrayCacheMemoryMgr.largerArrayMaxMultiple = largerArrayMaxMultiple;
+    }
+    public static void setLargerArrayMaxMultiple(double largerArrayMaxMultiple) {
+        ArrayCacheMemoryMgr.largerArrayMaxMultiple.set(largerArrayMaxMultiple);
+    }
+    public static AtomicLong getMaxCacheBytes() {
+        return maxCacheBytes;
+    }
+
+    public static void setMaxCacheBytes(AtomicLong maxCacheBytes) {
+        ArrayCacheMemoryMgr.maxCacheBytes = maxCacheBytes;
+    }
+
+    public static AtomicLong getCurrentCacheSize() {
+        return currentCacheSize;
+    }
+
+    public static void setCurrentCacheSize(AtomicLong currentCacheSize) {
+        ArrayCacheMemoryMgr.currentCacheSize = currentCacheSize;
+    }
+
     private static AtomicDouble largerArrayMaxMultiple;
 
     private static AtomicLong maxCacheBytes;

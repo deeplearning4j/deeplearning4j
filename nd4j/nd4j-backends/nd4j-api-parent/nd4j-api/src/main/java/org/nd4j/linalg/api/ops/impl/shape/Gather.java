@@ -38,12 +38,14 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
+import static org.nd4j.linalg.api.buffer.DataType.INT32;
+
 /**
  * Gather op
  */
 public class Gather extends DynamicCustomOp {
 
-    protected int[] indices;
+    protected int[] indices = null;
     protected int jaxis = 0;
 
     public Gather() {
@@ -163,68 +165,38 @@ public class Gather extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //2 args: input and indices. Plus integer dimension arg
         //Gather backprop is just scatter add
-        SDVariable indicesSize = sameDiff.expandDims(args()[1].length(),0);
-        SDVariable paramsShape = sameDiff.shape(args()[0]);
-        paramsShape = paramsShape.reshape(paramsShape.length());
         SDVariable indicesGrad = sameDiff.zerosLike(arg(1));
+        var gradAtOut = i_v.get(0);
+        try (var ignore = sameDiff.withNameScope(gradAtOut.name())) {
+            //Gather backprop is just scatter add
+            SDVariable inputArray = arg(0);
+            SDVariable indices = args().length > 1 ? arg(1) : sameDiff.constant(Nd4j.createFromArray(this.indices));
+            SDVariable inputGrad = sameDiff.zerosLike(inputArray);
+            SDVariable inputArrayRank = inputArray.rank();
+            SDVariable gatherAxis = (jaxis < 0 ? inputArrayRank.minus(1) : sameDiff.constant(jaxis)).reshape(1);
+            SDVariable gradAtOutAdditionalDimensions = sameDiff.range(inputArrayRank, gradAtOut.rank(), sameDiff.constant(1), INT32);
 
-        if(jaxis == 0) {
-            SDVariable paramsTailShape = paramsShape.getView(SDIndex.interval(sameDiff.constant(1)
-                    , sameDiff.constant(1),paramsShape.length()));
-            SDVariable valueShape = sameDiff.concat(0,indicesSize,paramsTailShape);
-            SDVariable values = sameDiff.reshape(i_v.get(0),valueShape);
-            SDVariable indices = sameDiff.flatten(args()[1]);
-            SDVariable retGrad = sameDiff.zerosLike(arg());
-            SDVariable put = retGrad.put(indices,values,indices).reshape(arg().shape());
-            /**
-             * TODO: figure out a better way to do a mass assign.
-             * We can't match the speed of a sparse gradient so we need to figure out the best way to
-             * achieve this with a dense representation.
-             *
-             * This would ideally be similar to nd4j's put(indices)
-             */
-            return Arrays.asList(put, indicesGrad);
-        } else {
-            SDVariable batchDims = sameDiff.constant(0);
-            SDVariable outerShape = paramsShape.getView(SDIndex.interval(0,jaxis));
-            SDVariable innerShape = paramsShape.getView(
-                    SDIndex.interval(sameDiff.constant(jaxis),paramsShape.length()),SDIndex.interval(sameDiff.constant(1),sameDiff.constant(-1)));
-            SDVariable valueShape = sameDiff.concat(0,outerShape,
-                    sameDiff.constant(-1).castTo(outerShape.dataType()),
-                    innerShape.castTo(outerShape.dataType()));
+            //Use scatter add plus permute
+            SDVariable inputArrayDimensions = sameDiff.range(null, sameDiff.constant(0), inputArrayRank, sameDiff.constant(1), INT32);
+            SDVariable inputArrayDimensionsRectified =
+                    sameDiff.math().listDiff(inputArrayDimensions, gatherAxis)[0];
 
+            // Indices
+            SDVariable inputPermuteDims = sameDiff.concat(0, gatherAxis, inputArrayDimensionsRectified);
+            SDVariable outGradPermuteDims =
+                    sameDiff.concat(0, inputPermuteDims, gradAtOutAdditionalDimensions);
+            SDVariable inputInvertDims = sameDiff.invertPermutation(inputPermuteDims);
 
-            /**
-             * Blow grad up to match values shape, values shape is  not wrong
-             */
-            SDVariable valuesDims = valueShape.length();
-            SDVariable axisDims = outerShape.length();
+            //Permute gradients so original axis is at position 0... then scatter add, and reverse
+            SDVariable permutedOutGrad = gradAtOut.permute(outGradPermuteDims);
+            SDVariable inputGradPermuted =inputGrad.permute(inputPermuteDims);
+            SDVariable inputGradPermutedScatterSum = sameDiff.scatterAdd(inputGradPermuted, indices, permutedOutGrad);
 
-            SDVariable outerBatchIndices = sameDiff.range(0,0,0,DataType.INT64);
-            SDVariable batchAxisIndices = sameDiff.range(batchDims,axisDims, sameDiff.constant(1),DataType.INT64);
-            SDVariable innerAxisIndices = sameDiff.range(axisDims.add(1.0),valuesDims,sameDiff.constant(1),DataType.INT64);
-
-            SDVariable indices = sameDiff.reshape(args()[1],indicesSize);
-
-            SDVariable put = sameDiff.unsortedSegmentSum(i_v.get(0), sameDiff.range(sameDiff.constant(0),sameDiff.sizeAt(i_v.get(0),0),sameDiff.constant(1),DataType.INT64), sameDiff.sizeAt(i_v.get(0),0));
-            SDVariable values = sameDiff.reshape(put,valueShape);
-
-
-
-            SDVariable transposeDims = sameDiff.concat("transposeConcat",0,outerBatchIndices,axisDims,batchAxisIndices,innerAxisIndices);
-            SDVariable valuesTranspose = sameDiff.permute(values,transposeDims);
-
-            /**
-             * Batch gather grad
-             */
-
-            SDVariable paramsGrad = sameDiff.unsortedSegmentSum(valuesTranspose,indices,paramsShape.get(SDIndex.point(jaxis)));
-            SDVariable invertTransposeDims = sameDiff.concat(0,outerBatchIndices.castTo(DataType.INT64),batchAxisIndices.add(1).castTo(DataType.INT64),batchDims.castTo(DataType.INT64),innerAxisIndices.castTo(DataType.INT64));
-            paramsGrad = sameDiff.permute(paramsGrad,invertTransposeDims);
-
-
-            return Arrays.asList(paramsGrad, indicesGrad);
+            //Now, invert the permutation so axis is back where it was
+            SDVariable finalInputGrad = inputGradPermutedScatterSum.permute(inputInvertDims);
+            return Arrays.asList(finalInputGrad,indicesGrad);
         }
+
 
     }
 
