@@ -33,6 +33,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.lang.reflect.Field;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -52,7 +53,7 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
     public void testArrayReuseTooLarge(Nd4jBackend backend) throws Exception {
 
         ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
-        mmgr.setMaxCacheBytes(1000);
+        mmgr.setMaxCacheBytes(new AtomicLong(1000));
         assertEquals(1000, mmgr.getMaxCacheBytes());
 
         INDArray[] arrays = new INDArray[100];
