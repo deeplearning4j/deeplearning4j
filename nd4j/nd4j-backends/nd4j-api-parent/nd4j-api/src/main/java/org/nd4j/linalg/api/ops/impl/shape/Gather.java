@@ -165,6 +165,7 @@ public class Gather extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //2 args: input and indices. Plus integer dimension arg
         //Gather backprop is just scatter add
+        //credit for fixes to @paratsu
         SDVariable indicesGrad = sameDiff.zerosLike(arg(1));
         var gradAtOut = i_v.get(0);
         try (var ignore = sameDiff.withNameScope(gradAtOut.name())) {
