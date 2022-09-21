@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.ops.custom;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -43,6 +44,7 @@ import java.util.*;
 /**
  * Invoke is an op
  */
+@Slf4j
 public class Invoke extends DynamicCustomOp {
 
     @Getter
@@ -92,9 +94,12 @@ public class Invoke extends DynamicCustomOp {
         Invoke invoke = (Invoke) op;
         String funcName = invoke.getFunctionName();
         SameDiff instance = op.getSameDiff().getFunction(funcName);
-        //invoke can have state bugs and should not free arrays on its own
-        instance.setEnableCache(false);
+
         SDVariable[] args = op.args();
+        if(Nd4j.getExecutioner().isDebug()) {
+            log.info("Invoke with function name " + funcName + " being invoked with input variables from parent graph: " + Arrays.toString(op.argNames()));
+        }
+
         String[] inputVarNameMappings = invoke.getInputVarNames();
 
         String[] subGraphInputNames = invoke.subGraphInputVarNames;
@@ -146,6 +151,10 @@ public class Invoke extends DynamicCustomOp {
                 }
             }
 
+            if(Nd4j.getExecutioner().isDebug()) {
+                log.info("Returning graph outputs from function name " + funcName + " and output names " + relevantOutputNames);
+            }
+
             return ExecutionResult.builder()
                     .outputs(ExecutionResult.pack(output))
                     .build();
@@ -164,6 +173,10 @@ public class Invoke extends DynamicCustomOp {
                 result.put(outputs[i].name(), valueOutputs.get(subGraphOutputNames[i]));
             }
 
+
+            if(Nd4j.getExecutioner().isDebug()) {
+                log.info("Returning graph outputs from function name " + funcName + " and output names " + relevantOutputNames);
+            }
             return ExecutionResult.builder()
                     .valueOutputs(result)
                     .build();
