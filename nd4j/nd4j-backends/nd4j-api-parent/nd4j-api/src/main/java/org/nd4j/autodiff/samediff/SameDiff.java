@@ -6458,10 +6458,26 @@ public class SameDiff extends SDBaseOps {
      * Reports variables, ops, SameDiff function instances, and (where possible) array shapes.<br>
      * For ops, the input and output variables are reported.<br>
      * For variables, the ops that they are inputs to - or outputs of - are also reported
+     * Note there is also {@link #summary(boolean) } which allows
+     * printing full sub graphs if more output is needed.
+     * This summary() call defaults to false for printing the sub graphs.
      *
      * @return A String representation of the SameDiff instance
      */
     public String summary() {
+        return summary(false);
+    }
+
+
+    /**
+     * Generate and return a String representation of the current SameDiff instance<br>
+     * Reports variables, ops, SameDiff function instances, and (where possible) array shapes.<br>
+     * For ops, the input and output variables are reported.<br>
+     * For variables, the ops that they are inputs to - or outputs of - are also reported
+     *
+     * @return A String representation of the SameDiff instance
+     */
+    public String summary(boolean printSubGraphs) {
 
         Map<String, SDVariable> varMap = variableMap();
         DifferentialFunction[] functions = ops();
@@ -6582,7 +6598,18 @@ public class SameDiff extends SDBaseOps {
             sb.append(String.format(format, i, fnName, df.getClass().getSimpleName(), dfInputStr.get(i), dfOutputStr.get(i))).append("\n");
         }
 
-        if (sameDiffFunctionInstances.size() > 0) {
+        if (sameDiffFunctionInstances.size() > 0 && printSubGraphs) {
+            sb.append("\n\n--- SameDiff Defined Functions ---\n");
+            format = "%-20s%-15s%-15s%-15s";
+            sb.append(String.format(format, "- Name -", "- Variables -", "- Functions -", "- Fn Defs -")).append("\n");
+            for (Map.Entry<String, SameDiff> e : sameDiffFunctionInstances.entrySet()) {
+                SameDiff sd = e.getValue();
+                sb.append("Function of name \n" + e.getKey());
+                sb.append("-----------------------------------------------------------------\n");
+                sb.append(sd.summary(printSubGraphs)).append("\n");
+                sb.append("-----------------------------------------------------------------\n");
+            }
+        } else if(printSubGraphs) {
             sb.append("\n\n--- SameDiff Defined Functions ---\n");
             format = "%-20s%-15s%-15s%-15s";
             sb.append(String.format(format, "- Name -", "- Variables -", "- Functions -", "- Fn Defs -")).append("\n");
@@ -6598,6 +6625,7 @@ public class SameDiff extends SDBaseOps {
 
         return sb.toString();
     }
+
 
 
 
