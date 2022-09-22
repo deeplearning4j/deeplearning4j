@@ -84,12 +84,14 @@ public class Create extends DynamicCustomOp {
         addDArgument(dataType);
         addBArgument(false);
         addIArgument((int) 'c', dataType.toInt());
+        this.outputType = dataType;
     }
 
     public Create(SameDiff sd, SDVariable shape, DataType dataType, String order, boolean initialize) {
         this(sd,shape,dataType);
         addIArgument((int) order.charAt(0),dataType.toInt());
         addBArgument(initialize);
+        this.outputType = dataType;
     }
 
     public Create(INDArray shape, DataType dataType, String order, boolean initialize) {
@@ -101,6 +103,13 @@ public class Create extends DynamicCustomOp {
     protected void addArgs() {
         addBArgument(initialize);
         addIArgument((int) order,outputType.toInt());
+    }
+
+    @Override
+    public void configureFromArguments() {
+        if(!iArguments.isEmpty()) {
+            this.outputType = DataType.fromInt(iArguments.get(0).intValue());
+        }
     }
 
     @Override
