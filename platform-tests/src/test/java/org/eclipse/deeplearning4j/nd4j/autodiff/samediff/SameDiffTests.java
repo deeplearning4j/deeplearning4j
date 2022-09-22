@@ -108,6 +108,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         return 999999999L;
     }
 
+
     @BeforeEach
     public void before() {
         Nd4j.create(1);
@@ -137,6 +138,15 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         inputMap.put("w", weights);
         inputMap.put("y", labels);
         return inputMap;
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSameDiffCreate() {
+        SameDiff sd = SameDiff.create();
+        SDVariable var = sd.create(null, sd.constant(8), DataType.INT32);
+        assertEquals(DataType.INT, var.eval().dataType());
+        assertEquals(DataType.INT,var.dataType());
     }
 
     @ParameterizedTest
