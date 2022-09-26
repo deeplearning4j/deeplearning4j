@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
-#include <veda/veda_types.h>
+#include <veda_device.h>
 #include <vednn.h>
 
 #include <cmath>
