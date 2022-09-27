@@ -23,7 +23,8 @@
 package org.nd4j.enums;
 
 /**
- * Padding format */
+ * Padding format
+ */
 public enum PadMode {
   CONSTANT,
 

@@ -465,11 +465,10 @@ public class NDNN {
 
   /**
    * ReLU (Rectified Linear Unit) layer operation: out = relu(mmul(in,w) + bias)<br>
-   * Note that bias array is optional<br>
    *
    * @param input Input data (NUMERIC type)
    * @param weights Weights variable (NUMERIC type)
-   * @param bias Optional bias variable (may be null) (NUMERIC type)
+   * @param bias  Bias variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
   public INDArray reluLayer(INDArray input, INDArray weights, INDArray bias) {

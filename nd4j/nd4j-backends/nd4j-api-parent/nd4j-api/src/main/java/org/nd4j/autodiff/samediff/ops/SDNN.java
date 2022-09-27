@@ -950,11 +950,10 @@ public class SDNN extends SDOps {
 
   /**
    * ReLU (Rectified Linear Unit) layer operation: out = relu(mmul(in,w) + bias)<br>
-   * Note that bias array is optional<br>
    *
    * @param input Input data (NUMERIC type)
    * @param weights Weights variable (NUMERIC type)
-   * @param bias Optional bias variable (may be null) (NUMERIC type)
+   * @param bias  Bias variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable reluLayer(SDVariable input, SDVariable weights, SDVariable bias) {
@@ -966,12 +965,11 @@ public class SDNN extends SDOps {
 
   /**
    * ReLU (Rectified Linear Unit) layer operation: out = relu(mmul(in,w) + bias)<br>
-   * Note that bias array is optional<br>
    *
    * @param name name May be null. Name for the output variable
    * @param input Input data (NUMERIC type)
    * @param weights Weights variable (NUMERIC type)
-   * @param bias Optional bias variable (may be null) (NUMERIC type)
+   * @param bias  Bias variable (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable reluLayer(String name, SDVariable input, SDVariable weights, SDVariable bias) {
