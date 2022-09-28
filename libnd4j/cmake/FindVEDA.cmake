@@ -1,5 +1,5 @@
 IF(NOT VEDA_FOUND)
-        FIND_PATH       (VEDA_DIR "include/veda.h" PATHS "${CMAKE_CURRENT_LIST_DIR}/../" "/opt/nec/ve/share/veda")
+        FIND_PATH       (VEDA_DIR "include/veda.h" PATHS "${CMAKE_CURRENT_LIST_DIR}/../" "/opt/nec/ve/share/veda" "/opt/nec/ve/share/veoffload-veda/")
         FIND_LIBRARY    (VEDA_LIBRARY "libveda.so" "libveda.a" PATHS "${VEDA_DIR}/../../veos/lib64")
         FIND_LIBRARY    (VERA_LIBRARY "libvera.so" "libvera.a" PATHS "${VEDA_DIR}/../../veos/lib64")
         FIND_FILE       (VEDA_DEVICE_LIBRARY "libveda.vso" PATHS "${VEDA_DIR}/../../veos/lib64")
