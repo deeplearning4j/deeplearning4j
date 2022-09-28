@@ -234,7 +234,7 @@ inline VEDAresult vedaArgsSetLocal(VEDAargs args, const int idx, const VEDAstack
 
 inline VEDAresult __vedaLaunchKernelLocal(VEDAfunction func, VEDAstream stream, uint64_t* result, VEDAargs args,
                                           const int idx) {
-  return vedaLaunchKernelEx(func, stream, result,args);
+  return vedaLaunchKernelEx(func, stream, result);
 }
 
 template <typename T, typename... Args>
