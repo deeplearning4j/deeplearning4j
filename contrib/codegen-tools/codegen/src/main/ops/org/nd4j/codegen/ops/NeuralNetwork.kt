@@ -300,13 +300,13 @@ fun NN() = Namespace("NN") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms"
         Input(NUMERIC, "input") { description = "Input data" }
         Input(NUMERIC, "weights") { description = "Weights variable" }
-        Input(NUMERIC, "bias") { description = "Optional bias variable (may be null)" /*; optional = true*/ }
+        Input(NUMERIC, "bias") { description = " Bias variable" }
         Output(NUMERIC, "output") { description = "Output variable" }
 
         Doc(Language.ANY, DocScope.ALL) {
             """
              ReLU (Rectified Linear Unit) layer operation: out = relu(mmul(in,w) + bias)
-             Note that bias array is optional
+           
             """.trimIndent()
         }
     }
