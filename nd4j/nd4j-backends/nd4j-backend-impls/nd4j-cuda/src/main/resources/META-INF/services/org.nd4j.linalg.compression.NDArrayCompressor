@@ -15,3 +15,5 @@
 #  * SPDX-License-Identifier: Apache-2.0
 #  ******************************************************************************/
 #
+
+org.nd4j.linalg.jcublas.compression.CudaThreshold
