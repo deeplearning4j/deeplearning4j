@@ -78,7 +78,7 @@ void nSampling_(void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, doub
 
   T dot = (T)0.0f;
   T g = (T)0.0f;
-
+  PRAGMA_OMP_SIMD
   for (int e = 0; e < vectorLength; e++) {
     dot += syn0[e] * syn1Neg[e];
   }
@@ -97,12 +97,14 @@ void nSampling_(void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, doub
   }
 
   // axpy1
+  PRAGMA_OMP_SIMD
   for (int e = 0; e < vectorLength; e++) {
     neu1e[e] = g * syn1Neg[e] + neu1e[e];
   }
 
   // axpy2
   if (!isInference) {
+    PRAGMA_OMP_SIMD
     for (int e = 0; e < vectorLength; e++) {
       syn1Neg[e] = g * syn0[e] + syn1Neg[e];
     }
@@ -128,6 +130,7 @@ void cbow_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vneg
   memset(neu1e, 0, vectorLength * sizeof(T));
 
   // building neu1 for current window
+
   for (int c = 0; c < contextWidth; c++) {
     if (context[c] >= vocabSize) throw std::runtime_error("Bad context 4");
 
@@ -140,6 +143,7 @@ void cbow_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vneg
 
   // for inference we add additional inference vector
   if (infVector != nullptr) {
+    PRAGMA_OMP_SIMD
     for (int i = 0; i < vectorLength; i++) {
       neu1[i] += infVector[i];
     }
@@ -147,6 +151,7 @@ void cbow_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vneg
 
   // average neu1
   if (contextWidth > 0) {
+    PRAGMA_OMP_SIMD
     for (int i = 0; i < vectorLength; i++) {
       neu1[i] /= contextWidth + (infVector != nullptr ? 1 : 0);
     }
@@ -165,6 +170,7 @@ void cbow_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vneg
   auto nsStarter = ngStarter;
   auto irow = nsStarter;
   if (nsRounds > 0) {
+    PRAGMA_OMP_SIMD
     for (int r = 0; r < nsRounds + 1; r++) {
       if (r == 0) {
         // target is known in advance
@@ -187,6 +193,7 @@ void cbow_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vneg
 
   // propagate neu1e -> syn0
   if (infVector == nullptr) {
+    PRAGMA_OMP_SIMD
     for (int c = starter; c < contextWidth; c++) {
       if (lockedWords[c] == 1) continue;
 
@@ -197,6 +204,7 @@ void cbow_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vneg
       }
     }
   } else {
+    PRAGMA_OMP_SIMD
     for (int i = 0; i < vectorLength; i++) {
       infVector[i] += neu1e[i];
     }
@@ -245,6 +253,7 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
   auto nsStarter = ngStarter;
   irow = nsStarter;
   if (nsRounds > 0) {
+    PRAGMA_OMP_SIMD
     for (int r = 0; r < nsRounds + 1; r++) {
       if (r == 0) {
         // target is known in advance
@@ -263,10 +272,12 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
   }
 
   if (infVector == nullptr) {
+    PRAGMA_OMP_SIMD
     for (int e = 0; e < vectorLength; e++) {
       syn0row[e] += neu1e[e];
     }
   } else {
+    PRAGMA_OMP_SIMD
     for (int e = 0; e < vectorLength; e++) {
       infVector[e] += neu1e[e];
     }

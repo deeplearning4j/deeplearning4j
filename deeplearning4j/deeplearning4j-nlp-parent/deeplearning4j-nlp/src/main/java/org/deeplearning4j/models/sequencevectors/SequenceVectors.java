@@ -1132,7 +1132,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                                 continue;
                             T realElement = vocab.wordFor(element.getLabel());
 
-                            // please note: this serquence element CAN be absent in vocab, due to minFreq or stopWord or whatever else
+                            // please note: this sequence element CAN be absent in vocab, due to minFreq or stopWord or whatever else
                             if (realElement != null) {
                                 newSequence.addElement(realElement);
                             } else if (useUnknown && unknownElement != null) {
@@ -1155,6 +1155,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                     ThreadUtils.uncheckedSleep(50);
                 }
             }
+
             isRunning.set(false);
         }
 

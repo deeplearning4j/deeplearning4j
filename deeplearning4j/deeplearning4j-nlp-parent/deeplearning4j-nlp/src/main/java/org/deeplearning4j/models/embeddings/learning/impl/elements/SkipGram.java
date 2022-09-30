@@ -426,7 +426,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     }
 
     public double iterateSample(List<BatchItem<T>> items) {
-
         boolean useHS = configuration.isUseHierarchicSoftmax();
         boolean useNegative = configuration.getNegative() > 0;
 
@@ -509,6 +508,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 }
             }
         }
+
+
         INDArray targetArray = Nd4j.createFromArray(targets);
         INDArray ngStarterArray = Nd4j.createFromArray(starters);
         INDArray alphasArray = Nd4j.createFromArray(alphas);
