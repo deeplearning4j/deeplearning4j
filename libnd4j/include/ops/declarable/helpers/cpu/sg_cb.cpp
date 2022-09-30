@@ -40,6 +40,7 @@ void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double a
   T f(0.0f);
 
   // dot
+  PRAGMA_OMP_SIMD
   for (int e = 0; e < vectorLength; e++) {
     dot += syn0[e] * syn1[e];
   }
@@ -55,13 +56,14 @@ void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double a
   g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * (T)alpha;
 
   // axpy1
-
+  PRAGMA_OMP_SIMD
   for (int e = 0; e < vectorLength; e++) {
     neu1e[e] = g * syn1[e] + neu1e[e];
   }
 
   // axpy2
   if (!isInference) {
+    PRAGMA_OMP_SIMD
     for (int e = 0; e < vectorLength; e++) {
       syn1[e] = g * syn0[e] + syn1[e];
     }
@@ -135,7 +137,7 @@ void cbow_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vneg
     if (context[c] >= vocabSize) throw std::runtime_error("Bad context 4");
 
     T *syn0word = syn0 + (context[c] * vectorLength);
-
+    PRAGMA_OMP_SIMD
     for (int i = 0; i < vectorLength; i++) {
       neu1[i] += syn0word[i];
     }
@@ -240,6 +242,7 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
   auto syn0row = infVector != nullptr ? infVector : syn0 + (target * vectorLength);
   auto irow = 0;
   if (hsRounds > 0) {
+
     for (int r = 0; r < hsRounds; r++) {
       irow = indices[r];
       if (irow < 0 || irow >= vocabSize) break;
