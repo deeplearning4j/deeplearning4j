@@ -137,6 +137,21 @@
     <profiles>
 
         <profile>
+            <id>aurora</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            
+            <modules>
+                <module>nd4j-native</module>
+                <module>nd4j-native-preset</module>
+                <module>nd4j-cpu-backend-common</module>
+            </modules>
+
+
+        </profile>
+
+        <profile>
             <id>minimial-cpu</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
