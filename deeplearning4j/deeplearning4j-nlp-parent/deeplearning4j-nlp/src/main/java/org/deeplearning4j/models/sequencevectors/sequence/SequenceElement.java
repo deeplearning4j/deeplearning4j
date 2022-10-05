@@ -64,6 +64,8 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
     protected boolean special;
 
     // this var defines that we have label here
+    @Getter
+    @Setter
     protected boolean isLabel;
 
     // this var defines how many documents/sequences contain this word
@@ -305,7 +307,7 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
         /*
         if (adaGrad == null)
             adaGrad = new AdaGrad(1,getCodeLength(), lr);
-        
+
         return adaGrad.getGradient(g, index, new int[]{1, getCodeLength()});
         */
         return 0.0;
@@ -316,7 +318,7 @@ public abstract class SequenceElement implements Comparable<SequenceElement>, Se
         /*
         if (adaGrad == null)
             adaGrad = new AdaGrad(1,getCodeLength(), 0.025);
-        
+
         adaGrad.setHistoricalGradient(gradient);
         */
     }

@@ -29,6 +29,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang3.StringUtils;
+import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.config.DL4JClassLoading;
 import org.deeplearning4j.common.util.ND4JFileUtils;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
@@ -166,11 +167,10 @@ public class WordVectorSerializer {
     /**
      * Read a binary word2vec from input stream.
      *
-     * @param inputStream  input stream to read
+     * @param inputStream input stream to read
      * @param linebreaks  if true, the reader expects each word/vector to be in a separate line, terminated
-     *      by a line break
+     *                    by a line break
      * @param normalize
-     *
      * @return a {@link Word2Vec model}
      * @throws NumberFormatException
      * @throws IOException
@@ -334,10 +334,148 @@ public class WordVectorSerializer {
                     if (i < vec.length() - 1)
                         builder.append(" ");
                 }
-                writer.println(builder.toString());
+                writer.println(builder);
             }
         }
     }
+
+
+    /**
+     * This method writes word vectors to the given OutputStream.
+     * Please note: this method doesn't load whole vocab/lookupTable into memory, so it's able to process large vocabularies served over network.
+     *
+     * @param stream
+     * @param <T>
+     * @throws IOException
+     */
+    public static <T extends SequenceElement> WeightLookupTable<T> readWordVectorsBinary(
+            InputStream stream) throws IOException {
+        InMemoryLookupTable.Builder<T> tableBuilder = new InMemoryLookupTable.Builder<>();
+        InMemoryLookupTable<T> lookupTable;
+        try (DataInputStream writer = new DataInputStream(stream)) {
+            int numWords = writer.readInt();
+            int layerSize = writer.readInt();
+            long totalNumberOfDocs = writer.readLong();
+            AbstractCache<T> vocabCache = new AbstractCache.Builder<T>().build();
+            tableBuilder.vectorLength(layerSize)
+                    .useAdaGrad(false);
+
+            lookupTable = tableBuilder.build();
+            // saving vocab content
+            for (int x = 0; x < numWords; x++) {
+                String label = writer.readUTF();
+                boolean isLabel = writer.readBoolean();
+                int codeLength = writer.readInt();
+                List<Byte> codes = new ArrayList<>();
+                for(int i = 0; i < codeLength; i++) {
+                    codes.add((byte) writer.readInt());
+                }
+
+                int pointsLength = writer.readInt();
+                int[] points = new int[pointsLength];
+                for(int i = 0; i < pointsLength; i++) {
+                    points[i] = writer.readInt();
+                }
+
+
+                VocabWord vocabWord = new VocabWord();
+                vocabWord.setWord(label);
+                vocabWord.setVocabId((long) x);
+                vocabWord.setIndex(x);
+                vocabWord.setPoints(points);
+                vocabWord.setLabel(isLabel);
+                vocabWord.setCodeLength((short) codeLength);
+                vocabWord.setCodes(codes);
+                long sequencesCount = writer.readLong();
+                double elementFrequency = writer.readDouble();
+                vocabWord.setSequencesCount(sequencesCount);
+                vocabWord.setElementFrequency((long) elementFrequency);
+
+
+                INDArray vec = Nd4j.createNpyFromInputStream(writer);
+
+                vocabCache.addToken((T) vocabWord);
+
+            }
+        }
+
+        return null;
+    }
+
+
+
+    /**
+     * This method writes word vectors to the given OutputStream.
+     * Please note: this method doesn't load whole vocab/lookupTable into memory, so it's able to process large vocabularies served over network.
+     *
+     * @param lookupTable
+     * @param stream
+     * @param <T>
+     * @throws IOException
+     */
+    public static <T extends SequenceElement> void writeLookupTableBinary(InMemoryLookupTable<T> lookupTable,
+                                                                          OutputStream stream) throws IOException {
+        val vocabCache = lookupTable.getVocabCache();
+
+        DataOutputStream writer = new DataOutputStream(stream);
+
+        // saving header as "NUM_WORDS VECTOR_SIZE NUM_DOCS"
+        val str = vocabCache.numWords() + " " + lookupTable.layerSize() + " " + vocabCache.totalNumberOfDocs();
+
+        writer.writeInt(vocabCache.numWords());
+        writer.writeInt(lookupTable.layerSize());
+        writer.writeLong(vocabCache.totalNumberOfDocs());
+        log.debug("Saving header: {}", str);
+
+
+        // saving vocab content
+        val num = vocabCache.numWords();
+        for (int x = 0; x < num; x++) {
+            T element = vocabCache.elementAtIndex(x);
+            val l = element.getLabel();
+            writer.writeUTF(l);
+            writer.writeBoolean(element.isLabel());
+            writer.writeInt(element.getCodeLength());
+            for(int i = 0; i < element.getCodeLength(); i++) {
+                writer.writeInt(element.getCodes().get(i));
+            }
+
+            writer.writeInt(element.getPoints().size());
+            for(int i = 0; i < element.getPoints().size(); i++) {
+                writer.writeInt(element.getPoints().get(i));
+            }
+
+            writer.writeLong(element.getSequencesCount());
+            writer.writeDouble(element.getElementFrequency());
+
+        }
+
+        writer.writeBoolean(lookupTable.getSyn0() != null);
+
+        if(lookupTable.getSyn0() != null) {
+            //get length first so we can read later
+            Pointer numpyPointer = Nd4j.convertToNumpy(lookupTable.getSyn0());
+            writer.writeLong(numpyPointer.capacity());
+            long written = Nd4j.writeAsNumpy(numpyPointer,stream,false);
+        }
+
+        writer.writeBoolean(lookupTable.getSyn1() != null);
+        if(lookupTable.getSyn1() != null) {
+            Pointer numpyPointer = Nd4j.convertToNumpy(lookupTable.getSyn1());
+            writer.writeLong(numpyPointer.capacity());
+            long written = Nd4j.writeAsNumpy(numpyPointer,stream,false);
+        }
+
+        writer.writeBoolean(lookupTable.getSyn1Neg() != null);
+        if(lookupTable.getSyn1Neg() != null) {
+            Pointer numpyPointer = Nd4j.convertToNumpy(lookupTable.getSyn1Neg());
+            writer.writeLong(numpyPointer.capacity());
+            long written = Nd4j.writeAsNumpy(numpyPointer,stream,false);
+        }
+
+    }
+
+
 
 
     /**
@@ -369,6 +507,8 @@ public class WordVectorSerializer {
         }
     }
 
+
+
     /**
      * This method saves ParagraphVectors model into compressed zip file
      *
@@ -382,6 +522,211 @@ public class WordVectorSerializer {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * This method saves ParagraphVectors model into compressed zip file located at path
+     *
+     * @param path
+     */
+    public static void writeParagraphVectorsBinary(ParagraphVectors vectors, String path) {
+        writeParagraphVectorsBinary(vectors, new File(path));
+    }
+
+
+
+    /**
+     * This method restores Word2Vec model previously saved with writeWord2VecModel
+     * <p>
+     * PLEASE NOTE: This method loads FULL model, so don't use it if you're only going to use weights.
+     *
+     * @param file
+     * @return
+     */
+    public static <T extends SequenceElement> SequenceVectors<T>  readSequenceVectorsBinary(File file) throws IOException {
+        int originalFreq = Nd4j.getMemoryManager().getOccasionalGcFrequency();
+        boolean originalPeriodic = Nd4j.getMemoryManager().isPeriodicGcActive();
+
+        if (originalPeriodic)
+            Nd4j.getMemoryManager().togglePeriodicGc(false);
+
+        Nd4j.getMemoryManager().setOccasionalGcFrequency(50000);
+
+        try {
+            AbstractCache<VocabWord> vocabCache = new AbstractCache<>();
+
+            try (DataInputStream reader = new DataInputStream(new FileInputStream(file))) {
+                String json = reader.readUTF();
+                VectorsConfiguration vectorsConfiguration = VectorsConfiguration.fromJson(json);
+
+                // saving header as "NUM_WORDS VECTOR_SIZE NUM_DOCS"
+
+                int numWords = reader.readInt();
+                int layerSize = reader.readInt();
+                long numDocs = reader.readLong();
+
+                // saving vocab content
+                for (int x = 0; x < numWords; x++) {
+                    VocabWord vocabWord = new VocabWord();
+                    String word = reader.readUTF();
+                    boolean isLabel = reader.readBoolean();
+                    int codeLength = reader.readInt();
+                    List<Byte> codes = new ArrayList<>();
+                    for(int i = 0; i < codeLength; i++) {
+                        codes.add((byte) reader.readInt());
+                    }
+
+                    vocabWord.setCodes(codes);
+
+                    int numPoints = reader.readInt();
+                    List<Integer> points = new ArrayList<>();
+                    for(int i = 0; i < numPoints; i++) {
+                        points.add(reader.readInt());
+                    }
+
+                    vocabWord.setPoints(points);
+
+                    long sequencesCount = reader.readLong();
+                    double elementFrequency = reader.readDouble();
+                    vocabWord.setSequencesCount(sequencesCount);
+                    vocabWord.setElementFrequency((long) elementFrequency);
+                    vocabWord.setWord(word);
+                    vocabWord.setCodeLength((short) codes.size());
+                    vocabCache.addToken(vocabWord);
+                    vocabWord.setLabel(isLabel);
+                    vocabWord.setIndex(x);
+                    vocabCache.addWordToIndex(x,vocabWord.getWord());
+                }
+
+                vocabCache.setTotalDocCount(numDocs);
+                boolean hasSyn0 = reader.readBoolean();
+                INDArray syn0 = null;
+                if(hasSyn0) {
+                    long syn0Length = reader.readLong();
+                    syn0 = Nd4j.createNpyFromInputStream(reader,syn0Length);
+                }
+
+                boolean hasSyn1 = reader.readBoolean();
+                INDArray syn1 = null;
+                if(hasSyn1) {
+                    long syn1Length = reader.readLong();
+                    syn1 = Nd4j.createNpyFromInputStream(reader,syn1Length);
+                }
+
+                boolean hasSyn1Neg = reader.readBoolean();
+                INDArray syn1Neg = null;
+                if(hasSyn1Neg) {
+                    long syn1NegLong = reader.readLong();
+                    syn1Neg = Nd4j.createNpyFromInputStream(reader,syn1NegLong);
+                }
+
+                vocabCache.setMinWordFrequency(vectorsConfiguration.getMinWordFrequency());
+                vocabCache.setStopWords(new ArrayList<>(vectorsConfiguration.getStopList()));
+                vocabCache.setScavengerThreshold(vectorsConfiguration.getScavengerActivationThreshold());
+                vocabCache.setRetentionDelay(vectorsConfiguration.getScavengerRetentionDelay());
+
+                InMemoryLookupTable<T> inMemoryLookupTable = new InMemoryLookupTable<>();
+                inMemoryLookupTable.setSyn0(syn0);
+                inMemoryLookupTable.setVectorLength(layerSize);
+                inMemoryLookupTable.setSyn1(syn1);
+                inMemoryLookupTable.setSyn1Neg(syn1Neg);
+                inMemoryLookupTable.setVocab(vocabCache);
+                SequenceVectors<T> sequenceVectors = new SequenceVectors.Builder<T>(vectorsConfiguration)
+                        .lookupTable(inMemoryLookupTable)
+                        .configuration(vectorsConfiguration)
+                        .useHierarchicSoftmax(vectorsConfiguration.isUseHierarchicSoftmax())
+                        .epochs(vectorsConfiguration.getEpochs())
+                        .iterations(vectorsConfiguration.getIterations())
+                        .layerSize(vectorsConfiguration.getLayersSize())
+                        .batchSize(vectorsConfiguration.getBatchSize())
+                        .learningRate(vectorsConfiguration.getLearningRate())
+                        .windowSize(vectorsConfiguration.getWindow())
+                        .minLearningRate(vectorsConfiguration.getMinLearningRate())
+                        .minWordFrequency(vectorsConfiguration.getMinWordFrequency())
+                        .stopWords(new ArrayList<>(vectorsConfiguration.getStopList()))
+                        .negativeSample(vectorsConfiguration.getNegative())
+                        .trainElementsRepresentation(vectorsConfiguration.isTrainElementsVectors())
+                        .trainSequencesRepresentation(vectorsConfiguration.isTrainSequenceVectors())
+                        .usePreciseMode(vectorsConfiguration.isPreciseMode())
+                        .useUnknown(vectorsConfiguration.isUseUnknown())
+                        .sequenceLearningAlgorithm(vectorsConfiguration.getSequenceLearningAlgorithm())
+                        .elementsLearningAlgorithm(vectorsConfiguration.getElementsLearningAlgorithm())
+                        .vocabCache((VocabCache<T>) vocabCache)
+                        .batchSize(vectorsConfiguration.getBatchSize())
+                        .windowSize(vectorsConfiguration.getWindow())
+                        .build();
+                return sequenceVectors;
+            }
+
+
+        } finally {
+            if (originalPeriodic)
+                Nd4j.getMemoryManager().togglePeriodicGc(true);
+
+            Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
+
+        }
+    }
+
+    /**
+     * This method saves ParagraphVectors model into compressed zip file
+     *
+     * @param file
+     */
+    public static void writeParagraphVectorsBinary(ParagraphVectors vectors, File file) {
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            writeParagraphVectorsBinary(vectors, fos);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    /**
+     * This method restores ParagraphVectors model previously saved with writeParagraphVectors()
+     *
+     * @return
+     */
+    public static ParagraphVectors readParagraphVectorsBinary(File file) throws IOException {
+        SequenceVectors<VocabWord> w2v = readSequenceVectorsBinary(file);
+
+        // and "convert" it to ParaVec model + optionally trying to restore labels information
+        ParagraphVectors vectors = new ParagraphVectors.Builder(w2v.getConfiguration())
+                .vocabCache(w2v.getVocab())
+                .lookupTable(w2v.lookupTable())
+                .sequenceLearningAlgorithm(w2v.getConfiguration().getSequenceLearningAlgorithm())
+                .elementsLearningAlgorithm(w2v.getConfiguration().getElementsLearningAlgorithm())
+                .resetModel(false)
+                .build();
+
+        vectors.extractLabels();
+
+        return vectors;
+    }
+
+    /**
+     * This method saves ParagraphVectors model into compressed zip file and sends it to output stream
+     */
+    public static void writeSequenceVectorsBinary(SequenceVectors<VocabWord> vectors, OutputStream stream) throws IOException {
+
+        try (DataOutputStream bufferedOutputStream = new DataOutputStream(stream)) {
+            String encoded = vectors.getConfiguration().toJson();
+            bufferedOutputStream.writeUTF(encoded);
+            InMemoryLookupTable<VocabWord> weightLookupTable = (InMemoryLookupTable<VocabWord>) vectors.lookupTable();
+            writeLookupTableBinary(weightLookupTable, bufferedOutputStream);
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    /**
+     * This method saves ParagraphVectors model into compressed zip file and sends it to output stream
+     */
+    public static void writeParagraphVectorsBinary(ParagraphVectors vectors, OutputStream stream) throws IOException {
+        writeSequenceVectorsBinary(vectors,stream);
+
+    }
+
 
     /**
      * This method saves ParagraphVectors model into compressed zip file located at path
@@ -1083,7 +1428,7 @@ public class WordVectorSerializer {
     public static void writeWordVectors(ParagraphVectors vectors, OutputStream stream) {
         try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8))) {
             /*
-            This method acts similary to w2v csv serialization, except of additional tag for labels
+            This method acts similarly to w2v csv serialization, except of additional tag for labels
              */
 
             VocabCache<VocabWord> vocabCache = vectors.getVocab();
@@ -1196,7 +1541,7 @@ public class WordVectorSerializer {
             Line 0 - VectorsConfiguration JSON string
             Line 1 - expTable
             Line 2 - table
-        
+
             All following lines are vocab/weight lookup table saved line by line as VocabularyWord JSON representation
          */
 
@@ -2573,7 +2918,8 @@ public class WordVectorSerializer {
         }
 
         lookupTable = new InMemoryLookupTable.Builder<VocabWord>().cache(vocabCache)
-                .vectorLength(syn0.columns()).useHierarchicSoftmax(false).useAdaGrad(false).build();
+                .vectorLength(syn0.columns()).useHierarchicSoftmax(false)
+                .useAdaGrad(false).build();
 
         lookupTable.setSyn0(syn0);
 
@@ -2606,7 +2952,7 @@ public class WordVectorSerializer {
 
             String tokenPreProcessorClassName = configuration.getTokenPreProcessor();
             if (StringUtils.isNotEmpty(tokenPreProcessorClassName)) {
-                Object preProcessor = DL4JClassLoading.createNewInstance(tokenPreProcessorClassName); 
+                Object preProcessor = DL4JClassLoading.createNewInstance(tokenPreProcessorClassName);
                 if(preProcessor instanceof TokenPreProcess) {
                     TokenPreProcess tokenPreProcess = (TokenPreProcess) preProcessor;
                     factory.setTokenPreProcessor(tokenPreProcess);
@@ -2944,8 +3290,8 @@ public class WordVectorSerializer {
      * @param weightLookupTable WeightLookupTable
      * @param file File
      */
-    public static <T extends SequenceElement>  void writeLookupTable(WeightLookupTable<T> weightLookupTable,
-                                                                     @NonNull File file) throws IOException {
+    public static <T extends SequenceElement>  void writeLookupTableBinary(WeightLookupTable<T> weightLookupTable,
+                                                                           @NonNull File file) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file),
                 StandardCharsets.UTF_8))) {
             int numWords = weightLookupTable.getVocabCache().numWords();

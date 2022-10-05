@@ -214,7 +214,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         }
 
         if (batches.get() == null)
-            batches.set(new ArrayList<Aggregate>());
+            batches.set(new ArrayList<>());
 
         /*AggregateCBOW(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(),
                 currentWord.getIndex(), windowWords, idxSyn1, codes, (int) negative, currentWord.getIndex(),
@@ -243,7 +243,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                     expTable.get(), table.get(), Nd4j.createFromArray(idxSyn1), Nd4j.createFromArray(codes),
                     (int)negative, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom.get()),
                     inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()),
-                    Nd4j.empty(DataType.INT),
+                    Nd4j.empty(DataType.INT32),
                     trainWords,
                     workers);
         }

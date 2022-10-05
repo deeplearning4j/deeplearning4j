@@ -413,7 +413,7 @@ public class Nd4j {
      * @return the array with the new axis dimension
      */
     public static INDArray expandDims(INDArray input, int dimension) {
-       return base().expandDims(input,dimension);
+        return base().expandDims(input,dimension);
     }
 
     /**
@@ -2972,6 +2972,19 @@ public class Nd4j {
     @Deprecated
     public static INDArray rand(int[] shape, @NonNull org.nd4j.linalg.api.rng.Random rng) {
         return rand(rng, ArrayUtil.toLongArray(shape)).castTo(Nd4j.defaultFloatingPointType());
+    }
+
+
+    /**
+     * Create a random ndarray with the given shape using the given RandomGenerator
+     *
+     * @param shape the shape of the array
+     * @param rng     the random generator to use
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(@NonNull org.nd4j.linalg.api.rng.Random rng, DataType dataType,@NonNull long... shape) {
+        INDArray ret = createUninitialized(shape, Nd4j.order()).castTo(dataType); //INSTANCE.rand(shape, rng);
+        return rand(ret, rng);
     }
 
     /**
@@ -5598,15 +5611,44 @@ public class Nd4j {
     }
 
 
+
     /**
      * Writes an array to an output stream
      * @param arr the array to write
      * @param writeTo the output stream to write to
+     * @return returns the number of bytes written
      */
     @SuppressWarnings("WeakerAccess")
-    public static void writeAsNumpy(INDArray arr, OutputStream writeTo) throws IOException {
-        try(BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(writeTo)) {
-            Pointer asNumpy = convertToNumpy(arr);
+    public static long writeAsNumpy(INDArray arr, OutputStream writeTo,boolean closeFlush) throws IOException {
+        Pointer asNumpy = convertToNumpy(arr);
+        return writeAsNumpy(asNumpy,writeTo,closeFlush);
+
+    }
+
+
+
+    /**
+     * Writes an array to an output stream
+     * @param arr the array to write
+     * @param writeTo the output stream to write to
+     * @return returns the number of bytes written
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static long writeAsNumpy(Pointer asNumpy, OutputStream writeTo,boolean closeFlush) throws IOException {
+        if(closeFlush) {
+            try(BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(writeTo)) {
+                WritableByteChannel channel = Channels.newChannel(bufferedOutputStream);
+
+                int written = channel.write(asNumpy.asByteBuffer());
+                if(written != asNumpy.capacity()) {
+                    throw new IllegalStateException("Not all bytes were written! Original capacity " + asNumpy.capacity() + " but wrote " + written);
+                }
+
+                bufferedOutputStream.flush();
+                return written;
+            }
+        } else {
+            BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(writeTo);
             WritableByteChannel channel = Channels.newChannel(bufferedOutputStream);
 
             int written = channel.write(asNumpy.asByteBuffer());
@@ -5615,7 +5657,22 @@ public class Nd4j {
             }
 
             bufferedOutputStream.flush();
+            return written;
         }
+
+    }
+
+
+
+    /**
+     * Writes an array to an output stream
+     * @param arr the array to write
+     * @param writeTo the output stream to write to
+     * @return the number of bytes written
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static long writeAsNumpy(INDArray arr, OutputStream writeTo) throws IOException {
+        return writeAsNumpy(arr,writeTo,true);
     }
 
 
@@ -5668,6 +5725,19 @@ public class Nd4j {
     public static Map<String, INDArray> createFromNpzFile(File file) throws Exception{
         return INSTANCE.createFromNpzFile(file);
     }
+
+
+    /**
+     * Create a numpy array based on the passed in input stream
+     * @param is the input stream to read
+     * @return the loaded ndarray
+     */
+    @SuppressWarnings("unused")
+    public static INDArray createNpyFromInputStream(@NonNull InputStream is,long lengthToRead) throws IOException {
+        byte[] content = IOUtils.toByteArray(is,lengthToRead);
+        return createNpyFromByteArray(content);
+    }
+
 
     /**
      * Create a numpy array based on the passed in input stream

@@ -84,7 +84,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
     }
 
     /**
-     * DBOW doesn't involves any pretraining
+     * DBOW doesn't involve any pretraining
      *
      * @param iterator
      */

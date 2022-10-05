@@ -196,7 +196,8 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
         Random random = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * sequence.hashCode(),
                         lookupTable.layerSize() + 1);
-        INDArray ret = Nd4j.rand(new int[] {1, lookupTable.layerSize()}, random).subi(0.5)
+        INDArray ret = Nd4j.rand(random,lookupTable.getWeights().dataType(),
+                        1, lookupTable.layerSize()).subi(0.5)
                         .divi(lookupTable.layerSize());
 
         log.info("Inf before: {}", ret);
@@ -206,6 +207,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
                 nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
                 dm(i, sequence, (int) nextRandom.get() % window, nextRandom, learningRate, null, true, ret, null);
             }
+
             learningRate = ((learningRate - minLearningRate) / (iterations - iter)) + minLearningRate;
         }
 

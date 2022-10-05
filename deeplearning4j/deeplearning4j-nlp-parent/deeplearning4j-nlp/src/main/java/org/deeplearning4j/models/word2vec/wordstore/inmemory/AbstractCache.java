@@ -23,6 +23,7 @@ package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
@@ -64,6 +65,7 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
     private final Map<Integer, T> idxMap = new ConcurrentHashMap<>();
 
     private final AtomicLong documentsCounter = new AtomicLong(0);
+
 
     private int minWordFrequency = 0;
     private boolean hugeModelExpected = false;
@@ -649,5 +651,111 @@ public class AbstractCache<T extends SequenceElement> implements VocabCache<T> {
             return cache;
         }
 
+    }
+
+    @Override
+    public String toString() {
+        return "AbstractCache{" +
+                "vocabulary=" + vocabulary +
+                ", extendedVocabulary=" + extendedVocabulary +
+                ", idxMap=" + idxMap +
+                ", documentsCounter=" + documentsCounter +
+                ", minWordFrequency=" + minWordFrequency +
+                ", hugeModelExpected=" + hugeModelExpected +
+                ", stopWords=" + stopWords +
+                ", scavengerThreshold=" + scavengerThreshold +
+                ", retentionDelay=" + retentionDelay +
+                ", hiddenWordsCounter=" + hiddenWordsCounter +
+                ", totalWordCount=" + totalWordCount +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof AbstractCache)) return false;
+        AbstractCache<?> that = (AbstractCache<?>) o;
+        return getMinWordFrequency() == that.getMinWordFrequency() && isHugeModelExpected() == that.isHugeModelExpected() && getScavengerThreshold() == that.getScavengerThreshold() && getRetentionDelay() == that.getRetentionDelay() && Objects.equals(getVocabulary(), that.getVocabulary()) && Objects.equals(getExtendedVocabulary(), that.getExtendedVocabulary()) && Objects.equals(getIdxMap(), that.getIdxMap()) && Objects.equals(getStopWords(), that.getStopWords());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getVocabulary(), getExtendedVocabulary(), getIdxMap(), getMinWordFrequency(), isHugeModelExpected(), getStopWords(), getScavengerThreshold(), getRetentionDelay());
+    }
+
+    public ConcurrentMap<Long, T> getVocabulary() {
+        return vocabulary;
+    }
+
+    public Map<String, T> getExtendedVocabulary() {
+        return extendedVocabulary;
+    }
+
+    public Map<Integer, T> getIdxMap() {
+        return idxMap;
+    }
+
+    public AtomicLong getDocumentsCounter() {
+        return documentsCounter;
+    }
+
+    public int getMinWordFrequency() {
+        return minWordFrequency;
+    }
+
+    public void setMinWordFrequency(int minWordFrequency) {
+        this.minWordFrequency = minWordFrequency;
+    }
+
+    public boolean isHugeModelExpected() {
+        return hugeModelExpected;
+    }
+
+    public void setHugeModelExpected(boolean hugeModelExpected) {
+        this.hugeModelExpected = hugeModelExpected;
+    }
+
+    public List<String> getStopWords() {
+        return stopWords;
+    }
+
+    public void setStopWords(List<String> stopWords) {
+        this.stopWords = stopWords;
+    }
+
+    public int getScavengerThreshold() {
+        return scavengerThreshold;
+    }
+
+    public void setScavengerThreshold(int scavengerThreshold) {
+        this.scavengerThreshold = scavengerThreshold;
+    }
+
+    public int getRetentionDelay() {
+        return retentionDelay;
+    }
+
+    public void setRetentionDelay(int retentionDelay) {
+        this.retentionDelay = retentionDelay;
+    }
+
+    public AtomicLong getHiddenWordsCounter() {
+        return hiddenWordsCounter;
+    }
+
+    public void setHiddenWordsCounter(AtomicLong hiddenWordsCounter) {
+        this.hiddenWordsCounter = hiddenWordsCounter;
+    }
+
+    public AtomicLong getTotalWordCount() {
+        return totalWordCount;
+    }
+
+    public static ObjectMapper getMapper() {
+        return mapper;
+    }
+
+    public static void setMapper(ObjectMapper mapper) {
+        AbstractCache.mapper = mapper;
     }
 }

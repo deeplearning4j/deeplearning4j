@@ -152,8 +152,9 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         assertEquals(244, cache.numWords() - source.getLabels().size());
     }
 
+
     /**
-     * This test doesn't really cares about actual results. We only care about equality between live model & restored models
+     * This test doesn't really care about actual results. We only care about equality between live model & restored models
      *
      * @throws Exception
      */
@@ -164,51 +165,70 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
     public void testParagraphVectorsModelling1(Nd4jBackend backend) throws Exception {
-        File file = Resources.asFile("/big/raw_sentences.txt");
-        SentenceIterator iter = new BasicLineIterator(file);
+        for(boolean binary : new boolean[] {true,false}) {
+            File file = Resources.asFile("/big/raw_sentences.txt");
+            SentenceIterator iter = new BasicLineIterator(file);
 
-        TokenizerFactory t = new DefaultTokenizerFactory();
-        t.setTokenPreProcessor(new CommonPreprocessor());
+            TokenizerFactory t = new DefaultTokenizerFactory();
+            t.setTokenPreProcessor(new CommonPreprocessor());
 
-        LabelsSource source = new LabelsSource("DOC_");
+            LabelsSource source = new LabelsSource("DOC_");
 
-        ParagraphVectors vec = new ParagraphVectors.Builder().minWordFrequency(1).iterations(5).seed(119).epochs(1)
-                .layerSize(150).learningRate(0.025).labelsSource(source).windowSize(5)
-                .sequenceLearningAlgorithm(new DM<VocabWord>()).iterate(iter).trainWordVectors(true)
-                .usePreciseWeightInit(true)
-                .batchSize(8192)
-                .tokenizerFactory(t).workers(4).sampling(0).build();
+            ParagraphVectors vec = new ParagraphVectors.Builder().minWordFrequency(1).iterations(5).seed(119).epochs(1)
+                    .layerSize(150).learningRate(0.025).labelsSource(source).windowSize(5)
+                    .sequenceLearningAlgorithm(new DM<>())
+                    .iterate(iter)
+                    .trainWordVectors(true)
+                    .usePreciseWeightInit(true)
+                    .batchSize(8192)
+                    .tokenizerFactory(t)
+                    .workers(4)
+                    .sampling(0)
+                    .build();
 
-        vec.fit();
+            vec.fit();
 
-        VocabCache<VocabWord> cache = vec.getVocab();
+            VocabCache<VocabWord> cache = vec.getVocab();
 
-        File fullFile = File.createTempFile("paravec", "tests");
-        fullFile.deleteOnExit();
+            File fullFile = File.createTempFile("paravec", "tests");
+            fullFile.deleteOnExit();
 
-        INDArray originalSyn1_17 = ((InMemoryLookupTable) vec.getLookupTable()).getSyn1().getRow(17, true).dup();
+            INDArray originalSyn1_17 = ((InMemoryLookupTable) vec.getLookupTable()).getSyn1().getRow(17, true).dup();
 
-        WordVectorSerializer.writeParagraphVectors(vec, fullFile);
+            if(binary)
+                WordVectorSerializer.writeParagraphVectorsBinary(vec,fullFile);
+            else
+                WordVectorSerializer.writeParagraphVectors(vec, fullFile);
 
-        int cnt1 = cache.wordFrequency("day");
-        int cnt2 = cache.wordFrequency("me");
+            ParagraphVectors paragraphVectors = binary ?
+                    WordVectorSerializer.readParagraphVectorsBinary(fullFile) :
+                    WordVectorSerializer.readParagraphVectors(fullFile);
 
-        assertNotEquals(1, cnt1);
-        assertNotEquals(1, cnt2);
-        assertNotEquals(cnt1, cnt2);
+            //TODO: figure out why some json properties are not saved properly
+          /*  assertEquals(vec.getConfiguration(),paragraphVectors.getConfiguration());
+            assertEquals(vec.vocab(),paragraphVectors.vocab());
+            assertEquals(vec.lookupTable(),paragraphVectors.lookupTable());
+            assertEquals(vec.getLayerSize(),paragraphVectors.getLayerSize());
+     */       //assertEquals(vec,paragraphVectors);
+            int cnt1 = cache.wordFrequency("day");
+            int cnt2 = cache.wordFrequency("me");
 
-        assertEquals(97406, cache.numWords());
+            assertNotEquals(1, cnt1);
+            assertNotEquals(1, cnt2);
+            assertNotEquals(cnt1, cnt2);
 
-        assertTrue(vec.hasWord("DOC_16392"));
-        assertTrue(vec.hasWord("DOC_3720"));
+            assertEquals(97406, cache.numWords());
 
-        List<String> result = new ArrayList<>(vec.nearestLabels(vec.getWordVectorMatrix("DOC_16392"), 10));
-        System.out.println("nearest labels: " + result);
-        for (String label : result) {
-            System.out.println(label + "/DOC_16392: " + vec.similarity(label, "DOC_16392"));
-        }
-        assertTrue(result.contains("DOC_16392"));
-        //assertTrue(result.contains("DOC_21383"));
+            assertTrue(vec.hasWord("DOC_16392"));
+            assertTrue(vec.hasWord("DOC_3720"));
+
+            List<String> result = new ArrayList<>(vec.nearestLabels(vec.getWordVectorMatrix("DOC_16392"), 10));
+            System.out.println("nearest labels: " + result);
+            for (String label : result) {
+                System.out.println(label + "/DOC_16392: " + vec.similarity(label, "DOC_16392"));
+            }
+            assertTrue(result.contains("DOC_16392"));
+            //assertTrue(result.contains("DOC_21383"));
 
 
 
@@ -216,141 +236,147 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
             We have few lines that contain pretty close words invloved.
             These sentences should be pretty close to each other in vector space
          */
-        // line 3721: This is my way .
-        // line 6348: This is my case .
-        // line 9836: This is my house .
-        // line 12493: This is my world .
-        // line 16393: This is my work .
+            // line 3721: This is my way .
+            // line 6348: This is my case .
+            // line 9836: This is my house .
+            // line 12493: This is my world .
+            // line 16393: This is my work .
 
-        // this is special sentence, that has nothing common with previous sentences
-        // line 9853: We now have one .
+            // this is special sentence, that has nothing common with previous sentences
+            // line 9853: We now have one .
 
-        double similarityD = vec.similarity("day", "night");
-        log.info("day/night similarity: " + similarityD);
+            double similarityD = vec.similarity("day", "night");
+            log.info("day/night similarity: " + similarityD);
 
-        if (similarityD < 0.0) {
-            log.info("Day: " + Arrays.toString(vec.getWordVectorMatrix("day").dup().data().asDouble()));
-            log.info("Night: " + Arrays.toString(vec.getWordVectorMatrix("night").dup().data().asDouble()));
-        }
+            if (similarityD < 0.0) {
+                log.info("Day: " + Arrays.toString(vec.getWordVectorMatrix("day").dup().data().asDouble()));
+                log.info("Night: " + Arrays.toString(vec.getWordVectorMatrix("night").dup().data().asDouble()));
+            }
 
 
-        List<String> labelsOriginal = vec.labelsSource.getLabels();
+            List<String> labelsOriginal = vec.labelsSource.getLabels();
 
-        double similarityW = vec.similarity("way", "work");
-        log.info("way/work similarity: " + similarityW);
+            double similarityW = vec.similarity("way", "work");
+            log.info("way/work similarity: " + similarityW);
 
-        double similarityH = vec.similarity("house", "world");
-        log.info("house/world similarity: " + similarityH);
+            double similarityH = vec.similarity("house", "world");
+            log.info("house/world similarity: " + similarityH);
 
-        double similarityC = vec.similarity("case", "way");
-        log.info("case/way similarity: " + similarityC);
+            double similarityC = vec.similarity("case", "way");
+            log.info("case/way similarity: " + similarityC);
 
-        double similarity1 = vec.similarity("DOC_9835", "DOC_12492");
-        log.info("9835/12492 similarity: " + similarity1);
-        //        assertTrue(similarity1 > 0.7d);
+            double similarity1 = vec.similarity("DOC_9835", "DOC_12492");
+            log.info("9835/12492 similarity: " + similarity1);
+            //        assertTrue(similarity1 > 0.7d);
 
-        double similarity2 = vec.similarity("DOC_3720", "DOC_16392");
-        log.info("3720/16392 similarity: " + similarity2);
-        //        assertTrue(similarity2 > 0.7d);
+            double similarity2 = vec.similarity("DOC_3720", "DOC_16392");
+            log.info("3720/16392 similarity: " + similarity2);
+            //        assertTrue(similarity2 > 0.7d);
 
-        double similarity3 = vec.similarity("DOC_6347", "DOC_3720");
-        log.info("6347/3720 similarity: " + similarity3);
-        //        assertTrue(similarity2 > 0.7d);
+            double similarity3 = vec.similarity("DOC_6347", "DOC_3720");
+            log.info("6347/3720 similarity: " + similarity3);
+            //        assertTrue(similarity2 > 0.7d);
 
-        // likelihood in this case should be significantly lower
-        double similarityX = vec.similarity("DOC_3720", "DOC_9852");
-        log.info("3720/9852 similarity: " + similarityX);
-        assertTrue(similarityX < 0.5d);
+            // likelihood in this case should be significantly lower
+            double similarityX = vec.similarity("DOC_3720", "DOC_9852");
+            log.info("3720/9852 similarity: " + similarityX);
+            assertTrue(similarityX < 0.5d);
 
-        File tempFile = File.createTempFile("paravec", "ser");
-        tempFile.deleteOnExit();
+            File tempFile = File.createTempFile("paravec", "ser");
+            tempFile.deleteOnExit();
 
-        INDArray day = vec.getWordVectorMatrix("day").dup();
+            INDArray day = vec.getWordVectorMatrix("day").dup();
 
         /*
             Testing txt serialization
          */
-        File tempFile2 = File.createTempFile("paravec", "ser");
-        tempFile2.deleteOnExit();
+            File tempFile2 = File.createTempFile("paravec", "ser");
+            tempFile2.deleteOnExit();
 
-        WordVectorSerializer.writeWordVectors(vec, tempFile2);
+            if(!binary)
+                WordVectorSerializer.writeWordVectors(vec, tempFile2);
+            else
+                WordVectorSerializer.writeParagraphVectorsBinary(vec,tempFile2);
+            ParagraphVectors vec3 = binary ? WordVectorSerializer.readParagraphVectorsBinary(tempFile2)
+                    : WordVectorSerializer.readParagraphVectorsFromText(tempFile2);
 
-        ParagraphVectors vec3 = WordVectorSerializer.readParagraphVectorsFromText(tempFile2);
+            INDArray day3 = vec3.getWordVectorMatrix("day").dup();
 
-        INDArray day3 = vec3.getWordVectorMatrix("day").dup();
+            List<String> labelsRestored = vec3.labelsSource.getLabels();
 
-        List<String> labelsRestored = vec3.labelsSource.getLabels();
+            assertEquals(day, day3);
 
-        assertEquals(day, day3);
-
-        assertEquals(labelsOriginal.size(), labelsRestored.size());
+            assertEquals(labelsOriginal.size(), labelsRestored.size());
 
         /*
          Testing binary serialization
         */
-        SerializationUtils.saveObject(vec, tempFile);
+            SerializationUtils.saveObject(vec, tempFile);
 
 
-        ParagraphVectors vec2 = SerializationUtils.readObject(tempFile);
-        INDArray day2 = vec2.getWordVectorMatrix("day").dup();
+            ParagraphVectors vec2 = SerializationUtils.readObject(tempFile);
+            INDArray day2 = vec2.getWordVectorMatrix("day").dup();
 
-        List<String> labelsBinary = vec2.labelsSource.getLabels();
+            List<String> labelsBinary = vec2.labelsSource.getLabels();
 
-        assertEquals(day, day2);
+            assertEquals(day, day2);
 
-        tempFile.delete();
+            tempFile.delete();
 
 
-        assertEquals(labelsOriginal.size(), labelsBinary.size());
+            assertEquals(labelsOriginal.size(), labelsBinary.size());
 
-        INDArray original = vec.getWordVectorMatrix("DOC_16392").dup();
-        INDArray originalPreserved = original.dup();
-        INDArray inferredA1 = vec.inferVector("This is my work .");
-        INDArray inferredB1 = vec.inferVector("This is my work .");
+            INDArray original = vec.getWordVectorMatrix("DOC_16392").dup();
+            INDArray originalPreserved = original.dup();
+            INDArray inferredA1 = vec.inferVector("This is my work .");
+            INDArray inferredB1 = vec.inferVector("This is my work .");
 
-        double cosAO1 = Transforms.cosineSim(inferredA1.dup(), original.dup());
-        double cosAB1 = Transforms.cosineSim(inferredA1.dup(), inferredB1.dup());
+            double cosAO1 = Transforms.cosineSim(inferredA1.dup(), original.dup());
+            double cosAB1 = Transforms.cosineSim(inferredA1.dup(), inferredB1.dup());
 
-        log.info("Cos O/A: {}", cosAO1);
-        log.info("Cos A/B: {}", cosAB1);
-        log.info("Inferred: {}", inferredA1);
-        //        assertTrue(cosAO1 > 0.45);
-        assertTrue(cosAB1 > 0.95);
+            log.info("Cos O/A: {}", cosAO1);
+            log.info("Cos A/B: {}", cosAB1);
+            log.info("Inferred: {}", inferredA1);
+            //        assertTrue(cosAO1 > 0.45);
+            assertTrue(cosAB1 > 0.95);
 
-        //assertArrayEquals(inferredA.data().asDouble(), inferredB.data().asDouble(), 0.01);
+            //assertArrayEquals(inferredA.data().asDouble(), inferredB.data().asDouble(), 0.01);
 
-        ParagraphVectors restoredVectors = WordVectorSerializer.readParagraphVectors(fullFile);
-        restoredVectors.setTokenizerFactory(t);
+            ParagraphVectors restoredVectors = binary ? WordVectorSerializer.readParagraphVectorsBinary(fullFile)  :
+                    WordVectorSerializer.readParagraphVectors(fullFile);
+            restoredVectors.setTokenizerFactory(t);
 
-        INDArray restoredSyn1_17 = ((InMemoryLookupTable) restoredVectors.getLookupTable()).getSyn1().getRow(17, true).dup();
+            INDArray restoredSyn1_17 = ((InMemoryLookupTable) restoredVectors.getLookupTable()).getSyn1().getRow(17, true).dup();
 
-        assertEquals(originalSyn1_17, restoredSyn1_17);
+            assertEquals(originalSyn1_17, restoredSyn1_17);
 
-        INDArray originalRestored = vec.getWordVectorMatrix("DOC_16392").dup();
+            INDArray originalRestored = vec.getWordVectorMatrix("DOC_16392").dup();
 
-        assertEquals(originalPreserved, originalRestored);
+            assertEquals(originalPreserved, originalRestored);
 
-        INDArray inferredA2 = restoredVectors.inferVector("This is my work .");
-        INDArray inferredB2 = restoredVectors.inferVector("This is my work .");
-        INDArray inferredC2 = restoredVectors.inferVector("world way case .");
+            INDArray inferredA2 = restoredVectors.inferVector("This is my work .");
+            INDArray inferredB2 = restoredVectors.inferVector("This is my work .");
+            INDArray inferredC2 = restoredVectors.inferVector("world way case .");
 
-        double cosAO2 = Transforms.cosineSim(inferredA2.dup(), original.dup());
-        double cosAB2 = Transforms.cosineSim(inferredA2.dup(), inferredB2.dup());
-        double cosAAX = Transforms.cosineSim(inferredA1.dup(), inferredA2.dup());
-        double cosAC2 = Transforms.cosineSim(inferredC2.dup(), inferredA2.dup());
+            double cosAO2 = Transforms.cosineSim(inferredA2.dup(), original.dup());
+            double cosAB2 = Transforms.cosineSim(inferredA2.dup(), inferredB2.dup());
+            double cosAAX = Transforms.cosineSim(inferredA1.dup(), inferredA2.dup());
+            double cosAC2 = Transforms.cosineSim(inferredC2.dup(), inferredA2.dup());
 
-        log.info("Cos A2/B2: {}", cosAB2);
-        log.info("Cos A1/A2: {}", cosAAX);
-        log.info("Cos O/A2: {}", cosAO2);
-        log.info("Cos C2/A2: {}", cosAC2);
+            log.info("Cos A2/B2: {}", cosAB2);
+            log.info("Cos A1/A2: {}", cosAAX);
+            log.info("Cos O/A2: {}", cosAO2);
+            log.info("Cos C2/A2: {}", cosAC2);
 
-        log.info("Vector: {}", Arrays.toString(inferredA1.data().asFloat()));
+            log.info("Vector: {}", Arrays.toString(inferredA1.data().asFloat()));
 
-        log.info("cosAO2: {}", cosAO2);
+            log.info("cosAO2: {}", cosAO2);
 
-        //  assertTrue(cosAO2 > 0.45);
-        assertTrue(cosAB2 > 0.95);
-        assertTrue(cosAAX > 0.95);
+            //  assertTrue(cosAO2 > 0.45);
+            assertTrue(cosAB2 > 0.95);
+            assertTrue(cosAAX > 0.95);
+        }
+
     }
 
 
