@@ -23,7 +23,8 @@
 package org.nd4j.enums;
 
 /**
- * padding mode: CONSTANT, REFLECT, SYMMETRIC */
+ * padding mode: CONSTANT, REFLECT, SYMMETRIC
+ */
 public enum Mode {
   CONSTANT,
 
