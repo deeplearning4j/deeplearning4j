@@ -2023,11 +2023,10 @@ public class NDBase {
   /**
    * Sets an inplace shape on the passed in input.<br>
    *
-   * @param input The input to set the shape of (NUMERIC type)
+   * @param input The input to set the shape of (NDARRAY type)
    * @param shape The shape to set the input to (NUMERIC type)
    */
   public INDArray[] setShape(INDArray input, INDArray shape) {
-    NDValidation.validateNumerical("setShape", "input", input);
     NDValidation.validateNumerical("setShape", "shape", shape);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.SetShape(input, shape));
   }
@@ -2035,22 +2034,20 @@ public class NDBase {
   /**
    * Returns the shape of the specified INDArray  as a 1D INDArray <br>
    *
-   * @param input Input variable (NUMERIC type)
+   * @param input Input variable (NDARRAY type)
    * @return output 1D output variable with contents equal to the shape of the input (NUMERIC type)
    */
   public INDArray shape(INDArray input) {
-    NDValidation.validateNumerical("shape", "input", input);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Shape(input))[0];
   }
 
   /**
    * Returns the size (number of elements, i.e., prod(shape)) of the specified INDArray  as a 0D scalar variable<br>
    *
-   * @param in Input variable (NUMERIC type)
+   * @param in Input variable (NDARRAY type)
    * @return output 0D (scalar) output variable with value equal to the number of elements in the specified array (NUMERIC type)
    */
   public INDArray size(INDArray in) {
-    NDValidation.validateNumerical("size", "in", in);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Size(in))[0];
   }
 
@@ -2058,12 +2055,11 @@ public class NDBase {
    * Returns a rank 0 (scalar) variable for the size of the specified dimension.<br>
    * For example, if X has shape [10,20,30] then sizeAt(X,1)=20. Similarly, sizeAt(X,-1)=30<br>
    *
-   * @param in Input variable (NUMERIC type)
+   * @param in Input variable (NDARRAY type)
    * @param dimension Dimension to get size of
    * @return output Scalar INDArray  for size at specified variable (NUMERIC type)
    */
   public INDArray sizeAt(INDArray in, int dimension) {
-    NDValidation.validateNumerical("sizeAt", "in", in);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.SizeAt(in, dimension))[0];
   }
 
