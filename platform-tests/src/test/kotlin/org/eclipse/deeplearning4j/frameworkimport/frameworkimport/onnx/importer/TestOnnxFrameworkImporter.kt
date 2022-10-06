@@ -12,11 +12,21 @@ import org.nd4j.linalg.dataset.DataSet
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.learning.config.Adam
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter
+import java.io.File
 import java.util.*
 
 @Tag(TagNames.ONNX)
 class TestOnnxFrameworkImporter {
 
+
+
+    @Test
+    fun testRecentUnsqueeze() {
+        val importer = OnnxFrameworkImporter()
+        val file = File("/home/agibsonccc/Documents/GitHub/kompile/kompile_pytorch/tests/output_cnn_mnist.onnx")
+        val output = importer.runImport(file.absolutePath, suggestDynamicVariables = true)
+
+    }
 
 
     @Test
