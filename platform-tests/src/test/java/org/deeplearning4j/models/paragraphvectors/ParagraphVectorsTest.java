@@ -204,12 +204,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
                     WordVectorSerializer.readParagraphVectorsBinary(fullFile) :
                     WordVectorSerializer.readParagraphVectors(fullFile);
 
-            //TODO: figure out why some json properties are not saved properly
-          /*  assertEquals(vec.getConfiguration(),paragraphVectors.getConfiguration());
-            assertEquals(vec.vocab(),paragraphVectors.vocab());
-            assertEquals(vec.lookupTable(),paragraphVectors.lookupTable());
-            assertEquals(vec.getLayerSize(),paragraphVectors.getLayerSize());
-     */       //assertEquals(vec,paragraphVectors);
+         
             int cnt1 = cache.wordFrequency("day");
             int cnt2 = cache.wordFrequency("me");
 

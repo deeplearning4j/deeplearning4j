@@ -2898,37 +2898,7 @@ public class Nd4j {
         return rand(ret);
     }
 
-    /**
-     * Create a random ndarray with values from a uniform distribution over (0, 1) with the given shape
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the matrix
-     * @return the random ndarray with the specified shape
-     */
-    /*public static INDArray rand(int rows, int columns) {
-        if (rows < 1 || columns < 1)
-            throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
 
-        INDArray ret = createUninitialized(new int[] {rows, columns}, Nd4j.order());
-        return rand(ret);
-    }*/
-
-    /**
-     * Create a random ndarray with the given shape and output order
-     *
-     * Values are sampled from a uniform distribution over (0, 1)
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the matrix
-     * @return the random ndarray with the specified shape
-     */
-    /*public static INDArray rand(char order, int rows, int columns) {
-        if (rows < 1 || columns < 1)
-            throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
-
-        INDArray ret = createUninitialized(new int[] {rows, columns}, order);//INSTANCE.rand(order, rows, columns);
-        return rand(ret);
-    }*/
 
     /**
      * Create a random ndarray with values from a uniform distribution over (0, 1) with the given shape
@@ -2952,19 +2922,6 @@ public class Nd4j {
     }
 
 
-    /**
-     * Create a random ndarray with values from a uniform distribution over (0, 1) with the given shape
-     * using the given seed
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the columns of the ndarray
-     * @param seed    the  seed to use
-     * @return the random ndarray with the specified shape
-     */
-    /*public static INDArray rand(int rows, int columns, long seed) {
-        INDArray ret = createUninitialized(new int[] {rows, columns}, Nd4j.order());
-        return rand(ret, seed);
-    }*/
 
     /**
      * @deprecated use {@link Nd4j#rand(org.nd4j.linalg.api.rng.Random, long...)}
@@ -5689,25 +5646,7 @@ public class Nd4j {
         return INSTANCE.createFromNpyPointer(pointer);
     }
 
-    /**
-     * Create an INDArray from a given Numpy .npy file.
-     *
-     * @param path Path to the .npy file to read
-     * @return the created ndarray
-     */
-    public static INDArray readNpy(@NonNull String path){
-        return readNpy(new File(path));
-    }
 
-    /**
-     * Create an INDArray from a given Numpy .npy file.
-     *
-     * @param file the file to create the ndarray from
-     * @return the created ndarray
-     */
-    public static INDArray readNpy(@NonNull File file){
-        return createFromNpyFile(file);
-    }
 
     /**
      * Create an INDArray from a given Numpy .npy file.
