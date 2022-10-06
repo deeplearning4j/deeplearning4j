@@ -142,6 +142,15 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSameDiffShapeNonNumerical() {
+        SameDiff sd = SameDiff.create();
+        SDVariable var = sd.create(null, sd.constant(8), DataType.BOOL);
+        assertEquals(8,var.shape().eval().getLong(0)); // throws exception    }
+        sd.setShape(var,var.shape())[0].eval();
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSameDiffCreate() {
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.create(null, sd.constant(8), DataType.INT32);
