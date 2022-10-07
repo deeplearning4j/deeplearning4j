@@ -94,10 +94,10 @@ public class DeconvTests extends BaseNd4jTestWithBackends {
             int d = Integer.parseInt(nums[5]);
             boolean nchw = s.contains("nchw");
 
-            INDArray w = Nd4j.readNpy(new File(newFolder, s + "_W.npy"));
-            INDArray b = Nd4j.readNpy(new File(newFolder, s + "_b.npy"));
-            INDArray in = Nd4j.readNpy(new File(newFolder, s + "_in.npy")).castTo(DataType.FLOAT);
-            INDArray expOut = Nd4j.readNpy(new File(newFolder, s + "_out.npy"));
+            INDArray w = Nd4j.createFromNpyFile(new File(newFolder, s + "_W.npy"));
+            INDArray b = Nd4j.createFromNpyFile(new File(newFolder, s + "_b.npy"));
+            INDArray in = Nd4j.createFromNpyFile(new File(newFolder, s + "_in.npy")).castTo(DataType.FLOAT);
+            INDArray expOut = Nd4j.createFromNpyFile(new File(newFolder, s + "_out.npy"));
 
             CustomOp op = DynamicCustomOp.builder("deconv2d")
                     .addInputs(in, w, b)

@@ -82,7 +82,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
      * Dummy construction is required for reflection
      */
     public SkipGram() {
-
     }
 
     public List<Aggregate> getBatch() {
@@ -108,7 +107,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
      */
     @Override
     public void configure(@NonNull VocabCache<T> vocabCache, @NonNull WeightLookupTable<T> lookupTable,
-                    @NonNull VectorsConfiguration configuration) {
+                          @NonNull VectorsConfiguration configuration) {
         this.vocabCache = vocabCache;
         this.lookupTable = lookupTable;
         this.configuration = configuration;
@@ -118,7 +117,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 log.info("Initializing syn1Neg...");
                 ((InMemoryLookupTable<T>) lookupTable).setUseHS(configuration.isUseHierarchicSoftmax());
                 ((InMemoryLookupTable<T>) lookupTable).setNegative(configuration.getNegative());
-                ((InMemoryLookupTable<T>) lookupTable).resetWeights(false);
+                lookupTable.resetWeights(false);
             }
         }
 
@@ -126,7 +125,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         this.syn1 = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1());
         this.syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
         this.expTable = new DeviceLocalNDArray(Nd4j.create(((InMemoryLookupTable<T>) lookupTable).getExpTable(),
-                                               new long[]{((InMemoryLookupTable<T>) lookupTable).getExpTable().length}, syn0.get().dataType()));
+                new long[]{((InMemoryLookupTable<T>) lookupTable).getExpTable().length}, syn0.get().dataType()));
         this.table = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getTable());
 
 
@@ -141,7 +140,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     }
 
     /**
-     * SkipGram doesn't involves any pretraining
+     * SkipGram doesn't involve any pretraining
      *
      * @param iterator
      */
@@ -164,7 +163,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             for (T element : sequence.getElements()) {
                 double numWords = vocabCache.totalWordOccurrences();
                 double ran = (Math.sqrt(element.getElementFrequency() / (sampling * numWords)) + 1)
-                                * (sampling * numWords) / element.getElementFrequency();
+                        * (sampling * numWords) / element.getElementFrequency();
 
                 nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
@@ -238,7 +237,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         for (int i = 0; i < tempSequence.getElements().size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom,
-                            learningRate, currentWindow);
+                    learningRate, currentWindow);
         }
         /*int batchSize = configuration.getBatchSize();
         if (batchSize > 1 && batchSequences != null) {
@@ -328,11 +327,11 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     }
 
     public double iterateSample(T w1, T lastWord, AtomicLong nextRandom, double alpha, boolean isInference,
-                    INDArray inferenceVector) {
+                                INDArray inferenceVector) {
         if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && !isInference)
-                        || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP")
-                        || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK")
-                        || lastWord.getLabel().equals("UNK")) {
+                || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP")
+                || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK")
+                || lastWord.getLabel().equals("UNK")) {
             return 0.0;
         }
 
@@ -369,7 +368,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         }
 
         if (batches.get() == null) {
-            batches.set(new ArrayList<Aggregate>());
+            batches.set(new ArrayList<>());
         }
 
         //log.info("VocabWords: {}; lastWordIndex: {}; syn1neg: {}", vocabCache.numWords(), lastWord.getIndex(), syn1Neg.get().rows());
@@ -426,7 +425,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     }
 
     public double iterateSample(List<BatchItem<T>> items) {
-
         boolean useHS = configuration.isUseHierarchicSoftmax();
         boolean useNegative = configuration.getNegative() > 0;
 
@@ -509,6 +507,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 }
             }
         }
+
+
         INDArray targetArray = Nd4j.createFromArray(targets);
         INDArray ngStarterArray = Nd4j.createFromArray(starters);
         INDArray alphasArray = Nd4j.createFromArray(alphas);

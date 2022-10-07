@@ -221,4 +221,17 @@ public class Sequence<T extends SequenceElement> implements Serializable {
 
         return hash;
     }
+
+    @Override
+    public String toString() {
+        return "Sequence{" +
+                "elements=" + elements +
+                ", elementsMap=" + elementsMap +
+                ", labels=" + labels +
+                ", label=" + label +
+                ", hash=" + hash +
+                ", hashCached=" + hashCached +
+                ", sequenceId=" + sequenceId +
+                '}';
+    }
 }

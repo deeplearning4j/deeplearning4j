@@ -68,7 +68,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
 
         if (sentenceIter != null) {
             SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(sentenceIter)
-                            .tokenizerFactory(this.tokenizerFactory).build();
+                    .tokenizerFactory(this.tokenizerFactory).build();
             this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
         }
     }
@@ -83,9 +83,9 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
 
         if (tokenizerFactory != null) {
             SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator)
-                            .tokenizerFactory(tokenizerFactory)
-                            .allowMultithreading(configuration == null || configuration.isAllowParallelTokenization())
-                            .build();
+                    .tokenizerFactory(tokenizerFactory)
+                    .allowMultithreading(configuration == null || configuration.isAllowParallelTokenization())
+                    .build();
             this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
         } else
             log.error("Please call setTokenizerFactory() prior to setSentenceIter() call.");
@@ -146,6 +146,51 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
 
         ret.setVocab(cache);
         return ret;
+    }
+
+    @Override
+    public String toString() {
+        return "Word2Vec{" +
+                "sentenceIter=" + sentenceIter +
+                ", tokenizerFactory=" + tokenizerFactory +
+                ", iterator=" + iterator +
+                ", elementsLearningAlgorithm=" + elementsLearningAlgorithm +
+                ", sequenceLearningAlgorithm=" + sequenceLearningAlgorithm +
+                ", configuration=" + configuration +
+                ", existingModel=" + existingModel +
+                ", intersectModel=" + intersectModel +
+                ", unknownElement=" + unknownElement +
+                ", scoreElements=" + scoreElements +
+                ", scoreSequences=" + scoreSequences +
+                ", configured=" + configured +
+                ", lockFactor=" + lockFactor +
+                ", enableScavenger=" + enableScavenger +
+                ", vocabLimit=" + vocabLimit +
+                ", eventListeners=" + eventListeners +
+                ", minWordFrequency=" + minWordFrequency +
+                ", lookupTable=" + lookupTable +
+                ", vocab=" + vocab +
+                ", layerSize=" + layerSize +
+                ", modelUtils=" + modelUtils +
+                ", numIterations=" + numIterations +
+                ", numEpochs=" + numEpochs +
+                ", negative=" + negative +
+                ", sampling=" + sampling +
+                ", learningRate=" + learningRate +
+                ", minLearningRate=" + minLearningRate +
+                ", window=" + window +
+                ", batchSize=" + batchSize +
+                ", learningRateDecayWords=" + learningRateDecayWords +
+                ", resetModel=" + resetModel +
+                ", useAdeGrad=" + useAdeGrad +
+                ", workers=" + workers +
+                ", trainSequenceVectors=" + trainSequenceVectors +
+                ", trainElementsVectors=" + trainElementsVectors +
+                ", seed=" + seed +
+                ", useUnknown=" + useUnknown +
+                ", variableWindows=" + Arrays.toString(variableWindows) +
+                ", stopWords=" + stopWords +
+                '}';
     }
 
     public static class Builder extends SequenceVectors.Builder<VocabWord> {
@@ -541,13 +586,17 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
         }
 
         @Override
-        public Builder elementsLearningAlgorithm(@NonNull String algorithm) {
+        public Builder elementsLearningAlgorithm(String algorithm) {
+            if(algorithm == null)
+                return this;
             super.elementsLearningAlgorithm(algorithm);
             return this;
         }
 
         @Override
-        public Builder elementsLearningAlgorithm(@NonNull ElementsLearningAlgorithm<VocabWord> algorithm) {
+        public Builder elementsLearningAlgorithm(ElementsLearningAlgorithm<VocabWord> algorithm) {
+          if(algorithm == null)
+              return this;
             super.elementsLearningAlgorithm(algorithm);
             return this;
         }
@@ -620,8 +669,8 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
                     tokenizerFactory = new DefaultTokenizerFactory();
 
                 SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(sentenceIterator)
-                                .tokenizerFactory(tokenizerFactory).allowMultithreading(allowParallelTokenization)
-                                .build();
+                        .tokenizerFactory(tokenizerFactory).allowMultithreading(allowParallelTokenization)
+                        .build();
                 this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
             }
 
@@ -630,8 +679,8 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
                     tokenizerFactory = new DefaultTokenizerFactory();
 
                 SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(labelAwareIterator)
-                                .tokenizerFactory(tokenizerFactory).allowMultithreading(allowParallelTokenization)
-                                .build();
+                        .tokenizerFactory(tokenizerFactory).allowMultithreading(allowParallelTokenization)
+                        .build();
                 this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
             }
 
@@ -699,7 +748,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
                 this.configuration.setTokenizerFactory(tokenizerFactory.getClass().getCanonicalName());
                 if (tokenizerFactory.getTokenPreProcessor() != null)
                     this.configuration.setTokenPreProcessor(
-                                    tokenizerFactory.getTokenPreProcessor().getClass().getCanonicalName());
+                            tokenizerFactory.getTokenPreProcessor().getClass().getCanonicalName());
             }
 
             ret.configuration = this.configuration;

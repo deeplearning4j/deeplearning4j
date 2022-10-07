@@ -413,7 +413,7 @@ public class Nd4j {
      * @return the array with the new axis dimension
      */
     public static INDArray expandDims(INDArray input, int dimension) {
-       return base().expandDims(input,dimension);
+        return base().expandDims(input,dimension);
     }
 
     /**
@@ -2813,7 +2813,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(@NonNull int... shape) {
-        INDArray ret = createUninitialized(shape, order()).castTo(Nd4j.defaultFloatingPointType()); //INSTANCE.rand(shape, Nd4j.getRandom());
+        INDArray ret = createUninitialized(shape, order()).castTo(Nd4j.defaultFloatingPointType());
         return rand(ret);
     }
 
@@ -2821,7 +2821,7 @@ public class Nd4j {
      * See {@link #rand(int[])}
      */
     public static INDArray rand(@NonNull long... shape) {
-        INDArray ret = createUninitialized(shape, order()).castTo(Nd4j.defaultFloatingPointType()); //INSTANCE.rand(shape, Nd4j.getRandom());
+        INDArray ret = createUninitialized(shape, order()).castTo(Nd4j.defaultFloatingPointType());
         return rand(ret);
     }
 
@@ -2834,7 +2834,7 @@ public class Nd4j {
     public static INDArray rand(@NonNull DataType dataType, @NonNull long... shape) {
         Preconditions.checkArgument(dataType.isFPType(),
                 "Can't create a random array of a non-floating point data type");
-        INDArray ret = createUninitialized(dataType, shape, order()); //INSTANCE.rand(shape, Nd4j.getRandom());
+        INDArray ret = createUninitialized(dataType, shape, order());
         return rand(ret);
     }
 
@@ -2848,7 +2848,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(char order, @NonNull int... shape) {
-        INDArray ret = Nd4j.createUninitialized(shape, order).castTo(Nd4j.defaultFloatingPointType()); //INSTANCE.rand(order, shape);
+        INDArray ret = Nd4j.createUninitialized(shape, order).castTo(Nd4j.defaultFloatingPointType());
         return rand(ret);
     }
 
@@ -2898,37 +2898,7 @@ public class Nd4j {
         return rand(ret);
     }
 
-    /**
-     * Create a random ndarray with values from a uniform distribution over (0, 1) with the given shape
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the matrix
-     * @return the random ndarray with the specified shape
-     */
-    /*public static INDArray rand(int rows, int columns) {
-        if (rows < 1 || columns < 1)
-            throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
 
-        INDArray ret = createUninitialized(new int[] {rows, columns}, Nd4j.order());
-        return rand(ret);
-    }*/
-
-    /**
-     * Create a random ndarray with the given shape and output order
-     *
-     * Values are sampled from a uniform distribution over (0, 1)
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the matrix
-     * @return the random ndarray with the specified shape
-     */
-    /*public static INDArray rand(char order, int rows, int columns) {
-        if (rows < 1 || columns < 1)
-            throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
-
-        INDArray ret = createUninitialized(new int[] {rows, columns}, order);//INSTANCE.rand(order, rows, columns);
-        return rand(ret);
-    }*/
 
     /**
      * Create a random ndarray with values from a uniform distribution over (0, 1) with the given shape
@@ -2952,19 +2922,6 @@ public class Nd4j {
     }
 
 
-    /**
-     * Create a random ndarray with values from a uniform distribution over (0, 1) with the given shape
-     * using the given seed
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the columns of the ndarray
-     * @param seed    the  seed to use
-     * @return the random ndarray with the specified shape
-     */
-    /*public static INDArray rand(int rows, int columns, long seed) {
-        INDArray ret = createUninitialized(new int[] {rows, columns}, Nd4j.order());
-        return rand(ret, seed);
-    }*/
 
     /**
      * @deprecated use {@link Nd4j#rand(org.nd4j.linalg.api.rng.Random, long...)}
@@ -2972,6 +2929,19 @@ public class Nd4j {
     @Deprecated
     public static INDArray rand(int[] shape, @NonNull org.nd4j.linalg.api.rng.Random rng) {
         return rand(rng, ArrayUtil.toLongArray(shape)).castTo(Nd4j.defaultFloatingPointType());
+    }
+
+
+    /**
+     * Create a random ndarray with the given shape using the given RandomGenerator
+     *
+     * @param shape the shape of the array
+     * @param rng     the random generator to use
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(@NonNull org.nd4j.linalg.api.rng.Random rng, DataType dataType,@NonNull long... shape) {
+        INDArray ret = createUninitialized(shape, Nd4j.order()).castTo(dataType);
+        return rand(ret, rng);
     }
 
     /**
@@ -2982,7 +2952,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(@NonNull org.nd4j.linalg.api.rng.Random rng, @NonNull long... shape) {
-        INDArray ret = createUninitialized(shape, Nd4j.order()).castTo(Nd4j.defaultFloatingPointType()); //INSTANCE.rand(shape, rng);
+        INDArray ret = createUninitialized(shape, Nd4j.order()).castTo(Nd4j.defaultFloatingPointType()); 
         return rand(ret, rng);
     }
 
@@ -5598,15 +5568,44 @@ public class Nd4j {
     }
 
 
+
     /**
      * Writes an array to an output stream
      * @param arr the array to write
      * @param writeTo the output stream to write to
+     * @return returns the number of bytes written
      */
     @SuppressWarnings("WeakerAccess")
-    public static void writeAsNumpy(INDArray arr, OutputStream writeTo) throws IOException {
-        try(BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(writeTo)) {
-            Pointer asNumpy = convertToNumpy(arr);
+    public static long writeAsNumpy(INDArray arr, OutputStream writeTo,boolean closeFlush) throws IOException {
+        Pointer asNumpy = convertToNumpy(arr);
+        return writeAsNumpy(asNumpy,writeTo,closeFlush);
+
+    }
+
+
+
+    /**
+     * Writes an array to an output stream
+     * @param asNumpy the array to write
+     * @param writeTo the output stream to write to
+     * @return returns the number of bytes written
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static long writeAsNumpy(Pointer asNumpy, OutputStream writeTo,boolean closeFlush) throws IOException {
+        if(closeFlush) {
+            try(BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(writeTo)) {
+                WritableByteChannel channel = Channels.newChannel(bufferedOutputStream);
+
+                int written = channel.write(asNumpy.asByteBuffer());
+                if(written != asNumpy.capacity()) {
+                    throw new IllegalStateException("Not all bytes were written! Original capacity " + asNumpy.capacity() + " but wrote " + written);
+                }
+
+                bufferedOutputStream.flush();
+                return written;
+            }
+        } else {
+            BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(writeTo);
             WritableByteChannel channel = Channels.newChannel(bufferedOutputStream);
 
             int written = channel.write(asNumpy.asByteBuffer());
@@ -5615,7 +5614,22 @@ public class Nd4j {
             }
 
             bufferedOutputStream.flush();
+            return written;
         }
+
+    }
+
+
+
+    /**
+     * Writes an array to an output stream
+     * @param arr the array to write
+     * @param writeTo the output stream to write to
+     * @return the number of bytes written
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static long writeAsNumpy(INDArray arr, OutputStream writeTo) throws IOException {
+        return writeAsNumpy(arr,writeTo,true);
     }
 
 
@@ -5632,25 +5646,7 @@ public class Nd4j {
         return INSTANCE.createFromNpyPointer(pointer);
     }
 
-    /**
-     * Create an INDArray from a given Numpy .npy file.
-     *
-     * @param path Path to the .npy file to read
-     * @return the created ndarray
-     */
-    public static INDArray readNpy(@NonNull String path){
-        return readNpy(new File(path));
-    }
 
-    /**
-     * Create an INDArray from a given Numpy .npy file.
-     *
-     * @param file the file to create the ndarray from
-     * @return the created ndarray
-     */
-    public static INDArray readNpy(@NonNull File file){
-        return createFromNpyFile(file);
-    }
 
     /**
      * Create an INDArray from a given Numpy .npy file.
@@ -5668,6 +5664,19 @@ public class Nd4j {
     public static Map<String, INDArray> createFromNpzFile(File file) throws Exception{
         return INSTANCE.createFromNpzFile(file);
     }
+
+
+    /**
+     * Create a numpy array based on the passed in input stream
+     * @param is the input stream to read
+     * @return the loaded ndarray
+     */
+    @SuppressWarnings("unused")
+    public static INDArray createNpyFromInputStream(@NonNull InputStream is,long lengthToRead) throws IOException {
+        byte[] content = IOUtils.toByteArray(is,lengthToRead);
+        return createNpyFromByteArray(content);
+    }
+
 
     /**
      * Create a numpy array based on the passed in input stream

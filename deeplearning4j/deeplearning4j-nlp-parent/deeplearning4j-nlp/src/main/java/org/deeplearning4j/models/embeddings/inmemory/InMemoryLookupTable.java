@@ -85,13 +85,13 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     public InMemoryLookupTable() {}
 
     public InMemoryLookupTable(VocabCache<T> vocab, int vectorLength, boolean useAdaGrad, double lr, Random gen,
-                    double negative, boolean useHS) {
+                               double negative, boolean useHS) {
         this(vocab, vectorLength, useAdaGrad, lr, gen, negative);
         this.useHS = useHS;
     }
 
     public InMemoryLookupTable(VocabCache<T> vocab, int vectorLength, boolean useAdaGrad, double lr, Random gen,
-                    double negative) {
+                               double negative) {
         this.vocab = vocab;
         this.vectorLength = vectorLength;
         this.useAdaGrad = useAdaGrad;
@@ -114,7 +114,8 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     }
 
     public double[] getExpTable() {
-
+        if(expTable == null)
+            initExpTable();
         return expTable;
     }
 
@@ -205,7 +206,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     @Deprecated
     public void iterateSample(T w1, T w2, AtomicLong nextRandom, double alpha) {
         if (w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getLabel().equals("STOP")
-                        || w2.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || w2.getLabel().equals("UNK"))
+                || w2.getLabel().equals("STOP") || w1.getLabel().equals("UNK") || w2.getLabel().equals("UNK"))
             return;
         //current word vector
         INDArray l1 = this.syn0.slice(w2.getIndex());
@@ -279,12 +280,12 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
                     g = label * (useAdaGrad ? w1.getGradient(target, alpha, alpha) : alpha);
                 else
                     g = useAdaGrad ? w1
-                                    .getGradient(target,
-                                                    label - expTable[(int) ((f + MAX_EXP)
-                                                                    * (expTable.length / MAX_EXP / 2))],
-                                                    alpha)
-                                    : (label - expTable[(int) ((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))])
-                                                    * alpha;
+                            .getGradient(target,
+                                    label - expTable[(int) ((f + MAX_EXP)
+                                            * (expTable.length / MAX_EXP / 2))],
+                                    alpha)
+                            : (label - expTable[(int) ((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))])
+                            * alpha;
                 if (syn0.data().dataType() == DataType.DOUBLE)
                     Nd4j.getBlasWrapper().axpy(g, syn1Neg.slice(target), neu1e);
                 else
@@ -583,7 +584,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
                 throw new IllegalStateException("Vocab cache must be specified");
 
             InMemoryLookupTable<T> table =
-                            new InMemoryLookupTable<>(vocabCache, vectorLength, useAdaGrad, lr, gen, negative, useHS);
+                    new InMemoryLookupTable<>(vocabCache, vectorLength, useAdaGrad, lr, gen, negative, useHS);
             table.seed = seed;
 
             return table;
@@ -593,9 +594,9 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     @Override
     public String toString() {
         return "InMemoryLookupTable{" + "syn0=" + syn0 + ", syn1=" + syn1 + ", vectorLength=" + vectorLength + ", rng="
-                        + rng + ", lr=" + lr + ", expTable=" + Arrays.toString(expTable) + ", seed=" + seed + ", table="
-                        + table + ", syn1Neg=" + syn1Neg + ", useAdaGrad=" + useAdaGrad + ", negative=" + negative
-                        + ", vocab=" + vocab + ", codes=" + codes + '}';
+                + rng + ", lr=" + lr + ", expTable=" + Arrays.toString(expTable) + ", seed=" + seed + ", table="
+                + table + ", syn1Neg=" + syn1Neg + ", useAdaGrad=" + useAdaGrad + ", negative=" + negative
+                + ", vocab=" + vocab + ", codes=" + codes + '}';
     }
 
     /**
@@ -619,7 +620,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
         if (srcTable.syn0.rows() > this.syn0.rows())
             throw new IllegalStateException(
-                            "You can't consume lookupTable with built for larger vocabulary without updating your vocabulary first");
+                    "You can't consume lookupTable with built for larger vocabulary without updating your vocabulary first");
 
         for (int x = 0; x < srcTable.syn0.rows(); x++) {
             this.syn0.putRow(x, srcTable.syn0.getRow(x));
@@ -637,5 +638,18 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             if (cntHs.get() > 0 && cntNg.get() > 0)
                 throw new ND4JIllegalStateException("srcTable has no syn1/syn1neg");
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof InMemoryLookupTable)) return false;
+        InMemoryLookupTable<?> that = (InMemoryLookupTable<?>) o;
+        return vectorLength == that.vectorLength && isUseAdaGrad() == that.isUseAdaGrad() && Double.compare(that.getNegative(), getNegative()) == 0 && useHS == that.useHS && Objects.equals(getSyn0(), that.getSyn0()) && Objects.equals(getSyn1(), that.getSyn1()) && Objects.equals(rng, that.rng) && Objects.equals(getTable(), that.getTable()) && Objects.equals(getSyn1Neg(), that.getSyn1Neg()) && Objects.equals(getVocab(), that.getVocab()) && Objects.equals(getCodes(), that.getCodes()) && Objects.equals(adaGrad, that.adaGrad) && Objects.equals(getTableId(), that.getTableId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getSyn0(), getSyn1(), vectorLength, rng, getTable(), getSyn1Neg(), isUseAdaGrad(), getNegative(), useHS, getVocab(), getCodes(), adaGrad, getTableId());
     }
 }

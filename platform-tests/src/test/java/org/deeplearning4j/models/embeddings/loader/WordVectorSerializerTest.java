@@ -274,7 +274,7 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
 
         WeightLookupTable<VocabWord> deser = null;
         try {
-            WordVectorSerializer.writeLookupTable(lookupTable, file);
+            WordVectorSerializer.writeLookupTableBinary(lookupTable, file);
             deser = WordVectorSerializer.readLookupTable(file);
         } catch (Exception e) {
             log.error("",e);
