@@ -2813,7 +2813,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(@NonNull int... shape) {
-        INDArray ret = createUninitialized(shape, order()).castTo(Nd4j.defaultFloatingPointType()); //INSTANCE.rand(shape, Nd4j.getRandom());
+        INDArray ret = createUninitialized(shape, order()).castTo(Nd4j.defaultFloatingPointType());
         return rand(ret);
     }
 
