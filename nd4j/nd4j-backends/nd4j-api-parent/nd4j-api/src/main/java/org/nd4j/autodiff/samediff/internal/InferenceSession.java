@@ -318,7 +318,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         List<String> outVarNames = o.getOutputsOfOp();
         for (int i = 0; i < out.numResults(); i++) {
             if (out.hasSingle() && out.resultAt(i) == null   || out.hasValues()
-                    && out.valueWithKeyAtIndex(i, false) == null && o.getOp() instanceof Switch)
+                    && out.valueWithKeyAtIndex(i, false) == null
+                    && o.getOp() instanceof Switch)
                 continue;   //Switch case: we only ever get one of 2 outputs, other is null (branch not executed)
             String name = outVarNames.get(i);
             Variable v = sameDiff.getVariables().get(name);
@@ -380,7 +381,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         log.trace("Found array id {} (output of {}) not required anywhere, deallocating", array.getTensorValue().getId(), o.getName());
                 }
 
-                if(array != null && array.getTensorValue() != null && !freedArrays.contains(array.getTensorValue().getId())) {
+                if(!outVarNames.contains(name) && array != null && array.getTensorValue() != null && !freedArrays.contains(array.getTensorValue().getId())) {
                     mmgr.release(array.getTensorValue());
                     freedArrays.add(array.getTensorValue().getId());
                 }
@@ -393,7 +394,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         log.trace("Found array id {} (output of {}) not required anywhere, deallocating", array.getId(), o.getName());
                 }
 
-                if(array != null && !freedArrays.contains(array.getId())) {
+                if(!outVarNames.contains(name) && array != null && !freedArrays.contains(array.getId())) {
                     mmgr.release(array);
                     freedArrays.add(array.getId());
                 }

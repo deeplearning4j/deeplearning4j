@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.datasets.iterator.utilty.ListDataSetIterator;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -52,6 +53,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.eclipse.deeplearning4j.nd4j.linalg.dataset.IrisDataSetIterator;
 import org.nd4j.linalg.dataset.MultiDataSet;
+import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.adapter.SingletonDataSetIterator;
 import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -64,6 +66,7 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.Sgd;
+import org.nd4j.shade.guava.collect.Lists;
 import org.nd4j.weightinit.impl.OneInitScheme;
 import org.nd4j.weightinit.impl.XavierInitScheme;
 
@@ -75,6 +78,74 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
     @TempDir
     Path testDir;
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
+    public void testTraining(Nd4jBackend backend) {
+        int nIn = 4;
+        int nOut = 1;
+        int NUM_SAMPLES = 300;
+        int epoches = 2;
+        int minibatch = 3;
+
+        SameDiff sd = SameDiff.create();
+
+        //First: Let's create our placeholders. Shape: [minibatch, in/out]
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, nIn);
+        SDVariable labels = sd.placeHolder("labels", DataType.FLOAT, -1, nOut);
+
+        //Second: let's create our variables
+        SDVariable weights = sd.var("weights", new XavierInitScheme('c', nIn, nOut), DataType.FLOAT, nIn, nOut);
+        SDVariable bias = sd.var("bias");
+
+        //And define our forward pass:
+        SDVariable out = input.mmul(weights).add(bias);     //Note: it's broadcast add here
+
+        //And our loss function
+        SDVariable mse = sd.loss.meanSquaredError("mse", labels, out, null);
+        //Let's create some mock data for this example:
+        Nd4j.getRandom().setSeed(12345);
+        INDArray inputArr = Nd4j.rand(minibatch, nIn);
+        INDArray labelArr = Nd4j.rand(minibatch, nOut);
+
+        Map<String,INDArray> placeholderData = new HashMap<>();
+        placeholderData.put("input", inputArr);
+        placeholderData.put("labels", labelArr);
+
+        //Execute forward pass:
+        INDArray loss = sd.output(placeholderData, "mse").get("mse");
+        System.out.println("MSE: " + loss);
+
+        //Calculate gradients:
+        Map<String,INDArray> gradMap = sd.calculateGradients(placeholderData, "weights");
+        System.out.println("Weights gradient:");
+        System.out.println(gradMap.get("weights"));
+
+        //Mock random dataset for training
+        INDArray indFeature = Nd4j.rand(new long[] {NUM_SAMPLES, nIn});
+        INDArray indLabel = Nd4j.rand(new long[] {NUM_SAMPLES, nOut});
+        DataSet ds = new DataSet(indFeature, indLabel);
+        SplitTestAndTrain train_test = ds.splitTestAndTrain(0.7);
+        DataSet dsTrain = train_test.getTrain();
+        DataSet dsTest = train_test.getTest();
+        DataSetIterator trainIter = new ListDataSetIterator<>(Lists.newArrayList(dsTrain), minibatch);
+        DataSetIterator testIter = new ListDataSetIterator<>(Lists.newArrayList(dsTest), minibatch);
+        //Train model
+        double learningRate = 1e-3;
+        TrainingConfig config = new TrainingConfig.Builder()
+                .updater(new Sgd(learningRate))
+                .dataSetFeatureMapping("input")
+                .dataSetLabelMapping("labels")
+                .minimize("mse")
+                .minimize(true)
+                .build();
+        sd.setTrainingConfig(config);
+        sd.setListeners(new ScoreListener(1));
+        History hist = sd.fit(trainIter, epoches);
+        System.out.println(hist.getLossCurve().getLossValues());
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

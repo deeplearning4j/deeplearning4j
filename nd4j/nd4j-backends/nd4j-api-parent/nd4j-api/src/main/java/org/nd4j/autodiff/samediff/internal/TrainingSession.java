@@ -125,6 +125,10 @@ public class TrainingSession extends InferenceSession {
             requiredActivations.addAll(config.getTrainEvaluations().keySet());
         }
 
+        if(config.getLossVariables() != null) {
+            requiredActivations.addAll(config.getLossVariables());
+        }
+
         //Set up losses
         lossVarsToLossIdx = new LinkedHashMap<>();
         List<String> lossVars;
