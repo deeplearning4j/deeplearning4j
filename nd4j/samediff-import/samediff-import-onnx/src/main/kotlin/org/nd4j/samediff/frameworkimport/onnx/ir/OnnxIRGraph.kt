@@ -188,8 +188,6 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         outputList.addAll(graphDef.outputList.filter { valueInfo -> !outputList.contains(valueInfo.name) }.map { input -> input.name })
         val frameworkList =  OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")
         graphDef.nodeList.forEach {
-
-
             val opDefOrNull = if(!frameworkList.containsKey(it.opType)) {
                 //use Constant as a placeholder for any op that resolves to noop, this is probably an op handled by the custom implementation
                 frameworkList["Constant"]!!

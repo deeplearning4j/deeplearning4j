@@ -1,11 +1,11 @@
 package org.eclipse.deeplearning4j.frameworkimport.frameworkimport.onnx.importer
 
-import org.junit.jupiter.api.Assertions.assertArrayEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.nd4j.autodiff.samediff.TrainingConfig
 import org.nd4j.common.io.ClassPathResource
+import org.nd4j.common.resources.Resources
 import org.nd4j.common.tests.tags.TagNames
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.dataset.DataSet
@@ -21,11 +21,14 @@ class TestOnnxFrameworkImporter {
 
 
     @Test
-    fun testRecentUnsqueeze() {
+    fun testConstantInitialization() {
         val importer = OnnxFrameworkImporter()
-        val file = File("/home/agibsonccc/Documents/GitHub/kompile/kompile_pytorch/tests/output_cnn_mnist.onnx")
+        val file = Resources.asFile("onnx_graphs/output_cnn_mnist.onnx")
+        //tests model import with constant initializers where an output of a constant node is
+        //defined
         val output = importer.runImport(file.absolutePath, suggestDynamicVariables = true)
-
+        //ensure that the graph with an eager mode can automatically import the model
+        assertNotNull(output)
     }
 
 

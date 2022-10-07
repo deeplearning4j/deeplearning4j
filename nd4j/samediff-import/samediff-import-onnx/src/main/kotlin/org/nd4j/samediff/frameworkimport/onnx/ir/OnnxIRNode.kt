@@ -82,7 +82,7 @@ class OnnxIRNode(inputNode: Onnx.NodeProto, inputOpDef: Onnx.NodeProto,opMapping
 
     override fun outputAt(index: Int): String {
         //Identity's output is just its node name and has no output
-        if(nodeDef.opType == "Identity"  || nodeDef.opType == "Placeholder" || nodeDef.opType == "Constant" && index == 0) {
+        if(nodeDef.outputCount < 1) {
             return nodeDef.name
         } else if(nodeDef.opType == "Identity" && index > 0) {
             throw IllegalArgumentException("Invalid index for Identity op. Only 0 is valid, received $index")
