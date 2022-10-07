@@ -23,7 +23,8 @@
 package org.nd4j.enums;
 
 /**
- * Activations */
+ * Activations
+ */
 public enum OutAct {
   TANH,
 

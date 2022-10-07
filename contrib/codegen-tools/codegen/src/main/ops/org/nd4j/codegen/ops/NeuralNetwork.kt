@@ -73,11 +73,11 @@ fun NN() = Namespace("NN") {
 
     Op("dropout") {
         javaPackage = "org.nd4j.linalg.api.ops.random.impl"
-        javaOpClass = "DropOut"
-        legacy = true
+        javaOpClass = "CustomDropOut"
         Input(NUMERIC, "input") { description = "Input array" }
-        Arg(NUMERIC, "inputRetainProbability") { description = "Probability of retaining an input (set to 0 with probability 1-p)" }
-
+        Arg(BOOL, "inverted") { description = "Whether dropout should be inverted or not." }
+        Arg(INT, "seed") { description = "the seed for dropout"; defaultValue = 0 }
+        Arg(NUMERIC,"probabilityValue") { description = "the chance of dropping a value to 0. Maybe interpreted as 1 - p if inverted is true."}
         Output(NUMERIC, "output") { description = "Output" }
 
         Doc(Language.ANY, DocScope.ALL) {
@@ -88,21 +88,6 @@ fun NN() = Namespace("NN") {
     }
 
 
-    Op("dropoutInverted") {
-        javaPackage = "org.nd4j.linalg.api.ops.random.impl"
-        javaOpClass = "DropOutInverted"
-        legacy = true
-        Input(NUMERIC, "input") { description = "Input array" }
-        Arg(NUMERIC, "p") { description = "Probability of dropping an input (set to 0 with probability p)" }
-
-        Output(NUMERIC, "output") { description = "Output" }
-
-        Doc(Language.ANY, DocScope.ALL) {
-            """
-                Dropout inverted operation. The dropout probability p is the probability of dropping an input.
-            """.trimIndent()
-        }
-    }
 
     Op("elu", transformStrict) {
         javaOpClass = "ELU"

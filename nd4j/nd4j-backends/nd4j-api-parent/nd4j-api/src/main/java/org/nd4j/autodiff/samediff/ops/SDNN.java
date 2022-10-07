@@ -231,12 +231,14 @@ public class SDNN extends SDOps {
    * Dropout operation<br>
    *
    * @param input Input array (NUMERIC type)
-   * @param inputRetainProbability Probability of retaining an input (set to 0 with probability 1-p)
+   * @param inverted Whether dropout should be inverted or not.
+   * @param seed the seed for dropout
+   * @param probabilityValue the chance of dropping a value to 0. Maybe interpreted as 1 - p if inverted is true.
    * @return output Output (NUMERIC type)
    */
-  public SDVariable dropout(SDVariable input, double inputRetainProbability) {
+  public SDVariable dropout(SDVariable input, boolean inverted, int seed, double probabilityValue) {
     SDValidation.validateNumerical("dropout", "input", input);
-    return new org.nd4j.linalg.api.ops.random.impl.DropOut(sd,input, inputRetainProbability).outputVariable();
+    return new org.nd4j.linalg.api.ops.random.impl.CustomDropOut(sd,input, inverted, seed, probabilityValue).outputVariable();
   }
 
   /**
@@ -244,38 +246,44 @@ public class SDNN extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param input Input array (NUMERIC type)
-   * @param inputRetainProbability Probability of retaining an input (set to 0 with probability 1-p)
+   * @param inverted Whether dropout should be inverted or not.
+   * @param seed the seed for dropout
+   * @param probabilityValue the chance of dropping a value to 0. Maybe interpreted as 1 - p if inverted is true.
    * @return output Output (NUMERIC type)
    */
-  public SDVariable dropout(String name, SDVariable input, double inputRetainProbability) {
+  public SDVariable dropout(String name, SDVariable input, boolean inverted, int seed,
+      double probabilityValue) {
     SDValidation.validateNumerical("dropout", "input", input);
-    SDVariable out =  new org.nd4j.linalg.api.ops.random.impl.DropOut(sd,input, inputRetainProbability).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.random.impl.CustomDropOut(sd,input, inverted, seed, probabilityValue).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
   /**
-   * Dropout inverted operation. The dropout probability p is the probability of dropping an input.<br>
+   * Dropout operation<br>
    *
    * @param input Input array (NUMERIC type)
-   * @param p Probability of dropping an input (set to 0 with probability p)
+   * @param inverted Whether dropout should be inverted or not.
+   * @param probabilityValue the chance of dropping a value to 0. Maybe interpreted as 1 - p if inverted is true.
    * @return output Output (NUMERIC type)
    */
-  public SDVariable dropoutInverted(SDVariable input, double p) {
-    SDValidation.validateNumerical("dropoutInverted", "input", input);
-    return new org.nd4j.linalg.api.ops.random.impl.DropOutInverted(sd,input, p).outputVariable();
+  public SDVariable dropout(SDVariable input, boolean inverted, double probabilityValue) {
+    SDValidation.validateNumerical("dropout", "input", input);
+    return new org.nd4j.linalg.api.ops.random.impl.CustomDropOut(sd,input, inverted, 0, probabilityValue).outputVariable();
   }
 
   /**
-   * Dropout inverted operation. The dropout probability p is the probability of dropping an input.<br>
+   * Dropout operation<br>
    *
    * @param name name May be null. Name for the output variable
    * @param input Input array (NUMERIC type)
-   * @param p Probability of dropping an input (set to 0 with probability p)
+   * @param inverted Whether dropout should be inverted or not.
+   * @param probabilityValue the chance of dropping a value to 0. Maybe interpreted as 1 - p if inverted is true.
    * @return output Output (NUMERIC type)
    */
-  public SDVariable dropoutInverted(String name, SDVariable input, double p) {
-    SDValidation.validateNumerical("dropoutInverted", "input", input);
-    SDVariable out =  new org.nd4j.linalg.api.ops.random.impl.DropOutInverted(sd,input, p).outputVariable();
+  public SDVariable dropout(String name, SDVariable input, boolean inverted,
+      double probabilityValue) {
+    SDValidation.validateNumerical("dropout", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.random.impl.CustomDropOut(sd,input, inverted, 0, probabilityValue).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

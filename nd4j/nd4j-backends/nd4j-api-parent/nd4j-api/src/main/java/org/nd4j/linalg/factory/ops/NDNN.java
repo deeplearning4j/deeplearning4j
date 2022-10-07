@@ -130,24 +130,27 @@ public class NDNN {
    * Dropout operation<br>
    *
    * @param input Input array (NUMERIC type)
-   * @param inputRetainProbability Probability of retaining an input (set to 0 with probability 1-p)
+   * @param inverted Whether dropout should be inverted or not.
+   * @param seed the seed for dropout
+   * @param probabilityValue the chance of dropping a value to 0. Maybe interpreted as 1 - p if inverted is true.
    * @return output Output (NUMERIC type)
    */
-  public INDArray dropout(INDArray input, double inputRetainProbability) {
+  public INDArray dropout(INDArray input, boolean inverted, int seed, double probabilityValue) {
     NDValidation.validateNumerical("dropout", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.DropOut(input, inputRetainProbability));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.CustomDropOut(input, inverted, seed, probabilityValue))[0];
   }
 
   /**
-   * Dropout inverted operation. The dropout probability p is the probability of dropping an input.<br>
+   * Dropout operation<br>
    *
    * @param input Input array (NUMERIC type)
-   * @param p Probability of dropping an input (set to 0 with probability p)
+   * @param inverted Whether dropout should be inverted or not.
+   * @param probabilityValue the chance of dropping a value to 0. Maybe interpreted as 1 - p if inverted is true.
    * @return output Output (NUMERIC type)
    */
-  public INDArray dropoutInverted(INDArray input, double p) {
-    NDValidation.validateNumerical("dropoutInverted", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.DropOutInverted(input, p));
+  public INDArray dropout(INDArray input, boolean inverted, double probabilityValue) {
+    NDValidation.validateNumerical("dropout", "input", input);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.CustomDropOut(input, inverted, 0, probabilityValue))[0];
   }
 
   /**

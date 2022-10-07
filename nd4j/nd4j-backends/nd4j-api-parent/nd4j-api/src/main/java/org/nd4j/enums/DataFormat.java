@@ -23,7 +23,8 @@
 package org.nd4j.enums;
 
 /**
- * Data format: "NCHW" or "NHWC" */
+ * Data format: "NCHW" or "NHWC"
+ */
 public enum DataFormat {
   NCHW,
 
