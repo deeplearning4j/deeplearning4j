@@ -5586,7 +5586,7 @@ public class Nd4j {
 
     /**
      * Writes an array to an output stream
-     * @param arr the array to write
+     * @param asNumpy the array to write
      * @param writeTo the output stream to write to
      * @return returns the number of bytes written
      */
