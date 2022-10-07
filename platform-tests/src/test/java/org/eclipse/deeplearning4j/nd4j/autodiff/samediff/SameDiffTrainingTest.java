@@ -144,7 +144,7 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
         sd.setTrainingConfig(config);
         sd.setListeners(new ScoreListener(1));
         History hist = sd.fit(trainIter, epoches);
-        System.out.println(hist.getLossCurve().getLossValues());
+        assertTrue(hist.getLossCurve().getLossValues().sumNumber().doubleValue() > 0.0);
     }
 
     @ParameterizedTest
