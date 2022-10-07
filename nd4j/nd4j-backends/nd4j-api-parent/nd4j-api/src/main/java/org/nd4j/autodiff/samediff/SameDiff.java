@@ -620,7 +620,7 @@ public class SameDiff extends SDBaseOps {
         Map<Integer, Integer> thisVertexIdToNew = new HashMap<>();
         int idx = 1;
         Map<String,SDVariable> allVars = new LinkedHashMap<>();
-        for (val var : variables()) {
+        for (SDVariable var : variables()) {
             //NOTE: the var call may not always be the same name, ensure that the samediff instance is aware of both
             SDVariable clone = var.clone(this);
             SDVariable newVar = sameDiff.var(clone);
@@ -1580,6 +1580,18 @@ public class SameDiff extends SDBaseOps {
         return Collections.unmodifiableList(this.lossVariables);
     }
 
+
+    /**
+     * Clear/remove any existing loss variables, and set the loss variables to the specified variable names.<br>
+     * See {@link #addLossVariable(String)} for more details
+     *
+     * @param lossVariableNames Names of variables to be loss function variables
+     */
+    public void setLossVariables(@NonNull Collection<String> lossVariableNames) {
+        this.setLossVariables(lossVariableNames.toArray(new String[lossVariableNames.size()]));
+    }
+
+
     /**
      * Clear/remove any existing loss variables, and set the loss variables to the specified variable names.<br>
      * See {@link #addLossVariable(String)} for more details
@@ -1595,6 +1607,8 @@ public class SameDiff extends SDBaseOps {
         // function is defined with respect to specific loss function variables
         sameDiffFunctionInstances.remove("grad");
     }
+
+
 
     /**
      * See {@link #setLossVariables(String...)}
@@ -1642,6 +1656,7 @@ public class SameDiff extends SDBaseOps {
      */
     public void setTrainingConfig(TrainingConfig trainingConfig) {
         this.trainingConfig = trainingConfig;
+        this.setLossVariables(trainingConfig.getLossVariables());
     }
 
     /**
@@ -1873,9 +1888,9 @@ public class SameDiff extends SDBaseOps {
 
 
         TrainingSession ts = new TrainingSession(gradInstance);
-        gradInstance.setTrainingConfig(trainingConfig);     //In case any listeners want to use it
+        gradInstance.setTrainingConfig(this.trainingConfig);     //In case any listeners want to use it
 
-        for(Listener l : activeListeners){
+        for(Listener l : activeListeners) {
             l.operationStart(gradInstance, Operation.TRAINING);
         }
 

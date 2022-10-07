@@ -396,7 +396,7 @@ public class TrainingConfig {
             return this;
         }
 
-        public Builder minimize(String... lossVariables){
+        public Builder minimize(String... lossVariables) {
             this.lossVariables = Arrays.asList(lossVariables);
             return this;
         }

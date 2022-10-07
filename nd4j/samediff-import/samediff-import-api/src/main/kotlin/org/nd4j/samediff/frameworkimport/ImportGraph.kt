@@ -441,7 +441,11 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             logger.debug {"Adding constant ${nd.nodeName()}" }
                             //Get array, create a constant
                             val arr = irGraph.getConstantArrayForName(name)
-                            sd.constant(name, arr)
+                            //probably implicit output like in tensorflow
+                            if(nd.numOutputs() < 1)
+                                sd.constant(name, arr)
+                            else //onnx case
+                                sd.constant(nd.outputAt(0),arr)
                             logger.debug {"Added constant for node name ${nd.nodeName()} with shape ${arr.shapeInfoToString()}" }
                             val inputCount = nd.numInputs()
                             if (inputCount > 0) {
@@ -502,7 +506,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             //Update Variable.inputsForOp for all variables that feed into this op
                             // Such variables must have already been created, given we process in order
                             //declare empty variable for anything that's an input > 0
-                            if(!sd.hasVariable(inName) && inName.contains(':')) {
+                            if(!sd.hasVariable(inName) && irGraph.frameworkName().contains("tensorflow") &&  inName.contains(':')) {
                                 val knownBaseName = stripVarSuffix(inName)
                                 if(!sd.hasVariable(knownBaseName)) {
                                     throw IllegalArgumentException("No variable name found for $knownBaseName")
