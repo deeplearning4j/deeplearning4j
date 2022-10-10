@@ -1979,7 +1979,7 @@ class MatchConditionBool {
         // isInfinite
         return sd::math::sd_isinf(d1) || sd::math::sd_isnan(d1);
       default:
-        sd_printf("Undefined match condition: [%i]\n", mode);
+        sd_debug("Undefined match condition: [%i]\n", mode);
     }
 
     return d1;
@@ -2408,7 +2408,7 @@ class ShannonEntropy {
   }
 
   SD_OP_DEF static Z postProcess(InterType reduction, sd::LongType n, Z *extraParams) {
-    return static_cast<Z>(-reduction); 
+    return static_cast<Z>(-reduction);
   }
 };
 
