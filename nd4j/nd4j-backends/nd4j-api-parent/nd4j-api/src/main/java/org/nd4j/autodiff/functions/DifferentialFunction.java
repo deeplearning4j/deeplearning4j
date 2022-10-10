@@ -362,7 +362,7 @@ public abstract class DifferentialFunction {
                        value = DataType.values()[idxConverted];
                 }
 
-                if(target.getType().isEnum() && value instanceof Long || value instanceof Integer && !target.getType().equals(int.class) && !target.getType().equals(long.class)) {
+                if(target.getType().isEnum() && (value instanceof Long || value instanceof Integer && !target.getType().equals(int.class) && !target.getType().equals(long.class))) {
                     Class<? extends Enum> enumType = (Class<? extends Enum>) target.getType();
                     Method method = enumType.getMethod("values");
                     method.setAccessible(true);

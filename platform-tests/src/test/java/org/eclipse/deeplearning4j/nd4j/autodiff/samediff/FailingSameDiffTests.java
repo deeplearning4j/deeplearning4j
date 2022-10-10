@@ -95,7 +95,7 @@ public class FailingSameDiffTests extends BaseNd4jTestWithBackends {
 
         SDVariable input = sd.var("input", ia);
 
-        SDVariable res = sd.nn().dropout(input, p);
+        SDVariable res = sd.nn().dropout(input, false,p);
         Map<String, INDArray> output = sd.outputAll(Collections.emptyMap());
         assertTrue(!output.isEmpty());
 

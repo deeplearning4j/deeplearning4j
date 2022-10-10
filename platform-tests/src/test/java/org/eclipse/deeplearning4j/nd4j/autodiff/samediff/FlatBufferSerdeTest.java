@@ -33,6 +33,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
 import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.common.resources.Resources;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.graph.FlatConfiguration;
@@ -94,6 +95,14 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testEnum(Nd4jBackend backend) {
+        SameDiff sameDiff = SameDiff.load(Resources.asFile("onnx_graphs/output_cnn_mnist.fb"),true);
+        assertNotNull(sameDiff);
+    }
 
 
     @ParameterizedTest
