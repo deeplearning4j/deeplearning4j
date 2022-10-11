@@ -143,6 +143,11 @@ public class SplitV extends DynamicCustomOp {
     }
 
     @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Arrays.asList(new Concat(sameDiff,splitDim,f1.toArray(new SDVariable[f1.size()])).outputVariables());
+    }
+
+    @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         //Output types are same as first input type - just numSplits of them...
         List<DataType> out = new ArrayList<>(numSplit);
