@@ -110,5 +110,12 @@
     "allDeclaredConstructors":true,
     "allDeclaredClasses" : true,
     "allPublicClasses" : true
-  }
+  },{
+  "name":"org.nd4j.linalg.api.blas.BLASLapackDelegator",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true,
+  "allDeclaredConstructors":true,
+  "allDeclaredClasses" : true,
+  "allPublicClasses" : true
+}
 ]

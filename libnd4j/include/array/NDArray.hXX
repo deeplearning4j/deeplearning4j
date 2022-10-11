@@ -2280,12 +2280,12 @@ NDArray NDArray::asS() const {
                                                : unicode::offsetUtf8StringInUtf32(data + start, stop);
     } else if (dataType() == DataType::UTF16) {
       dataLength += (dtype == DataType::UTF32)
-                        ? unicode::offsetUtf16StringInUtf32(data + start, (stop / sizeof(char16_t)))
-                        : unicode::offsetUtf16StringInUtf8(data + start, (stop / sizeof(char16_t)));
+                    ? unicode::offsetUtf16StringInUtf32(data + start, (stop / sizeof(char16_t)))
+                    : unicode::offsetUtf16StringInUtf8(data + start, (stop / sizeof(char16_t)));
     } else {
       dataLength += (dtype == DataType::UTF16)
-                        ? unicode::offsetUtf32StringInUtf16(data + start, (stop / sizeof(char32_t)))
-                        : unicode::offsetUtf32StringInUtf8(data + start, (stop / sizeof(char32_t)));
+                    ? unicode::offsetUtf32StringInUtf16(data + start, (stop / sizeof(char32_t)))
+                    : unicode::offsetUtf32StringInUtf8(data + start, (stop / sizeof(char32_t)));
     }
   }
   offsets[lengthOf()] = dataLength;
@@ -2764,8 +2764,8 @@ void NDArray::applyTrueBroadcast(sd::BroadcastOpsTuple op, const NDArray &other,
   if (checkTargetShape) {
     const sd::LongType *newShapeInfo = nullptr;
     if (!ShapeUtils::evalBroadcastShapeInfo(
-            *this, other, true, newShapeInfo,
-            getContext()->getWorkspace()))  // the rank of target array must be equal to max->rankOf)()
+        *this, other, true, newShapeInfo,
+        getContext()->getWorkspace()))  // the rank of target array must be equal to max->rankOf)()
       throw std::runtime_error(
           "NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast "
           "operation !");
@@ -2819,8 +2819,8 @@ void NDArray::applyTrueBroadcast(sd::BroadcastBoolOpsTuple op, const NDArray &ot
   if (checkTargetShape) {
     const sd::LongType *newShapeInfo = nullptr;
     if (!ShapeUtils::evalBroadcastShapeInfo(
-            *this, other, true, newShapeInfo,
-            getContext()->getWorkspace()))  // the rank of target array must be equal to max->rankOf)()
+        *this, other, true, newShapeInfo,
+        getContext()->getWorkspace()))  // the rank of target array must be equal to max->rankOf)()
       throw std::runtime_error(
           "NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast "
           "operation !");
@@ -2878,8 +2878,8 @@ void NDArray::applyTrueBroadcast(sd::BroadcastIntOpsTuple op, const NDArray &oth
   if (checkTargetShape) {
     const sd::LongType *newShapeInfo = nullptr;
     if (!ShapeUtils::evalBroadcastShapeInfo(
-            *this, other, false, newShapeInfo,
-            getContext()->getWorkspace()))  // the rank of target array must be equal to max->rankOf)()
+        *this, other, false, newShapeInfo,
+        getContext()->getWorkspace()))  // the rank of target array must be equal to max->rankOf)()
       throw std::runtime_error(
           "NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast "
           "operation !");
@@ -3257,8 +3257,6 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
 
   if (isEmpty() && !isOutShapeEmpty)
     throw std::invalid_argument("NDArray::reshapei: can't reshape empty array to non-empty !");
-  if (!isEmpty() && isOutShapeEmpty)
-    throw std::invalid_argument("NDArray::reshapei: can't reshape non-empty array to empty !");
   if (isEmpty() && isOutShapeEmpty) {
     sd::LongType *shapeInfoNew = ShapeBuilders::emptyShapeInfo(dataType(), order, cshape, getContext()->getWorkspace());
     setShapeInfo(shapeInfoNew);
@@ -3792,7 +3790,7 @@ T NDArray::e(const sd::LongType i, const sd::LongType j, const sd::LongType k, c
 }
 BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT,
                                 NDArray::e(const sd::LongType, const sd::LongType, const sd::LongType,
-                                           const sd::LongType) const,
+                                    const sd::LongType) const,
                                 SD_COMMON_TYPES_ALL);
 
 //////////////////////////////////////////////////////////////////////////
