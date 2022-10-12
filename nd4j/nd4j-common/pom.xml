@@ -36,8 +36,8 @@
     <name>nd4j-common</name>
 
     <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <module.name>nd4j.common</module.name>
     </properties>
 

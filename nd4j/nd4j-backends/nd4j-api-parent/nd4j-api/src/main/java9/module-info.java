@@ -1,4 +1,5 @@
 open module nd4j.api {
+    requires java.nio;
     requires byteunits;
     requires commons.io;
     requires commons.net;

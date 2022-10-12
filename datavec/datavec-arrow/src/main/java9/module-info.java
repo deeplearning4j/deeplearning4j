@@ -1,4 +1,5 @@
 open module datavec.arrow {
+    requires java.nio;
     requires commons.io;
     requires slf4j.api;
     requires arrow.memory.core;

@@ -48,11 +48,11 @@ public class VectorsConfiguration implements Serializable {
     private Integer iterations = 1;
     private Integer epochs = 1;
     private Integer window = 5;
-    private Long seed;
+    private Long seed = 1234L;
     private Double negative = 0.0d;
     private Boolean useHierarchicSoftmax = true;
     private Double sampling = 0.0d;
-    private Integer learningRateDecayWords;
+    private Integer learningRateDecayWords = 3;
     private int[] variableWindows;
 
     private Boolean hugeModelExpected = false;
@@ -620,6 +620,46 @@ public class VectorsConfiguration implements Serializable {
         int result = Objects.hash(getMinWordFrequency(), getLearningRate(), getMinLearningRate(), getLayersSize(), useAdaGrad, getBatchSize(), getIterations(), getEpochs(), getWindow(), getSeed(), getNegative(), useHierarchicSoftmax, getSampling(), getLearningRateDecayWords(), hugeModelExpected, useUnknown, getScavengerActivationThreshold(), getScavengerRetentionDelay(), getElementsLearningAlgorithm(), getSequenceLearningAlgorithm(), getModelUtils(), getTokenizerFactory(), getTokenPreProcessor(), getnGram(), getUNK(), getSTOP(), getStopList(), getVocabSize(), trainElementsVectors, trainSequenceVectors, allowParallelTokenization, preciseWeightInit, preciseMode);
         result = 31 * result + Arrays.hashCode(getVariableWindows());
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "VectorsConfiguration{" +
+                "minWordFrequency=" + minWordFrequency +
+                ", learningRate=" + learningRate +
+                ", minLearningRate=" + minLearningRate +
+                ", layersSize=" + layersSize +
+                ", useAdaGrad=" + useAdaGrad +
+                ", batchSize=" + batchSize +
+                ", iterations=" + iterations +
+                ", epochs=" + epochs +
+                ", window=" + window +
+                ", seed=" + seed +
+                ", negative=" + negative +
+                ", useHierarchicSoftmax=" + useHierarchicSoftmax +
+                ", sampling=" + sampling +
+                ", learningRateDecayWords=" + learningRateDecayWords +
+                ", variableWindows=" + Arrays.toString(variableWindows) +
+                ", hugeModelExpected=" + hugeModelExpected +
+                ", useUnknown=" + useUnknown +
+                ", scavengerActivationThreshold=" + scavengerActivationThreshold +
+                ", scavengerRetentionDelay=" + scavengerRetentionDelay +
+                ", elementsLearningAlgorithm='" + elementsLearningAlgorithm + '\'' +
+                ", sequenceLearningAlgorithm='" + sequenceLearningAlgorithm + '\'' +
+                ", modelUtils='" + modelUtils + '\'' +
+                ", tokenizerFactory='" + tokenizerFactory + '\'' +
+                ", tokenPreProcessor='" + tokenPreProcessor + '\'' +
+                ", nGram=" + nGram +
+                ", UNK='" + UNK + '\'' +
+                ", STOP='" + STOP + '\'' +
+                ", stopList=" + stopList +
+                ", vocabSize=" + vocabSize +
+                ", trainElementsVectors=" + trainElementsVectors +
+                ", trainSequenceVectors=" + trainSequenceVectors +
+                ", allowParallelTokenization=" + allowParallelTokenization +
+                ", preciseWeightInit=" + preciseWeightInit +
+                ", preciseMode=" + preciseMode +
+                '}';
     }
 
     public static void setMapper(ObjectMapper mapper) {

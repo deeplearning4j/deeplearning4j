@@ -62,21 +62,23 @@ public abstract class BaseSparkTest implements Serializable {
 
     @AfterEach
     synchronized void after() {
-        sc.close();
-        // Wait until it's stopped, to avoid race conditions during tests
-        for (int i = 0; i < 100; i++) {
-            if (!sc.sc().stopped().get()) {
-                try {
-                    Thread.sleep(100L);
-                } catch (InterruptedException e) {
-                    log.error("", e);
+        if(sc != null) {
+            sc.close();
+            // Wait until it's stopped, to avoid race conditions during tests
+            for (int i = 0; i < 100; i++) {
+                if (!sc.sc().stopped().get()) {
+                    try {
+                        Thread.sleep(100L);
+                    } catch (InterruptedException e) {
+                        log.error("", e);
+                    }
+                } else {
+                    break;
                 }
-            } else {
-                break;
             }
-        }
-        if (!sc.sc().stopped().get()) {
-            throw new RuntimeException("Spark context is not stopped after 10s");
+            if (!sc.sc().stopped().get()) {
+                throw new RuntimeException("Spark context is not stopped after 10s");
+            }
         }
         sc = null;
     }

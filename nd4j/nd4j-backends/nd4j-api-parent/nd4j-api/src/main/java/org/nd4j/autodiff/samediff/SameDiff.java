@@ -6428,23 +6428,8 @@ public class SameDiff extends SDBaseOps {
      *
      */
     public void convertConstantsToVariables() {
-        for(Map.Entry<String,Variable> varEntry : variables.entrySet()) {
-            Variable varMetaData = varEntry.getValue();
-            SDVariable currVar = varMetaData.getVariable();
-            if(currVar.isConstant()) {
-                String output = varMetaData.getOutputOfOp();
-                //arrays are outputs of ops
-                if(output != null)
-                    currVar.setVariableType(VariableType.ARRAY);
-                    //only need to convert floating point types as trainable, ints are not
-                else if(varMetaData.getInputsForOp() != null && !varMetaData.getInputsForOp().isEmpty() && currVar.dataType().isFPType()) {
-                    currVar.setVariableType(VariableType.VARIABLE);
-                    if(constantArrays.hasArray(currVar.name())) {
-                        currVar.setArray(constantArrays.getArray(currVar.name()));
-                    }
-                }
-            }
-        }
+        convertToVariables(variables().stream().filter(input -> input.getVariableType() == VariableType.CONSTANT)
+                .collect(Collectors.toList()));
     }
 
     /**

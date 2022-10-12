@@ -139,6 +139,9 @@
                         <classpathDependencyExclude>com.google.android:android
                         </classpathDependencyExclude>
                     </classpathDependencyExcludes>
+                    <argLine>
+                        --add-exports java.base/java.nio=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED
+                    </argLine>
                 </configuration>
             </plugin>
         </plugins>
