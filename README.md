@@ -20,6 +20,7 @@ The DL4J stack comprises of:
 - **SameDiff** : Part of the ND4J library, SameDiff is our automatic differentiation / deep learning framework. SameDiff uses a graph-based (define then run) approach, similar to TensorFlow graph mode. Eager graph (TensorFlow 2.x eager/PyTorch) graph execution is planned. SameDiff supports importing TensorFlow frozen model format .pb (protobuf) models. Import for ONNX, TensorFlow SavedModel and Keras models are planned. Deeplearning4j also has full SameDiff support for easily writing custom layers and loss functions.
 - **DataVec**: ETL for machine learning data in a wide variety of formats and files (HDFS, Spark, Images, Video, Audio, CSV, Excel etc)
 - **LibND4J** : C++ library that underpins everything. For more information on how the JVM acceses native arrays and operations refer to [JavaCPP](https://github.com/bytedeco/javacpp)
+- **Python4J**: Bundled cpython execution for the JVM
 
 All projects in the DL4J ecosystem support Windows, Linux and macOS. Hardware support includes CUDA GPUs (10.0, 10.1, 10.2 except OSX), x86 CPU (x86_64, avx2, avx512), ARM CPU (arm, arm64, armhf) and PowerPC (ppc64le).
 
@@ -47,45 +48,24 @@ Deeplearning4J has quite a few dependencies. For this reason we only support usa
 
 Add these dependencies to your pom.xml file to use Deeplearning4J with the CPU backend. A full standalone project example is [available in the example repository](https://github.com/eclipse/deeplearning4j-examples), if you want to start a new Maven project from scratch.
 
-## A taste of code
-Deeplearning4J offers a very high level API for defining even complex neural networks. The following example code shows
-you how LeNet, a convolutional neural network, is defined in DL4J.
+## Code samples
 
-```java
-MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(seed)
-                .l2(0.0005)
-                .weightInit(WeightInit.XAVIER)
-                .updater(new Adam(1e-3))
-                .list()
-                .layer(new ConvolutionLayer.Builder(5, 5)
-                        .stride(1,1)
-                        .nOut(20)
-                        .activation(Activation.IDENTITY)
-                        .build())
-                .layer(new SubsamplingLayer.Builder(PoolingType.MAX)
-                        .kernelSize(2,2)
-                        .stride(2,2)
-                        .build())
-                .layer(new ConvolutionLayer.Builder(5, 5)
-                        .stride(1,1)
-                        .nOut(50)
-                        .activation(Activation.IDENTITY)
-                        .build())
-                .layer(new SubsamplingLayer.Builder(PoolingType.MAX)
-                        .kernelSize(2,2)
-                        .stride(2,2)
-                        .build())
-                .layer(new DenseLayer.Builder().activation(Activation.RELU)
-                        .nOut(500).build())
-                .layer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .nOut(outputNum)
-                        .activation(Activation.SOFTMAX)
-                        .build())
-                .setInputType(InputType.convolutionalFlat(28,28,1))
-                .build();
+Due to DL4J being a multi faceted project
+with several modules in the mono repo, we recommend looking at the examples
+for a taste of different usages of the different modules. Below
+we'll link to examples for each module.
 
-```
+1. ND4J: https://github.com/deeplearning4j/deeplearning4j-examples/tree/master/nd4j-ndarray-examples
+2. DL4J: https://github.com/deeplearning4j/deeplearning4j-examples/tree/master/dl4j-examples
+3. Samediff: https://github.com/deeplearning4j/deeplearning4j-examples/tree/master/samediff-examples
+4. Datavec: https://github.com/deeplearning4j/deeplearning4j-examples/tree/master/data-pipeline-examples
+5. Python4j: https://deeplearning4j.konduit.ai/python4j/tutorials/quickstart
+
+
+For users looking for being able to run models from other frameworks, see:
+1. Onnx: https://github.com/deeplearning4j/deeplearning4j-examples/tree/master/onnx-import-examples
+2. Tensorflow/Keras: https://github.com/deeplearning4j/deeplearning4j-examples/tree/master/tensorflow-keras-import-examples
+
 
 ## Documentation, Guides and Tutorials
 You can find the official documentation for Deeplearning4J and the other libraries of its ecosystem at http://deeplearning4j.konduit.ai/.
@@ -109,6 +89,23 @@ mvn -B -V -U clean install -pl  -Dlibnd4j.platform=linux-x86_64 -Dlibnd4j.chip=c
 ```
 
 An example of GPU "CC" or compute capability is 61 for Titan X Pascal.
+
+## Running tests
+
+In order to run tests, please see the platform-tests module.
+This module only runs on jdk 11 (mostly due to spark and bugs with older scala versions + JDK 17)
+
+platform-tests allows you to run dl4j for different backends.
+There are a few properties you can specify on the command line:
+1. backend.artifactId: this defaults to nd4j-native and will run tests on cpu,you can specify other backends like nd4j-cuda-11.6
+2. dl4j.version: You can change the dl4j version that the tests run against. This defaults to 1.0.0-SNAPSHOT.
+
+More parameters can be found here:
+https://github.com/deeplearning4j/deeplearning4j/blob/c1bf8717e4839c8930e9c43183bf7b94d0cf84dc/platform-tests/pom.xml#L47
+
+
+
+
 
 ## Running project in Intellij IDEA:
 1. Ensure you follow https://stackoverflow.com/questions/45370178/exporting-a-package-from-system-module-is-not-allowed-with-release on jdk 9 or later
