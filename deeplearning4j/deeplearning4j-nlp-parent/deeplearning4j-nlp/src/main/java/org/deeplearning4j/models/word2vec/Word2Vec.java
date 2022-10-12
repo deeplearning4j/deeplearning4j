@@ -722,27 +722,30 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.intersectModel = this.intersectVectors;
             ret.lockFactor = this.lockFactor;
 
-            this.configuration.setLearningRate(this.learningRate);
-            this.configuration.setLayersSize(layerSize);
-            this.configuration.setHugeModelExpected(hugeModelExpected);
-            this.configuration.setWindow(window);
-            this.configuration.setMinWordFrequency(minWordFrequency);
-            this.configuration.setIterations(iterations);
-            this.configuration.setSeed(seed);
-            this.configuration.setBatchSize(batchSize);
-            this.configuration.setLearningRateDecayWords(learningRateDecayWords);
-            this.configuration.setMinLearningRate(minLearningRate);
-            this.configuration.setSampling(this.sampling);
-            this.configuration.setUseAdaGrad(useAdaGrad);
-            this.configuration.setNegative(negative);
-            this.configuration.setEpochs(this.numEpochs);
-            this.configuration.setStopList(this.stopWords);
-            this.configuration.setVariableWindows(variableWindows);
-            this.configuration.setUseHierarchicSoftmax(this.useHierarchicSoftmax);
-            this.configuration.setPreciseWeightInit(this.preciseWeightInit);
-            this.configuration.setModelUtils(this.modelUtils.getClass().getCanonicalName());
-            this.configuration.setAllowParallelTokenization(this.allowParallelTokenization);
-            this.configuration.setPreciseMode(this.preciseMode);
+            if(!this.configurationSpecified) {
+                this.configuration.setLearningRate(this.learningRate);
+                this.configuration.setLayersSize(layerSize);
+                this.configuration.setHugeModelExpected(hugeModelExpected);
+                this.configuration.setWindow(window);
+                this.configuration.setMinWordFrequency(minWordFrequency);
+                this.configuration.setIterations(iterations);
+                this.configuration.setSeed(seed);
+                this.configuration.setBatchSize(batchSize);
+                this.configuration.setLearningRateDecayWords(learningRateDecayWords);
+                this.configuration.setMinLearningRate(minLearningRate);
+                this.configuration.setSampling(this.sampling);
+                this.configuration.setUseAdaGrad(useAdaGrad);
+                this.configuration.setNegative(negative);
+                this.configuration.setEpochs(this.numEpochs);
+                this.configuration.setStopList(this.stopWords);
+                this.configuration.setVariableWindows(variableWindows);
+                this.configuration.setUseHierarchicSoftmax(this.useHierarchicSoftmax);
+                this.configuration.setPreciseWeightInit(this.preciseWeightInit);
+                this.configuration.setModelUtils(this.modelUtils.getClass().getCanonicalName());
+                this.configuration.setAllowParallelTokenization(this.allowParallelTokenization);
+                this.configuration.setPreciseMode(this.preciseMode);
+
+            }
 
             if (tokenizerFactory != null) {
                 this.configuration.setTokenizerFactory(tokenizerFactory.getClass().getCanonicalName());
