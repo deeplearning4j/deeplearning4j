@@ -35,12 +35,12 @@ Deeplearning4J has quite a few dependencies. For this reason we only support usa
   <dependency>
       <groupId>org.deeplearning4j</groupId>
       <artifactId>deeplearning4j-core</artifactId>
-      <version>1.0.0-M1.1</version>
+      <version>1.0.0-M2.1</version>
   </dependency>
   <dependency>
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-native-platform</artifactId>
-      <version>1.0.0-M1.1</version>
+      <version>1.0.0-M2.1</version>
   </dependency>
 </dependencies>
 ```
@@ -109,6 +109,10 @@ mvn -B -V -U clean install -pl  -Dlibnd4j.platform=linux-x86_64 -Dlibnd4j.chip=c
 ```
 
 An example of GPU "CC" or compute capability is 61 for Titan X Pascal.
+
+## Running project in Intellij IDEA:
+1. Ensure you follow https://stackoverflow.com/questions/45370178/exporting-a-package-from-system-module-is-not-allowed-with-release on jdk 9 or later
+2. Ignore all nd4j-shade submodules. Right click on each folder and click: Maven -> Ignore project
 
 
 ## License

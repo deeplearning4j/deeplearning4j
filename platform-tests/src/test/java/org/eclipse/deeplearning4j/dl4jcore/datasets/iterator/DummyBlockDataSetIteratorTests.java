@@ -22,7 +22,6 @@ package org.eclipse.deeplearning4j.dl4jcore.datasets.iterator;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import lombok.var;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.DummyBlockDataSetIterator;
 import org.eclipse.deeplearning4j.dl4jcore.datasets.iterator.tools.SimpleVariableGenerator;
