@@ -164,17 +164,6 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
             constructor.buildJointVocabulary(false, true);
 
-            /*
-            if (useUnknown && unknownElement != null && !vocab.containsWord(unknownElement.getLabel())) {
-                log.info("Adding UNK element...");
-                unknownElement.setSpecial(true);
-                unknownElement.markAsLabel(false);
-                unknownElement.setIndex(vocab.numWords());
-                vocab.addToken(unknownElement);
-            }
-            */
-
-
             // check for malformed inputs. if numWords/numSentences ratio is huge, then user is passing something weird
             if (vocab.numWords() / constructor.getNumberOfSequences() > 1000) {
                 log.warn("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
@@ -198,6 +187,11 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 elementsLearningAlgorithm.configure(vocab, lookupTable, configuration);
                 elementsLearningAlgorithm.pretrain(iterator);
             }
+
+            if(sequenceLearningAlgorithm == null) {
+                sequenceLearningAlgorithm = new DBOW<>();
+            }
+
             if (trainSequenceVectors && sequenceLearningAlgorithm != null) {
                 log.info("          building SequenceLearningAlgorithm: [" + sequenceLearningAlgorithm.getCodeName()
                         + "]");
@@ -247,8 +241,6 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         if (props.getProperty("backend").equals("CUDA")) {
             if (Nd4j.getAffinityManager().getNumberOfDevices() > 1)
                 throw new IllegalStateException("Multi-GPU word2vec/doc2vec isn't available atm");
-            //if (!NativeOpsHolder.getInstance().getDeviceNativeOps().isP2PAvailable())
-            //throw new IllegalStateException("Running Word2Vec on multi-gpu system requires P2P support between GPUs, which looks to be unavailable on your system.");
         }
 
         Nd4j.getRandom().setSeed(configuration.getSeed());
@@ -1032,11 +1024,11 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             if (trainElementsVectors && this.elementsLearningAlgorithm == null) {
                 // create default implementation of ElementsLearningAlgorithm
                 //derive default from sequence when specified
-                if(this.sequenceLearningAlgorithm != null) {
+                if (this.sequenceLearningAlgorithm != null) {
                     this.elementsLearningAlgorithm = this.sequenceLearningAlgorithm.getElementsLearningAlgorithm();
-                }
-                else
+                } else {
                     this.elementsLearningAlgorithm = new SkipGram<>();
+                }
             }
 
 

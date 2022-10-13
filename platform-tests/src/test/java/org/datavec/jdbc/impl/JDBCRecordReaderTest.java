@@ -20,6 +20,7 @@
 package org.datavec.jdbc.impl;
 
 import org.apache.commons.dbutils.DbUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.derby.jdbc.EmbeddedDataSource;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
@@ -61,6 +62,7 @@ public class JDBCRecordReaderTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        FileUtils.forceDelete(new File(dbName));
         dataSource = new EmbeddedDataSource();
         dataSource.setDatabaseName(dbName);
         dataSource.setCreateDatabase("create");

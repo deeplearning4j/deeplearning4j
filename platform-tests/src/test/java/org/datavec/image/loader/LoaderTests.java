@@ -46,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.LARGE_RESOURCES)
 @Tag(TagNames.LONG_TEST)
+@Disabled("Dataset URL needs to be updated")
 public class LoaderTests {
 
     private static void ensureDataAvailable(){

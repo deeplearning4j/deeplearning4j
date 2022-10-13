@@ -76,7 +76,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
     protected ThreadLocal<List<Aggregate>> batches = new ThreadLocal<>();
 
-    //private BatchSequences<T> batchSequences;
 
     /**
      * Dummy construction is required for reflection
@@ -125,7 +124,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         this.syn1 = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1());
         this.syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
         this.expTable = new DeviceLocalNDArray(Nd4j.create(((InMemoryLookupTable<T>) lookupTable).getExpTable(),
-                new long[]{((InMemoryLookupTable<T>) lookupTable).getExpTable().length}, syn0.get().dataType()));
+                new long[]{((InMemoryLookupTable<T>) lookupTable).getExpTable().length}, syn0.get() == null ? DataType.DOUBLE
+                        : syn0.get().dataType()));
         this.table = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getTable());
 
 
@@ -193,8 +193,13 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
         for (int i = 0; i < tempSequence.getElements().size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom,
-                    learningRate, currentWindow, batchSequences);
+            if(currentWindow > 0)
+                score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom,
+                        learningRate, currentWindow, batchSequences);
+            else
+                score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() , nextRandom,
+                        learningRate, currentWindow, batchSequences);
+
         }
         /*int batchSize = configuration.getBatchSize();
         if (batchSize > 1 && batchSequences != null && batchSequences.size() >= batchSize) {

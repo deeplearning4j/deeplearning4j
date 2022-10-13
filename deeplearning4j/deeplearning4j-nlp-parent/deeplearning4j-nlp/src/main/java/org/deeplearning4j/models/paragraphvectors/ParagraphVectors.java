@@ -1015,16 +1015,16 @@ public class ParagraphVectors extends Word2Vec {
         @Override
         public ParagraphVectors build() {
             presetTables();
-
+            if(configuration == null) {
+                configurationSpecified = false;
+                configuration = new VectorsConfiguration();
+            }
             ParagraphVectors ret = new ParagraphVectors();
 
             if (this.existingVectors != null) {
                 trainWordVectors(false);
                 trainElementsRepresentation(false);
                 this.elementsLearningAlgorithm = null;
-
-                //    this.lookupTable = this.existingVectors.lookupTable();
-                //    this.vocabCache = this.existingVectors.vocab();
             }
 
             if (this.labelsSource == null)
@@ -1038,14 +1038,14 @@ public class ParagraphVectors extends Word2Vec {
 
                 if (docIter instanceof LabelAwareDocumentIterator)
                     this.labelAwareIterator =
-                            new DocumentIteratorConverter((LabelAwareDocumentIterator) docIter, labelsSource);
+                            new DocumentIteratorConverter(docIter, labelsSource);
                 else
                     this.labelAwareIterator = new DocumentIteratorConverter(docIter, labelsSource);
             } else if (sentenceIterator != null) {
                 // we have SentenceIterator. Mechanics will be the same, as above
                 if (sentenceIterator instanceof LabelAwareSentenceIterator)
                     this.labelAwareIterator = new SentenceIteratorConverter(
-                            (LabelAwareSentenceIterator) sentenceIterator, labelsSource);
+                            sentenceIterator, labelsSource);
                 else
                     this.labelAwareIterator = new SentenceIteratorConverter(sentenceIterator, labelsSource);
             } else if (labelAwareIterator != null) {
@@ -1122,7 +1122,6 @@ public class ParagraphVectors extends Word2Vec {
                             .setSequenceLearningAlgorithm(this.sequenceLearningAlgorithm.getClass().getCanonicalName());
                 this.configuration.setModelUtils(this.modelUtils.getClass().getCanonicalName());
                 this.configuration.setAllowParallelTokenization(this.allowParallelTokenization);
-
                 if (tokenizerFactory != null) {
                     this.configuration.setTokenizerFactory(tokenizerFactory.getClass().getCanonicalName());
                     if (tokenizerFactory.getTokenPreProcessor() != null)
@@ -1141,7 +1140,10 @@ public class ParagraphVectors extends Word2Vec {
             ret.labelsSource = this.labelsSource;
             ret.labelAwareIterator = this.labelAwareIterator;
             ret.iterator = this.iterator;
-
+            if(this.elementsLearningAlgorithm != null)
+                elementsLearningAlgorithm.configure(vocabCache,lookupTable,configuration);
+            if(this.sequenceLearningAlgorithm != null)
+                sequenceLearningAlgorithm.configure(vocabCache,lookupTable,configuration);
             return ret;
         }
 

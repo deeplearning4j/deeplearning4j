@@ -204,7 +204,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
                     WordVectorSerializer.readParagraphVectorsBinary(fullFile) :
                     WordVectorSerializer.readParagraphVectors(fullFile);
 
-         
+
             int cnt1 = cache.wordFrequency("day");
             int cnt2 = cache.wordFrequency("me");
 
@@ -631,8 +631,14 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
          * But there's no reason to keep at that high
          */
 
-        ParagraphVectors vec = new ParagraphVectors.Builder().minWordFrequency(1).epochs(3).layerSize(100)
-                .stopWords(new ArrayList<String>()).windowSize(5).iterate(iter).tokenizerFactory(t).build();
+        ParagraphVectors vec = new ParagraphVectors.Builder()
+                .minWordFrequency(1)
+                .epochs(3)
+                .layerSize(100)
+                .stopWords(new ArrayList<String>())
+                .windowSize(5).iterate(iter)
+                .tokenizerFactory(t)
+                .build();
 
         vec.fit();
 
@@ -923,25 +929,6 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         log.info("vec1/vec2: {}", Transforms.cosineSim(vec1, vec2));
     }
 
-    @Test
-    @Tag(TagNames.LONG_TEST)
-    @Tag(TagNames.LARGE_RESOURCES)
-    public void testGoogleModelForInference() throws Exception {
-        WordVectors googleVectors = WordVectorSerializer.readWord2VecModel(new File("/ext/GoogleNews-vectors-negative300.bin.gz"));
-
-        TokenizerFactory t = new DefaultTokenizerFactory();
-        t.setTokenPreProcessor(new CommonPreprocessor());
-
-        ParagraphVectors pv =
-                new ParagraphVectors.Builder().tokenizerFactory(t).iterations(10).useHierarchicSoftmax(false)
-                        .trainWordVectors(false).iterations(10).useExistingWordVectors(googleVectors)
-                        .negativeSample(10).sequenceLearningAlgorithm(new DM<VocabWord>()).build();
-
-        INDArray vec1 = pv.inferVector("This text is pretty awesome");
-        INDArray vec2 = pv.inferVector("Fantastic process of crazy things happening inside just for history purposes");
-
-        log.info("vec1/vec2: {}", Transforms.cosineSim(vec1, vec2));
-    }
 
     @Test()
     @Timeout(300000)
