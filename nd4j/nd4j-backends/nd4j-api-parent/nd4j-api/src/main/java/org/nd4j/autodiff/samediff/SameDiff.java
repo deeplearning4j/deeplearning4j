@@ -1656,7 +1656,8 @@ public class SameDiff extends SDBaseOps {
      */
     public void setTrainingConfig(TrainingConfig trainingConfig) {
         this.trainingConfig = trainingConfig;
-        this.setLossVariables(trainingConfig.getLossVariables());
+        if(trainingConfig.getLossVariables() != null)
+            this.setLossVariables(trainingConfig.getLossVariables());
     }
 
     /**

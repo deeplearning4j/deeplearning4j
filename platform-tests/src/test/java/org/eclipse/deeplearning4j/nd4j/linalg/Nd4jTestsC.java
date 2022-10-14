@@ -1904,9 +1904,9 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
         INDArray threeByThree = Nd4j.create(3, 3);
-        INDArray threeByThreeRow1AndTwo = threeByThree.get(NDArrayIndex.interval(1, 3), NDArrayIndex.all());
+        INDArray threeByThreeRow1AndTwo = threeByThree.get(NDArrayIndex.interval(1, 2), NDArrayIndex.all());
         threeByThreeRow1AndTwo.putRow(1, Nd4j.ones(3));
-        assertEquals(Nd4j.ones(3), threeByThreeRow1AndTwo.getRow(1));
+        assertEquals(Nd4j.ones(3), threeByThreeRow1AndTwo.getRow(0));
 
     }
 

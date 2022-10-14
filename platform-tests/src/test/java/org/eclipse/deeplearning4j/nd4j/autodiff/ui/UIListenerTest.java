@@ -48,6 +48,7 @@ import org.nd4j.common.primitives.Pair;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -296,6 +297,7 @@ public class UIListenerTest extends BaseNd4jTestWithBackends {
 
         sd.setTrainingConfig(TrainingConfig.builder()
                 .dataSetFeatureMapping("in")
+                .lossVariables(Collections.singleton(loss.name()))
                 .dataSetLabelMapping("label")
                 .updater(new Adam(1e-1))
                 .weightDecay(1e-3, true)

@@ -54,7 +54,7 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
 
         ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
         mmgr.setMaxCacheBytes(new AtomicLong(1000));
-        assertEquals(1000, mmgr.getMaxCacheBytes());
+        assertEquals(1000, mmgr.getMaxCacheBytes().get());
 
         INDArray[] arrays = new INDArray[100];
         for( int i = 0; i < arrays.length; i++) {
@@ -65,7 +65,7 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
             mmgr.release(arrays[i]);
         }
 
-        assertEquals(1000, mmgr.getCurrentCacheSize());
+        assertEquals(1000, mmgr.getCurrentCacheSize().get());
         assertEquals(10, mmgr.getLruCache().size());
         assertEquals(10, mmgr.getLruCacheValues().size());
 
@@ -88,7 +88,7 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
         }
 
 
-        assertEquals(1000, mmgr.getCurrentCacheSize());
+        assertEquals(1000, mmgr.getCurrentCacheSize().get());
         assertEquals(10, mmgr.getLruCache().size());
         assertEquals(10, mmgr.getLruCacheValues().size());
 
@@ -129,7 +129,7 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
             mmgr.release(Nd4j.scalar(0));
         }
 
-        assertEquals(4*1000, mmgr.getCurrentCacheSize());
+        assertEquals(4 * 1000, mmgr.getCurrentCacheSize().get());
         assertEquals(1000, mmgr.getLruCache().size());
         assertEquals(1000, mmgr.getLruCacheValues().size());
 
@@ -137,7 +137,7 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
             mmgr.release(Nd4j.scalar(0));
         }
 
-        assertEquals(4*2000, mmgr.getCurrentCacheSize());
+        assertEquals(4 * 2000, mmgr.getCurrentCacheSize().get());
         assertEquals(2000, mmgr.getLruCache().size());
         assertEquals(2000, mmgr.getLruCacheValues().size());
     }

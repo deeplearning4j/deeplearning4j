@@ -37,6 +37,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Sgd;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 

@@ -1435,19 +1435,16 @@ public class TestReductionOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStandardDeviation(Nd4jBackend backend) {
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
-
         for (boolean keepDims : new boolean[]{false, true}) {
             SameDiff sameDiff = SameDiff.create();
 
             INDArray in = Nd4j.linspace(1, 8, 8).reshape(2, 4);
             SDVariable input = sameDiff.var(in);
             INDArray expected = Nd4j.createFromArray(new double[]{
-                    2,         2,         2,         2
+                    2,2,2,2
             });
 
-            if(keepDims){
+            if(keepDims) {
                 expected = expected.reshape(1,4);
             }
 

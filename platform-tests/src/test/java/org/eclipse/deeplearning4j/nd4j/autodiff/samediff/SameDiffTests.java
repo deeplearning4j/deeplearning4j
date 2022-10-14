@@ -2812,6 +2812,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         TrainingConfig c = TrainingConfig.builder()
                 .updater(new Adam(0.1))
+                .lossVariables(Collections.singletonList(loss.name()))
                 .weightDecay(0.01, true)
                 .dataSetFeatureMapping("in")
                 .skipBuilderValidation(true)
@@ -2858,6 +2859,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         TrainingConfig c = TrainingConfig.builder()
                 .updater(new Adam(0.1))
                 .weightDecay(0.01, true)
+                .lossVariables(Collections.singletonList(loss.name()))
                 .dataSetFeatureMapping("in", "in2")
                 .skipBuilderValidation(true)
                 .build();
@@ -2899,6 +2901,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         TrainingConfig c = TrainingConfig.builder()
                 .updater(new Adam(0.1))
+                .lossVariables(Collections.singletonList(loss.name()))
                 .weightDecay(0.01, true)
                 .dataSetFeatureMapping("in")
                 .skipBuilderValidation(true)
@@ -3289,6 +3292,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         sd.setTrainingConfig(TrainingConfig.builder()
                 .updater(new Adam(1e-3))
+                .lossVariables(Collections.singletonList(v4.name()))
                 .dataSetFeatureMapping("x")
                 .markLabelsUnused()
                 .build());
@@ -3352,6 +3356,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         sd.setTrainingConfig(TrainingConfig.builder()
                 .dataSetFeatureMapping("ph1", "ph2", "ph3", "ph4")
+                .lossVariables(Collections.singletonList(mean.name()))
                 .markLabelsUnused()
                 .updater(new Adam(1e-3)).build());
 
@@ -3984,8 +3989,9 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     public void testTrainingConfigJson(Nd4jBackend backend) {
         for(IEvaluation e : new IEvaluation[]{new Evaluation(), new RegressionEvaluation(), new EvaluationBinary(), new ROC(),
                 new ROCMultiClass(), new ROCBinary(), new EvaluationCalibration()}) {
-            TrainingConfig config = new TrainingConfig.Builder()
+            TrainingConfig config =  TrainingConfig.builder()
                     .l2(1e-4)
+                    .lossVariables(Collections.singletonList("loss"))
                     .updater(new Adam(0.1))
                     .dataSetFeatureMapping("out").dataSetLabelMapping("label")
                     .trainEvaluation("out", 0, e)

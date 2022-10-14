@@ -65,7 +65,7 @@ public class CheckpointListenerTest extends BaseNd4jTestWithBackends {
         return 90000L;
     }
 
-    public static SameDiff getModel(){
+    public static SameDiff getModel() {
         Nd4j.getRandom().setSeed(12345);
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 4);
@@ -79,6 +79,7 @@ public class CheckpointListenerTest extends BaseNd4jTestWithBackends {
 
         sd.setTrainingConfig(TrainingConfig.builder()
                 .dataSetFeatureMapping("in")
+                .lossVariables(Collections.singletonList(loss.name()))
                 .dataSetLabelMapping("label")
                 .updater(new Adam(1e-2))
                 .weightDecay(1e-2, true)

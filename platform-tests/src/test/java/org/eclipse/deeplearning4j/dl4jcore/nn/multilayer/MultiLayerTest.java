@@ -862,11 +862,19 @@ public class MultiLayerTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Multi Layer Configuration Activation Types")
     void testMultiLayerConfigurationActivationTypes() {
-        NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder().list().layer(new LSTM.Builder().nOut(6).build()).layer(new LSTM.Builder().nOut(7).build()).layer(new GlobalPoolingLayer()).layer(new OutputLayer.Builder().nOut(8).activation(Activation.SOFTMAX).build()).setInputType(InputType.recurrent(10));
+        NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder().list()
+                .layer(new LSTM.Builder().nOut(6).build())
+                .layer(new LSTM.Builder().nOut(7).build())
+                .layer(new GlobalPoolingLayer())
+                .layer(new OutputLayer.Builder()
+                        .nOut(8)
+                        .activation(Activation.SOFTMAX)
+                        .build())
+                .setInputType(InputType.recurrent(10));
         MultiLayerConfiguration conf = builder.build();
         List<InputType> outBuilder = builder.getLayerActivationTypes();
         List<InputType> outConf = conf.getLayerActivationTypes(InputType.recurrent(10));
-        List<InputType> exp = Arrays.asList(InputType.recurrent(6), InputType.recurrent(7), InputType.recurrent(7), InputType.feedForward(8,RNNFormat.NCW));
+        List<InputType> exp = Arrays.asList(InputType.recurrent(6), InputType.recurrent(7), InputType.feedForward(7,RNNFormat.NCW), InputType.feedForward(8,RNNFormat.NCW));
         assertEquals(exp, outBuilder);
         assertEquals(exp, outConf);
     }

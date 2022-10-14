@@ -463,7 +463,7 @@ public class Variance extends BaseReduceOp {
             throw new ND4JIllegalStateException("Unable to compute input shape. No arguments found.");
         }
 
-        long[] argShape = arg().getShape();
+        long[] argShape = x.shape();
         if (argShape == null && x == null) {
             return Collections.emptyList();
         }

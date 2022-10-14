@@ -188,7 +188,7 @@ public class Word2VecTestsSmall extends BaseDL4JTest {
                 .iterations(1)
                 .useUnknown(true) // Using UNK with limited vocab size causes the issue
                 .seed(42)
-                .iterate((SequenceIterator<VocabWord>) iter)
+                .iterate( iter)
                 .workers(4)
                 .tokenizerFactory(t).build();
 

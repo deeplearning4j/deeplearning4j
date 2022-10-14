@@ -39,9 +39,14 @@ public class NDArrayIndexAll extends IntervalIndex {
 
     @Override
     public void init(INDArray arr, long begin, int dimension) {
+       //this may happen in cases where init is called too early
+        //and we have something like new axis dimensions specified
+        if(dimension >= arr.rank() || dimension < 0)
+            return;
         initialized = true;
         inclusive = false;
         this.begin = 0;
+
         this.end = arr.size(dimension);
         this.length = (end - begin) / stride + 1;
     }
