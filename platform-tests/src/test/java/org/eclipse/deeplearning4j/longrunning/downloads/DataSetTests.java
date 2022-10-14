@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag(TagNames.DOWNLOADS)
+@Disabled("Disable datasets till we migrate to new storage")
 public class DataSetTests {
 
     @Test

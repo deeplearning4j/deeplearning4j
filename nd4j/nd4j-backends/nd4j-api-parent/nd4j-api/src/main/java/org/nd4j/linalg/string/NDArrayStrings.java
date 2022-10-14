@@ -241,9 +241,7 @@ public class NDArrayStrings {
                     if (arr.ordering() == 'f' && arr.rank() > 2 && arr.size(arr.rank() - 1) == 1) {
                         sb.append(format(arr.dup('c').slice(i), offset, summarize));
                     }
-//                    else if(arr.rank() <= 1 || arr.length() == 1) {
-//                        sb.append(format(Nd4j.scalar(arr.getDouble(0)),offset,summarize));
-//                    }
+
                     else {
                         INDArray slice = arr.slice(i);
                         sb.append(format(slice, offset, summarize));

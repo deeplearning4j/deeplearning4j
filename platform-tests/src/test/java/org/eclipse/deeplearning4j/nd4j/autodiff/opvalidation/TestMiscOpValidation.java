@@ -578,57 +578,6 @@ public class TestMiscOpValidation extends BaseOpValidation {
     }
 
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void gatherTest(Nd4jBackend backend) {
-        /**
-         * TODO: add tests for new indexing engine based on SDVariable
-         * TODO: add tests for pure point based indices derived from an SDVariable
-         */
-        SameDiff sd = SameDiff.create();
-        long sequenceLength = 256;
-        int hiddenSize = 768;
-        var sequenceLengthSd = sd.constant(sequenceLength);
-        var hiddenSizeSd = sd.constant(hiddenSize);
-        var classesAmount = 10;
-        var tokenEmbeddingsMatrix = sd.var("tokenEmbeddingsMatrix", new XavierInitScheme('c', 30522, hiddenSize), FLOAT, 30522, hiddenSize);
-        var classificationWeights =
-                sd.var("classificationWeights", new XavierInitScheme('c', hiddenSize, classesAmount), FLOAT, hiddenSize, classesAmount);
-        var inputTokenVocabIndices = sd.placeHolder("inputTokenVocabIndices", INT32, -1, sequenceLength);
-        var batchTokenEmbeddings = sd.gather("batchTokenEmbeddings", tokenEmbeddingsMatrix, inputTokenVocabIndices, 0);
-        var batchSize = batchTokenEmbeddings.shape().get(SDIndex.point(0)).castTo("batchSize", INT32);
-        var flatBatchSizeSd = batchSize.mul(sequenceLengthSd);
-        var hiddenLayerInputShape = sd.stack("hiddenLayerInputShape", 0, flatBatchSizeSd, hiddenSizeSd);
-        var layerInput = batchTokenEmbeddings.reshape(hiddenLayerInputShape);
-        var labels = sd.placeHolder("labels", INT32, sequenceLength);
-        var logits = sd.nn().linear(layerInput, classificationWeights, sd.zero("bias", classesAmount).convertToVariable().castTo(FLOAT));
-        sd.loss().softmaxCrossEntropy(sd.oneHot(labels, classesAmount), logits, null);
-
-        TrainingConfig trainingConfig = TrainingConfig.builder()
-                .dataSetFeatureMapping("inputTokenVocabIndices")
-                .dataSetLabelMapping("labels")
-                .updater(new Adam())
-                .build();
-        sd.setTrainingConfig(trainingConfig);
-
-
-        TestCase tc = new TestCase(sd)
-                .testName("gather_grad")
-                .gradientCheck(true)
-                .gradCheckPrint(true)
-                .testFlatBufferSerialization(TestCase.TestSerialization.BOTH)
-                .placeholderValue("inputTokenVocabIndices",Nd4j.zeros(1,sequenceLength))
-                .placeholderValue("labels",Nd4j.ones(sequenceLength));
-
-        String err = OpValidation.validate(tc);
-        assertNull(err);
-     /*   DataSet d = new DataSet();
-        d.setFeatures(Nd4j.zeros(1, sequenceLength));
-        d.setLabels(Nd4j.ones(sequenceLength));
-
-
-        sd.fit(d);*/
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

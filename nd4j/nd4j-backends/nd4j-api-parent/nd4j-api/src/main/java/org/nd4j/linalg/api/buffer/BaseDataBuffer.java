@@ -143,7 +143,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected void pickReferent(BaseDataBuffer referent) {
         referenced.compareAndSet(false, true);
-        //references.add(new WeakReference<BaseDataBuffer>(this));
     }
 
     /**

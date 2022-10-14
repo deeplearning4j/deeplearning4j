@@ -109,6 +109,7 @@ public class ListenerTest extends BaseNd4jTestWithBackends {
         TrainingConfig conf = new TrainingConfig.Builder()
                 .l2(1e-4)
                 .updater(updater)
+                .lossVariables(Collections.singletonList("loss"))
                 .dataSetFeatureMapping("input")
                 .dataSetLabelMapping("label")
                 .trainEvaluation(predictions, 0, e)
@@ -292,7 +293,8 @@ public class ListenerTest extends BaseNd4jTestWithBackends {
                 .l2(1e-4)                               //L2 regularization
                 .updater(new Adam(learningRate))        //Adam optimizer with specified learning rate
                 .dataSetFeatureMapping("input")         //DataSet features array should be associated with variable "input"
-                .dataSetLabelMapping("label")           //DataSet label array should be associated with variable "label
+                .dataSetLabelMapping("label")
+                .lossVariables(Collections.singletonList("loss"))//DataSet label array should be associated with variable "label
                 .addEvaluations(false,"out",0,new Evaluation())
                 .build();
         sd.setTrainingConfig(config);

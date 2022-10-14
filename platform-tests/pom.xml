@@ -68,9 +68,9 @@
         <maven-shade-plugin.version>3.1.1</maven-shade-plugin.version>
         <log4j2.version>2.17.2</log4j2.version>
         <netty.version>4.1.74.Final</netty.version>
-        <test.heap.size>4g</test.heap.size>
-        <test.offheap.size>4g</test.offheap.size>
-        <test.nogc>true</test.nogc>
+        <test.heap.size>9g</test.heap.size>
+        <test.offheap.size>9g</test.offheap.size>
+        <test.nogc>false</test.nogc>
         <dokka.version>1.4.30</dokka.version>
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
@@ -830,7 +830,7 @@
                         </classpathDependencyExclude>
                     </classpathDependencyExcludes>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
-                    <argLine>${jdk9.exports} -Dorg.nd4j.arraynogc=${test.nogc} -Dorg.bytedeco.javacpp.logger.debug=true -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                    <argLine>${jdk9.exports} -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
                     <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
                     <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
                     <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>

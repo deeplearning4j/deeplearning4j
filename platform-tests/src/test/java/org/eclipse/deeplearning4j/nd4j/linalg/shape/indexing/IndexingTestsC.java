@@ -52,7 +52,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
 
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExecSubArray(Nd4jBackend backend) {
         INDArray nd = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6}, new int[] {2, 3});
@@ -64,7 +64,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLinearViewElementWiseMatching(Nd4jBackend backend) {
         INDArray linspace = Nd4j.linspace(1, 4, 4).reshape(2, 2);
@@ -73,7 +73,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetRows(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);
@@ -84,7 +84,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
 
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFirstColumn(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new double[][] {{5, 7}, {6, 8}});
@@ -94,7 +94,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, test);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiRow(Nd4jBackend backend) {
         INDArray matrix = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);
@@ -104,13 +104,13 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, test);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPointIndexes(Nd4jBackend backend) {
-        INDArray arr = Nd4j.create(DataType.DOUBLE, 4, 3, 2);
-        INDArray get = arr.get(NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.all());
-        assertArrayEquals(new long[] {4, 2}, get.shape());
         INDArray linspaced = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape(4, 3, 2);
+        INDArray linspacedGet2 = linspaced.get(NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.all());
+        assertArrayEquals(new long[] {4, 2}, linspacedGet2.shape());
+        linspaced.toString();
         INDArray assertion = Nd4j.create(new double[][] {{3, 4}, {9, 10}, {15, 16}, {21, 22}});
 
         INDArray linspacedGet = linspaced.get(NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.all());
@@ -122,7 +122,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(assertion, linspacedGet);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetWithVariedStride(Nd4jBackend backend) {
         int ph = 0;
@@ -134,26 +134,26 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         int i = 0;
         int j = 0;
         INDArray img = Nd4j.create(new double[] {1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
-                        4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
-                        4, 4, 4, 4, 4, 4, 4, 4}, new long[] {1, 1, 8, 8});
+                4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+                4, 4, 4, 4, 4, 4, 4, 4}, new long[] {1, 1, 8, 8});
 
 
         INDArray padded = Nd4j.pad(img, new int[][] {{0, 0}, {0, 0}, {ph, ph + sy - 1}, {pw, pw + sx - 1}});
 
         INDArray get = padded.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(i, sy, iLim),
-                        NDArrayIndex.interval(j, sx, jLim));
+                NDArrayIndex.interval(j, sx, jLim));
         assertArrayEquals(new long[] {81, 81, 18, 2}, get.stride());
         INDArray assertion = Nd4j.create(new double[] {1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3},
-                        new int[] {1, 1, 4, 4});
+                new int[] {1, 1, 4, 4});
         assertEquals(assertion, get);
 
         i = 1;
         iLim = 9;
         INDArray get3 = padded.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(i, sy, iLim),
-                        NDArrayIndex.interval(j, sx, jLim));
+                NDArrayIndex.interval(j, sx, jLim));
 
         INDArray assertion2 = Nd4j.create(new double[] {2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4},
-                        new int[] {1, 1, 4, 4});
+                new int[] {1, 1, 4, 4});
         assertArrayEquals(new long[] {81, 81, 18, 2}, get3.stride());
         assertEquals(assertion2, get3);
 
@@ -164,7 +164,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         jLim = 9;
         j = 1;
         INDArray get2 = padded.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(i, sy, iLim),
-                        NDArrayIndex.interval(j, sx, jLim));
+                NDArrayIndex.interval(j, sx, jLim));
         assertArrayEquals(new long[] {81, 81, 18, 2}, get2.stride());
         assertEquals(assertion, get2);
 
@@ -173,7 +173,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRowVectorInterval(Nd4jBackend backend) {
         int len = 30;
@@ -203,7 +203,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
             assertTrue(last10b.getDouble(i) == 20 + i);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test1dSubarray_1(Nd4jBackend backend) {
         val data = Nd4j.linspace(DataType.FLOAT,0, 10, 1);
@@ -213,7 +213,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, dataAtIndex);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test1dSubarray_2(Nd4jBackend backend) {
         val data = Nd4j.linspace(DataType.FLOAT,1, 10, 1);
@@ -223,7 +223,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, dataAtIndex);
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGet(Nd4jBackend backend) {
 //        System.out.println("Testing sub-array put and get with a 3D array ...");
@@ -281,7 +281,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
 //        System.out.println("... done");
     }
 
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSimplePoint(Nd4jBackend backend) {
         INDArray A = Nd4j.linspace(1, 3 * 3 * 3, 3 * 3 * 3).reshape(3, 3, 3);
@@ -308,7 +308,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         This is the same as the above test - just tests every possible window with a slice from the 0th dim
         They all fail - so it's possibly unrelated to the value of the index
      */
-      @ParameterizedTest
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPointIndexing(Nd4jBackend backend) {
         int slices = 5;

@@ -4140,7 +4140,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         //initialize upon use passing in the array where necessary when not initialized
         for(int i = 0; i < indexes.length; i++) {
             if(!indexes[i].initialized()) {
-                indexes[i].init(this,indexes[i].offset(),(int) i);
+                indexes[i].init(this,indexes[i].offset(), i);
             }
         }
 
@@ -4194,9 +4194,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int inIdx = 0;      //Axis number counter for input array
         for( int i = 0; i < indexes.length; i++) {
             if(startingOffset < length() &&  i > 0 && offset >= length() || inIdx >= rank()) {
-                if(startingOffset < length() &&  offset >= length())
-                    return Nd4j.empty();
-                else if(indexes.length > 1) {
+                if(startingOffset >= length() &&  offset >= length())
+                    return Nd4j.empty(dataType());
+                else if(indexes.length > 1 && outShape[0] > 0) {
                     //more indices to process but we've exhausted this list
                     //use the offset we have and process further indices
                     //recursively
@@ -4345,6 +4345,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         char order = Shape.getOrder(outShape, outStrides, -1);
         INDArray out = create(data, outShape, outStrides, offset, order);
+        out.toStringFull();
         return out;
     }
 

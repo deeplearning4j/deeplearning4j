@@ -36,7 +36,6 @@ import java.io.IOException;
 import java.util.*;
 
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Slf4j
@@ -186,17 +185,27 @@ public class TrainingConfig {
          * etc. This is also how the learning rate (or learning rate schedule) is set.
          * @param updater  Updater to set
          */
-        public Builder updater(IUpdater updater){
+        public Builder updater(IUpdater updater) {
             this.updater = updater;
             return this;
         }
+
+        /**
+         * Sets the loss variables for the training
+         * @param lossVariables L1 regularization coefficient
+         */
+        public Builder lossVariables(Collection<String> lossVariables) {
+            this.lossVariables = new ArrayList<>(lossVariables);
+            return this;
+        }
+
 
         /**
          * Sets the L1 regularization coefficient for all trainable parameters. Must be >= 0.<br>
          * See {@link L1Regularization} for more details
          * @param l1 L1 regularization coefficient
          */
-        public Builder l1(double l1){
+        public Builder l1(double l1) {
             Preconditions.checkState(l1 >= 0, "L1 regularization coefficient must be >= 0. Got %s", l1);
             removeInstances(this.regularization, L1Regularization.class);
             this.regularization.add(new L1Regularization(l1));

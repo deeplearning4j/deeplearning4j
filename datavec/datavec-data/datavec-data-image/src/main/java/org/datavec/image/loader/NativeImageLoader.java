@@ -833,9 +833,6 @@ public class NativeImageLoader extends BaseImageLoader {
             case MINIBATCH:
                 data = Nd4j.create(pixa.n(), 1, 1, pixa.pix(0).h(), pixa.pix(0).w());
                 break;
-//            case CHANNELS:
-//                data = Nd4j.create(1, pixa.n(), 1, pixa.pix(0).h(), pixa.pix(0).w());
-//                break;
             case FIRST:
                 data = Nd4j.create(1, 1, 1, pixa.pix(0).h(), pixa.pix(0).w());
                 PIX pix = pixa.pix(0);
@@ -856,11 +853,10 @@ public class NativeImageLoader extends BaseImageLoader {
                 case MINIBATCH:
                     index = new INDArrayIndex[]{NDArrayIndex.point(i),NDArrayIndex.all(), NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.all()};
                     break;
-//                case CHANNELS:
-//                    index = new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all(),NDArrayIndex.all()};
-//                    break;
+//
                 default: throw new UnsupportedOperationException("Unsupported MultiPageMode: " + multiPageMode);
             }
+
             data.put(index , currentD.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(),NDArrayIndex.all()));
         }
 

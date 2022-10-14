@@ -1011,8 +1011,8 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             op.setZ(z);
     }
 
-    public INDArray getZ(Op op, OpContext oc){
-        if( oc != null )
+    public INDArray getZ(Op op, OpContext oc) {
+        if( oc != null)
             return oc.getOutputArray(0);
         return op.z();
     }
