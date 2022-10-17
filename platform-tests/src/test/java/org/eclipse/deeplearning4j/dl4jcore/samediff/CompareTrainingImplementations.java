@@ -213,9 +213,11 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                 //Note that the SameDiff gradients don't include the L1/L2 terms at present just from execBackwards()... these are added in fitting only
                 //We can check correctness though with training param checks later
                 if(l1Val == 0 && l2Val == 0 && wdVal == 0) {
-                    assertEquals(grads.get("1_b"), gm.get(b1.name()), testName);
+                    //we reshape here because the only difference here should be whether it's 2d or not (1 x n)
+                    assertEquals(grads.get("1_b"), gm.get(b1.name()).reshape(grads.get("1_b").shape()), testName);
                     assertEquals(grads.get("1_W"), gm.get(w1.name()), testName);
-                    assertEquals(grads.get("0_b"), gm.get(b0.name()), testName);
+                    //we reshape here because the only difference here should be whether it's 2d or not (1 x n)
+                    assertEquals(grads.get("0_b"), gm.get(b0.name()).reshape(grads.get("0_b").shape()), testName);
                     assertEquals(grads.get("0_W"), gm.get(w0.name()), testName);
                 }
 
@@ -236,7 +238,7 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                 net.init();
                 net.setParamTable(oldParams);
 
-                for( int j=0; j<3; j++ ) {
+                for( int j = 0; j < 3; j++ ) {
                     net.fit(ds);
                     sd.fit(ds);
 
@@ -244,9 +246,11 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                     INDArray dl4j_0W = net.getParam("0_W");
                     INDArray sd_0W = w0.getArr();
                     assertEquals(dl4j_0W, sd_0W, s);
-                    assertEquals(net.getParam("0_b"), b0.getArr(), s);
+                    //we reshape here because the only difference here should be whether it's 2d or not (1 x n)
+                    assertEquals(net.getParam("0_b"), b0.getArr().reshape(net.getParam("0_b").shape()), s);
                     assertEquals(net.getParam("1_W"), w1.getArr(), s);
-                    assertEquals(net.getParam("1_b"), b1.getArr(), s);
+                    //we reshape here because the only difference here should be whether it's 2d or not (1 x n)
+                    assertEquals(net.getParam("1_b"), b1.getArr().reshape(net.getParam("1_b").shape()), s);
                 }
 
                 //Compare evaluations

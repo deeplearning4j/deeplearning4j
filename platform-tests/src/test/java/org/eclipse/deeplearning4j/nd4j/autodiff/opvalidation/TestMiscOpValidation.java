@@ -113,7 +113,10 @@ public class TestMiscOpValidation extends BaseOpValidation {
             in2Shape[dim_sz1] = 1;
 
             for (int i = 0; i < 8; i++) {
-
+                //floormod case is questionable, hard to tell if gradient checkable: skipping for now
+                if(i == 7) {
+                    continue;
+                }
                 SameDiff sd = SameDiff.create();
 
                 SDVariable in3 = sd.var("in3", Nd4j.rand(new int[]{3, 4, 5}));

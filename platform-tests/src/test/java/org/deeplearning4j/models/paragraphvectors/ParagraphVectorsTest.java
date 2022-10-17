@@ -705,7 +705,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         val folder_labeled = new File(testDir.toFile(),"labeled");
         val folder_unlabeled = new File(testDir.toFile(),"unlabeled");
         assertTrue(folder_labeled.mkdirs());
-        assertTrue(folder_labeled.mkdirs());
+        assertTrue(folder_unlabeled.mkdirs());
         new ClassPathResource("/paravec/labeled/").copyDirectory(folder_labeled);
         new ClassPathResource("/paravec/unlabeled/").copyDirectory(folder_unlabeled);
 
@@ -730,7 +730,6 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
                     words += lst.size();
             }
             labelAwareIterator.reset();
-            //System.out.println(words + " " + labels + " " + j);
             assertEquals(0, words);
             assertEquals(30, labels);
             assertEquals(30, j);

@@ -122,11 +122,11 @@ public class FullModelComparisons extends BaseDL4JTest {
 
 
         INDArray b = firstLstm.getParam("b");
-        assertTrue(Arrays.equals(b.shape(), new long[]{1, 4 * nOut}));
-        assertEquals(b.getDouble(0, 288), -0.36940336, 1e-7); // Keras I
-        assertEquals(b.getDouble(0, 96), 0.6031118, 1e-7);  // Keras F
-        assertEquals(b.getDouble(0, 192), -0.13569744, 1e-7); // Keras O
-        assertEquals(b.getDouble(0, 0), -0.2587392, 1e-7); // Keras C
+        assertTrue(Arrays.equals(b.shape(), new long[]{ 4 * nOut}));
+        assertEquals(b.getDouble(288), -0.36940336, 1e-7); // Keras I
+        assertEquals(b.getDouble( 96), 0.6031118, 1e-7);  // Keras F
+        assertEquals(b.getDouble( 192), -0.13569744, 1e-7); // Keras O
+        assertEquals(b.getDouble( 0), -0.2587392, 1e-7); // Keras C
 
         // 2. Layer
         LSTM secondLstm = (LSTM) ((LastTimeStepLayer) model.getLayer(1)).getUnderlying();
@@ -151,11 +151,11 @@ public class FullModelComparisons extends BaseDL4JTest {
 
 
         b = secondLstm.getParam("b");
-        assertTrue(Arrays.equals(b.shape(), new long[]{1, 4 * nOut}));
-        assertEquals(b.getDouble(0, 288), -0.2223678, 1e-7);
-        assertEquals(b.getDouble(0, 96), 0.73556226, 1e-7);
-        assertEquals(b.getDouble(0, 192), -0.63227624, 1e-7);
-        assertEquals(b.getDouble(0, 0), 0.06636357, 1e-7);
+        assertTrue(Arrays.equals(b.shape(), new long[]{ 4 * nOut}));
+        assertEquals(b.getDouble( 288), -0.2223678, 1e-7);
+        assertEquals(b.getDouble( 96), 0.73556226, 1e-7);
+        assertEquals(b.getDouble( 192), -0.63227624, 1e-7);
+        assertEquals(b.getDouble( 0), 0.06636357, 1e-7);
 
         File dataDir = testDir.toFile();
 

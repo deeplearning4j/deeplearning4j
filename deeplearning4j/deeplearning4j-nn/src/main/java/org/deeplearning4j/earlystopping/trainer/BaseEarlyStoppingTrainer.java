@@ -99,7 +99,7 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
         return fit(true);
     }
 
-    protected EarlyStoppingResult<T> fit(boolean pretrain){
+    protected EarlyStoppingResult<T> fit(boolean pretrain) {
         esConfig.validate();
         log.info("Starting early stopping training");
         if (esConfig.getScoreCalculator() == null)
@@ -140,8 +140,8 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
             triggerEpochListeners(true, model, epochCount);
             while (iterator.hasNext()) {
                 try {
-                    if(pretrain){
-                        if(train != null){
+                    if(pretrain) {
+                        if(train != null) {
                             pretrain((DataSet)iterator.next());
                         } else {
                             pretrain(trainMulti.next());
@@ -223,7 +223,6 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                 T bestModel;
                 try {
                     bestModel = esConfig.getModelSaver().getBestModel();
-                    bestModelScore = bestModel.score();
                 } catch (IOException e2) {
                     throw new RuntimeException(e2);
                 }
@@ -263,6 +262,7 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                         log.info("New best model: score = {}, epoch = {} (previous: score = {}, epoch = {})", score,
                                 epochCount, bestModelScore, bestModelEpoch);
                     }
+
                     bestModelScore = score;
                     bestModelEpoch = epochCount;
 
@@ -304,14 +304,12 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                     T bestModel;
                     try {
                         bestModel = esConfig.getModelSaver().getBestModel();
-                        bestModelScore = bestModel.score();
                     } catch (IOException e2) {
                         //Best model does not exist. Just save the current model
                         if(esConfig.isSaveLastModel()) {
                             try {
                                 esConfig.getModelSaver().saveBestModel(model,0.0);
                                 bestModel = model;
-                                bestModelScore = bestModel.score();
                             } catch (IOException e) {
                                 log.error("Unable to save model.",e);
                                 throw new RuntimeException(e);

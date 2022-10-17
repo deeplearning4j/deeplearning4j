@@ -54,9 +54,9 @@
 
         <logback.version>1.1.7</logback.version>
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
-        <jdk9.exports>--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.cs=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED --add-opens=java.base/sun.util.calendar=ALL-UNNAMED --add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED --add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/java.nio=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED</jdk9.exports>
+        <jdk9.exports>--add-opens=java.base/java.lang=ALL-UNNAMED  --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.cs=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED --add-opens=java.base/sun.util.calendar=ALL-UNNAMED --add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED --add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/java.nio=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED</jdk9.exports>
 
-        <kotlin.version>1.4.30</kotlin.version>
+        <kotlin.version>1.7.20</kotlin.version>
         <kotlin.compiler.jvmTarget>11</kotlin.compiler.jvmTarget>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
         <junit.version>5.8.0-M1</junit.version>
@@ -68,14 +68,14 @@
         <maven-shade-plugin.version>3.1.1</maven-shade-plugin.version>
         <log4j2.version>2.17.2</log4j2.version>
         <netty.version>4.1.74.Final</netty.version>
-        <test.heap.size>9g</test.heap.size>
-        <test.offheap.size>9g</test.offheap.size>
+        <test.heap.size>12g</test.heap.size>
+        <test.offheap.size>12g</test.offheap.size>
         <test.nogc>false</test.nogc>
         <dokka.version>1.4.30</dokka.version>
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
-        <surefire.forks>4</surefire.forks>
-        <surefire.threads>1</surefire.threads>
+        <surefire.forks>8</surefire.forks>
+        <surefire.threads>8</surefire.threads>
         <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
         <excludedTests>large-resources,downloads,long-running-test</excludedTests>
         <preload>/usr/local/lib/libjemalloc.so.2</preload>

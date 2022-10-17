@@ -4196,7 +4196,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if(startingOffset < length() &&  i > 0 && offset >= length() || inIdx >= rank()) {
                 if(startingOffset >= length() &&  offset >= length())
                     return Nd4j.empty(dataType());
-                else if(indexes.length > 1 && outShape[0] > 0) {
+                else if(indexes.length > 1 && outShape[0] > 0 && !(indexes[i] instanceof NewAxis)) {
                     //more indices to process but we've exhausted this list
                     //use the offset we have and process further indices
                     //recursively
@@ -4372,7 +4372,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray getRow(long r) {
         if (isRowVector() && r > 0)
             throw new IllegalArgumentException("Illegal index for row: requested row " + r + " but this.size(0)=" + this.size(0));
-
+        if(rank() == 1 && r == 0)
+            return this;
         Preconditions.checkArgument(rank() == 2, "getRow() can be called on 2D arrays only");
         Preconditions.checkArgument(r < rows(), "Row index must be smaller than total number of rows");
 

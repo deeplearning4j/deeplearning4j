@@ -1116,12 +1116,16 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEps3(Nd4jBackend backend) {
-
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         INDArray first = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
         INDArray second = Nd4j.linspace(20, 30, 10, DataType.DOUBLE);
 
-        INDArray expAllZeros = Nd4j.getExecutioner().exec(new Eps(first, second, Nd4j.create(DataType.BOOL, 10)));
-        INDArray expAllOnes = Nd4j.getExecutioner().exec(new Eps(first, first, Nd4j.create(DataType.BOOL, 10)));
+        INDArray firstResult = Nd4j.create(DataType.BOOL, 10);
+        INDArray secondResult = Nd4j.create(DataType.BOOL, 10);
+
+        INDArray expAllZeros = Nd4j.getExecutioner().exec(new Eps(first, second, firstResult));
+        INDArray expAllOnes = Nd4j.getExecutioner().exec(new Eps(first, first, secondResult));
 
 
         val allones = Nd4j.getExecutioner().exec(new All(expAllOnes)).getDouble(0);
@@ -5016,20 +5020,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testTadReduce3_5(Nd4jBackend backend) {
-        assertThrows(ND4JIllegalStateException.class,() -> {
-            INDArray initial = Nd4j.create(5, 10).castTo(DataType.DOUBLE);
-            for (int i = 0; i < initial.rows(); i++) {
-                initial.getRow(i).assign(i + 1);
-            }
-            INDArray needle = Nd4j.create(2, 10).assign(1.0).castTo(DataType.DOUBLE);
-            INDArray reduced = Nd4j.getExecutioner().exec(new EuclideanDistance(initial, needle, 1));
-        });
 
-
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

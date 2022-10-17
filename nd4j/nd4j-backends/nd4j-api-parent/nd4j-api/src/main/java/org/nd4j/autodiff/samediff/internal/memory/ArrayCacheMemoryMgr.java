@@ -50,11 +50,44 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     private static Map<INDArray,INDArray> released = new IdentityHashMap<>();
 
+    public final static double DEFAULT_MAX_MEM_FRACTION = 0.25;
+    public final static long DEFAULT_SMALL_ARRAY_THRESHOLD = 1024;
+    public final static double DEFAULT_LARGE_ARRAY_MAX_MULTIPLE = 2.0;
+    private static AtomicDouble largerArrayMaxMultiple;
+
+    private static AtomicLong maxCacheBytes;
+    private static AtomicLong totalMemBytes;
     @Getter
     @Setter
     private static  AtomicDouble maxMemFrac;
-   @Getter
-   @Setter
+    private static AtomicLong currentCacheSize =  new AtomicLong(0);
+
+
+    static {
+        setCacheDefaults();
+    }
+
+
+    public static void setCacheDefaults() {
+        maxMemFrac = new AtomicDouble(Double.parseDouble(System.getProperty(ND4JSystemProperties.CACHE_MEM_FRACTION,String.valueOf(DEFAULT_MAX_MEM_FRACTION))));
+        smallArrayThreshold = new AtomicLong(Long.parseLong(System.getProperty(ND4JSystemProperties.SMALL_ARRAY_THRESHOLD,String.valueOf(DEFAULT_SMALL_ARRAY_THRESHOLD))));
+        largerArrayMaxMultiple = new AtomicDouble(Double.parseDouble(System.getProperty(ND4JSystemProperties.LARGE_ARRAY_MAX_MULTIPLE,String.valueOf(DEFAULT_LARGE_ARRAY_MAX_MULTIPLE))));
+
+        if (isCpu()) {
+            totalMemBytes = new AtomicLong(Pointer.maxBytes());
+        } else {
+            Properties p = Nd4j.getExecutioner().getEnvironmentInformation();
+            List devList = (List) p.get("cuda.devicesInformation");
+            Map m = (Map) devList.get(0);
+            totalMemBytes = new AtomicLong((Long) m.get("cuda.totalMemory"));
+        }
+
+        long cacheValue = Math.round(maxMemFrac.get() * totalMemBytes.get());
+        maxCacheBytes = new AtomicLong(cacheValue);
+    }
+
+    @Getter
+    @Setter
     private static AtomicLong smallArrayThreshold;
 
     public static Set<Long> getLruCache() {
@@ -103,12 +136,6 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         ArrayCacheMemoryMgr.currentCacheSize = currentCacheSize;
     }
 
-    private static AtomicDouble largerArrayMaxMultiple;
-
-    private static AtomicLong maxCacheBytes;
-    private static AtomicLong totalMemBytes;
-
-    private static AtomicLong currentCacheSize =  new AtomicLong(0);
 
     private static Set<Long> lruCache = new ConcurrentSkipListSet<>();
     private static Map<Long, INDArray> lruCacheValues = new ConcurrentHashMap<>();
@@ -123,45 +150,12 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
      * {@link ArrayCacheMemoryMgr}
      */
     public ArrayCacheMemoryMgr() {
-        this(0.25, 1024, 2.0);
+
     }
 
-    /**
-     * @param maxMemFrac             Maximum memory fraction to use as cache
-     * @param smallArrayThreshold    Below this size (elements), don't apply the
-     *                               "largerArrayMaxMultiple" rule
-     * @param largerArrayMaxMultiple Maximum multiple of the requested size to
-     *                               return from the cache. If an array of size
-     *                               1024 is requested, and largerArrayMaxMultiple
-     *                               is 2.0, then we'll return from the cache
-     *                               the array with the smallest data buffer up to
-     *                               2.0*1024 elements; otherwise we'll return
-     *                               a new array
-     */
-    public ArrayCacheMemoryMgr(double maxMemFrac, long smallArrayThreshold, double largerArrayMaxMultiple) {
-        Preconditions.checkArgument(maxMemFrac > 0 && maxMemFrac < 1,
-                "Maximum memory fraction for cache must be between 0.0 and 1.0, got %s", maxMemFrac);
-        Preconditions.checkArgument(smallArrayThreshold >= 0, "Small array threshold must be >= 0, got %s",
-                smallArrayThreshold);
-        Preconditions.checkArgument(largerArrayMaxMultiple >= 1.0, "Larger array max multiple must be >= 1.0, got %s",
-                largerArrayMaxMultiple);
-        this.maxMemFrac = new AtomicDouble(maxMemFrac);
-        this.smallArrayThreshold = new AtomicLong(smallArrayThreshold);
-        this.largerArrayMaxMultiple = new AtomicDouble(largerArrayMaxMultiple);
 
-        if (isCpu()) {
-            totalMemBytes = new AtomicLong(Pointer.maxBytes());
-        } else {
-            Properties p = Nd4j.getExecutioner().getEnvironmentInformation();
-            List devList = (List) p.get("cuda.devicesInformation");
-            Map m = (Map) devList.get(0);
-            totalMemBytes = new AtomicLong((Long) m.get("cuda.totalMemory"));
-        }
 
-        maxCacheBytes = new AtomicLong((long) maxMemFrac * totalMemBytes.get());
-    }
-
-    private boolean isCpu() {
+    private static boolean isCpu() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         return !"CUDA".equalsIgnoreCase(backend);
     }

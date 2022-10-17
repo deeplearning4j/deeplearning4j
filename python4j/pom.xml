@@ -69,31 +69,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
             </plugin>
-            <plugin>
-                <groupId>com.lewisd</groupId>
-                <artifactId>lint-maven-plugin</artifactId>
-                <version>${maven-lint-plugin.version}</version>
-                <configuration>
-                    <failOnViolation>true</failOnViolation>
-                    <onlyRunRules>
-                        <rule>DuplicateDep</rule>
-                        <rule>RedundantPluginVersion</rule>
-                        <!-- Rules incompatible with Java 9
-                        <rule>VersionProp</rule>
-                        <rule>DotVersionProperty</rule> -->
-                    </onlyRunRules>
-                    <xmlOutputFile>${project.build.directory}/maven-lint-result.xml</xmlOutputFile>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>pom-lint</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <!-- Configuration for git-commit-id plugin - used with ND4J version check functionality -->
             <plugin>
                 <groupId>pl.project13.maven</groupId>

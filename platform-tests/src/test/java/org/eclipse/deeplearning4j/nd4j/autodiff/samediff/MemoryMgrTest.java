@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -46,6 +47,11 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
     @Override
     public char ordering(){
         return 'c';
+    }
+
+    @BeforeEach
+    public void before() {
+        ArrayCacheMemoryMgr.setCacheDefaults();
     }
 
     @ParameterizedTest
@@ -95,7 +101,7 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
         //now, allocate some values:
         for( int i = 1; i <= 10; i++) {
             INDArray a1 = mmgr.allocate(true, DataType.FLOAT, 25);
-            assertEquals(1000 - i * 100, mmgr.getCurrentCacheSize());
+            assertEquals(1000 - i * 100, mmgr.getCurrentCacheSize().get());
             assertEquals(10 - i, mmgr.getLruCache().size());
             assertEquals(10 - i, mmgr.getLruCacheValues().size());
         }

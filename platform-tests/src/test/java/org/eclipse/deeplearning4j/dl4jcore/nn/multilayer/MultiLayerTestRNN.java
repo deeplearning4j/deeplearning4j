@@ -98,11 +98,11 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
         INDArray inputWeights = paramTable.get(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
         assertArrayEquals(inputWeights.shape(), new long[] {nIn, 4 * nHiddenUnits}); //Should be shape: [nIn,4*layerSize]
         INDArray biases = paramTable.get(GravesLSTMParamInitializer.BIAS_KEY);
-        assertArrayEquals(biases.shape(), new long[] {1, 4 * nHiddenUnits}); //Should be shape: [1,4*layerSize]
+        assertArrayEquals(biases.shape(), new long[] { 4 * nHiddenUnits}); //Should be shape: [1,4*layerSize]
 
         //Want forget gate biases to be initialized to > 0. See parameter initializer for details
         INDArray forgetGateBiases =
-                        biases.get(NDArrayIndex.point(0), NDArrayIndex.interval(nHiddenUnits, 2 * nHiddenUnits));
+                        biases.get(NDArrayIndex.interval(nHiddenUnits, 2 * nHiddenUnits));
         INDArray gt = forgetGateBiases.gt(0);
         INDArray gtSum = gt.castTo(DataType.INT).sum(Integer.MAX_VALUE);
         int count = gtSum.getInt(0);
@@ -145,12 +145,12 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
             INDArray inputWeights = paramTable.get(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
             assertArrayEquals(inputWeights.shape(), new long[] {layerNIn, 4 * nHiddenUnits[i]}); //Should be shape: [nIn,4*layerSize]
             INDArray biases = paramTable.get(GravesLSTMParamInitializer.BIAS_KEY);
-            assertArrayEquals(biases.shape(), new long[] {1, 4 * nHiddenUnits[i]}); //Should be shape: [1,4*layerSize]
+            assertArrayEquals(biases.shape(), new long[] { 4 * nHiddenUnits[i]}); //Should be shape: [1,4*layerSize]
 
             //Want forget gate biases to be initialized to > 0. See parameter initializer for details
-            INDArray forgetGateBiases = biases.get(NDArrayIndex.point(0),
+            INDArray forgetGateBiases = biases.get(
                             NDArrayIndex.interval(nHiddenUnits[i], 2 * nHiddenUnits[i]));
-            INDArray gt = forgetGateBiases.gt(0).castTo(DataType.INT);
+            INDArray gt = forgetGateBiases.gt(0).castTo(DataType.INT32);
             INDArray gtSum = gt.sum(Integer.MAX_VALUE);
             double count = gtSum.getDouble(0);
             assertEquals(nHiddenUnits[i], (int)count);
