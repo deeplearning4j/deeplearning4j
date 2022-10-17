@@ -347,10 +347,10 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetRowEdgeCase(Nd4jBackend backend) {
-        INDArray rowVec = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).reshape(1, -1);
+        INDArray rowVec = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).reshape( -1);
         INDArray get = rowVec.getRow(0); //Returning shape [1,1]
 
-        assertArrayEquals(new long[] {1, 5}, get.shape());
+        assertArrayEquals(new long[] { 5}, get.shape());
         assertEquals(rowVec, get);
     }
 
@@ -485,7 +485,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
                             }
                         }
 
-                        if(newAxisTestCase == 2){  //At end
+                        if(newAxisTestCase == 2) {  //At end
                             indexes[pos++] = NDArrayIndex.newAxis();
                         }
 

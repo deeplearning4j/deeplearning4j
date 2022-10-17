@@ -199,6 +199,32 @@ public class ND4JSystemProperties {
     public final static String INIT_NATIVEOPS_HOLDER = "org.nd4j.nativeblas.nativeops.init";
 
 
+
+    /**
+     * Maximum memory fraction to use as cache. For more see:
+     * https://github.com/deeplearning4j/deeplearning4j/blob/2f08cc208b3bae1007bbbb001938d17c15926a09/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/internal/memory/ArrayCacheMemoryMgr.java#L156-L157
+     */
+    public final static String CACHE_MEM_FRACTION = "org.nd4j.cache.cache_mem_fraction";
+    /**
+     * Below this size (elements), don't apply the
+     * "largerArrayMaxMultiple" rule.
+     * For more see: https://github.com/deeplearning4j/deeplearning4j/blob/2f08cc208b3bae1007bbbb001938d17c15926a09/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/internal/memory/ArrayCacheMemoryMgr.java#L156-L157
+     */
+    public final static String SMALL_ARRAY_THRESHOLD = "org.nd4j.cache.cache_small_array_threshold";
+
+    /**
+     * Maximum multiple of the requested size to
+     * return from the cache. If an array of size
+     * 1024 is requested, and largerArrayMaxMultiple
+     * is 2.0, then we'll return from the cache
+     * the array with the smallest data buffer up to
+     * 2.0*1024 elements; otherwise we'll return
+     * a new array
+     *
+     *  For more see: https://github.com/deeplearning4j/deeplearning4j/blob/2f08cc208b3bae1007bbbb001938d17c15926a09/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/internal/memory/ArrayCacheMemoryMgr.java#L156-L157
+     */
+    public final static String LARGE_ARRAY_MAX_MULTIPLE = "org.nd4j.cache.large_array_max_multiple";
+
     private ND4JSystemProperties() {
     }
 }

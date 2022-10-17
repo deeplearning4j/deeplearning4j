@@ -204,7 +204,7 @@ class ConvolutionLayerTest extends BaseDL4JTest {
         val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
-        assertEquals(1, layer.getParam("b").size(0));
+        assertEquals(layer.getParam("b").length(), layer.getParam("b").size(0));
     }
 
     @Test
