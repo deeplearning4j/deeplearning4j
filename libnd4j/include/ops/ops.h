@@ -795,7 +795,7 @@ class ReverseMod {
 
 /**
  * Whether 2 elements in an array
- * are epsilion equal
+ * are epsilon equal
  */
 template <typename X, typename Z>
 class Epsilon {

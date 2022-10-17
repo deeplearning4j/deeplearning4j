@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.PretrainedType;
 import org.deeplearning4j.zoo.model.VGG16;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -49,6 +50,7 @@ public class MiscTests extends BaseDL4JTest {
     }
 
     @Test
+    @Disabled("Takes long even when having needed RAM")
     public void testTransferVGG() throws Exception {
         DataSet ds = new DataSet();
         ds.setFeatures(Nd4j.create(1, 3, 224, 224));
@@ -57,7 +59,6 @@ public class MiscTests extends BaseDL4JTest {
         ComputationGraph model = (ComputationGraph)(
                 VGG16.builder().build()
                         .initPretrained(PretrainedType.IMAGENET));
-//        System.out.println(model.summary());
 
         ComputationGraph transferModel = new TransferLearning.GraphBuilder(model)
                 .setFeatureExtractor("fc2")

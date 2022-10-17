@@ -55,6 +55,15 @@ public class Eps extends BaseTransformBoolOp {
         super(x, y, z);
     }
 
+    @Override
+    public Type getOpType() {
+        return opType();
+    }
+
+    @Override
+    public Type opType() {
+        return Type.PAIRWISE_BOOL;
+    }
 
     @Override
     public int opNum() {
