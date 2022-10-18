@@ -277,7 +277,7 @@ public class Mmul extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients) {
-        return Arrays.asList(new MmulBp(sameDiff, larg(), rarg(), gradients.get(0), mt).outputVariables());
+        return Arrays.asList(new MmulBp(sameDiff, arg(0), arg(1), gradients.get(0), mt).outputVariables());
     }
 
 
