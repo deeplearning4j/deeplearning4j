@@ -582,13 +582,55 @@ public class SDNN extends SDOps {
    * @param input Input data (NUMERIC type)
    * @param weights Weights variable, shape [nIn, nOut] (NUMERIC type)
    * @param bias Optional bias variable (may be null) (NUMERIC type)
+   * @param transposeA Whether to transpose input or not
+   * @param transposeB Whether to transpose second input or not
+   * @param transposeC Whether to transpose result or not
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable linear(SDVariable input, SDVariable weights, SDVariable bias,
+      boolean transposeA, boolean transposeB, boolean transposeC) {
+    SDValidation.validateNumerical("linear", "input", input);
+    SDValidation.validateNumerical("linear", "weights", weights);
+    SDValidation.validateNumerical("linear", "bias", bias);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(sd,input, weights, bias, transposeA, transposeB, transposeC).outputVariable();
+  }
+
+  /**
+   * Linear layer operation: out = mmul(in,w) + bias<br>
+   * Note that bias array is optional<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input data (NUMERIC type)
+   * @param weights Weights variable, shape [nIn, nOut] (NUMERIC type)
+   * @param bias Optional bias variable (may be null) (NUMERIC type)
+   * @param transposeA Whether to transpose input or not
+   * @param transposeB Whether to transpose second input or not
+   * @param transposeC Whether to transpose result or not
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable linear(String name, SDVariable input, SDVariable weights, SDVariable bias,
+      boolean transposeA, boolean transposeB, boolean transposeC) {
+    SDValidation.validateNumerical("linear", "input", input);
+    SDValidation.validateNumerical("linear", "weights", weights);
+    SDValidation.validateNumerical("linear", "bias", bias);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(sd,input, weights, bias, transposeA, transposeB, transposeC).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Linear layer operation: out = mmul(in,w) + bias<br>
+   * Note that bias array is optional<br>
+   *
+   * @param input Input data (NUMERIC type)
+   * @param weights Weights variable, shape [nIn, nOut] (NUMERIC type)
+   * @param bias Optional bias variable (may be null) (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable linear(SDVariable input, SDVariable weights, SDVariable bias) {
     SDValidation.validateNumerical("linear", "input", input);
     SDValidation.validateNumerical("linear", "weights", weights);
     SDValidation.validateNumerical("linear", "bias", bias);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(sd,input, weights, bias).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(sd,input, weights, bias, false, false, false).outputVariable();
   }
 
   /**
@@ -605,7 +647,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("linear", "input", input);
     SDValidation.validateNumerical("linear", "weights", weights);
     SDValidation.validateNumerical("linear", "bias", bias);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(sd,input, weights, bias).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(sd,input, weights, bias, false, false, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

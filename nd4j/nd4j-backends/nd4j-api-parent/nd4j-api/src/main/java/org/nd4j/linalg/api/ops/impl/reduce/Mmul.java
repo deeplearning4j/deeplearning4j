@@ -150,6 +150,30 @@ public class Mmul extends DynamicCustomOp {
     public Mmul() {
     }
 
+    public Mmul(SameDiff sd, SDVariable a, SDVariable b, double alpha, double beta, boolean transA, boolean transB) {
+        super(null,sd,new SDVariable[]{a,b});
+        addIArgument(ArrayUtil.fromBoolean(transA),
+                ArrayUtil.fromBoolean(transB),
+                ArrayUtil.fromBoolean(false));
+        this.alpha = alpha;
+        this.beta = beta;
+        addTArgument(alpha, beta);
+        mt = MMulTranspose.builder().transposeA(transA).transposeB(transB).transposeResult(false).build();
+
+    }
+
+    public Mmul(INDArray a, INDArray b, double alpha, double beta, boolean transA, boolean transB) {
+        addInputArgument(a, b);
+        addIArgument(ArrayUtil.fromBoolean(transA),
+                ArrayUtil.fromBoolean(transB),
+                ArrayUtil.fromBoolean(false));
+        this.alpha = alpha;
+        this.beta = beta;
+        addTArgument(alpha, beta);
+        mt = MMulTranspose.builder().transposeA(transA).transposeB(transB).transposeResult(false).build();
+
+    }
+
     @Override
     public Object getValue(Field property) {
         if (mt == null) {
@@ -311,8 +335,8 @@ public class Mmul extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
-       if(!dArguments.isEmpty())
-           return Collections.singletonList(dArguments.get(0));
+        if(!dArguments.isEmpty())
+            return Collections.singletonList(dArguments.get(0));
         Preconditions.checkState(dataTypes != null && dataTypes.size() >= 2, "Expected at least 2 inputs to mmul op, got %s", dataTypes);
         Preconditions.checkState(dataTypes.get(0).isFPType() && dataTypes.get(1).isFPType(), "Inputs to mmul op must both be a floating" +
                 "point type: got %s", dataTypes);

@@ -204,7 +204,9 @@ fun NN() = Namespace("NN") {
         Input(NUMERIC, "input") { description = "Input data" }
         Input(NUMERIC, "weights") { description = "Weights variable, shape [nIn, nOut]" }
         Input(NUMERIC, "bias") { description = "Optional bias variable (may be null)" /*; optional = true*/ }
-
+        Arg(BOOL,"transposeA") { description = "Whether to transpose input or not"; defaultValue= false}
+        Arg(BOOL,"transposeB") { description = "Whether to transpose second input or not"; defaultValue= false}
+        Arg(BOOL,"transposeC") { description = "Whether to transpose result or not"; defaultValue= false}
         Output(NUMERIC, "output") { description = "Output variable" }
 
         Doc(Language.ANY, DocScope.ALL) {
@@ -214,6 +216,7 @@ fun NN() = Namespace("NN") {
             """.trimIndent()
         }
     }
+
 
     Op("logSigmoid", transformStrict) {
         Doc(Language.ANY, DocScope.ALL) {

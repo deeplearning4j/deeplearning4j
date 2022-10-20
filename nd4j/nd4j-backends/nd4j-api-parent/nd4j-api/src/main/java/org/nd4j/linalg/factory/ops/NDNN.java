@@ -295,13 +295,33 @@ public class NDNN {
    * @param input Input data (NUMERIC type)
    * @param weights Weights variable, shape [nIn, nOut] (NUMERIC type)
    * @param bias Optional bias variable (may be null) (NUMERIC type)
+   * @param transposeA Whether to transpose input or not
+   * @param transposeB Whether to transpose second input or not
+   * @param transposeC Whether to transpose result or not
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray linear(INDArray input, INDArray weights, INDArray bias, boolean transposeA,
+      boolean transposeB, boolean transposeC) {
+    NDValidation.validateNumerical("linear", "input", input);
+    NDValidation.validateNumerical("linear", "weights", weights);
+    NDValidation.validateNumerical("linear", "bias", bias);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(input, weights, bias, transposeA, transposeB, transposeC))[0];
+  }
+
+  /**
+   * Linear layer operation: out = mmul(in,w) + bias<br>
+   * Note that bias array is optional<br>
+   *
+   * @param input Input data (NUMERIC type)
+   * @param weights Weights variable, shape [nIn, nOut] (NUMERIC type)
+   * @param bias Optional bias variable (may be null) (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
   public INDArray linear(INDArray input, INDArray weights, INDArray bias) {
     NDValidation.validateNumerical("linear", "input", input);
     NDValidation.validateNumerical("linear", "weights", weights);
     NDValidation.validateNumerical("linear", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(input, weights, bias))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(input, weights, bias, false, false, false))[0];
   }
 
   /**

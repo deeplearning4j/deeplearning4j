@@ -32,16 +32,18 @@
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
-  auto x = INPUT_VARIABLE(0);
+  const bool aTranspose = (block.getIArguments()->size() > 0 ? INT_ARG(0) == 1 : false);
+  const bool bTranspose = (block.getIArguments()->size() > 1 ? INT_ARG(1) == 1 : false);
+  const bool cTranspose = (block.getIArguments()->size() > 2 ? INT_ARG(2) == 1 : false);
+
+  auto x = aTranspose ? new NDArray(INPUT_VARIABLE(0)->transpose()) :  INPUT_VARIABLE(0);
+  auto w = bTranspose ? new NDArray(INPUT_VARIABLE(1)->transpose()) : INPUT_VARIABLE(1);
+  auto z = cTranspose ? new NDArray(OUTPUT_VARIABLE(0)->transpose()) : OUTPUT_VARIABLE(0);
 
   auto b = INPUT_VARIABLE(2);
-  auto z = OUTPUT_VARIABLE(0);
 
   if (x->isEmpty() || INPUT_VARIABLE(1)->isEmpty() || b->isEmpty()) return sd::Status::OK;
 
-  const bool bTranspose = (block.getIArguments()->size() > 0 ? INT_ARG(0) == 1 : false);
-
-  auto w = bTranspose ? new NDArray(INPUT_VARIABLE(1)->transpose()) : INPUT_VARIABLE(1);
 
   REQUIRE_TRUE(x->rankOf() == 2, 0, "xw_plus_b: Input x array should have rank equal 2, but got instead %i!",
                x->rankOf());
@@ -50,31 +52,51 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
   REQUIRE_TRUE(z->rankOf() == 2, 0, "xw_plus_b: Output array should have rank equal 2, but got instead %i!",
                z->rankOf());
 
-  REQUIRE_TRUE(1 == b->rankOf() && b->lengthOf() == z->sizeAt(-1), 0,
-               "xw_plus_b: Input bias vector should be 1D and have proper dimension 1x%i."
-               " But got rank %i, and got length %i instead %i.",
-               z->sizeAt(-1), b->rankOf(), b->lengthOf(), z->sizeAt(-1));
+
 
   // multiply x to y
   MmulHelper::mmul(x, w, z, 1.0, 0.0);
+  if(bTranspose && b->rankOf() == 1) {
+      b = new NDArray(INPUT_VARIABLE(2)->reshape('c',{INPUT_VARIABLE(2)->lengthOf(),1}));
+      z->addiColumnVector(*b);
+  } else {
 
-  // adding b vector
-  z->addiRowVector(*b);
+    b->printShapeInfo("Shape buffer of bias before is \n");
 
-  if (bTranspose) delete w;
+    if(b->rankOf() == 1) {
+      b = new NDArray(INPUT_VARIABLE(2)->reshape('c',{1,INPUT_VARIABLE(2)->lengthOf()}));
+    }
+    b->printShapeInfo("Shape buffer of bias after is \n");
 
+
+     // adding b vector
+     z->addiRowVector(*b);
+   }
+
+
+   if(bTranspose || b->lengthOf() == 1) {
+     delete b;
+   }
+
+  if (bTranspose) {
+    delete w;
+  }
   return sd::Status::OK;
 }
 
 DECLARE_SHAPE_FN(xw_plus_b) {
   auto weights = INPUT_VARIABLE(1);
+  const bool aTranspose = (block.getIArguments()->size() > 0 ? INT_ARG(0) == 1 : false);
+  const bool bTranspose = (block.getIArguments()->size() > 1 ? INT_ARG(1) == 1 : false);
+  const bool cTranspose = (block.getIArguments()->size() > 2 ? INT_ARG(2) == 1 : false);
 
   const int nWeightsFormat = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
 
   auto weightsShape =
       (1 == nWeightsFormat) ? ShapeUtils::evalTranspShapeInfo(*weights, block.getWorkspace()) : inputShape->at(1);
 
-  auto outputShape = ShapeUtils::matrixProductShape(inputShape->at(0), weightsShape, false, false,
+  auto outputShape = ShapeUtils::matrixProductShape(inputShape->at(0), weightsShape, aTranspose,
+                                                    bTranspose,
                                                     ArrayOptions::dataType(inputShape->at(0)), block.getWorkspace());
 
   return SHAPELIST(outputShape);
@@ -85,16 +107,14 @@ DECLARE_TYPES(xw_plus_b) {
 }
 
 CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
-  auto x = INPUT_VARIABLE(0);
+
+  const bool aTranspose = (block.getIArguments()->size() > 0 ? INT_ARG(0) == 1 : false);
+  const bool bTranspose = (block.getIArguments()->size() > 1 ? INT_ARG(1) == 1 : false);
+  auto x = aTranspose ? new NDArray(INPUT_VARIABLE(0)->transpose()) : INPUT_VARIABLE(0);
   auto b = INPUT_VARIABLE(2);
   auto dLdz = INPUT_VARIABLE(3);
 
-  auto dLdx = OUTPUT_VARIABLE(0);
-  auto dLdb = OUTPUT_VARIABLE(2);
-
   if (x->isEmpty() || INPUT_VARIABLE(1)->isEmpty() || b->isEmpty() || dLdz->isEmpty()) return sd::Status::OK;
-
-  const bool bTranspose = (block.getIArguments()->size() > 0 ? INT_ARG(0) == 1 : false);
 
   auto w = bTranspose ? new NDArray(INPUT_VARIABLE(1)->transpose()) : INPUT_VARIABLE(1);
 
@@ -104,10 +124,9 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
                w->rankOf());
   REQUIRE_TRUE(dLdz->rankOf() == 2, 0, "xw_plus_b BP: Output array should have rank equal 2, but got instead %i!",
                dLdz->rankOf());
-  REQUIRE_TRUE(1 == b->rankOf() && b->lengthOf() == dLdz->sizeAt(-1), 0,
-               "xw_plus_b BP: Input bias vector should be 1D and have proper dimension 1x%i."
-               " But got rank %i, and got length %i instead %i.",
-               dLdz->sizeAt(-1), b->rankOf(), b->lengthOf(), dLdz->sizeAt(-1));
+
+  auto dLdx = aTranspose ? new NDArray(OUTPUT_VARIABLE(0)->transpose()) : OUTPUT_VARIABLE(0);
+  auto dLdb = OUTPUT_VARIABLE(2);
 
   auto dLdw = (bTranspose) ? new NDArray(OUTPUT_VARIABLE(1)->transpose()) : OUTPUT_VARIABLE(1);
 
@@ -117,10 +136,16 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
   matmul_bp mmul_bp;
   mmul_bp.execute({x, w, dLdz}, std::vector<NDArray*>{dLdx, dLdw}, {}, {}, {});
 
+  if(aTranspose) {
+    delete x;
+    delete dLdx;
+  }
+
   if (bTranspose) {
     delete w;
     delete dLdw;
   }
+
   return sd::Status::OK;
 }
 
