@@ -114,14 +114,20 @@ fun Linalg() =  Namespace("Linalg") {
 
         Input(DataType.NUMERIC, "a") {description = "input tensor"}
         Input(DataType.NUMERIC, "b") {description = "input tensor"}
+        Arg(DataType.FLOATING_POINT,"alpha",{defaultValue = 1.0; description = "Defaults to 1.0: the scalar multiplier for the product of a* b "})
+        Arg(DataType.FLOATING_POINT,"beta",{defaultValue = 1.0; description = "Defaults to 1.0: the scalar multiplier for c "})
+        Arg(DataType.BOOL,"transA",{defaultValue = false; description = "Whether to transpose a when running multiply "})
+        Arg(DataType.BOOL,"transB",{defaultValue = false; description = "Whether to transpose b when running multiply "})
         Output(DataType.FLOATING_POINT, "output")
 
         Doc(Language.ANY, DocScope.ALL){
             """
-             Performs matrix mutiplication on input tensors.
+             Performs matrix multiplication on input tensors.
             """.trimIndent()
         }
     }
+
+
 
     Op("Qr") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"

@@ -85,7 +85,25 @@ public class NDLinalg {
   }
 
   /**
-   * Performs matrix mutiplication on input tensors.<br>
+   * Performs matrix multiplication on input tensors.<br>
+   *
+   * @param a input tensor (NUMERIC type)
+   * @param b input tensor (NUMERIC type)
+   * @param alpha Defaults to 1.0: the scalar multiplier for the product of a* b 
+   * @param beta Defaults to 1.0: the scalar multiplier for c 
+   * @param transA Whether to transpose a when running multiply 
+   * @param transB Whether to transpose b when running multiply 
+   * @return output  (FLOATING_POINT type)
+   */
+  public INDArray matmul(INDArray a, INDArray b, double alpha, double beta, boolean transA,
+      boolean transB) {
+    NDValidation.validateNumerical("Matmul", "a", a);
+    NDValidation.validateNumerical("Matmul", "b", b);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.Mmul(a, b, alpha, beta, transA, transB))[0];
+  }
+
+  /**
+   * Performs matrix multiplication on input tensors.<br>
    *
    * @param a input tensor (NUMERIC type)
    * @param b input tensor (NUMERIC type)
@@ -94,7 +112,7 @@ public class NDLinalg {
   public INDArray matmul(INDArray a, INDArray b) {
     NDValidation.validateNumerical("Matmul", "a", a);
     NDValidation.validateNumerical("Matmul", "b", b);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.Mmul(a, b))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.Mmul(a, b, 1.0, 1.0, false, false))[0];
   }
 
   /**

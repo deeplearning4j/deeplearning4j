@@ -3588,6 +3588,76 @@ public class SameDiff extends SDBaseOps {
         return variable;
     }
 
+
+    public void prepareForTraining() {
+        prepareForTraining(lossVariables);
+    }
+
+
+    public void prepareForTraining(List<String> lossVariables) {
+        Queue<Variable> variableQueue = new LinkedList<>();
+        Set<String> alreadyProcessedOps = new HashSet<>();
+        Set<String> alreadyProcessedVariables = new HashSet<>();
+        for(String lossVariable : lossVariables) {
+            Variable variable = variables.get(lossVariable);
+            variableQueue.add(variable);
+        }
+
+        Set<SDVariable> variablesToConvert = new HashSet<>();
+        while(!variableQueue.isEmpty()) {
+            Variable remove = variableQueue.remove();
+            if(remove.getVariable().isConstant() && remove.getOutputOfOp() == null) {
+                variablesToConvert.add(remove.getVariable());
+            }
+
+            if(remove.getOutputOfOp() != null) {
+                DifferentialFunction differentialFunction = getOpById(remove.getOutputOfOp());
+                if(!alreadyProcessedOps.contains(differentialFunction.getOwnName())) {
+                    if(differentialFunction.argNames() != null && differentialFunction.argNames().length > 0) {
+                        for(String arg : differentialFunction.argNames()) {
+                            if(!alreadyProcessedVariables.contains(arg))
+                                variableQueue.add(variables.get(arg));
+                        }
+                    }
+
+                    //prevent redundant processing of ops and variables
+                    alreadyProcessedVariables.add(remove.getName());
+                    alreadyProcessedOps.add(differentialFunction.getOwnName());
+                }
+            } else { //hit an input
+                alreadyProcessedVariables.add(remove.getName());
+            }
+
+
+        }
+
+
+        convertToVariables(new ArrayList<>(variablesToConvert));
+
+        if(lossVariables != null) {
+            createGradFunction();
+        }
+
+
+        System.out.println(summary(true));
+        List<SDVariable> convertToConstant = new ArrayList<>();
+        for(SDVariable variable : variablesToConvert) {
+            if(!variableHasGradient(variable.name())) {
+                //some variables we convert might be
+                //optional parameters like
+                //a constant permute/transpose value array
+                //that can be an attribute or an input
+                //thus we convert it back to constant
+                //this will prevent errors from being
+                //thrown when an updater is not found for a configuration input
+                convertToConstant.add(variable);
+            }
+        }
+
+        convertToConstants(convertToConstant);
+
+    }
+
     /**
      * Convert all the specified variables to constants. This is equivalent to "freezing" the variables so that their values
      * won't be changed by further training.<br>
@@ -3599,6 +3669,21 @@ public class SameDiff extends SDBaseOps {
      * @return The (now constant) SDVariables
      */
     public void convertToConstants(List<SDVariable> variables) {
+        convertToConstants(variables,true);
+    }
+
+    /**
+     * Convert all the specified variables to constants. This is equivalent to "freezing" the variables so that their values
+     * won't be changed by further training.<br>
+     * This can only be done for variables and placeholders, not ARRAY type variables (which are usually network activations).
+     * As constants, these variables will no longer be modified by any subsequent training.<br>
+     * See also: {@link VariableType}
+     *
+     * @param variables Variables to convert to constants
+     * @param recreateGradFunction whether to recreate the grad function or not
+     * @return The (now constant) SDVariables
+     */
+    public void convertToConstants(List<SDVariable> variables,boolean recreateGradFunction) {
         if (variables.size() == 0)
             return;
         boolean allConst = true;
@@ -3616,7 +3701,8 @@ public class SameDiff extends SDBaseOps {
         sessions.clear();
 
         //If gradient function has been defined, remove it (so it will be recreated later)
-        sameDiffFunctionInstances.remove(GRAD_FN_KEY);
+        if(recreateGradFunction)
+            sameDiffFunctionInstances.remove(GRAD_FN_KEY);
 
         for (SDVariable variable : variables) {
             String n = variable.name();
@@ -4658,7 +4744,7 @@ public class SameDiff extends SDBaseOps {
         }
 
         List<String> varNames = new ArrayList<>();
-        if(outputVars != null){
+        if(outputVars != null) {
             varNames.addAll(outputVars);
         }
         if(gradientVars != null) {
@@ -4968,7 +5054,11 @@ public class SameDiff extends SDBaseOps {
                 if (inputsTo != null && !inputsTo.isEmpty()) {
                     for (String opName : inputsTo) {
                         SameDiffOp op = sameDiff.ops.get(opName);
+                        if(op == null) {
+                            continue;
+                        }
                         List<String> inputsToOp = op.getInputsToOp();
+
                         boolean anyPresent = false;
                         for (String s : inputsToOp) {
                             if (minimalSubgraphVars.contains(s) || (variablesRequiringGradients != null && ArrayUtils.contains(variablesRequiringGradients, s))) {
@@ -5009,7 +5099,7 @@ public class SameDiff extends SDBaseOps {
                 }
             }
 
-            // Collect all the the ops that have to be traversed before we can conclude that the gradient for
+            // Collect all the ops that have to be traversed before we can conclude that the gradient for
             // a variable is fully available
             //For example, if we have  X -> op -> Y, and Y -> (A,B) we need gradient contribution from BOTH
             // Y->A and Y->B connections before we can do differentiation of op "op"
@@ -5100,7 +5190,7 @@ public class SameDiff extends SDBaseOps {
                 //Differentiate:
                 List<SDVariable> currFnGrads = df.diff(grads);
                 differentiatedOps.add(df.getOwnName());
-                System.out.println("Added differentiated op " + df.getOwnName());
+                log.debug("Added differentiated op " + df.getOwnName());
                 //Check the inputs to this op, see if we can differentiate those ops now (and if so: add to queue)
                 for (String s : inputsToOp) {
                     Variable v = sameDiff.variables.get(s);

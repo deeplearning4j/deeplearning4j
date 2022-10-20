@@ -29,44 +29,38 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 
 @NoArgsConstructor
-public class XwPlusB extends DynamicCustomOp {
+public class XwPlusBBp extends DynamicCustomOp {
 
 
-    private boolean aTranspose,bTranspose,cTranspose;
+    private boolean aTranpose,bTranspose;
 
 
-    public XwPlusB(SameDiff sameDiff, SDVariable input, SDVariable weights, SDVariable bias) {
-        super(null, sameDiff, new SDVariable[] {input, weights, bias}, false);
+    public XwPlusBBp(SameDiff sameDiff, SDVariable input, SDVariable weights, SDVariable bias,SDVariable dldX, boolean transposeA, boolean transposeB) {
+        super(null, sameDiff, new SDVariable[] {input, weights, bias,dldX}, false);
+        addIArgument(transposeA ? 1 : 0, transposeB ? 1 : 0);
+        this.aTranpose = transposeA;
+        this.bTranspose = transposeB;
     }
 
-    public XwPlusB(INDArray input, INDArray weights, INDArray bias) {
+    public XwPlusBBp(INDArray input, INDArray weights, INDArray bias) {
         super(new INDArray[] {input, weights, bias}, null);
     }
 
-    public XwPlusB(INDArray[] inputs, INDArray output){
+    public XwPlusBBp(INDArray[] inputs, INDArray output){
         super(inputs, wrapOrNull(output));
     }
 
-    public XwPlusB(SameDiff sd, SDVariable input, SDVariable weights, SDVariable bias, boolean transposeA, boolean transposeB, boolean transposeC) {
-        super(null,sd,new SDVariable[]{input,weights,bias});
-        addIArgument(transposeA ? 1 : 0, transposeB ? 1 : 0,transposeC ? 1 : 0);
-        this.aTranspose = transposeA;
-        this.bTranspose = transposeB;
-        this.cTranspose = transposeC;
-    }
 
-    public XwPlusB(INDArray input, INDArray weights, INDArray bias, boolean transposeA, boolean transposeB, boolean transposeC) {
-        super(null,new INDArray[]{input,weights,bias},null);
-        addIArgument(transposeA ? 1 : 0,transposeB ? 1 : 0,transposeC ? 1 : 0);
-    }
 
     @Override
     public String opName() {
-        return "xw_plus_b";
+        return "xw_plus_b_bp";
     }
 
 
@@ -81,46 +75,22 @@ public class XwPlusB extends DynamicCustomOp {
     }
 
     @Override
-    public void configureFromArguments() {
-        if(!iArguments.isEmpty()) {
-            if(iArguments.size() == 1) {
-                this.aTranspose = iArguments.get(0) > 0;
-            }
-
-            if(iArguments.size() > 1) {
-                this.bTranspose = iArguments.get(1) > 0;
-            }
-
-            if(iArguments.size() > 2) {
-                this.cTranspose = iArguments.get(2) > 0;
-            }
-
-
-        }
-    }
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient) {
-        return Arrays.asList(new XwPlusBBp(
-                sameDiff,
-                arg(0),
-                arg(1),
-                arg(2),
-                gradient.get(0),
-                aTranspose,bTranspose).outputVariables());
+        throw new UnsupportedOperationException("Unable to take gradient of a back prop op");
     }
+
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 3, "Expected exactly 3 input datatypes, got %s", dataTypes);
         DataType first = dataTypes.get(0);
-        for( int i = 0; i < 3; i++ ) {
+        for( int i = 0; i < 4; i++) {
             Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);
-            if(i > 0) {
+            if(i > 0){
                 Preconditions.checkState(first == dataTypes.get(i), "All datatypes must be same type, got input datatypes %s", dataTypes);
             }
         }
-        return Collections.singletonList(first);
+
+        return dataTypes.subList(0,3);
     }
 
 }

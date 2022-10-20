@@ -146,7 +146,45 @@ public class SDLinalg extends SDOps {
   }
 
   /**
-   * Performs matrix mutiplication on input tensors.<br>
+   * Performs matrix multiplication on input tensors.<br>
+   *
+   * @param a input tensor (NUMERIC type)
+   * @param b input tensor (NUMERIC type)
+   * @param alpha Defaults to 1.0: the scalar multiplier for the product of a* b 
+   * @param beta Defaults to 1.0: the scalar multiplier for c 
+   * @param transA Whether to transpose a when running multiply 
+   * @param transB Whether to transpose b when running multiply 
+   * @return output  (FLOATING_POINT type)
+   */
+  public SDVariable matmul(SDVariable a, SDVariable b, double alpha, double beta, boolean transA,
+      boolean transB) {
+    SDValidation.validateNumerical("Matmul", "a", a);
+    SDValidation.validateNumerical("Matmul", "b", b);
+    return new org.nd4j.linalg.api.ops.impl.reduce.Mmul(sd,a, b, alpha, beta, transA, transB).outputVariable();
+  }
+
+  /**
+   * Performs matrix multiplication on input tensors.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param a input tensor (NUMERIC type)
+   * @param b input tensor (NUMERIC type)
+   * @param alpha Defaults to 1.0: the scalar multiplier for the product of a* b 
+   * @param beta Defaults to 1.0: the scalar multiplier for c 
+   * @param transA Whether to transpose a when running multiply 
+   * @param transB Whether to transpose b when running multiply 
+   * @return output  (FLOATING_POINT type)
+   */
+  public SDVariable matmul(String name, SDVariable a, SDVariable b, double alpha, double beta,
+      boolean transA, boolean transB) {
+    SDValidation.validateNumerical("Matmul", "a", a);
+    SDValidation.validateNumerical("Matmul", "b", b);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.Mmul(sd,a, b, alpha, beta, transA, transB).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Performs matrix multiplication on input tensors.<br>
    *
    * @param a input tensor (NUMERIC type)
    * @param b input tensor (NUMERIC type)
@@ -155,11 +193,11 @@ public class SDLinalg extends SDOps {
   public SDVariable matmul(SDVariable a, SDVariable b) {
     SDValidation.validateNumerical("Matmul", "a", a);
     SDValidation.validateNumerical("Matmul", "b", b);
-    return new org.nd4j.linalg.api.ops.impl.reduce.Mmul(sd,a, b).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.reduce.Mmul(sd,a, b, 1.0, 1.0, false, false).outputVariable();
   }
 
   /**
-   * Performs matrix mutiplication on input tensors.<br>
+   * Performs matrix multiplication on input tensors.<br>
    *
    * @param name name May be null. Name for the output variable
    * @param a input tensor (NUMERIC type)
@@ -169,7 +207,7 @@ public class SDLinalg extends SDOps {
   public SDVariable matmul(String name, SDVariable a, SDVariable b) {
     SDValidation.validateNumerical("Matmul", "a", a);
     SDValidation.validateNumerical("Matmul", "b", b);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.Mmul(sd,a, b).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.Mmul(sd,a, b, 1.0, 1.0, false, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
