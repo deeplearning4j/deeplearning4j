@@ -28,6 +28,7 @@ import org.nd4j.samediff.frameworkimport.lookupIndexForArgDescriptor
 import org.nd4j.samediff.frameworkimport.nameSpaceTensorFromNDarray
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
+import java.lang.IllegalArgumentException
 
 abstract class AttributeNumberListNDArray<
         GRAPH_DEF : GeneratedMessageV3,
@@ -93,6 +94,37 @@ abstract class AttributeNumberListNDArray<
                     })
                 }
 
+                AttributeValueType.FLOAT -> {
+                    val floatValue = irAttribute.floatValue()
+                    val ndarray = Nd4j.scalar(floatValue)
+                    ret.add(ArgDescriptor {
+                        argType = OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR
+                        name = k
+                        inputValue = nameSpaceTensorFromNDarray(ndarray)
+                        argIndex = lookupIndexForArgDescriptor(
+                            argDescriptorName = k,
+                            opDescriptorName = mappingCtx.nd4jOpName(),
+                            argDescriptorType = OpNamespace.ArgDescriptor.ArgType.INT64
+                        )
+                    })
+                }
+                AttributeValueType.INT -> {
+                    val floatValue = irAttribute.intValue()
+                    val ndarray = Nd4j.scalar(floatValue)
+                    ret.add(ArgDescriptor {
+                        argType = OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR
+                        name = k
+                        inputValue = nameSpaceTensorFromNDarray(ndarray)
+                        argIndex = lookupIndexForArgDescriptor(
+                            argDescriptorName = k,
+                            opDescriptorName = mappingCtx.nd4jOpName(),
+                            argDescriptorType = OpNamespace.ArgDescriptor.ArgType.INT64
+                        )
+                    })
+                }
+              else -> {
+                  throw IllegalArgumentException("Invalid type: ${irAttribute.attributeValueType()}, only accepts floats, ints or lists of floats/ints")
+              }
             }
 
         }

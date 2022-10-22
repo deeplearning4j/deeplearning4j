@@ -27,6 +27,7 @@ import org.nd4j.samediff.frameworkimport.ir.IRTensor
 import org.nd4j.samediff.frameworkimport.ndarrayFromNameSpaceTensor
 import org.tensorflow.framework.DataType
 import org.tensorflow.framework.TensorProto
+import java.lang.IllegalArgumentException
 
 class TensorflowIRTensor(input: TensorProto): IRTensor<TensorProto, DataType> {
 
@@ -77,7 +78,22 @@ class TensorflowIRTensor(input: TensorProto): IRTensor<TensorProto, DataType> {
             DataType.DT_COMPLEX64 -> builder.dataType = TensorNamespace.DataType.COMPLEX64.ordinal
             DataType.DT_COMPLEX128 -> builder.dataType = TensorNamespace.DataType.COMPLEX128.ordinal
             DataType.UNRECOGNIZED -> builder.dataType = TensorNamespace.DataType.UNRECOGNIZED.ordinal
-
+            DataType.DT_INVALID -> builder.dataType = TensorNamespace.DataType.UNRECOGNIZED.ordinal
+            DataType.DT_FLOAT_REF -> builder.dataType = TensorNamespace.DataType.FLOAT.ordinal
+            DataType.DT_DOUBLE_REF -> builder.dataType = TensorNamespace.DataType.DOUBLE.ordinal
+            DataType.DT_INT32_REF -> builder.dataType = TensorNamespace.DataType.INT32.ordinal
+            DataType.DT_UINT8_REF ->builder.dataType = TensorNamespace.DataType.UINT8.ordinal
+            DataType.DT_INT16_REF -> builder.dataType = TensorNamespace.DataType.INT16.ordinal
+            DataType.DT_INT8_REF -> builder.dataType = TensorNamespace.DataType.INT8.ordinal
+            DataType.DT_STRING_REF -> builder.dataType = TensorNamespace.DataType.STRING.ordinal
+            DataType.DT_INT64_REF -> builder.dataType = TensorNamespace.DataType.INT64.ordinal
+            DataType.DT_BOOL_REF -> builder.dataType = TensorNamespace.DataType.BOOL.ordinal
+            DataType.DT_BFLOAT16_REF -> builder.dataType = TensorNamespace.DataType.BFLOAT16.ordinal
+            DataType.DT_UINT16_REF -> builder.dataType = TensorNamespace.DataType.UINT16.ordinal
+            DataType.DT_HALF_REF -> builder.dataType = TensorNamespace.DataType.FLOAT16.ordinal
+            DataType.DT_UINT32_REF -> builder.dataType = TensorNamespace.DataType.UINT32.ordinal
+            DataType.DT_UINT64_REF -> builder.dataType = TensorNamespace.DataType.UINT64.ordinal
+            else -> throw IllegalArgumentException("Unsupported type ${tensor.dtype}")
         }
 
 

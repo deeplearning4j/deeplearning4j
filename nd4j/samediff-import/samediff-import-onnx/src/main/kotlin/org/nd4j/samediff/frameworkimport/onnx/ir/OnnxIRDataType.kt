@@ -46,7 +46,7 @@ class OnnxIRDataType(inputDataType: Onnx.TensorProto.DataType): IRDataType<Onnx.
             Onnx.TensorProto.DataType.COMPLEX64 ->  return IRDataTypeValue.DT_COMPLEX64
             Onnx.TensorProto.DataType.COMPLEX128 ->  return IRDataTypeValue.DT_COMPLEX128
             Onnx.TensorProto.DataType.UNDEFINED, Onnx.TensorProto.DataType.UNRECOGNIZED ->  TensorNamespace.DataType.UNRECOGNIZED.ordinal
-
+            Onnx.TensorProto.DataType.BFLOAT16 -> return IRDataTypeValue.DT_BFLOAT16
         }
 
         return IRDataTypeValue.DT_INVALID
@@ -75,7 +75,8 @@ class OnnxIRDataType(inputDataType: Onnx.TensorProto.DataType): IRDataType<Onnx.
             Onnx.TensorProto.DataType.INT64 -> return  return DataType.INT64
             Onnx.TensorProto.DataType.INT32 ->  return  return DataType.INT32
             Onnx.TensorProto.DataType.INT16 -> return  return DataType.INT16
-
+            Onnx.TensorProto.DataType.BFLOAT16 -> return DataType.BFLOAT16
+            else -> return DataType.UNKNOWN
         }
 
         return  return DataType.UNKNOWN
@@ -95,7 +96,11 @@ class OnnxIRDataType(inputDataType: Onnx.TensorProto.DataType): IRDataType<Onnx.
             Onnx.TensorProto.DataType.INT64 -> return  return TensorNamespace.DataType.INT64
             Onnx.TensorProto.DataType.INT32 ->  return  return TensorNamespace.DataType.INT32
             Onnx.TensorProto.DataType.INT16 -> return  return TensorNamespace.DataType.INT16
-
+            Onnx.TensorProto.DataType.UNDEFINED -> TODO()
+            Onnx.TensorProto.DataType.UINT8 -> return TensorNamespace.DataType.UINT8
+            Onnx.TensorProto.DataType.INT8 -> return TensorNamespace.DataType.INT8
+            Onnx.TensorProto.DataType.BFLOAT16 -> return TensorNamespace.DataType.BFLOAT16
+            else -> return TensorNamespace.DataType.UNDEFINED
         }
 
         return TensorNamespace.DataType.UNDEFINED

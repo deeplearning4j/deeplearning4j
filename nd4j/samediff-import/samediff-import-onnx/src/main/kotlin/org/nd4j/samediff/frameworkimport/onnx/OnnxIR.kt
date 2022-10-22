@@ -160,6 +160,7 @@ fun attributeValueTypeForOnnxAttribute(attributeDef: Onnx.AttributeProto) : Attr
         Onnx.AttributeProto.AttributeType.FLOATS -> return AttributeValueType.LIST_FLOAT
         Onnx.AttributeProto.AttributeType.TENSOR -> return AttributeValueType.TENSOR
         Onnx.AttributeProto.AttributeType.TENSORS -> return AttributeValueType.LIST_TENSOR
+        else -> return AttributeValueType.INVALID
     }
 
     return AttributeValueType.INVALID

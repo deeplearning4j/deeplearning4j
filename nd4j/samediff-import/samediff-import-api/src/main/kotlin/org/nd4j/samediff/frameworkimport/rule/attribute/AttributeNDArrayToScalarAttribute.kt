@@ -28,6 +28,7 @@ import org.nd4j.samediff.frameworkimport.lookupIndexForArgDescriptor
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
+import java.lang.IllegalArgumentException
 
 abstract class AttributeNDArrayToScalarAttribute<
         GRAPH_DEF : GeneratedMessageV3,
@@ -87,6 +88,30 @@ abstract class AttributeNDArrayToScalarAttribute<
                         )
                     })
                 }
+
+                OpNamespace.ArgDescriptor.ArgType.FLOAT -> ret.add(ArgDescriptor {
+                    argType = OpNamespace.ArgDescriptor.ArgType.FLOAT
+                    name = k
+                    floatValue = irAttribute.getFloat(0)
+                    argIndex = lookupIndexForArgDescriptor(
+                        argDescriptorName = k,
+                        opDescriptorName = mappingCtx.nd4jOpName(),
+                        argDescriptorType = OpNamespace.ArgDescriptor.ArgType.INT64
+                    )
+                })
+                OpNamespace.ArgDescriptor.ArgType.INT32 -> ret.add(ArgDescriptor {
+                    argType = OpNamespace.ArgDescriptor.ArgType.INT32
+                    name = k
+                    int32Value = irAttribute.getInt(0)
+                    argIndex = lookupIndexForArgDescriptor(
+                        argDescriptorName = k,
+                        opDescriptorName = mappingCtx.nd4jOpName(),
+                        argDescriptorType = OpNamespace.ArgDescriptor.ArgType.INT64
+                    )
+                })
+             else -> {
+                 throw IllegalArgumentException("Illegal data type ${realDataType}")
+             }
             }
 
         }

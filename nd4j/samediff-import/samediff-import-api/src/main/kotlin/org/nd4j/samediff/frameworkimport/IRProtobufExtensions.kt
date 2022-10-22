@@ -621,6 +621,24 @@ fun setNameForFunctionFromDescriptors(argDescriptors: Collection<OpNamespace.Arg
                         }
                     }
 
+                    OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR,OpNamespace.ArgDescriptor.ArgType.OUTPUT_TENSOR -> {
+                        if(INDArray::class.java.isAssignableFrom(field.type)) {
+                            field.isAccessible = true
+                            ReflectionUtils.setField(
+                                field,
+                                func,
+                                ndarrayFromNameSpaceTensor(descriptor.inputValue))
+                        }
+                    }
+                    OpNamespace.ArgDescriptor.ArgType.OUTPUT_TENSOR ->
+                        if(INDArray::class.java.isAssignableFrom(field.type)) {
+                            field.isAccessible = true
+                            ReflectionUtils.setField(
+                                field,
+                                func,
+                                ndarrayFromNameSpaceTensor(descriptor.outputValue))
+                        }
+                    OpNamespace.ArgDescriptor.ArgType.UNRECOGNIZED -> throw IllegalArgumentException("Illegal type ${field.type}")
                 }
 
             }

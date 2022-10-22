@@ -26,6 +26,7 @@ import org.nd4j.samediff.frameworkimport.context.MappingContext
 import org.nd4j.samediff.frameworkimport.lookupIndexForArgDescriptor
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
+import java.lang.IllegalArgumentException
 
 abstract class FlattenDims<
         GRAPH_DEF : GeneratedMessageV3,
@@ -83,6 +84,11 @@ abstract class FlattenDims<
                     val axisList = mappingCtx.irAttributeValueForNode(v).listIntValue()
                     addToList(ret,k,baseIndex,axis,axisList)
                 }
+
+               else -> {
+                   throw IllegalArgumentException("Illegal type ${attr.attributeValueType()}")
+               }
+
             }
 
         }

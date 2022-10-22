@@ -25,6 +25,7 @@ import org.nd4j.samediff.frameworkimport.context.MappingContext
 import org.nd4j.samediff.frameworkimport.lookupIndexForArgDescriptor
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
+import java.lang.IllegalArgumentException
 
 abstract class ListAttributeValueLookupToIndex<
         GRAPH_DEF : GeneratedMessageV3,
@@ -171,6 +172,9 @@ abstract class ListAttributeValueLookupToIndex<
 
                 }
 
+              else -> {
+                  throw IllegalArgumentException("Illegal type ${listOfValues.attributeValueType()}")
+              }
             }
 
 

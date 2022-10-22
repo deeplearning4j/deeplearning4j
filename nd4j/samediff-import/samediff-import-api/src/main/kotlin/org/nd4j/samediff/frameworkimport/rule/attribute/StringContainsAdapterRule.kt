@@ -20,8 +20,10 @@
 package org.nd4j.samediff.frameworkimport.rule.attribute
 
 import org.nd4j.ir.OpNamespace
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.context.MappingContext
 import org.nd4j.samediff.frameworkimport.lookupIndexForArgDescriptor
+import org.nd4j.samediff.frameworkimport.nameSpaceTensorFromNDarray
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
@@ -76,6 +78,20 @@ abstract class StringContainsAdapterRule<
 
                     }
 
+                    OpNamespace.ArgDescriptor.ArgType.FLOAT ->    descriptorBuilder.floatValue = if (testValue.isNotEmpty() && compString.contains(testValue)) 1.0f else 0.0f
+
+                    OpNamespace.ArgDescriptor.ArgType.DOUBLE ->   descriptorBuilder.doubleValue = if (testValue.isNotEmpty() && compString.contains(testValue)) 1.0 else 0.0
+                    OpNamespace.ArgDescriptor.ArgType.INT32 ->   descriptorBuilder.int32Value = if (testValue.isNotEmpty() && compString.contains(testValue)) 1 else 0
+                    OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR ->  {
+                        descriptorBuilder.inputValue = if (testValue.isNotEmpty() && compString.contains(testValue)) nameSpaceTensorFromNDarray(
+                            Nd4j.scalar(true)) else nameSpaceTensorFromNDarray(Nd4j.scalar(false))
+                    }
+                    OpNamespace.ArgDescriptor.ArgType.OUTPUT_TENSOR ->  {
+                        descriptorBuilder.outputValue = if (testValue.isNotEmpty() && compString.contains(testValue)) nameSpaceTensorFromNDarray(
+                            Nd4j.scalar(true)) else nameSpaceTensorFromNDarray(Nd4j.scalar(false))
+                    }
+                    OpNamespace.ArgDescriptor.ArgType.STRING ->   descriptorBuilder.stringValue = if (testValue.isNotEmpty() && compString.contains(testValue)) "true" else "false"
+                    else -> throw IllegalArgumentException("Invalid type ${argDescriptorType}")
                 }
                 ret.add(descriptorBuilder.build())
             }

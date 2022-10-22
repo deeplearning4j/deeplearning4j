@@ -27,6 +27,7 @@ import org.nd4j.samediff.frameworkimport.lookupIndexForArgDescriptor
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
+import java.lang.IllegalArgumentException
 
 abstract class NDArrayInputToNumericalAttribute<
         GRAPH_DEF : GeneratedMessageV3,
@@ -90,6 +91,22 @@ abstract class NDArrayInputToNumericalAttribute<
                                     argIndex = baseIndex + i
                                 })
                             }
+
+                            OpNamespace.ArgDescriptor.ArgType.FLOAT -> ret.add(ArgDescriptor {
+                                name = nameToUse
+                                argType = OpNamespace.ArgDescriptor.ArgType.FLOAT
+                                int64Value = get.toLong()
+                                argIndex = baseIndex + i
+                            })
+                            OpNamespace.ArgDescriptor.ArgType.INT32 -> ret.add(ArgDescriptor {
+                                name = nameToUse
+                                argType = OpNamespace.ArgDescriptor.ArgType.INT32
+                                int64Value = get.toLong()
+                                argIndex = baseIndex + i
+                            })
+                           else -> {
+                               throw IllegalArgumentException("Illegal type ${argDescriptor.argType}")
+                           }
                         }
 
                     }

@@ -29,6 +29,7 @@ import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.process.MappingProcess
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
+import java.lang.IllegalArgumentException
 
 abstract class MultiInputIndexMappingRule<
         GRAPH_DEF : GeneratedMessageV3,
@@ -137,6 +138,10 @@ abstract class MultiInputIndexMappingRule<
                 OpNamespace.ArgDescriptor.ArgType.INT64 -> builder.addOutputIntName(k)
                 OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR -> builder.addInputTensorName(k)
                 OpNamespace.ArgDescriptor.ArgType.OUTPUT_TENSOR -> builder.addOutputTensorName(k)
+                OpNamespace.ArgDescriptor.ArgType.INT32 -> builder.addOutputIntName(k)
+                OpNamespace.ArgDescriptor.ArgType.DATA_TYPE -> builder.addOutputDataTypeName(k)
+                OpNamespace.ArgDescriptor.ArgType.STRING -> builder.addOutputStringAttrName(k)
+                OpNamespace.ArgDescriptor.ArgType.UNRECOGNIZED -> throw IllegalArgumentException("Invalid type $k: ${descriptor.argType}")
             }
 
             for (associatedInput in v) {
@@ -146,6 +151,9 @@ abstract class MultiInputIndexMappingRule<
                     OpNamespace.ArgDescriptor.ArgType.DOUBLE, OpNamespace.ArgDescriptor.ArgType.FLOAT -> builder.addInputFloatName(associatedInput.name)
                     OpNamespace.ArgDescriptor.ArgType.INT32, OpNamespace.ArgDescriptor.ArgType.INT64 -> builder.addInputIntName(associatedInput.name)
                     OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR -> builder.addInputTensorName(associatedInput.name)
+                    OpNamespace.ArgDescriptor.ArgType.DATA_TYPE -> builder.addInputDataTypeName(associatedInput.name)
+                    OpNamespace.ArgDescriptor.ArgType.OUTPUT_TENSOR -> builder.addOutputTensorName(associatedInput.name)
+                    OpNamespace.ArgDescriptor.ArgType.UNRECOGNIZED -> throw IllegalArgumentException("Invalid type $v: ${descriptor.argType}")
                 }
             }
 

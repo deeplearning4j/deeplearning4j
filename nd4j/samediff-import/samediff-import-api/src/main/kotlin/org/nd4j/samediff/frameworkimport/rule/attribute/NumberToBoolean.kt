@@ -24,6 +24,7 @@ import org.nd4j.samediff.frameworkimport.context.MappingContext
 import org.nd4j.samediff.frameworkimport.lookupIndexForArgDescriptor
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
+import java.lang.IllegalArgumentException
 
 abstract class NumberToBoolean<
         GRAPH_DEF: GeneratedMessageV3,
@@ -73,6 +74,10 @@ abstract class NumberToBoolean<
                 AttributeValueType.INT -> {
                     descriptorBuilder.boolValue = irAttribute.intValue() > 0
                 }
+                else -> {
+                    throw IllegalArgumentException("Illegal type ${irAttribute.attributeValueType()}")
+                }
+
             }
 
             ret.add(descriptorBuilder.build())

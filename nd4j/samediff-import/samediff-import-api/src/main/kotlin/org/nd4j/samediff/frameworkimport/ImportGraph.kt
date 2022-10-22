@@ -648,6 +648,11 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 MapperNamespace.VariableResolutionType.ERROR_ON_NOT_EQUAL -> {
                                     throw java.lang.IllegalStateException("Number of variable names for node ${mappingContext!!.nodeName()} not exact equal to number of inputs resolved from nd4j op descriptor which was ${resolvedArgInputs.size}")
                                 }
+
+                                MapperNamespace.VariableResolutionType.UNRECOGNIZED -> {
+                                    throw java.lang.IllegalArgumentException("Illegal type ${opMappingProcess.arrayResolutionType()}")
+                                }
+
                             }
 
                             //we want the default names used for no op or other situations

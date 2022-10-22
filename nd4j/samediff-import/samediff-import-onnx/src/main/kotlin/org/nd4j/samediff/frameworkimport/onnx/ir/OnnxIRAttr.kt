@@ -75,6 +75,7 @@ class OnnxIRAttr(inputAttributeDef: Onnx.AttributeProto, inputAttributeValue: On
             Onnx.AttributeProto.AttributeType.TENSOR -> return AttributeValueType.TENSOR
             Onnx.AttributeProto.AttributeType.TENSORS -> return AttributeValueType.LIST_TENSOR
             Onnx.AttributeProto.AttributeType.GRAPH -> return AttributeValueType.GRAPH
+            else -> return AttributeValueType.INVALID
         }
 
         return AttributeValueType.INVALID
@@ -114,8 +115,8 @@ class OnnxIRAttr(inputAttributeDef: Onnx.AttributeProto, inputAttributeValue: On
     }
 
     override fun graphValue(registry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>): IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum> {
-      return OnnxIRGraph(attributeValue.g,registry as OpMappingRegistry<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto, Onnx.TensorProto.DataType, Onnx.AttributeProto, Onnx.AttributeProto>)
-        as IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
+        return OnnxIRGraph(attributeValue.g,registry as OpMappingRegistry<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto, Onnx.TensorProto.DataType, Onnx.AttributeProto, Onnx.AttributeProto>)
+                as IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>
     }
 
 }

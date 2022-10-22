@@ -219,6 +219,20 @@ class DefaultImportRunner<GRAPH_TYPE: GeneratedMessageV3,
                                         ReflectionUtils.setField(scalarField, df, nd4jScalarValue)
 
                                     }
+                                    OpNamespace.ArgDescriptor.ArgType.BOOL -> {
+                                        val nd4jScalarValue = Nd4j.scalar(argDescriptor.boolValue).castTo(dtype)
+                                        ReflectionUtils.setField(scalarField, df, nd4jScalarValue)
+
+                                    }
+
+                                    OpNamespace.ArgDescriptor.ArgType.STRING -> {
+                                        val nd4jScalarValue = Nd4j.scalar(argDescriptor.stringValue).castTo(dtype)
+                                        ReflectionUtils.setField(scalarField, df, nd4jScalarValue)
+
+                                    }
+                                    else -> {
+                                        throw IllegalArgumentException("Trying to convert invalid argument type " + argDescriptor.argType)
+                                    }
                                 }
                             }
                         }
@@ -257,6 +271,19 @@ class DefaultImportRunner<GRAPH_TYPE: GeneratedMessageV3,
                                     val nd4jScalarValue = Nd4j.scalar(argDescriptor.int64Value).castTo(dtype)
                                     ReflectionUtils.setField(scalarField, df, nd4jScalarValue)
 
+                                }
+
+                                OpNamespace.ArgDescriptor.ArgType.BOOL -> {
+                                    val nd4jScalarValue = Nd4j.scalar(argDescriptor.boolValue).castTo(dtype)
+                                    ReflectionUtils.setField(scalarField, df, nd4jScalarValue)
+                                }
+
+                                OpNamespace.ArgDescriptor.ArgType.STRING -> {
+                                    val nd4jScalarValue = Nd4j.scalar(argDescriptor.stringValue).castTo(dtype)
+                                    ReflectionUtils.setField(scalarField, df, nd4jScalarValue)
+                                }
+                                else -> {
+                                    throw IllegalArgumentException("Trying to convert invalid argument type " + argDescriptor.argType)
                                 }
                             }
                         }

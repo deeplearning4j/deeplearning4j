@@ -27,6 +27,7 @@ import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.process.MappingProcess
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
+import java.lang.IllegalArgumentException
 
 abstract class BaseAttributeExtractionRule<
         GRAPH_DEF: GeneratedMessageV3,
@@ -100,6 +101,8 @@ abstract class BaseAttributeExtractionRule<
                     OpNamespace.ArgDescriptor.ArgType.DOUBLE, OpNamespace.ArgDescriptor.ArgType.FLOAT -> builder.addInputFloatName(descriptor.name)
                     OpNamespace.ArgDescriptor.ArgType.INT32, OpNamespace.ArgDescriptor.ArgType.INT64 -> builder.addInputIntName(descriptor.name)
                     OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR -> builder.addInputTensorName(descriptor.name)
+                    else -> {throw IllegalArgumentException("Illegal arg type ${descriptor.argType}")}
+
                 }
 
                 builder.addTransformerArgs(MapperNamespace.TransformerArgs.newBuilder().setKey(k).addAllTransformerArgs(v))
@@ -121,6 +124,7 @@ abstract class BaseAttributeExtractionRule<
                 OpNamespace.ArgDescriptor.ArgType.DATA_TYPE -> builder.addOutputDataTypeName(outputName)
                 OpNamespace.ArgDescriptor.ArgType.OUTPUT_TENSOR -> builder.addOutputTensorName(outputName)
                 OpNamespace.ArgDescriptor.ArgType.STRING -> builder.addOutputStringAttrName(outputName)
+                else -> {throw IllegalArgumentException("Illegal type ${descriptorForName.argType}")}
             }
 
             //not all associated outputs will have inputs
@@ -132,6 +136,7 @@ abstract class BaseAttributeExtractionRule<
                     AttributeValueType.STRING -> builder.addInputStringAttrName(inputName)
                     AttributeValueType.DATA_TYPE -> builder.addInputDataTypeName(inputName)
                     AttributeValueType.TENSOR -> builder.addInputTensorName(inputName)
+                   else -> {throw IllegalArgumentException("Illegal type ${inputOpDefTypes!![inputName]!!}")}
                 }
 
             }

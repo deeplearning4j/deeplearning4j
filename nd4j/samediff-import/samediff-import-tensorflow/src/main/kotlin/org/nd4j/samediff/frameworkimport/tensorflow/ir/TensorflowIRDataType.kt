@@ -50,7 +50,7 @@ class TensorflowIRDataType(inputDataType: DataType): IRDataType<DataType> {
             DataType.DT_UINT16, DataType.DT_UINT16_REF -> return IRDataTypeValue.DT_UINT16
             DataType.DT_UINT32, DataType.DT_UINT32_REF -> return IRDataTypeValue.DT_UINT32
             DataType.DT_UINT64, DataType.DT_UINT64_REF -> return IRDataTypeValue.DT_UINT64
-
+            else -> return IRDataTypeValue.DT_INVALID
         }
 
         return IRDataTypeValue.DT_INVALID
@@ -82,6 +82,7 @@ class TensorflowIRDataType(inputDataType: DataType): IRDataType<DataType> {
             DataType.DT_UINT16, DataType.DT_UINT16_REF -> return org.nd4j.linalg.api.buffer.DataType.UINT16
             DataType.DT_UINT32, DataType.DT_UINT32_REF -> return org.nd4j.linalg.api.buffer.DataType.UINT32
             DataType.DT_UINT64, DataType.DT_UINT64_REF -> return org.nd4j.linalg.api.buffer.DataType.UINT64
+            else -> org.nd4j.linalg.api.buffer.DataType.UNKNOWN
         }
 
         return org.nd4j.linalg.api.buffer.DataType.UNKNOWN
@@ -103,6 +104,7 @@ class TensorflowIRDataType(inputDataType: DataType): IRDataType<DataType> {
             DataType.DT_UINT16, DataType.DT_UINT16_REF -> return TensorNamespace.DataType.UINT16
             DataType.DT_UINT32, DataType.DT_UINT32_REF -> return TensorNamespace.DataType.UINT32
             DataType.DT_UINT64, DataType.DT_UINT64_REF -> return TensorNamespace.DataType.UINT64
+            else ->  return TensorNamespace.DataType.UNDEFINED
         }
 
         return TensorNamespace.DataType.UNDEFINED
