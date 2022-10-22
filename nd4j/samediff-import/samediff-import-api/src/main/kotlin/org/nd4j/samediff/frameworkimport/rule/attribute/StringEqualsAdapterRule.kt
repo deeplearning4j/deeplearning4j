@@ -20,10 +20,13 @@
 package org.nd4j.samediff.frameworkimport.rule.attribute
 
 import org.nd4j.ir.OpNamespace
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.context.MappingContext
 import org.nd4j.samediff.frameworkimport.lookupIndexForArgDescriptor
+import org.nd4j.samediff.frameworkimport.nameSpaceTensorFromNDarray
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
+import java.lang.IllegalArgumentException
 
 abstract class StringEqualsAdapterRule<
         GRAPH_DEF : GeneratedMessageV3,
@@ -77,6 +80,20 @@ abstract class StringEqualsAdapterRule<
                         descriptorBuilder.int64Value = if (testValue == compString) 1 else 0
 
                     }
+
+                    OpNamespace.ArgDescriptor.ArgType.FLOAT ->
+                        descriptorBuilder.floatValue = if (testValue == compString) 1.0f else 0.0f
+
+                    OpNamespace.ArgDescriptor.ArgType.DOUBLE ->
+                        descriptorBuilder.doubleValue = if (testValue == compString) 1.0 else 0.0
+                    OpNamespace.ArgDescriptor.ArgType.INT32 ->
+                        descriptorBuilder.int32Value = if (testValue == compString) 1 else 0
+                    OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR,OpNamespace.ArgDescriptor.ArgType.OUTPUT_TENSOR -> if (testValue != compString) nameSpaceTensorFromNDarray(
+                        Nd4j.scalar(true)) else nameSpaceTensorFromNDarray(Nd4j.scalar(false))
+                    OpNamespace.ArgDescriptor.ArgType.OUTPUT_TENSOR -> TODO()
+                    OpNamespace.ArgDescriptor.ArgType.STRING ->
+                        descriptorBuilder.stringValue = if (testValue == compString) "true" else "false"
+                    else -> throw IllegalArgumentException("Illeal type $argDescriptorType")
                 }
 
                 ret.add(descriptorBuilder.build())

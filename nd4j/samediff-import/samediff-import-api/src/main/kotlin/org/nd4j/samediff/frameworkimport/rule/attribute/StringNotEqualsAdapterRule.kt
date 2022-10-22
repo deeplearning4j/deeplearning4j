@@ -20,9 +20,11 @@
 package org.nd4j.samediff.frameworkimport.rule.attribute
 
 import org.nd4j.ir.OpNamespace
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ArgDescriptor
 import org.nd4j.samediff.frameworkimport.context.MappingContext
 import org.nd4j.samediff.frameworkimport.lookupIndexForArgDescriptor
+import org.nd4j.samediff.frameworkimport.nameSpaceTensorFromNDarray
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
@@ -72,6 +74,72 @@ abstract class StringNotEqualsAdapterRule<
                                 argDescriptorName = k,
                                 opDescriptorName = mappingCtx.nd4jOpName(),
                                 argDescriptorType = OpNamespace.ArgDescriptor.ArgType.BOOL
+                            )
+
+                        })
+                    }
+
+                    OpNamespace.ArgDescriptor.ArgType.FLOAT ->  ret.add(ArgDescriptor {
+                        name = k
+                        argType = argDescriptorType
+                        floatValue = if (testValue != compString) 1.0f else 0.0f
+                        argIndex = lookupIndexForArgDescriptor(
+                            argDescriptorName = k,
+                            opDescriptorName = mappingCtx.nd4jOpName(),
+                            argDescriptorType = OpNamespace.ArgDescriptor.ArgType.BOOL
+                        )
+
+                    })
+                    OpNamespace.ArgDescriptor.ArgType.DOUBLE ->ret.add(ArgDescriptor {
+                        name = k
+                        argType = argDescriptorType
+                        doubleValue = if (testValue != compString) 1.0 else 0.0
+                        argIndex = lookupIndexForArgDescriptor(
+                            argDescriptorName = k,
+                            opDescriptorName = mappingCtx.nd4jOpName(),
+                            argDescriptorType = OpNamespace.ArgDescriptor.ArgType.BOOL
+                        )
+
+                    })
+                    OpNamespace.ArgDescriptor.ArgType.INT32 -> {
+                        ret.add(ArgDescriptor {
+                            name = k
+                            argType = argDescriptorType
+                            int32Value = if (testValue != compString) 1 else 0
+                            argIndex = lookupIndexForArgDescriptor(
+                                argDescriptorName = k,
+                                opDescriptorName = mappingCtx.nd4jOpName(),
+                                argDescriptorType = OpNamespace.ArgDescriptor.ArgType.INT64
+                            )
+
+                        })
+                    }
+
+
+                    OpNamespace.ArgDescriptor.ArgType.UNRECOGNIZED -> TODO()
+                    OpNamespace.ArgDescriptor.ArgType.DATA_TYPE -> TODO()
+                    OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR, OpNamespace.ArgDescriptor.ArgType.OUTPUT_TENSOR  -> {
+                        ret.add(ArgDescriptor {
+                            name = k
+                            argType = argDescriptorType
+                            inputValue = if (testValue != compString) nameSpaceTensorFromNDarray(Nd4j.scalar(true)) else nameSpaceTensorFromNDarray(Nd4j.scalar(false))
+                            argIndex = lookupIndexForArgDescriptor(
+                                argDescriptorName = k,
+                                opDescriptorName = mappingCtx.nd4jOpName(),
+                                argDescriptorType = OpNamespace.ArgDescriptor.ArgType.INT64
+                            )
+
+                        })
+                    }
+                    OpNamespace.ArgDescriptor.ArgType.STRING -> {
+                        ret.add(ArgDescriptor {
+                            name = k
+                            argType = argDescriptorType
+                            stringValue = "${testValue != compString}"
+                            argIndex = lookupIndexForArgDescriptor(
+                                argDescriptorName = k,
+                                opDescriptorName = mappingCtx.nd4jOpName(),
+                                argDescriptorType = OpNamespace.ArgDescriptor.ArgType.INT64
                             )
 
                         })

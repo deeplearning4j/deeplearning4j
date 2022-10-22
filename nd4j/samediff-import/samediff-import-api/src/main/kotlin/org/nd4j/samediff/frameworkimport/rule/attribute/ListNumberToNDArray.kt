@@ -67,32 +67,34 @@ abstract class ListNumberToNDArray<
 
             when (listOfValues.attributeValueType()) {
                 AttributeValueType.LIST_FLOAT -> {
-                   if(listOfValues.listFloatValue().isNotEmpty()) {
-                       val nd4jArray = Nd4j.create(listOfValues.listFloatValue().toFloatArray())
-                       val inputTensor = nameSpaceTensorFromNDarray(nd4jArray)
-                       ret.add(ArgDescriptor {
-                           name = k
-                           inputValue = inputTensor
-                           argType = OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR
-                           argIndex = baseIndex
-                       })
-                   }
+                    if(listOfValues.listFloatValue().isNotEmpty()) {
+                        val nd4jArray = Nd4j.create(listOfValues.listFloatValue().toFloatArray())
+                        val inputTensor = nameSpaceTensorFromNDarray(nd4jArray)
+                        ret.add(ArgDescriptor {
+                            name = k
+                            inputValue = inputTensor
+                            argType = OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR
+                            argIndex = baseIndex
+                        })
+                    }
 
                 }
 
                 AttributeValueType.LIST_INT -> {
-                   if(listOfValues.listIntValue().isNotEmpty()) {
-                       val nd4jArray = Nd4j.create(Nd4j.createBuffer(listOfValues.listIntValue().toLongArray()))
-                       val inputTensor = nameSpaceTensorFromNDarray(nd4jArray)
-                       ret.add(ArgDescriptor {
-                           name = k
-                           inputValue = inputTensor
-                           argType = OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR
-                           argIndex = baseIndex
-                       })
-                   }
-                   }
-
+                    if(listOfValues.listIntValue().isNotEmpty()) {
+                        val nd4jArray = Nd4j.create(Nd4j.createBuffer(listOfValues.listIntValue().toLongArray()))
+                        val inputTensor = nameSpaceTensorFromNDarray(nd4jArray)
+                        ret.add(ArgDescriptor {
+                            name = k
+                            inputValue = inputTensor
+                            argType = OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR
+                            argIndex = baseIndex
+                        })
+                    }
+                }
+                else -> {
+                    throw IllegalArgumentException("Invalid type ${listOfValues.attributeValueType()}")
+                }
 
             }
 

@@ -82,7 +82,7 @@ or:
 ./generate.sh linalg -projects nd4j
 ```
 The script will first compile the project, before running.
-Internally, the `org.nd4j.codegen.cli.CLI` class is used.
+Internally, the `org.nd4j.codegen.cli.PicoCliCodeGen` class is used.
 Classes are written to `deeplearning4j/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/factory/ops/`
 
 ## Generating documentation.

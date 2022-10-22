@@ -27,6 +27,7 @@ import org.nd4j.samediff.frameworkimport.lookupIndexForArgDescriptor
 import org.nd4j.samediff.frameworkimport.nameSpaceTensorFromNDarray
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
+import java.lang.IllegalArgumentException
 
 abstract class StringAttributeToNDArray<
         GRAPH_DEF : GeneratedMessageV3,
@@ -82,6 +83,10 @@ abstract class StringAttributeToNDArray<
                         )
                     })
                 }
+
+              else -> {
+                  throw IllegalArgumentException("Illegal type ${irAttribute.attributeValueType()}")
+              }
             }
 
         }

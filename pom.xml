@@ -61,6 +61,8 @@
         <module>python4j</module>
         <module>omnihub</module>
         <module>resources</module>
+        <module>codegen</module>
+        <module>codegen/libnd4j-gen</module>
     </modules>
 
     <scm>
@@ -234,7 +236,7 @@
         <jackson.databind.version>2.13.3</jackson.databind.version>
         <shaded.snakeyaml.version>1.26</shaded.snakeyaml.version>
         <geo.jackson.version>2.8.7</geo.jackson.version>
-        <lombok.version>1.18.22</lombok.version>
+        <lombok.version>1.18.24</lombok.version>
         <json.versiounitn>20131018</json.versiounitn>
         <google.protobuf.version>3.21.2</google.protobuf.version>
         <google.protobuf.solr.version>2.6.1</google.protobuf.solr.version>
@@ -314,6 +316,7 @@
         <neoitertools.version>1.0.0</neoitertools.version>
         <rxjava.version>2.2.0</rxjava.version>
         <kotlin.version>1.7.20</kotlin.version>
+        <javapoet.version>1.13.0</javapoet.version>
         <kotlin-logging.version>2.1.21</kotlin-logging.version>
         <test.heap.size>8g</test.heap.size>
         <test.offheap.size>8g</test.offheap.size>

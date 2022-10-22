@@ -36,11 +36,11 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <commonsio.version>2.5</commonsio.version>
-    <commons.lang.version>3.6</commons.lang.version>
+    <commonsio.version>2.7</commonsio.version>
+    <commons.lang.version>3.7</commons.lang.version>
     <commons.dbutils.version>1.7</commons.dbutils.version>
-    <lombok.version>1.18.22</lombok.version>
-    <logback.version>1.1.7</logback.version>
+    <lombok.version>1.18.24</lombok.version>
+    <logback.version>1.2.3</logback.version>
     <protobuf.version>3.8.0</protobuf.version>
     <classgraph.version>4.8.90</classgraph.version>
     <commons-collections4.version>4.1</commons-collections4.version>
@@ -115,7 +115,7 @@
     <dependency>
       <groupId>com.squareup</groupId>
       <artifactId>javapoet</artifactId>
-      <version>1.11.1</version>
+      <version>${javapoet.version}</version>
     </dependency>
 
 
