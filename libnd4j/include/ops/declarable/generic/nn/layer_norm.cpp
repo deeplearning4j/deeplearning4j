@@ -63,11 +63,8 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
   std::vector<bool> bargs = {};
   standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
 
-  // output->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), gain, output);
   output->applyBroadcast(sd::broadcast::Multiply, {dimC}, *gain, *output);
   if (bias != nullptr) {
-    // output->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), bias, output);
-    // output->applyBroadcast(sd::broadcast::Add, {dimC}, bias);
     helpers::addBias(block, *output, *bias, *output, isNCHW);
   }
 

@@ -47,9 +47,9 @@ CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
   shape::checkDimensions(input->rankOf(), axis);
 
   auto means = input->reduceAlongDimension(reduce::Mean, axis, true);
-  auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, axis);
+  auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, axis) + 1e-12;
   stdev.reshapei(means.getShapeAsVector());
-
+  stdev.printBuffer("Standard deviation\n");
   input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), means, *output, false);
   output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, *output, false);
   output->applyScalar(sd::scalar::ReplaceNans, 0, *output);
