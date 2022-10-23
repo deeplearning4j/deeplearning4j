@@ -58,7 +58,7 @@ public class Svd extends DynamicCustomOp {
         addIArgument(ArrayUtil.fromBoolean(fullUV), ArrayUtil.fromBoolean(computeUv), switchNum);
     }
 
-    public Svd(SameDiff sd, SDVariable input, boolean fullUV, boolean computeUv){
+    public Svd(SameDiff sd, SDVariable input, boolean fullUV, boolean computeUv) {
         this(sd, input, fullUV, computeUv, DEFAULT_SWITCHNUM);
     }
 
@@ -72,8 +72,11 @@ public class Svd extends DynamicCustomOp {
 
     public Svd(INDArray input, boolean fullUV, boolean computeUV, int switchNum) {
         addInputArgument(input);
-        addBArgument(fullUV, computeUV);
-        addIArgument(switchNum);
+        this.computeUv = computeUV;
+        this.fullUV = fullUV;
+        this.switchNum = switchNum;
+        addIArgument(ArrayUtil.fromBoolean(fullUV), ArrayUtil.fromBoolean(computeUV), switchNum);
+
     }
 
     @Override
