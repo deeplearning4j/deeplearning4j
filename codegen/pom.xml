@@ -17,6 +17,7 @@
     <name>codegen</name>
     <modules>
         <module>op-codegen</module>
+        <module>libnd4j-gen</module>
     </modules>
 
 

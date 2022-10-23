@@ -27,6 +27,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -65,6 +66,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -1269,6 +1271,40 @@ public class TestLayerOpValidation extends BaseOpValidation {
             assertNull(err);
         }
     }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLayerNormNan(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+        //seed
+        Nd4j.getRandom().setSeed(1234L);
+        //mock input tensor
+        int X = 2, Y = 3, Z = 10;
+        float[][][] arr = new float[X][Y][Z];
+        for( int i = 0; i < X; i++) {
+            for( int j = 0; j < Y; j++) {
+                for( int k = 0; k < Z; k++) {
+                    arr[i][j][k] = 1.5678f;
+                }
+            }
+        }
+
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
+                        .checkForNAN(true)
+                        .checkForINF(true)
+                .build());
+        //test layer norm op
+        int[] layerNormDimension = new int[] {2};
+        SDVariable input = sd.constant("input", Nd4j.createFromArray(arr));
+        SDVariable gain = sd.constant("gain", Nd4j.ones(DataType.FLOAT, Z));
+        SDVariable bias = sd.constant("bias", Nd4j.zeros(DataType.FLOAT, Z));
+        SDVariable output = sd.nn.layerNorm("output", input, gain, bias, false, layerNormDimension);
+        INDArray arr2 = output.eval();
+
+        //print layer norm value
+        System.out.println(output.eval());
+    }
+
 
 
     @ParameterizedTest

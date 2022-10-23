@@ -62,7 +62,6 @@
         <module>omnihub</module>
         <module>resources</module>
         <module>codegen</module>
-        <module>codegen/libnd4j-gen</module>
     </modules>
 
     <scm>
