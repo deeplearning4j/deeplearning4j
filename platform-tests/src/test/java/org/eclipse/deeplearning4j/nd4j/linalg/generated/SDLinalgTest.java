@@ -21,7 +21,6 @@ package org.eclipse.deeplearning4j.nd4j.linalg.generated;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -34,8 +33,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
+
 @Tag(TagNames.SAMEDIFF)
 @NativeTag
 public class SDLinalgTest extends BaseNd4jTestWithBackends {
@@ -272,6 +271,37 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         SDVariable res = sameDiff.linalg().svd(sdx, false, false);
         assertEquals(expected, res.eval());
     }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvd2(Nd4jBackend backend) {
+     //https://stackoverflow.com/questions/74157832/runtime-error-from-nd4j-when-executing-svd
+        var a = Nd4j.create(new double[] {
+                0.0, 1.0, -2.0, 3.0,
+                5.0, -3.0, 1.0, -2.0,
+                5.0, -2.0, -1.0, 1.0
+        }, new int[]{3, 4});
+        var b = Nd4j.create(new double[]{-17.0, 28.0, 11.0}, new int[]{3, 1});
+        var u = Nd4j.create(new double[]{
+                -0.1295469, -0.8061540, 0.5773503,
+                0.7629233, 0.2908861, 0.5773503,
+                0.6333764, -0.5152679, -0.5773503
+        }, new int[]{3, 3});
+        var v = Nd4j.create(new double[] {
+                0.87191556, -0.2515803, -0.1764323,
+                -0.46022634, -0.1453716, -0.4694190,
+                0.04853711, 0.5423235, 0.6394484,
+                -0.15999723, -0.7883272, 0.5827720
+        }, new int[]{3, 4});
+        var d = Nd4j.create(new double[] {
+                8.007081e+00, 4.459446e+00, 4.022656e-16
+        }, new int[]{3});
+        // exercise
+        INDArray svd = Nd4j.linalg().svd(a, true, true);
+        assertNotNull(svd);
+
+    }
+
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
