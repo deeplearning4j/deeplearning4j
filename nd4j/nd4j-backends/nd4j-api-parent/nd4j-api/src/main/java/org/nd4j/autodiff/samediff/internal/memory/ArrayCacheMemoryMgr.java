@@ -170,13 +170,15 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 arr = !arrays.get(dataType, arrayShapeString).isEmpty()
                         ? arrays.get(dataType, arrayShapeString).remove(0)
                         : null;
-                if(arr != null && !arr.closeable() || arr.wasClosed() || arr.isView()) {
+                if(arr != null && (!arr.closeable() || arr.wasClosed() || arr.isView())) {
                     log.trace("Found array closeable, not returning from cache. Only closeable arrays are returnable from the cache.");
                     if(arr.isView())
                         arr.setCloseable(false);
                     log.trace("Found view array with id " + arr.getId() + " in cache. Avoiding return. Allocating new array.");
 
                     continue;
+                } else if(!arrays.contains(dataType, arrayShapeString) || arrays.get(dataType,arrayShapeString).isEmpty()) {
+                    break;
                 }
 
                 if (arr != null) {

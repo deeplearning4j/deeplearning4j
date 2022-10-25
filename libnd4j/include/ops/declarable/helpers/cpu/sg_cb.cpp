@@ -242,6 +242,7 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
       hSoftmax_<T>(syn0row, syn1 + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, codes[r], expLength,
                    infVector != nullptr);
     }
+
   }
 
   // negative sampling goes second (if enabled)
@@ -260,22 +261,21 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
         if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
         if (irow == nsStarter) continue;
       }
-
       nSampling_<T>(syn0row, syn1Neg + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0,
                     expLength, infVector != nullptr);
+
     }
   }
 
   if (infVector == nullptr) {
-   
     for (int e = 0; e < vectorLength; e++) {
       syn0row[e] += neu1e[e];
     }
   } else {
-   
     for (int e = 0; e < vectorLength; e++) {
       infVector[e] += neu1e[e];
     }
+
   }
 
   delete[] neu1e;
