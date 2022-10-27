@@ -1301,9 +1301,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                     .cyclesBeforeInitialization(3)
                     .initialSize(25L * 1024L * 1024L)
                     .build();
-            val workspace_id = "sequence_vectors_training_" + java.util.UUID.randomUUID().toString();
+            val workspace_id = "sequence_vectors_training_" + UUID.randomUUID();
 
-            Nd4j.getAffinityManager().getDeviceForCurrentThread();
             while (digitizer.hasMoreLines()) {
                 try {
                     // get current sentence as list of VocabularyWords
@@ -1316,6 +1315,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             }
                         }
                     }
+
                     double alpha = 0.025;
 
                     if (sequences.isEmpty()) {
@@ -1331,7 +1331,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, workspace_id)) {
                                 Sequence<T> sequence = sequences.get(x);
 
-                                //log.info("LR before: {}; wordsCounter: {}; totalWordsCount: {}", learningRate.get(), this.wordsCounter.get(), this.totalWordsCount);
+                                log.debug("LR before: {}; wordsCounter: {}; totalWordsCount: {}", learningRate.get(), this.wordsCounter.get(), this.totalWordsCount);
                                 alpha = Math.max(minLearningRate,
                                         learningRate.get() * (1 - (1.0 * this.wordsCounter.get()
                                                 / ((double) this.totalWordsCount) / (numIterations

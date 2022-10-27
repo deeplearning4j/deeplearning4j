@@ -111,60 +111,6 @@ public class WordVectorSerializer {
     }
 
     /**
-     * @param modelFile
-     * @return
-     * @throws FileNotFoundException
-     * @throws IOException
-     * @throws NumberFormatException
-     */
-    /*private static Word2Vec readTextModel(File modelFile) throws IOException, NumberFormatException {
-        InMemoryLookupTable lookupTable;
-        VocabCache cache;
-        INDArray syn0;
-        Word2Vec ret = new Word2Vec();
-        try (BufferedReader reader =
-                     new BufferedReader(new InputStreamReader(GzipUtils.isCompressedFilename(modelFile.getName())
-                             ? new GZIPInputStream(new FileInputStream(modelFile))
-                             : new FileInputStream(modelFile), "UTF-8"))) {
-            String line = reader.readLine();
-            String[] initial = line.split(" ");
-            int words = Integer.parseInt(initial[0]);
-            int layerSize = Integer.parseInt(initial[1]);
-            syn0 = Nd4j.create(words, layerSize);
-
-            cache = new InMemoryLookupCache(false);
-
-            int currLine = 0;
-            while ((line = reader.readLine()) != null) {
-                String[] split = line.split(" ");
-                Preconditions.checkState(split.length == layerSize + 1, "Expected %s values, got %s", layerSize + 1, split.length);
-                String word = split[0].replaceAll(WHITESPACE_REPLACEMENT, " ");
-
-                float[] vector = new float[split.length - 1];
-                for (int i = 1; i < split.length; i++) {
-                    vector[i - 1] = Float.parseFloat(split[i]);
-                }
-
-                syn0.putRow(currLine, Nd4j.create(vector));
-
-                cache.addWordToIndex(cache.numWords(), word);
-                cache.addToken(new VocabWord(1, word));
-                cache.putVocabWord(word);
-
-                currLine++;
-            }
-
-            lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder().cache(cache).vectorLength(layerSize)
-                    .build();
-            lookupTable.setSyn0(syn0);
-
-            ret.setVocab(cache);
-            ret.setLookupTable(lookupTable);
-        }
-        return ret;
-    }*/
-
-    /**
      * Read a binary word2vec from input stream.
      *
      * @param inputStream input stream to read

@@ -198,7 +198,8 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         }
 
         // Allocation failed, allocate new array
-        INDArray ret = Nd4j.createUninitializedDetached(dataType, shape);
+        //switch to using current workspace rather than detached
+        INDArray ret = detached ? Nd4j.createUninitializedDetached(dataType,shape) : Nd4j.create(dataType, shape);
         return ret;
     }
 

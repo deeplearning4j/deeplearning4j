@@ -168,9 +168,6 @@ public class SameDiff extends SDBaseOps {
     ////////////////////////////////////////
 
 
-    // counter for auto-naming variables
-    private int variableId = 0;
-
     ////////////////////////////////////////
 
     /**

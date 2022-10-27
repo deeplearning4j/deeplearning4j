@@ -55,24 +55,52 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     @Getter
     protected transient ModelUtils<T> modelUtils = new BasicModelUtils<>();
     private boolean initDone = false;
-
+    @Getter
+    @Setter
     protected int numIterations = 1;
+    @Getter
+    @Setter
     protected int numEpochs = 1;
+    @Getter
+    @Setter
     protected double negative = 0;
+    @Getter
+    @Setter
     protected double sampling = 0;
     protected AtomicDouble learningRate = new AtomicDouble(0.025);
+    @Getter
+    @Setter
     protected double minLearningRate = 0.01;
     @Getter
+    @Setter
     protected int window = 5;
+    @Getter
+    @Setter
     protected int batchSize;
+    @Getter
+    @Setter
     protected int learningRateDecayWords;
+    @Getter
+    @Setter
     protected boolean resetModel;
     protected boolean useAdeGrad;
-    protected int workers = 1; //Runtime.getRuntime().availableProcessors();
+    @Getter
+    @Setter
+    protected int workers = 1;
+    @Getter
+    @Setter
     protected boolean trainSequenceVectors = false;
+    @Getter
+    @Setter
     protected boolean trainElementsVectors = true;
+    @Getter
+    @Setter
     protected long seed;
+    @Getter
+    @Setter
     protected boolean useUnknown = false;
+    @Getter
+    @Setter
     protected int[] variableWindows;
 
 

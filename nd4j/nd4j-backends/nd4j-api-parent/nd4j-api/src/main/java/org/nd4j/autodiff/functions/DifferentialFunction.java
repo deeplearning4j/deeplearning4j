@@ -88,7 +88,7 @@ public abstract class DifferentialFunction {
     protected boolean ownNameSetWithDefault = false;
 
     public DifferentialFunction() {
-        this(true);
+        this(false);
     }
 
     public DifferentialFunction(boolean sameDiff) {

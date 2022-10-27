@@ -42,10 +42,7 @@ import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
-import org.deeplearning4j.text.documentiterator.FileLabelAwareIterator;
-import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
-import org.deeplearning4j.text.documentiterator.LabelledDocument;
-import org.deeplearning4j.text.documentiterator.LabelsSource;
+import org.deeplearning4j.text.documentiterator.*;
 import org.deeplearning4j.text.sentenceiterator.*;
 import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIteratorConverter;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
@@ -76,6 +73,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -99,6 +97,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     public DataType getDefaultFPDataType() {
         return DataType.FLOAT;
     }
+
 
 
 

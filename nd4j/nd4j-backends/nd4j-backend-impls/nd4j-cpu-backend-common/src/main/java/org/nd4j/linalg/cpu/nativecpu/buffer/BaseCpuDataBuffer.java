@@ -41,6 +41,7 @@ import static org.nd4j.linalg.api.buffer.DataType.INT8;
 public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallocatable {
 
     protected transient OpaqueDataBuffer ptrDataBuffer;
+    protected transient Pointer addressPointer;
 
     private transient final long instanceId = Nd4j.getDeallocatorService().nextValue();
 
@@ -51,7 +52,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
     @Override
     public String getUniqueId() {
-        return new String("BCDB_" + instanceId);
+        return "BCDB_" + instanceId;
     }
 
     @Override
@@ -177,7 +178,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         Pointer temp = null;
 
-        switch (dataType()){
+        switch (dataType()) {
             case DOUBLE:
                 temp = new DoublePointer(buffer.asDoubleBuffer());
                 break;
@@ -444,6 +445,9 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
     @Override
     public Pointer addressPointer() {
+
+        if(addressPointer  != null)
+            return addressPointer;
         //possible with empty buffers
         if(ptrDataBuffer.primaryBuffer() == null)
             return null;
@@ -452,21 +456,25 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         val tempPtr = new PagedPointer(ptrDataBuffer.primaryBuffer());
 
         switch (this.type) {
-            case DOUBLE: return tempPtr.asDoublePointer();
-            case FLOAT: return tempPtr.asFloatPointer();
+            case DOUBLE:
+                addressPointer = tempPtr.asDoublePointer();
+            case FLOAT:
+                addressPointer = tempPtr.asFloatPointer();
             case UINT16:
             case SHORT:
             case BFLOAT16:
-            case HALF: return tempPtr.asShortPointer();
+            case HALF: addressPointer = tempPtr.asShortPointer();
             case UINT32:
-            case INT: return tempPtr.asIntPointer();
+            case INT: addressPointer = tempPtr.asIntPointer();
             case UBYTE:
-            case BYTE: return tempPtr.asBytePointer();
+            case BYTE: addressPointer = tempPtr.asBytePointer();
             case UINT64:
-            case LONG: return tempPtr.asLongPointer();
-            case BOOL: return tempPtr.asBoolPointer();
-            default: return tempPtr.asBytePointer();
+            case LONG: addressPointer = tempPtr.asLongPointer();
+            case BOOL: addressPointer = tempPtr.asBoolPointer();
+            default: addressPointer = tempPtr.asBytePointer();
         }
+
+        return addressPointer;
     }
 
     protected BaseCpuDataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
