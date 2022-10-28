@@ -36,7 +36,6 @@ public class Or extends BaseTransformBoolOp {
 
     public Or(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
-        this.extraArgs = new Object[] {this.comparable};
     }
 
     public Or(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {

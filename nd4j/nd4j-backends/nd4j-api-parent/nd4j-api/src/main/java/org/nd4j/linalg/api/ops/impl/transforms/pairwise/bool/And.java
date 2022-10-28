@@ -34,9 +34,8 @@ public class And extends BaseTransformBoolOp {
 
     protected double comparable = 0.0;
 
-    public And(SameDiff sameDiff, SDVariable ix, SDVariable iy){
+    public And(SameDiff sameDiff, SDVariable ix, SDVariable iy) {
         super(sameDiff, ix, iy);
-        this.extraArgs = new Object[] {this.comparable};
     }
 
     public And(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
@@ -102,6 +101,6 @@ public class And extends BaseTransformBoolOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Arrays.asList( sameDiff.zerosLike(larg()), sameDiff.zerosLike(rarg()));
+        return Arrays.asList(sameDiff.zerosLike(larg()), sameDiff.zerosLike(rarg()));
     }
 }

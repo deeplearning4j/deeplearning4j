@@ -680,7 +680,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         // Pow operations might be special
         if (op.opNum() == 31) {
             if (y != null && y.isScalar()) {
-//                op.setY(Nd4j.valueArrayOf(op.x().shape(), op.y().getDouble(0)));
                 setY(Nd4j.valueArrayOf(x.shape(), y.getDouble(0)), op, oc);
             }
         }
@@ -870,19 +869,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         Pointer devTadShapeInfoZ = null;
         Pointer devTadOffsetsZ = null;
 
-        //        if (!Arrays.equals(x.shape(),z.shape()) || !Arrays.equals(x.stride(),z.stride()) || x.ordering() != z.ordering()) {
         // that's the place where we're going to have second TAD in place
         Pair<DataBuffer, DataBuffer> tadBuffersZ = tadManager.getTADOnlyShapeInfo(z, dimension);
 
         devTadShapeInfoZ = tadBuffersZ.getFirst().addressPointer();
         devTadOffsetsZ = tadBuffersZ.getSecond().addressPointer();
-        /*
-        log.info("Broascast dimension: {}", Arrays.toString(dimension));
-        log.info("x shape: {}; x TAD: {}; comp TAD: {}", Arrays.toString(x.shapeInfoDataBuffer().asInt()), Arrays.toString(tadBuffers.getFirst().asInt()), Arrays.toString(x.tensorAlongDimension(0, dimension).shapeInfoDataBuffer().asInt()));
-        log.info("z shape: {}; z TAD: {}", Arrays.toString(z.shapeInfoDataBuffer().asInt()), Arrays.toString(tadBuffersZ.getFirst().asInt()));
-        log.info("y shape: {}", Arrays.toString(y.shapeInfoDataBuffer().asInt()));
-        log.info("-------------");
-        */
+
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -997,7 +989,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             // TODO: variable datatype should be handled here
             // putting real arguments
 
-            switch (dataType){
+            switch (dataType) {
                 case FLOAT:
                     FloatPointer fPtr = new FloatPointer(pointer);
                     for (int e = 0; e < op.getRealArguments().size(); e++) {

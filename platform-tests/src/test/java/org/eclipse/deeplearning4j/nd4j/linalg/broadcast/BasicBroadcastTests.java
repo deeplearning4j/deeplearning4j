@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
@@ -48,6 +50,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @NativeTag
 @Tag(TagNames.NDARRAY_INDEXING)
 public class BasicBroadcastTests extends BaseNd4jTestWithBackends {
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSameDiffBroadcast(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+        SDVariable a = sd.constant(Nd4j.createFromArray(true, false, false, true).reshape(2, 2));
+        SDVariable b = sd.constant(Nd4j.createFromArray(true, true).reshape(1, 2)); // with .reshape(2, 1) or .reshape(2) it doesn't work either
+        SDVariable result = sd.math().and(a, b);
+        INDArray eval = result.eval();
+        assertEquals(Nd4j.createFromArray(new boolean[][] {
+                {true,false},
+                {false,false}
+        }),eval);
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
