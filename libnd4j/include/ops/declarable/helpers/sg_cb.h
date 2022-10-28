@@ -29,15 +29,30 @@
 namespace sd {
 namespace ops {
 namespace helpers {
+
+
+
 SD_LIB_HIDDEN void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable,
                             NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes,
                             NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector, const bool preciseMode,
                             const int numWorkers);
 
+
+SD_LIB_HIDDEN void  skipgramInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, int target,
+                       int ngStarter, int nsRounds, NDArray &indices, NDArray &codes, double alpha, sd::LongType randomValue,
+                       NDArray &inferenceVector, const bool preciseMode, const int numWorkers);
+
 SD_LIB_HIDDEN void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable,
                         NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &context, NDArray &lockedWords,
                         NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &numLabels,
                         NDArray &inferenceVector, const bool trainWords, const int numWorkers);
+
+
+
+SD_LIB_HIDDEN void cbowInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, int target,
+                                 int ngStarter, int nsRounds, NDArray &context, NDArray &lockedWords, NDArray &indices, NDArray &codes,
+                                 double alpha, sd::LongType randomValue, int numLabels, NDArray &inferenceVector, const bool trainWords,
+                                 int numWorkers);
 
 SD_LIB_HIDDEN int binarySearch(const int *haystack, const int needle, const int totalElements);
 }  // namespace helpers

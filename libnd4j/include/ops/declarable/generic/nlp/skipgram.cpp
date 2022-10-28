@@ -28,6 +28,125 @@
 
 namespace sd {
 namespace ops {
+
+
+CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
+ //construct codes and indices from the IARGS
+ //we do this to avoid serialization overhead from the JVM for frequently created small arrays
+  auto numCodes = I_ARG(0);
+  auto numIndices = I_ARG(1);
+  //2 for the number of indices/codes 3 for the mandatory args
+ auto numMin = numIndices + numCodes + 2 + 3;
+   std::vector<sd::LongType> *codes = new std::vector<sd::LongType>();
+   std::vector<sd::LongType> *indices = new std::vector<sd::LongType>();
+
+  int currIdx = 2;
+  for(int i = 0; i < numCodes; i++) {
+    codes->push_back(I_ARG(currIdx));
+    currIdx++;
+  }
+
+  for(int i = 0; i < numIndices; i++) {
+    indices->push_back(I_ARG(currIdx));
+    currIdx++;
+  }
+
+  const std::vector<sd::LongType> *indicesVec = indices;
+  const std::vector<sd::LongType> *codesVec = codes;
+
+  std::vector<sd::LongType> *indicesSize = new std::vector<sd::LongType>();
+  indicesSize->push_back(indices->size());
+  const std::vector<sd::LongType> *indicesShape = indicesSize;
+
+
+  std::vector<sd::LongType> *codesSize = new std::vector<sd::LongType>();
+  codesSize->push_back(codes->size());
+  const std::vector<sd::LongType> *codesShape = codesSize;
+
+
+  auto indicesArrOne = NDArrayFactory::create('c',*indicesShape,*indicesVec);
+  auto indicesArr = new NDArray(indicesArrOne);
+  auto codesArrOne = NDArrayFactory::create('c',*codesShape,*codesVec);
+  auto codesArr = new NDArray(codesArrOne);
+
+
+
+  auto target = I_ARG(currIdx++);
+  auto ngStarter = I_ARG(currIdx++);
+  auto randomValue = I_ARG(currIdx++);
+  auto numWorkers = block.numI() > numMin ? INT_ARG(currIdx++) : omp_get_max_threads();
+  auto nsRounds = block.numI() > numMin + 1 ? INT_ARG(currIdx++) : 0;
+
+  auto alpha = T_ARG(0);
+
+  // required part
+
+
+  auto syn0 = INPUT_VARIABLE(0);
+  auto syn1 = INPUT_VARIABLE(1);
+  auto syn1neg = INPUT_VARIABLE(2);
+
+  auto expTable = INPUT_VARIABLE(3);
+  auto negTable = INPUT_VARIABLE(4);
+
+
+  auto inferenceVector = INPUT_VARIABLE(5);
+
+
+
+
+
+  auto isInference = block.numB() > 0 ? B_ARG(0) : false;
+  auto isPreciseMode = block.numB() > 1 ? B_ARG(1) : false;
+
+  REQUIRE_TRUE(block.isInplace(), 0, "SkipGram: this operation requires inplace execution only");
+
+  REQUIRE_TRUE(syn0->dataType() == syn1->dataType() && syn0->dataType() == syn1neg->dataType(), 0,
+               "SkipGram: all syn tables must have the same data type");
+  REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0,
+               "SkipGram: expTable must have the same data type as syn0 table");
+
+
+
+
+
+  sd::ops::helpers::skipgramInference(*syn0,
+                                      *syn1,
+                                      *syn1neg,
+                                      *expTable,
+                                      *negTable,
+                                      target,
+                                      ngStarter,
+                                      nsRounds,
+                                      *indicesArr,
+                                      *codesArr,
+                                      alpha,
+                                      randomValue,
+                                      *inferenceVector,
+                                      isPreciseMode,
+                                      numWorkers);
+
+ delete codes;
+ delete indices;
+  delete indicesArr;
+  delete codesArr;
+
+  return sd::Status::OK;
+}
+
+
+DECLARE_TYPES(skipgram_inference) {
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, {ALL_FLOATS})
+      ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedInputTypes(2, {ALL_FLOATS})
+      ->setAllowedInputTypes(3, {ALL_FLOATS})
+      ->setAllowedInputTypes(4, {ALL_FLOATS})
+      ->setAllowedInputTypes(5, {ALL_FLOATS})
+      ->setAllowedOutputTypes(sd::DataType::ANY);
+}
+
+
 CONFIGURABLE_OP_IMPL(skipgram, 12, 12, true, 0, 0) {
   auto target = INPUT_VARIABLE(0);
   auto ngStarter = INPUT_VARIABLE(1);

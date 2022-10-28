@@ -458,20 +458,34 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         switch (this.type) {
             case DOUBLE:
                 addressPointer = tempPtr.asDoublePointer();
+                break;
             case FLOAT:
                 addressPointer = tempPtr.asFloatPointer();
+                break;
             case UINT16:
             case SHORT:
             case BFLOAT16:
-            case HALF: addressPointer = tempPtr.asShortPointer();
+            case HALF:
+                addressPointer = tempPtr.asShortPointer();
+                break;
             case UINT32:
-            case INT: addressPointer = tempPtr.asIntPointer();
+            case INT:
+                addressPointer = tempPtr.asIntPointer();
+                break;
             case UBYTE:
-            case BYTE: addressPointer = tempPtr.asBytePointer();
+            case BYTE:
+                addressPointer = tempPtr.asBytePointer();
+                break;
             case UINT64:
-            case LONG: addressPointer = tempPtr.asLongPointer();
-            case BOOL: addressPointer = tempPtr.asBoolPointer();
-            default: addressPointer = tempPtr.asBytePointer();
+            case LONG:
+                addressPointer = tempPtr.asLongPointer();
+                break;
+            case BOOL:
+                addressPointer = tempPtr.asBoolPointer();
+                break;
+            default:
+                addressPointer = tempPtr.asBytePointer();
+                break;
         }
 
         return addressPointer;

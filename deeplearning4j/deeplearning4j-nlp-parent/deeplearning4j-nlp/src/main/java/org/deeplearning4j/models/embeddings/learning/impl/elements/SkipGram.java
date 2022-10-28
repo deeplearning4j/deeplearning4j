@@ -38,6 +38,7 @@ import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.api.ops.impl.nlp.SkipGramInference;
 import org.nd4j.linalg.api.ops.impl.nlp.SkipGramRound;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
@@ -359,128 +360,80 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
         nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
-        SkipGramRound sg = null;
+        SkipGramInference sg = null;
         boolean useHS = configuration.isUseHierarchicSoftmax();
         boolean useNegative = configuration.getNegative() > 0;
 
-        byte[] intCodes = new byte[codes.length];
-        for (int i = 0; i < codes.length; ++i) {
-            intCodes[i] = codes[i];
-        }
+
 
         List<INDArray> release = new ArrayList<>();
         if (useHS && useNegative) {
-            INDArray allocate = arrayCacheMemoryMgr.allocate(false,DataType.INT32,1);
-            INDArray targetArr = arrayCacheMemoryMgr.allocate(false,DataType.INT32,1);
-            INDArray alphaArr = arrayCacheMemoryMgr.allocate(false,syn0.get().dataType(),1);
-            INDArray nextRandomArr = arrayCacheMemoryMgr.allocate(true,DataType.INT64,1);
-            allocate.putScalar(0,lastWord.getIndex());
-            targetArr.putScalar(0,target);
-            alphaArr.putScalar(0,alpha);
-            if(nextRandom != null)
-                nextRandomArr.putScalar(0,nextRandom.get());
             INDArray idxSyn1Arr = arrayCacheMemoryMgr.allocate(false,DataType.INT32,idxSyn1.length);
 
-          sg = SkipGramRound.builder()
-                  .target(allocate)
-                  .ngStarter(targetArr)
+          sg = SkipGramInference.builder()
+                  .target(lastWord.getIndex())
+                  .ngStarter(target)
                   .syn0(syn0.get())
                   .syn1(syn1.get())
                   .syn1Neg(syn1Neg.get())
                   .expTable(expTable.get())
                   .negTable(table.get())
                   .nsRounds(0)
-                  .indices(idxSyn1Arr)
-                  .codes(Nd4j.createFromArray(intCodes))
-                  .randomValue(nextRandomArr)
+                  .indices(idxSyn1)
+                  .codes(codes)
+                  .randomValue((int) nextRandom.get())
                   .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
-                  .alpha(alphaArr)
+                  .alpha(alpha)
                   .preciseMode(configuration.isPreciseMode())
                   .numWorkers(workers)
                   .build();
 
-            release.add(alphaArr);
-            release.add(targetArr);
             release.add(idxSyn1Arr);
-            release.add(allocate);
 
         }
         else if (useHS) {
-            INDArray lastWordIdx = arrayCacheMemoryMgr.allocate(false,DataType.INT32,1);
-            INDArray targetArr = arrayCacheMemoryMgr.allocate(false,DataType.INT32,1);
-            INDArray alphaArr = arrayCacheMemoryMgr.allocate(false,syn0.get().dataType(),1);
-            INDArray nextRandomArr = arrayCacheMemoryMgr.allocate(false,DataType.INT64,1);
-            INDArray ngStarter = arrayCacheMemoryMgr.allocate(false,DataType.INT32,1);
-            ngStarter.putScalar(0,-1);
-            lastWordIdx.putScalar(0,lastWord.getIndex());
-            targetArr.putScalar(0,target);
-            alphaArr.putScalar(0,alpha);
-            nextRandomArr.putScalar(0,nextRandom.get());
-
-            sg = SkipGramRound.builder()
-                    .target(lastWordIdx)
-                    .ngStarter(targetArr)
+            sg = SkipGramInference.builder()
+                    .target(lastWord.getIndex())
+                    .ngStarter(-1)
                     .syn0(syn0.get())
                     .syn1(syn1.get())
                     .syn1Neg(Nd4j.empty(syn0.get().dataType()))
                     .expTable(expTable.get() != null ? expTable.get() : Nd4j.empty(syn0.get().dataType()))
                     .negTable(table.get() != null ? table.get() : Nd4j.empty(syn0.get().dataType()))
                     .nsRounds((int) negative)
-                    .alpha(alphaArr)
-                    .randomValue(nextRandomArr)
+                    .alpha(alpha)
+                    .randomValue((int) nextRandom.get())
                     .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
-                    .codes( Nd4j.createFromArray(intCodes))
-                    .indices(Nd4j.createFromArray(idxSyn1))
+                    .codes(codes)
+                    .indices(idxSyn1)
                     .preciseMode(configuration.isPreciseMode())
                     .numWorkers(workers)
                     .build();
 
-
-            release.add(lastWordIdx);
-            release.add(alphaArr);
-            release.add(targetArr);
-            release.add(ngStarter);
-            release.add(nextRandomArr);
-
         }
         else if (useNegative) {
-            INDArray lastWordIdx = arrayCacheMemoryMgr.allocate(false,DataType.INT32,1);
-            INDArray targetArr = arrayCacheMemoryMgr.allocate(false,DataType.INT32,1);
-            INDArray alphaArr = arrayCacheMemoryMgr.allocate(false,syn0.get().dataType(),1);
-            INDArray nextRandomArr = arrayCacheMemoryMgr.allocate(false,DataType.INT64,1);
-            INDArray ngStarter = arrayCacheMemoryMgr.allocate(false,DataType.INT32,1);
             INDArray negativeArr = arrayCacheMemoryMgr.allocate(false,DataType.INT32,1);
             negativeArr.putScalar(0,negative);
-            ngStarter.putScalar(0,target);
-            lastWordIdx.putScalar(0,lastWord.getIndex());
-            targetArr.putScalar(0,target);
-            alphaArr.putScalar(0,alpha);
-            nextRandomArr.putScalar(0,nextRandom.get());
 
-            //    int numWorkers) {
-            sg = SkipGramRound.builder()
-                    .ngStarter(targetArr)
-                    .target(lastWordIdx)
+            sg = SkipGramInference.builder()
+                    .ngStarter(target)
+                    .target(lastWord.getIndex())
                     .syn0(syn0.get())
                     .syn1(Nd4j.empty(syn0.get().dataType()))
-                    .codes(Nd4j.empty(DataType.INT8))
-                    .indices(Nd4j.empty(DataType.INT32))
+                    .codes(new byte[0])
+                    .indices(new int[0])
                     .negTable(negativeArr)
                     .syn1Neg(syn1Neg.get())
                     .expTable(expTable.get())
                     .syn1(syn1.get())
-                    .alpha(alphaArr)
+                    .randomValue((int) nextRandom.get())
+                    .alpha(alpha)
                     .preciseMode(configuration.isPreciseMode())
                     .numWorkers(workers)
                     .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
                     .build();
 
             release.add(negativeArr);
-            release.add(lastWordIdx);
-            release.add(alphaArr);
-            release.add(targetArr);
-            release.add(ngStarter);
-            release.add(nextRandomArr);
 
         }
 

@@ -293,8 +293,6 @@ NDArray NDArrayFactory::create(sd::DataType type, const T scalar, sd::LaunchCont
 
   return res;
 }
-//    BUILD_DOUBLE_TEMPLATE(template SD_LIB_EXPORT NDArray NDArrayFactory::create, (DataType type, const T scalar,
-//    sd::LaunchContext * context), SD_COMMON_TYPES_ALL);
 
 #define TMPL_INSTANTIATE_CREATE_D(TYPE) \
 template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(DataType type, const TYPE scalar, sd::LaunchContext* context);

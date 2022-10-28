@@ -20,6 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.nlp;
 
+import lombok.Builder;
 import lombok.NonNull;
 import lombok.val;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -44,7 +45,7 @@ public class CbowRound extends DynamicCustomOp {
      * @param inferenceVector
      */
     public CbowRound(int target, @NonNull int[] context, @NonNull int[] lockedWords, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray expTable, @NonNull int[] indices, @NonNull byte[] codes, double alpha, long nextRandom, @NonNull INDArray inferenceVector, int numLabels) {
-        this(Nd4j.scalar(target), Nd4j.createFromArray(context), Nd4j.createFromArray(lockedWords), Nd4j.empty(DataType.INT), syn0, syn1, Nd4j.empty(syn1.dataType()), expTable, Nd4j.empty(syn1.dataType()), Nd4j.createFromArray(indices), Nd4j.createFromArray(codes), 0, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom), inferenceVector, Nd4j.scalar(numLabels), inferenceVector.isEmpty(), 1);
+        this(Nd4j.scalar(target), Nd4j.createFromArray(context), Nd4j.createFromArray(lockedWords), Nd4j.empty(DataType.INT32), syn0, syn1, Nd4j.empty(syn1.dataType()), expTable, Nd4j.empty(syn1.dataType()), Nd4j.createFromArray(indices), Nd4j.createFromArray(codes), 0, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom), inferenceVector, Nd4j.scalar(numLabels), inferenceVector.isEmpty(), 1);
     }
 
     /**
@@ -62,7 +63,7 @@ public class CbowRound extends DynamicCustomOp {
      * @param inferenceVector
      */
     public CbowRound(int target, @NonNull int[] context, @NonNull int[] lockedWords, int ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, int nsRounds, double alpha, long nextRandom, @NonNull INDArray inferenceVector, int numLabels) {
-        this(Nd4j.scalar(target), Nd4j.createFromArray(context), Nd4j.createFromArray(lockedWords), Nd4j.scalar(ngStarter), syn0, Nd4j.empty(syn0.dataType()), syn1Neg, expTable, negTable, Nd4j.empty(DataType.INT), Nd4j.empty(DataType.BYTE), nsRounds, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom), inferenceVector, Nd4j.scalar(numLabels), inferenceVector.isEmpty(), 1);
+        this(Nd4j.scalar(target), Nd4j.createFromArray(context), Nd4j.createFromArray(lockedWords), Nd4j.scalar(ngStarter), syn0, Nd4j.empty(syn0.dataType()), syn1Neg, expTable, negTable, Nd4j.empty(DataType.INT32), Nd4j.empty(DataType.INT8), nsRounds, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom), inferenceVector, Nd4j.scalar(numLabels), inferenceVector.isEmpty(), 1);
     }
 
     /**
@@ -80,6 +81,7 @@ public class CbowRound extends DynamicCustomOp {
      * @param nextRandom
      * @param inferenceVector
      */
+    @Builder
     public CbowRound(@NonNull INDArray target, @NonNull INDArray context, @NonNull INDArray lockedWords, @NonNull INDArray ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, @NonNull INDArray indices, @NonNull INDArray codes, int nsRounds, @NonNull INDArray alpha, @NonNull INDArray nextRandom, @NonNull INDArray inferenceVector, @NonNull INDArray numLabels, boolean trainWords, int numWorkers) {
 
         inputArguments.add(target);

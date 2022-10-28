@@ -518,7 +518,7 @@ public class FlatBuffersMapper {
             }
             /*
             Op types that don't need any extra/special mapping:
-            TRANSFORM_BOOL - BooleanNot, IsFinite, IsInf, IsNaN, MatchConditionTransorm
+            TRANSFORM_BOOL - BooleanNot, IsFinite, IsInf, IsNaN, MatchConditionTransform
             TRANSFORM_ANY - IsMax, Assign
             TRANSFORM_FLOAT - Histogram, Sqrt
             TRANSFORM_STRICT - Cos, Log, Sigmoid, etc
@@ -970,6 +970,9 @@ public class FlatBuffersMapper {
         int i = 0;
         for (String s : outVarNames) {
             SDVariable v = sameDiff.getVariable(s);
+            if(v == null) {
+                throw new IllegalStateException("Unknown output variable " + s);
+            }
             outTypes[i++] = FlatBuffersMapper.getDataTypeAsByte(v.dataType());
         }
         int outTypesOffset = FlatNode.createOutputTypesVector(bufferBuilder, outTypes);
@@ -979,7 +982,7 @@ public class FlatBuffersMapper {
 
         int opCds = 0;
         int[] opCdsArr = mapOrNull(sdo.getControlDeps(), bufferBuilder);
-        if(opCdsArr != null){
+        if(opCdsArr != null) {
             opCds = FlatNode.createControlDepsVector(bufferBuilder, opCdsArr);
         }
 
@@ -991,7 +994,7 @@ public class FlatBuffersMapper {
 
         int cdsFor = 0;
         int[] cdsForArr = mapOrNull(sdo.getControlDepFor(), bufferBuilder);
-        if(cdsForArr != null){
+        if(cdsForArr != null) {
             cdsFor = FlatNode.createControlDepForVector(bufferBuilder, cdsForArr);
         }
 

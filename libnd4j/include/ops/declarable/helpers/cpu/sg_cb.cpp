@@ -360,14 +360,10 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable,
                         NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr,
                         NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
                         const int expLength, const int negLength, const bool preciseMode, const int numThreads) {
-  // auto syn0 = reinterpret_cast<T*>(vsyn0);
-  // auto syn1 = reinterpret_cast<T*>(vsyn1);
-  // auto syn1Neg = reinterpret_cast<T*>(vsyn1Neg);
   const auto expTable = reinterpret_cast<T *>(vexpTable);
   const auto negTable = reinterpret_cast<T *>(vnegTable);
   const auto infVector = reinterpret_cast<T *>(vinfVector);
 
-  // const auto numThreads = omp_get_max_threads();
   const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
   const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
 
@@ -401,7 +397,6 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable,
           auto syn1row = s1.bufferWithOffset(irow * vectorLength);
           auto code = bCodes[e + cShift];
 
-          // sd_printf("syn0: [%i]; syn1: [%i]; code: [%i]\n", target, irow, code);
           hSoftmax_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, code, expLength, false);
         }
       }
@@ -457,7 +452,6 @@ void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, voi
   const auto negTable = reinterpret_cast<T *>(vnegTable);
   const auto infVector = reinterpret_cast<T *>(vinfVector);
 
-  // const auto numThreads = omp_get_max_threads();
   const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
   const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
   const auto numTargets = context.sizeAt(0);
@@ -549,7 +543,6 @@ void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, voi
                           r == 0 ? 1 : 0, expLength, infVector != nullptr);
           }
 
-          // sd_printf("Thread <%i>: syn0: [%i]; s1n: [%i];\n", omp_get_thread_num(), 0, irow);
         }
       }
 
@@ -591,6 +584,44 @@ BUILD_SINGLE_TEMPLATE(template void cbowBatchExec_,
                           const bool trainWords, const int numThreads),
                       SD_FLOAT_TYPES);
 
+
+
+void skipgramInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, int target,
+             int ngStarter, int nsRounds, NDArray &indices, NDArray &codes, double alpha, sd::LongType randomValue,
+              NDArray &inferenceVector, const bool preciseMode, const int numWorkers) {
+  auto xType = syn0.dataType();
+  auto hsRounds = codes.lengthOf();
+
+  BUILD_SINGLE_SELECTOR(
+      xType, skipgram_,
+      (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(),
+        target, ngStarter,
+       reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t *>(codes.buffer()), alpha,
+       randomValue, hsRounds, nsRounds, (int)syn0.sizeAt(0), (int)syn0.sizeAt(1),
+       (int)expTable.lengthOf(), (int)negTable.lengthOf()),
+      SD_FLOAT_TYPES);
+}
+
+
+void cbowInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, int target,
+          int ngStarter, int nsRounds, NDArray &context, NDArray &lockedWords, NDArray &indices, NDArray &codes,
+          double alpha, sd::LongType randomValue, int numLabels, NDArray &inferenceVector, const bool trainWords,
+          int numWorkers) {
+  auto xType = syn0.dataType();
+  auto hsRounds = codes.lengthOf();
+
+  BUILD_SINGLE_SELECTOR(
+      xType, cbow_,
+      (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(),
+      target, ngStarter,
+       reinterpret_cast<int *>(context.buffer()), reinterpret_cast<int *>(lockedWords.buffer()),
+       reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t *>(codes.buffer()), alpha,
+       randomValue, (int)context.lengthOf(), hsRounds, nsRounds, (int)syn0.sizeAt(0),
+       (int)syn0.sizeAt(1), (int)expTable.lengthOf(), (int)negTable.lengthOf(),
+       numLabels, trainWords),
+      SD_FLOAT_TYPES);
+}
+
 void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target,
               NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue,
               NDArray &inferenceVector, const bool preciseMode, const int numWorkers) {
@@ -627,16 +658,6 @@ void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDA
   auto xType = syn0.dataType();
 
   if ((context.rankOf() == 0 || context.rankOf() == 1) && (indices.rankOf() == 1 || indices.rankOf() == 0)) {
-    // single round case
-    /*sd_printf("Row exec; ContextWidth: %i; LockedWords: %i; numLabels: %i; Train words: %i\n", (int)
-    context.lengthOf(), (int) lockedWords.lengthOf(), numLabels.isEmpty() ? 0 : numLabels.e<int>(0), (int) trainWords);
-    if (context.lengthOf() == 2) {
-        context.printBuffer("context");
-        lockedWords.printBuffer("locked");
-        codes.printBuffer("codes");
-        indices.printBuffer("indices");
-    }*/
-
     auto hsRounds = codes.lengthOf();
 
     BUILD_SINGLE_SELECTOR(
@@ -650,9 +671,6 @@ void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDA
             numLabels.isEmpty() ? 0 : numLabels.e<int>(0), trainWords),
         SD_FLOAT_TYPES);
   } else if (context.rankOf() == 2 && indices.rankOf() == 2) {
-    // batch mode
-    // sd_printf("Batch exec\n","");
-
     BUILD_SINGLE_SELECTOR(
         xType, cbowBatchExec_,
         (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, context, lockedWords, target, ngStarter,
