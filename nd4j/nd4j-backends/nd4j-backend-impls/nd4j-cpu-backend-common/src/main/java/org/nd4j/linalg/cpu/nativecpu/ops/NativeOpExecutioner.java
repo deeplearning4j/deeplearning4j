@@ -1021,7 +1021,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             // putting arguments pointers
 
-            PointerPointer ptrPtr = new PointerPointer(pointer);//extraz.get().put(pointer);
+            PointerPointer ptrPtr = new PointerPointer(pointer);
 
             for (int e = 0; e < op.getArguments().size(); e++) {
                 idx = argsPos + i * batch.getSample().maxArguments();

@@ -24,6 +24,8 @@ import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.linalg.api.ops.custom.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
+import org.nd4j.linalg.api.ops.impl.nlp.CbowInference;
+import org.nd4j.linalg.api.ops.impl.nlp.SkipGramInference;
 import org.nd4j.linalg.api.ops.impl.reduce.HashCode;
 import org.nd4j.shade.guava.collect.ImmutableSet;
 import org.nd4j.shade.guava.reflect.ClassPath;
@@ -962,6 +964,8 @@ public class OpValidation {
                 SpTreeCell.class,
                 CbowRound.class,
                 SkipGramRound.class,
+                SkipGramInference.class,
+                CbowInference.class,
                 HashCode.class,
                 HashCode.class,
                 BitCast.class,

@@ -170,7 +170,7 @@ public class InputTypeUtil {
 
         int sD = stride[0];
         int sH = stride[1];
-        int sW = stride[1];
+        int sW = stride[2];
 
         if (sH <= 0 || sW <= 0 || sD <= 0) {
             throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, sH <= 0)

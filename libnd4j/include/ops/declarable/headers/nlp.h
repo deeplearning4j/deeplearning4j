@@ -31,8 +31,16 @@ namespace ops {
 DECLARE_CONFIGURABLE_OP(skipgram, 12, 12, true, 0, 0);
 #endif
 
+#if NOT_EXCLUDED(OP_skipgram_inference)
+DECLARE_CONFIGURABLE_OP(skipgram_inference, 6, 6, true, -2, -2);
+#endif
+
 #if NOT_EXCLUDED(OP_cbow)
 DECLARE_CONFIGURABLE_OP(cbow, 15, 15, true, 0, 0);
+#endif
+
+#if NOT_EXCLUDED(OP_cbow_inference)
+DECLARE_CONFIGURABLE_OP(cbow_inference,6, 6, true, -2, -2);
 #endif
 }  // namespace ops
 }  // namespace sd

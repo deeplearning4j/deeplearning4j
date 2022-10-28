@@ -117,7 +117,6 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
     protected void dbow(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, boolean isInference,
                     INDArray inferenceVector, BatchSequences<T> batchSequences) {
 
-        //final T word = sequence.getElements().get(i);
         List<T> sentence = skipGram.applySubsampling(sequence, nextRandom).getElements();
 
 
@@ -131,7 +130,6 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
             return;
 
         int batchSize = configuration.getBatchSize();
-
         for (T lastWord : labels) {
             for (T word : sentence) {
                 if (word == null)
@@ -163,18 +161,15 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
     public INDArray inferSequence(Sequence<T> sequence, long nextRandom, double learningRate, double minLearningRate,
                     int iterations) {
         AtomicLong nr = new AtomicLong(nextRandom);
-
-        // we probably don't want subsampling here
-        // Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
-        // if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
-
         if (sequence.isEmpty())
             return null;
 
 
+
+
         Random random = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * sequence.hashCode(),
                         lookupTable.layerSize() + 1);
-        INDArray ret = Nd4j.rand(new int[] {1, lookupTable.layerSize()}, random).subi(0.5)
+        INDArray ret = Nd4j.rand(random,new long[] {1, lookupTable.layerSize()}).subi(0.5)
                         .divi(lookupTable.layerSize());
 
         for (int iter = 0; iter < iterations; iter++) {

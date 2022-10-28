@@ -37,6 +37,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.api.ops.impl.nlp.CbowInference;
 import org.nd4j.linalg.api.ops.impl.nlp.CbowRound;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
@@ -88,7 +89,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
     @Override
     public void configure(@NonNull VocabCache<T> vocabCache, @NonNull WeightLookupTable<T> lookupTable,
-                    @NonNull VectorsConfiguration configuration) {
+                          @NonNull VectorsConfiguration configuration) {
         this.vocabCache = vocabCache;
         this.lookupTable = lookupTable;
         this.configuration = configuration;
@@ -153,7 +154,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         for (int i = 0; i < tempSequence.getElements().size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             cbow(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom, learningRate,
-                 currentWindow, batchSequences);
+                    currentWindow, batchSequences);
         }
 
         return 0;
@@ -174,7 +175,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         for (int i = 0; i < tempSequence.getElements().size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             cbow(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom, learningRate,
-                            currentWindow, null);
+                    currentWindow, null);
         }
 
         return 0;
@@ -216,10 +217,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         if (batches.get() == null)
             batches.set(new ArrayList<>());
 
-        /*AggregateCBOW(syn0.get(), syn1.get(), syn1Neg.get(), expTable.get(), table.get(),
-                currentWord.getIndex(), windowWords, idxSyn1, codes, (int) negative, currentWord.getIndex(),
-                lookupTable.layerSize(), alpha, nextRandom.get(), vocabCache.numWords(), numLabels, trainWords,
-                inferenceVector);*/
+
 
         boolean useHS = configuration.isUseHierarchicSoftmax();
         boolean useNegative = configuration.getNegative() > 0;
@@ -231,46 +229,76 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             else
                 inputStatuses[i] = -1;
         }
-        INDArray wordsStatuses = Nd4j.createFromArray(inputStatuses);
 
-        CbowRound cbow = null;
 
+
+        CbowInference cbowInference = null;
         if (useHS && useNegative) {
-            cbow = new CbowRound(Nd4j.scalar(currentWord.getIndex()), Nd4j.createFromArray(windowWords),
-                    wordsStatuses,
-                    Nd4j.scalar(currentWord.getIndex()),
-                    syn0.get(), syn1.get(), syn1Neg.get(),
-                    expTable.get(), table.get(), Nd4j.createFromArray(idxSyn1), Nd4j.createFromArray(codes),
-                    (int)negative, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom.get()),
-                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()),
-                    Nd4j.empty(DataType.INT32),
-                    trainWords,
-                    workers);
+            cbowInference = CbowInference.builder()
+                    .ngStarter(currentWord.getIndex())
+                    .target(currentWord.getIndex())
+                    .randomValue((int) nextRandom.get())
+                    .nsRounds((int) negative)
+                    .syn0(syn0.get())
+                    .syn1(syn1.get())
+                    .syn1Neg(syn1Neg.get())
+                    .expTable(expTable.get())
+                    .negTable(table.get())
+                    .codes(codes)
+                    .indices(idxSyn1)
+                    .preciseMode(configuration.isPreciseMode())
+                    .alpha(alpha)
+                    .inferenceVector( inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
+                    .numWorkers(workers)
+                    .build();
+
         }
         else if (useHS) {
-            cbow = new CbowRound(currentWord.getIndex(), windowWords, wordsStatuses.toIntVector(),
-                    syn0.get(), syn1.get(),
-                    expTable.get(), idxSyn1, codes, alpha, nextRandom.get(),
-                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()), 0);
+            cbowInference = CbowInference.builder()
+                    .target(currentWord.getIndex())
+                    .ngStarter(currentWord.getIndex())
+                    .randomValue((int) nextRandom.get())
+                    .context(windowWords)
+                    .expTable(expTable.get())
+                    .lockedWords(inputStatuses)
+                    .syn0(syn0.get())
+                    .syn1(syn1.get())
+                    .syn1Neg(Nd4j.empty(syn0.get().dataType()))
+                    .codes(codes)
+                    .indices(new int[0])
+                    .numLabels(numLabels)
+                    .alpha(alpha)
+                    .preciseMode(configuration.isPreciseMode())
+                    .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
+                    .numWorkers(workers)
+                    .build();
+
         }
         else if (useNegative) {
-            cbow = new CbowRound(currentWord.getIndex(), windowWords, wordsStatuses.toIntVector(), currentWord.getIndex(),
-                    syn0.get(), syn1Neg.get(),
-                    expTable.get(), table.get(), (int)negative, alpha, nextRandom.get(),
-                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()), 0);
+            cbowInference = CbowInference.builder()
+                    .target(currentWord.getIndex())
+                    .ngStarter(currentWord.getIndex())
+                    .randomValue((int) nextRandom.get())
+                    .context(windowWords)
+                    .expTable(expTable.get())
+                    .lockedWords(inputStatuses)
+                    .syn0(syn0.get())
+                    .syn1(Nd4j.empty(syn0.get().dataType()))
+                    .syn1Neg(Nd4j.empty(syn0.get().dataType()))
+                    .codes(new byte[0])
+                    .indices(new int[0])
+                    .numLabels(numLabels)
+                    .alpha(alpha)
+                    .preciseMode(configuration.isPreciseMode())
+                    .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
+                    .numWorkers(workers)
+                    .build();
         }
 
         nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-        Nd4j.getExecutioner().exec(cbow);
+        Nd4j.getExecutioner().exec(cbowInference);
 
-        /*if (!isInference) {
-            batches.get().add(cbow);
-            if (batches.get().size() > 4096) {
-                Nd4j.getExecutioner().exec(batches.get());
-                batches.get().clear();
-            }
-        } else
-            Nd4j.getExecutioner().exec(cbow);*/
+
 
     }
 
@@ -471,7 +499,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             for (T element : sequence.getElements()) {
                 double numWords = vocabCache.totalWordOccurrences();
                 double ran = (Math.sqrt(element.getElementFrequency() / (sampling * numWords)) + 1)
-                                * (sampling * numWords) / element.getElementFrequency();
+                        * (sampling * numWords) / element.getElementFrequency();
 
                 nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
