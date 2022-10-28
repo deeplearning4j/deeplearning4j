@@ -331,7 +331,7 @@ void ctc_loss_(const NDArray &logits, const NDArray &targetLabels, const NDArray
   auto lenK = logits.shapeOf()[2];
   auto maxLenS = targetLabels.shapeOf()[1];
 
-  // get probability bufer and tagetLabels buffer
+  // get probability buffer and targetLabels buffer
   auto logP = logits.bufferAsT<Type>();
   auto lblPtr = targetLabels.bufferAsT<IndexType>();
 
