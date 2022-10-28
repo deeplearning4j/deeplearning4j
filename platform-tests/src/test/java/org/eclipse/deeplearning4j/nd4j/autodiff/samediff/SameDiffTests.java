@@ -102,6 +102,26 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     }
 
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCtc(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        SameDiff sd = SameDiff.create();
+        INDArray labelsND = Nd4j.createFromArray(new int[][] {{1917, 3468, 1024, 2744, 4092, 2613,  112,  922, 4785, 1675},
+                {119, 16, 202, 2352, 2945, 3468, 2744, 112, 0, 0}});
+        INDArray labels_len_ND =  Nd4j.createFromArray(new int[] {10, 8});
+        INDArray logits_len_ND =  Nd4j.createFromArray(new int[] {155, 155});
+        SDVariable labels = sd.constant(labelsND);
+        SDVariable logits = sd.random.normal(0, 1, DataType.FLOAT, new long[] {2, 155, 5530});
+        SDVariable labels_len = sd.constant(labels_len_ND);
+        SDVariable logits_len = sd.constant(logits_len_ND);
+        SDVariable ctc = sd.loss.ctcLoss("ctcLoss", labels, logits, labels_len, logits_len);
+        //
+        System.out.println(ctc.eval());
+    }
+
+
 
     @Override
     public long getTimeoutMilliseconds() {

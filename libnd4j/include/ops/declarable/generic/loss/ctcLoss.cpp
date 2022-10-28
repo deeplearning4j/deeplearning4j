@@ -74,8 +74,10 @@ CUSTOM_OP_IMPL(ctc_loss, 4, 1, false, 0, 1) {
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(ctc_loss) {
   getOpDescriptor()
-      ->setAllowedInputTypes({ALL_INDICES})
+      ->setAllowedInputTypes(0,{ALL_INDICES})
       ->setAllowedInputTypes(1, {ALL_FLOATS})
+      ->setAllowedInputTypes(2,{ALL_INDICES})
+      ->setAllowedInputTypes(3,{ALL_INDICES})
       ->setAllowedOutputTypes({ALL_FLOATS});
 }
 

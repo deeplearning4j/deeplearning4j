@@ -55,6 +55,7 @@ fun SDLoss() =  Namespace("Loss"){
         Input(NUMERIC, "logitInput") { description = "Inputs" }
         Input(NUMERIC, "targetLabelLengths") { description = "Length of the target label" }
         Input(NUMERIC, "logitInputLengths") { description = "Length of the input"}
+        Arg(INT,"blankIndex") {description = "The index of the blank label"; defaultValue = 0}
         Output(NUMERIC, "output"){ description = "Ctc loss " }
         Doc(Language.ANY, DocScope.ALL){
             """
