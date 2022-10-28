@@ -36,7 +36,6 @@ public class Xor extends BaseTransformBoolOp {
 
     public Xor(SameDiff sameDiff, SDVariable ix, SDVariable iy){
         super(sameDiff, ix, iy);
-        this.extraArgs = new Object[] {this.comparable};
     }
 
     public Xor(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double comparable) {

@@ -35,7 +35,6 @@ public class Not extends BaseTransformBoolOp {
 
     public Not(SameDiff sameDiff, SDVariable i_v) {
         super(sameDiff, i_v, false);
-        this.extraArgs = new Object[] {this.comparable};
     }
 
     public Not() {
