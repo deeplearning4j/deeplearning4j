@@ -460,12 +460,14 @@ public class FlatBuffersMapper {
             //Set input SDVariables:
 
             //Set args:
-            //op.addTArgument();
-            ((CustomOp) op).addIArgument(extraInteger);
-            ((CustomOp) op).addTArgument(extraParams);
-            ((CustomOp) op).addBArgument(extraBools);
-            ((CustomOp) op).addDArgument(extraDTypes);
-            ((CustomOp) op).addSArgument(extraStrings);
+            if(op instanceof CustomOp) {
+                ((CustomOp) op).addIArgument(extraInteger);
+                ((CustomOp) op).addTArgument(extraParams);
+                ((CustomOp) op).addBArgument(extraBools);
+                ((CustomOp) op).addDArgument(extraDTypes);
+                ((CustomOp) op).addSArgument(extraStrings);
+            }
+
             //base loss gets saved as an int argument, ensure that the field is set
             if(op instanceof BaseLoss && extraInteger != null && extraInteger.length > 0) {
                 BaseLoss baseLoss = (BaseLoss) op;
@@ -476,8 +478,8 @@ public class FlatBuffersMapper {
             }
 
             op.setPropertiesForFunction(props);
-
-            ((CustomOp) op).configureFromArguments();
+            if(op instanceof CustomOp)
+                ((CustomOp) op).configureFromArguments();
             return op;
         } else {
             Class<?> c = LegacyOpMapper.getLegacyOpClassForId(opType, (int) opNum);

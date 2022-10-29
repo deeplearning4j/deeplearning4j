@@ -23,10 +23,17 @@ package org.eclipse.deeplearning4j.nd4j.linalg.rng;
 
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.util.FastMath;
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.impl.collection.CollectionRecordReader;
+import org.datavec.api.writable.IntWritable;
+import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.TrainingConfig;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
@@ -55,15 +62,18 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.impl.NormalDistribution;
 import org.nd4j.linalg.api.rng.distribution.impl.OrthogonalDistribution;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.rng.NativeRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -229,6 +239,62 @@ public class RandomTests extends BaseNd4jTestWithBackends {
 
         assertEquals(z1, z2);
     }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDropoutZero(Nd4jBackend backend) {
+        INDArray in = Nd4j.ones(4, 8);
+        INDArray res = Nd4j.nn.dropout(in, false, 0.0); // throws exception
+        assertEquals(0.0,res.sumNumber().doubleValue(),1e-6);
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDropoutOne(Nd4jBackend backend) {
+        INDArray in = Nd4j.ones(4, 8);
+        INDArray res1 = Nd4j.nn.dropout(in, false, 1.0);
+        System.out.println(res1); // same as res0 but should be different
+        INDArray res0 = Nd4j.nn.dropout(in, true, 1.0);
+        System.out.println(res0); // same as res1 but should be different
+        assertFalse(res1.eq(res0).all());
+
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDropoutBackPropRnn(Nd4jBackend backend) {
+        int batchSize = 4;
+        int seqLength = 8;
+
+        SameDiff sd = SameDiff.create();
+
+        SDVariable features = sd.placeHolder("features", DataType.FLOAT, batchSize, seqLength);
+        SDVariable labels = sd.placeHolder("labels", DataType.FLOAT, batchSize, batchSize);
+        SDVariable random = sd.var(Nd4j.random().uniform(0.0,1.0,DataType.FLOAT,batchSize, batchSize));
+        SDVariable predictions = sd.nn.dropout("predictions", features, false, 0.5);
+        sd.loss.meanSquaredError("loss", labels, random, null);
+
+        TrainingConfig config = new TrainingConfig.Builder()
+                .updater(new Adam(0.1))
+                .dataSetFeatureMapping("features")
+                .dataSetLabelMapping("labels")
+                .build();
+        sd.setTrainingConfig(config);
+
+        RecordReader reader = new CollectionRecordReader(
+                Collections.nCopies(batchSize, Collections.nCopies(seqLength + batchSize, new IntWritable(1))));
+        DataSetIterator iterator = new RecordReaderDataSetIterator(
+                reader, batchSize, seqLength, seqLength + batchSize - 1, true);
+
+        System.out.println(sd.output(iterator, "predictions").get("predictions")); // forward pass works
+        //ensure backprop also works
+        sd.fit(iterator, 1); // backward pass throws exception
+
+    }
+
+
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

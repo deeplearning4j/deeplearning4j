@@ -45,9 +45,9 @@ CONFIGURABLE_OP_IMPL(dropout, 1, 1, true, 1, 1) {
 
   if (block.width() > 1) reduceShape = INPUT_VARIABLE(1);
 
-  REQUIRE_TRUE(probValue > 0.f && probValue <= 1.f, 0, "dropout: Probability should be with range 0 to 1.");
+  REQUIRE_TRUE(probValue >= 0.f && probValue <= 1.f, 0, "dropout: Probability should be with range 0 to 1.");
 
-  if (probValue == 1.0) {
+  if (probValue == 1.0f) {
     *output = *input;
     return sd::Status::OK;
   }
