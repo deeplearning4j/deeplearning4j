@@ -2104,17 +2104,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     protected void doTruncatedBPTT(INDArray input, INDArray labels, INDArray featuresMaskArray,
                                    INDArray labelsMaskArray, LayerWorkspaceMgr workspaceMgr) {
-        if (input.rank() != 3 || labels.rank() != 3) {
-            log.warn("Cannot do truncated BPTT with non-3d inputs or labels. Expect input with shape [miniBatchSize,nIn,timeSeriesLength], got "
-                    + Arrays.toString(input.shape()) + "\tand labels with shape "
-                    + Arrays.toString(labels.shape()));
-            return;
-        }
-        if (input.size(2) != labels.size(2)) {
-            log.warn("Input and label time series have different lengths: {} input length, {} label length",
-                    input.size(2), labels.size(2));
-            return;
-        }
+
 
         int fwdLen = layerWiseConfigurations.getTbpttFwdLength();
         update(TaskUtils.buildTask(input, labels));
