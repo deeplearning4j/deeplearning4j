@@ -256,6 +256,8 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     @Override
     public void release(@NonNull INDArray array) {
+       if(!array.closeable())
+           return;
         // Check for multiple releases of the array
         long id = array.getId();
         Preconditions.checkState(!lruCache.contains(id), "Array was released multiple times: id=%s, shape=%ndShape", id,

@@ -73,7 +73,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     protected static final String KERAS_TRAIN_TEST = "keras_learning_phase";
     //freed array ids to track for allocation, sometimes SDValues contain dup arrays that get freed twice.
     //we track the ids to avoid double frees
-    protected  Set<Long> freedArrays = new LinkedHashSet<>();
+    protected  static Set<Long> freedArrays = new LinkedHashSet<>();
 
     @Getter
     @Setter
@@ -418,17 +418,26 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     }
                 }
 
+                //don't free anything that's an output
+                boolean containsOutput = false;
+                for(String output : outVarNames) {
+                    if(op.getOutputsOfOp().contains(output)) {
+                        containsOutput = true;
+                    }
+                }
+
                 if(!(op.getOp() instanceof Switch))
                     switch(value.getSdValueType()) {
                         case TENSOR:
-                            if(!freedArrays.contains(value.getTensorValue().getId()) && sameDiff.isEnableCache()) {
+                            if(!freedArrays.contains(value.getTensorValue().getId()) &&
+                                    sameDiff.isEnableCache() && !containsOutput) {
                                 mmgr.release(value.getTensorValue());
                                 freedArrays.add(value.getTensorValue().getId());
                             }
                             break;
                         case LIST:
                             for(INDArray arr : value.getListValue())
-                                if(arr != null && !freedArrays.contains(arr.getId()) && sameDiff.isEnableCache()) {
+                                if(arr != null && !freedArrays.contains(arr.getId()) && sameDiff.isEnableCache() && !containsOutput) {
                                     mmgr.release(arr);
                                     freedArrays.add(arr.getId());
                                 }

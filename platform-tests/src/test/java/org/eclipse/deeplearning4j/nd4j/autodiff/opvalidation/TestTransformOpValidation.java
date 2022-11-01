@@ -1277,7 +1277,6 @@ public class TestTransformOpValidation extends BaseOpValidation {
         List<String> failed = new ArrayList<>();
 
         for (int i = 0; i < 4; i++) {
-
             SameDiff sd = SameDiff.create();
             SDVariable in = sd.var("in", 4);
 

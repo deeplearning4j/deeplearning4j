@@ -871,7 +871,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         }
 
         String topPrediction = paragraphVectors.predict(document);
-        assertEquals("Z"+document.getLabel(), topPrediction);
+        assertEquals("Z" + document.getLabel(), topPrediction);
     }
 
     /*

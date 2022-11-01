@@ -19,6 +19,7 @@
  */
 package org.nd4j.samediff.frameworkimport.tensorflow.ir
 
+import org.nd4j.ir.TensorNamespace
 import org.nd4j.samediff.frameworkimport.ir.IRAttribute
 import org.nd4j.samediff.frameworkimport.ir.IRDataType
 import org.nd4j.samediff.frameworkimport.ir.IRGraph
@@ -71,9 +72,17 @@ class TensorflowIRAttr(inputAttributeDef: OpDef.AttrDef, inputAttributeValue: At
         return attributeValue.list.bList
     }
 
+    override fun shapeValue(): List<Long> {
+        return attributeValue.shape.dimList.map { input -> input.size }
+    }
+
+    override fun listDataTypes(): List<TensorNamespace.DataType> {
+        throw UnsupportedOperationException("Unable to map list of data types")
+    }
+
     override fun attributeValueType(): AttributeValueType {
         when(attributeDef.type) {
-            "shape" -> return AttributeValueType.LIST_INT
+            "shape" -> return AttributeValueType.SHAPE
             "list(bool)" -> return AttributeValueType.LIST_BOOL
             "bool" -> return AttributeValueType.BOOL
             "string" -> return AttributeValueType.STRING
@@ -85,6 +94,7 @@ class TensorflowIRAttr(inputAttributeDef: OpDef.AttrDef, inputAttributeValue: At
             "tensor" -> return AttributeValueType.TENSOR
             "list(tensor)" -> return AttributeValueType.LIST_TENSOR
             "type" -> return AttributeValueType.DATA_TYPE
+            "list(type)" -> return AttributeValueType.LIST_DATA_TYPE
         }
 
         return AttributeValueType.INVALID
@@ -123,6 +133,10 @@ class TensorflowIRAttr(inputAttributeDef: OpDef.AttrDef, inputAttributeValue: At
     }
 
     override fun graphValue(registry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>): IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum> {
+        throw UnsupportedOperationException("Unsupported for Tensorflow. Graphs do not exist on attributes.")
+    }
+
+    override fun listGraphValue(registry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>): List<IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>> {
         throw UnsupportedOperationException("Unsupported for Tensorflow. Graphs do not exist on attributes.")
     }
 

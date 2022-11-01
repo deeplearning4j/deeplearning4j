@@ -112,6 +112,7 @@ abstract class AbstractMappingContext<GRAPH_TYPE: GeneratedMessageV3,
                 }
 
                 AttributeValueType.LIST_GRAPH -> {
+                    ret[name] = attribute.listGraphValue(graph.opMappingRegistry() as OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>)
 
                 }
 
@@ -155,6 +156,15 @@ abstract class AbstractMappingContext<GRAPH_TYPE: GeneratedMessageV3,
                 }
 
                 AttributeValueType.INVALID -> {
+
+                }
+
+                AttributeValueType.SHAPE ->  {
+                    ret[name] = attribute.shapeValue()
+                }
+
+                AttributeValueType.LIST_DATA_TYPE -> {
+                    ret[name] = attribute.listDataTypes()
 
                 }
             }

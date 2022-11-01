@@ -33,5 +33,7 @@ enum class AttributeValueType {
     DATA_TYPE,
     INVALID,
     GRAPH,
-    LIST_GRAPH
+    LIST_GRAPH,
+    SHAPE,
+    LIST_DATA_TYPE
 }

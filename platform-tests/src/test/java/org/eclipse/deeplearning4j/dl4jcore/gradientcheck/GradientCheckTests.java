@@ -405,101 +405,10 @@ public class GradientCheckTests extends BaseDL4JTest {
         TestUtils.testModelSerialization(mln);
     }
 
-    @Test
-    public void testAutoEncoder() {
-        //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
-        //Need to run gradient through updater, so that L2 can be applied
-
-        Activation[] activFns = {Activation.SIGMOID, Activation.TANH};
-        boolean[] characteristic = {false, true}; //If true: run some backprop steps first
-
-        LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
-        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH};
-
-        DataNormalization scaler = new NormalizerMinMaxScaler();
-        DataSetIterator iter = new IrisDataSetIterator(150, 150);
-        scaler.fit(iter);
-        iter.setPreProcessor(scaler);
-        DataSet ds = iter.next();
-        INDArray input = ds.getFeatures();
-        INDArray labels = ds.getLabels();
-
-        NormalizerStandardize norm = new NormalizerStandardize();
-        norm.fit(ds);
-        norm.transform(ds);
-
-        double[] l2vals = {0.2, 0.0, 0.2};
-        double[] l1vals = {0.0, 0.3, 0.3}; //i.e., use l2vals[i] with l1vals[i]
-
-        for (Activation afn : activFns) {
-            for (boolean doLearningFirst : characteristic) {
-                for (int i = 0; i < lossFunctions.length; i++) {
-                    for (int k = 0; k < l2vals.length; k++) {
-                        LossFunction lf = lossFunctions[i];
-                        Activation outputActivation = outputActivations[i];
-                        double l2 = l2vals[k];
-                        double l1 = l1vals[k];
-
-                        Nd4j.getRandom().setSeed(12345);
-                        MultiLayerConfiguration conf =
-                                        new NeuralNetConfiguration.Builder()
-                                                        .dataType(DataType.DOUBLE)
-                                                        .updater(new NoOp())
-                                                        .l2(l2).l1(l1)
-                                                        .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                                                        .seed(12345L)
-                                                        .dist(new NormalDistribution(0, 1))
-                                                        .list().layer(0,
-                                                                        new AutoEncoder.Builder().nIn(4).nOut(3)
-                                                                                        .activation(afn).build())
-                                                        .layer(1, new OutputLayer.Builder(lf).nIn(3).nOut(3)
-                                                                        .activation(outputActivation).build())
-                                                        .build();
-
-                        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-                        mln.init();
-
-                        String msg;
-                        if (doLearningFirst) {
-                            //Run a number of iterations of learning
-                            mln.setInput(ds.getFeatures());
-                            mln.setLabels(ds.getLabels());
-                            mln.computeGradientAndScore();
-                            double scoreBefore = mln.score();
-                            for (int j = 0; j < 10; j++)
-                                mln.fit(ds);
-                            mln.computeGradientAndScore();
-                            double scoreAfter = mln.score();
-                            //Can't test in 'characteristic mode of operation' if not learning
-                            msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="
-                                            + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
-                                            + ", doLearningFirst=" + doLearningFirst + ", l2=" + l2 + ", l1=" + l1
-                                            + " (before=" + scoreBefore + ", scoreAfter=" + scoreAfter + ")";
-                            assertTrue(scoreAfter < scoreBefore, msg);
-                        }
-
-                        msg = "testGradMLP2LayerIrisSimple() - activationFn=" + afn + ", lossFn=" + lf
-                                        + ", outputActivation=" + outputActivation + ", doLearningFirst="
-                                        + doLearningFirst + ", l2=" + l2 + ", l1=" + l1;
-                        if (PRINT_RESULTS) {
-                            System.out.println(msg);
-//                            for (int j = 0; j < mln.getnLayers(); j++)
-//                                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
-                        }
-
-                        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-                        assertTrue(gradOK, msg);
-                        TestUtils.testModelSerialization(mln);
-                    }
-                }
-            }
-        }
-    }
 
 
     @Test
-    public void elementWiseMultiplicationLayerTest(){
+    public void elementWiseMultiplicationLayerTest() {
 
         for(Activation a : new Activation[]{Activation.IDENTITY, Activation.TANH}) {
 

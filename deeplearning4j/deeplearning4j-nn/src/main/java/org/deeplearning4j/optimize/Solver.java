@@ -26,9 +26,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TrainingListener;
-import org.deeplearning4j.optimize.solvers.ConjugateGradient;
-import org.deeplearning4j.optimize.solvers.LBFGS;
-import org.deeplearning4j.optimize.solvers.LineGradientDescent;
 import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.stepfunctions.StepFunctions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -64,20 +61,11 @@ public class Solver {
         if (optimizer != null)
             return optimizer;
         switch (conf.getOptimizationAlgo()) {
-            case LBFGS:
-                optimizer = new LBFGS(conf, stepFunction, listeners, model);
-                break;
-            case LINE_GRADIENT_DESCENT:
-                optimizer = new LineGradientDescent(conf, stepFunction, listeners, model);
-                break;
-            case CONJUGATE_GRADIENT:
-                optimizer = new ConjugateGradient(conf, stepFunction, listeners, model);
-                break;
             case STOCHASTIC_GRADIENT_DESCENT:
                 optimizer = new StochasticGradientDescent(conf, stepFunction, listeners, model);
                 break;
             default:
-                throw new IllegalStateException("No optimizer found");
+                throw new IllegalStateException("STOCHASTIC_GRADIENT_DESCENT is the only valid optimizer.");
         }
         return optimizer;
     }

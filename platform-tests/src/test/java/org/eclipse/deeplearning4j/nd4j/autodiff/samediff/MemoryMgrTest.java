@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -52,6 +53,17 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
     @BeforeEach
     public void before() {
         ArrayCacheMemoryMgr.setCacheDefaults();
+    }
+
+    @AfterEach
+    public void after() {
+        ArrayCacheMemoryMgr.getLruCache().clear();
+        ArrayCacheMemoryMgr.getCurrentCacheSize().set(0);
+        ArrayCacheMemoryMgr.getMaxMemFrac().set(0.0);
+        ArrayCacheMemoryMgr.getMaxMemFrac().set(0.0);
+        ArrayCacheMemoryMgr.getCurrentCacheSize().set(0);
+        ArrayCacheMemoryMgr.getMaxMemFrac().set(0.0);
+        ArrayCacheMemoryMgr.getLruCacheValues().clear();
     }
 
     @ParameterizedTest
@@ -128,7 +140,7 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testManyArrays(Nd4jBackend backend){
+    public void testManyArrays(Nd4jBackend backend) {
 
         ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
         for( int i = 0; i < 1000; i++) {

@@ -328,4 +328,6 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
     boolean isEmpty();
 
     MultiDataSet toMultiDataSet();
+
+    void setCloseable(boolean closeable);
 }

@@ -124,19 +124,23 @@ abstract class BaseAttributeExtractionRule<
                 OpNamespace.ArgDescriptor.ArgType.DATA_TYPE -> builder.addOutputDataTypeName(outputName)
                 OpNamespace.ArgDescriptor.ArgType.OUTPUT_TENSOR -> builder.addOutputTensorName(outputName)
                 OpNamespace.ArgDescriptor.ArgType.STRING -> builder.addOutputStringAttrName(outputName)
+                OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR -> builder.addInputTensorName(outputName)
+
                 else -> {throw IllegalArgumentException("Illegal type ${descriptorForName.argType}")}
             }
 
             //not all associated outputs will have inputs
             if(inputOpDefTypes!!.containsKey(inputName)) {
                 when(inputOpDefTypes!![inputName]!!) {
-                    AttributeValueType.FLOAT -> builder.addInputFloatName(inputName)
-                    AttributeValueType.INT -> builder.addInputIntName(inputName)
-                    AttributeValueType.BOOL -> builder.addInputBooleanName(inputName)
-                    AttributeValueType.STRING -> builder.addInputStringAttrName(inputName)
+                    AttributeValueType.FLOAT,AttributeValueType.LIST_FLOAT  -> builder.addInputFloatName(inputName)
+                    AttributeValueType.INT,AttributeValueType.LIST_INT  -> builder.addInputIntName(inputName)
+                    AttributeValueType.BOOL,AttributeValueType.LIST_BOOL -> builder.addInputBooleanName(inputName)
+                    AttributeValueType.STRING,AttributeValueType.LIST_STRING -> builder.addInputStringAttrName(inputName)
                     AttributeValueType.DATA_TYPE -> builder.addInputDataTypeName(inputName)
                     AttributeValueType.TENSOR -> builder.addInputTensorName(inputName)
-                   else -> {throw IllegalArgumentException("Illegal type ${inputOpDefTypes!![inputName]!!}")}
+                   else -> {
+                       throw IllegalArgumentException("Illegal type ${inputOpDefTypes!![inputName]!!}")
+                   }
                 }
 
             }

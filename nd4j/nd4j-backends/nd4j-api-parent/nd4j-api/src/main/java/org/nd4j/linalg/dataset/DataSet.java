@@ -1385,5 +1385,17 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         return new org.nd4j.linalg.dataset.MultiDataSet(fNew, lNew, fMaskNew, lMaskNew, exampleMetaData);
     }
 
+    @Override
+    public void setCloseable(boolean closeable) {
+        if(features != null)
+            features.setCloseable(closeable);
+        if(featuresMask != null)
+            featuresMask.setCloseable(closeable);
+        if(labels != null)
+            labels.setCloseable(closeable);
+        if(labelsMask != null)
+            labelsMask.setCloseable(closeable);
+    }
+
 
 }

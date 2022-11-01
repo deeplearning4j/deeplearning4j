@@ -1538,7 +1538,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
 
             return result;
-        } catch (ND4JOpProfilerException e){
+        } catch (ND4JOpProfilerException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("Op [" + name + "] execution failed", e);
