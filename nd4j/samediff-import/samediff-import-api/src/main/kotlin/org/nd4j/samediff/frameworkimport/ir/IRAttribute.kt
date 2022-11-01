@@ -19,6 +19,7 @@
  */
 package org.nd4j.samediff.frameworkimport.ir
 
+import org.nd4j.ir.TensorNamespace.DataType
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.samediff.frameworkimport.rule.attribute.AttributeValueType
 import org.nd4j.shade.protobuf.GeneratedMessageV3
@@ -51,6 +52,10 @@ interface IRAttribute<ATTRIBUTE_TYPE : GeneratedMessageV3,
 
     fun listBoolValue(): List<Boolean>
 
+    fun shapeValue(): List<Long>
+
+    fun listDataTypes(): List<DataType>
+
     fun stringValue(): String
 
     fun listStringValue(): List<String>
@@ -65,6 +70,10 @@ interface IRAttribute<ATTRIBUTE_TYPE : GeneratedMessageV3,
      * Returns the graph value. This value, when used should be cast to the proper type.
      */
     fun graphValue(registry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>): IRGraph<GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,ProtocolMessageEnum>
+
+
+    fun listGraphValue(registry: OpMappingRegistry<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum, GeneratedMessageV3, GeneratedMessageV3>): List<IRGraph<GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,GeneratedMessageV3,ProtocolMessageEnum>>
+
 
     fun internalAttributeValue(): ATTRIBUTE_VALUE_TYPE
 }

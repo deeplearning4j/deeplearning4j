@@ -81,9 +81,11 @@ public class SameDiffMultiThreadTests extends BaseND4JTest {
 
         INDArray[] inputArrs = new INDArray[nThreads];
         INDArray[] expOut = new INDArray[nThreads];
-        for( int i=0; i<nThreads; i++ ){
+        for( int i = 0; i < nThreads; i++) {
             inputArrs[i] = Nd4j.rand(DataType.FLOAT, i+1, 10);
             expOut[i] = sd.outputSingle(Collections.singletonMap("in", inputArrs[i]), "out");
+            inputArrs[i].setCloseable(false);
+            expOut[i].setCloseable(false);
         }
 
         Semaphore s = new Semaphore(nThreads);
@@ -114,36 +116,33 @@ public class SameDiffMultiThreadTests extends BaseND4JTest {
         for( int i = 0; i < nThreads; i++) {
             failuresByThread[i] = new AtomicBoolean(false);
             counters[i] = new AtomicInteger(0);
-            final int j=i;
-            Thread t = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try{
-                        s.acquire(1);
-                        for( int i=0; i < nRuns; i++ ){
-                            INDArray out = sd.outputSingle(Collections.singletonMap(inName, inputArrs[j]), outName);
-                            Nd4j.getExecutioner().commit();
-                            INDArray exp = expOut[j];
-
-                            if(!exp.equals(out)){
-                                failuresByThread[j].set(true);
-                                log.error("Failure in thread: {}/{} - iteration {}\nExpected ={}\nActual={}", Thread.currentThread().getId(), j, i, exp, out);
-                                break;
-                            }
-
-                            if(out.closeable())
-                                out.close();
-
-//                            if(i % 100 == 0){
-//                                log.info("Thread {} at {}", Thread.currentThread().getId(), i);
-//                            }
-                            counters[j].addAndGet(1);
+            final int j = i;
+            Thread t = new Thread(() -> {
+                try{
+                    s.acquire(1);
+                    for(int i1 = 0; i1 < nRuns; i1++) {
+                        inputArrs[j].setCloseable(false);
+                        INDArray out = sd.outputSingle(Collections.singletonMap(inName, inputArrs[j]), outName);
+                        out.setCloseable(false);
+                        Nd4j.getExecutioner().commit();
+                        INDArray exp = expOut[j];
+                        exp.setCloseable(false);
+                        if(!exp.equals(out)){
+                            failuresByThread[j].set(true);
+                            log.error("Failure in thread: {}/{} - iteration {}\nExpected ={}\nActual={}", Thread.currentThread().getId(), j, i1, exp, out);
+                            break;
                         }
-                    } catch (Throwable t){
-                        log.error("Error in thread: {}", Thread.currentThread().getId(), t);
-                    } finally {
-                        latch.countDown();
+
+                        if(out.closeable())
+                            out.close();
+
+
+                        counters[j].addAndGet(1);
                     }
+                } catch (Throwable t1){
+                    log.error("Error in thread: {}", Thread.currentThread().getId(), t1);
+                } finally {
+                    latch.countDown();
                 }
             });
             t.start();

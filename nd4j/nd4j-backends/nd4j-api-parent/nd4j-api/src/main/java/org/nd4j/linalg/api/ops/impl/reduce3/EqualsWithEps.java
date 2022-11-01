@@ -80,6 +80,7 @@ public class EqualsWithEps extends BaseReduce3Op {
 
     public EqualsWithEps(INDArray x, INDArray y, int... dimensions) {
         super(x, y, dimensions);
+        this.eps = Nd4j.EPS_THRESHOLD;
     }
 
     public EqualsWithEps(INDArray x, INDArray y, boolean allDistances, int... dimensions) {

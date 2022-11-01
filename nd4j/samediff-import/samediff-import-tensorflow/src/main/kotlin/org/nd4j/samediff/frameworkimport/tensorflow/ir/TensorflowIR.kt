@@ -216,6 +216,8 @@ fun attributeValueTypeForTensorflowAttribute(attributeDef: AttrDef): AttributeVa
         "tensor" -> return AttributeValueType.TENSOR
         "list(tensor)" -> return AttributeValueType.LIST_TENSOR
         "type" -> return AttributeValueType.DATA_TYPE
+        "shape" -> return AttributeValueType.LIST_INT
+        "list(type)" -> return AttributeValueType.LIST_STRING
     }
 
     return AttributeValueType.INVALID

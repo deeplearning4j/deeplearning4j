@@ -65,7 +65,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     protected StepFunction stepFunction;
     protected Collection<TrainingListener> trainingListeners = new ArrayList<>();
     protected Model model;
-    protected BackTrackLineSearch lineMaximizer;
     protected Updater updater;
     protected ComputationGraphUpdater computationGraphUpdater;
     protected double step;
@@ -90,14 +89,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      * @param model
      */
     public BaseOptimizer(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<TrainingListener> trainingListeners, Model model) {
+                         Collection<TrainingListener> trainingListeners, Model model) {
         this.conf = conf;
         this.stepFunction = (stepFunction != null ? stepFunction : getDefaultStepFunctionForOptimizer(this.getClass()));
         this.trainingListeners = trainingListeners != null ? trainingListeners : new ArrayList<TrainingListener>();
         this.model = model;
-        lineMaximizer = new BackTrackLineSearch(model, this.stepFunction, this);
-        lineMaximizer.setStepMax(stepMax);
-        lineMaximizer.setMaxIterations(conf.getMaxNumLineSearchIterations());
     }
 
     @Override
@@ -194,66 +190,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     // TODO add flag to allow retaining state between mini batches and when to apply updates
     @Override
     public boolean optimize(LayerWorkspaceMgr workspaceMgr) {
-        //validate the input before training
-        INDArray gradient;
-        INDArray searchDirection;
-        INDArray parameters;
-        Pair<Gradient, Double> pair = gradientAndScore(workspaceMgr);
-        if (searchState.isEmpty()) {
-            searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
-            try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-                setupSearchState(pair); //Only do this once
-            }
-        } else {
-            searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
-        }
-
-        //calculate initial search direction
-        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            preProcessLine();
-        }
-
-        gradient = (INDArray) searchState.get(GRADIENT_KEY);
-        searchDirection = (INDArray) searchState.get(SEARCH_DIR);
-        parameters = (INDArray) searchState.get(PARAMS_KEY);
-
-        //perform one line search optimization
-        try {
-            step = lineMaximizer.optimize(parameters, gradient, searchDirection, workspaceMgr);
-        } catch (InvalidStepException e) {
-            log.warn("Invalid step...continuing another iteration: {}", e.getMessage());
-            step = 0.0;
-        }
-
-        //Update parameters based on final/best step size returned by line search:
-        if (step != 0.0) {
-            // TODO: inject accumulation use here
-            stepFunction.step(parameters, searchDirection, step); //Calculate params. given step size
-            model.setParams(parameters);
-        } else {
-            log.debug("Step size returned by line search is 0.0.");
-        }
-
-        pair = gradientAndScore(workspaceMgr);
-
-        //updates searchDirection
-        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            postStep(pair.getFirst().gradient());
-        }
-
-        //invoke listeners
-        int iterationCount = BaseOptimizer.getIterationCount(model);
-        int epochCount = BaseOptimizer.getEpochCount(model);
-        try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            for (TrainingListener listener : trainingListeners)
-                listener.iterationDone(model, iterationCount, epochCount);
-        }
-
-
-        //check for termination conditions based on absolute change in score
-        incrementIterationCount(model, 1);
-        applyConstraints(model);
-        return true;
+        throw new UnsupportedOperationException("BackTrackLineSearch has been removed. Use SGD.");
     }
 
     protected void postFirstStep(INDArray gradient) {

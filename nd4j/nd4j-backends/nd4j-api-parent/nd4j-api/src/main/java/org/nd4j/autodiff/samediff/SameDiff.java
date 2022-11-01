@@ -1670,6 +1670,8 @@ public class SameDiff extends SDBaseOps {
      * (evaluations specified in the {@link TrainingConfig}, loss values, and timing information).
      */
     public History fit(@NonNull DataSet dataSet, @NonNull Listener... listeners) {
+        //input arrays maybe used elsewhere, ensure they aren't closed
+        dataSet.setCloseable(false);
         return fit(new SingletonMultiDataSetIterator(dataSet.toMultiDataSet()), 1, false,
                 null, 1, listeners);
     }
@@ -1685,6 +1687,8 @@ public class SameDiff extends SDBaseOps {
      * (evaluations specified in the {@link TrainingConfig}, loss values, and timing information).
      */
     public History fit(@NonNull MultiDataSet dataSet, @NonNull Listener... listeners) {
+        //input arrays maybe used elsewhere, ensure they aren't closed
+        dataSet.setCloseable(false);
         return fit(new SingletonMultiDataSetIterator(dataSet), 1, false,
                 null, 1, listeners);
     }
@@ -2772,6 +2776,7 @@ public class SameDiff extends SDBaseOps {
      * Special case of {@link #batchOutput()}.
      */
     public INDArray outputSingle(Map<String, INDArray> placeholders, String output) {
+        placeholders.values().stream().forEach(arr -> arr.setCloseable(false));
         return batchOutput().output(output).inputs(placeholders).outputSingle();
     }
 
@@ -2840,6 +2845,8 @@ public class SameDiff extends SDBaseOps {
      * @param outputs      The variables to output and return.
      */
     public Map<String, INDArray> output(Map<String, INDArray> placeholders, List<Listener> listeners, String... outputs) {
+        if(placeholders != null)
+            placeholders.values().stream().forEach(arr -> arr.setCloseable(false));
         ExecutionResult output = output(placeholders, Collections.emptyMap(), listeners, outputs);
         //execution results can set either field, ensure we catch both cases
         if(output.getOutputs() == null) {
@@ -2881,6 +2888,25 @@ public class SameDiff extends SDBaseOps {
                                                 List<Listener> listeners,
                                                 Operation operation,
                                                 String... outputs) {
+
+        if(placeholders != null)
+            placeholders.values().stream().forEach(arr -> arr.setCloseable(false));
+        if(otherPlaceholders != null)
+            otherPlaceholders.values().stream().forEach(value -> {
+                switch(value.getSdValueType()) {
+                    case TENSOR:
+                        value.getTensorValue().setCloseable(false);
+                        break;
+                    case LIST:
+                        value.getListValue().stream().forEach(arr -> arr.setCloseable(false));
+                        break;
+                    case DICT:
+                        value.getDictValue().values().stream().forEach(arr -> arr.setCloseable(false));
+                        break;
+                }
+            });
+
+
         List<Listener> activeListeners = new ArrayList<>();
 
         if(operation == null)
@@ -2908,6 +2934,17 @@ public class SameDiff extends SDBaseOps {
                 null, Collections.emptyList(),
                 activeListeners,
                 outputs);
+
+        if(ret.getOutputs() != null) {
+            ret.getOutputs().values().forEach(arr -> {
+                if(arr.isPresent())
+                    arr.get().setCloseable(false);
+            });
+        }
+
+        if(ret.getValueOutputs() != null) {
+            ret.getValueOutputs().values().forEach(value ->   value.setCloseable(false));
+        }
 
         for (Listener l : activeListeners) {
             l.operationEnd(this, operation);

@@ -801,7 +801,8 @@ public class FlatBuffersMapper {
             Object[] eArgs = node.getExtraArgs();
             extras = eArgs != null ? new double[eArgs.length] : new double[0];
             for (int e = 0; e < extras.length; e++) {
-                extras[e] = ((Number) eArgs[e]).doubleValue();
+                if(eArgs[e] instanceof Number)
+                    extras[e] = ((Number) eArgs[e]).doubleValue();
             }
         }
 

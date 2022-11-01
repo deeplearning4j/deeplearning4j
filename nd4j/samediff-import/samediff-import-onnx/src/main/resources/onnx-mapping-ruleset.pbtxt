@@ -66,6 +66,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    inputIntName: "axes"
     outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
@@ -141,6 +142,7 @@ mappings {
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "dilations"
     inputIntName: "dH"
+    inputIntName: "dilations"
     outputIntName: "dH"
     inputToOutput {
       key: "dH"
@@ -182,6 +184,7 @@ mappings {
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "dilations"
     inputIntName: "dW"
+    inputIntName: "dilations"
     outputIntName: "dW"
     inputToOutput {
       key: "dW"
@@ -225,6 +228,7 @@ mappings {
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "pads"
     inputIntName: "pads"
+    inputIntName: "pads"
     outputIntName: "pH"
     inputToOutput {
       key: "pH"
@@ -264,6 +268,7 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "pads"
     inputIntName: "pads"
     inputIntName: "pads"
     outputIntName: "pW"
@@ -307,6 +312,7 @@ mappings {
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "strides"
     inputIntName: "sH"
+    inputIntName: "strides"
     outputIntName: "sH"
     inputToOutput {
       key: "sH"
@@ -348,6 +354,7 @@ mappings {
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "strides"
     inputIntName: "sW"
+    inputIntName: "strides"
     outputIntName: "sW"
     inputToOutput {
       key: "sW"
@@ -390,6 +397,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "kernel_shape"
+    inputIntName: "kernel_shape"
     outputIntName: "kH"
     inputToOutput {
       key: "kH"
@@ -408,6 +416,7 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "kernel_shape"
     inputIntName: "kernel_shape"
     outputIntName: "kW"
     inputToOutput {
@@ -548,6 +557,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    inputIntName: "axes"
     outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
@@ -866,6 +876,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    inputIntName: "axes"
     outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
@@ -1167,6 +1178,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    inputIntName: "axes"
     outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
@@ -1207,86 +1219,8 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "matmul"
+  opName: "noop"
   inputFrameworkOpName: "Gemm"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "A"
-    inputTensorName: "B"
-    outputTensorName: "input"
-    outputTensorName: "y"
-    inputToOutput {
-      key: "input"
-      value: "A"
-    }
-    inputToOutput {
-      key: "y"
-      value: "B"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "Gemm"
-  }
-  rule {
-    ruleName: "valuemapping"
-    functionName: "valuemapping"
-    inputIntName: "transA"
-    inputIntName: "transB"
-    inputFloatName: "alpha"
-    inputFloatName: "beta"
-    outputDoubleName: "alpha"
-    outputDoubleName: "beta"
-    outputBooleanName: "transposeX"
-    outputBooleanName: "transposeY"
-    inputToOutput {
-      key: "alpha"
-      value: "alpha"
-    }
-    inputToOutput {
-      key: "beta"
-      value: "beta"
-    }
-    inputToOutput {
-      key: "transposeX"
-      value: "transA"
-    }
-    inputToOutput {
-      key: "transposeY"
-      value: "transB"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Gemm"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "transZ"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "transZ"
-        argType: BOOL
-        argIndex: 2
-      }
-    }
-    inputFrameworkOpName: "Gemm"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputBooleanName: "transposeZ"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "transposeZ"
-        argType: BOOL
-        argIndex: 2
-      }
-    }
-    inputFrameworkOpName: "Gemm"
-  }
 }
 mappings {
   frameworkName: "onnx"
@@ -1461,6 +1395,8 @@ mappings {
   rule {
     ruleName: "listnumbertondarray"
     functionName: "listnumbertondarray"
+    inputIntName: "shape"
+    inputTensorName: "input"
     inputToOutput {
       key: "input"
       value: "shape"
@@ -1546,6 +1482,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    inputIntName: "axes"
     outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
@@ -1617,6 +1554,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    inputIntName: "axes"
     outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
@@ -1812,6 +1750,7 @@ mappings {
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "pads"
     inputIntName: "pH"
+    inputIntName: "pads"
     outputIntName: "pH"
     inputToOutput {
       key: "pH"
@@ -1853,6 +1792,7 @@ mappings {
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "pads"
     inputIntName: "pW"
+    inputIntName: "pads"
     outputIntName: "pW"
     inputToOutput {
       key: "pW"
@@ -1894,6 +1834,7 @@ mappings {
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "strides"
     inputIntName: "sH"
+    inputIntName: "strides"
     outputIntName: "sH"
     inputToOutput {
       key: "sH"
@@ -1935,6 +1876,7 @@ mappings {
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "strides"
     inputIntName: "sW"
+    inputIntName: "strides"
     outputIntName: "sW"
     inputToOutput {
       key: "sW"
@@ -1977,6 +1919,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "kernel_shape"
+    inputIntName: "kernel_shape"
     outputIntName: "kW"
     inputToOutput {
       key: "kW"
@@ -1997,6 +1940,7 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "kernel_shape"
     inputIntName: "kernel_shape"
     outputIntName: "kH"
     inputToOutput {
@@ -2339,6 +2283,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "activation_alpha"
+    inputFloatName: "activation_alpha"
     outputDoubleName: "gateAlpha"
     inputToOutput {
       key: "gateAlpha"
@@ -2359,6 +2304,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "activation_alpha"
+    inputFloatName: "activation_alpha"
     outputDoubleName: "cellAlpha"
     inputToOutput {
       key: "cellAlpha"
@@ -2380,6 +2326,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "activation_alpha"
+    inputFloatName: "activation_alpha"
     outputDoubleName: "outAlpha"
     inputToOutput {
       key: "outAlpha"
@@ -2401,6 +2348,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "activation_beta"
+    inputFloatName: "activation_beta"
     outputDoubleName: "gateBeta"
     inputToOutput {
       key: "gateBeta"
@@ -2421,6 +2369,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "activation_beta"
+    inputFloatName: "activation_beta"
     outputDoubleName: "cellBeta"
     inputToOutput {
       key: "cellBeta"
@@ -2442,6 +2391,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "activation_beta"
+    inputFloatName: "activation_beta"
     outputDoubleName: "outBeta"
     inputToOutput {
       key: "outBeta"
@@ -2462,6 +2412,7 @@ mappings {
   rule {
     ruleName: "mapstringtoindex"
     functionName: "mapstringtoindex"
+    inputStringAttrName: "activations"
     outputIntName: "gateAct"
     inputFloatName: "Relu"
     inputFloatName: "Tanh"
@@ -3118,6 +3069,7 @@ mappings {
   rule {
     ruleName: "mapstringtoindex"
     functionName: "mapstringtoindex"
+    inputStringAttrName: "activations"
     outputIntName: "cellAct"
     inputFloatName: "Relu"
     inputFloatName: "Tanh"
@@ -3775,6 +3727,7 @@ mappings {
   rule {
     ruleName: "mapstringtoindex"
     functionName: "mapstringtoindex"
+    inputStringAttrName: "activations"
     outputIntName: "outAct"
     inputFloatName: "Relu"
     inputFloatName: "Tanh"
@@ -4815,6 +4768,7 @@ mappings {
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "dilations"
     inputIntName: "dH"
+    inputIntName: "dilations"
     outputIntName: "dH"
     inputToOutput {
       key: "dH"
@@ -4856,6 +4810,7 @@ mappings {
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "dilations"
     inputIntName: "dW"
+    inputIntName: "dilations"
     outputIntName: "dW"
     inputToOutput {
       key: "dW"
@@ -4899,6 +4854,7 @@ mappings {
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "pads"
     inputIntName: "padding"
+    inputIntName: "pads"
     outputIntName: "pH"
     inputToOutput {
       key: "pH"
@@ -4938,6 +4894,7 @@ mappings {
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "pads"
     inputIntName: "padding"
+    inputIntName: "pads"
     outputIntName: "pW"
     inputToOutput {
       key: "pW"
@@ -4979,6 +4936,7 @@ mappings {
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "strides"
     inputIntName: "strides"
+    inputIntName: "strides"
     outputIntName: "sH"
     inputToOutput {
       key: "sH"
@@ -5018,6 +4976,7 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "strides"
     inputIntName: "strides"
     inputIntName: "strides"
     outputIntName: "sW"
@@ -5062,6 +5021,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "kernel_shape"
+    inputIntName: "kernel_shape"
     outputIntName: "kW"
     inputToOutput {
       key: "kW"
@@ -5081,6 +5041,7 @@ mappings {
   rule {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
+    inputIntName: "kernel_shape"
     inputIntName: "kernel_shape"
     outputIntName: "kH"
     inputToOutput {
@@ -5731,6 +5692,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    inputIntName: "axes"
     outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
@@ -5938,6 +5900,8 @@ mappings {
     functionName: "valuemapping"
     inputFloatName: "low"
     inputFloatName: "high"
+    inputTensorName: "min"
+    inputTensorName: "max"
     inputToOutput {
       key: "max"
       value: "high"
@@ -5966,6 +5930,8 @@ mappings {
   rule {
     ruleName: "listnumbertondarray"
     functionName: "listnumbertondarray"
+    inputIntName: "shape"
+    inputTensorName: "shape"
     inputToOutput {
       key: "shape"
       value: "shape"
