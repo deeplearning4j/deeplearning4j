@@ -4345,7 +4345,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         char order = Shape.getOrder(outShape, outStrides, -1);
         INDArray out = create(data, outShape, outStrides, offset, order);
-        out.toStringFull();
         return out;
     }
 
