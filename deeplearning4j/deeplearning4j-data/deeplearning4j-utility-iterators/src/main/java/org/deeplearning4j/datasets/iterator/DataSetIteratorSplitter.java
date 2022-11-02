@@ -50,7 +50,6 @@ public class DataSetIteratorSplitter {
     protected AtomicBoolean resetPending = new AtomicBoolean(false);
     protected DataSet firstTrain = null;
 
-    protected int partNumber = 0;
 
     /**
      * The only constructor
@@ -73,11 +72,15 @@ public class DataSetIteratorSplitter {
         this.backedIterator = baseIterator;
         this.totalExamples = totalBatches;
         this.ratio = ratio;
-        this.ratios = null;
+        ratios = new double[]{ratio, 1 - ratio};
         this.numTrain = (long) (totalExamples * ratio);
         this.numTest = totalExamples - numTrain;
         this.numArbitrarySets = 2;
-        this.splits = null;
+        this.splits = new int[this.ratios.length];
+        for (int i = 0; i < this.splits.length; ++i) {
+            this.splits[i] = (int)(totalExamples * ratios[i]);
+        }
+
 
         log.warn("IteratorSplitter is used: please ensure you don't use randomization/shuffle in underlying iterator!");
     }
@@ -112,10 +115,6 @@ public class DataSetIteratorSplitter {
     }
 
     public DataSetIteratorSplitter(@NonNull DataSetIterator baseIterator, int[] splits) {
-
-        /*if (!(simpleRatio > 0.0 && simpleRatio < 1.0))
-           throw new ND4JIllegalStateException("Ratio value should be in range of 0.0 > X < 1.0");*/
-
         int totalBatches = 0;
         for (val v:splits)
             totalBatches += v;
@@ -132,8 +131,8 @@ public class DataSetIteratorSplitter {
         this.ratio = 0.0;
         this.ratios = null;
 
-        this.numTrain = 0; //(long) (totalExamples * ratio);
-        this.numTest = 0; //totalExamples - numTrain;
+        this.numTrain = 0;
+        this.numTest = 0;
         this.splits = splits;
         this.numArbitrarySets = splits.length;
 
@@ -146,7 +145,11 @@ public class DataSetIteratorSplitter {
         int bottom = 0;
         for (final int split : splits) {
                 ScrollableDataSetIterator partIterator =
-                        new ScrollableDataSetIterator(partN++, backedIterator, counter, resetPending, firstTrain,
+                        new ScrollableDataSetIterator(partN++,
+                                backedIterator,
+                                counter,
+                                resetPending,
+                                firstTrain,
                                 new int[]{bottom,split});
                 bottom += split;
                 retVal.add(partIterator);
