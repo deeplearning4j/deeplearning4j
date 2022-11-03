@@ -20,7 +20,6 @@
 
 package org.nd4j.jita.handler.impl;
 
-import lombok.var;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.nativeblas.OpaqueLaunchContext;

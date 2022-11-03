@@ -28,6 +28,11 @@
 namespace sd {
 namespace ops {
 namespace helpers {
+
+
+
+
+
 template <typename T>
 SD_KERNEL void hSoftmaxKernel(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double alpha, int vectorLength,
                               int code, int expLength, bool isInference) {
@@ -157,10 +162,6 @@ template <typename T>
 void skipgram_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTableV, NDArray &negTableV, NDArray &infV,
                int target, int ngStarter, NDArray &indices, NDArray &codes, double alpha, sd::LongType randomValue,
                const int hsRounds, const int nsRounds) {
-  //                    void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vnegTable, void *vinfVector,
-  //                    int target, int ngStarter, int *indices, int8_t *codes, double alpha, sd::LongType randomValue,
-  //                    const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int
-  //                    expLength, const int negLength) {
   auto syn0 = reinterpret_cast<T *>(s0.specialBuffer());
   auto syn1 = reinterpret_cast<T *>(s1.specialBuffer());
   auto syn1Neg = reinterpret_cast<T *>(s1n.specialBuffer());
@@ -177,8 +178,7 @@ void skipgram_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTableV, NDArr
   codes.syncToHost();
   auto stream = s0.getContext()->getCudaStream();
 
-  T *neu1e;  // = new T[vectorLength];
-  // memset(neu1e, 0, vectorLength * sizeof(T));
+  T *neu1e;
   auto err = cudaMalloc(&neu1e, sizeof(T) * vectorLength);
   err = cudaMemset(neu1e, 0, sizeof(T) * vectorLength);
   // hierarchic softmax goes first (if enabled)
@@ -244,27 +244,19 @@ template <typename T>
 void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTableV, NDArray &negTableV,
                         NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr,
                         NDArray &nextRandom, const int nsRounds, const bool preciseMode, const int numThreads) {
-  //            (NDArray &s0, NDArray &s1, NDArray &s1n, NDArray& expTable, NDArray& negTable, NDArray& infVector,
-  //            NDArray& targets, NDArray& negStarters, NDArray& indices, NDArray& codes, NDArray& lr, NDArray&
-  //            nextRandom, const int nsRounds, const bool preciseMode, const int numThreads) {
-  // auto syn0 = reinterpret_cast<T*>(vsyn0);
-  // auto syn1 = reinterpret_cast<T*>(vsyn1);
-  // auto syn1Neg = reinterpret_cast<T*>(vsyn1Neg);
   auto stream = s0.getContext()->getCudaStream();
   negTableV.tickReadDevice();
   negTableV.syncToHost();
   const auto expTable = reinterpret_cast<T *>(expTableV.specialBuffer());
   const auto negTable = reinterpret_cast<T *>(negTableV.buffer());
-  const auto infVector = (T *)nullptr;  // reinterpret_cast<T*>(infVector.specialBuffer());
+  const auto infVector = (T *) nullptr;
 
   const int vocabSize = s0.sizeAt(0);
   const int vectorLength = s0.sizeAt(1);
   const int expLength = expTableV.lengthOf();
   const int negLength = negTableV.lengthOf();
 
-  // T sneu1e[600];
 
-  // const auto numThreads = omp_get_max_threads();
   const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
   const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
 
@@ -277,16 +269,14 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTabl
   nextRandom.syncToHost();
   negStarters.tickReadDevice();
   negStarters.syncToHost();
-  auto bTarget = reinterpret_cast<int *>(targets.buffer());   // targets.bufferAsT<int>();
-  auto bIndices = reinterpret_cast<int *>(indices.buffer());  // indices.bufferAsT<int>();
-  auto bCodes = reinterpret_cast<int8_t *>(codes.buffer());   // codes.bufferAsT<int8_t>();
+  auto bTarget = reinterpret_cast<int *>(targets.buffer());
+  auto bIndices = reinterpret_cast<int *>(indices.buffer());
+  auto bCodes = reinterpret_cast<int8_t *>(codes.buffer());
 
-  //                PRAGMA_OMP_PARALLEL_FOR_ARGS(num_threads(numThreads))
   for (int t = 0; t < numTargets; t++) {
-    T *neu1e;  // lvectorLength <= 600 ? sneu1e : new T[vectorLength];
+    T *neu1e;
     auto err = cudaMalloc(&neu1e, vectorLength * sizeof(T));
     err = cudaMemset(neu1e, 0, vectorLength * sizeof(T));
-    // memset(neu1e, 0, vectorLength * sizeof(T));
 
     auto target = bTarget[t];
     auto alpha = lr.e<double>(t);
@@ -305,7 +295,6 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTabl
         auto syn1row = reinterpret_cast<T *>(s1.specialBuffer()) + (irow * vectorLength);
         auto code = bCodes[e + cShift];
 
-        // sd_printf("syn0: [%i]; syn1: [%i]; code: [%i]\n", target, irow, code);
         hSoftmax_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, code, expLength, false, stream);
       }
     }
@@ -343,8 +332,6 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTabl
       throw cuda_exception::build("helpers::skipgramBatchExec_: Cannot deallocate memory with stage", err);
       break;
     }
-    //                    if (vectorLength > 600)
-    //                        delete[] neu1e;
   }
 }
 BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_,
@@ -374,10 +361,6 @@ void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable,
                            alphaV, randomV, hsRounds, nsRounds),
                           SD_FLOAT_TYPES);
   } else if (ngStarter.isVector() || target.isVector()) {
-    // batch mode
-    //                     NDArray& infVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes,
-    //                     NDArray &lr, NDArray &nextRandom, const int nsRounds, const bool preciseMode, const int
-    //                     numThreads)
     BUILD_SINGLE_SELECTOR(xType, skipgramBatchExec_,
                           (syn0, syn1, syn1Neg, expTable, negTable, target, ngStarter, indices, codes, alpha,
                            randomValue, nsRounds, preciseMode, numWorkers),
@@ -385,6 +368,31 @@ void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable,
   } else
     throw std::runtime_error("SkipGram: target must have rank 0 or 1");
 }
+
+
+void skipgramInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, int target,
+                       int ngStarter, int nsRounds, NDArray &indices, NDArray &codes, double alpha, sd::LongType randomValue,
+                       NDArray &inferenceVector, const bool preciseMode, const int numWorkers) {
+  auto xType = syn0.dataType();
+  auto hsRounds = codes.lengthOf();
+
+
+  /**
+   * void skipgram_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTableV, NDArray &negTableV, NDArray &infV,
+int target, int ngStarter, NDArray &indices, NDArray &codes, double alpha, sd::LongType randomValue,
+const int hsRounds, const int nsRounds)
+   */
+
+
+  BUILD_SINGLE_SELECTOR(xType, skipgram_,
+                        (syn0, syn1, syn1Neg, expTable, negTable, inferenceVector, target, ngStarter, indices, codes,
+                         alpha, randomValue, hsRounds, nsRounds),
+                        SD_FLOAT_TYPES);
+}
+
+
+
+
 
 template <typename T>
 static SD_KERNEL void checkContextKernel(int *context, T *syn0, T *neu1, int contextWidth, int vectorLength,
@@ -541,6 +549,15 @@ BUILD_SINGLE_TEMPLATE(template void cbow_,
                        const int expLength, const int negLength, const int numLabels, const bool trainWords),
                       SD_FLOAT_TYPES);
 
+
+
+void cbowInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, int target,
+                   int ngStarter, int nsRounds, NDArray &context, NDArray &lockedWords, NDArray &indices, NDArray &codes,
+                   double alpha, sd::LongType randomValue, int numLabels, NDArray &inferenceVector, const bool trainWords,
+                   int numWorkers) {
+  throw cuda_exception::build("cbow:: cbow inference not currently supported please use normal cbow",0);
+}
+
 template <typename T>
 static SD_KERNEL void buildCurrentWindowKernel(int vocabSize, int contextWidth, int vectorLength, int *bContext,
                                                T *syn0, T *neu1, int *actualContext, int e) {
@@ -659,20 +676,8 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
   }
 
   for (int e = 0; e < numTargets; e++) {
-    //                    auto err = cudaMalloc(&neu1, sizeof(T)* vectorLength);
-    //                   q err = cudaMalloc(&neu1e, sizeof(T)*vectorLength);
-    //
-    //                    // optionally we nullify temp arrays after successful (and on first) cycle
-    //                    memset(neu1, 0, sizeof(T) * vectorLength);
-    //                    memset(neu1e, 0, sizeof(T) * vectorLength);
-
     auto alpha = lr.e<double>(e);
     auto numLabels = nLabels.isEmpty() ? 0 : nLabels.e<int>(e);
-
-    //                    auto err = cudaMemset(actualContext, 0, sizeof(int));
-    //                    if (err) {
-    //                        printf("Cuda error %d\n", err); break;
-    //                    }
 
     buildCurrentWindowKernel<T>
         <<<1, 1, 128, *stream>>>(vocabSize, contextWidth, vectorLength, dContext, syn0, neu1, actualContext, e);
@@ -717,7 +722,6 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
                         r == 0 ? 1 : 0, expLength, infVector != nullptr, stream);
         }
 
-        // sd_printf("Thread <%i>: syn0: [%i]; s1n: [%i];\n", omp_get_thread_num(), 0, irow);
       }
     }
 
@@ -727,9 +731,7 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
     // applying previously averaged results
     applyShiftKernel<T><<<1, 1, 128, *stream>>>(dContext, dLocker, syn0, neu1e, contextWidth, vectorLength, e, starter);
 
-    // optionally release temp arrays
-    //                    if (vectorLength > 600) {
-    //                    }
+
   }
   cerr = cudaStreamSynchronize(*stream);
   if (cerr) {
@@ -767,18 +769,8 @@ void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDA
   NDArray::prepareSpecialUse(
       {&syn0, &syn1, &syn1Neg, &expTable, &negTable, &target, &ngStarter},
       {&context, &lockedWords, &indices, &codes, &alpha, &randomValue, &numLabels, &inferenceVector});
-  // auto stream = lc->getCudaStream();
   if ((context.rankOf() == 0 || context.rankOf() == 1) && (indices.rankOf() == 1 || indices.rankOf() == 0)) {
     // single round case
-    /*sd_printf("Row exec; ContextWidth: %i; LockedWords: %i; numLabels: %i; Train words: %i\n", (int)
-    context.lengthOf(), (int) lockedWords.lengthOf(), numLabels.isEmpty() ? 0 : numLabels.e<int>(0), (int) trainWords);
-    if (context.lengthOf() == 2) {
-        context.printBuffer("context");
-        lockedWords.printBuffer("locked");
-        codes.printBuffer("codes");
-        indices.printBuffer("indices");
-    }*/
-
     auto hsRounds = codes.lengthOf();
     target.syncToHost();
     numLabels.syncToHost();
@@ -799,7 +791,6 @@ void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDA
         SD_FLOAT_TYPES);
   } else if (context.rankOf() == 2 && indices.rankOf() == 2) {
     // batch mode
-    // sd_printf("Batch exec\n","");
 
     BUILD_SINGLE_SELECTOR(
         xType, cbowBatchExec_,
