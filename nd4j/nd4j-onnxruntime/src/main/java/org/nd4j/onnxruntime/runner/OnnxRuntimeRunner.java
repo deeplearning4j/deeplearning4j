@@ -115,8 +115,8 @@ public class OnnxRuntimeRunner implements Closeable  {
         PointerPointer<BytePointer> outputNodeNames = new PointerPointer<>(numOutputNodes);
 
         Value inputVal = new Value(numInputNodes);
-        for (int i = 0; i < numInputNodes; i++) {
-            BytePointer inputName = session.GetInputName(i, allocator.asOrtAllocator());
+        for (long i = 0; i < numInputNodes; i++) {
+            BytePointer inputName = session.GetInputNameAllocated(i, allocator.asOrtAllocator());
             inputNodeNames.put(i, inputName);
             ONNXType typeForInput = getTypeForInput(session, i);
             List<INDArray> arr = input.get(inputName.getString()).getListValue();
@@ -142,7 +142,7 @@ public class OnnxRuntimeRunner implements Closeable  {
 
 
         for (int i = 0; i < numOutputNodes; i++) {
-            BytePointer outputName = session.GetOutputName(i, allocator.asOrtAllocator());
+            BytePointer outputName = session.GetOutputNameAllocated(i, allocator.asOrtAllocator());
             outputNodeNames.put(i, outputName);
         }
 
@@ -194,7 +194,7 @@ public class OnnxRuntimeRunner implements Closeable  {
         Value inputVal = new Value(numInputNodes);
 
         for (int i = 0; i < numInputNodes; i++) {
-            BytePointer inputName = session.GetInputName(i, allocator.asOrtAllocator());
+            BytePointer inputName = session.GetInputNameAllocated(i, allocator.asOrtAllocator());
             inputNodeNames.put(i, inputName);
             INDArray arr = input.get(inputName.getString());
             Value inputTensor = getTensor(arr, memoryInfo);
@@ -207,8 +207,8 @@ public class OnnxRuntimeRunner implements Closeable  {
 
 
 
-        for (int i = 0; i < numOutputNodes; i++) {
-            BytePointer outputName = session.GetOutputName(i, allocator.asOrtAllocator());
+        for (long i = 0; i < numOutputNodes; i++) {
+            BytePointer outputName = session.GetOutputNameAllocated(i, allocator.asOrtAllocator());
             outputNodeNames.put(i, outputName);
         }
 

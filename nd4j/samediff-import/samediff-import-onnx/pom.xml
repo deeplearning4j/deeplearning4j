@@ -54,12 +54,22 @@
     </plugins>
   </build>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.bytedeco</groupId>
+        <artifactId>onnxruntime-platform</artifactId>
+        <version>1.13.1-1.5.8</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
 
   <dependencies>
     <dependency>
       <groupId>org.bytedeco</groupId>
       <artifactId>onnx-platform</artifactId>
-      <version>1.10.2-1.5.7</version>
+      <version>1.12.0-1.5.8</version>
     </dependency>
     <dependency>
       <groupId>org.nd4j</groupId>

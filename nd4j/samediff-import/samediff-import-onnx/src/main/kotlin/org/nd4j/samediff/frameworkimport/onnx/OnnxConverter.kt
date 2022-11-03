@@ -53,7 +53,7 @@ class OnnxConverter {
             val opSetImport = proto.opset_import(i)
             if(!opSetImport.has_domain() || opSetImport.domain().string == "ai.onnx") {
                 //approximates default opset from https://github.com/onnx/onnx/blob/master/onnx/version_converter/convert.cc#L14
-                initialId.setVersion(opSetImport.version().toInt())
+                initialId.setVersion(opSetImport.version())
                 break
 
             }
