@@ -73,6 +73,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -392,7 +393,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
                 .layerSize(100).learningRate(0.025).labelsSource(source).windowSize(5).iterate(iter)
                 .trainWordVectors(true).vocabCache(cache).tokenizerFactory(t).negativeSample(0)
                 .useHierarchicSoftmax(true).sampling(0).workers(1).usePreciseWeightInit(true)
-                .sequenceLearningAlgorithm(new DM<VocabWord>()).build();
+                .sequenceLearningAlgorithm(new DM<>()).build();
 
         vec.fit();
 
@@ -752,9 +753,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     @Tag(TagNames.LARGE_RESOURCES)
     public void testParagraphVectorsOverExistingWordVectorsModel(@TempDir Path testDir) throws Exception {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
-        if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
-            skipUnlessIntegrationTests(); //Skip CUDA except for integration tests due to very slow test speed
-        }
+
 
         // we build w2v from multiple sources, to cover everything
         File resource_sentences = Resources.asFile("/big/raw_sentences.txt");
@@ -835,7 +834,6 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
          * Here we're checking cross-vocabulary equality
          *
          */
-        /*
         Random rnd = new Random();
         VocabCache<VocabWord> cacheP = paragraphVectors.getVocab();
         VocabCache<VocabWord> cacheW = wordVectors.getVocab();
@@ -853,7 +851,6 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
             double simWP = Transforms.cosineSim(arrayW, arrayP);
             assertTrue(simWP >= 0.9);
         }
-        */
 
         log.info("Zfinance: " + paragraphVectors.getWordVectorMatrix("Zfinance"));
         log.info("Zhealth: " + paragraphVectors.getWordVectorMatrix("Zhealth"));
@@ -912,14 +909,14 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
         Word2Vec wordVectors = new Word2Vec.Builder().minWordFrequency(1).batchSize(250).iterations(1).epochs(1)
                 .learningRate(0.025).layerSize(150).minLearningRate(0.001)
-                .elementsLearningAlgorithm(new SkipGram<VocabWord>()).useHierarchicSoftmax(true).windowSize(5)
+                .elementsLearningAlgorithm(new SkipGram<>()).useHierarchicSoftmax(true).windowSize(5)
                 .iterate(iter).tokenizerFactory(t).build();
 
         wordVectors.fit();
 
         ParagraphVectors pv = new ParagraphVectors.Builder().tokenizerFactory(t).iterations(10)
                 .useHierarchicSoftmax(true).trainWordVectors(true).useExistingWordVectors(wordVectors)
-                .negativeSample(0).sequenceLearningAlgorithm(new DM<VocabWord>()).build();
+                .negativeSample(0).sequenceLearningAlgorithm(new DBOW<>()).build();
 
         INDArray vec1 = pv.inferVector("This text is pretty awesome");
         INDArray vec2 = pv.inferVector("Fantastic process of crazy things happening inside just for history purposes");
