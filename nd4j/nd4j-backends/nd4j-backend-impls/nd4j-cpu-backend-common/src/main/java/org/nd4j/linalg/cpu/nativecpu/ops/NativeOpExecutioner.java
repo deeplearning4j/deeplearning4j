@@ -80,24 +80,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Getter
     private CpuTADManager tadManager = new CpuTADManager();
 
-    //thread locals for custom op inputs and outputs to prevent allocations
-    //every time exec(CustomOp) is called
-    private ThreadLocal<Map<Integer,PointerPointer>> inputShapes = new ThreadLocal<>();
-    private ThreadLocal<Map<Integer,PointerPointer>> inputBuffers = new ThreadLocal<>();
-    private ThreadLocal<Map<Integer,PointerPointer>> outputShapes = new ThreadLocal<>();
-    private ThreadLocal<Map<Integer,PointerPointer>> outputBuffers = new ThreadLocal<>();
-    private ThreadLocal<Map<Integer,LongPointer>> iArgsPointer = new ThreadLocal<>();
-    private ThreadLocal<Map<Integer,DoublePointer>> tArgsPointer = new ThreadLocal<>();
-    private ThreadLocal<Map<Integer,BooleanPointer>> bArgsPointer = new ThreadLocal<>();
-    private ThreadLocal<Map<Integer,ShortPointer>> halfArgsPointer = new ThreadLocal<>();
-
     protected Map<String, CustomOpDescriptor> customOps = null;
 
     protected ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
 
     protected AtomicBoolean experimentalMode = new AtomicBoolean(false);
 
-    protected Map<String, Boolean> mklOverrides = new HashMap<>();
 
     /**
      * Instead of allocating new memory chunks for each batch invocation, we reuse them on thread/opNum basis
@@ -126,7 +114,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Op op, OpContext opContext) {
-        DifferentialFunction differentialFunction = (DifferentialFunction) op;
         checkForCompression(op);
 
         if (op instanceof ScalarOp) {
@@ -271,7 +258,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             return z;
         }
 
-        //validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -343,7 +329,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             ret = z;
         }
 
-        //log.info("X dtype: {}; Z dtype: {}", x.dataType(), z.dataType());
 
         /**
          * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
@@ -518,7 +503,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray z = getZ(op, oc);
 
         val dimension = op.dimensions().toIntVector();
-        //dimension = Shape.normalizeAxis(op.x().rank(), dimension);
         // do tad magic
         /**
          * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
@@ -589,16 +573,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     public INDArray exec(ScalarOp op, OpContext oc) {
         long st = profilingConfigurableHookIn(op);
-        //validateDataType(Nd4j.dataType(), op);
 
         if((oc != null && oc.getOutputArray(0) == null) || getZ(op, oc) == null){
             switch (op.getOpType()) {
                 case SCALAR:
                     setZ(getX(op, oc).ulike(), op, oc);
-//                    op.setZ(op.x().ulike());
                     break;
                 case SCALAR_BOOL:
-//                    op.setZ(Nd4j.createUninitialized(DataType.BOOL, op.x().shape()));
                     setZ(Nd4j.createUninitialized(DataType.BOOL, getX(op, oc).shape()), op, oc);
                     break;
                 default:
@@ -606,7 +587,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
 
-//        if (op.x().length() != op.z().length())
 
         if (op.dimensions() != null) {
             invokeScalarAlongDimension(op);
@@ -659,9 +639,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         return null;
     }
 
-    private void exec(TransformOp op) {
-        exec(op, null);
-    }
 
     private void exec(TransformOp op, OpContext oc) {
         INDArray x = getX(op, oc);
@@ -670,7 +647,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         long st = 0;
 
-//        validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -731,7 +707,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             op.validateDataTypes(oc, experimentalMode.get());
 
-            //log.info("X type: {}; Y type: {}; Z type: {}; OpNum: {}", op.x().dataType(), op.y().dataType(), op.z().dataType(), op.opNum());
 
 
             val xb = ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
@@ -916,7 +891,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     protected <T extends Aggregate> Pointer getPointer(Batch<T> batch) {
         if (batchPointers.get() == null)
-            batchPointers.set(new HashMap<Integer, Pointer>());
+            batchPointers.set(new HashMap<>());
 
         if (!batchPointers.get().containsKey(batch.opNum())) {
             val pointer = new IntPointer(batch.getSample().getRequiredBatchMemorySize() / 4 );
@@ -935,7 +910,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      */
     @Override
     public <T extends Aggregate> void exec(Batch<T> batch) {
-        //profilingHookIn(batch);
 
         IntPointer pointer = (IntPointer) getPointer(batch);
 
@@ -1074,10 +1048,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      */
     @Override
     public void exec(Aggregate op) {
-        // long st = profilingHookIn(op);
 
         if (memoryBlocks.get() == null)
-            memoryBlocks.set(new HashMap<Integer, AggregateMemoryBlock>());
+            memoryBlocks.set(new HashMap<>());
 
         if (memoryBlocks.get().get(op.opNum()) == null)
             memoryBlocks.get().put(op.opNum(), new AggregateMemoryBlock(op));
@@ -1090,9 +1063,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         int numShapes = op.getShapes().size();
         int numIntArrays = op.getIntArrayArguments().size();
 
-        PointerPointer arguments = block.getArgumentsPointer(); //new PointerPointer(numArguments);
+        PointerPointer arguments = block.getArgumentsPointer();
         List<IntPointer> pointers = new ArrayList<>();
-        PointerPointer intArrays = block.getArraysPointer(); //new PointerPointer(numIntArrays);
+        PointerPointer intArrays = block.getArraysPointer();
         val dataType = op.getArguments().get(0).dataType();
 
         for (int x = 0; x < numArguments; x++) {
@@ -1100,7 +1073,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     : op.getArguments().get(x).data().addressPointer());
         }
 
-        PointerPointer shapes = block.getShapesPointer(); //new PointerPointer(numShapes);
+        PointerPointer shapes = block.getShapesPointer();
 
         for (int x = 0; x < numShapes; x++) {
             if (op.getShapes().get(x).dataType() != DataType.LONG)
@@ -1109,17 +1082,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             shapes.put(x, op.getShapes().get(x) == null ? null : op.getShapes().get(x).addressPointer());
         }
 
-        //int[] indexes = new int[numIndexArguments];
         IntPointer pointer = block.getIndexingPointer();
         for (int x = 0; x < numIndexArguments; x++) {
             pointer.put(x, op.getIndexingArguments().get(x));
         }
 
-        //IntPointer pointer = new IntPointer(indexes);
 
-        double[] reals = new double[numRealArguments];
         for (int x = 0; x < numRealArguments; x++) {
-            //reals[x] = op.getRealArguments().get(x).doubleValue();
             switch (dataType) {
                 case FLOAT:
                     ((FloatPointer) block.getRealArgumentsPointer()).put(x, op.getRealArguments().get(x).floatValue());
@@ -1133,13 +1102,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         for (int x = 0; x < numIntArrays; x++) {
-            IntPointer intPtr = block.getIntArrays().get(x); //new IntPointer(op.getIntArrayArguments().get(x));
+            IntPointer intPtr = block.getIntArrays().get(x);
             intPtr.put(op.getIntArrayArguments().get(x), 0, op.getIntArrayArguments().get(x).length);
             intArrays.put(x, intPtr);
             pointers.add(intPtr);
         }
 
-        //INDArray realsBuffer = Nd4j.create(reals);
 
 
 
@@ -1364,110 +1332,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
 
-    private PointerPointer getPointerPointerFrom(ThreadLocal<Map<Integer,PointerPointer>> map,int numArguments) {
-        if(map.get() == null) {
-            Map<Integer,PointerPointer> store = new HashMap<>();
-            store.put(numArguments,new PointerPointer(numArguments));
-            map.set(store);
-            return map.get().get(numArguments);
-        }
-        else if (map.get().get(numArguments) == null) {
-            PointerPointer pointerPointer = new PointerPointer(numArguments);
-            map.get().put(numArguments,pointerPointer);
-            return pointerPointer;
-        }
 
-        return map.get().get(numArguments);
-    }
-
-
-
-
-    private ShortPointer getShortPointerFrom(ThreadLocal<Map<Integer,ShortPointer>> map,int numArguments) {
-        if(map.get() == null) {
-            Map<Integer,ShortPointer> store = new HashMap<>();
-            store.put(numArguments,new ShortPointer(numArguments));
-            map.set(store);
-            return map.get().get(numArguments);
-        }
-        else if (map.get().get(numArguments) == null) {
-            ShortPointer pointerPointer = new ShortPointer(numArguments);
-            map.get().put(numArguments,pointerPointer);
-            return pointerPointer;
-        }
-
-        return map.get().get(numArguments);
-    }
-
-
-    private LongPointer getLongPointerFrom(ThreadLocal<Map<Integer,LongPointer>> map,int numArguments) {
-        if(map.get() == null) {
-            Map<Integer,LongPointer> store = new HashMap<>();
-            store.put(numArguments,new LongPointer(numArguments));
-            map.set(store);
-            return map.get().get(numArguments);
-        }
-        else if (map.get().get(numArguments) == null) {
-            val pointerPointer = new LongPointer(numArguments);
-            map.get().put(numArguments,pointerPointer);
-            return pointerPointer;
-        }
-
-        return map.get().get(numArguments);
-    }
-
-    private DoublePointer getDoublePointerFrom(ThreadLocal<Map<Integer,DoublePointer>> map,int numArguments) {
-        if(map.get() == null) {
-            Map<Integer,DoublePointer> store = new HashMap<>();
-            store.put(numArguments,new DoublePointer(numArguments));
-            map.set(store);
-            return map.get().get(numArguments);
-        }
-        else if (map.get().get(numArguments) == null) {
-            DoublePointer pointerPointer = new DoublePointer(numArguments);
-            map.get().put(numArguments,pointerPointer);
-            return pointerPointer;
-        }
-
-        return map.get().get(numArguments);
-    }
-
-
-    private BooleanPointer getBooleanPointerFrom(ThreadLocal<Map<Integer,BooleanPointer>> map,int numArguments) {
-        if(map.get() == null) {
-            Map<Integer,BooleanPointer> store = new HashMap<>();
-            store.put(numArguments,new BooleanPointer(numArguments));
-            map.set(store);
-            return map.get().get(numArguments);
-        }
-        else if (map.get().get(numArguments) == null) {
-            val pointerPointer = new BooleanPointer(numArguments);
-            map.get().put(numArguments,pointerPointer);
-            return pointerPointer;
-        }
-
-        return map.get().get(numArguments);
-    }
-
-
-    private PointerPointer getInputShapes(int numArguments) {
-        return getPointerPointerFrom(inputShapes,numArguments);
-    }
-
-    private PointerPointer getInputBuffers(int numArguments) {
-        return getPointerPointerFrom(inputBuffers,numArguments);
-
-    }
-
-    private PointerPointer getOutputShapes(int numArguments) {
-        return getPointerPointerFrom(outputShapes,numArguments);
-
-    }
-
-    private PointerPointer getOutputBuffers(int numArguments) {
-        return getPointerPointerFrom(outputBuffers,numArguments);
-
-    }
 
     /**
      * This method executes given CustomOp
@@ -1478,7 +1343,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray[] exec(@NonNull CustomOp op) {
         DifferentialFunction differentialFunction = (DifferentialFunction) op;
-        String ownName = differentialFunction.getOwnName();
         boolean shapeOverride = false;
         if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
             try {
@@ -1490,35 +1354,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     op.addOutputArgument(Nd4j.create(shape, false));
 
                 shapeOverride = true;
-            } catch (ND4JIllegalStateException e){
+            } catch (ND4JIllegalStateException e) {
                 throw e;
             } catch (Exception e) {
                 throw new ND4JIllegalStateException("Op name " + op.opName() + " - no output arrays were provided and calculateOutputShape failed to execute", e);
-                //throw new RuntimeException(e);
             }
         }
 
         val name = op.opName();
         try (val context = buildContext()) {
-
-            // optionally skip shape validation on op execution
-            if (shapeOverride)
-                context.shapeFunctionOverride(true);
-
-            context.markInplace(op.isInplaceCall());
-
-            // transferring rng state
-            context.setRngStates(Nd4j.getRandom().rootState(), Nd4j.getRandom().nodeState());
-
-            //transferring input/output arrays
-            context.setInputArrays(op.inputArguments());
-            context.setOutputArrays(op.outputArguments());
-
-            // transferring static args
-            context.setBArguments(op.bArgs());
-            context.setIArguments(op.iArgs());
-            context.setTArguments(op.tArgs());
-            context.setDArguments(op.dArgs());
+            initOpContext(op, shapeOverride, context);
 
             val result = exec(op, context);
             val states = context.getRngStates();
@@ -1553,7 +1398,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             shape[i] = ptr.get(i);
         }
 
-        //val extras = ptr.get(Shape.shapeInfoLength(rank) - 3);
         val t = ArrayOptionsHelper.arrayType(shape);
         return LongShapeDescriptor.fromShape(Shape.shape(shape), Shape.stride(shape), Shape.elementWiseStride(shape), Shape.order(shape), ArrayOptionsHelper.dataType(shape), t == ArrayType.EMPTY);
     }

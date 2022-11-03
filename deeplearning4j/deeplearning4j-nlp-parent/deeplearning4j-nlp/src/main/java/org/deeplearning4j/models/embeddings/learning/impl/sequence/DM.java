@@ -34,6 +34,8 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -72,7 +74,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
     @Override
     public void configure(@NonNull VocabCache<T> vocabCache, @NonNull WeightLookupTable<T> lookupTable,
-                    @NonNull VectorsConfiguration configuration) {
+                          @NonNull VectorsConfiguration configuration) {
         this.vocabCache = vocabCache;
         this.lookupTable = lookupTable;
         this.configuration = configuration;
@@ -120,8 +122,55 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         return 0;
     }
 
+
+
+    public List<CustomOp> getOps(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, List<T> labels,
+                                 boolean isInference, INDArray inferenceVector, BatchSequences<T> batchSequences) {
+        int end = window * 2 + 1 - b;
+
+        List<CustomOp> ret = new ArrayList<>();
+        T currentWord = sequence.getElementByIndex(i);
+
+        List<Integer> intsList = new ArrayList<>();
+        List<Boolean> statusesList = new ArrayList<>();
+        for (int a = b; a < end; a++) {
+            if (a != window) {
+                int c = i - window + a;
+                if (c >= 0 && c < sequence.size()) {
+                    T lastWord = sequence.getElementByIndex(c);
+
+                    intsList.add(lastWord.getIndex());
+                    statusesList.add(lastWord.isLocked());
+                }
+            }
+        }
+
+        // appending labels indexes
+        if (labels != null)
+            for (T label : labels) {
+                intsList.add(label.getIndex());
+            }
+
+        int[] windowWords = new int[intsList.size()];
+        boolean[] statuses = new boolean[intsList.size()];
+        for (int x = 0; x < windowWords.length; x++) {
+            windowWords[x] = intsList.get(x);
+            statuses[x] = false;
+        }
+
+        int batchSize = configuration.getBatchSize();
+        if (batchSize == 1 || isInference) {
+            // pass for underlying
+            ret.add(cbow.iterateSampleOp(currentWord, windowWords, statuses, nextRandom, alpha, isInference, labels == null ? 0 : labels.size(),
+                    configuration.isTrainElementsVectors(), inferenceVector));
+        }
+
+
+        return ret;
+    }
+
     public void dm(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, List<T> labels,
-                    boolean isInference, INDArray inferenceVector, BatchSequences<T> batchSequences) {
+                   boolean isInference, INDArray inferenceVector, BatchSequences<T> batchSequences) {
         int end = window * 2 + 1 - b;
 
         T currentWord = sequence.getElementByIndex(i);
@@ -184,28 +233,41 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
      */
     @Override
     public INDArray inferSequence(Sequence<T> sequence, long nr, double learningRate, double minLearningRate,
-                    int iterations) {
+                                  int iterations) {
         AtomicLong nextRandom = new AtomicLong(nr);
 
         // we probably don't want subsampling here
-        // Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
-        // if (sequence.getSequenceLabel() == null) throw new IllegalStateException("Label is NULL");
 
         if (sequence.isEmpty())
             return null;
 
         Random random = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * sequence.hashCode(),
-                        lookupTable.layerSize() + 1);
+                lookupTable.layerSize() + 1);
         INDArray ret = Nd4j.rand(random,lookupTable.getWeights().dataType(),
                         1, lookupTable.layerSize()).subi(0.5)
-                        .divi(lookupTable.layerSize());
+                .divi(lookupTable.layerSize());
 
         log.info("Inf before: {}", ret);
-
+        OpContext ctx = Nd4j.getExecutioner().buildContext();
+        boolean setCtx = false;
+        List<CustomOp> ops = new ArrayList<>();
         for (int iter = 0; iter < iterations; iter++) {
             for (int i = 0; i < sequence.size(); i++) {
                 nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-                dm(i, sequence, (int) nextRandom.get() % window, nextRandom, learningRate, null, true, ret, null);
+                List<CustomOp> ops1 = getOps(i, sequence, (int) nextRandom.get() % window, nextRandom, learningRate, null, true, ret, null);
+                if(!setCtx) {
+                    ctx.setInputArrays(ops1.get(0).inputArguments());
+                    ctx.setOutputArrays(ops1.get(0).outputArguments());
+                    ctx.setBArguments(ops1.get(0).bArgs());
+                    setCtx = true;
+                }
+
+                ctx.setTArguments(ops1.get(0).tArgs());
+                for(CustomOp customOp : ops) {
+                    ctx.setIArguments(customOp.iArgs());
+                    Nd4j.getExecutioner().exec(customOp,ctx);
+                }
+
             }
 
             learningRate = ((learningRate - minLearningRate) / (iterations - iter)) + minLearningRate;
