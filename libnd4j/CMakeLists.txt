@@ -70,7 +70,6 @@ if (SD_CUDA AND NOT SD_AURORA)
         message("Jetson nano cublas library is ${CUDA_cublas_LIBRARY} and CuSolver library ${CUDA_cusolver_LIBRARY}")
     endif()
 
-
     enable_language(CUDA)
     find_package(CUDA REQUIRED)
     # Add a platform agnostic way of showing we are compiling for cuda
