@@ -93,7 +93,7 @@ public class ONNXUtils {
      * @param i the index of the input
      * @return the relevant type information
      */
-    public static ONNXType getTypeForInput(Session session,int i) {
+    public static ONNXType getTypeForInput(Session session,long i) {
         TypeInfo typeInfo = session.GetInputTypeInfo(i);
         return ONNXType.values()[typeInfo.GetONNXType()];
     }

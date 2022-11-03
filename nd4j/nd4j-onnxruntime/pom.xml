@@ -38,7 +38,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
 
-        <onnxruntime.version>1.10.0</onnxruntime.version>
+        <onnxruntime.version>1.13.1</onnxruntime.version>
         <onnxruntime.javacpp.version>${onnxruntime.version}-${javacpp.version}</onnxruntime.javacpp.version>
         <module.name>nd4j.onnxruntime</module.name>
     </properties>
