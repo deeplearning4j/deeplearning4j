@@ -128,12 +128,12 @@ public class BlasLapackGenerator {
 
 
     public static void main(String...args) throws Exception {
-        BlasLapackGenerator blasLapackGenerator = new BlasLapackGenerator(new File("../../nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/"));
+        BlasLapackGenerator blasLapackGenerator = new BlasLapackGenerator(new File("nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/"));
         blasLapackGenerator.parse();
         String generated = FileUtils.readFileToString(blasLapackGenerator.getTargetFile(), Charset.defaultCharset());
         generated = generated.replaceAll("\\{\\s+\\}",";");
         generated = generated.replace("default","");
-        FileUtils.write(blasLapackGenerator.getTargetFile(),generated);
+        FileUtils.write(blasLapackGenerator.getTargetFile(),generated,Charset.defaultCharset());
 
     }
 

@@ -142,7 +142,7 @@ public class NoOpBlasLapackGenerator {
     }
 
     public static void main(String...args) throws Exception {
-        NoOpBlasLapackGenerator openblasBlasLapackGenerator = new NoOpBlasLapackGenerator(new File("../../nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cpu-backend-common/src/main/java"));
+        NoOpBlasLapackGenerator openblasBlasLapackGenerator = new NoOpBlasLapackGenerator(new File("nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cpu-backend-common/src/main/java"));
         openblasBlasLapackGenerator.parse();
         String generated = FileUtils.readFileToString(openblasBlasLapackGenerator.getTargetFile(), Charset.defaultCharset());
         generated = generated.replace(";;",";");

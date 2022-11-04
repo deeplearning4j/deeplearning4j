@@ -70,34 +70,34 @@ public class OpenblasBlasLapackGenerator {
         put("LAPACKE_cggesx_work","openblas.LAPACK_C_SELECT2");
         put("LAPACKE_zggesx_work","openblas.LAPACK_Z_SELECT2");
 
-        put("LAPACK_sgges3","openblas.LAPACK_S_SELECT3");
-        put("LAPACK_dgges3","openblas.LAPACK_D_SELECT3");
-        put("LAPACK_cgges3","openblas.LAPACK_C_SELECT2");
-        put("LAPACK_zgges3","openblas.LAPACK_Z_SELECT2");
+        put("LAPACK_sgges3_base","openblas.LAPACK_S_SELECT3");
+        put("LAPACK_dgges3_base","openblas.LAPACK_D_SELECT3");
+        put("LAPACK_cgges3_base","openblas.LAPACK_C_SELECT2");
+        put("LAPACK_zgges3_base","openblas.LAPACK_Z_SELECT2");
 
 
-        put("LAPACK_sgges","openblas.LAPACK_S_SELECT3");
-        put("LAPACK_dgges","openblas.LAPACK_D_SELECT3");
-        put("LAPACK_cgges","openblas.LAPACK_C_SELECT2");
-        put("LAPACK_zgges","openblas.LAPACK_Z_SELECT2");
+        put("LAPACK_sgges_base","openblas.LAPACK_S_SELECT3");
+        put("LAPACK_dgges_base","openblas.LAPACK_D_SELECT3");
+        put("LAPACK_cgges_base","openblas.LAPACK_C_SELECT2");
+        put("LAPACK_zgges_base","openblas.LAPACK_Z_SELECT2");
 
 
-        put("LAPACK_sggesx","openblas.LAPACK_S_SELECT3");
-        put("LAPACK_dggesx","openblas.LAPACK_D_SELECT3");
-        put("LAPACK_cggesx","openblas.LAPACK_C_SELECT2");
-        put("LAPACK_zggesx","openblas.LAPACK_Z_SELECT2");
+        put("LAPACK_sggesx_base","openblas.LAPACK_S_SELECT3");
+        put("LAPACK_dggesx_base","openblas.LAPACK_D_SELECT3");
+        put("LAPACK_cggesx_base","openblas.LAPACK_C_SELECT2");
+        put("LAPACK_zggesx_base","openblas.LAPACK_Z_SELECT2");
 
         //LAPACK_zgeesx
-        put("LAPACK_cgees","openblas.LAPACK_C_SELECT1");
-        put("LAPACK_dgees","openblas.LAPACK_D_SELECT2");
-        put("LAPACK_zgees","openblas.LAPACK_Z_SELECT1");
-        put("LAPACK_sgees","openblas.LAPACK_S_SELECT2");
+        put("LAPACK_cgees_base","openblas.LAPACK_C_SELECT1");
+        put("LAPACK_dgees_base","openblas.LAPACK_D_SELECT2");
+        put("LAPACK_zgees_base","openblas.LAPACK_Z_SELECT1");
+        put("LAPACK_sgees_base","openblas.LAPACK_S_SELECT2");
 
 
-        put("LAPACK_cgeesx","openblas.LAPACK_C_SELECT1");
-        put("LAPACK_dgeesx","openblas.LAPACK_D_SELECT2");
-        put("LAPACK_zgeesx","openblas.LAPACK_Z_SELECT1");
-        put("LAPACK_sgeesx","openblas.LAPACK_S_SELECT2");
+        put("LAPACK_cgeesx_base","openblas.LAPACK_C_SELECT1");
+        put("LAPACK_dgeesx_base","openblas.LAPACK_D_SELECT2");
+        put("LAPACK_zgeesx_base","openblas.LAPACK_Z_SELECT1");
+        put("LAPACK_sgeesx_base","openblas.LAPACK_S_SELECT2");
 
     }};
     private static String copyright =
@@ -255,7 +255,7 @@ public class OpenblasBlasLapackGenerator {
     }
 
     public static void main(String...args) throws Exception {
-        OpenblasBlasLapackGenerator openblasBlasLapackGenerator = new OpenblasBlasLapackGenerator(new File("../../nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/src/main/java"));
+        OpenblasBlasLapackGenerator openblasBlasLapackGenerator = new OpenblasBlasLapackGenerator(new File("nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/src/main/java"));
         openblasBlasLapackGenerator.parse();
         String generated = FileUtils.readFileToString(openblasBlasLapackGenerator.getTargetFile(), Charset.defaultCharset());
         generated = generated.replace(";;",";");
