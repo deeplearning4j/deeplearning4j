@@ -32,9 +32,8 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Merge extends BaseCompatOp {
 
@@ -90,6 +89,12 @@ public class Merge extends BaseCompatOp {
         return 1;
     }
 
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        List<SDVariable> ret = new ArrayList<>( Arrays.stream(args()).sequential().map(input -> sameDiff.zerosLike(input))
+                .collect(Collectors.toList()));
+        return ret;
+    }
 
 
     @Override

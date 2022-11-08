@@ -45,7 +45,7 @@ public class MergeAvgBp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
-        ArrayList<DataType> list = new ArrayList<DataType>();
+        ArrayList<DataType> list = new ArrayList<>();
         for (int i = 0; i < args().length - 1; i++) {
             list.add(inputDataTypes.get(0));
         }
