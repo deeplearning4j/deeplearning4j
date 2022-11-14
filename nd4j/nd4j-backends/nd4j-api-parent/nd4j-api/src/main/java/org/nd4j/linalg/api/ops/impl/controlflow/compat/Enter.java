@@ -112,6 +112,11 @@ public class Enter extends BaseCompatOp {
     }
 
     @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return super.doDiff(f1);
+    }
+
+    @Override
     public int getNumOutputs(){
         return 1;
     }

@@ -52,7 +52,6 @@ import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.Random;
 
-import static org.bytedeco.leptonica.global.lept.*;
 import static org.bytedeco.opencv.global.opencv_core.*;
 import static org.junit.jupiter.api.Assertions.*;
 

@@ -4167,6 +4167,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         //TODO: figure out why Variable type + enter body has no gradient.
         //could be edge case we need to yet figure out or have something to do with
         //function nesting + control flow. This should be examined closer.
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
         whileLoop();
     }
 

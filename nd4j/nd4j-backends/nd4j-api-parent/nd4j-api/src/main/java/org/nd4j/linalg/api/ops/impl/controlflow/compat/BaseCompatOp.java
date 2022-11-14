@@ -53,7 +53,7 @@ public abstract class BaseCompatOp extends DynamicCustomOp {
         addInputArgument(inputs);
     }
 
-    public BaseCompatOp(){
+    public BaseCompatOp() {
 
     }
 

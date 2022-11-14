@@ -172,7 +172,7 @@ public class TrainingSession extends InferenceSession {
 
     @Override
     public ExecutionResult getOutputs(Pair<SameDiffOp, OpContext> opPair, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
-                                                Set<String> constAndPhInputs, List<Listener> listeners, At at, MultiDataSet batch, Set<String> allReqVariables, Map<String, SDValue> otherPlaceHolders) {
+                                      Set<String> constAndPhInputs, List<Listener> listeners, At at, MultiDataSet batch, Set<String> allReqVariables, Map<String, SDValue> otherPlaceHolders) {
         //Get outputs from InferenceSession
         ExecutionResult out = super.getOutputs(opPair, outputFrameIter, opInputs, allIterInputs, constAndPhInputs, listeners, at, batch, allReqVariables, otherPlaceHolders);
         SameDiffOp op = opPair.getFirst();
@@ -194,6 +194,8 @@ public class TrainingSession extends InferenceSession {
                 //log.info("Calculated gradient for variable \"{}\": (grad var name: \"{}\")", varName, s);
 
                 Variable gradVar = sameDiff.getVariables().get(s);
+                if(!gradVar.getVariable().dataType().isFPType())
+                    continue;
                 if (gradVar.getInputsForOp() != null && gradVar.getInputsForOp().isEmpty()) {
                     //Should be rare, and we should handle this by tracking dependencies, and only update when safe
                     // (i.e., dependency tracking)
