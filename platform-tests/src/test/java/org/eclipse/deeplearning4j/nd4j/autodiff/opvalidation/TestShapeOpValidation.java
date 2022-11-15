@@ -55,6 +55,7 @@ import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.checkutil.CheckUtil;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -229,6 +230,16 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
             assertNull(err);
         }
+    }
+
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @ParameterizedTest()
+    public void testExpandDimsOutofBounds(Nd4jBackend backend) {
+       assertThrows(ND4JIllegalStateException.class,() -> {
+           INDArray v1 = Nd4j.zeros(1, 1);
+           INDArray v2 = Nd4j.base().expandDims(v1, 3); // crashes
+       });
+
     }
 
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
