@@ -183,6 +183,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         if (sampling > 0)
             tempSequence = applySubsampling(sequence, nextRandom);
 
+        List<BatchItem<T>> batch = new ArrayList<>();
+
         double score = 0.0;
 
         int currentWindow = window;
@@ -195,17 +197,16 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             if(currentWindow > 0)
                 score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom,
-                        learningRate, currentWindow, batchSequences);
+                        learningRate, currentWindow, batch);
             else
                 score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() , nextRandom,
-                        learningRate, currentWindow, batchSequences);
+                        learningRate, currentWindow, batch);
 
         }
 
 
-        if (batches != null && batches.get() != null && batches.get().size() >= configuration.getBatchSize()) {
-            Nd4j.getExecutioner().exec(batches.get());
-            batches.get().clear();
+        if (!batch.isEmpty()) {
+            score = iterateSample(batch);
         }
 
         return score;
@@ -222,6 +223,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         Sequence<T> tempSequence = sequence;
         if (sampling > 0)
             tempSequence = applySubsampling(sequence, nextRandom);
+        List<BatchItem<T>> batch = new ArrayList<>();
 
         double score = 0.0;
 
@@ -230,7 +232,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         if (variableWindows != null && variableWindows.length != 0) {
             currentWindow = variableWindows[RandomUtils.nextInt(0, variableWindows.length)];
         }
-        //batchSequences = new BatchSequences<>(configuration.getBatchSize());
         for (int i = 0; i < tempSequence.getElements().size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom,
@@ -239,8 +240,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
 
         if (batches != null && batches.get() != null && batches.get().size() >= configuration.getBatchSize()) {
-            Nd4j.getExecutioner().exec(batches.get());
-            batches.get().clear();
+            score = iterateSample(batch);
         }
 
         return score;
@@ -286,7 +286,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     }
 
     private double skipGram(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha, int currentWindow,
-                            BatchSequences<T> batchSequences) {
+                            List<BatchItem<T>> batchSequences) {
         final T word = sentence.get(i);
         if (word == null || sentence.isEmpty() || word.isLocked())
             return 0.0;
@@ -305,7 +305,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                         score = iterateSample(word, lastWord, nextRandom, alpha, false, null);
                     }
                     else {
-                        batchSequences.put(word, lastWord, nextRandom.get(), alpha);
+                        BatchItem<T> batchItem = new BatchItem<>(word,lastWord,nextRandom.get(),alpha);
+                        batchSequences.add(batchItem);
                     }
                 }
             }
@@ -498,23 +499,23 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         if (useHS && useNegative) {
             INDArray idxSyn1Arr = arrayCacheMemoryMgr.allocate(false,DataType.INT32,idxSyn1.length);
 
-          sg = SkipGramInference.builder()
-                  .target(lastWord.getIndex())
-                  .ngStarter(target)
-                  .syn0(syn0.get())
-                  .syn1(syn1.get())
-                  .syn1Neg(syn1Neg.get())
-                  .expTable(expTable.get())
-                  .negTable(table.get())
-                  .nsRounds(0)
-                  .indices(idxSyn1)
-                  .codes(codes)
-                  .randomValue((int) nextRandom.get())
-                  .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
-                  .alpha(alpha)
-                  .preciseMode(configuration.isPreciseMode())
-                  .numWorkers(workers)
-                  .build();
+            sg = SkipGramInference.builder()
+                    .target(lastWord.getIndex())
+                    .ngStarter(target)
+                    .syn0(syn0.get())
+                    .syn1(syn1.get())
+                    .syn1Neg(syn1Neg.get())
+                    .expTable(expTable.get())
+                    .negTable(table.get())
+                    .nsRounds(0)
+                    .indices(idxSyn1)
+                    .codes(codes)
+                    .randomValue((int) nextRandom.get())
+                    .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
+                    .alpha(alpha)
+                    .preciseMode(configuration.isPreciseMode())
+                    .numWorkers(workers)
+                    .build();
 
             release.add(idxSyn1Arr);
 

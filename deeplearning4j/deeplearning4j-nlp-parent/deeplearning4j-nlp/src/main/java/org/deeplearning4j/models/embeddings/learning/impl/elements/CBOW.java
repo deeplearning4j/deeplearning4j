@@ -142,6 +142,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                                 BatchSequences<T> batchSequences) {
         Sequence<T> tempSequence = sequence;
 
+        List<BatchItem<T>> batch = new ArrayList<>();
         if (sampling > 0)
             tempSequence = applySubsampling(sequence, nextRandom);
 
@@ -154,7 +155,12 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         for (int i = 0; i < tempSequence.getElements().size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             cbow(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom, learningRate,
-                    currentWindow, batchSequences);
+                    currentWindow, batch);
+        }
+
+
+        if(!batch.isEmpty()) {
+            iterateSample(batch);
         }
 
         return 0;
@@ -527,9 +533,6 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                 }
             }
 
-            if (batches.get() == null)
-                batches.set(new ArrayList<Aggregate>());
-
         }
 
         INDArray currentWordIndexesArray = Nd4j.createFromArray(currentWordIndexes);
@@ -561,7 +564,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     }
 
     public void cbow(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha, int currentWindow,
-                     BatchSequences<T> batchSequences) {
+                     List<BatchItem<T>> batch) {
         int batchSize = configuration.getBatchSize();
 
         int end = window * 2 + 1 - b;
@@ -593,13 +596,10 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         if (batchSize <= 1)
             iterateSample(currentWord, windowWords, statuses, nextRandom, alpha, false, 0, true, null);
         else {
-            batchSequences.put(currentWord, windowWords, statuses, nextRandom.get(), alpha);
+            BatchItem<T> batchItem = new BatchItem<>(currentWord,windowWords,statuses,nextRandom.get(),alpha);
+            batch.add(batchItem);
         }
 
-        if (batches != null && batches.get() != null && batches.get().size() >= configuration.getBatchSize()) {
-            Nd4j.getExecutioner().exec(batches.get());
-            batches.get().clear();
-        }
     }
 
     public Sequence<T> applySubsampling(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom) {
