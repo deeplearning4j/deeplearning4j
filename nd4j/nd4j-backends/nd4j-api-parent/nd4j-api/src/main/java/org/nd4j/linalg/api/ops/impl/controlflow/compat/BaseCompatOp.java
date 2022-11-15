@@ -20,6 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
+import java.util.Arrays;
 import java.util.List;
 import lombok.NonNull;
 import lombok.val;
@@ -39,6 +40,7 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public abstract class BaseCompatOp extends DynamicCustomOp {
     protected String frameName;
@@ -51,7 +53,7 @@ public abstract class BaseCompatOp extends DynamicCustomOp {
         addInputArgument(inputs);
     }
 
-    public BaseCompatOp(){
+    public BaseCompatOp() {
 
     }
 
@@ -68,6 +70,12 @@ public abstract class BaseCompatOp extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         TFGraphMapper.initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode,nodeDef, graph);
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Arrays.stream(args()).sequential().map(input -> sameDiff.zerosLike(input))
+                .collect(Collectors.toList());
     }
 
     @Override

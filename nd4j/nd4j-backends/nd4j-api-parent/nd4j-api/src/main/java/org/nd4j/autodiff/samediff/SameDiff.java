@@ -1600,9 +1600,6 @@ public class SameDiff extends SDBaseOps {
         for (String s : lossVariableNames) {
             addLossVariable(s);
         }
-        //After changing loss function variables, we (probably) need to recreate gradient function - as gradient
-        // function is defined with respect to specific loss function variables
-        sameDiffFunctionInstances.remove("grad");
     }
 
 
@@ -4008,7 +4005,7 @@ public class SameDiff extends SDBaseOps {
      */
     public void renameVariable(SameDiffOp opToReName,String from, String to) {
         if(!variables.containsKey(from)) {
-            log.debug("Failed to rename variable {} to {}, no variable found",from,to);
+            System.out.println(String.format("Failed to rename variable %s to %s, no variable found",from,to));
             return;
         }
         Preconditions.checkState(variables.containsKey(from), "Cannot rename variable \"%s\": no variable with this name exists", from);
@@ -4958,9 +4955,13 @@ public class SameDiff extends SDBaseOps {
                 throw new ND4JIllegalStateException("No ops found!");
             }
 
+            Set<SameDiffOp> controlflowOps = new LinkedHashSet<>();
+
             for (SameDiffOp op : allFunctions) {
                 DifferentialFunction func = op.getOp();
-
+                if(func instanceof BaseCompatOp) {
+                    controlflowOps.add(op);
+                }
                 val args = func.args();
                 for (val arg : args)
                     arg.setSameDiff(sameDiff);
@@ -5009,30 +5010,36 @@ public class SameDiff extends SDBaseOps {
             Set<String> allFpVarsConnectedToLoss = new LinkedHashSet<>();
             Queue<String> toProcess = new LinkedList<>();
             for (String s : lossVariables) {
-                if (!toProcess.contains(s)) {
-                    toProcess.add(s);
-                }
+                allFpVarsConnectedToLoss.add(s);
             }
 
+
+
+
+
+
             Set<SameDiffOp> processedOps = new LinkedHashSet<>();
+            Set<String> processed = new HashSet<>();
             while (!toProcess.isEmpty()) {
                 String next = toProcess.remove();
+                processed.add(next);
                 if (!allFpVarsConnectedToLoss.contains(next)) {
                     Variable v = variables.get(next);
                     if (v.getVariable().dataType().isFPType()) {
-                        allFpVarsConnectedToLoss.add(v.getName());
                         //Work out what op (if any) this is an output of... and add the inputs to that op to be processed
                         if (v.getOutputOfOp() != null) {
                             String opName = v.getOutputOfOp();
                             SameDiffOp op = ops.get(opName);
                             processedOps.add(op);
+
                             List<String> opInputs = op.getInputsToOp();
                             if (opInputs != null) {
                                 for (String s : opInputs) {
                                     Variable inputVar = variables.get(s);
                                     if (inputVar.getVariable().dataType().isFPType()) {
                                         //Add this connected floating point type to the list to be processed
-                                        toProcess.add(s);
+                                        if(!processed.contains(s))
+                                            toProcess.add(s);
                                     }
                                 }
                             }
@@ -5044,6 +5051,30 @@ public class SameDiff extends SDBaseOps {
             //----- Step 2: Determine minimal set of FP variables actually required -----
             // Keep removing leaf nodes until only Variable type SDVariables remain
             Set<String> minimalSubgraphVars = new LinkedHashSet<>(allFpVarsConnectedToLoss);
+            //eliminate dups, add all control flow variables
+            Set<String> variablesToAdd = new HashSet<>();
+            controlflowOps.forEach(op -> {
+                for(String inputVar : op.getInputsToOp()) {
+                    SDVariable v = getVariable(inputVar);
+                    if(v.dataType().isFPType()) {
+                        if(!toProcess.contains(inputVar) && !(sameDiff.getVariableOutputOp(inputVar) instanceof BaseCompatOp))
+                            variablesToAdd.add(inputVar);
+                    }
+                }
+
+                for(String outputVar : op.getOutputsOfOp()) {
+                    SDVariable v = getVariable(outputVar);
+                    if(v.dataType().isFPType()) {
+                        if(!toProcess.contains(outputVar) && !(sameDiff.getVariableOutputOp(outputVar) instanceof BaseCompatOp))
+                            variablesToAdd.add(outputVar);
+                    }
+                }
+            });
+
+
+            minimalSubgraphVars.addAll(variablesToAdd);
+
+
             Queue<String> leafFPVars = new LinkedList<>();
             for (String s : allFpVarsConnectedToLoss) {
                 //First: determine if is a FP leaf (Array type SDVariable)
@@ -5123,6 +5154,7 @@ public class SameDiff extends SDBaseOps {
 
             //At this point: we know the set of variables that are connected to the loss - these all (and only) need gradients
             Queue<String> availableForDiff = new LinkedList<>();
+          availableForDiff.addAll(controlflowOps.stream().map(input -> input.getName()).collect(Collectors.toList()));
             Set<String> differentiatedOps = new LinkedHashSet<>();
 
             for (SDVariable lossVar : finalOutputs) {
@@ -5221,10 +5253,18 @@ public class SameDiff extends SDBaseOps {
                     }
                 }
 
+
+                /**
+                 * TODO: when in a frame or see an exit op
+                 * we need to log all ops in the loop/if body
+                 *
+                 * When we hit an enter we need to look at its inputs
+                 * and set the gradients appropriately.
+                 */
                 //Differentiate:
                 List<SDVariable> currFnGrads = df.diff(grads);
                 differentiatedOps.add(df.getOwnName());
-                log.debug("Added differentiated op " + df.getOwnName());
+                System.out.println("Added differentiated op " + df.getOwnName());
                 //Check the inputs to this op, see if we can differentiate those ops now (and if so: add to queue)
                 for (String s : inputsToOp) {
                     Variable v = sameDiff.variables.get(s);

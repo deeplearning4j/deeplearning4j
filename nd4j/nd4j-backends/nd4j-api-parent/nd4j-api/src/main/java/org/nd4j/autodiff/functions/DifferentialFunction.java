@@ -357,9 +357,9 @@ public abstract class DifferentialFunction {
                 }
 
                 if(target.getType().equals(DataType.class) && value instanceof Double) {
-                       Double value2 = (Double) value;
-                       int idxConverted = value2.intValue();
-                       value = DataType.values()[idxConverted];
+                    Double value2 = (Double) value;
+                    int idxConverted = value2.intValue();
+                    value = DataType.values()[idxConverted];
                 }
 
                 if(target.getType().isEnum() && (value instanceof Long || value instanceof Integer && !target.getType().equals(int.class) && !target.getType().equals(long.class))) {
@@ -685,7 +685,7 @@ public abstract class DifferentialFunction {
             SDVariable var = outputVars[i];
             SDVariable grad = var.hasGradient() ? var.getGradient() : null;
             if(grad != null) {
-                if(!copied){
+                if(!copied) {
                     //Don't mutate the original - this could mess with the original op's state!
                     vals = new ArrayList<>(vals);
                     copied = true;
@@ -697,7 +697,8 @@ public abstract class DifferentialFunction {
             } else {
                 SDVariable gradVar = vals.get(i);
                 if(sameDiff.hasVariable(var.name() + "-grad")) {
-                    sameDiff.getVariable(var.name() + "-grad").add(gradVar);
+                    if(sameDiff.getVariable(var.name() + "-grad").dataType().isFPType())
+                        sameDiff.getVariable(var.name() + "-grad").add(gradVar);
                 } else {
                     sameDiff.updateVariableNameAndReference(gradVar,var.name() + "-grad");
                     sameDiff.setGradientForVariableName(var.name(), gradVar);

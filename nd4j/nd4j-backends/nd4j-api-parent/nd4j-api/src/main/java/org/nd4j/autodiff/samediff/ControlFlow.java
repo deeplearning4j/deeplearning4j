@@ -412,7 +412,7 @@ public class ControlFlow {
      * @param functionBody
      * @param functionName
      * @param subGraphInputNames  the subgraph input names for use to invoke the graph with
-     * @param subGraphOutputNames the subgraph output naems to expect to be returned from the subgraph invoke
+     * @param subGraphOutputNames the subgraph output names to expect to be returned from the subgraph invoke
      * @return
      */
     public static SameDiffLambda loopBody(SameDiff parent,
@@ -480,11 +480,13 @@ public class ControlFlow {
             // the second arg will later be replaced with the output of NextIteration
             // but that isn't available yet (and can't be, as it depends on this)
             mergeOps[i] = new Merge(sameDiff, entered[i], entered[i]);
+            mergeOps[i].setFrameName(frameName);
             merged[i] = mergeOps[i].outputVariable();
         }
 
         Merge counterMerge = new Merge(sameDiff, counter, counter);
         counter = counterMerge.outputVariable();
+        counterMerge.setFrameName(frameName);
 
         NameScope condScope = sameDiff.withNameScope("cond");
         SDVariable condResult = cond.define(sameDiff, merged);
@@ -502,7 +504,9 @@ public class ControlFlow {
             SDVariable[] s = sameDiff.switchOp(merged[i], condResult);
             trueSwitches[i] = s[1];
             alreadyEntered.add(s[1].name());
-            exits[i] = new Exit(sameDiff, s[0]).outputVariable();
+            Exit exit = new Exit(sameDiff, s[0]);
+            exit.setFrameName(frameName);
+            exits[i] = exit.outputVariable();
         }
 
         final Set<String> declared = Sets.newHashSet(sameDiff.variableMap().keySet());
@@ -537,7 +541,9 @@ public class ControlFlow {
         counter.add(1);
 
         for (int i = 0; i < outs.length; i++) {
-            SDVariable n = new NextIteration(sameDiff, outs[i]).outputVariable();
+            NextIteration nextIteration = new NextIteration(sameDiff, outs[i]);
+            nextIteration.setFrameName(frameName);
+            SDVariable n = nextIteration.outputVariable();
             mergeOps[i].replaceArg(1, n);
         }
 

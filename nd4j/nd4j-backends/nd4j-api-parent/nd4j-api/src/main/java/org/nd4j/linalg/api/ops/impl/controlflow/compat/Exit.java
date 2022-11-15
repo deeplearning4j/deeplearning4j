@@ -31,6 +31,8 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -74,6 +76,10 @@ public class Exit extends BaseCompatOp {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
     }
 
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Arrays.asList(f1.get(0));
+    }
 
     @Override
     public int getNumOutputs(){
