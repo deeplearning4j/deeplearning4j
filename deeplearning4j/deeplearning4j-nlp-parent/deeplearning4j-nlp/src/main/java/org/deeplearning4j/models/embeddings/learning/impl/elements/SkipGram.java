@@ -39,6 +39,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.nlp.SkipGramInference;
 import org.nd4j.linalg.api.ops.impl.nlp.SkipGramRound;
 import org.nd4j.linalg.factory.Nd4j;
@@ -74,7 +75,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     @Setter
     protected DeviceLocalNDArray syn0, syn1, syn1Neg, table, expTable;
 
-    protected ThreadLocal<List<Aggregate>> batches = new ThreadLocal<>();
+    protected ThreadLocal<List<BatchItem<T>>> batches = new ThreadLocal<>();
 
 
     /**
@@ -83,7 +84,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     public SkipGram() {
     }
 
-    public List<Aggregate> getBatch() {
+    public List<BatchItem<T>> getBatch() {
         return batches.get();
     }
 
@@ -205,8 +206,15 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         }
 
 
-        if (!batch.isEmpty()) {
-            score = iterateSample(batch);
+        if(batches.get() == null) {
+            batches.set(batch);
+        } else if(batches.get() != null) {
+            batches.get().addAll(batch);
+        }
+
+
+        if(batches.get().size() >= configuration.getBatchSize()) {
+            finish();
         }
 
         return score;
@@ -223,7 +231,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         Sequence<T> tempSequence = sequence;
         if (sampling > 0)
             tempSequence = applySubsampling(sequence, nextRandom);
-        List<BatchItem<T>> batch = new ArrayList<>();
 
         double score = 0.0;
 
@@ -240,7 +247,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
 
         if (batches != null && batches.get() != null && batches.get().size() >= configuration.getBatchSize()) {
-            score = iterateSample(batch);
+            finish();
         }
 
         return score;
@@ -249,7 +256,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     @Override
     public void finish() {
         if (batches != null && batches.get() != null && !batches.get().isEmpty()) {
-            Nd4j.getExecutioner().exec(batches.get());
+            iterateSample(batches.get());
             batches.get().clear();
         }
     }
@@ -686,7 +693,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
 
 
-        Nd4j.getExecutioner().exec(sg);
 
         return score;
     }

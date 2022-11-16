@@ -213,7 +213,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         }
 
         if (cbow.getBatch() != null && cbow.getBatch().size() >= configuration.getBatchSize()) {
-            Nd4j.getExecutioner().exec(cbow.getBatch());
+            cbow.iterateSample(cbow.getBatch());
             cbow.getBatch().clear();
         }
     }
@@ -282,8 +282,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
     @Override
     public void finish() {
         if (cbow != null && cbow.getBatch() != null && !cbow.getBatch().isEmpty()) {
-            Nd4j.getExecutioner().exec(cbow.getBatch());
-            cbow.getBatch().clear();
+            cbow.finish();
         }
     }
 }

@@ -77,9 +77,9 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     @Setter
     protected DeviceLocalNDArray syn0, syn1, syn1Neg, expTable, table;
 
-    protected ThreadLocal<List<Aggregate>> batches = new ThreadLocal<>();
+    protected ThreadLocal<List<BatchItem<T>>> batches = new ThreadLocal<>();
 
-    public List<Aggregate> getBatch() {
+    public List<BatchItem<T>> getBatch() {
         return batches.get();
     }
 
@@ -132,7 +132,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     @Override
     public void finish() {
         if (batches != null && batches.get() != null && !batches.get().isEmpty()) {
-            Nd4j.getExecutioner().exec(batches.get());
+            iterateSample(batches.get());
             batches.get().clear();
         }
     }
@@ -159,8 +159,15 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         }
 
 
-        if(!batch.isEmpty()) {
-            iterateSample(batch);
+        if(batches.get() == null) {
+            batches.set(batch);
+        } else if(batches.get() != null) {
+            batches.get().addAll(batch);
+        }
+
+
+        if(batches.get().size() >= configuration.getBatchSize()) {
+            finish();
         }
 
         return 0;
@@ -558,7 +565,6 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                 configuration.isTrainElementsVectors(),
                 workers);
 
-        Nd4j.getExecutioner().exec(cbow);
 
 
     }
