@@ -47,7 +47,7 @@ public interface SequenceLearningAlgorithm<T extends SequenceElement> {
      * @param learningRate
      * @return average score for this sequence
      */
-    double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate, BatchSequences<T> batchSequences);
+    double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate);
 
     boolean isEarlyTerminationHit();
 

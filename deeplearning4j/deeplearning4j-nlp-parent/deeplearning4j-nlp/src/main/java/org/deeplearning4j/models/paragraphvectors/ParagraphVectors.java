@@ -1098,7 +1098,9 @@ public class ParagraphVectors extends Word2Vec {
             ret.lookupTable = this.lookupTable;
             ret.modelUtils = this.modelUtils;
             ret.eventListeners = this.vectorsListeners;
+            ret.workers = this.workers;
             if(!configurationSpecified) {
+                this.configuration.setWorkers(this.workers);
                 this.configuration.setLearningRate(this.learningRate);
                 this.configuration.setLayersSize(layerSize);
                 this.configuration.setHugeModelExpected(hugeModelExpected);

@@ -20,17 +20,15 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import lombok.Data;
 import org.apache.commons.codec.binary.Base64;
-import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
-import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.nd4j.shade.jackson.annotation.*;
-import org.nd4j.shade.jackson.databind.*;
-import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
+import org.nd4j.shade.jackson.databind.DeserializationFeature;
+import org.nd4j.shade.jackson.databind.MapperFeature;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -64,6 +62,8 @@ public class VectorsConfiguration implements Serializable {
     private String elementsLearningAlgorithm;
     private String sequenceLearningAlgorithm;
     private String modelUtils;
+
+    private int workers;
 
     private String tokenizerFactory;
     private String tokenPreProcessor;
@@ -114,7 +114,48 @@ public class VectorsConfiguration implements Serializable {
         this.allowParallelTokenization = false;
         this.preciseWeightInit = false;
         this.preciseMode = false;
+        this.workers = Runtime.getRuntime().availableProcessors();
 
+    }
+
+    public Boolean getUseHierarchicSoftmax() {
+        return useHierarchicSoftmax;
+    }
+
+    public Boolean getHugeModelExpected() {
+        return hugeModelExpected;
+    }
+
+    public Boolean getUseUnknown() {
+        return useUnknown;
+    }
+
+    public int getWorkers() {
+        return workers;
+    }
+
+    public void setWorkers(int workers) {
+        this.workers = workers;
+    }
+
+    public Boolean getTrainElementsVectors() {
+        return trainElementsVectors;
+    }
+
+    public Boolean getTrainSequenceVectors() {
+        return trainSequenceVectors;
+    }
+
+    public Boolean getAllowParallelTokenization() {
+        return allowParallelTokenization;
+    }
+
+    public Boolean getPreciseWeightInit() {
+        return preciseWeightInit;
+    }
+
+    public Boolean getPreciseMode() {
+        return preciseMode;
     }
 
     @JsonCreator
@@ -151,7 +192,8 @@ public class VectorsConfiguration implements Serializable {
                                 @JsonProperty("trainSequenceVectors") Boolean trainSequenceVectors,
                                 @JsonProperty("allowParallelTokenization") Boolean allowParallelTokenization,
                                 @JsonProperty("preciseWeightInit") Boolean preciseWeightInit,
-                                @JsonProperty("preciseMode") Boolean preciseMode) {
+                                @JsonProperty("preciseMode") Boolean preciseMode,
+                                @JsonProperty("workers") Integer workers) {
         if(minWordFrequency != null)
             this.minWordFrequency = minWordFrequency;
         else
@@ -235,6 +277,11 @@ public class VectorsConfiguration implements Serializable {
         this.tokenizerFactory = tokenizerFactory;
         this.tokenPreProcessor = tokenPreProcessor;
         this.nGram = nGram;
+
+        if(workers != null)
+            this.workers = workers;
+        else this.workers = Runtime.getRuntime().availableProcessors();
+
         if(UNK != null)
             this.UNK = UNK;
         else

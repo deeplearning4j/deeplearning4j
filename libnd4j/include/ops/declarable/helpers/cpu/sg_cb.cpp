@@ -22,6 +22,7 @@
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/sg_cb.h>
 #include <ops/specials.h>
+
 #define HS_MAX_EXP 6.0f
 
 namespace sd {
@@ -39,8 +40,8 @@ void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double a
   T g(0.0f);
   T f(0.0f);
 
+
   // dot
-   PRAGMA_OMP_SIMD
   for (int e = 0; e < vectorLength; e++) {
     dot += syn0[e] * syn1[e];
   }
@@ -53,17 +54,49 @@ void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double a
   f = expTable[idx];
   g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * (T)alpha;
 
-  // axpy1
-   PRAGMA_OMP_SIMD
-  for (int e = 0; e < vectorLength; e++) {
-    neu1e[e] = g * syn1[e] + neu1e[e];
-  }
-
-  // axpy2
-  if (!isInference) {
-     PRAGMA_OMP_SIMD
+  if(!isInference) {
     for (int e = 0; e < vectorLength; e++) {
       syn1[e] = g * syn0[e] + syn1[e];
+      neu1e[e] = g * syn1[e] + neu1e[e];
+    }
+
+  } else {
+    for (int e = 0; e < vectorLength; e++) {
+      neu1e[e] = g * syn1[e] + neu1e[e];
+    }
+  }
+}
+
+template <typename T>
+void hSoftmaxDot_(T dot,void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double alpha, int vectorLength, int code,
+               int expLength, bool isInference) {
+  auto syn0 = reinterpret_cast<T *>(vsyn0);
+  auto syn1 = reinterpret_cast<T *>(vsyn1);
+  auto expTable = reinterpret_cast<T *>(vexpTable);
+  auto neu1e = reinterpret_cast<T *>(vneu1e);
+
+  T g(0.0f);
+  T f(0.0f);
+
+  // gradient
+  if (dot < (T)-HS_MAX_EXP || dot >= (T)HS_MAX_EXP) return;
+  int idx = static_cast<int>((dot + HS_MAX_EXP) * ((float)expLength / HS_MAX_EXP / 2.0f));
+  if (idx >= expLength || idx < 0) return;
+
+  f = expTable[idx];
+  g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * (T)alpha;
+
+  if(!isInference) {
+    PRAGMA_OMP_SIMD
+    for (int e = 0; e < vectorLength; e++) {
+      syn1[e] = g * syn0[e] + syn1[e];
+      neu1e[e] = g * syn1[e] + neu1e[e];
+    }
+
+  } else {
+    PRAGMA_OMP_SIMD
+    for (int e = 0; e < vectorLength; e++) {
+      neu1e[e] = g * syn1[e] + neu1e[e];
     }
   }
 }
@@ -96,19 +129,22 @@ void nSampling_(void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, doub
     g = ((T)code - expTable[idx]) * alpha;
   }
 
-  // axpy1
-   PRAGMA_OMP_SIMD
-  for (int e = 0; e < vectorLength; e++) {
-    neu1e[e] = g * syn1Neg[e] + neu1e[e];
-  }
 
   // axpy2
   if (!isInference) {
-     PRAGMA_OMP_SIMD
+    PRAGMA_OMP_SIMD
     for (int e = 0; e < vectorLength; e++) {
+      neu1e[e] = g * syn1Neg[e] + neu1e[e];
       syn1Neg[e] = g * syn0[e] + syn1Neg[e];
     }
+  } else {
+    // axpy1
+    PRAGMA_OMP_SIMD
+    for (int e = 0; e < vectorLength; e++) {
+      neu1e[e] = g * syn1Neg[e] + neu1e[e];
+    }
   }
+
 }
 
 template <typename T>
@@ -356,6 +392,17 @@ static void do_negative(int target, int positive, T *syn0, T *syn1Neg, T *expTab
 }
 
 template <typename T>
+T _dot(T *x,T *y,int vectorLength) {
+  T dot(0.0f);
+  // dot
+  PRAGMA_OMP_SIMD
+  for (int e = 0; e < vectorLength; e++) {
+    dot += x[e] * y[e];
+  }
+  return dot;
+}
+
+template <typename T>
 void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector,
                         NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr,
                         NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
@@ -372,10 +419,8 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable,
   auto bTarget = targets.bufferAsT<int>();
   auto bIndices = indices.bufferAsT<int>();
   auto bCodes = codes.bufferAsT<int8_t>();
-
   auto func = PRAGMA_THREADS_FOR {
     T sneu1e[600];
-
     for (auto t = start; t < stop; t++) {
       T *neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
       memset(neu1e, 0, vectorLength * sizeof(T));
@@ -387,50 +432,49 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable,
       auto syn0row = reinterpret_cast<T *>(s0.bufferWithOffset(target * vectorLength));
 
       if (hsRounds > 0) {
-        int irow = 0;
         auto cShift = t * idxShift;
-
         for (sd::LongType e = 0; e < hsRounds; e++) {
-          irow = bIndices[e + cShift];
-          if (irow < 0 || irow >= vocabSize) continue;
-
-          auto syn1row = s1.bufferWithOffset(irow * vectorLength);
-          auto code = bCodes[e + cShift];
-
-          hSoftmax_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, code, expLength, false);
-        }
-      }
-
-      if (nsRounds > 0) {
-        int irow = negStarters.e<int>(t);
-        int nsStarter = irow;
-        for (int r = 0; r < nsRounds + 1; r++) {
-          if (r == 0) {
-            // target is known in advance
-          } else {
-            randomValue = randomValue * (unsigned long long)25214903917 + 11;
-            auto idx = sd::math::sd_abs<sd::LongType>((randomValue >> 16) % negLength);
-            irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
-
-            if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
-
-            if (irow == nsStarter) continue;
+          int currRow = bIndices[e + cShift];
+          if (currRow > 0 && currRow < vocabSize) {
+            signed char code = bCodes[currRow + cShift];
+            T *syn1row = (T *) s1.bufferWithOffset(currRow * vectorLength);
+            T dot = _dot(syn0row, syn1row, vectorLength);
+            hSoftmaxDot_<T>(dot, syn0row, syn1row, expTable, neu1e, alpha, vectorLength, code, expLength, false);
           }
-
-          nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength,
-                        r == 0 ? 1 : 0, expLength, infVector != nullptr);
         }
       }
 
-      for (int e = 0; e < vectorLength; e++) syn0row[e] += neu1e[e];
+        if (nsRounds > 0) {
+          int irow = negStarters.e<int>(t);
+          int nsStarter = irow;
+          for (int r = 0; r < nsRounds + 1; r++) {
+            if (r == 0) {
+              // target is known in advance
+            } else {
+              randomValue = randomValue * (unsigned long long)25214903917 + 11;
+              auto idx = sd::math::sd_abs<sd::LongType>((randomValue >> 16) % negLength);
+              irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
-      // optionally release temp arrays
-      if (vectorLength > 600) delete[] neu1e;
+              if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
+
+              if (irow == nsStarter) continue;
+            }
+
+            nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength,
+                          r == 0 ? 1 : 0, expLength, infVector != nullptr);
+          }
+        }
+
+        for (int e = 0; e < vectorLength; e++) syn0row[e] += neu1e[e];
+
+        // optionally release temp arrays
+        if (vectorLength > 600) delete[] neu1e;
     }
-  };
+    };
 
-  samediff::Threads::parallel_tad(func, 0, numTargets, 1, numThreads);
-}
+    samediff::Threads::parallel_tad(func, 0, numTargets, 1, numThreads);
+  }
+
 BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_,
                       (NDArray & s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector,
                           NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr,
