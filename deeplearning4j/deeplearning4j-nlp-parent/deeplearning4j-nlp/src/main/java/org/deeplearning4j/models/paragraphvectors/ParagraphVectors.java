@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.models.paragraphvectors;
 
+import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.nd4j.shade.guava.collect.Lists;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -1407,6 +1408,21 @@ public class ParagraphVectors extends Word2Vec {
         @Override
         public Builder windowSize(int windowSize) {
             super.windowSize(windowSize);
+            return this;
+        }
+
+        /**
+         * Sets number of threads running calculations.
+         * Note this is different from workers which affect
+         * the number of threads used to compute updates.
+         * This should be balanced with the number of workers.
+         * High number of threads will actually hinder performance.
+         *
+         * @param vectorCalcThreads the number of threads to compute updates
+         * @return
+         */
+        public Builder vectorCalcThreads(int vectorCalcThreads) {
+            super.vectorCalcThreads(vectorCalcThreads);
             return this;
         }
 

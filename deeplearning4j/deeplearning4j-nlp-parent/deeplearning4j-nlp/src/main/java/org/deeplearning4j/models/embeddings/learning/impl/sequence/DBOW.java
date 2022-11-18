@@ -104,9 +104,6 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
         // we just pass data to dbow, and loop over sequence there
         dbow(0, sequence, (int) nextRandom.get() % window, nextRandom, learningRate, false, null);
 
-        if(skipGram.getBatch() != null && skipGram.getBatch().size() >= configuration.getBatchSize()) {
-            finish();
-        }
 
         return 0;
     }
@@ -184,12 +181,6 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
         }
 
         skipGram.getBatch().addAll(batches);
-
-        if (skipGram != null && skipGram.getBatch() != null && skipGram.getBatch() != null
-                && skipGram.getBatch().size() >= configuration.getBatchSize()) {
-            skipGram.iterateSample(skipGram.getBatch());
-            skipGram.getBatch().clear();
-        }
 
     }
 

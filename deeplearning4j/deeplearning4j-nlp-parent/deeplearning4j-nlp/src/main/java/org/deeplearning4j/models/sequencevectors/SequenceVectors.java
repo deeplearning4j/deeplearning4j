@@ -96,7 +96,6 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected boolean enableScavenger = false;
     protected int vocabLimit = 0;
 
-    private BatchSequences<T> batchSequences;
 
 
     @Setter
@@ -334,7 +333,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
             val timer = new AtomicLong(System.currentTimeMillis());
             val threads = new ArrayList<VectorCalculationsThread>();
-            for (int x = 0; x < 1; x++) {
+            for (int x = 0; x < vectorCalcThreads; x++) {
                 threads.add(x, new VectorCalculationsThread(x, currentEpoch, wordsCounter, vocab.totalWordOccurrences(), linesCounter, sequencer, timer, numEpochs));
                 threads.get(x).start();
             }
@@ -390,7 +389,6 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             we skip that, because PV-DM includes CBOW
           */
 
-        //TODO: look in to elements learning vs sequence learning for time
         if (trainElementsVectors && !(trainSequenceVectors && sequenceLearningAlgorithm instanceof DM)) {
             // call for ElementsLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
@@ -435,7 +433,6 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 ", lockFactor=" + lockFactor +
                 ", enableScavenger=" + enableScavenger +
                 ", vocabLimit=" + vocabLimit +
-                ", batchSequences=" + batchSequences +
                 ", eventListeners=" + eventListeners +
                 ", minWordFrequency=" + minWordFrequency +
                 ", lookupTable=" + lookupTable +
@@ -454,6 +451,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 ", resetModel=" + resetModel +
                 ", useAdeGrad=" + useAdeGrad +
                 ", workers=" + workers +
+                ", vectorCalcThreads=" + vectorCalcThreads +
                 ", trainSequenceVectors=" + trainSequenceVectors +
                 ", trainElementsVectors=" + trainElementsVectors +
                 ", seed=" + seed +
@@ -510,6 +508,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected boolean enableScavenger = false;
         protected int vocabLimit;
 
+        protected  int vectorCalcThreads = 1;
+
         /**
          * Experimental field. Switches on precise mode for batch operations.
          */
@@ -546,7 +546,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.variableWindows = configuration.getVariableWindows();
             this.useHierarchicSoftmax = configuration.isUseHierarchicSoftmax();
             this.preciseMode = configuration.isPreciseMode();
-
+            this.vectorCalcThreads = configuration.getVectorCalcThreads();
             String modelUtilsClassName = configuration.getModelUtils();
             if (StringUtils.isNotEmpty(modelUtilsClassName)) {
                 try {
@@ -706,13 +706,30 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
 
         /**
-         * Sets number of worker threads to be used in calculations
+         * Sets number of worker threads to be used in the
+         * lower level linear algebra calculations used in
+         * calculating hierarchical softmax/sampling
          *
          * @param numWorkers
          * @return
          */
         public Builder<T> workers(int numWorkers) {
             this.workers = numWorkers;
+            return this;
+        }
+
+        /**
+         * Sets number of threads running calculations.
+         * Note this is different from workers which affect
+         * the number of threads used to compute updates.
+         * This should be balanced with the number of workers.
+         * High number of threads will actually hinder performance.
+         *
+         * @param vectorCalcThreads the number of threads to compute updates
+         * @return
+         */
+        public Builder<T> vectorCalcThreads(int vectorCalcThreads) {
+            this.vectorCalcThreads = vectorCalcThreads;
             return this;
         }
 

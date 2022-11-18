@@ -29,6 +29,7 @@ import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.reader.ModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
+import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
@@ -509,6 +510,23 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             super.seed(randomSeed);
             return this;
         }
+
+
+        /**
+         * Sets number of threads running calculations.
+         * Note this is different from workers which affect
+         * the number of threads used to compute updates.
+         * This should be balanced with the number of workers.
+         * High number of threads will actually hinder performance.
+         *
+         * @param vectorCalcThreads the number of threads to compute updates
+         * @return
+         */
+        public Builder vectorCalcThreads(int vectorCalcThreads) {
+            super.vectorCalcThreads(vectorCalcThreads);
+            return this;
+        }
+
 
         /**
          * This method defines maximum number of concurrent threads available for training

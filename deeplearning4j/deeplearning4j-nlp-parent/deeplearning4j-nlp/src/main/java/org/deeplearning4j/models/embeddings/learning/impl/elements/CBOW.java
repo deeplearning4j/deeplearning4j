@@ -53,7 +53,6 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
     private static final Logger logger = LoggerFactory.getLogger(CBOW.class);
 
-    protected static double MAX_EXP = 6;
 
     protected int window;
     protected boolean useAdaGrad;
@@ -134,29 +133,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         }
     }
 
-    @Override
-    public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate,
-                                BatchSequences<T> batchSequences) {
-        Sequence<T> tempSequence = sequence;
 
-        List<BatchItem<T>> batch = new ArrayList<>();
-        if (sampling > 0)
-            tempSequence = applySubsampling(sequence, nextRandom);
-
-        int currentWindow = window;
-
-        if (variableWindows != null && variableWindows.length != 0) {
-            currentWindow = variableWindows[RandomUtils.nextInt(0, variableWindows.length)];
-        }
-
-        for (int i = 0; i < tempSequence.getElements().size(); i++) {
-            nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            cbow(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom, learningRate,
-                    currentWindow, batch);
-        }
-
-        return 0;
-    }
 
     @Override
     public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate) {

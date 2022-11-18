@@ -48,7 +48,6 @@ public interface ElementsLearningAlgorithm<T extends SequenceElement> {
      */
     double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate);
 
-    double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate, BatchSequences<T> batchSequences);
 
     boolean isEarlyTerminationHit();
 

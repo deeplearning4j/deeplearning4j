@@ -179,37 +179,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             return sequence;
     }
 
-    public double learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, double learningRate,
-                                BatchSequences<T> batchSequences) {
-        Sequence<T> tempSequence = sequence;
-        if (sampling > 0)
-            tempSequence = applySubsampling(sequence, nextRandom);
 
-        List<BatchItem<T>> batch = new ArrayList<>();
-
-        double score = 0.0;
-
-        int currentWindow = window;
-
-        if (variableWindows != null && variableWindows.length != 0) {
-            currentWindow = variableWindows[RandomUtils.nextInt(0, variableWindows.length)];
-        }
-
-        for (int i = 0; i < tempSequence.getElements().size(); i++) {
-            nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            score = skipGram(i, tempSequence.getElements(), currentWindow > 0 ? (int) nextRandom.get() % currentWindow : (int) nextRandom.get(), nextRandom,
-                    learningRate, currentWindow, batch);
-
-
-        }
-
-        if(batches.get().size() >= configuration.getBatchSize()) {
-            score = iterateSample(batches.get());
-            batches.get().clear();
-        }
-
-        return score;
-    }
     /**
      * Learns sequence using SkipGram algorithm
      *
@@ -236,7 +206,10 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     learningRate, currentWindow,getBatch());
         }
 
-
+        if (getBatch() != null && getBatch().size() >= configuration.getBatchSize()) {
+            score = iterateSample(getBatch());
+            getBatch().clear();
+        }
 
         return score;
     }
@@ -282,7 +255,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     else {
                         BatchItem<T> batchItem = new BatchItem<>(word,lastWord,nextRandom.get(),alpha);
                         batchSequences.add(batchItem);
-                        score = iterateBatchesIfReady(batchSequences);
 
                     }
                 }
@@ -686,7 +658,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 .build();
 
 
-        System.out.println("Running skip gram round with " + targets.length);
         Nd4j.getExecutioner().exec(sg);
 
         return score;

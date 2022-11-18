@@ -84,12 +84,15 @@ public class VectorsConfiguration implements Serializable {
     private Boolean trainSequenceVectors;
     private Boolean allowParallelTokenization;
     private Boolean preciseWeightInit;
-    private Boolean preciseMode ;
+    private Boolean preciseMode;
+
+    private Integer vectorCalcThreads;
 
     private static ObjectMapper mapper;
     private static final Object lock = new Object();
 
     public VectorsConfiguration() {
+        this.vectorCalcThreads = 1;
         this.minWordFrequency = 5;
         this.learningRate = 0.025;
         this.minLearningRate = 0.0001;
@@ -116,6 +119,14 @@ public class VectorsConfiguration implements Serializable {
         this.preciseMode = false;
         this.workers = Runtime.getRuntime().availableProcessors();
 
+    }
+
+    public Integer getVectorCalcThreads() {
+        return vectorCalcThreads;
+    }
+
+    public void setVectorCalcThreads(Integer vectorCalcThreads) {
+        this.vectorCalcThreads = vectorCalcThreads;
     }
 
     public Boolean getUseHierarchicSoftmax() {
@@ -193,7 +204,8 @@ public class VectorsConfiguration implements Serializable {
                                 @JsonProperty("allowParallelTokenization") Boolean allowParallelTokenization,
                                 @JsonProperty("preciseWeightInit") Boolean preciseWeightInit,
                                 @JsonProperty("preciseMode") Boolean preciseMode,
-                                @JsonProperty("workers") Integer workers) {
+                                @JsonProperty("workers") Integer workers,
+                                @JsonProperty("vectorCalcThreads") Integer vectorCalcThreads) {
         if(minWordFrequency != null)
             this.minWordFrequency = minWordFrequency;
         else
@@ -269,6 +281,11 @@ public class VectorsConfiguration implements Serializable {
         else {
             this.scavengerRetentionDelay = 3;
         }
+
+        if(vectorCalcThreads != null) {
+            this.vectorCalcThreads = vectorCalcThreads;
+        } else
+            this.vectorCalcThreads = 1;
 
         this.elementsLearningAlgorithm = elementsLearningAlgorithm;
         this.sequenceLearningAlgorithm = sequenceLearningAlgorithm;
