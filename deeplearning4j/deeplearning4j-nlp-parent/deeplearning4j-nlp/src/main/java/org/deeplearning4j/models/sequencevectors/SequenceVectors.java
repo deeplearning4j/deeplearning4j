@@ -344,7 +344,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 throw new RuntimeException(e);
             }
 
-            for (int x = 0; x < workers; x++) {
+            for (int x = 0; x < vectorCalcThreads; x++) {
                 try {
                     threads.get(x).join();
                 } catch (Exception e) {
