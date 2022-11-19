@@ -26,6 +26,7 @@ import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.BatchItem;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.BatchSequences;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
@@ -99,8 +100,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
     }
 
     @Override
-    public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate,
-                                BatchSequences<T> batchSequences) {
+    public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate) {
         Sequence<T> seq = cbow.applySubsampling(sequence, nextRandom);
 
         if (sequence.getSequenceLabel() == null)
@@ -116,7 +116,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         for (int i = 0; i < seq.size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             dm(i, seq, (int) nextRandom.get() % window, nextRandom, learningRate, labels, false,
-                    null, batchSequences);
+                    null);
         }
 
         return 0;
@@ -170,7 +170,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
     }
 
     public void dm(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, List<T> labels,
-                   boolean isInference, INDArray inferenceVector, BatchSequences<T> batchSequences) {
+                   boolean isInference, INDArray inferenceVector) {
         int end = window * 2 + 1 - b;
 
         T currentWord = sequence.getElementByIndex(i);
@@ -209,11 +209,12 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
                     configuration.isTrainElementsVectors(), inferenceVector);
         }
         else {
-            batchSequences.put(currentWord, windowWords, statuses, nextRandom.get(), alpha, labels == null ? 0 : labels.size());
+            BatchItem<T> batch = new BatchItem<>(currentWord,windowWords,statuses,nextRandom.get(),alpha);
+            cbow.getBatch().add(batch);
         }
 
         if (cbow.getBatch() != null && cbow.getBatch().size() >= configuration.getBatchSize()) {
-            Nd4j.getExecutioner().exec(cbow.getBatch());
+            cbow.iterateSample(cbow.getBatch());
             cbow.getBatch().clear();
         }
     }
@@ -282,8 +283,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
     @Override
     public void finish() {
         if (cbow != null && cbow.getBatch() != null && !cbow.getBatch().isEmpty()) {
-            Nd4j.getExecutioner().exec(cbow.getBatch());
-            cbow.getBatch().clear();
+            cbow.finish();
         }
     }
 }

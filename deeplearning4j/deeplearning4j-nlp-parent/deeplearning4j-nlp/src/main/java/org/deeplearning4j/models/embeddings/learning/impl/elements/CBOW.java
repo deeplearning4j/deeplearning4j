@@ -23,8 +23,6 @@ package org.deeplearning4j.models.embeddings.learning.impl.elements;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import lombok.val;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -37,7 +35,6 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.impl.nlp.CbowInference;
 import org.nd4j.linalg.api.ops.impl.nlp.CbowRound;
 import org.nd4j.linalg.factory.Nd4j;
@@ -56,7 +53,6 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
     private static final Logger logger = LoggerFactory.getLogger(CBOW.class);
 
-    protected static double MAX_EXP = 6;
 
     protected int window;
     protected boolean useAdaGrad;
@@ -77,9 +73,9 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     @Setter
     protected DeviceLocalNDArray syn0, syn1, syn1Neg, expTable, table;
 
-    protected ThreadLocal<List<Aggregate>> batches = new ThreadLocal<>();
+    protected ThreadLocal<List<BatchItem<T>>> batches = new ThreadLocal<>();
 
-    public List<Aggregate> getBatch() {
+    public List<BatchItem<T>> getBatch() {
         return batches.get();
     }
 
@@ -99,7 +95,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         this.useAdaGrad = configuration.isUseAdaGrad();
         this.negative = configuration.getNegative();
         this.sampling = configuration.getSampling();
-
+        this.workers = configuration.getWorkers();
         if (configuration.getNegative() > 0) {
             if (((InMemoryLookupTable<T>) lookupTable).getSyn1Neg() == null) {
                 logger.info("Initializing syn1Neg...");
@@ -132,39 +128,12 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     @Override
     public void finish() {
         if (batches != null && batches.get() != null && !batches.get().isEmpty()) {
-            Nd4j.getExecutioner().exec(batches.get());
+            iterateSample(batches.get());
             batches.get().clear();
         }
     }
 
-    @Override
-    public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate,
-                                BatchSequences<T> batchSequences) {
-        Sequence<T> tempSequence = sequence;
 
-        List<BatchItem<T>> batch = new ArrayList<>();
-        if (sampling > 0)
-            tempSequence = applySubsampling(sequence, nextRandom);
-
-        int currentWindow = window;
-
-        if (variableWindows != null && variableWindows.length != 0) {
-            currentWindow = variableWindows[RandomUtils.nextInt(0, variableWindows.length)];
-        }
-
-        for (int i = 0; i < tempSequence.getElements().size(); i++) {
-            nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            cbow(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom, learningRate,
-                    currentWindow, batch);
-        }
-
-
-        if(!batch.isEmpty()) {
-            iterateSample(batch);
-        }
-
-        return 0;
-    }
 
     @Override
     public double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate) {
@@ -183,6 +152,12 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             cbow(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom, learningRate,
                     currentWindow, null);
         }
+
+        if (getBatch() != null && getBatch().size() >= configuration.getBatchSize()) {
+            iterateSample(getBatch());
+            getBatch().clear();
+        }
+
 
         return 0;
     }
@@ -431,10 +406,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
     }
 
-
-
-
-    public void iterateSample(List<BatchItem<T>> items) {
+    public double iterateSample(List<BatchItem<T>> items) {
 
         boolean useHS = configuration.isUseHierarchicSoftmax();
         boolean useNegative = configuration.getNegative() > 0;
@@ -443,7 +415,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         byte[] codes = null;
 
         int maxCols = 1;
-        for (int i = 0; i < items.size(); ++i) {
+        for (int i = 0; i < items.size(); i++) {
             int curr = items.get(i).getWord().getCodeLength();
             if (curr > maxCols)
                 maxCols = curr;
@@ -559,7 +531,8 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                 workers);
 
         Nd4j.getExecutioner().exec(cbow);
-
+        batches.get().clear();
+        return 0.0;
 
     }
 
@@ -598,8 +571,28 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         else {
             BatchItem<T> batchItem = new BatchItem<>(currentWord,windowWords,statuses,nextRandom.get(),alpha);
             batch.add(batchItem);
+            iterateBatchesIfReady(batch);
+
         }
 
+
+
+    }
+
+    private double iterateBatchesIfReady(List<BatchItem<T>> batch) {
+        double score = 0.0;
+        if(batches.get() == null) {
+            batches.set(batch);
+        }
+        else
+            batches.get().addAll(batch);
+
+        if(batches.get().size() >= configuration.getBatchSize()) {
+            score = iterateSample(batches.get());
+            batches.get().clear();
+
+        }
+        return score;
     }
 
     public Sequence<T> applySubsampling(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom) {

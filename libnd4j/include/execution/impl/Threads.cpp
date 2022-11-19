@@ -390,7 +390,6 @@ namespace samediff {
 		}
 
 #ifdef _OPENMP
-
 		if (tryAcquire(numThreads)) {
 			auto span = delta / numThreads;
 #pragma omp parallel for
@@ -416,6 +415,8 @@ namespace samediff {
 		sd::Environment::getInstance().maxThreads();
 		auto ticket = ThreadPool::getInstance().tryAcquire(numThreads);
 		if (ticket != nullptr) {
+                  sd_printf("Gathered ticket\n",0);
+
 			// if we got our threads - we'll run our jobs here
 			auto span = delta / numThreads;
 
@@ -438,6 +439,8 @@ namespace samediff {
 			return numThreads;
 		}
 		else {
+                  sd_printf("In line parallelism\n",0);
+
 			// if there were no threads available - we'll execute function right within current thread
 			function(0, start, stop, increment);
 
