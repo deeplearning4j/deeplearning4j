@@ -44,6 +44,11 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     private OpaqueContext context = nativeOps.createGraphContext(1);
     private final transient long id = Nd4j.getDeallocatorService().nextValue();
 
+    private transient DoublePointer tArgs;
+    private transient BooleanPointer bArgs;
+    private transient IntPointer dArgs;
+    private transient LongPointer iArgs;
+
     public CpuOpContext() {
         Nd4j.getDeallocatorService().pickObject(this);
     }
@@ -54,10 +59,85 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     }
 
     @Override
+    public void setIArguments(Pointer arguments, int length) {
+        this.iArgs = arguments instanceof LongPointer ?(LongPointer) arguments : new LongPointer(arguments);
+        nativeOps.setGraphContextIArguments(context, this.iArgs,length);
+
+    }
+
+    @Override
+    public void setTArguments(Pointer arguments, int length) {
+        this.tArgs = arguments instanceof DoublePointer ?(DoublePointer) arguments : new DoublePointer(arguments);
+        nativeOps.setGraphContextTArguments(context, this.tArgs,length);
+    }
+
+    @Override
+    public void setDArguments(Pointer arguments, int length) {
+        this.dArgs = arguments instanceof IntPointer ?(IntPointer) arguments : new IntPointer(arguments);
+        nativeOps.setGraphContextDArguments(context, this.dArgs,length);
+    }
+
+    @Override
+    public void setBArguments(Pointer arguments, int length) {
+        this.bArgs = arguments instanceof BooleanPointer ?(BooleanPointer) arguments : new BooleanPointer(arguments);
+        nativeOps.setGraphContextBArguments(context, this.bArgs,length);
+    }
+
+    @Override
+    public boolean hasCachedDArgs() {
+        return dArgs != null && !dArgs.isNull();
+    }
+
+    @Override
+    public boolean hasCachedTArgs() {
+        return tArgs != null && !tArgs.isNull();
+    }
+
+    @Override
+    public boolean hasCachedBArgs() {
+        return bArgs != null && !bArgs.isNull();
+    }
+
+    @Override
+    public boolean hasCachedIArgs() {
+        return iArgs != null && !iArgs.isNull();
+    }
+
+    @Override
+    public void setDArgAt(int index, DataType value) {
+        if(dArgs == null || dArgs.isNull())
+            throw new IllegalStateException("Please use setDArguments before trying to set at an index.");
+        dArgs.put(index,value.toInt());
+    }
+
+    @Override
+    public void setBArgAt(int index, boolean value) {
+        if(bArgs == null || bArgs.isNull())
+            throw new IllegalStateException("Please use setBArguments before trying to set at an index.");
+        bArgs.put(index,value);
+    }
+
+    @Override
+    public void setTArgAt(int index, double value) {
+        if(tArgs == null || tArgs.isNull())
+            throw new IllegalStateException("Please use setTArguments before trying to set at an index.");
+
+        tArgs.put(index,value);
+    }
+
+    @Override
+    public void setIArgAt(int index, long value) {
+        if(iArgs == null || iArgs.isNull())
+            throw new IllegalStateException("Please use setIArguments before trying to set at an index.");
+        iArgs.put(index,value);
+    }
+
+    @Override
     public void setIArguments(long... arguments) {
         if (arguments.length > 0) {
             super.setIArguments(arguments);
-            nativeOps.setGraphContextIArguments(context, new LongPointer(arguments), arguments.length);
+            this.iArgs = new LongPointer(arguments);
+            nativeOps.setGraphContextIArguments(context, this.iArgs, arguments.length);
         }
     }
 
@@ -65,7 +145,8 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     public void setBArguments(boolean... arguments) {
         if (arguments.length > 0) {
             super.setBArguments(arguments);
-            nativeOps.setGraphContextBArguments(context, new BooleanPointer(arguments), arguments.length);
+            this.bArgs = new BooleanPointer(arguments);
+            nativeOps.setGraphContextBArguments(context, this.bArgs, arguments.length);
         }
     }
 
@@ -73,7 +154,8 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     public void setTArguments(double... arguments) {
         if (arguments.length > 0) {
             super.setTArguments(arguments);
-            nativeOps.setGraphContextTArguments(context, new DoublePointer(arguments), arguments.length);
+            this.tArgs = new DoublePointer(arguments);
+            nativeOps.setGraphContextTArguments(context, tArgs, arguments.length);
         };
     }
 
@@ -85,8 +167,9 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             for (int e = 0; e < arguments.length; e++)
                 args[e] = arguments[e].toInt();
 
-            nativeOps.setGraphContextDArguments(context, new IntPointer(args), arguments.length);
-        };
+            this.dArgs =  new IntPointer(args);
+            nativeOps.setGraphContextDArguments(context, this.dArgs, arguments.length);
+        }
     }
 
     @Override
@@ -159,5 +242,53 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     @Override
     public int targetDevice() {
         return 0;
+    }
+
+    @Override
+    public void transferTArgs() {
+        if (fastpath_t.size() > 0) {
+            val args = new double[fastpath_t.size()];
+            for (int e = 0; e < fastpath_t.size(); e++)
+                args[e] = fastpath_t.get(e);
+
+            this.tArgs =  new DoublePointer(args);
+            nativeOps.setGraphContextTArguments(context, this.tArgs, fastpath_t.size());
+        }
+    }
+
+    @Override
+    public void transferIArgs() {
+        if (fastpath_i.size() > 0) {
+            val args = new long[fastpath_i.size()];
+            for (int e = 0; e < fastpath_i.size(); e++)
+                args[e] = fastpath_i.get(e);
+
+            this.iArgs =  new LongPointer(args);
+            nativeOps.setGraphContextIArguments(context, this.iArgs, fastpath_i.size());
+        }
+    }
+
+    @Override
+    public void transferBArgs() {
+        if (fastpath_b.size() > 0) {
+            val args = new boolean[fastpath_b.size()];
+            for (int e = 0; e < fastpath_b.size(); e++)
+                args[e] = fastpath_b.get(e);
+
+            this.bArgs =  new BooleanPointer(args);
+            nativeOps.setGraphContextBArguments(context, this.bArgs, fastpath_b.size());
+        }
+    }
+
+    @Override
+    public void transferDArgs() {
+        if (fastpath_d.size() > 0) {
+            val args = new int[fastpath_d.size()];
+            for (int e = 0; e < fastpath_d.size(); e++)
+                args[e] = fastpath_d.get(e).toInt();
+
+            this.dArgs =  new IntPointer(args);
+            nativeOps.setGraphContextDArguments(context, this.dArgs, fastpath_d.size());
+        }
     }
 }

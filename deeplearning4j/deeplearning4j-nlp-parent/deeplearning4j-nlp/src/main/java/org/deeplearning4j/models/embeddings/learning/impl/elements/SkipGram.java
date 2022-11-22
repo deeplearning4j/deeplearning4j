@@ -20,9 +20,7 @@
 
 package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -37,6 +35,8 @@ import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.nlp.SkipGramInference;
 import org.nd4j.linalg.api.ops.impl.nlp.SkipGramRound;
 import org.nd4j.linalg.factory.Nd4j;
@@ -249,14 +249,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 if (c >= 0 && c < sentence.size()) {
                     T lastWord = sentence.get(c);
                     nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-                    if (batchSize <= 1) {
-                        score = iterateSample(word, lastWord, nextRandom, alpha, false, null);
-                    }
-                    else {
-                        BatchItem<T> batchItem = new BatchItem<>(word,lastWord,nextRandom.get(),alpha);
-                        batchSequences.add(batchItem);
-
-                    }
+                    BatchItem<T> batchItem = new BatchItem<>(word,lastWord,nextRandom.get(),alpha);
+                    batchSequences.add(batchItem);
                 }
             }
         }
@@ -284,267 +278,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     }
 
 
-    public CustomOp iterateSampleOp(T w1, T lastWord, AtomicLong nextRandom, double alpha, boolean isInference,
-                                    INDArray inferenceVector) {
-        if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && !isInference)
-                || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP")
-                || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK")
-                || lastWord.getLabel().equals("UNK")) {
-            return null;
-        }
-
-
-
-        int[] idxSyn1 = null;
-        byte[] codes = null;
-        if (configuration.isUseHierarchicSoftmax()) {
-            idxSyn1 = new int[w1.getCodeLength()];
-            codes = new byte[w1.getCodeLength()];
-            for (int i = 0; i < w1.getCodeLength(); i++) {
-                int code = w1.getCodes().get(i);
-                int point = w1.getPoints().get(i);
-                if (point >= vocabCache.numWords() || point < 0)
-                    continue;
-
-                codes[i] = (byte)code;
-                idxSyn1[i] = point;
-            }
-        } else {
-            idxSyn1 = new int[0];
-            codes = new byte[0];
-        }
-
-
-        int target = w1.getIndex();
-        //negative sampling
-        if (negative > 0) {
-            if (syn1Neg == null) {
-                ((InMemoryLookupTable<T>) lookupTable).initNegative();
-                syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
-            }
-        }
-
-        if (batches.get() == null) {
-            batches.set(new ArrayList<>());
-        }
-
-        nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-
-        SkipGramInference sg = null;
-        boolean useHS = configuration.isUseHierarchicSoftmax();
-        boolean useNegative = configuration.getNegative() > 0;
-
-
-
-        List<INDArray> release = new ArrayList<>();
-        if (useHS && useNegative) {
-            INDArray idxSyn1Arr = arrayCacheMemoryMgr.allocate(false,DataType.INT32,idxSyn1.length);
-
-            sg = SkipGramInference.builder()
-                    .target(lastWord.getIndex())
-                    .ngStarter(target)
-                    .syn0(syn0.get())
-                    .syn1(syn1.get())
-                    .syn1Neg(syn1Neg.get())
-                    .expTable(expTable.get())
-                    .negTable(table.get())
-                    .nsRounds(0)
-                    .indices(idxSyn1)
-                    .codes(codes)
-                    .randomValue((int) nextRandom.get())
-                    .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
-                    .alpha(alpha)
-                    .preciseMode(configuration.isPreciseMode())
-                    .numWorkers(workers)
-                    .build();
-
-            release.add(idxSyn1Arr);
-
-        }
-        else if (useHS) {
-            sg = SkipGramInference.builder()
-                    .target(lastWord.getIndex())
-                    .ngStarter(-1)
-                    .syn0(syn0.get())
-                    .syn1(syn1.get())
-                    .syn1Neg(Nd4j.empty(syn0.get().dataType()))
-                    .expTable(expTable.get() != null ? expTable.get() : Nd4j.empty(syn0.get().dataType()))
-                    .negTable(table.get() != null ? table.get() : Nd4j.empty(syn0.get().dataType()))
-                    .nsRounds((int) negative)
-                    .alpha(alpha)
-                    .randomValue((int) nextRandom.get())
-                    .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
-                    .codes(codes)
-                    .indices(idxSyn1)
-                    .preciseMode(configuration.isPreciseMode())
-                    .numWorkers(workers)
-                    .build();
-
-        }
-        else if (useNegative) {
-            INDArray negativeArr = arrayCacheMemoryMgr.allocate(false,DataType.INT32,1);
-            negativeArr.putScalar(0,negative);
-
-            sg = SkipGramInference.builder()
-                    .ngStarter(target)
-                    .target(lastWord.getIndex())
-                    .syn0(syn0.get())
-                    .syn1(Nd4j.empty(syn0.get().dataType()))
-                    .codes(new byte[0])
-                    .indices(new int[0])
-                    .negTable(negativeArr)
-                    .syn1Neg(syn1Neg.get())
-                    .expTable(expTable.get())
-                    .syn1(syn1.get())
-                    .randomValue((int) nextRandom.get())
-                    .alpha(alpha)
-                    .preciseMode(configuration.isPreciseMode())
-                    .numWorkers(workers)
-                    .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
-                    .build();
-
-            release.add(negativeArr);
-
-        }
-
-        return sg;
-    }
-
-    public double iterateSample(T w1, T lastWord, AtomicLong nextRandom, double alpha, boolean isInference,
-                                INDArray inferenceVector) {
-        if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && !isInference)
-                || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP")
-                || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK")
-                || lastWord.getLabel().equals("UNK")) {
-            return 0.0;
-        }
-
-
-        double score = 0.0;
-
-        int[] idxSyn1 = null;
-        byte[] codes = null;
-        if (configuration.isUseHierarchicSoftmax()) {
-            idxSyn1 = new int[w1.getCodeLength()];
-            codes = new byte[w1.getCodeLength()];
-            for (int i = 0; i < w1.getCodeLength(); i++) {
-                int code = w1.getCodes().get(i);
-                int point = w1.getPoints().get(i);
-                if (point >= vocabCache.numWords() || point < 0)
-                    continue;
-
-                codes[i] = (byte)code;
-                idxSyn1[i] = point;
-            }
-        } else {
-            idxSyn1 = new int[0];
-            codes = new byte[0];
-        }
-
-
-        int target = w1.getIndex();
-        //negative sampling
-        if (negative > 0) {
-            if (syn1Neg == null) {
-                ((InMemoryLookupTable<T>) lookupTable).initNegative();
-                syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
-            }
-        }
-
-        if (batches.get() == null) {
-            batches.set(new ArrayList<>());
-        }
-
-        nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-
-
-
-
-        SkipGramInference sg = null;
-        boolean useHS = configuration.isUseHierarchicSoftmax();
-        boolean useNegative = configuration.getNegative() > 0;
-
-
-
-        List<INDArray> release = new ArrayList<>();
-        if (useHS && useNegative) {
-            INDArray idxSyn1Arr = arrayCacheMemoryMgr.allocate(false,DataType.INT32,idxSyn1.length);
-
-            sg = SkipGramInference.builder()
-                    .target(lastWord.getIndex())
-                    .ngStarter(target)
-                    .syn0(syn0.get())
-                    .syn1(syn1.get())
-                    .syn1Neg(syn1Neg.get())
-                    .expTable(expTable.get())
-                    .negTable(table.get())
-                    .nsRounds(0)
-                    .indices(idxSyn1)
-                    .codes(codes)
-                    .randomValue((int) nextRandom.get())
-                    .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
-                    .alpha(alpha)
-                    .preciseMode(configuration.isPreciseMode())
-                    .numWorkers(workers)
-                    .build();
-
-            release.add(idxSyn1Arr);
-
-        }
-        else if (useHS) {
-            sg = SkipGramInference.builder()
-                    .target(lastWord.getIndex())
-                    .ngStarter(-1)
-                    .syn0(syn0.get())
-                    .syn1(syn1.get())
-                    .syn1Neg(Nd4j.empty(syn0.get().dataType()))
-                    .expTable(expTable.get() != null ? expTable.get() : Nd4j.empty(syn0.get().dataType()))
-                    .negTable(table.get() != null ? table.get() : Nd4j.empty(syn0.get().dataType()))
-                    .nsRounds((int) negative)
-                    .alpha(alpha)
-                    .randomValue((int) nextRandom.get())
-                    .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
-                    .codes(codes)
-                    .indices(idxSyn1)
-                    .preciseMode(configuration.isPreciseMode())
-                    .numWorkers(workers)
-                    .build();
-
-        }
-        else if (useNegative) {
-            INDArray negativeArr = arrayCacheMemoryMgr.allocate(false,DataType.INT32,1);
-            negativeArr.putScalar(0,negative);
-
-            sg = SkipGramInference.builder()
-                    .ngStarter(target)
-                    .target(lastWord.getIndex())
-                    .syn0(syn0.get())
-                    .syn1(Nd4j.empty(syn0.get().dataType()))
-                    .codes(new byte[0])
-                    .indices(new int[0])
-                    .negTable(negativeArr)
-                    .syn1Neg(syn1Neg.get())
-                    .expTable(expTable.get())
-                    .syn1(syn1.get())
-                    .randomValue((int) nextRandom.get())
-                    .alpha(alpha)
-                    .preciseMode(configuration.isPreciseMode())
-                    .numWorkers(workers)
-                    .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
-                    .build();
-
-            release.add(negativeArr);
-
-        }
-
-        Nd4j.getExecutioner().exec(sg);
-
-        //release after use
-        for(INDArray arr : release)
-            arrayCacheMemoryMgr.release(arr);
-
-        return score;
-    }
 
     public double iterateSample(List<BatchItem<T>> items) {
         boolean useHS = configuration.isUseHierarchicSoftmax();

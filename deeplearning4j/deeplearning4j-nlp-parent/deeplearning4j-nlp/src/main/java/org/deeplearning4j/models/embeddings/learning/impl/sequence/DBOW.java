@@ -21,6 +21,7 @@
 package org.deeplearning4j.models.embeddings.learning.impl.sequence;
 
 import lombok.NonNull;
+import org.bytedeco.javacpp.DoublePointer;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
@@ -37,6 +38,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
+import org.nd4j.linalg.api.ops.impl.nlp.SkipGramInference;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -102,7 +104,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
     public double learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, double learningRate) {
 
         // we just pass data to dbow, and loop over sequence there
-        dbow(0, sequence, (int) nextRandom.get() % window, nextRandom, learningRate, false, null);
+        dbow( sequence,  nextRandom, learningRate);
 
 
         return 0;
@@ -119,12 +121,11 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
 
 
-    protected List<CustomOp> getOps(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, boolean isInference,
-                                    INDArray inferenceVector) {
+    protected List<BatchItem<T>> getOps(Sequence<T> sequence, AtomicLong nextRandom,double learningRate) {
 
 
         List<T> sentence = skipGram.applySubsampling(sequence, nextRandom).getElements();
-        List<CustomOp> ret = new ArrayList<>();
+        List<BatchItem<T>> ret = new ArrayList<>();
 
         if (sequence.getSequenceLabel() == null)
             return null;
@@ -139,8 +140,8 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
             for (T word : sentence) {
                 if (word == null)
                     continue;
-
-                ret.add(skipGram.iterateSampleOp(word, lastWord, nextRandom, alpha, isInference, inferenceVector));
+                BatchItem<T> batchItem = new BatchItem<>(word,lastWord,nextRandom.get(),learningRate);
+                ret.add(batchItem);
 
             }
         }
@@ -149,8 +150,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
     }
 
 
-    protected void dbow(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, boolean isInference,
-                        INDArray inferenceVector) {
+    protected void dbow(Sequence<T> sequence, AtomicLong nextRandom, double alpha) {
 
         List<T> sentence = skipGram.applySubsampling(sequence, nextRandom).getElements();
 
@@ -171,12 +171,9 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
                 if (word == null)
                     continue;
 
-                if (batchSize == 1 || isInference)
-                    skipGram.iterateSample(word, lastWord, nextRandom, alpha, isInference, inferenceVector);
-                else {
-                    BatchItem<T> batchItem = new BatchItem<>(word,lastWord,nextRandom.get(),alpha);
-                    batches.add(batchItem);
-                }
+                BatchItem<T> batchItem = new BatchItem<>(word,lastWord,nextRandom.get(),alpha);
+                batches.add(batchItem);
+
             }
         }
 
@@ -208,34 +205,26 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
                 .divi(lookupTable.layerSize());
 
         OpContext ctx = Nd4j.getExecutioner().buildContext();
-        boolean setCtx = false;
         List<CustomOp> ops = new ArrayList<>();
         //build up a vector over iterations?
+        double[] learningRates = new double[iterations];
         for (int iter = 0; iter < iterations; iter++) {
-            nr.set(Math.abs(nr.get() * 25214903917L + 11));
-            List<CustomOp> ops1 = getOps(0, sequence, (int) nr.get() % window, nr, learningRate, true, ret);
-            if(!setCtx) {
-                ctx.setInputArrays(ops1.get(0).inputArguments());
-                ctx.setOutputArrays(ops1.get(0).outputArguments());
-                ctx.setBArguments(ops1.get(0).bArgs());
-                setCtx = true;
-            }
-
-            ctx.setTArguments(ops1.get(0).tArgs());
-            for(CustomOp customOp : ops) {
-                ctx.setIArguments(customOp.iArgs());
-                Nd4j.getExecutioner().exec(customOp,ctx);
-            }
-
+            learningRates[iter] = learningRate;
             learningRate = ((learningRate - minLearningRate) / (iterations - iter)) + minLearningRate;
         }
 
+        ctx.setTArguments(learningRates);
 
 
+        for (int iter = 0; iter < iterations; iter++) {
+            nr.set(Math.abs(nr.get() * 25214903917L + 11));
+            List<BatchItem<T>> ops1 = getOps( sequence, nr,learningRates[iter]);
+            skipGram.getBatch().addAll(ops1);
+        }
 
 
+        skipGram.finish();
 
-        finish();
 
         return ret;
     }

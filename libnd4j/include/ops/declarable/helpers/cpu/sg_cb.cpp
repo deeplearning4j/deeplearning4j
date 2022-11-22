@@ -87,6 +87,7 @@ void hSoftmaxDot_(T dot,void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e,
   g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * (T)alpha;
 
   if(!isInference) {
+
     PRAGMA_OMP_SIMD
     for (int e = 0; e < vectorLength; e++) {
       syn1[e] = g * syn0[e] + syn1[e];
@@ -99,6 +100,7 @@ void hSoftmaxDot_(T dot,void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e,
       neu1e[e] = g * syn1[e] + neu1e[e];
     }
   }
+
 }
 
 template <typename T>
@@ -111,11 +113,11 @@ void nSampling_(void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, doub
 
   T dot = (T)0.0f;
   T g = (T)0.0f;
+
    PRAGMA_OMP_SIMD
   for (int e = 0; e < vectorLength; e++) {
     dot += syn0[e] * syn1Neg[e];
   }
-
   if (dot > HS_MAX_EXP)
     g = (code - 1) * alpha;
   else if (dot < (T)-HS_MAX_EXP)
@@ -240,8 +242,8 @@ void cbow_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vneg
     }
   }
 
-  delete[] neu1;
-  delete[] neu1e;
+  //delete[] neu1;
+  //delete[] neu1e;
 }
 BUILD_SINGLE_TEMPLATE(template void cbow_,
                       (void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector,
@@ -314,7 +316,7 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
 
   }
 
-  delete[] neu1e;
+  //delete[] neu1e;
 }
 BUILD_SINGLE_TEMPLATE(template void skipgram_,
                       (void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector,
@@ -351,7 +353,6 @@ static void do_update(const int target, const int rowIndex, const int count, T *
 template <typename T>
 static void do_positive(const int target, const int postive, T *syn0, T *syn1Neg, T *expTable, T *neu1e,
                         const double alpha, const int vectorLength, const int expLength) {
-  // sd_printf("Target: [%i]; Positive: [%i]; TID: [%i];\n", target, postive, omp_get_thread_num());
   nSampling_<T>(syn0, syn1Neg, expTable, neu1e, alpha, vectorLength, 1, expLength, false);
 }
 
@@ -428,15 +429,13 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable,
       auto target = bTarget[t];
       auto alpha = lr.e<double>(t);
       unsigned long long randomValue = nextRandom.e<sd::LongType>(t);
-
       auto syn0row = reinterpret_cast<T *>(s0.bufferWithOffset(target * vectorLength));
-
       if (hsRounds > 0) {
         auto cShift = t * idxShift;
         for (sd::LongType e = 0; e < hsRounds; e++) {
           int currRow = bIndices[e + cShift];
           if (currRow > 0 && currRow < vocabSize) {
-            signed char code = bCodes[currRow + cShift];
+            signed char code = bCodes[e + cShift];
             T *syn1row = (T *) s1.bufferWithOffset(currRow * vectorLength);
             T dot = _dot(syn0row, syn1row, vectorLength);
             hSoftmaxDot_<T>(dot, syn0row, syn1row, expTable, neu1e, alpha, vectorLength, code, expLength, false);
@@ -466,9 +465,11 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable,
         }
 
         for (int e = 0; e < vectorLength; e++) syn0row[e] += neu1e[e];
-
         // optionally release temp arrays
-        if (vectorLength > 600) delete[] neu1e;
+        if (vectorLength > 600) {
+          delete[] neu1e;
+
+        }
     }
     };
 

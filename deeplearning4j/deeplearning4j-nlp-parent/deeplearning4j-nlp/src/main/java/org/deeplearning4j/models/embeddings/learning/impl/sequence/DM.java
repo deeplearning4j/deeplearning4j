@@ -37,10 +37,12 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -115,24 +117,28 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
         for (int i = 0; i < seq.size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-            dm(i, seq, (int) nextRandom.get() % window, nextRandom, learningRate, labels, false,
-                    null);
+            dm(i, seq, (int) nextRandom.get() % window, nextRandom, learningRate, labels);
         }
 
         return 0;
     }
 
 
-
-    public List<CustomOp> getOps(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, List<T> labels,
-                                 boolean isInference, INDArray inferenceVector, BatchSequences<T> batchSequences) {
+    public List<BatchItem<T>> getOps(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, List<T> labels) {
         int end = window * 2 + 1 - b;
 
-        List<CustomOp> ret = new ArrayList<>();
+        List<BatchItem<T>> ret = new ArrayList<>();
         T currentWord = sequence.getElementByIndex(i);
 
         List<Integer> intsList = new ArrayList<>();
         List<Boolean> statusesList = new ArrayList<>();
+        int[] windowWords = new int[intsList.size()];
+        boolean[] statuses = new boolean[intsList.size()];
+        for (int x = 0; x < windowWords.length; x++) {
+            windowWords[x] = intsList.get(x);
+            statuses[x] = false;
+        }
+
         for (int a = b; a < end; a++) {
             if (a != window) {
                 int c = i - window + a;
@@ -141,6 +147,8 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
                     intsList.add(lastWord.getIndex());
                     statusesList.add(lastWord.isLocked());
+                    BatchItem<T> batch = new BatchItem<>(currentWord,windowWords,statuses,nextRandom.get(),alpha);
+                    ret.add(batch);
                 }
             }
         }
@@ -150,27 +158,14 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
             for (T label : labels) {
                 intsList.add(label.getIndex());
             }
-
-        int[] windowWords = new int[intsList.size()];
-        boolean[] statuses = new boolean[intsList.size()];
-        for (int x = 0; x < windowWords.length; x++) {
-            windowWords[x] = intsList.get(x);
-            statuses[x] = false;
-        }
-
-        int batchSize = configuration.getBatchSize();
-        if (batchSize == 1 || isInference) {
-            // pass for underlying
-            ret.add(cbow.iterateSampleOp(currentWord, windowWords, statuses, nextRandom, alpha, isInference, labels == null ? 0 : labels.size(),
-                    configuration.isTrainElementsVectors(), inferenceVector));
-        }
 
 
         return ret;
     }
 
-    public void dm(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, List<T> labels,
-                   boolean isInference, INDArray inferenceVector) {
+
+
+    public void dm(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, List<T> labels) {
         int end = window * 2 + 1 - b;
 
         T currentWord = sequence.getElementByIndex(i);
@@ -202,16 +197,8 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
             statuses[x] = false;
         }
 
-        int batchSize = configuration.getBatchSize();
-        if (batchSize == 1 || isInference) {
-            // pass for underlying
-            cbow.iterateSample(currentWord, windowWords, statuses, nextRandom, alpha, isInference, labels == null ? 0 : labels.size(),
-                    configuration.isTrainElementsVectors(), inferenceVector);
-        }
-        else {
-            BatchItem<T> batch = new BatchItem<>(currentWord,windowWords,statuses,nextRandom.get(),alpha);
-            cbow.getBatch().add(batch);
-        }
+        BatchItem<T> batch = new BatchItem<>(currentWord,windowWords,statuses,nextRandom.get(),alpha);
+        cbow.getBatch().add(batch);
 
         if (cbow.getBatch() != null && cbow.getBatch().size() >= configuration.getBatchSize()) {
             cbow.iterateSample(cbow.getBatch());
@@ -255,19 +242,8 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         for (int iter = 0; iter < iterations; iter++) {
             for (int i = 0; i < sequence.size(); i++) {
                 nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-                List<CustomOp> ops1 = getOps(i, sequence, (int) nextRandom.get() % window, nextRandom, learningRate, null, true, ret, null);
-                if(!setCtx) {
-                    ctx.setInputArrays(ops1.get(0).inputArguments());
-                    ctx.setOutputArrays(ops1.get(0).outputArguments());
-                    ctx.setBArguments(ops1.get(0).bArgs());
-                    setCtx = true;
-                }
-
-                ctx.setTArguments(ops1.get(0).tArgs());
-                for(CustomOp customOp : ops) {
-                    ctx.setIArguments(customOp.iArgs());
-                    Nd4j.getExecutioner().exec(customOp,ctx);
-                }
+                List<BatchItem<T>> ops1 = getOps(i, sequence, (int) nextRandom.get() % window, nextRandom, learningRate, Collections.emptyList());
+                cbow.getBatch().addAll(ops1);
 
             }
 

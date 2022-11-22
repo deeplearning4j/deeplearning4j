@@ -35,12 +35,13 @@ CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
  //we do this to avoid serialization overhead from the JVM for frequently created small arrays
   auto numCodes = I_ARG(0);
   auto numIndices = I_ARG(1);
-  //2 for the number of indices/codes 3 for the mandatory args
- auto numMin = numIndices + numCodes + 2 + 3;
+  auto currIteration = I_ARG(2);
+  //2 for the number of indices/codes 1 for the iteration 3 for the mandatory args
+ auto numMin = numIndices + numCodes + 2  + 1 + 3;
    std::vector<sd::LongType> *codes = new std::vector<sd::LongType>();
    std::vector<sd::LongType> *indices = new std::vector<sd::LongType>();
 
-  int currIdx = 2;
+  int currIdx = 3;
   for(int i = 0; i < numCodes; i++) {
     codes->push_back(I_ARG(currIdx));
     currIdx++;
@@ -77,7 +78,7 @@ CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
   auto numWorkers = block.numI() > numMin ? INT_ARG(currIdx++) : omp_get_max_threads();
   auto nsRounds = block.numI() > numMin + 1 ? INT_ARG(currIdx++) : 0;
 
-  auto alpha = T_ARG(0);
+  auto alpha = T_ARG(currIteration);
 
   // required part
 

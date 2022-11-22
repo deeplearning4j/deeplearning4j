@@ -24,6 +24,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.val;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -41,6 +42,77 @@ public abstract class BaseOpContext implements OpContext {
     @Setter()
     @Getter
     protected ExecutionMode executionMode = ExecutionMode.UNDEFINED;
+
+    @Override
+    public void setIArguments(Pointer arguments, int length) {
+        throw new UnsupportedOperationException("Unable to set an int arguments pointer using a pointer");
+
+    }
+
+    @Override
+    public void setTArguments(Pointer arguments, int length) {
+        throw new UnsupportedOperationException("Unable to set an double arguments pointer using a pointer");
+
+    }
+
+    @Override
+    public void setDArguments(Pointer arguments, int length) {
+        throw new UnsupportedOperationException("Unable to set a data type arguments pointer using a pointer");
+
+    }
+
+    @Override
+    public void setBArguments(Pointer arguments, int length) {
+        throw new UnsupportedOperationException("Unable to set a boolean arguments pointer using a pointer");
+
+    }
+
+    @Override
+    public boolean hasCachedDArgs() {
+        throw new UnsupportedOperationException("Unable to obtain cached d arguments pointer");
+
+    }
+
+    @Override
+    public boolean hasCachedTArgs() {
+        throw new UnsupportedOperationException("Unable to obtain cached double arguments pointer");
+
+    }
+
+    @Override
+    public boolean hasCachedBArgs() {
+        throw new UnsupportedOperationException("Unable to obtain cached boolean arguments pointer");
+
+    }
+
+    @Override
+    public boolean hasCachedIArgs() {
+        throw new UnsupportedOperationException("Unable to obtain cached int arguments pointer");
+
+    }
+
+    @Override
+    public void setDArgAt(int index, DataType value) {
+        throw new UnsupportedOperationException("Unable to set data type at an index");
+    }
+
+    @Override
+    public void setBArgAt(int index, boolean value) {
+        throw new UnsupportedOperationException("Unable to set boolean at an index");
+
+    }
+
+    @Override
+    public void setTArgAt(int index, double value) {
+        throw new UnsupportedOperationException("Unable to set double at an index");
+
+    }
+
+    @Override
+    public void setIArgAt(int index, long value) {
+        throw new UnsupportedOperationException("Unable to set int at an index");
+
+    }
 
     @Override
     public void setIArguments(long... arguments) {
@@ -211,5 +283,25 @@ public abstract class BaseOpContext implements OpContext {
             setTArguments(tArgs);
         if (bArgs != null)
             setBArguments(bArgs);
+    }
+
+    @Override
+    public void transferTArgs() {
+setTArguments();
+    }
+
+    @Override
+    public void transferIArgs() {
+
+    }
+
+    @Override
+    public void transferBArgs() {
+
+    }
+
+    @Override
+    public void transferDArgs() {
+
     }
 }
