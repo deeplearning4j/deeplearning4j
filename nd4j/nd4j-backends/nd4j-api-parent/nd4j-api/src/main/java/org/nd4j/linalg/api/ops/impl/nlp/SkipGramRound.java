@@ -58,7 +58,8 @@ public class SkipGramRound extends DynamicCustomOp {
                          @NonNull INDArray randomValue,
                          INDArray inferenceVector,
                          boolean preciseMode,
-                         int numWorkers) {
+                         int numWorkers,
+                         int iterations) {
         inputArguments.add(target);
         inputArguments.add(ngStarter);
         inputArguments.add(indices);
@@ -76,7 +77,7 @@ public class SkipGramRound extends DynamicCustomOp {
         // couple of options
         iArguments.add((long) numWorkers);
         iArguments.add((long) nsRounds);
-
+        iArguments.add((long) iterations);
         bArguments.add(!inferenceVector.isEmpty());
         bArguments.add(preciseMode);
 

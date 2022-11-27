@@ -65,4 +65,6 @@ public interface SequenceLearningAlgorithm<T extends SequenceElement> {
     ElementsLearningAlgorithm<T> getElementsLearningAlgorithm();
 
     void finish();
+
+    void finish(INDArray inferenceVector);
 }

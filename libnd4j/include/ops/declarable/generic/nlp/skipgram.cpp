@@ -125,7 +125,7 @@ CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
                                       randomValue,
                                       *inferenceVector,
                                       isPreciseMode,
-                                      numWorkers);
+                                      numWorkers,1e-3,1);
 
  delete codes;
  delete indices;
@@ -172,9 +172,12 @@ CONFIGURABLE_OP_IMPL(skipgram, 12, 12, true, 0, 0) {
 
   auto numWorkers = block.numI() > 0 ? INT_ARG(0) : omp_get_max_threads();
   auto nsRounds = block.numI() > 1 ? INT_ARG(1) : 0;
+  auto iterations = block.numI() > 2 ? INT_ARG(2) : 1;
 
   auto isInference = block.numB() > 0 ? B_ARG(0) : false;
   auto isPreciseMode = block.numB() > 1 ? B_ARG(1) : false;
+
+  auto minLearningRate = block.numT() > 0 ? T_ARG(0) : 1e-3;
 
   REQUIRE_TRUE(block.isInplace(), 0, "SkipGram: this operation requires inplace execution only");
 
@@ -183,8 +186,8 @@ CONFIGURABLE_OP_IMPL(skipgram, 12, 12, true, 0, 0) {
   REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0,
                "SkipGram: expTable must have the same data type as syn0 table");
 
-  sd::ops::helpers::skipgram(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *indices,
-                             *codes, *alpha, *randomValue, *inferenceVector, isPreciseMode, numWorkers);
+    sd::ops::helpers::skipgram(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *indices,
+                               *codes, *alpha, *randomValue, *inferenceVector, isPreciseMode, numWorkers,iterations,minLearningRate);
 
   return sd::Status::OK;
 }

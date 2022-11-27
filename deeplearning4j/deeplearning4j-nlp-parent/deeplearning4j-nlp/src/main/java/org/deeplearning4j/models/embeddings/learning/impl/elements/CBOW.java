@@ -128,11 +128,18 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     @Override
     public void finish() {
         if (batches != null && batches.get() != null && !batches.get().isEmpty()) {
-            iterateSample(batches.get());
+            iterateSample(batches.get(),null);
             batches.get().clear();
         }
     }
 
+    @Override
+    public void finish(INDArray inferenceVector) {
+        if (batches != null && batches.get() != null && !batches.get().isEmpty()) {
+            iterateSample(batches.get(),inferenceVector);
+            batches.get().clear();
+        }
+    }
 
 
     @Override
@@ -154,7 +161,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         }
 
         if (getBatch() != null && getBatch().size() >= configuration.getBatchSize()) {
-            iterateSample(getBatch());
+            iterateSample(getBatch(),null);
             getBatch().clear();
         }
 
@@ -170,7 +177,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
 
 
-    public double iterateSample(List<BatchItem<T>> items) {
+    public double iterateSample(List<BatchItem<T>> items,INDArray inferenceVector) {
 
         boolean useHS = configuration.isUseHierarchicSoftmax();
         boolean useNegative = configuration.getNegative() > 0;
@@ -289,7 +296,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                 useHS ? indicesArray : Nd4j.empty(DataType.INT),
                 useHS ? codesArray : Nd4j.empty(DataType.BYTE),
                 (int) negative, alphasArray, Nd4j.createFromArray(randoms),
-                /*inferenceVector != null ? inferenceVector :*/ Nd4j.empty(syn0.get().dataType()),
+                inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()),
                 hasNumLabels ? numLabelsArray : Nd4j.empty(DataType.INT),
                 configuration.isTrainElementsVectors(),
                 workers);
@@ -345,7 +352,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             batches.get().addAll(batch);
 
         if(batches.get().size() >= configuration.getBatchSize()) {
-            score = iterateSample(batches.get());
+            score = iterateSample(batches.get(),null);
             batches.get().clear();
 
         }

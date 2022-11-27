@@ -20,7 +20,9 @@
 
 package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
-import lombok.*;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -34,17 +36,13 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.OpContext;
-import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
-import org.nd4j.linalg.api.ops.impl.nlp.SkipGramInference;
 import org.nd4j.linalg.api.ops.impl.nlp.SkipGramRound;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
@@ -52,7 +50,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected VocabCache<T> vocabCache;
     protected WeightLookupTable<T> lookupTable;
     protected VectorsConfiguration configuration;
-    private ArrayCacheMemoryMgr  arrayCacheMemoryMgr;
     protected int window;
     protected boolean useAdaGrad;
     protected double negative;
@@ -112,7 +109,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         this.vocabCache = vocabCache;
         this.lookupTable = lookupTable;
         this.configuration = configuration;
-        arrayCacheMemoryMgr = new ArrayCacheMemoryMgr();
         if (configuration.getNegative() > 0) {
             if (((InMemoryLookupTable<T>) lookupTable).getSyn1Neg() == null) {
                 log.info("Initializing syn1Neg...");
@@ -207,7 +203,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         }
 
         if (getBatch() != null && getBatch().size() >= configuration.getBatchSize()) {
-            score = iterateSample(getBatch());
+            score = iterateSample(getBatch(),null);
             getBatch().clear();
         }
 
@@ -217,7 +213,15 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     @Override
     public void finish() {
         if (batches != null && batches.get() != null && !batches.get().isEmpty()) {
-            iterateSample(batches.get());
+            iterateSample(batches.get(),null);
+            batches.get().clear();
+        }
+    }
+
+    @Override
+    public void finish(INDArray inferenceVector) {
+        if (batches != null && batches.get() != null && !batches.get().isEmpty()) {
+            iterateSample(batches.get(),inferenceVector);
             batches.get().clear();
         }
     }
@@ -241,7 +245,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
         double score = 0.0;
         int batchSize = configuration.getBatchSize();
-
+        List<BatchItem<T>> batchItems = new ArrayList<>();
         int end = currentWindow * 2 + 1 - b;
         for (int a = b; a < end; a++) {
             if (a != currentWindow) {
@@ -250,41 +254,28 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     T lastWord = sentence.get(c);
                     nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
                     BatchItem<T> batchItem = new BatchItem<>(word,lastWord,nextRandom.get(),alpha);
+                    //iterateSample(Arrays.asList(batchItem),null);
+                    //batchItems.add(batchItem);
                     batchSequences.add(batchItem);
                 }
             }
         }
 
+     /*   if(!batchItems.isEmpty())
+            iterateSample(batchItems,null);
 
-
-
-        return score;
-    }
-
-    private double iterateBatchesIfReady(List<BatchItem<T>> batchSequences) {
-        double score = 0.0;
-        if(batches.get() == null) {
-            batches.set(batchSequences);
-        }
-        else
-            batches.get().addAll(batchSequences);
-
-        if(batches.get().size() >= configuration.getBatchSize()) {
-            score = iterateSample(batches.get());
-            batches.get().clear();
-        }
-
+*/
         return score;
     }
 
 
 
-    public double iterateSample(List<BatchItem<T>> items) {
+
+    public double iterateSample(List<BatchItem<T>> items,INDArray inferenceVector) {
         boolean useHS = configuration.isUseHierarchicSoftmax();
         boolean useNegative = configuration.getNegative() > 0;
-
         double score = 0.0;
-        boolean isInference = false;
+        boolean isInference = inferenceVector != null;
 
         int[] targets = new int[items.size()];
         int[] starters = new int[items.size()];
@@ -304,6 +295,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         for (int cnt = 0; cnt < items.size(); ++cnt) {
             T w1 = items.get(cnt).getWord();
             T lastWord = items.get(cnt).getLastWord();
+
             randomValues[cnt] = items.get(cnt).getRandomValue();
             double alpha = items.get(cnt).getAlpha();
 
@@ -314,8 +306,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 continue;
             }
 
-            int target = lastWord.getIndex();
-            int ngStarter = w1.getIndex();
+            int target = w1.getIndex();
+            int ngStarter = lastWord.getIndex();
 
             targets[cnt] = target;
             starters[cnt] = ngStarter;
@@ -336,16 +328,14 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     idxSyn1[i] = point;
                 }
                 for (int i = 0; i < maxCols; ++i) {
-                    if (i < w1.getCodeLength())
+                    if (i < w1.getCodeLength()) {
                         codes[cnt][i] = interimCodes[i];
-                    else
-                        codes[cnt][i] = -1;
-                }
-                for (int i = 0; i < maxCols; ++i) {
-                    if (i < w1.getCodeLength())
                         indices[cnt][i]  = idxSyn1[i];
-                    else
-                        indices[cnt][i] = -1;
+                    }
+                    else {
+                        codes[cnt][i] = 0;
+                        indices[cnt][i] = 0;
+                    }
                 }
 
             } else {
@@ -385,13 +375,14 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 .codes(useHS ? codesArray : Nd4j.empty(DataType.INT8))
                 .alpha(alphasArray)
                 .randomValue(randomValuesArray)
-                .inferenceVector( Nd4j.empty(syn0.get().dataType()))
+                .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
                 .preciseMode(configuration.isPreciseMode())
                 .numWorkers(workers)
+                .iterations(inferenceVector != null? configuration.getIterations() : 1)
                 .build();
 
-
         Nd4j.getExecutioner().exec(sg);
+
 
         return score;
     }

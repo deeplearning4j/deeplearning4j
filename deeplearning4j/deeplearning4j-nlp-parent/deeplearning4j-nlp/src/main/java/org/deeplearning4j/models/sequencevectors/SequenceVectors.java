@@ -1351,13 +1351,13 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
                                 log.debug("LR before: {}; wordsCounter: {}; totalWordsCount: {}", learningRate.get(), this.wordsCounter.get(), this.totalWordsCount);
 
-
-                                trainSequence(sequence, nextRandom, alpha);
                                 alpha = Math.max(minLearningRate,
                                         learningRate.get() * (1 - (1.0 * this.wordsCounter.get()
                                                 / ((double) this.totalWordsCount) / (numIterations
                                                 * totalEpochs))));
-                                // increment processed word count, please note: this affects learningRate decay
+
+                                trainSequence(sequence, nextRandom, alpha);
+                                      // increment processed word count, please note: this affects learningRate decay
                                 totalLines.incrementAndGet();
                                 this.wordsCounter.addAndGet(sequence.getElements().size());
 
