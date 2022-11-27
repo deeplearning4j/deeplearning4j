@@ -245,7 +245,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
         double score = 0.0;
         int batchSize = configuration.getBatchSize();
-        List<BatchItem<T>> batchItems = new ArrayList<>();
         int end = currentWindow * 2 + 1 - b;
         for (int a = b; a < end; a++) {
             if (a != currentWindow) {
@@ -254,17 +253,12 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     T lastWord = sentence.get(c);
                     nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
                     BatchItem<T> batchItem = new BatchItem<>(word,lastWord,nextRandom.get(),alpha);
-                    //iterateSample(Arrays.asList(batchItem),null);
-                    //batchItems.add(batchItem);
                     batchSequences.add(batchItem);
                 }
             }
         }
 
-     /*   if(!batchItems.isEmpty())
-            iterateSample(batchItems,null);
 
-*/
         return score;
     }
 

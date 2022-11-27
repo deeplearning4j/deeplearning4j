@@ -150,6 +150,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
             }
 
 
+        List<BatchItem<T>> batches = new ArrayList<>();
         BatchItem<T> batch = new BatchItem<>(currentWord,windowWords,statuses,nextRandom.get(),alpha);
 
         for (int a = b; a < end; a++) {
@@ -160,10 +161,21 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
                     intsList.add(lastWord.getIndex());
                     statusesList.add(lastWord.isLocked());
-                    cbow.iterateSample(Arrays.asList(batch),inferenceVector);
+                    if(inferenceVector != null)
+                        cbow.iterateSample(Arrays.asList(batch),inferenceVector);
+                    else
+                        batches.add(batch);
                 }
             }
         }
+
+
+        if(inferenceVector == null) {
+            cbow.getBatch().addAll(batches);
+            if(cbow.getBatch().size() >= configuration.getBatchSize())
+                finish();
+        }
+
 
     }
 

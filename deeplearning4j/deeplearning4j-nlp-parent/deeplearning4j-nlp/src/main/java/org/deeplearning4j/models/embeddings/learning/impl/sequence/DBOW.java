@@ -146,9 +146,17 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
                 BatchItem<T> batchItem = new BatchItem<>(word,lastWord,nextRandom.get(),alpha);
                 batches.add(batchItem);
-                skipGram.iterateSample(Arrays.asList(batchItem),inferenceVector);
+                if(inferenceVector != null)
+                    skipGram.iterateSample(Arrays.asList(batchItem),inferenceVector);
 
             }
+        }
+
+
+        if(inferenceVector == null) {
+            skipGram.getBatch().addAll(batches);
+            if(skipGram.getBatch().size() >= configuration.getBatchSize())
+                finish();
         }
 
     }
