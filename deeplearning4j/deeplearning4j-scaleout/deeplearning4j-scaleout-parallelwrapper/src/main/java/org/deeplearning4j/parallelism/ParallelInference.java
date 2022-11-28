@@ -570,7 +570,7 @@ public class ParallelInference {
                                 for (Pair<INDArray[],INDArray[]> inBatch : batches) {
                                     try {
                                         modelLock.readLock().lock();
-                                        if(layersToOutputTo != null) {
+                                         if(layersToOutputTo != null) {
                                             ComputationGraph computationGraph = (ComputationGraph) replicatedModel;
                                             INDArray[] output = computationGraph.output(Arrays.asList(layersToOutputTo),false,inBatch.getFirst(), inBatch.getSecond());
                                             out.add(output);

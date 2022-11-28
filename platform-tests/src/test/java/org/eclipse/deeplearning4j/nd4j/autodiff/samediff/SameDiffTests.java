@@ -4223,7 +4223,6 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
                 .updater(new Adam(0.1))
                 .dataSetFeatureMapping("features")
                 .dataSetLabelMapping("labels")
-                .lossVariables(Collections.singletonList("loss"))
                 .build();
         sd.setTrainingConfig(config);
 

@@ -956,7 +956,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         final AtomicInteger failedCount = new AtomicInteger(0);
 
         for( int i = 0; i < in.size(); i++) {
-            final int j =i;
+            final int j = i;
             new Thread(() -> {
                 try{
                     INDArray[] inMask = (inMasks == null ? null : inMasks.get(j));

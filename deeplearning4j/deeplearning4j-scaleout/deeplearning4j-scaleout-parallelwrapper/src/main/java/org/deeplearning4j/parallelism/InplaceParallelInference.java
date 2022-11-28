@@ -58,6 +58,8 @@ public class InplaceParallelInference extends ParallelInference {
             val h = ModelHolder.builder()
                     .sourceModel(model)
                     .workers(workers)
+                    .layerIndicesOutputTo(layerIndicesOutputTo)
+                    .layersToOutputTo(layersToOutputTo)
                     .loadBalanceMode(loadBalanceMode)
                     .targetDeviceId(e)
                     .rootDevice(e == Nd4j.getAffinityManager().getDeviceForCurrentThread().intValue())
