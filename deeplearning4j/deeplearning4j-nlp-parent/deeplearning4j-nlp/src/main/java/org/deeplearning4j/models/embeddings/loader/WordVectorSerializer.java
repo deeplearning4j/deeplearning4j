@@ -204,6 +204,7 @@ public class WordVectorSerializer {
                 .learningRate(0.025)
                 .windowSize(5)
                 .workers(1)
+                .vectorCalcThreads(1)
                 .build();
 
         ret.setVocab(cache);

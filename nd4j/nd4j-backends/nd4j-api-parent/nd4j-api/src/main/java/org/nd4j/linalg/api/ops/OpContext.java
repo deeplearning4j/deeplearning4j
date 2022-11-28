@@ -30,6 +30,71 @@ import java.util.List;
 public interface OpContext extends AutoCloseable {
 
     /**
+     * Returns true if the op context
+     * currently contains a valid data type arguments pointer
+     * @return
+     */
+
+    boolean hasCachedDArgs();
+    /**
+     * Returns true if the op context
+     * currently contains a valid double arguments pointer
+     * @return
+     */
+
+    boolean hasCachedTArgs();
+    /**
+     * Returns true if the op context
+     * currently contains a valid boolean arguments pointer
+     * @return
+     */
+
+    boolean hasCachedBArgs();
+    /**
+     * Returns true if the op context
+     * currently contains a valid int arguments pointer
+     * @return
+     */
+
+    boolean hasCachedIArgs();
+
+    /**
+     * This method sets an tArgument at an index
+     * @param index the index to set
+     * @param value the value to set
+     */
+    void setDArgAt(int index,DataType value);
+
+
+    /**
+     * This method sets an bArgument at an index
+     * @param index the index to set
+     * @param value the value to set
+     */
+    void setBArgAt(int index,boolean value);
+
+
+    /**
+     * This method sets an tArgument at an index
+     * @param index the index to set
+     * @param value the value to set
+     */
+    void setTArgAt(int index,double value);
+
+    /**
+     * This method sets an iArgument at an index
+     * @param index the index to set
+     * @param value the value to set
+     */
+    void setIArgAt(int index,long value);
+    /**
+     * This method sets integer arguments required for operation
+     *
+     * @param arguments
+     * @param length
+     */
+    void setIArguments(Pointer arguments, int length);
+    /**
      * This method sets integer arguments required for operation
      * @param arguments
      */
@@ -44,6 +109,15 @@ public interface OpContext extends AutoCloseable {
      * @param arguments
      */
     void setTArguments(double... arguments);
+
+    /**
+     * This method sets floating point arguments required for operation
+     *
+     * @param arguments
+     * @param length
+     */
+    void setTArguments(Pointer arguments, int length);
+
     List<Double> getTArguments();
     int numTArguments();
 
@@ -52,14 +126,37 @@ public interface OpContext extends AutoCloseable {
      * @param arguments
      */
     void setDArguments(DataType... arguments);
+
+
+    /**
+     * This method sets data type arguments required for operation
+     *
+     * @param arguments
+     * @param length
+     */
+    void setDArguments(Pointer arguments, int length);
+
     List<DataType> getDArguments();
     int numDArguments();
+
+
+
+    /**
+     * This method sets data type arguments required for operation
+     *
+     * @param arguments
+     * @param length
+     */
+    void setBArguments(Pointer arguments, int length);
 
     /**
      * This method sets boolean arguments required for operation
      * @param arguments
      */
     void setBArguments(boolean... arguments);
+
+
+
     List<Boolean> getBArguments();
     int numBArguments();
 
@@ -188,4 +285,26 @@ public interface OpContext extends AutoCloseable {
      * @param bArgs
      */
     void setArgs(INDArray[] inputArrs, long[] iArgs, DataType[] dArgs, double[] tArgs, boolean[] bArgs);
+
+    /**
+     * Transfers double arguments in java to
+     * c++
+     */
+    void transferTArgs();
+
+    /**
+     * Transfers int arguments in java to c++
+     */
+    void transferIArgs();
+
+    /**
+     * Transfers boolean arguments in java to c++
+     */
+    void transferBArgs();
+
+    /**
+     * Transfers data type arguments to c++
+     */
+    void transferDArgs();
+
 }

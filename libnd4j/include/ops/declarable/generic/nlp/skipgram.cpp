@@ -35,12 +35,13 @@ CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
  //we do this to avoid serialization overhead from the JVM for frequently created small arrays
   auto numCodes = I_ARG(0);
   auto numIndices = I_ARG(1);
-  //2 for the number of indices/codes 3 for the mandatory args
- auto numMin = numIndices + numCodes + 2 + 3;
+  auto currIteration = I_ARG(2);
+  //2 for the number of indices/codes 1 for the iteration 3 for the mandatory args
+ auto numMin = numIndices + numCodes + 2  + 1 + 3;
    std::vector<sd::LongType> *codes = new std::vector<sd::LongType>();
    std::vector<sd::LongType> *indices = new std::vector<sd::LongType>();
 
-  int currIdx = 2;
+  int currIdx = 3;
   for(int i = 0; i < numCodes; i++) {
     codes->push_back(I_ARG(currIdx));
     currIdx++;
@@ -77,7 +78,7 @@ CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
   auto numWorkers = block.numI() > numMin ? INT_ARG(currIdx++) : omp_get_max_threads();
   auto nsRounds = block.numI() > numMin + 1 ? INT_ARG(currIdx++) : 0;
 
-  auto alpha = T_ARG(0);
+  auto alpha = T_ARG(currIteration);
 
   // required part
 
@@ -124,7 +125,7 @@ CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
                                       randomValue,
                                       *inferenceVector,
                                       isPreciseMode,
-                                      numWorkers);
+                                      numWorkers,1e-3,1);
 
  delete codes;
  delete indices;
@@ -171,9 +172,12 @@ CONFIGURABLE_OP_IMPL(skipgram, 12, 12, true, 0, 0) {
 
   auto numWorkers = block.numI() > 0 ? INT_ARG(0) : omp_get_max_threads();
   auto nsRounds = block.numI() > 1 ? INT_ARG(1) : 0;
+  auto iterations = block.numI() > 2 ? INT_ARG(2) : 1;
 
   auto isInference = block.numB() > 0 ? B_ARG(0) : false;
   auto isPreciseMode = block.numB() > 1 ? B_ARG(1) : false;
+
+  auto minLearningRate = block.numT() > 0 ? T_ARG(0) : 1e-3;
 
   REQUIRE_TRUE(block.isInplace(), 0, "SkipGram: this operation requires inplace execution only");
 
@@ -182,8 +186,8 @@ CONFIGURABLE_OP_IMPL(skipgram, 12, 12, true, 0, 0) {
   REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0,
                "SkipGram: expTable must have the same data type as syn0 table");
 
-  sd::ops::helpers::skipgram(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *indices,
-                             *codes, *alpha, *randomValue, *inferenceVector, isPreciseMode, numWorkers);
+    sd::ops::helpers::skipgram(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *indices,
+                               *codes, *alpha, *randomValue, *inferenceVector, isPreciseMode, numWorkers,iterations,minLearningRate);
 
   return sd::Status::OK;
 }

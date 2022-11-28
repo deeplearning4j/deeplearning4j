@@ -27,6 +27,7 @@ import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -48,9 +49,10 @@ public interface ElementsLearningAlgorithm<T extends SequenceElement> {
      */
     double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate);
 
-    double learnSequence(Sequence<T> sequence, AtomicLong nextRandom, double learningRate, BatchSequences<T> batchSequences);
 
     boolean isEarlyTerminationHit();
 
     void finish();
+
+    void finish(INDArray inferenceVector);
 }

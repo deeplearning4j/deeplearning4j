@@ -87,6 +87,11 @@ public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     @Getter
     @Setter
     protected int workers = 1;
+
+    @Getter
+    @Setter
+    protected int vectorCalcThreads = 1;
+
     @Getter
     @Setter
     protected boolean trainSequenceVectors = false;
