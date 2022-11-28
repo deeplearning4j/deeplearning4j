@@ -154,7 +154,8 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
 
         if(inferenceVector == null) {
-            skipGram.getBatch().addAll(batches);
+            if(skipGram != null)
+                skipGram.getBatch().addAll(batches);
             if(skipGram.getBatch().size() >= configuration.getBatchSize())
                 finish();
         }

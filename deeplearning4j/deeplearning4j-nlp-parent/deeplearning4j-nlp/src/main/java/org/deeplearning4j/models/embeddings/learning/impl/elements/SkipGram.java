@@ -244,7 +244,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             return 0.0;
 
         double score = 0.0;
-        int batchSize = configuration.getBatchSize();
         int end = currentWindow * 2 + 1 - b;
         for (int a = b; a < end; a++) {
             if (a != currentWindow) {
@@ -283,8 +282,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 maxCols = curr;
         }
 
-        byte[][] codes = new byte[items.size()][maxCols];
-        int[][] indices = new int[items.size()][maxCols];
+        INDArray codes = Nd4j.create(DataType.INT8,items.size(),maxCols);
+        INDArray indices = Nd4j.create(DataType.INT32,items.size(),maxCols);
 
         for (int cnt = 0; cnt < items.size(); ++cnt) {
             T w1 = items.get(cnt).getWord();
@@ -310,33 +309,18 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             int[] idxSyn1 = null;
             byte[] interimCodes = null;
             if (useHS) {
-                idxSyn1 = new int[w1.getCodeLength()];
-                interimCodes = new byte[w1.getCodeLength()];
                 for (int i = 0; i < w1.getCodeLength(); i++) {
                     int code = w1.getCodes().get(i);
                     int point = w1.getPoints().get(i);
                     if (point >= vocabCache.numWords() || point < 0)
                         continue;
-
-                    interimCodes[i] = (byte) code;
-                    idxSyn1[i] = point;
-                }
-                for (int i = 0; i < maxCols; ++i) {
                     if (i < w1.getCodeLength()) {
-                        codes[cnt][i] = interimCodes[i];
-                        indices[cnt][i]  = idxSyn1[i];
+                        codes.putScalar(cnt,i,code);
+                        indices.putScalar(cnt,i,point);
                     }
-                    else {
-                        codes[cnt][i] = 0;
-                        indices[cnt][i] = 0;
-                    }
+
                 }
 
-            } else {
-                idxSyn1 = new int[0];
-                interimCodes = new byte[0];
-                codes = new byte[0][0];
-                indices = new int[0][0];
             }
 
             //negative sampling
@@ -353,8 +337,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         INDArray ngStarterArray = Nd4j.createFromArray(starters);
         INDArray alphasArray = Nd4j.createFromArray(alphas);
         INDArray randomValuesArray = Nd4j.createFromArray(randomValues);
-        INDArray indicesArray = Nd4j.createFromArray(indices);
-        INDArray codesArray = Nd4j.createFromArray(codes);
+        INDArray indicesArray = indices;
+        INDArray codesArray = codes;
 
 
         SkipGramRound sg = SkipGramRound.builder()

@@ -441,9 +441,7 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable,
          for (sd::LongType e = 0; e < hsRounds; e++) {
            int currRow = bIndices[e + cShift];
            if (currRow > 0 && currRow < vocabSize) {
-             // sd_printf("Curr row %d\n",currRow);
              signed int code = bCodes[e + cShift];
-             // sd_printf("Code was %d\n",code);
              T *syn1row = (T *) s1.bufferWithOffset(currRow * vectorLength);
              T dot = _dot(syn0row, syn1row, vectorLength);
              hSoftmaxDot_<T>(dot, syn0row, syn1row, expTable, neu1e, alpha, vectorLength, code, expLength, vinfVector != nullptr);

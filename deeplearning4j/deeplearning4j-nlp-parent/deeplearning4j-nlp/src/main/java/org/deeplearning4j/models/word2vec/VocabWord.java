@@ -85,17 +85,7 @@ public class VocabWord extends SequenceElement implements Serializable {
     public String getLabel() {
         return this.word;
     }
-    /*
-    	public void write(DataOutputStream dos) throws IOException {
-    		dos.writeDouble(this.elementFrequency.get());
-    	}
-    
-    	public VocabWord read(DataInputStream dos) throws IOException {
-    		this.elementFrequency.set(dos.readDouble());
-    		return this;
-    	}
-    
-    */
+
 
     public String getWord() {
         return word;
@@ -117,28 +107,12 @@ public class VocabWord extends SequenceElement implements Serializable {
             return vocabWord.word == null;
 
         return this.word.equals(vocabWord.getWord());
-        /*
-        if (codeLength != vocabWord.codeLength) return false;
-        if (index != vocabWord.index) return false;
-        if (!codes.equals(vocabWord.codes)) return false;
-        if (historicalGradient != null ? !historicalGradient.equals(vocabWord.historicalGradient) : vocabWord.historicalGradient != null)
-            return false;
-        if (!points.equals(vocabWord.points)) return false;
-        if (!word.equals(vocabWord.word)) return false;
-        return this.elementFrequency.get() == vocabWord.elementFrequency.get();
-        */
     }
     
 
     @Override
     public int hashCode() {
         final int result = this.word == null ? 0 : this.word.hashCode(); //this.elementFrequency.hashCode();
-        /*result = 31 * result + index;
-        result = 31 * result + codes.hashCode();
-        result = 31 * result + word.hashCode();
-        result = 31 * result + (historicalGradient != null ? historicalGradient.hashCode() : 0);
-        result = 31 * result + points.hashCode();
-        result = 31 * result + codeLength;*/
         return result;
     }
 
