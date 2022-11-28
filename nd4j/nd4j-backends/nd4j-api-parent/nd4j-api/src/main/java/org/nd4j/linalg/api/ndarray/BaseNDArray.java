@@ -1434,9 +1434,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         Nd4j.getCompressor().autoDecompress(this);
         autoProcessScalarCall();
 
-        Preconditions.checkArgument(dataType() != DataType.BOOL || value == 0.0 || value == 1.0, "Cannot put value %s into boolean array" +
-                " - only putScalar with values 0 or 1 is allowed on boolean arrays", value);
-
         if (rank() > 2)
             throw new IllegalStateException("Cannot use putScalar(int,int,double) on a rank " + rank() + " INDArray");
         long offset = Shape.getOffsetUnsafe(jvmShapeInfo.javaShapeInformation, row, col);

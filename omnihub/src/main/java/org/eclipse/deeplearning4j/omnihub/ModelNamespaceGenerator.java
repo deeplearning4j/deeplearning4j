@@ -25,8 +25,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.eclipse.deeplearning4j.omnihub.api.Model;
 import org.eclipse.deeplearning4j.omnihub.api.NamespaceModels;
-import org.eclipse.deeplearning4j.omnihub.frameworks.Dl4jModelsKt;
-import org.eclipse.deeplearning4j.omnihub.frameworks.SameDiffModelsKt;
+
 import org.nd4j.autodiff.samediff.SameDiff;
 
 import javax.lang.model.element.Modifier;
@@ -142,9 +141,7 @@ public class ModelNamespaceGenerator {
 
 
     public static void main(String... args) throws Exception {
-        generateModels(Dl4jModelsKt.Dl4jModels(),new File("./omnihub/src/main/java/"),"Dl4jModels","org.eclipse.deeplearning4j.omnihub.models","");
-        generateModels(SameDiffModelsKt.SameDiffModels(),new File("./omnihub/src/main/java/"),"SameDiffModels","org.eclipse.deeplearning4j.omnihub.models","");
-
+      
     }
 
 

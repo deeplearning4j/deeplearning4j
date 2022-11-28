@@ -30,7 +30,7 @@
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
         <javapoet.version>1.13.0</javapoet.version>
         <picocli.version>4.6.3</picocli.version>
-        <kotlin.version>1.7.20</kotlin.version>
+        <kotlin.version>1.7.21</kotlin.version>
     </properties>
 
     <dependencies>

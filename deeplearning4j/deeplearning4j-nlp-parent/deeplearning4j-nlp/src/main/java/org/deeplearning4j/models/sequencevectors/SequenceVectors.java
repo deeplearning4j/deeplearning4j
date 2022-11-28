@@ -96,7 +96,6 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected boolean enableScavenger = false;
     protected int vocabLimit = 0;
 
-    private BatchSequences<T> batchSequences;
 
 
     @Setter
@@ -333,9 +332,11 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             sequencer.start();
 
             val timer = new AtomicLong(System.currentTimeMillis());
-            val thread = new VectorCalculationsThread(0, currentEpoch, wordsCounter, vocab.totalWordOccurrences(),
-                    linesCounter, sequencer, timer, numEpochs);
-            thread.start();
+            val threads = new ArrayList<VectorCalculationsThread>();
+            for (int x = 0; x < vectorCalcThreads; x++) {
+                threads.add(x, new VectorCalculationsThread(x, currentEpoch, wordsCounter, vocab.totalWordOccurrences(), linesCounter, sequencer, timer, numEpochs));
+                threads.get(x).start();
+            }
 
             try {
                 sequencer.join();
@@ -343,10 +344,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 throw new RuntimeException(e);
             }
 
-            try {
-                thread.join();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+            for (int x = 0; x < vectorCalcThreads; x++) {
+                try {
+                    threads.get(x).join();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
 
             // TODO: fix this to non-exclusive termination
@@ -385,21 +388,19 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             we do NOT train elements separately if sequnceLearningAlgorithm isn't CBOW
             we skip that, because PV-DM includes CBOW
           */
+
         if (trainElementsVectors && !(trainSequenceVectors && sequenceLearningAlgorithm instanceof DM)) {
             // call for ElementsLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             if (!elementsLearningAlgorithm.isEarlyTerminationHit()) {
-                scoreElements.set(elementsLearningAlgorithm.learnSequence(sequence, nextRandom, alpha, batchSequences));
-            }
-            else
                 scoreElements.set(elementsLearningAlgorithm.learnSequence(sequence, nextRandom, alpha));
+            }
         }
-
         if (trainSequenceVectors) {
             // call for SequenceLearningAlgorithm
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             if (!sequenceLearningAlgorithm.isEarlyTerminationHit())
-                scoreSequences.set(sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha, batchSequences));
+                scoreSequences.set(sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha));
         }
     }
 
@@ -432,7 +433,6 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 ", lockFactor=" + lockFactor +
                 ", enableScavenger=" + enableScavenger +
                 ", vocabLimit=" + vocabLimit +
-                ", batchSequences=" + batchSequences +
                 ", eventListeners=" + eventListeners +
                 ", minWordFrequency=" + minWordFrequency +
                 ", lookupTable=" + lookupTable +
@@ -451,6 +451,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 ", resetModel=" + resetModel +
                 ", useAdeGrad=" + useAdeGrad +
                 ", workers=" + workers +
+                ", vectorCalcThreads=" + vectorCalcThreads +
                 ", trainSequenceVectors=" + trainSequenceVectors +
                 ", trainElementsVectors=" + trainElementsVectors +
                 ", seed=" + seed +
@@ -507,6 +508,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected boolean enableScavenger = false;
         protected int vocabLimit;
 
+        protected  int vectorCalcThreads = 1;
+
         /**
          * Experimental field. Switches on precise mode for batch operations.
          */
@@ -543,7 +546,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.variableWindows = configuration.getVariableWindows();
             this.useHierarchicSoftmax = configuration.isUseHierarchicSoftmax();
             this.preciseMode = configuration.isPreciseMode();
-
+            this.vectorCalcThreads = configuration.getVectorCalcThreads();
             String modelUtilsClassName = configuration.getModelUtils();
             if (StringUtils.isNotEmpty(modelUtilsClassName)) {
                 try {
@@ -703,13 +706,30 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
 
         /**
-         * Sets number of worker threads to be used in calculations
+         * Sets number of worker threads to be used in the
+         * lower level linear algebra calculations used in
+         * calculating hierarchical softmax/sampling
          *
          * @param numWorkers
          * @return
          */
         public Builder<T> workers(int numWorkers) {
             this.workers = numWorkers;
+            return this;
+        }
+
+        /**
+         * Sets number of threads running calculations.
+         * Note this is different from workers which affect
+         * the number of threads used to compute updates.
+         * This should be balanced with the number of workers.
+         * High number of threads will actually hinder performance.
+         *
+         * @param vectorCalcThreads the number of threads to compute updates
+         * @return
+         */
+        public Builder<T> vectorCalcThreads(int vectorCalcThreads) {
+            this.vectorCalcThreads = vectorCalcThreads;
             return this;
         }
 
@@ -1316,7 +1336,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                         }
                     }
 
-                    double alpha = 0.025;
+                    double alpha = configuration.getLearningRate();
 
                     if (sequences.isEmpty()) {
                         continue;
@@ -1324,22 +1344,20 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
                     // getting back number of iterations
                     for (int i = 0; i < numIterations; i++) {
-
-                        batchSequences = new BatchSequences<>(configuration.getBatchSize());
                         // we roll over sequences derived from digitizer, it's NOT window loop
                         for (int x = 0; x < sequences.size(); x++) {
                             try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, workspace_id)) {
                                 Sequence<T> sequence = sequences.get(x);
 
                                 log.debug("LR before: {}; wordsCounter: {}; totalWordsCount: {}", learningRate.get(), this.wordsCounter.get(), this.totalWordsCount);
+
                                 alpha = Math.max(minLearningRate,
                                         learningRate.get() * (1 - (1.0 * this.wordsCounter.get()
                                                 / ((double) this.totalWordsCount) / (numIterations
                                                 * totalEpochs))));
 
                                 trainSequence(sequence, nextRandom, alpha);
-
-                                // increment processed word count, please note: this affects learningRate decay
+                                      // increment processed word count, please note: this affects learningRate decay
                                 totalLines.incrementAndGet();
                                 this.wordsCounter.addAndGet(sequence.getElements().size());
 
@@ -1368,33 +1386,6 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             }
                         }
 
-                        if (elementsLearningAlgorithm instanceof SkipGram)
-                            ((SkipGram)elementsLearningAlgorithm).setWorkers(workers);
-                        else if (elementsLearningAlgorithm instanceof CBOW)
-                            ((CBOW)elementsLearningAlgorithm).setWorkers(workers);
-
-                        int batchSize = configuration.getBatchSize();
-                        if (batchSize > 1 && batchSequences != null) {
-                            int rest = batchSequences.size() % batchSize;
-                            int chunks = ((batchSequences.size() >= batchSize) ? batchSequences.size() / batchSize : 0) + ((rest > 0)? 1 : 0);
-                            for (int j = 0; j < chunks; ++j) {
-                                if (trainElementsVectors) {
-                                    if (elementsLearningAlgorithm instanceof SkipGram)
-                                        ((SkipGram) elementsLearningAlgorithm).iterateSample(batchSequences.get(j));
-                                    else if (elementsLearningAlgorithm instanceof CBOW)
-                                        ((CBOW) elementsLearningAlgorithm).iterateSample(batchSequences.get(j));
-                                }
-
-                                if (trainSequenceVectors) {
-                                    if (sequenceLearningAlgorithm instanceof DBOW)
-                                        ((SkipGram<T>) sequenceLearningAlgorithm.getElementsLearningAlgorithm()).iterateSample(batchSequences.get(j));
-                                    else if (sequenceLearningAlgorithm instanceof DM)
-                                        ((CBOW<T>) sequenceLearningAlgorithm.getElementsLearningAlgorithm()).iterateSample(batchSequences.get(j));
-                                }
-                            }
-                            batchSequences.clear();
-                            batchSequences = null;
-                        }
 
                         if (eventListeners != null && !eventListeners.isEmpty()) {
                             for (VectorsListener listener : eventListeners) {
@@ -1403,6 +1394,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             }
                         }
                     }
+
 
 
                 } catch (Exception e) {

@@ -21,9 +21,11 @@
 package org.deeplearning4j.models.embeddings.learning.impl.sequence;
 
 import lombok.NonNull;
+import org.bytedeco.javacpp.DoublePointer;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.BatchItem;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.BatchSequences;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
@@ -36,12 +38,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
+import org.nd4j.linalg.api.ops.impl.nlp.SkipGramInference;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -98,14 +102,8 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
     }
 
     @Override
-    public double learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, double learningRate,
-                                BatchSequences<T> batchSequences) {
-
-        // we just pass data to dbow, and loop over sequence there
-        dbow(0, sequence, (int) nextRandom.get() % window, nextRandom, learningRate, false, null,
-                batchSequences);
-
-
+    public double learnSequence(@NonNull Sequence<T> sequence, @NonNull AtomicLong nextRandom, double learningRate) {
+        dbow( sequence,  nextRandom, learningRate);
         return 0;
     }
 
@@ -120,39 +118,14 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
 
 
-    protected List<CustomOp> getOps(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, boolean isInference,
-                                    INDArray inferenceVector) {
 
 
-        List<T> sentence = skipGram.applySubsampling(sequence, nextRandom).getElements();
-        List<CustomOp> ret = new ArrayList<>();
+    protected void dbow(Sequence<T> sequence, AtomicLong nextRandom, double alpha) {
+        dbow(sequence,nextRandom,alpha,null);
 
-        if (sequence.getSequenceLabel() == null)
-            return null;
-
-        List<T> labels = new ArrayList<>();
-        labels.addAll(sequence.getSequenceLabels());
-
-        if (sentence.isEmpty() || labels.isEmpty())
-            return null;
-
-        for (T lastWord : labels) {
-            for (T word : sentence) {
-                if (word == null)
-                    continue;
-
-                ret.add(skipGram.iterateSampleOp(word, lastWord, nextRandom, alpha, isInference, inferenceVector));
-
-            }
-        }
-
-        return ret;
     }
 
-
-    protected void dbow(int i, Sequence<T> sequence, int b, AtomicLong nextRandom, double alpha, boolean isInference,
-                        INDArray inferenceVector, BatchSequences<T> batchSequences) {
-
+    protected void dbow(Sequence<T> sequence, AtomicLong nextRandom, double alpha,INDArray inferenceVector) {
         List<T> sentence = skipGram.applySubsampling(sequence, nextRandom).getElements();
 
 
@@ -165,24 +138,28 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
         if (sentence.isEmpty() || labels.isEmpty())
             return;
 
-        int batchSize = configuration.getBatchSize();
+        List<BatchItem<T>> batches = new ArrayList<>();
         for (T lastWord : labels) {
             for (T word : sentence) {
                 if (word == null)
                     continue;
 
-                if (batchSize == 1 || batchSequences == null || isInference)
-                    skipGram.iterateSample(word, lastWord, nextRandom, alpha, isInference, inferenceVector);
-                else
-                    batchSequences.put(word, lastWord, nextRandom.get(), alpha);
+                BatchItem<T> batchItem = new BatchItem<>(word,lastWord,nextRandom.get(),alpha);
+                batches.add(batchItem);
+                if(inferenceVector != null)
+                    skipGram.iterateSample(Arrays.asList(batchItem),inferenceVector);
+
             }
         }
 
-        if (skipGram != null && skipGram.getBatch() != null && skipGram.getBatch() != null
-                && skipGram.getBatch().size() >= configuration.getBatchSize()) {
-            Nd4j.getExecutioner().exec(skipGram.getBatch());
-            skipGram.getBatch().clear();
+
+        if(inferenceVector == null) {
+            if(skipGram != null)
+                skipGram.getBatch().addAll(batches);
+            if(skipGram.getBatch().size() >= configuration.getBatchSize())
+                finish();
         }
+
     }
 
     /**
@@ -205,38 +182,11 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
         Random random = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * sequence.hashCode(),
                 lookupTable.layerSize() + 1);
-        INDArray ret = Nd4j.rand(random,new long[] {1, lookupTable.layerSize()}).subi(0.5)
+        INDArray ret = Nd4j.rand(random,new long[] {lookupTable.layerSize()}).subi(0.5)
                 .divi(lookupTable.layerSize());
 
-        OpContext ctx = Nd4j.getExecutioner().buildContext();
-        boolean setCtx = false;
-        List<CustomOp> ops = new ArrayList<>();
-        //build up a vector over iterations?
-        for (int iter = 0; iter < iterations; iter++) {
-            nr.set(Math.abs(nr.get() * 25214903917L + 11));
-            List<CustomOp> ops1 = getOps(0, sequence, (int) nr.get() % window, nr, learningRate, true, ret);
-            if(!setCtx) {
-                ctx.setInputArrays(ops1.get(0).inputArguments());
-                ctx.setOutputArrays(ops1.get(0).outputArguments());
-                ctx.setBArguments(ops1.get(0).bArgs());
-                setCtx = true;
-            }
+        dbow(sequence,nr,learningRate,ret);
 
-            ctx.setTArguments(ops1.get(0).tArgs());
-            for(CustomOp customOp : ops) {
-                ctx.setIArguments(customOp.iArgs());
-                Nd4j.getExecutioner().exec(customOp,ctx);
-            }
-
-            learningRate = ((learningRate - minLearningRate) / (iterations - iter)) + minLearningRate;
-        }
-
-
-
-
-
-
-        finish();
 
         return ret;
     }
@@ -244,8 +194,14 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
     @Override
     public void finish() {
         if (skipGram != null && skipGram.getBatch() != null && !skipGram.getBatch().isEmpty()) {
-            Nd4j.getExecutioner().exec(skipGram.getBatch());
-            skipGram.getBatch().clear();
+            skipGram.finish();
+        }
+    }
+
+    @Override
+    public void finish(INDArray inferenceVector) {
+        if (skipGram != null && skipGram.getBatch() != null && !skipGram.getBatch().isEmpty()) {
+            skipGram.finish(inferenceVector);
         }
     }
 }

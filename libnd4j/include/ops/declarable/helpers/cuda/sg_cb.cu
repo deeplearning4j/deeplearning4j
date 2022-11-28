@@ -342,7 +342,7 @@ BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_,
 
 void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target,
               NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue,
-              NDArray &inferenceVector, const bool preciseMode, const int numWorkers) {
+              NDArray &inferenceVector, const bool preciseMode, const int numWorkers,const int iterations) {
   auto xType = syn0.dataType();
   // single round case
   if ((ngStarter.isScalar() && !ngStarter.isEmpty()) || (target.isScalar() && !target.isEmpty())) {
@@ -372,7 +372,7 @@ void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable,
 
 void skipgramInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, int target,
                        int ngStarter, int nsRounds, NDArray &indices, NDArray &codes, double alpha, sd::LongType randomValue,
-                       NDArray &inferenceVector, const bool preciseMode, const int numWorkers) {
+                       NDArray &inferenceVector, const bool preciseMode, const int numWorkers,double minLearningRate) {
   auto xType = syn0.dataType();
   auto hsRounds = codes.lengthOf();
 

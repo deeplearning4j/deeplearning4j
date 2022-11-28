@@ -157,7 +157,7 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
                               numLabels,
                            *inferenceVector,
                               trainWords,
-                                 numWorkers);
+                                 numWorkers,1,1e-3);
 
   return sd::Status::OK;
 }
@@ -213,7 +213,7 @@ CONFIGURABLE_OP_IMPL(cbow, 15, 15, true, 0, 0) {
 
   sd::ops::helpers::cbow(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *context,
                          *lockedWords, *indices, *codes, *alpha, *randomValue, *numLabels, *inferenceVector, trainWords,
-                         numWorkers);
+                         numWorkers,1e-3,1);
 
   return sd::Status::OK;
 }

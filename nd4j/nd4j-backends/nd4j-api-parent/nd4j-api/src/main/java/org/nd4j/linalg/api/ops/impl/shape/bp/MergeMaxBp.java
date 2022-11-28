@@ -45,8 +45,8 @@ public class MergeMaxBp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
-        List<DataType> list = new ArrayList<DataType>();
-        for (int i=0; i< args().length-1;i++){
+        List<DataType> list = new ArrayList<>();
+        for (int i = 0; i < args().length - 1; i++) {
             list.add(inputDataTypes.get(0));
         }
         return list;
@@ -55,6 +55,6 @@ public class MergeMaxBp extends DynamicCustomOp {
 
     @Override
     public int getNumOutputs(){
-        return args().length-1;
+        return args().length - 1;
     }
 }

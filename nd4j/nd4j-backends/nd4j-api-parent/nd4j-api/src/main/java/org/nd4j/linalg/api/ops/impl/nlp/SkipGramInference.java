@@ -25,6 +25,7 @@ import lombok.NonNull;
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.shade.guava.primitives.Ints;
 
 public class SkipGramInference extends DynamicCustomOp {
 
@@ -45,6 +46,7 @@ public class SkipGramInference extends DynamicCustomOp {
      */
     @Builder
     public SkipGramInference(@NonNull int target,
+                             @NonNull int iteration,
                              @NonNull int ngStarter,
                              @NonNull INDArray syn0,
                              @NonNull INDArray syn1,
@@ -53,8 +55,8 @@ public class SkipGramInference extends DynamicCustomOp {
                              @NonNull INDArray negTable,
                              int nsRounds,
                              @NonNull int[] indices,
-                             @NonNull byte[] codes,
-                             @NonNull double alpha,
+                             @NonNull byte  [] codes,
+                             @NonNull double[] alpha,
                              @NonNull int randomValue,
                              INDArray inferenceVector,
                              boolean preciseMode,
@@ -70,14 +72,18 @@ public class SkipGramInference extends DynamicCustomOp {
 
         iArguments.add((long) codes.length);
         iArguments.add((long) indices.length);
+        iArguments.add((long) iteration);
 
-        for(int i = 0; i < codes.length; i++) {
-            iArguments.add((long) codes[i]);
+        int codeIdx = 0;
+        int indicesIdx = 0;
+        for(int i = 0; i < codes.length + indices.length; i++) {
+            if(i < codes.length)
+                iArguments.add((long) codes[codeIdx++]);
+            else
+                iArguments.add((long) indices[indicesIdx++]);
+
         }
 
-        for(int i = 0; i < indices.length; i++) {
-            iArguments.add((long) indices[i]);
-        }
 
         // couple of options
         iArguments.add((long) target);
@@ -85,8 +91,8 @@ public class SkipGramInference extends DynamicCustomOp {
         iArguments.add((long) randomValue);
         iArguments.add((long) numWorkers);
         iArguments.add((long) nsRounds);
-
-        tArguments.add(alpha);
+        for(double tArg : alpha)
+            tArguments.add(tArg);
 
         bArguments.add(!inferenceVector.isEmpty());
         bArguments.add(preciseMode);
