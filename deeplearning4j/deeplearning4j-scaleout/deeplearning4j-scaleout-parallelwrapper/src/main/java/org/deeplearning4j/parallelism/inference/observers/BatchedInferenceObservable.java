@@ -78,15 +78,13 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
         // this method should pile individual examples into single batch
 
         if (counter.get() > 1) {
-
             int pos = 0;
             List<Pair<INDArray[],INDArray[]>> out = new ArrayList<>();
             int numArrays = inputs.get(0).length;
             while(pos < inputs.size()) {
-
                 //First: determine which we can actually batch...
                 int lastPossible = pos;
-                for (int i = pos+1; i < inputs.size(); i++) {
+                for (int i = pos + 1; i < inputs.size(); i++) {
                     if (canBatch(inputs.get(pos), inputs.get(i))) {
                         lastPossible = i;
                     } else {
@@ -94,17 +92,17 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
                     }
                 }
 
-                int countToMerge = lastPossible-pos+1;
+                int countToMerge = lastPossible - pos + 1;
                 INDArray[][] featuresToMerge = new INDArray[countToMerge][0];
                 INDArray[][] fMasksToMerge = null;
                 int fPos = 0;
-                for( int i=pos; i<=lastPossible; i++ ){
+                for( int i = pos; i <= lastPossible; i++) {
                     featuresToMerge[fPos] = inputs.get(i);
 
                     if(inputMasks.get(i) != null) {
                         if(fMasksToMerge == null){
                             fMasksToMerge = new INDArray[countToMerge][0];
-                            for( int j=0; j<countToMerge; j++ ){
+                            for( int j = 0; j < countToMerge; j++ ){
                                 fMasksToMerge[j] = null;
                             }
                         }
@@ -117,7 +115,7 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
                 out.add(merged);
 
                 outputBatchInputArrays.add(new int[]{pos, lastPossible});
-                pos = lastPossible+1;
+                pos = lastPossible + 1;
             }
             realLocker.writeLock().unlock();
             return out;
@@ -128,7 +126,7 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
         }
     }
 
-    private static boolean canBatch(INDArray[] first, INDArray[] candidate){
+    private static boolean canBatch(INDArray[] first, INDArray[] candidate) {
         //Check if we can batch these inputs into the one array. This isn't always possible - for example, some fully
         // convolutional nets can support different input image sizes
         //For now: let's simply require that the inputs have the same shape
@@ -147,7 +145,7 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
     public void setOutputBatches(List<INDArray[]> output) {
         //this method should split batched output INDArray[] into multiple separate INDArrays
         int countNumInputBatches = 0;   //Counter for total number of input batches processed
-        for( int outBatchNum=0; outBatchNum<output.size(); outBatchNum++ ){ //Iterate over output batch
+        for( int outBatchNum = 0; outBatchNum < output.size(); outBatchNum++) { //Iterate over output batch
             INDArray[] currBatchOutputs = output.get(outBatchNum);
             int[] inputBatchIdxs = outputBatchInputArrays.get(outBatchNum);
             int inputBatchCount = inputBatchIdxs[1] - inputBatchIdxs[0] + 1;
@@ -165,7 +163,7 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
                 for (int inputInBatch = 0; inputInBatch < inputBatchCount; inputInBatch++) {
                     outputs.get(currentInputBatch++)[outputNumber] = split[inputInBatch];
 
-                    if(outputNumber == 0){
+                    if(outputNumber == 0) {
                         countNumInputBatches++;
                     }
                 }
@@ -188,7 +186,7 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
                 indices[i] = NDArrayIndex.all();
             }
             int examplesSoFar = 0;
-            for( int inNum = 0; inNum < numSplits; inNum++ ){
+            for( int inNum = 0; inNum < numSplits; inNum++) {
                 val inSizeEx = inputs.get(firstInputComponent + inNum)[0].size(0);
                 indices[0] = NDArrayIndex.interval(examplesSoFar, examplesSoFar+inSizeEx);
                 out[inNum] = netOutput.get(indices);

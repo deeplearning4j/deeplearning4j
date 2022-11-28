@@ -187,7 +187,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         BasicInferenceObserver observer = new BasicInferenceObserver();
 
         ParallelInference.ObservablesProvider provider =
-                        new ParallelInference.ObservablesProvider(10000000L, 100, queue);
+                new ParallelInference.ObservablesProvider(10000000L, 100, queue);
 
         InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(1, 100));
         InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(1, 100));
@@ -202,7 +202,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         LinkedBlockingQueue queue = new LinkedBlockingQueue();
         BasicInferenceObserver observer = new BasicInferenceObserver();
         ParallelInference.ObservablesProvider provider =
-                        new ParallelInference.ObservablesProvider(10000000L, 100, queue);
+                new ParallelInference.ObservablesProvider(10000000L, 100, queue);
 
         InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(1,100).assign(1.0));
         InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(1,100).assign(2.0));
@@ -263,11 +263,11 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         ParallelInference.ObservablesProvider provider = new ParallelInference.ObservablesProvider(10000000L, 4, queue);
 
         BatchedInferenceObservable observable1 =
-                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(1.0));
+                (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(1.0));
         BatchedInferenceObservable observable2 =
-                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(2.0));
+                (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(2.0));
         BatchedInferenceObservable observable3 =
-                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(3.0));
+                (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(1,100).assign(3.0));
 
         INDArray bigOutput = Nd4j.create(3, 10);
         for (int i = 0; i < bigOutput.rows(); i++)
@@ -321,7 +321,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
     }
 
     protected void evalClassifcationMultipleThreads(@NonNull ParallelInference inf, @NonNull DataSetIterator iterator,
-                    int numThreads) throws Exception {
+                                                    int numThreads) throws Exception {
         DataSet ds = iterator.next();
         log.info("NumColumns: {}", ds.getLabels().columns());
         iterator.reset();
@@ -734,11 +734,11 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         net.init();
 
         val inf = new ParallelInference.Builder(net)
-                        .inferenceMode(InferenceMode.SEQUENTIAL)
-                        .batchLimit(5)
-                        .queueLimit(64)
-                        .workers(4)
-                        .build();
+                .inferenceMode(InferenceMode.SEQUENTIAL)
+                .batchLimit(5)
+                .queueLimit(64)
+                .workers(4)
+                .build();
 
         // imitating use of the original model
         for (int e = 0; e < 10; e++) {
@@ -789,6 +789,57 @@ public class ParallelInferenceTest extends BaseDL4JTest {
 
         inf.shutdown();
     }
+
+
+    @Test()
+    @Timeout(120000)
+    public void testMultiOutputNetLayerTo() throws Exception {
+
+        int nIn = 5;
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).activation(Activation.SOFTMAX).build(), "in")
+                .layer("out1", new OutputLayer.Builder().nIn(nIn).nOut(6).activation(Activation.SOFTMAX).build(), "in")
+                .setOutputs("out0", "out1")
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        Random r = new Random();
+        for( InferenceMode m : InferenceMode.values()) {
+            for( int w : new int[]{1,2}) {
+
+                final ParallelInference inf =
+                        new ParallelInference.Builder(net)
+                                .inferenceMode(m)
+                                .layersToOutputTo(new String[]{"out1"})
+                                .batchLimit(5)
+                                .queueLimit(64)
+                                .workers(w).build();
+
+                List<INDArray[]> in = new ArrayList<>();
+                List<INDArray[]> exp = new ArrayList<>();
+                int runs = isIntegrationTests() ? 100 : 20;
+                for (int i = 0; i < 100; i++) {
+                    int currNumEx = 1 + r.nextInt(3);
+                    INDArray inArr = Nd4j.rand(new int[]{currNumEx, nIn});
+                    in.add(new INDArray[]{inArr});
+
+                    INDArray[] out = net.output(Arrays.asList("out1"),false,new INDArray[]{inArr},null);
+                    exp.add(out);
+                }
+
+                testParallelInferenceMulti(inf, in, null, exp);
+                inf.shutdown();
+            }
+        }
+
+    }
+
+
 
     @Test()
     @Timeout(120000)
@@ -892,18 +943,9 @@ public class ParallelInferenceTest extends BaseDL4JTest {
 
         assertEquals(0, failedCount.get());
         assertEquals(in.size(), counter.get());
-        for( int i=0; i<in.size(); i++ ){
+        for( int i = 0; i < in.size(); i++) {
             INDArray e = exp.get(i);
             INDArray a = act[i];
-
-//            float[] fe = e.dup().data().asFloat();
-//            float[] fa = a.dup().data().asFloat();
-//            System.out.println(Arrays.toString(fe));
-//            System.out.println(Arrays.toString(fa));
-//            assertArrayEquals(fe, fa, 1e-8f);
-//            System.out.println(Arrays.toString(e.shape()) + " vs " + Arrays.toString(a.shape()));
-//            assertArrayEquals(e.shape(), a.shape());
-
             assertEquals(e, a, "Failed at iteration [" + i + "]");
         }
     }
@@ -913,19 +955,17 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         final AtomicInteger counter = new AtomicInteger(0);
         final AtomicInteger failedCount = new AtomicInteger(0);
 
-        for( int i=0; i<in.size(); i++ ){
-            final int j=i;
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try{
-                        INDArray[] inMask = (inMasks == null ? null : inMasks.get(j));
-                        act[j] = inf.output(in.get(j), inMask);
-                        counter.incrementAndGet();
-                    } catch (Exception e){
-                        log.error("",e);
-                        failedCount.incrementAndGet();
-                    }
+        for( int i = 0; i < in.size(); i++) {
+            final int j =i;
+            new Thread(() -> {
+                try{
+                    INDArray[] inMask = (inMasks == null ? null : inMasks.get(j));
+                    act[j] = inf.output(in.get(j), inMask);
+
+                    counter.incrementAndGet();
+                } catch (Exception e){
+                    log.error("",e);
+                    failedCount.incrementAndGet();
                 }
             }).start();
         }
@@ -938,7 +978,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
 
         assertEquals(0, failedCount.get());
         assertEquals(in.size(), counter.get());
-        for( int i=0; i<in.size(); i++ ){
+        for( int i = 0; i < in.size(); i++) {
             INDArray[] e = exp.get(i);
             INDArray[] a = act[i];
 

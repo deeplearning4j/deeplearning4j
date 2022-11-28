@@ -45,6 +45,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 @Slf4j
 public class InplaceParallelInference extends ParallelInference {
     protected List<ModelHolder> holders = new CopyOnWriteArrayList<>();
+    protected String[] layersToOutputTo;
+    protected int[] layerIndicesOutputTo;
+
     protected ModelSelector selector = new ModelSelector();
 
     protected final Object locker = new Object();
@@ -164,6 +167,9 @@ public class InplaceParallelInference extends ParallelInference {
         @lombok.Builder.Default protected List<Model> replicas = new ArrayList<>();
         @lombok.Builder.Default protected boolean rootDevice = true;
         @lombok.Builder.Default protected LoadBalanceMode loadBalanceMode = LoadBalanceMode.ROUND_ROBIN;
+
+        protected String[] layersToOutputTo;
+        protected int[] layerIndicesOutputTo;
         protected int targetDeviceId;
 
         protected final AtomicLong position = new AtomicLong(0);
@@ -224,8 +230,8 @@ public class InplaceParallelInference extends ParallelInference {
 
                 switch (loadBalanceMode) {
                     case FIFO: {
-                            return queue.take();
-                        }
+                        return queue.take();
+                    }
                     case ROUND_ROBIN:
                         return replicas.get((int) (position.getAndIncrement() % replicas.size()));
                     default:
@@ -264,7 +270,11 @@ public class InplaceParallelInference extends ParallelInference {
                     // doing inference
                     INDArray[] output;
                     try{
-                        output = ((ComputationGraph) model).output(false, input, inputMasks);
+                        if(layersToOutputTo != null) {
+                            output = ((ComputationGraph) model).output(Arrays.asList(layersToOutputTo),false,input,inputMasks);
+                        }
+                        else
+                            output = ((ComputationGraph) model).output(false, input, inputMasks);
                     } finally {
                         // releasing model
                         releaseModel(model);
@@ -277,7 +287,14 @@ public class InplaceParallelInference extends ParallelInference {
                     val model = acquireModel();
                     INDArray result;
                     try {
-                        result = ((MultiLayerNetwork) model).output(input[0], false, (inputMasks == null ? null : inputMasks[0]), null);
+                        if(layerIndicesOutputTo != null) {
+                            MultiLayerNetwork multiLayerNetwork = (MultiLayerNetwork) model;
+                            result = multiLayerNetwork.feedForwardToLayer(layerIndicesOutputTo[0],input[0],false).get(0);
+
+                        } else {
+                            result = ((MultiLayerNetwork) model).output(input[0], false, (inputMasks == null ? null : inputMasks[0]), null);
+
+                        }
                     } finally {
                         releaseModel(model);
                     }
