@@ -22,19 +22,14 @@ package org.datavec.image.loader;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import org.bytedeco.javacv.OpenCVFrameConverter;
-import org.bytedeco.leptonica.PIX;
-import org.bytedeco.leptonica.PIXCMAP;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.datavec.image.data.Image;
 import org.datavec.image.data.ImageWritable;
-import org.datavec.image.loader.Java2DNativeImageLoader;
-import org.datavec.image.loader.NativeImageLoader;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -48,11 +43,9 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.Random;
 
-import static org.bytedeco.leptonica.global.lept.*;
 import static org.bytedeco.opencv.global.opencv_core.*;
 import static org.junit.jupiter.api.Assertions.*;
 

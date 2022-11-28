@@ -109,7 +109,6 @@ public class ListenerTest extends BaseNd4jTestWithBackends {
         TrainingConfig conf = new TrainingConfig.Builder()
                 .l2(1e-4)
                 .updater(updater)
-                .lossVariables(Collections.singletonList("loss"))
                 .dataSetFeatureMapping("input")
                 .dataSetLabelMapping("label")
                 .trainEvaluation(predictions, 0, e)
@@ -286,7 +285,7 @@ public class ListenerTest extends BaseNd4jTestWithBackends {
         SDVariable z = sd.nn().linear("z", in, w, b);
         SDVariable out = sd.nn().softmax("out", z, 1);
         SDVariable loss = sd.loss().softmaxCrossEntropy("loss", label, out, null);
-
+        loss.markAsLoss();
         //Create and set the training configuration
         double learningRate = 1e-3;
         TrainingConfig config = new TrainingConfig.Builder()
@@ -294,7 +293,6 @@ public class ListenerTest extends BaseNd4jTestWithBackends {
                 .updater(new Adam(learningRate))        //Adam optimizer with specified learning rate
                 .dataSetFeatureMapping("input")         //DataSet features array should be associated with variable "input"
                 .dataSetLabelMapping("label")
-                .lossVariables(Collections.singletonList("loss"))//DataSet label array should be associated with variable "label
                 .addEvaluations(false,"out",0,new Evaluation())
                 .build();
         sd.setTrainingConfig(config);

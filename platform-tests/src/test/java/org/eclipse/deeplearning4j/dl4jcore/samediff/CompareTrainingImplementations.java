@@ -148,7 +148,6 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                 }
                 TrainingConfig conf = new TrainingConfig.Builder()
                         .updater(updater)
-                        .lossVariables(Collections.singletonList(lossMse.name()))
                         .regularization(r)
                         .dataSetFeatureMapping("input")
                         .dataSetLabelMapping("label")

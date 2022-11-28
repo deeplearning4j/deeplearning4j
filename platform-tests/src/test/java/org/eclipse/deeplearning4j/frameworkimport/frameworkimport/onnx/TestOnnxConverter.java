@@ -66,11 +66,11 @@ public class TestOnnxConverter {
         sameDiff.setEagerMode(false);
 
         SDVariable sdVariable = sameDiff.loss().softmaxCrossEntropy(labels, sameDiff.getVariable("22"),sameDiff.constant(1.0f));
+        sdVariable.markAsLoss();
         TrainingConfig trainingConfig = TrainingConfig.builder()
                 .dataSetFeatureMapping("input.1")
                 .dataSetLabelMapping(labels.name())
                 .updater(new Adam())
-                .lossVariables(Collections.singletonList(sdVariable.name()))
                 .build();
         sameDiff.setTrainingConfig(trainingConfig);
         sameDiff.prepareForTraining();

@@ -294,10 +294,9 @@ public class UIListenerTest extends BaseNd4jTestWithBackends {
         SDVariable mmul = in.mmul(w).add(b);
         SDVariable softmax = sd.nn.softmax("softmax", mmul);
         SDVariable loss = sd.loss().logLoss("loss", label, softmax);
-
+        loss.markAsLoss();
         sd.setTrainingConfig(TrainingConfig.builder()
                 .dataSetFeatureMapping("in")
-                .lossVariables(Collections.singleton(loss.name()))
                 .dataSetLabelMapping("label")
                 .updater(new Adam(1e-1))
                 .weightDecay(1e-3, true)
