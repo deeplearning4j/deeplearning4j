@@ -76,10 +76,9 @@ public class CheckpointListenerTest extends BaseNd4jTestWithBackends {
         SDVariable mmul = in.mmul(w).add(b);
         SDVariable softmax = sd.nn().softmax(mmul);
         SDVariable loss = sd.loss().logLoss("loss", label, softmax);
-
+        loss.markAsLoss();
         sd.setTrainingConfig(TrainingConfig.builder()
                 .dataSetFeatureMapping("in")
-                .lossVariables(Collections.singletonList(loss.name()))
                 .dataSetLabelMapping("label")
                 .updater(new Adam(1e-2))
                 .weightDecay(1e-2, true)

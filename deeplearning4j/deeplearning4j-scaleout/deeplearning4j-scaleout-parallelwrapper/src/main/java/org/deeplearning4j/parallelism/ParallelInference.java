@@ -42,6 +42,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Observer;
 import java.util.concurrent.BlockingQueue;
@@ -68,6 +69,8 @@ public class ParallelInference {
     private InferenceWorker[] zoo;
     private ObservablesProvider provider;
 
+    protected String[] layersToOutputTo;
+    protected int[] layerIndicesOutputTo;
 
 
     public final static int DEFAULT_NUM_WORKERS = Nd4j.getAffinityManager().getNumberOfDevices();
@@ -91,7 +94,7 @@ public class ParallelInference {
             for (val w: zoo)
                 w.updateModel(model);
         } else {
-            // if zoo wasn't initalized yet - just replace model
+            // if zoo wasn't initialized yet - just replace model
             this.model = model;
         }
     }
@@ -127,8 +130,13 @@ public class ParallelInference {
             int cDevice = i % numDevices;
             boolean cRoot = !assignedRoot.get() && cDevice == currentDevice;
             assignedRoot.compareAndSet(false, cRoot);
+            if(layersToOutputTo != null)
+                zoo[i] = new InferenceWorker(layersToOutputTo,i, model, observables, cRoot, cDevice);
+            else if(layerIndicesOutputTo != null)
+                zoo[i] = new InferenceWorker(layerIndicesOutputTo,i, model, observables, cRoot, cDevice);
+            else
+                zoo[i] = new InferenceWorker(i, model, observables, cRoot, cDevice);
 
-            zoo[i] = new InferenceWorker(i, model, observables, cRoot, cDevice);
 
             zoo[i].setDaemon(true);
             zoo[i].start();
@@ -187,7 +195,7 @@ public class ParallelInference {
         return output(input, null);
     }
 
-    public INDArray output(INDArray input, INDArray inputMask){
+    public INDArray output(INDArray input, INDArray inputMask) {
         INDArray[] out = output(new INDArray[]{input}, (inputMask == null ? null : new INDArray[]{inputMask}));
         // basically, depending on model type we either
         // throw stuff to specific model, or wait for batch
@@ -209,7 +217,7 @@ public class ParallelInference {
     }
 
     /**
-     * Generate predictions/output from the netwonk
+     * Generate predictions/output from the network
      *
      * @param input Input to the network
      * @return Output from the network
@@ -233,7 +241,13 @@ public class ParallelInference {
         InferenceObservable observable;
 
         if (inferenceMode == InferenceMode.SEQUENTIAL) {
-            observable = new BasicInferenceObservable(input, inputMasks);
+            if(layersToOutputTo != null)
+                observable = new BasicInferenceObservable(layersToOutputTo,input, inputMasks);
+            else if(layerIndicesOutputTo != null)
+                observable = new BasicInferenceObservable(layerIndicesOutputTo,input, inputMasks);
+            else
+                observable = new BasicInferenceObservable(input, inputMasks);
+
             observable.addObserver(observer);
             try {
                 observables.put(observable);
@@ -289,12 +303,36 @@ public class ParallelInference {
         private int batchLimit = DEFAULT_BATCH_LIMIT;
         private InferenceMode inferenceMode = DEFAULT_INFERENCE_MODE;
         private int queueLimit = DEFAULT_QUEUE_LIMIT;
+        private String[] layersToOutputTo;
+        private int[] layerIndicesOutputTo;
+
         protected LoadBalanceMode loadBalanceMode = LoadBalanceMode.FIFO;
 
         public Builder(@NonNull Model model) {
             this.model = model;
         }
 
+        /**
+         * Optional input for outputting to a subset of layers according to indices.
+         * Used in {@link MultiLayerNetwork}
+         * @param layerIndicesOutputTo the layer indices
+         * @return
+         */
+        public Builder layerIndicesOutputTo(int[] layerIndicesOutputTo) {
+            this.layerIndicesOutputTo = layerIndicesOutputTo;
+            return this;
+        }
+
+        /**
+         * Optional input for outputting to a subset of layers according to indices.
+         * Used in {@link ComputationGraph}
+         * @param layersToOutputTo the layer output names
+         * @return
+         */
+        public Builder layersToOutputTo(String[] layersToOutputTo) {
+            this.layersToOutputTo = layersToOutputTo;
+            return this;
+        }
 
         /**
          * This method allows you to define mode that'll be used during inference. Options are:
@@ -385,9 +423,10 @@ public class ParallelInference {
                 val inf = new InplaceParallelInference();
                 inf.inferenceMode = this.inferenceMode;
                 inf.model = this.model;
+                inf.layersToOutputTo = this.layersToOutputTo;
+                inf.layerIndicesOutputTo = this.layerIndicesOutputTo;
                 inf.workers = this.workers;
                 inf.loadBalanceMode = this.loadBalanceMode;
-
                 inf.init();
 
                 return inf;
@@ -399,7 +438,8 @@ public class ParallelInference {
                 inference.model = this.model;
                 inference.workers = this.workers;
                 inference.loadBalanceMode = this.loadBalanceMode;
-
+                inference.layerIndicesOutputTo = layerIndicesOutputTo;
+                inference.layersToOutputTo = layersToOutputTo;
                 inference.init();
 
                 return inference;
@@ -422,7 +462,28 @@ public class ParallelInference {
         private boolean rootDevice;
         private int deviceId;
 
+        private String[] layersToOutputTo;
+        private int[] layerIndicesOutputTo;
+
         private ReentrantReadWriteLock modelLock = new ReentrantReadWriteLock();
+
+        private InferenceWorker(String[] layersToOutputTo,int id, @NonNull Model model, @NonNull BlockingQueue inputQueue, boolean rootDevice, int deviceId) {
+            this.inputQueue = inputQueue;
+            this.protoModel = model;
+            this.rootDevice = rootDevice;
+            this.deviceId = deviceId;
+            this.layersToOutputTo = layersToOutputTo;
+            this.setDaemon(true);
+            this.setName("InferenceThread-" + id);
+
+        }
+
+
+        private InferenceWorker(int[] layerIndicesOutputTo,int id, @NonNull Model model, @NonNull BlockingQueue inputQueue, boolean rootDevice, int deviceId) {
+            this(id,model,inputQueue,rootDevice,deviceId);
+            this.layerIndicesOutputTo = layerIndicesOutputTo;
+
+        }
 
         private InferenceWorker(int id, @NonNull Model model, @NonNull BlockingQueue inputQueue, boolean rootDevice, int deviceId) {
             this.inputQueue = inputQueue;
@@ -434,7 +495,6 @@ public class ParallelInference {
             this.setName("InferenceThread-" + id);
 
         }
-
         protected long getCounterValue() {
             return counter.get();
         }
@@ -510,9 +570,15 @@ public class ParallelInference {
                                 for (Pair<INDArray[],INDArray[]> inBatch : batches) {
                                     try {
                                         modelLock.readLock().lock();
+                                         if(layersToOutputTo != null) {
+                                            ComputationGraph computationGraph = (ComputationGraph) replicatedModel;
+                                            INDArray[] output = computationGraph.output(Arrays.asList(layersToOutputTo),false,inBatch.getFirst(), inBatch.getSecond());
+                                            out.add(output);
+                                        } else {
+                                            INDArray[] output = ((ComputationGraph) replicatedModel).output(false, inBatch.getFirst(), inBatch.getSecond());
+                                            out.add(output);
+                                        }
 
-                                        INDArray[] output = ((ComputationGraph) replicatedModel).output(false, inBatch.getFirst(), inBatch.getSecond());
-                                        out.add(output);
                                     } finally {
                                         Nd4j.getExecutioner().commit();
                                         modelLock.readLock().unlock();
@@ -532,9 +598,15 @@ public class ParallelInference {
                                     INDArray fm = (inBatch.getSecond() == null ? null : inBatch.getSecond()[0]);
                                     try {
                                         modelLock.readLock().lock();
+                                        if(layerIndicesOutputTo != null) {
+                                            MultiLayerNetwork multiLayerNetwork = (MultiLayerNetwork) replicatedModel;
+                                            List<INDArray> indArrays = multiLayerNetwork.feedForwardToLayer(layerIndicesOutputTo[0], f, false);
+                                            out.add(new INDArray[]{indArrays.get(0)});
+                                        } else {
+                                            INDArray output = ((MultiLayerNetwork) replicatedModel).output(f, false, fm, null);
+                                            out.add(new INDArray[]{output});
+                                        }
 
-                                        INDArray output = ((MultiLayerNetwork) replicatedModel).output(f, false, fm, null);
-                                        out.add(new INDArray[]{output});
                                     } finally {
                                         Nd4j.getExecutioner().commit();
                                         modelLock.readLock().unlock();
@@ -584,11 +656,11 @@ public class ParallelInference {
             this.batchLimit = batchLimit;
         }
 
-        protected InferenceObservable setInput(@NonNull Observer observer, INDArray input){
+        protected InferenceObservable setInput(@NonNull Observer observer, INDArray input) {
             return setInput(observer, new INDArray[]{input}, null);
         }
 
-        protected InferenceObservable setInput(@NonNull Observer observer, INDArray... input){
+        protected InferenceObservable setInput(@NonNull Observer observer, INDArray... input) {
             return setInput(observer, input, null);
         }
 
@@ -596,7 +668,7 @@ public class ParallelInference {
             synchronized (locker) {
                 boolean isNew = false;
                 if (currentObservable == null || currentObservable.getCounter() >= batchLimit
-                                || currentObservable.isLocked()) {
+                        || currentObservable.isLocked()) {
                     isNew = true;
                     currentObservable = new BatchedInferenceObservable();
                 }

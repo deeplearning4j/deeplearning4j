@@ -74,7 +74,7 @@ public class TrainingConfig {
      */
     public TrainingConfig(IUpdater updater, List<Regularization> regularization, String dataSetFeatureMapping, String dataSetLabelMapping) {
         this(updater, regularization, true, Collections.singletonList(dataSetFeatureMapping), Collections.singletonList(dataSetLabelMapping),
-                Collections.<String>emptyList(), Collections.<String>emptyList(), null,DataType.FLOAT);
+                Collections.<String>emptyList(), null,DataType.FLOAT);
     }
 
     /**
@@ -93,7 +93,7 @@ public class TrainingConfig {
      * @param dataSetLabelMaskMapping   May be null. If non-null, the variables that the MultiDataSet label mask arrays should be associated with.
      */
     public TrainingConfig(IUpdater updater, List<Regularization> regularization, boolean minimize, List<String> dataSetFeatureMapping, List<String> dataSetLabelMapping,
-                          List<String> dataSetFeatureMaskMapping, List<String> dataSetLabelMaskMapping, List<String> lossVariables,DataType initialLossDataType) {
+                          List<String> dataSetFeatureMaskMapping, List<String> dataSetLabelMaskMapping, DataType initialLossDataType) {
         this.updater = updater;
         this.regularization = regularization;
         this.minimize = minimize;
@@ -101,15 +101,14 @@ public class TrainingConfig {
         this.dataSetLabelMapping = dataSetLabelMapping;
         this.dataSetFeatureMaskMapping = dataSetFeatureMaskMapping;
         this.dataSetLabelMaskMapping = dataSetLabelMaskMapping;
-        this.lossVariables = lossVariables;
         this.initialLossDataType = initialLossDataType;
     }
 
     protected TrainingConfig(IUpdater updater, List<Regularization> regularization, boolean minimize, List<String> dataSetFeatureMapping, List<String> dataSetLabelMapping,
-            List<String> dataSetFeatureMaskMapping, List<String> dataSetLabelMaskMapping, List<String> lossVariables,
+            List<String> dataSetFeatureMaskMapping, List<String> dataSetLabelMaskMapping,
             Map<String, List<IEvaluation>> trainEvaluations, Map<String, Integer> trainEvaluationLabels,
             Map<String, List<IEvaluation>> validationEvaluations, Map<String, Integer> validationEvaluationLabels,DataType initialLossDataType) {
-        this(updater, regularization, minimize, dataSetFeatureMapping, dataSetLabelMapping, dataSetFeatureMaskMapping, dataSetLabelMaskMapping, lossVariables,initialLossDataType);
+        this(updater, regularization, minimize, dataSetFeatureMapping, dataSetLabelMapping, dataSetFeatureMaskMapping, dataSetLabelMaskMapping,initialLossDataType);
         this.trainEvaluations = trainEvaluations;
         this.trainEvaluationLabels = trainEvaluationLabels;
         this.validationEvaluations = validationEvaluations;
@@ -152,7 +151,6 @@ public class TrainingConfig {
         private List<String> dataSetLabelMapping;
         private List<String> dataSetFeatureMaskMapping;
         private List<String> dataSetLabelMaskMapping;
-        private List<String> lossVariables;
         private boolean skipValidation = false;
         private boolean markLabelsUnused = false;
         private DataType initialLossDataType = DataType.FLOAT;
@@ -187,15 +185,6 @@ public class TrainingConfig {
          */
         public Builder updater(IUpdater updater) {
             this.updater = updater;
-            return this;
-        }
-
-        /**
-         * Sets the loss variables for the training
-         * @param lossVariables L1 regularization coefficient
-         */
-        public Builder lossVariables(Collection<String> lossVariables) {
-            this.lossVariables = new ArrayList<>(lossVariables);
             return this;
         }
 
@@ -400,18 +389,14 @@ public class TrainingConfig {
             return this;
         }
 
-        public Builder skipBuilderValidation(boolean skip){
+        public Builder skipBuilderValidation(boolean skip) {
             this.skipValidation = skip;
             return this;
         }
 
-        public Builder minimize(String... lossVariables) {
-            this.lossVariables = Arrays.asList(lossVariables);
-            return this;
-        }
 
         private void addEvaluations(boolean validation, @NonNull Map<String, List<IEvaluation>> evaluationMap, @NonNull Map<String, Integer> labelMap,
-                @NonNull String variableName, int labelIndex, @NonNull IEvaluation... evaluations){
+                @NonNull String variableName, int labelIndex, @NonNull IEvaluation... evaluations) {
             if(evaluationMap.containsKey(variableName) && labelMap.get(variableName) != labelIndex){
                 String s;
 
@@ -528,7 +513,7 @@ public class TrainingConfig {
             }
 
             return new TrainingConfig(updater, regularization, minimize, dataSetFeatureMapping, dataSetLabelMapping,
-                    dataSetFeatureMaskMapping, dataSetLabelMaskMapping, lossVariables,
+                    dataSetFeatureMaskMapping, dataSetLabelMaskMapping,
                     trainEvaluations, trainEvaluationLabels, validationEvaluations, validationEvaluationLabels,initialLossDataType);
         }
     }

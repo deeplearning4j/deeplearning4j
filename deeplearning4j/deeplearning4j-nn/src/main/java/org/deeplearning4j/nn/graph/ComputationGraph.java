@@ -1874,7 +1874,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     public INDArray[] output(List<String> layers, boolean train, INDArray[] features, INDArray[] featureMasks){
         Preconditions.checkState(layers != null && layers.size() > 0, "Layers must not be null: got later names %s", layers);
         int[] layerNums = new int[layers.size()];
-        for( int i=0; i<layers.size(); i++ ){
+        for( int i = 0; i < layers.size(); i++) {
             String n = layers.get(i);
             Preconditions.checkState(verticesMap.containsKey(n), "Layer with name %s not found in network", n);
             layerNums[i] = verticesMap.get(n).getVertexIndex();

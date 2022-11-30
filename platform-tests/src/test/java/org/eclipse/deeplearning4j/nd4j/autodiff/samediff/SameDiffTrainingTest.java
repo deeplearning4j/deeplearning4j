@@ -105,6 +105,7 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
 
         //And our loss function
         SDVariable mse = sd.loss.meanSquaredError("mse", labels, out, null);
+        mse.markAsLoss();
         //Let's create some mock data for this example:
         Nd4j.getRandom().setSeed(12345);
         INDArray inputArr = Nd4j.rand(minibatch, nIn);
@@ -138,7 +139,6 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
                 .updater(new Sgd(learningRate))
                 .dataSetFeatureMapping("input")
                 .dataSetLabelMapping("labels")
-                .minimize("mse")
                 .minimize(true)
                 .build();
         sd.setTrainingConfig(config);
@@ -473,7 +473,6 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
         sd.createGradFunction();
         val conf = new TrainingConfig.Builder()
                 .updater(updater)
-                .minimize("loss")
                 .dataSetFeatureMapping("x1", "x2", "y")
                 .markLabelsUnused()
                 .build();
@@ -486,7 +485,7 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testTrainingEvalVarNotReqForLoss(){
+    public void testTrainingEvalVarNotReqForLoss() {
         //If a variable is not required for the loss - normally it won't be calculated
         //But we want to make sure it IS calculated here - so we can perform evaluation on it
 

@@ -102,7 +102,6 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTestWithBackends {
             } else {
                 TrainingConfig tc = TrainingConfig.builder()
                         .updater(new Adam(0.01))
-                        .minimize("l1","l2")
                         .dataSetFeatureMapping("ph")
                         .markLabelsUnused()
                         .build();

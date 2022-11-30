@@ -40,13 +40,37 @@ public class BasicInferenceObservable extends Observable implements InferenceObs
     private long id;
     private INDArray[] output;
     protected Exception exception;
+    protected String[] layersToOutputTo;
+    protected int[] layerIndicesOutputTo;
 
+
+    public BasicInferenceObservable(int[] layerIndicesOutputTo,INDArray... inputs) {
+        this(layerIndicesOutputTo,inputs, null);
+    }
+
+    public BasicInferenceObservable(int[] layerIndicesOutputTo,INDArray[] inputs, INDArray[] inputMasks) {
+        super();
+        this.layerIndicesOutputTo = layerIndicesOutputTo;
+        this.input = inputs;
+        this.inputMasks = inputMasks;
+    }
+
+    public BasicInferenceObservable(String[] layersToOutputTo,INDArray... inputs) {
+        this(layersToOutputTo,inputs, null);
+    }
+
+    public BasicInferenceObservable(String[] layersToOutputTo,INDArray[] inputs, INDArray[] inputMasks) {
+        super();
+        this.layersToOutputTo = layersToOutputTo;
+        this.input = inputs;
+        this.inputMasks = inputMasks;
+    }
 
     public BasicInferenceObservable(INDArray... inputs) {
         this(inputs, null);
     }
 
-    public BasicInferenceObservable(INDArray[] inputs, INDArray[] inputMasks){
+    public BasicInferenceObservable(INDArray[] inputs, INDArray[] inputMasks) {
         super();
         this.input = inputs;
         this.inputMasks = inputMasks;
@@ -72,26 +96,26 @@ public class BasicInferenceObservable extends Observable implements InferenceObs
     }
 
     @Override
-    public List<Pair<INDArray[],INDArray[]>> getInputBatches(){
+    public List<Pair<INDArray[],INDArray[]>> getInputBatches() {
         return Collections.singletonList(new Pair<>(input, inputMasks));
     }
 
     @Override
-    public void setOutputException(Exception exception){
+    public void setOutputException(Exception exception) {
         this.exception = exception;
         this.setChanged();
         notifyObservers();
     }
 
     @Override
-    public INDArray[] getOutput(){
+    public INDArray[] getOutput() {
         checkOutputException();
         return output;
     }
 
-    protected void checkOutputException(){
-        if(exception != null){
-            if(exception instanceof RuntimeException){
+    protected void checkOutputException() {
+        if(exception != null) {
+            if(exception instanceof RuntimeException) {
                 throw (RuntimeException)exception;
             } else {
                 throw new RuntimeException("Exception encountered while getting output: " + exception.getMessage(), exception);

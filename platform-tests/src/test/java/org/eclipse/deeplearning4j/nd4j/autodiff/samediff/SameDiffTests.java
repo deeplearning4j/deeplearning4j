@@ -2832,13 +2832,12 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable add = mmul.add(b);
         SDVariable tanh = sd.math().tanh(add);
         SDVariable loss = sd.variance(tanh, true);
-
+        loss.markAsLoss();
         INDArray inArr = Nd4j.rand(DataType.FLOAT, 1, 3);
         in.setArray(inArr);
 
         TrainingConfig c = TrainingConfig.builder()
                 .updater(new Adam(0.1))
-                .lossVariables(Collections.singletonList(loss.name()))
                 .weightDecay(0.01, true)
                 .dataSetFeatureMapping("in")
                 .skipBuilderValidation(true)
@@ -2881,11 +2880,10 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         in.setArray(inArr);
         INDArray inArr2 = Nd4j.rand(DataType.FLOAT, 3, 4);
         in2.setArray(inArr2);
-
+        loss.markAsLoss();
         TrainingConfig c = TrainingConfig.builder()
                 .updater(new Adam(0.1))
                 .weightDecay(0.01, true)
-                .lossVariables(Collections.singletonList(loss.name()))
                 .dataSetFeatureMapping("in", "in2")
                 .skipBuilderValidation(true)
                 .build();
@@ -2921,13 +2919,12 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable add = mmul.add(b);
         SDVariable tanh = sd.math().tanh(add);
         SDVariable loss = sd.variance(tanh, true);
-
+        loss.markAsLoss();
         INDArray inArr = Nd4j.rand(DataType.FLOAT, 1, 3);
         in.setArray(inArr);
 
         TrainingConfig c = TrainingConfig.builder()
                 .updater(new Adam(0.1))
-                .lossVariables(Collections.singletonList(loss.name()))
                 .weightDecay(0.01, true)
                 .dataSetFeatureMapping("in")
                 .skipBuilderValidation(true)
@@ -3313,12 +3310,11 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable v2 = sd.var("y", Nd4j.rand(DataType.FLOAT, 4, 5));
         SDVariable v3 = v1.mmul("oldName", v2);
         SDVariable v4 = v3.std("out", false);
-
+        v4.markAsLoss();
         INDArray out = sd.outputSingle(Collections.singletonMap("x", Nd4j.rand(DataType.FLOAT, 3, 4)), "out");
 
         sd.setTrainingConfig(TrainingConfig.builder()
                 .updater(new Adam(1e-3))
-                .lossVariables(Collections.singletonList(v4.name()))
                 .dataSetFeatureMapping("x")
                 .markLabelsUnused()
                 .build());
@@ -3378,11 +3374,11 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         //Also try training:
         SDVariable sum = sd.math.mergeAdd(new SDVariable[]{ph1, ph2, ph3, ph4});
         SDVariable mean = sum.add(scalar).mean();
+        mean.markAsLoss();
         MultiDataSet mds = new MultiDataSet(new INDArray[]{wrongShape, wrongShape, wrongShape, wrongShape}, null);
 
         sd.setTrainingConfig(TrainingConfig.builder()
                 .dataSetFeatureMapping("ph1", "ph2", "ph3", "ph4")
-                .lossVariables(Collections.singletonList(mean.name()))
                 .markLabelsUnused()
                 .updater(new Adam(1e-3)).build());
 
@@ -4017,7 +4013,6 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
                 new ROCMultiClass(), new ROCBinary(), new EvaluationCalibration()}) {
             TrainingConfig config =  TrainingConfig.builder()
                     .l2(1e-4)
-                    .lossVariables(Collections.singletonList("loss"))
                     .updater(new Adam(0.1))
                     .dataSetFeatureMapping("out").dataSetLabelMapping("label")
                     .trainEvaluation("out", 0, e)
@@ -4228,7 +4223,6 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
                 .updater(new Adam(0.1))
                 .dataSetFeatureMapping("features")
                 .dataSetLabelMapping("labels")
-                .lossVariables(Collections.singletonList("loss"))
                 .build();
         sd.setTrainingConfig(config);
 
