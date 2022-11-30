@@ -74,21 +74,8 @@ You can find the official documentation for Deeplearning4J and the other librari
 We have separate repository with various examples available: https://github.com/eclipse/deeplearning4j-examples
 
 ## Building from source
-It is preferred to use the official pre-compiled releases (see above). But if you want to build from source, first take a look at the prerequisites for building from source here: https://deeplearning4j.konduit.ai/multi-project/how-to-guides/build-from-source.
+It is preferred to use the official pre-compiled releases (see above). But if you want to build from source, first take a look at the prerequisites for building from source here: https://deeplearning4j.konduit.ai/multi-project/how-to-guides/build-from-source. Various instructions for cpu and gpu builds can be found there. Please go to our [forums](https://community.konduit.ai/) for further help.
 
-To build everything, we can use commands like
-```
-./change-cuda-versions.sh x.x
-./change-scala-versions.sh 2.xx
-./change-spark-versions.sh x
-mvn clean install -Dmaven.test.skip -Dlibnd4j.cuda=x.x -Dlibnd4j.compute=xx
-```
-or
-```
-mvn -B -V -U clean install -pl  -Dlibnd4j.platform=linux-x86_64 -Dlibnd4j.chip=cuda -Dlibnd4j.cuda=11.0 -Dlibnd4j.compute=<your GPU CC> -Djavacpp.platform=linux-x86_64 -Dmaven.test.skip=true
-```
-
-An example of GPU "CC" or compute capability is 61 for Titan X Pascal.
 
 ## Running tests
 
