@@ -54,7 +54,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 @Slf4j
 @NoArgsConstructor
 @AllArgsConstructor
-public class DefaultTrainer extends Thread implements Trainer {
+public class DefaultTrainer implements Trainer,Runnable {
 
     protected Model replicatedModel;
 
@@ -72,7 +72,8 @@ public class DefaultTrainer extends Thread implements Trainer {
     protected Exception thrownException;
     @Builder.Default
     protected volatile boolean useMDS = false;
-    @Getter protected String uuid;
+    @Getter
+    protected String uuid;
     @Builder.Default
     protected boolean onRootModel = false;
     @Builder.Default
@@ -469,6 +470,16 @@ public class DefaultTrainer extends Thread implements Trainer {
 
             LockSupport.parkNanos(1000L);
         }
+    }
+
+    @Override
+    public void setUncaughtExceptionHandler(Thread.UncaughtExceptionHandler handler) {
+
+    }
+
+    @Override
+    public void start() {
+
     }
 
 

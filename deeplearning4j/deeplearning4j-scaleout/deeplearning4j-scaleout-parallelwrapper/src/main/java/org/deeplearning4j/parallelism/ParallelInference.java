@@ -22,7 +22,6 @@ package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.ModelAdapter;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -91,7 +90,7 @@ public class ParallelInference {
      */
     public void updateModel(@NonNull Model model) {
         if (zoo != null) {
-            for (val w: zoo)
+            for (var w: zoo)
                 w.updateModel(model);
         } else {
             // if zoo wasn't initialized yet - just replace model
@@ -109,9 +108,9 @@ public class ParallelInference {
         if (zoo == null)
             return new Model[0];
 
-        val models = new Model[zoo.length];
+        var models = new Model[zoo.length];
         int cnt = 0;
-        for (val w:zoo) {
+        for (var w:zoo) {
             models[cnt++] = w.replicatedModel;
         }
 
@@ -420,7 +419,7 @@ public class ParallelInference {
          */
         public ParallelInference build() {
             if (this.inferenceMode == InferenceMode.INPLACE) {
-                val inf = new InplaceParallelInference();
+                var inf = new InplaceParallelInference();
                 inf.inferenceMode = this.inferenceMode;
                 inf.model = this.model;
                 inf.layersToOutputTo = this.layersToOutputTo;

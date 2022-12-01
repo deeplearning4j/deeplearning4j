@@ -21,7 +21,6 @@
 package org.deeplearning4j.parallelism.inference.observers;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.deeplearning4j.parallelism.inference.InferenceObservable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSetUtil;
@@ -187,8 +186,8 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
             }
             int examplesSoFar = 0;
             for( int inNum = 0; inNum < numSplits; inNum++) {
-                val inSizeEx = inputs.get(firstInputComponent + inNum)[0].size(0);
-                indices[0] = NDArrayIndex.interval(examplesSoFar, examplesSoFar+inSizeEx);
+                var inSizeEx = inputs.get(firstInputComponent + inNum)[0].size(0);
+                indices[0] = NDArrayIndex.interval(examplesSoFar, examplesSoFar + inSizeEx);
                 out[inNum] = netOutput.get(indices);
                 examplesSoFar += inSizeEx;
             }
