@@ -57,12 +57,12 @@ public class SymmetricTrainerContext implements TrainerContext {
      */
     @Override
     public Trainer create(String uuid, int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper,
-                    WorkspaceMode mode, int averagingFrequency) {
+                          WorkspaceMode mode, int averagingFrequency) {
 
         SymmetricTrainer trainer = new SymmetricTrainer(model, uuid, threadId, mode, wrapper, useMDS);
-
-        trainer.setName("SymmetricTrainer thread " + threadId);
-        trainer.setDaemon(true);
+        Thread t2 = new Thread(trainer);
+        t2.setName("SymmetricTrainer thread " + threadId);
+        t2.setDaemon(true);
 
         return trainer;
     }

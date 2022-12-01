@@ -61,8 +61,9 @@ public class DefaultTrainerContext implements TrainerContext {
                         .uuid(uuid + "_thread_" + threadId)
                         .averagingFrequency(averagingFrequency).build();
 
-        trainer.setName("DefaultTrainer thread " + threadId);
-        trainer.setDaemon(true);
+        Thread trainer2 = new Thread(trainer);
+        trainer2.setName("DefaultTrainer thread " + threadId);
+        trainer2.setDaemon(true);
 
         return trainer;
     }
