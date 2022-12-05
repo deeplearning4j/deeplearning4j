@@ -262,6 +262,45 @@ void execBroadcastBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *
   }
 }
 
+
+void setGraphContextInputArrays(OpaqueContext* ptr, int numArrays, sd::Pointer * buffer, sd::Pointer * shapeInfo,
+                                sd::Pointer * specialBuffer, sd::Pointer * specialShapeInfo) {
+
+  auto inputBuffers = (void **) buffer;
+  auto inputShapeBuffers = (void **) shapeInfo;
+  for(int i = 0; i < numArrays; i++) {
+    ptr->setInputArray(i,inputBuffers != nullptr && inputBuffers[i] != nullptr ? inputBuffers[i] : nullptr,inputShapeBuffers[i],specialBuffer != nullptr ? specialBuffer[i] : nullptr,specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+  }
+
+}
+void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, void** buffer, sd::Pointer * shapeInfo,
+                                      sd::Pointer * specialBuffer, sd::Pointer * specialShapeInfo) {
+  auto inputBuffers = (void **) buffer;
+  auto inputShapeBuffers = (void **) shapeInfo;
+  for(int i = 0; i < numArrays; i++) {
+    ptr->setOutputArray(i,inputBuffers != nullptr && inputBuffers[i] != nullptr  ? inputBuffers[i] : nullptr,inputShapeBuffers[i],specialBuffer != nullptr ? specialBuffer[i] : nullptr,specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+  }
+
+}
+void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer * shapeInfo,
+                                      sd::Pointer * specialShapeInfo) {
+  auto inputShapeBuffers = (void **) shapeInfo;
+  for(int i = 0; i < numArrays; i++) {
+    setGraphContextInputBuffer(ptr,i,buffer != nullptr  && buffer[i] != nullptr ? buffer[i] : nullptr,inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+  }
+
+}
+void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer* shapeInfo,
+                                               sd::Pointer * specialShapeInfo) {
+  auto inputShapeBuffers = (void **) shapeInfo;
+
+  for(int i = 0; i < numArrays; i++) {
+    setGraphContextOutputBuffer(ptr,i,buffer != nullptr && buffer[i] != nullptr ? buffer[i] : nullptr,inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : specialShapeInfo);
+  }
+
+}
+
+
 /**
  *
  * @param opNum
@@ -2136,7 +2175,6 @@ sd::Status execCustomOpWithScope_(sd::Pointer *extraPointers, sd::graph::GraphSt
     // we should check scope existence in GraphState/Graph
     int scopeId = (int)scopes[e];
     if (!state->hasScope(scopeId)) {
-      // sd_printf("execCustomOpWithScope: referenced scope [%i] doesn't exist\n", scopeId);
       return Logger::logKernelFailureMsg();
     }
     node.pickInput(scopeId, 0);
@@ -2217,7 +2255,7 @@ void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer hX, sd::LongType
     } else if (dstType == ND4J_DOUBLE) {
       // sd::TypeCast::convertGeneric<sd::float8, double>(nullptr, hx, N, hz);
     } else {
-      // sd_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+       sd_debug("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
     }
   } else if (srcType == ND4J_INT8) {
     if (dstType == ND4J_FLOAT8) {
@@ -2369,14 +2407,7 @@ void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer hX, sd::LongType
   }
 }
 
-/*
-void fillUtf8String(sd::Pointer *extraPointers, const char **strings, int numStrings, sd::Pointer buffer) {
-    auto hZ = reinterpret_cast<sd::utf8string**>(buffer);
-    for (int e = 0; e < numStrings; e++) {
-        hZ[e] = reinterpret_cast<sd::utf8string*>(createUtf8String(extraPointers, strings[e]));
-    }
-}
- */
+
 
 sd::Pointer createUtf8String(sd::Pointer *extraPointers, const char *string, int length) {
   auto u = new sd::utf8string(string, length);
@@ -2562,6 +2593,9 @@ void setGraphContextInputArray(sd::graph::Context *ptr, int index, void *buffer,
                                void *specialShapeInfo) {
   ptr->setInputArray(index, buffer, shapeInfo, specialBuffer, specialShapeInfo);
 }
+
+
+
 void setGraphContextOutputArray(sd::graph::Context *ptr, int index, void *buffer, void *shapeInfo, void *specialBuffer,
                                 void *specialShapeInfo) {
   ptr->setOutputArray(index, buffer, shapeInfo, specialBuffer, specialShapeInfo);

@@ -41,7 +41,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -56,6 +55,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected double sampling;
     protected int[] variableWindows;
     protected int vectorLength;
+    private ArrayCacheMemoryMgr arrayCacheMemoryMgr;
     protected int workers = Runtime.getRuntime().availableProcessors();
 
     public int getWorkers() {
@@ -126,7 +126,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                         : syn0.get().dataType()));
         this.table = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getTable());
 
-
+        arrayCacheMemoryMgr = new ArrayCacheMemoryMgr();
 
         this.window = configuration.getWindow();
         this.useAdaGrad = configuration.isUseAdaGrad();
@@ -270,10 +270,10 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         double score = 0.0;
         boolean isInference = inferenceVector != null;
 
-        int[] targets = new int[items.size()];
-        int[] starters = new int[items.size()];
-        double[] alphas = new double[items.size()];
-        long[] randomValues = new long[items.size()];
+        INDArray targetArray = arrayCacheMemoryMgr.allocate(false,DataType.INT32, items.size());
+        INDArray ngStarterArray = arrayCacheMemoryMgr.allocate(false,DataType.INT32,items.size());
+        INDArray alphasArray = arrayCacheMemoryMgr.allocate(false,DataType.DOUBLE,items.size());
+        INDArray randomValuesArr = arrayCacheMemoryMgr.allocate(false, DataType.INT64,items.size());
 
         int maxCols = 1;
         for (int i = 0; i < items.size(); ++i) {
@@ -282,14 +282,14 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 maxCols = curr;
         }
 
-        INDArray codes = Nd4j.create(DataType.INT8,items.size(),maxCols);
-        INDArray indices = Nd4j.create(DataType.INT32,items.size(),maxCols);
+        INDArray codes = arrayCacheMemoryMgr.allocate(false,DataType.INT8,items.size(),maxCols);
+        INDArray indices = arrayCacheMemoryMgr.allocate(false,DataType.INT32,items.size(),maxCols);
 
         for (int cnt = 0; cnt < items.size(); ++cnt) {
             T w1 = items.get(cnt).getWord();
             T lastWord = items.get(cnt).getLastWord();
 
-            randomValues[cnt] = items.get(cnt).getRandomValue();
+            randomValuesArr.putScalar(cnt,items.get(cnt).getRandomValue());
             double alpha = items.get(cnt).getAlpha();
 
             if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && !isInference)
@@ -302,12 +302,11 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             int target = w1.getIndex();
             int ngStarter = lastWord.getIndex();
 
-            targets[cnt] = target;
-            starters[cnt] = ngStarter;
-            alphas[cnt] = alpha;
+            targetArray.putScalar(cnt,target);
+            ngStarterArray.putScalar(cnt,ngStarter);
+            alphasArray.putScalar(cnt,alpha);
 
-            int[] idxSyn1 = null;
-            byte[] interimCodes = null;
+
             if (useHS) {
                 for (int i = 0; i < w1.getCodeLength(); i++) {
                     int code = w1.getCodes().get(i);
@@ -333,10 +332,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         }
 
 
-        INDArray targetArray = Nd4j.createFromArray(targets);
-        INDArray ngStarterArray = Nd4j.createFromArray(starters);
-        INDArray alphasArray = Nd4j.createFromArray(alphas);
-        INDArray randomValuesArray = Nd4j.createFromArray(randomValues);
         INDArray indicesArray = indices;
         INDArray codesArray = codes;
 
@@ -352,7 +347,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 .indices( useHS ? indicesArray : Nd4j.empty(DataType.INT32))
                 .codes(useHS ? codesArray : Nd4j.empty(DataType.INT8))
                 .alpha(alphasArray)
-                .randomValue(randomValuesArray)
+                .randomValue(randomValuesArr)
                 .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
                 .preciseMode(configuration.isPreciseMode())
                 .numWorkers(workers)
@@ -360,7 +355,11 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 .build();
 
         Nd4j.getExecutioner().exec(sg);
-
+        arrayCacheMemoryMgr.release(codesArray);
+        arrayCacheMemoryMgr.release(indicesArray);
+        arrayCacheMemoryMgr.release(targetArray);
+        arrayCacheMemoryMgr.release(randomValuesArr);
+        arrayCacheMemoryMgr.release(alphasArray);
 
         return score;
     }

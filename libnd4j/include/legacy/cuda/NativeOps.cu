@@ -3478,3 +3478,41 @@ int dbLocality(OpaqueDataBuffer *dataBuffer) {
 void setVedaDeviceLibFolder(std::string path){
 
 }
+
+
+void setGraphContextInputArrays(OpaqueContext* ptr, int numArrays, sd::Pointer * buffer, sd::Pointer * shapeInfo,
+                                sd::Pointer * specialBuffer, sd::Pointer * specialShapeInfo) {
+
+  auto inputBuffers = (void **) buffer;
+  auto inputShapeBuffers = (void **) shapeInfo;
+  for(int i = 0; i < numArrays; i++) {
+    ptr->setInputArray(i,inputBuffers != nullptr && inputBuffers[i] != nullptr ? inputBuffers[i] : nullptr,inputShapeBuffers[i],specialBuffer != nullptr ? specialBuffer[i] : nullptr,specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+  }
+
+}
+void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, void** buffer, sd::Pointer * shapeInfo,
+                                 sd::Pointer * specialBuffer, sd::Pointer * specialShapeInfo) {
+  auto inputBuffers = (void **) buffer;
+  auto inputShapeBuffers = (void **) shapeInfo;
+  for(int i = 0; i < numArrays; i++) {
+    ptr->setOutputArray(i,inputBuffers != nullptr && inputBuffers[i] != nullptr  ? inputBuffers[i] : nullptr,inputShapeBuffers[i],specialBuffer != nullptr ? specialBuffer[i] : nullptr,specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+  }
+
+}
+void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer * shapeInfo,
+                                 sd::Pointer * specialShapeInfo) {
+  auto inputShapeBuffers = (void **) shapeInfo;
+  for(int i = 0; i < numArrays; i++) {
+    setGraphContextInputBuffer(ptr,i,buffer != nullptr  && buffer[i] != nullptr ? buffer[i] : nullptr,inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+  }
+
+}
+void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer* shapeInfo,
+                                  sd::Pointer * specialShapeInfo) {
+  auto inputShapeBuffers = (void **) shapeInfo;
+
+  for(int i = 0; i < numArrays; i++) {
+    setGraphContextOutputBuffer(ptr,i,buffer != nullptr && buffer[i] != nullptr ? buffer[i] : nullptr,inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : specialShapeInfo);
+  }
+
+}
