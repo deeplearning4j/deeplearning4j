@@ -427,8 +427,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
             Nd4j.getExecutioner().exec(sg);
 
-
-
         }
 
         return score;
