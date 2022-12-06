@@ -62,8 +62,6 @@ ConstantShapeBuffer& ConstantShapeHelper::bufferForShapeInfo(const ShapeDescript
     auto hPtr =
         std::make_shared<PointerWrapper>(descriptor.toShapeInfo(), std::make_shared<PrimaryPointerDeallocator>());
     ConstantShapeBuffer buffer(hPtr);
-
-    //ShapeDescriptor descriptor1(descriptor);
     _cache[deviceId][descriptor] = buffer;
     return _cache[deviceId][descriptor];
   } else {
@@ -77,7 +75,6 @@ ConstantShapeBuffer& ConstantShapeHelper::bufferForShapeInfo(const sd::LongType*
 }
 
 bool ConstantShapeHelper::checkBufferExistenceForShapeInfo(ShapeDescriptor& descriptor) {
-  bool result;
   int deviceId = 0;
   std::lock_guard<std::mutex> lock(_mutex);
 

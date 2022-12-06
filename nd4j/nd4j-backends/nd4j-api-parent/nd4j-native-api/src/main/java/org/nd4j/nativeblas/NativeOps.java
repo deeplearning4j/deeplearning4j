@@ -24,6 +24,8 @@ import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.annotation.ByPtrPtr;
 import org.bytedeco.javacpp.annotation.Cast;
 
+import java.nio.LongBuffer;
+
 
 public interface NativeOps {
     /**
@@ -1191,6 +1193,9 @@ public interface NativeOps {
      void setGraphContextOutputBuffers(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays,  org.nd4j.nativeblas.OpaqueDataBuffer buffer, PointerPointer shapeInfo,
                                                     PointerPointer specialShapeInfo);
 
+     void setShapeBuffer( LongPointer inputShapeData, int dt, LongPointer bufferToSet,char order);
+     void setShapeBuffer( LongBuffer inputShapeData,  int dt,  LongBuffer bufferToSet,char order);
+     void setShapeBuffer( long[] inputShapeData, int dt, long[] bufferToSet,char order);
 
     void setGraphContextTArguments(OpaqueContext ptr, DoublePointer arguments, int numberOfArguments);
     void setGraphContextIArguments(OpaqueContext ptr, LongPointer arguments, int numberOfArguments);

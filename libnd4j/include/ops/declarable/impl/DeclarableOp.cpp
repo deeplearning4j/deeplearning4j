@@ -900,10 +900,12 @@ sd::Status sd::ops::DeclarableOp::validateNonEmptyInput(Context &block) {
   if (this->getOpDescriptor()->getNumberOfInputs() == -2 || this->getOpDescriptor()->getNumberOfInputs() == 0)
     return sd::Status::OK;
 
-  if (block.width() < 1) {
+  if (block.width() < 1 && !block.isFastPath() && block.fastpath_in().size() < 1) {
     sd_printf("%s: no operands provided for the op", this->getOpName()->c_str());
     return sd::Status::BAD_INPUT;
   }
+
+
 
   int cnt = 0;
   for (auto p : *block.inputs()) {

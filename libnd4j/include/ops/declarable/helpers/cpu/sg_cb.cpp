@@ -29,8 +29,8 @@ namespace sd {
 namespace ops {
 namespace helpers {
 template <typename T>
-void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double alpha, int vectorLength, int code,
-               int expLength, bool isInference) {
+void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, const double alpha, const int vectorLength, const int code,
+               const int expLength, const bool isInference) {
   auto syn0 = reinterpret_cast<T *>(vsyn0);
   auto syn1 = reinterpret_cast<T *>(vsyn1);
   auto expTable = reinterpret_cast<T *>(vexpTable);
@@ -42,6 +42,7 @@ void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double a
 
 
   // dot
+  PRAGMA_OMP_SIMD
   for (int e = 0; e < vectorLength; e++) {
     dot += syn0[e] * syn1[e];
   }
@@ -55,12 +56,14 @@ void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double a
   g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * (T)alpha;
 
   if(!isInference) {
+    PRAGMA_OMP_SIMD
     for (int e = 0; e < vectorLength; e++) {
       syn1[e] = g * syn0[e] + syn1[e];
       neu1e[e] = g * syn1[e] + neu1e[e];
     }
 
   } else {
+    PRAGMA_OMP_SIMD
     for (int e = 0; e < vectorLength; e++) {
       neu1e[e] = g * syn1[e] + neu1e[e];
     }
@@ -70,7 +73,6 @@ void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double a
 template <typename T>
 void hSoftmaxDot_(T dot,void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double alpha, int vectorLength, int code,
                int expLength, bool isInference) {
-  //sd_printf("In hsoftmax with params alpha %f vector length %d code %d expLength %d isInference %d\n",alpha,vectorLength,code,expLength,isInference);
   // gradient
   if (dot < (T)-HS_MAX_EXP || dot >= (T) HS_MAX_EXP) return;
   auto syn0 = reinterpret_cast<T *>(vsyn0);
@@ -166,83 +168,86 @@ void cbow_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vneg
   memset(neu1, 0, vectorLength * sizeof(T));
   memset(neu1e, 0, vectorLength * sizeof(T));
 
-  // building neu1 for current window
+  for(int i = 0; i < iterations; i++) {
+    // building neu1 for current window
 
-  for (int c = 0; c < contextWidth; c++) {
-
-    T *syn0word = syn0 + (context[c] * vectorLength);
-     PRAGMA_OMP_SIMD
-    for (int i = 0; i < vectorLength; i++) {
-      neu1[i] += syn0word[i];
-    }
-  }
-
-  // for inference we add additional inference vector
-  if(infVector != nullptr  && contextWidth > 0) {
-     PRAGMA_OMP_SIMD
-    for (int i = 0; i < vectorLength; i++) {
-      neu1[i] = (infVector[i] + neu1[i]) / (contextWidth + 1);
-    }
-  } else if(infVector == nullptr && contextWidth > 0) {
-     PRAGMA_OMP_SIMD
-    for (int i = 0; i < vectorLength; i++) {
-      neu1[i] = (infVector[i] + neu1[i]) / (contextWidth);
-    }
-  }
-
-  // softmax round
-  if (hsRounds > 0) {
-    for (int i = 0; i < hsRounds; i++) {
-      hSoftmax_<T>(neu1, syn1 + (indices[i] * vectorLength), expTable, neu1e, alpha, vectorLength, codes[i], expLength,
-                   infVector != nullptr);
-    }
-  }
-
-  auto nsStarter = ngStarter;
-  auto irow = nsStarter;
-  if (nsRounds > 0) {
-   
-    for (int r = 0; r < nsRounds + 1; r++) {
-      if (r == 0) {
-        // target is known in advance
-      } else {
-        randomValue = randomValue * (unsigned long long)25214903917 + 11;
-        auto idx = sd::math::sd_abs<sd::LongType>((randomValue >> 16) % negLength);
-        irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
-
-        if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
-        if (irow == nsStarter) continue;
-      }
-
-      nSampling_<T>(neu1, syn1Neg + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0,
-                    expLength, infVector != nullptr);
-    }
-  }
-
-  // if we don't train words - we skip start of idxSyn0
-  int starter = trainWords == 1 ? 0 : contextWidth - numLabels;
-
-  // propagate neu1e -> syn0
-  if (infVector == nullptr) {
-   
-    for (int c = starter; c < contextWidth; c++) {
-      if (lockedWords[c] == 1) continue;
+    for (int c = 0; c < contextWidth; c++) {
 
       T *syn0word = syn0 + (context[c] * vectorLength);
-       PRAGMA_OMP_SIMD
+      PRAGMA_OMP_SIMD
       for (int i = 0; i < vectorLength; i++) {
-        syn0word[i] += neu1e[i];
+        neu1[i] += syn0word[i];
       }
     }
-  } else {
-     PRAGMA_OMP_SIMD
-    for (int i = 0; i < vectorLength; i++) {
-      infVector[i] += neu1e[i];
-    }
-  }
 
-  delete[] neu1;
-  delete[] neu1e;
+    // for inference we add additional inference vector
+    if(infVector != nullptr  && contextWidth > 0) {
+      PRAGMA_OMP_SIMD
+      for (int i = 0; i < vectorLength; i++) {
+        neu1[i] = (infVector[i] + neu1[i]) / (contextWidth + 1);
+      }
+    } else if(infVector == nullptr && contextWidth > 0) {
+      PRAGMA_OMP_SIMD
+      for (int i = 0; i < vectorLength; i++) {
+        neu1[i] = (infVector[i] + neu1[i]) / (contextWidth);
+      }
+    }
+
+    // softmax round
+    if (hsRounds > 0) {
+      for (int i = 0; i < hsRounds; i++) {
+        hSoftmax_<T>(neu1, syn1 + (indices[i] * vectorLength), expTable, neu1e, alpha, vectorLength, codes[i], expLength,
+                     infVector != nullptr);
+      }
+    }
+
+    auto nsStarter = ngStarter;
+    auto irow = nsStarter;
+    if (nsRounds > 0) {
+
+      for (int r = 0; r < nsRounds + 1; r++) {
+        if (r == 0) {
+          // target is known in advance
+        } else {
+          randomValue = randomValue * (unsigned long long)25214903917 + 11;
+          auto idx = sd::math::sd_abs<sd::LongType>((randomValue >> 16) % negLength);
+          irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
+
+          if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
+          if (irow == nsStarter) continue;
+        }
+
+        nSampling_<T>(neu1, syn1Neg + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0,
+                      expLength, infVector != nullptr);
+      }
+    }
+
+    // if we don't train words - we skip start of idxSyn0
+    int starter = trainWords == 1 ? 0 : contextWidth - numLabels;
+
+    // propagate neu1e -> syn0
+    if (infVector == nullptr) {
+
+      for (int c = starter; c < contextWidth; c++) {
+        if (lockedWords[c] == 1) continue;
+
+        T *syn0word = syn0 + (context[c] * vectorLength);
+        PRAGMA_OMP_SIMD
+        for (int i = 0; i < vectorLength; i++) {
+          syn0word[i] += neu1e[i];
+        }
+      }
+    } else {
+      PRAGMA_OMP_SIMD
+      for (int i = 0; i < vectorLength; i++) {
+        infVector[i] += neu1e[i];
+      }
+    }
+
+    delete[] neu1;
+    delete[] neu1e;
+
+  }
 }
 BUILD_SINGLE_TEMPLATE(template void cbow_,
                       (void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector,
@@ -271,6 +276,8 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
   for(int i = 0; i < iterations; i++) {
     // hierarchic softmax goes first (if enabled)
     auto syn0row = infVector != nullptr ? infVector : syn0 + (target * vectorLength);
+    alpha = ((alpha - minLearningRate) / (iterations - i)) + minLearningRate;
+
     auto irow = 0;
     if (hsRounds > 0) {
 
@@ -316,7 +323,6 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
       }
 
     }
-
 
   }
 

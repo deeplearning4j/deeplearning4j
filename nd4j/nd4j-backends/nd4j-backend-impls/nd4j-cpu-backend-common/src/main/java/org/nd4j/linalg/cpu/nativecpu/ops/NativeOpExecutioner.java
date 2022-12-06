@@ -1796,15 +1796,26 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
-        val dbf = loop.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, empty);
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
+        DataBuffer ret = Nd4j.createBuffer(DataType.INT64,Shape.shapeInfoLength(shape.length),true);
+        long[] merged = new long[shape.length * 2 + 1];
+        merged[0] = shape.length;
+        int shapeIdx = 0;
+        int strideIdx = 0;
+        for(int i = 1; i < shape.length * 2 + 1; i++) {
+            if(shapeIdx < shape.length) {
+                merged[i] = shape[shapeIdx];
+                shapeIdx++;
+            } else {
+                merged[i] = stride[strideIdx];
+                strideIdx++;
+            }
+        }
 
-        val result = new LongBuffer(loop.getConstantShapeBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
 
-        loop.deleteConstantShapeBuffer(dbf);
 
-        return result;
+        LongPointer longPointer = new LongPointer(merged);
+        loop.setShapeBuffer(new LongPointer(longPointer),dtype.toInt(),new LongPointer(ret.pointer()),order);
+        return ret;
     }
 
     @Override

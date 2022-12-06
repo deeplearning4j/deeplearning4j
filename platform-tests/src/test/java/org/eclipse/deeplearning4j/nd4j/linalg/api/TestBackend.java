@@ -19,16 +19,17 @@
  */
 package org.eclipse.deeplearning4j.nd4j.linalg.api;
 
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.tests.tags.NativeTag;
-import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 @NativeTag
 public class TestBackend extends BaseNd4jTestWithBackends {
 
@@ -38,4 +39,14 @@ public class TestBackend extends BaseNd4jTestWithBackends {
     public void testBuildInfo(Nd4jBackend backend) {
         System.out.println("Backend build info: " +  backend.buildInfo());
     }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSetShape() {
+        INDArray arr = Nd4j.create(1,2);
+        assertArrayEquals(new long[]{1,2},arr.shape());
+        System.out.println(arr);
+
+    }
+
 }

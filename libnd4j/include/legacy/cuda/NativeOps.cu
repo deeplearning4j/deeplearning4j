@@ -3480,6 +3480,32 @@ void setVedaDeviceLibFolder(std::string path){
 }
 
 
+void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order) {
+  sd::LongType  rank = inputShapeData[0];
+  std::vector<sd::LongType> shape;
+  std::vector<sd::LongType> strides;
+  //shape, stride, data type
+  for(sd::LongType i = 1; i < rank * 2 + 1; i++) {
+    if(i <= rank) {
+      shape.push_back(inputShapeData[i]);
+    } else if(shape.size() == rank) {
+      strides.push_back(inputShapeData[i]);
+    }
+  }
+
+
+
+  auto buffer = ShapeDescriptor(dt ,order,shape,strides).toShapeInfo();
+  auto len = shape::shapeInfoLength(rank);
+  for(sd::LongType i = 0; i < len; i++) {
+    bufferToSet[i] = buffer[i];
+  }
+
+  delete[] buffer;
+}
+
+
+
 void setGraphContextInputArrays(OpaqueContext* ptr, int numArrays, sd::Pointer * buffer, sd::Pointer * shapeInfo,
                                 sd::Pointer * specialBuffer, sd::Pointer * specialShapeInfo) {
 

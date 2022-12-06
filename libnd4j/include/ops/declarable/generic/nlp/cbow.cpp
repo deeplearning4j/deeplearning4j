@@ -110,11 +110,12 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
   auto ngStarter = I_ARG(currIdx++);
   auto numLabels = I_ARG(currIdx++);
   auto randomValue = I_ARG(currIdx++);
-  auto numWorkers = block.numI() > 0 ? INT_ARG(3) : omp_get_max_threads();
-  auto nsRounds = block.numI() > 1 ? INT_ARG(4) : 0;
+  auto iterations = I_ARG(currIdx++);
+  auto numWorkers = block.numI() > 0 ? INT_ARG(4) : omp_get_max_threads();
+  auto nsRounds = block.numI() > 1 ? INT_ARG(5) : 0;
 
   auto alpha = T_ARG(0);
-
+   auto minLearningRate = block.numT() > 1 ? T_ARG(1) : 1e-3;
 
 
 
@@ -157,7 +158,7 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
                               numLabels,
                            *inferenceVector,
                               trainWords,
-                                 numWorkers,1,1e-3);
+                                 numWorkers,iterations,minLearningRate);
 
   return sd::Status::OK;
 }
