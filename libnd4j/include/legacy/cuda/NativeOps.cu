@@ -3478,3 +3478,67 @@ int dbLocality(OpaqueDataBuffer *dataBuffer) {
 void setVedaDeviceLibFolder(std::string path){
 
 }
+
+
+void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order) {
+  sd::LongType  rank = inputShapeData[0];
+  std::vector<sd::LongType> shape;
+  std::vector<sd::LongType> strides;
+  //shape, stride, data type
+  for(sd::LongType i = 1; i < rank * 2 + 1; i++) {
+    if(i <= rank) {
+      shape.push_back(inputShapeData[i]);
+    } else if(shape.size() == rank) {
+      strides.push_back(inputShapeData[i]);
+    }
+  }
+
+
+
+  auto buffer = ShapeDescriptor(dt ,order,shape,strides).toShapeInfo();
+  auto len = shape::shapeInfoLength(rank);
+  for(sd::LongType i = 0; i < len; i++) {
+    bufferToSet[i] = buffer[i];
+  }
+
+  delete[] buffer;
+}
+
+
+
+void setGraphContextInputArrays(OpaqueContext* ptr, int numArrays, sd::Pointer * buffer, sd::Pointer * shapeInfo,
+                                sd::Pointer * specialBuffer, sd::Pointer * specialShapeInfo) {
+
+  auto inputBuffers = (void **) buffer;
+  auto inputShapeBuffers = (void **) shapeInfo;
+  for(int i = 0; i < numArrays; i++) {
+    ptr->setInputArray(i,inputBuffers != nullptr && inputBuffers[i] != nullptr ? inputBuffers[i] : nullptr,inputShapeBuffers[i],specialBuffer != nullptr ? specialBuffer[i] : nullptr,specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+  }
+
+}
+void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, void** buffer, sd::Pointer * shapeInfo,
+                                 sd::Pointer * specialBuffer, sd::Pointer * specialShapeInfo) {
+  auto inputBuffers = (void **) buffer;
+  auto inputShapeBuffers = (void **) shapeInfo;
+  for(int i = 0; i < numArrays; i++) {
+    ptr->setOutputArray(i,inputBuffers != nullptr && inputBuffers[i] != nullptr  ? inputBuffers[i] : nullptr,inputShapeBuffers[i],specialBuffer != nullptr ? specialBuffer[i] : nullptr,specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+  }
+
+}
+void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer * shapeInfo,
+                                 sd::Pointer * specialShapeInfo) {
+  auto inputShapeBuffers = (void **) shapeInfo;
+  for(int i = 0; i < numArrays; i++) {
+    setGraphContextInputBuffer(ptr,i,buffer != nullptr  && buffer[i] != nullptr ? buffer[i] : nullptr,inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+  }
+
+}
+void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer* shapeInfo,
+                                  sd::Pointer * specialShapeInfo) {
+  auto inputShapeBuffers = (void **) shapeInfo;
+
+  for(int i = 0; i < numArrays; i++) {
+    setGraphContextOutputBuffer(ptr,i,buffer != nullptr && buffer[i] != nullptr ? buffer[i] : nullptr,inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : specialShapeInfo);
+  }
+
+}

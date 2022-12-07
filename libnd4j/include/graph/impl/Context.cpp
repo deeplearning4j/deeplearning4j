@@ -135,30 +135,11 @@ sd::random::RandomBuffer *Context::getRNG() { return _rng; }
 
 void Context::setRNG(sd::random::RandomBuffer *rng) { _rng = rng; }
 
-/**
- * This method returns variableSpace used in this block
- * @return
- */
-/*
-    VariableSpace* Context::getVariableSpace() {
-        return _variableSpace;
-    }
-*/
 
 Stash *Context::getStash() { return _variableSpace->getStash(); }
 
 void Context::trackList(NDArrayList *list) { _variableSpace->trackList(list); }
 
-/*
-        void Block::updateVariables() {
-            _variables.clear();
-            auto x = _inputs.size();
-            for (auto &v:_inputs) {
-                auto var = _variableSpace->getVariable(v);
-                _variables.emplace_back(var);
-            }
-        }
-*/
 int Context::getBranch() { return _variableSpace->flowPath()->branch(this->nodeId()); }
 
 void Context::setBranch(int branch) {
@@ -354,14 +335,13 @@ void Context::setInputArray(int index, NDArray *array, bool removable) {
 }
 
 void Context::setInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
-  this->setInputArray(index, buffer, const_cast<const void *>(shapeInfo), specialBuffer,
+     this->setInputArray(index, buffer, const_cast<const void *>(shapeInfo), specialBuffer,
                       const_cast<const void *>(specialShapeInfo));
 }
 
 void Context::setInputArray(int index, void *buffer, void const *shapeInfo, void *specialBuffer,
                             void const *specialShapeInfo) {
   auto array = new NDArray(buffer, specialBuffer, reinterpret_cast<sd::LongType const *>(shapeInfo));
-
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
 
   _fastpath_in[index] = array;
@@ -369,6 +349,9 @@ void Context::setInputArray(int index, void *buffer, void const *shapeInfo, void
 
   if (_context != nullptr) array->setContext(_context);
 }
+
+
+
 
 void Context::setOutputArray(int index, NDArray *array, bool removable) {
   if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);
@@ -512,5 +495,52 @@ void Context::clearFastPath() {
 
   _handles.clear();
 }
+
+void Context::setInputArrays(int numArrays,NDArray** array, bool removable) {
+  for(int i = 0; i < numArrays; i++) {
+    setInputArray(i,array[i],removable);
+  }
+}
+void Context::setInputArrays(int numArrays,void** buffer, void const** shapeInfo, void** specialBuffer, void const** specialShapeInfo) {
+  for(int i = 0; i < numArrays; i++) {
+    setInputArray(i,buffer[i],shapeInfo[i],specialBuffer[i],specialShapeInfo[i]);
+  }
+}
+void Context::setInputArrays(int numArrays,void** buffer, void** shapeInfo, void** specialBuffer, void** specialShapeInfo) {
+for(int i = 0; i < numArrays; i++) {
+  setInputArray(i,buffer[i],shapeInfo[i],specialBuffer[i],specialBuffer[i]);
+}
+
+}
+void Context::setInputArrays(int numArrays,void** databuffer, void const** shapeInfo, void const** specialShapeInfo) {
+for(int i = 0; i < numArrays; i++) {
+  setInputArray(i,databuffer[i],shapeInfo[i],specialShapeInfo[i]);
+}
+}
+
+void Context::setOutputArrays(int numArrays,NDArray** array, bool removable) {
+  for(int i = 0; i < numArrays; i++) {
+    setOutputArray(i,array[i],removable);
+  }
+}
+void Context::setOutputArrays(int numArrays,void** buffer, const void** shapeInfo, void** specialBuffer,
+                     const void** specialShapeInfo) {
+  for(int i = 0; i < numArrays; i++) {
+    setOutputArray(i,buffer[i],shapeInfo[i],specialBuffer[i],specialShapeInfo[i]);
+  }
+
+}
+void Context::setOutputArrays(int numArrays,void** buffer, void** shapeInfo, void** specialBuffer, void** specialShapeInfo) {
+  for(int i = 0; i < numArrays; i++) {
+    setOutputArray(i,buffer[i],shapeInfo[i],specialBuffer[i],specialShapeInfo[i]);
+  }
+}
+
+void Context::setOutputArrays(int numArrays,void** databuffer, void const** shapeInfo, void const** specialShapeInfo) {
+  for(int i = 0; i < numArrays; i++) {
+    setOutputArray(i,databuffer[i],shapeInfo[i],specialShapeInfo[i]);
+  }
+}
+
 }  // namespace graph
 }  // namespace sd

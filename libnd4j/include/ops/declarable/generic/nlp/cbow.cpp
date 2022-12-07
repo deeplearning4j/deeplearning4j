@@ -110,11 +110,12 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
   auto ngStarter = I_ARG(currIdx++);
   auto numLabels = I_ARG(currIdx++);
   auto randomValue = I_ARG(currIdx++);
-  auto numWorkers = block.numI() > 0 ? INT_ARG(3) : omp_get_max_threads();
-  auto nsRounds = block.numI() > 1 ? INT_ARG(4) : 0;
+  auto iterations = I_ARG(currIdx++);
+  auto numWorkers = block.numI() > 0 ? INT_ARG(4) : omp_get_max_threads();
+  auto nsRounds = block.numI() > 1 ? INT_ARG(5) : 0;
 
   auto alpha = T_ARG(0);
-
+   auto minLearningRate = block.numT() > 1 ? T_ARG(1) : 1e-3;
 
 
 
@@ -157,7 +158,7 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
                               numLabels,
                            *inferenceVector,
                               trainWords,
-                                 numWorkers,1,1e-3);
+                                 numWorkers,iterations,minLearningRate);
 
   return sd::Status::OK;
 }
@@ -200,9 +201,12 @@ CONFIGURABLE_OP_IMPL(cbow, 15, 15, true, 0, 0) {
 
   auto numWorkers = block.numI() > 0 ? INT_ARG(0) : omp_get_max_threads();
   auto nsRounds = block.numI() > 1 ? INT_ARG(1) : 0;
+  auto iterations = block.numI() > 2 ? INT_ARG(2) : 1;
 
   auto trainWords = block.numB() > 0 ? B_ARG(0) : true;
   auto isInference = block.numB() > 1 ? B_ARG(1) : false;
+
+  auto minLearningRate = block.numT() > 0 ? T_ARG(0) : 1e-3;
 
   REQUIRE_TRUE(block.isInplace(), 0, "CBOW: this operation requires inplace execution only");
 
@@ -213,7 +217,7 @@ CONFIGURABLE_OP_IMPL(cbow, 15, 15, true, 0, 0) {
 
   sd::ops::helpers::cbow(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *context,
                          *lockedWords, *indices, *codes, *alpha, *randomValue, *numLabels, *inferenceVector, trainWords,
-                         numWorkers,1e-3,1);
+                         numWorkers,minLearningRate,iterations);
 
   return sd::Status::OK;
 }

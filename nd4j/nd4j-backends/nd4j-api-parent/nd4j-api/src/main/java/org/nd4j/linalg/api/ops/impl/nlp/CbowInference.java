@@ -61,7 +61,8 @@ public class CbowInference extends DynamicCustomOp {
                          INDArray inferenceVector,
                          boolean preciseMode,
                          int numWorkers,
-                         int numLabels) {
+                         int numLabels,
+                         int iterations) {
 
         inputArguments.add(syn0);
         inputArguments.add(syn1);
@@ -75,7 +76,7 @@ public class CbowInference extends DynamicCustomOp {
         iArguments.add((long) indices.length);
         iArguments.add((long) context.length);
         iArguments.add((long) lockedWords.length);
-
+        iArguments.add((long) iterations);
         for(int i = 0; i < codes.length; i++) {
             iArguments.add((long) codes[i]);
         }

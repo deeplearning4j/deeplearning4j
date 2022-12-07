@@ -1478,6 +1478,9 @@ SD_LIB_EXPORT void ctxPurge(OpaqueContext* ptr);
 SD_LIB_EXPORT void markGraphContextInplace(OpaqueContext* ptr, bool reallyInplace);
 SD_LIB_EXPORT void setGraphContextCudaContext(OpaqueContext* ptr, void* stream, void* reductionPointer,
                                               void* allocationPointer);
+
+
+
 SD_LIB_EXPORT void setGraphContextInputArray(OpaqueContext* ptr, int index, void* buffer, void* shapeInfo,
                                              void* specialBuffer, void* specialShapeInfo);
 SD_LIB_EXPORT void setGraphContextOutputArray(OpaqueContext* ptr, int index, void* buffer, void* shapeInfo,
@@ -1486,6 +1489,18 @@ SD_LIB_EXPORT void setGraphContextInputBuffer(OpaqueContext* ptr, int index, Opa
                                               void* specialShapeInfo);
 SD_LIB_EXPORT void setGraphContextOutputBuffer(OpaqueContext* ptr, int index, OpaqueDataBuffer* buffer, void* shapeInfo,
                                                void* specialShapeInfo);
+
+SD_LIB_EXPORT void setGraphContextInputArrays(OpaqueContext* ptr, int numArrays, sd::Pointer * buffer, sd::Pointer * shapeInfo,
+                                              sd::Pointer * specialBuffer, sd::Pointer * specialShapeInfo);
+SD_LIB_EXPORT void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, sd::Pointer * buffer, sd::Pointer * shapeInfo,
+                                               sd::Pointer * specialBuffer, sd::Pointer * specialShapeInfo);
+SD_LIB_EXPORT void setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer * shapeInfo,
+                                               sd::Pointer * specialShapeInfo);
+SD_LIB_EXPORT void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer * shapeInfo,
+                                                sd::Pointer * specialShapeInfo);
+
+SD_LIB_EXPORT void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order = 'c');
+
 SD_LIB_EXPORT void setGraphContextDArguments(OpaqueContext* ptr, int* arguments, int numberOfArguments);
 SD_LIB_EXPORT void setGraphContextTArguments(OpaqueContext* ptr, double* arguments, int numberOfArguments);
 SD_LIB_EXPORT void setGraphContextIArguments(OpaqueContext* ptr, sd::LongType* arguments, int numberOfArguments);

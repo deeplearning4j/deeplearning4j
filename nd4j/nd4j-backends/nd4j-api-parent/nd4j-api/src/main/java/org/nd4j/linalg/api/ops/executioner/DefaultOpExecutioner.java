@@ -79,7 +79,8 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
         //transferring input/output arrays
         context.setInputArrays(op.inputArguments());
-        context.setOutputArrays(op.outputArguments());
+        if(!op.isInplaceCall())
+            context.setOutputArrays(op.outputArguments());
 
         // transferring static args
         context.setBArguments(op.bArgs());

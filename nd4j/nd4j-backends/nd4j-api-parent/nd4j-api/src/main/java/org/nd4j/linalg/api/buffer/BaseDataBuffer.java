@@ -66,7 +66,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected long underlyingLength;
     protected long offset;
     protected byte elementSize;
-    //protected transient ByteBuffer wrappedBuffer;
     protected transient DataBuffer wrappedDataBuffer;
     protected transient long workspaceGenerationId = 0L;
 
@@ -86,7 +85,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient boolean released = false;
 
     protected transient AtomicBoolean referenced = new AtomicBoolean(false);
-    //protected transient Collection<WeakReference<BaseDataBuffer>> references = new ArrayList<>();
 
     public BaseDataBuffer() {}
 

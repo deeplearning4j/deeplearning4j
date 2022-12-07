@@ -282,9 +282,9 @@ NDArray::NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *conte
 // do not allocate memory, memory for array is passed from outside
 NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc) {
   if (buffer == nullptr && ArrayOptions::arrayType(shapeInfo) != ArrayType::EMPTY)
-    throw std::runtime_error("NDArray constructor: can't be initalized with nullptr buffer !");
+    throw std::runtime_error("NDArray constructor: can't be initialized with nullptr buffer !");
 
-  if (shapeInfo == nullptr) throw std::runtime_error("NDArray constructor: can't be initalized without shapeinfo !");
+  if (shapeInfo == nullptr) throw std::runtime_error("NDArray constructor: can't be initialized without shapeinfo !");
 
   if ((int)shapeInfo[0] > SD_MAX_RANK)
     throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32 !");
@@ -309,7 +309,7 @@ NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext 
 // we suppose the content of both (device and host) buffers is identical
 NDArray::NDArray(void *buffer, void *bufferD, const sd::LongType *shapeInfo, sd::LaunchContext *context,
                  const bool isBuffAlloc, const bool isBuffDAlloc) {
-  if (shapeInfo == nullptr) throw std::runtime_error("NDArray constructor cuda: can't be initalized without shapeinfo");
+  if (shapeInfo == nullptr) throw std::runtime_error("NDArray constructor cuda: can't be initialized without shapeinfo");
 
   if ((int)shapeInfo[0] > SD_MAX_RANK)
     throw std::invalid_argument("NDArray constructor cuda: rank of NDArray can't exceed 32");

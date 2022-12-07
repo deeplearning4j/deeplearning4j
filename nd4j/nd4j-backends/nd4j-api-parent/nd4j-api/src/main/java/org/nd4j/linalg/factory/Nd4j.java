@@ -302,14 +302,14 @@ public class Nd4j {
     /**
      * See {@link #pad(INDArray, INDArray)}.  Uses 0 padding.
      */
-    public static INDArray pad(@NonNull INDArray toPad, @NonNull int[][] padWidth){
+    public static INDArray pad(@NonNull INDArray toPad, @NonNull int[][] padWidth) {
         return pad(toPad, Nd4j.createFromArray(padWidth));
     }
 
     /**
      * See {@link #pad(INDArray, INDArray)}.  Uses 0 padding, and uses padWidth for all dimensions.
      */
-    public static INDArray pad(@NonNull INDArray toPad, @NonNull int... padWidth){
+    public static INDArray pad(@NonNull INDArray toPad, @NonNull int... padWidth) {
         return pad(toPad, padWidth, Mode.CONSTANT, 0);
     }
 

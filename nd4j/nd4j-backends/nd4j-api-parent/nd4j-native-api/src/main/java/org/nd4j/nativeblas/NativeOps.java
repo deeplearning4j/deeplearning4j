@@ -21,7 +21,10 @@
 package org.nd4j.nativeblas;
 
 import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.annotation.ByPtrPtr;
 import org.bytedeco.javacpp.annotation.Cast;
+
+import java.nio.LongBuffer;
 
 
 public interface NativeOps {
@@ -1174,6 +1177,26 @@ public interface NativeOps {
     void setGraphContextOutputArray(OpaqueContext ptr, int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
     void setGraphContextInputBuffer(OpaqueContext ptr, int index, OpaqueDataBuffer databuffer, Pointer shapeInfo, Pointer specialShapeInfo);
     void setGraphContextOutputBuffer(OpaqueContext ptr, int index, OpaqueDataBuffer databuffer, Pointer shapeInfo, Pointer specialShapeInfo);
+
+
+
+     void setGraphContextInputArrays(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, PointerPointer buffer, PointerPointer shapeInfo,
+                                                  PointerPointer specialBuffer, PointerPointer specialShapeInfo);
+     void setGraphContextOutputArrays(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, PointerPointer buffer, PointerPointer shapeInfo,
+                                                   PointerPointer specialBuffer, PointerPointer specialShapeInfo);
+     void setGraphContextInputBuffers(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, PointerPointer buffer, PointerPointer shapeInfo,
+                                                   PointerPointer specialShapeInfo);
+     void setGraphContextInputBuffers(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays,  org.nd4j.nativeblas.OpaqueDataBuffer buffer, PointerPointer shapeInfo,
+                                                   PointerPointer specialShapeInfo);
+     void setGraphContextOutputBuffers(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, PointerPointer buffer, PointerPointer shapeInfo,
+                                                    PointerPointer specialShapeInfo);
+     void setGraphContextOutputBuffers(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays,  org.nd4j.nativeblas.OpaqueDataBuffer buffer, PointerPointer shapeInfo,
+                                                    PointerPointer specialShapeInfo);
+
+     void setShapeBuffer( LongPointer inputShapeData, int dt, LongPointer bufferToSet,char order);
+     void setShapeBuffer( LongBuffer inputShapeData,  int dt,  LongBuffer bufferToSet,char order);
+     void setShapeBuffer( long[] inputShapeData, int dt, long[] bufferToSet,char order);
+
     void setGraphContextTArguments(OpaqueContext ptr, DoublePointer arguments, int numberOfArguments);
     void setGraphContextIArguments(OpaqueContext ptr, LongPointer arguments, int numberOfArguments);
     void setGraphContextDArguments(OpaqueContext ptr, IntPointer arguments, int numberOfArguments);

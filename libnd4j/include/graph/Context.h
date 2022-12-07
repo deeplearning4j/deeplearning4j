@@ -188,6 +188,15 @@ class SD_LIB_EXPORT Context : public sd::graph::ContextPrototype {
   std::vector<NDArray*>& fastpath_out();
 #endif
 
+
+
+
+  void setInputArrays(int numArrays,NDArray** array, bool removable = false);
+  void setInputArrays(int numArrays,void** buffer, void const** shapeInfo, void** specialBuffer, void const** specialShapeInfo);
+  void setInputArrays(int numArrays,void** buffer, void** shapeInfo, void** specialBuffer, void** specialShapeInfo);
+  void setInputArrays(int numArrays,void** databuffer, void const** shapeInfo, void const** specialShapeInfo);
+
+
   void setInputArray(int index, NDArray* array, bool removable = false);
   void setInputArray(int index, void* buffer, void const* shapeInfo, void* specialBuffer, void const* specialShapeInfo);
   void setInputArray(int index, void* buffer, void* shapeInfo, void* specialBuffer, void* specialShapeInfo);
@@ -198,6 +207,14 @@ class SD_LIB_EXPORT Context : public sd::graph::ContextPrototype {
                       const void* specialShapeInfo);
   void setOutputArray(int index, void* buffer, void* shapeInfo, void* specialBuffer, void* specialShapeInfo);
   void setOutputArray(int index, void* databuffer, void const* shapeInfo, void const* specialShapeInfo);
+
+
+  void setOutputArrays(int numArrays,NDArray** array, bool removable = false);
+  void setOutputArrays(int numArrays,void** buffer, const void** shapeInfo, void** specialBuffer,
+                      const void** specialShapeInfo);
+  void setOutputArrays(int numArrays,void** buffer, void** shapeInfo, void** specialBuffer, void** specialShapeInfo);
+  void setOutputArrays(int numArrays,void** databuffer, void const** shapeInfo, void const** specialShapeInfo);
+
 
   void setTArguments(double* arguments, int numberOfArguments);
   void setIArguments(sd::LongType* arguments, int numberOfArguments);

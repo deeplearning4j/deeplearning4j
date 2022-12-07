@@ -151,14 +151,14 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const sd::LongType length)
 }
 
 ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtype) {
-
   _order = shape::order(shapeInfo);
   _ews = shape::elementWiseStride(shapeInfo);
   _rank = shape::rank(shapeInfo);
-
   _extraProperties = ArrayOptions::propertyWithoutDataType(shapeInfo);
   if (inheritDtype) _dataType = ArrayOptions::dataType(shapeInfo);
+
   _shape_strides.resize(2 * _rank);
+
   auto _shape = _shape_strides.data();
   auto _strides = _shape_strides.data() + _rank;
   auto shapePtr = shape::shapeOf(shapeInfo);
