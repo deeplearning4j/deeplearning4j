@@ -32,39 +32,6 @@ public class CbowRound extends DynamicCustomOp {
 
     public CbowRound(){ }
 
-    /**
-     * hs round
-     *
-     * @param target
-     * @param context
-     * @param syn0
-     * @param syn1
-     * @param expTable
-     * @param alpha
-     * @param nextRandom
-     * @param inferenceVector
-     */
-    public CbowRound(int target, @NonNull int[] context, @NonNull int[] lockedWords, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray expTable, @NonNull int[] indices, @NonNull byte[] codes, double alpha, long nextRandom, @NonNull INDArray inferenceVector, int numLabels) {
-        this(Nd4j.scalar(target), Nd4j.createFromArray(context), Nd4j.createFromArray(lockedWords), Nd4j.empty(DataType.INT32), syn0, syn1, Nd4j.empty(syn1.dataType()), expTable, Nd4j.empty(syn1.dataType()), Nd4j.createFromArray(indices), Nd4j.createFromArray(codes), 0, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom), inferenceVector, Nd4j.scalar(numLabels), inferenceVector.isEmpty(), 1);
-    }
-
-    /**
-     * ns round
-     *
-     * @param target
-     * @param context
-     * @param ngStarter
-     * @param syn0
-     * @param syn1Neg
-     * @param expTable
-     * @param negTable
-     * @param alpha
-     * @param nextRandom
-     * @param inferenceVector
-     */
-    public CbowRound(int target, @NonNull int[] context, @NonNull int[] lockedWords, int ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, int nsRounds, double alpha, long nextRandom, @NonNull INDArray inferenceVector, int numLabels) {
-        this(Nd4j.scalar(target), Nd4j.createFromArray(context), Nd4j.createFromArray(lockedWords), Nd4j.scalar(ngStarter), syn0, Nd4j.empty(syn0.dataType()), syn1Neg, expTable, negTable, Nd4j.empty(DataType.INT32), Nd4j.empty(DataType.INT8), nsRounds, Nd4j.scalar(alpha), Nd4j.scalar(nextRandom), inferenceVector, Nd4j.scalar(numLabels), inferenceVector.isEmpty(), 1);
-    }
 
     /**
      * full constructor
@@ -82,7 +49,7 @@ public class CbowRound extends DynamicCustomOp {
      * @param inferenceVector
      */
     @Builder
-    public CbowRound(@NonNull INDArray target, @NonNull INDArray context, @NonNull INDArray lockedWords, @NonNull INDArray ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, @NonNull INDArray indices, @NonNull INDArray codes, int nsRounds, @NonNull INDArray alpha, @NonNull INDArray nextRandom, @NonNull INDArray inferenceVector, @NonNull INDArray numLabels, boolean trainWords, int numWorkers) {
+    public CbowRound(@NonNull INDArray target, @NonNull INDArray context, @NonNull INDArray lockedWords, @NonNull INDArray ngStarter, @NonNull INDArray syn0, @NonNull INDArray syn1, @NonNull INDArray syn1Neg, @NonNull INDArray expTable, @NonNull INDArray negTable, @NonNull INDArray indices, @NonNull INDArray codes, int nsRounds, @NonNull INDArray alpha, @NonNull INDArray nextRandom, @NonNull INDArray inferenceVector, @NonNull INDArray numLabels, boolean trainWords, int numWorkers,int iterations,double minLearningRate) {
 
         inputArguments.add(target);
         inputArguments.add(ngStarter);
@@ -103,7 +70,10 @@ public class CbowRound extends DynamicCustomOp {
         // couple of options
         iArguments.add((long) numWorkers);
         iArguments.add((long) nsRounds);
+        iArguments.add((long) iterations);
 
+
+        tArguments.add(minLearningRate);
 
         bArguments.add(trainWords);
         bArguments.add(!inferenceVector.isEmpty());

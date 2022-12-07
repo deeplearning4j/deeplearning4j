@@ -352,7 +352,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
                     .preciseMode(configuration.isPreciseMode())
                     .numWorkers(workers)
-                    .iterations(configuration.getIterations())
+                    .iterations(isInference ? configuration.getIterations() * configuration.getEpochs() : 1)
                     .build();
 
             Nd4j.getExecutioner().exec(sg);
@@ -416,7 +416,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     .syn1Neg((negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()))
                     .negTable((negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()))
                     .alpha(new double[]{alpha})
-                    .iteration(configuration.getIterations() * configuration.getEpochs())
+                    .iteration(isInference ? configuration.getIterations() * configuration.getEpochs() : 1)
                     .ngStarter(ngStarter)
                     .indices(indices)
                     .target(target)

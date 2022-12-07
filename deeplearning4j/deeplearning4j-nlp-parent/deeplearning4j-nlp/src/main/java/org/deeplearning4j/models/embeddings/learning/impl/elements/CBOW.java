@@ -178,11 +178,9 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
 
     public double iterateSample(List<BatchItem<T>> items,INDArray inferenceVector) {
-
-
         boolean useHS = configuration.isUseHierarchicSoftmax();
         boolean useNegative = configuration.getNegative() > 0;
-
+        boolean useInference = inferenceVector != null;
         if(items.size() > 1) {
             int maxCols = 1;
             for (int i = 0; i < items.size(); i++) {
@@ -259,20 +257,27 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             }
 
 
-            CbowRound cbow = new CbowRound(currentWindowIndexes, inputWindowWords, inputWordsStatuses,
-                    currentWindowIndexes,
-                    syn0.get(),
-                    useHS ? syn1.get() : Nd4j.empty(syn0.get().dataType()),
-                    (negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()),
-                    expTable.get(),
-                    (negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()),
-                    useHS ? indices : Nd4j.empty(DataType.INT32),
-                    useHS ? codes : Nd4j.empty(DataType.INT8),
-                    (int) negative, alphas, randoms,
-                    inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()),
-                    hasNumLabels ? numLabelsArray : Nd4j.empty(DataType.INT32),
-                    configuration.isTrainElementsVectors(),
-                    workers);
+            CbowRound cbow = CbowRound.builder()
+                    .target(currentWindowIndexes)
+                    .context(inputWindowWords)
+                    .lockedWords(inputWordsStatuses)
+                    .ngStarter(currentWindowIndexes)
+                    .syn0(syn0.get())
+                    .syn1(useHS ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
+                    .syn1Neg((negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()))
+                    .expTable(expTable.get())
+                    .indices(useHS ? indices : Nd4j.empty(DataType.INT32))
+                    .codes(useHS ? codes : Nd4j.empty(DataType.INT8))
+                    .nsRounds((int) negative)
+                    .alpha(alphas)
+                    .nextRandom(randoms)
+                    .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
+                    .numLabels(hasNumLabels ? numLabelsArray : Nd4j.empty(DataType.INT32))
+                    .trainWords(configuration.isTrainElementsVectors())
+                    .numWorkers(workers)
+                    .iterations(useInference ? configuration.getIterations() * configuration.getEpochs() : 1)
+                    .build();
+
 
             Nd4j.getExecutioner().exec(cbow);
             batches.get().clear();
@@ -334,7 +339,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                         .alpha(alpha)
                         .inferenceVector( inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
                         .numWorkers(workers)
-                        .iterations(configuration.getIterations() * configuration.getEpochs())
+                        .iterations(useInference ? configuration.getIterations() * configuration.getEpochs() : 1)
                         .build();
 
             }
@@ -357,7 +362,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                         .preciseMode(configuration.isPreciseMode())
                         .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
                         .numWorkers(workers)
-                        .iterations(configuration.getIterations() * configuration.getEpochs())
+                        .iterations(useInference ? configuration.getIterations() * configuration.getEpochs() : 1)
                         .build();
 
             }
@@ -380,7 +385,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                         .preciseMode(configuration.isPreciseMode())
                         .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
                         .numWorkers(workers)
-                        .iterations(configuration.getIterations() * configuration.getEpochs())
+                        .iterations(useInference ? configuration.getIterations() * configuration.getEpochs() : 1)
                         .build();
             }
 
