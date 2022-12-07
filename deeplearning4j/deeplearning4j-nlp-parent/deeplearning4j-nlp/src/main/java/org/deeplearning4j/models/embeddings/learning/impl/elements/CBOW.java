@@ -34,7 +34,6 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.impl.nlp.CbowInference;
 import org.nd4j.linalg.api.ops.impl.nlp.CbowRound;
 import org.nd4j.linalg.factory.Nd4j;
@@ -318,76 +317,31 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                     ((InMemoryLookupTable<T>) lookupTable).initNegative();
                     syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
                 }
+            } else {
+                syn1Neg.set(Nd4j.empty(syn0.get().dataType()));
             }
 
+            CbowInference cbowInference  = CbowInference.builder()
+                    .target(currentWord.getIndex())
+                    .ngStarter(currentWord.getIndex())
+                    .negTable(table.get() == null ? Nd4j.empty(syn0.get().dataType()) : table.get())
+                    .expTable(expTable.get() == null ? Nd4j.empty(syn0.get().dataType()) : expTable.get())
+                    .syn0(syn0.get())
+                    .syn1(!useHS ? Nd4j.empty(syn0.get().dataType()) : syn1.get())
+                    .syn1Neg(syn1Neg.get())
+                    .alpha(alpha)
+                    .indices(!useHS || useNegative ? points : new int[0])
+                    .codes(useHS ? codes : new byte[0])
+                    .lockedWords(inputStatuses)
+                    .randomValue((int) randomValue)
+                    .numWorkers(workers)
+                    .numLabels(numLabels)
+                    .nsRounds(useNegative ? (int) negative : 0)
+                    .preciseMode(configuration.isPreciseMode())
+                    .inferenceVector( inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
+                    .iterations(useInference ? configuration.getIterations() * configuration.getEpochs() : 1)
+                    .build();
 
-            CbowInference cbowInference = null;
-            if (useHS && useNegative) {
-                cbowInference = CbowInference.builder()
-                        .ngStarter(currentWord.getIndex())
-                        .target(currentWord.getIndex())
-                        .randomValue((int) randomValue)
-                        .nsRounds((int) negative)
-                        .syn0(syn0.get())
-                        .syn1(syn1.get())
-                        .syn1Neg(syn1Neg.get())
-                        .expTable(expTable.get())
-                        .negTable(table.get() == null ? Nd4j.empty(syn0.get().dataType()) : table.get())
-                        .codes(codes)
-                        .indices(points)
-                        .preciseMode(configuration.isPreciseMode())
-                        .alpha(alpha)
-                        .inferenceVector( inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
-                        .numWorkers(workers)
-                        .iterations(useInference ? configuration.getIterations() * configuration.getEpochs() : 1)
-                        .build();
-
-            }
-            else if (useHS) {
-                cbowInference = CbowInference.builder()
-                        .target(currentWord.getIndex())
-                        .ngStarter(currentWord.getIndex())
-                        .randomValue((int) randomValue)
-                        .context(windowWords)
-                        .expTable(expTable.get())
-                        .lockedWords(inputStatuses)
-                        .syn0(syn0.get())
-                        .syn1(syn1.get())
-                        .syn1Neg(Nd4j.empty(syn0.get().dataType()))
-                        .negTable(table.get() == null ? Nd4j.empty(syn0.get().dataType()) : table.get())
-                        .codes(codes)
-                        .indices(new int[0])
-                        .numLabels(numLabels)
-                        .alpha(alpha)
-                        .preciseMode(configuration.isPreciseMode())
-                        .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
-                        .numWorkers(workers)
-                        .iterations(useInference ? configuration.getIterations() * configuration.getEpochs() : 1)
-                        .build();
-
-            }
-            else if (useNegative) {
-                cbowInference = CbowInference.builder()
-                        .target(currentWord.getIndex())
-                        .ngStarter(currentWord.getIndex())
-                        .randomValue((int) randomValue)
-                        .context(windowWords)
-                        .expTable(expTable.get())
-                        .negTable(table.get())
-                        .lockedWords(inputStatuses)
-                        .syn0(syn0.get())
-                        .syn1(Nd4j.empty(syn0.get().dataType()))
-                        .syn1Neg(Nd4j.empty(syn0.get().dataType()))
-                        .codes(new byte[0])
-                        .indices(new int[0])
-                        .numLabels(numLabels)
-                        .alpha(alpha)
-                        .preciseMode(configuration.isPreciseMode())
-                        .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
-                        .numWorkers(workers)
-                        .iterations(useInference ? configuration.getIterations() * configuration.getEpochs() : 1)
-                        .build();
-            }
 
 
             Nd4j.getExecutioner().exec(cbowInference);
