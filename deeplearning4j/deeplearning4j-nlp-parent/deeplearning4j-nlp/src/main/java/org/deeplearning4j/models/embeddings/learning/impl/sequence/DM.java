@@ -184,6 +184,26 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         return false;
     }
 
+    @Override
+    public INDArray inferSequence(INDArray inferenceVector, Sequence<T> sequence, long nextRandom, double learningRate, double minLearningRate, int iterations) {
+        AtomicLong nextRandom2 = new AtomicLong(nextRandom);
+        // we probably don't want subsampling here
+
+        if (sequence.isEmpty())
+            return null;
+
+        Random random = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * sequence.hashCode(),
+                lookupTable.layerSize() + 1);
+        INDArray ret = Nd4j.rand(random,lookupTable.getWeights().dataType(),
+                        1, lookupTable.layerSize()).subi(0.5)
+                .divi(lookupTable.layerSize());
+
+        log.info("Inf before: {}", ret);
+        dm(0, sequence, (int) nextRandom2.get() % window, nextRandom2, learningRate,Collections.emptyList(), ret);
+
+        return ret;
+    }
+
     /**
      * This method does training on previously unseen paragraph, and returns inferred vector
      *

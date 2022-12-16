@@ -118,8 +118,14 @@ public class VocabWord extends SequenceElement implements Serializable {
 
     @Override
     public String toString() {
-        return "VocabWord{" + "wordFrequency=" + this.elementFrequency + ", index=" + index + ", word='" + word + '\''
-                        + ", codeLength=" + codeLength + '}';
+        return "VocabWord{" +
+                "word='" + word + '\'' +
+                ", elementFrequency=" + elementFrequency +
+                ", index=" + index +
+                ", codes=" + codes +
+                ", points=" + points +
+                ", codeLength=" + codeLength +
+                '}';
     }
 
     @Override

@@ -54,55 +54,27 @@ void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, const do
 
   f = expTable[idx];
   g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * (T)alpha;
+  ////sd_printf("HS: dot [%f] idx [%d] f [%f] g [%f] code %d\n",dot,idx,f,g,code);
+  //sd_printf("neu1e:",0);
 
-  if(!isInference) {
-    PRAGMA_OMP_SIMD
-    for (int e = 0; e < vectorLength; e++) {
-      syn1[e] = g * syn0[e] + syn1[e];
-      neu1e[e] = g * syn1[e] + neu1e[e];
-    }
-
-  } else {
-    PRAGMA_OMP_SIMD
-    for (int e = 0; e < vectorLength; e++) {
-      neu1e[e] = g * syn1[e] + neu1e[e];
-    }
-  }
-}
-
-template <typename T>
-void hSoftmaxDot_(T dot,void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double alpha, int vectorLength, int code,
-               int expLength, bool isInference) {
-  // gradient
-  if (dot < (T)-HS_MAX_EXP || dot >= (T) HS_MAX_EXP) return;
-  auto syn0 = reinterpret_cast<T *>(vsyn0);
-  auto syn1 = reinterpret_cast<T *>(vsyn1);
-  auto expTable = reinterpret_cast<T *>(vexpTable);
-  auto neu1e = reinterpret_cast<T *>(vneu1e);
-
-  T g(0.0f);
-  T f(0.0f);
-
-  int idx = static_cast<int>((dot + HS_MAX_EXP) * ((float)expLength / HS_MAX_EXP / 2.0f));
-  if (idx >= expLength || idx < 0) return;
-
-  f = expTable[idx];
-  g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * (T)alpha;
   PRAGMA_OMP_SIMD
   for (int x = 0; x < vectorLength; x++) {
     neu1e[x] = g * syn1[x] + neu1e[x];
+    //sd_printf(" %f ",neu1e[x]);
   }
-
+  //sd_printf("\n",0);
   // axpy2
   if (!isInference) {
-    PRAGMA_OMP_SIMD
+    //sd_printf("syn1: ",0);
+PRAGMA_OMP_SIMD
     for (int x = 0; x < vectorLength; x++) {
       syn1[x] = g * syn0[x] + syn1[x];
+      //sd_printf(" %f ",syn1[x]);
     }
-  }
 
+    //sd_printf("\n",0);
   }
-
+}
 
 template <typename T>
 void nSampling_(void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, double alpha, int vectorLength, int code,
@@ -152,7 +124,7 @@ void nSampling_(void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, doub
 
 template <typename T>
 void cbow_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vnegTable, void *vinfVector, int target,
-           int ngStarter, int *context, int *lockedWords, int *indices, int8_t *codes, double alpha,
+           int ngStarter, int *context, int *lockedWords, int *indices, int *codes, double alpha,
            sd::LongType randomValue, const int contextWidth, const int hsRounds, const int nsRounds,
            const int vocabSize, const int vectorLength, const int expLength, const int negLength, const int numLabels,
            const bool trainWords,double minLearningRate,const int iterations) {
@@ -251,7 +223,7 @@ void cbow_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vneg
 }
 BUILD_SINGLE_TEMPLATE(template void cbow_,
                       (void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector,
-                          int target, int ngStarter, int *context, int *lockedWords, int *indices, int8_t *codes,
+                          int target, int ngStarter, int *context, int *lockedWords, int *indices, int *codes,
                           double alpha, sd::LongType randomValue, const int contextWidth, const int hsRounds,
                           const int nsRounds, const int vocabSize, const int vectorLength, const int expLength,
                           const int negLength, const int numLabels, const bool trainWords,double minLearningRate,const int iterations),
@@ -259,33 +231,28 @@ BUILD_SINGLE_TEMPLATE(template void cbow_,
 
 template <typename T>
 void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vnegTable, void *vinfVector, int target,
-               int ngStarter, int *indices, int8_t *codes, double alpha, sd::LongType randomValue, const int hsRounds,
+               int ngStarter, NDArray &indices, NDArray &codes, double alpha, sd::LongType randomValue, const int hsRounds,
                const int nsRounds, const int vocabSize, const int vectorLength, const int expLength,
                const int negLength,double minLearningRate,const int iterations) {
-
   auto syn0 = reinterpret_cast<T *>(vsyn0);
   auto syn1 = reinterpret_cast<T *>(vsyn1);
   auto syn1Neg = reinterpret_cast<T *>(vsyn1Neg);
   auto expTable = reinterpret_cast<T *>(vexpTable);
   auto negTable = reinterpret_cast<T *>(vnegTable);
   auto infVector = reinterpret_cast<T *>(vinfVector);
-
   auto neu1e = new T[vectorLength];
   memset(neu1e, 0, vectorLength * sizeof(T));
+  //sd_printf("BEGIN skipgram syn0Row: [%i] vecLen: [%i] hsRounds [%d] expLength: [%i] vocabSize [%i]\n",target,vectorLength,hsRounds,expLength,vocabSize);
 
   for(int i = 0; i < iterations; i++) {
     // hierarchic softmax goes first (if enabled)
     auto syn0row = infVector != nullptr ? infVector : syn0 + (target * vectorLength);
-    alpha = ((alpha - minLearningRate) / (iterations - i)) + minLearningRate;
-
     auto irow = 0;
     if (hsRounds > 0) {
-
       for (int r = 0; r < hsRounds; r++) {
-        irow = indices[r];
-        if (irow < 0 || irow >= vocabSize) break;
-
-        hSoftmax_<T>(syn0row, syn1 + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, codes[r], expLength,
+        irow = indices.e<int>(r);
+        //sd_printf("Code %d Index %d\n",codes.e<int>(r),irow);
+        hSoftmax_<T>(syn0row, syn1 + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, codes.e<int>(r), expLength,
                      infVector != nullptr);
       }
 
@@ -324,13 +291,18 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
 
     }
 
+    alpha = ((alpha - minLearningRate) / (iterations - i)) + minLearningRate;
+
+
   }
+
+  //sd_printf("END skipgram\n",0);
 
   delete[] neu1e;
 }
 BUILD_SINGLE_TEMPLATE(template void skipgram_,
                       (void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector,
-                          int target, int ngStarter, int *indices, int8_t *codes, double alpha, sd::LongType randomValue,
+                          int target, int ngStarter,NDArray &indices, NDArray &codes, double alpha, sd::LongType randomValue,
                           const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength,
                           const int expLength, const int negLength,double minLearningRate,const int iterations),
                       SD_FLOAT_TYPES);
@@ -421,85 +393,73 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable,
   const auto expTable = reinterpret_cast<T *>(vexpTable);
   const auto negTable = reinterpret_cast<T *>(vnegTable);
   const auto infVector = reinterpret_cast<T *>(vinfVector);
-
-  const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
   const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
-
+   
   // regular mode provides 0 guarantees for reproducibility
   auto numTargets = targets.lengthOf();
-  auto bTarget = targets.bufferAsT<int>();
-  auto bIndices = indices.bufferAsT<int>();
-  auto bCodes = codes.bufferAsT<int8_t>();
   int iteration = 0;
-  auto func = PRAGMA_THREADS_FOR {
-    T sneu1e[600];
-    for (auto t = start; t < stop; t++) {
-      T *neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
-      memset(neu1e, 0, vectorLength * sizeof(T));
-      auto alpha = lr.e<double>(t);
-      alpha = ((alpha - minLearningRate) / (iterations - iteration)) + minLearningRate;
-      sd::LongType randomValue = nextRandom.e<sd::LongType>(t);
-       auto target = bTarget[t];
+  for(int i = 0; i < iterations; i++) {
+  for (auto t = 0; t < numTargets; t++) {
+    T *neu1e = new T[vectorLength];
+    memset(neu1e, 0, vectorLength * sizeof(T));
 
-       auto syn0row = reinterpret_cast<T *>(s0.bufferWithOffset(target * vectorLength));
-       if (hsRounds > 0) {
-         auto cShift = t * idxShift;
-         for (sd::LongType e = 0; e < hsRounds; e++) {
-           int currRow = bIndices[e + cShift];
-           if (currRow > 0 && currRow < vocabSize) {
-             signed int code = bCodes[e + cShift];
-             T *syn1row = (T *) s1.bufferWithOffset(currRow * vectorLength);
-             T dot = _dot(syn0row, syn1row, vectorLength);
-             hSoftmaxDot_<T>(dot, syn0row, syn1row, expTable, neu1e, alpha, vectorLength, code, expLength, vinfVector != nullptr);
-           }
-         }
-       }
-
-       if (nsRounds > 0) {
-         int irow = negStarters.e<int>(t);
-         int nsStarter = irow;
-         for (int r = 0; r < nsRounds + 1; r++) {
-           if (r == 0) {
-             // target is known in advance
-           } else {
-             randomValue = randomValue * (unsigned long long)25214903917 + 11;
-             auto idx = sd::math::sd_abs<sd::LongType>((randomValue >> 16) % negLength);
-             irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
-
-             if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
-
-             if (irow == nsStarter) continue;
-           }
-
-           nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength,
-                         r == 0 ? 1 : 0, expLength, infVector != nullptr);
-         }
-       }
+    auto alpha = lr.e<double>(t);
+    sd::LongType randomValue = nextRandom.e<sd::LongType>(t);
+    auto target = targets.e<int>(t);
+    auto syn0row = reinterpret_cast<T *>(s0.bufferWithOffset(target * vectorLength));
+    //sd_printf("BEGIN skipgram syn0Row: [%i] vecLen: [%i] hsRounds [%d] expLength: [%i] vocabSize [%i]\n",target,vectorLength,hsRounds,expLength,vocabSize);
+    if(hsRounds > 0) {
+      for (sd::LongType e = 0; e < hsRounds; e++) {
+        int currRow = indices.e<int>(t,e);
+        int code = codes.e<int>(t,e);
+        //codes are only 0 and 1, -1 are placeholders for invalid codes
+        //the codes matrix is padded with extra values at time of allocation
+        //this is due to the code rows effectively being a ragged matrix (rows have different shapes)
+        if(code < 0) continue;
+        T *syn1row = (T *) s1.bufferWithOffset(currRow * vectorLength);
+        //sd_printf("skipgram syn0row [%i] idx syn1: [%i] code [%i] at hsRound [%i]\n",target,currRow,code,e);
+        hSoftmax_<T>(syn0row,syn1row,vexpTable,neu1e,alpha,vectorLength,code,expLength,vinfVector != nullptr);
+      }
+    }
 
 
-       if (infVector == nullptr) {
-         for (int e = 0; e < vectorLength; e++) {
-           syn0row[e] += neu1e[e];
-         }
-       } else {
-         for (int e = 0; e < vectorLength; e++) {
-           infVector[e] += neu1e[e];
-         }
-     }
+      if(nsRounds > 0) {
+        int irow = negStarters.e<int>(t);
+        int nsStarter = irow;
+        for (int r = 0; r < nsRounds + 1; r++) {
+          if (r == 0) {
+            // target is known in advance
+          } else {
+            randomValue = randomValue * (unsigned long long)25214903917 + 11;
+            auto idx = sd::math::sd_abs<sd::LongType>((randomValue >> 16) % negLength);
+            irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
-        // optionally release temp arrays
-        if (vectorLength > 600) {
-          delete[] neu1e;
+            if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
 
+            if (irow == nsStarter) continue;
+          }
+
+          nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength,
+                        r == 0 ? 1 : 0, expLength, infVector != nullptr);
         }
-    }
-    };
+      }
 
-    for(int i = 0; i < iterations; i++) {
-      iteration = i;
-      samediff::Threads::parallel_tad(func, 0, numTargets, 1, numThreads);
+
+    if (infVector == nullptr) {
+      for (int e = 0; e < vectorLength; e++) {
+        syn0row[e] += neu1e[e];
+      }
+    } else {
+      for (int e = 0; e < vectorLength; e++) {
+        infVector[e] += neu1e[e];
+      }
     }
 
+    delete[] neu1e;
+  }
+   }
+
+   //sd_printf("END skipgram\n",0);
   }
 
 BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_,
@@ -530,8 +490,6 @@ void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, voi
 
   const auto bContext = context.bufferAsT<int>();
   const auto bLocker = lockedWords.bufferAsT<int>();
-  const auto bIndices = indices.bufferAsT<int>();
-  const auto bCodes = codes.bufferAsT<int8_t>();
   const auto bStarters = negStarters.bufferAsT<int>();
   const auto numIndices = indices.isEmpty() ? 0 : indices.sizeAt(1);
 
@@ -581,8 +539,8 @@ void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, voi
       // hierarchic softmax step
       if (!indices.isEmpty()) {
         for (sd::LongType i = 0; i < numIndices; i++) {
-          const int cIndex = bIndices[(e * numIndices) + i];
-          const int cCode = bCodes[(e * numIndices) + i];
+          const int cIndex = indices.e<int>(e,i);
+          const int cCode = codes.e<int>(e,i);
 
           // we're skipping padded values
           if (cIndex < 0) continue;
@@ -669,12 +627,11 @@ void skipgramInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &
               NDArray &inferenceVector, const bool preciseMode, const int numWorkers,double minLearningRate,const int iterations) {
   auto xType = syn0.dataType();
   auto hsRounds = codes.lengthOf();
-
   BUILD_SINGLE_SELECTOR(
       xType, skipgram_,
       (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(),
         target, ngStarter,
-       reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t *>(codes.buffer()), alpha,
+       indices, codes, alpha,
        randomValue, hsRounds, nsRounds, (int)syn0.sizeAt(0), (int)syn0.sizeAt(1),
        (int)expTable.lengthOf(), (int)negTable.lengthOf(),minLearningRate,iterations),
       SD_FLOAT_TYPES);
@@ -692,8 +649,8 @@ void cbowInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expT
       xType, cbow_,
       (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(),
       target, ngStarter,
-       reinterpret_cast<int *>(context.buffer()), reinterpret_cast<int *>(lockedWords.buffer()),
-       reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t *>(codes.buffer()), alpha,
+       context.bufferAsT<int>(), lockedWords.bufferAsT<int>(),
+      indices.bufferAsT<int>(), codes.bufferAsT<int>(), alpha,
        randomValue, (int)context.lengthOf(), hsRounds, nsRounds, (int)syn0.sizeAt(0),
        (int)syn0.sizeAt(1), (int)expTable.lengthOf(), (int)negTable.lengthOf(),
        numLabels, trainWords,minLearningRate,iterations),
@@ -713,7 +670,7 @@ void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable,
         xType, skipgram_,
         (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(),
             target.isEmpty() ? -1 : target.e<int>(0), ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0),
-            reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t *>(codes.buffer()), alpha.e<double>(0),
+            indices, codes, alpha.e<double>(0),
             randomValue.e<sd::LongType>(0), hsRounds, nsRounds, (int)syn0.sizeAt(0), (int)syn0.sizeAt(1),
             (int)expTable.lengthOf(), (int)negTable.lengthOf(),minLearningRate,iterations),
         SD_FLOAT_TYPES);
@@ -741,8 +698,8 @@ void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDA
         xType, cbow_,
         (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(),
             target.isEmpty() ? -1 : target.e<int>(0), ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0),
-            reinterpret_cast<int *>(context.buffer()), reinterpret_cast<int *>(lockedWords.buffer()),
-            reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t *>(codes.buffer()), alpha.e<double>(0),
+            context.bufferAsT<int>(), lockedWords.bufferAsT<int>(),
+            indices.bufferAsT<int>(), codes.bufferAsT<int>(), alpha.e<double>(0),
             randomValue.e<sd::LongType>(0), (int)context.lengthOf(), hsRounds, nsRounds, (int)syn0.sizeAt(0),
             (int)syn0.sizeAt(1), (int)expTable.lengthOf(), (int)negTable.lengthOf(),
             numLabels.isEmpty() ? 0 : numLabels.e<int>(0), trainWords,minLearningRate,iterations),
