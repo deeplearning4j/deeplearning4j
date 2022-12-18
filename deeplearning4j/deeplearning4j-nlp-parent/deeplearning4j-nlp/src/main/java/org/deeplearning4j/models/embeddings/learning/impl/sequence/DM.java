@@ -161,12 +161,15 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
                     intsList.add(lastWord.getIndex());
                     statusesList.add(lastWord.isLocked());
-                    if(inferenceVector != null)
-                        cbow.iterateSample(Arrays.asList(batch),inferenceVector);
-                    else
-                        batches.add(batch);
+                    batches.add(batch);
+
                 }
             }
+        }
+
+
+        if(inferenceVector != null) {
+            cbow.doExec(batches,inferenceVector);
         }
 
 
