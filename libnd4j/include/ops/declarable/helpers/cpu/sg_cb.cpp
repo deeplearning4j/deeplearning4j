@@ -442,8 +442,6 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
 
    }
 
-
-
   }
 
 BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_,
@@ -454,18 +452,17 @@ BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_,
                       SD_FLOAT_TYPES);
 
 template <typename T>
-void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector,
+void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable, NDArray &vnegTable, NDArray &vinfVector,
                     NDArray &context, NDArray &lockedWords, NDArray &targets, NDArray &negStarters, NDArray &indices,
                     NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &nLabels, const int nsRounds,
                     const int vocabSize, const int vectorLength, const int expLength, const int negLength,
                     const bool trainWords, const int numThreads,double minLearningRate,int iterations) {
-  const auto syn0 = s0.bufferAsT<T>();
-  const auto syn1 = s1.bufferAsT<T>();
+
   const auto syn1Neg = s1n.bufferAsT<T>();
 
-  const auto expTable = reinterpret_cast<T *>(vexpTable);
-  const auto negTable = reinterpret_cast<T *>(vnegTable);
-  const auto infVector = reinterpret_cast<T *>(vinfVector);
+  const auto expTable = vexpTable.bufferAsT<T>();
+  const auto negTable = vnegTable.bufferAsT<T>();
+  const auto infVector = vinfVector.bufferAsT<T>();
 
   const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
   const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
@@ -478,36 +475,32 @@ void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, voi
   const auto numIndices = indices.isEmpty() ? 0 : indices.sizeAt(1);
 
   int iteration = 0;
-  auto func = PRAGMA_THREADS_FOR {
-    T sneu1[600];
-    T sneu1e[600];
-
-    for (auto e = start; e < stop; e++) {
-      T *neu1 = vectorLength <= 600 ? sneu1 : new T[vectorLength];
-      T *neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
+  for(int i = 0; i < iterations; i++) {
+    for(int t = 0 ; t < targets.lengthOf(); t++) {
+      T *neu1 =  new T[vectorLength];
+      T *neu1e =  new T[vectorLength];
 
       // optionally we nullify temp arrays after successful (and on first) cycle
       memset(neu1, 0, sizeof(T) * vectorLength);
       memset(neu1e, 0, sizeof(T) * vectorLength);
 
-      auto alpha = lr.e<double>(e);
-      alpha = ((alpha - minLearningRate) / (iterations - iteration)) + minLearningRate;
+      auto alpha = lr.e<double>(t);
 
-      auto numLabels = nLabels.isEmpty() ? 0 : nLabels.e<int>(e);
+      auto numLabels = nLabels.isEmpty() ? 0 : nLabels.e<int>(t);
 
       int actualContext = 0;
 
       // building neu1 for current window
       for (int c = 0; c < contextWidth; c++) {
         // getting next context word
-        auto cContext = bContext[c + (e * contextWidth)];
+        auto cContext = bContext[c + (t * contextWidth)];
 
         // skipping padded values
         if (cContext < 0) continue;
 
         if (cContext >= vocabSize) throw std::runtime_error("ContextID can't be >= vocab size");
 
-        T *syn0word = syn0 + (cContext * vectorLength);
+        T *syn0word = s0.bufferWithOffset(cContext * vectorLength);
 
         for (int i = 0; i < vectorLength; i++) neu1[i] += syn0word[i];
 
@@ -523,24 +516,24 @@ void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, voi
       // hierarchic softmax step
       if (!indices.isEmpty()) {
         for (sd::LongType i = 0; i < numIndices; i++) {
-          const int cIndex = indices.e<int>(e,i);
-          const int cCode = codes.e<int>(e,i);
+          const int cIndex = indices.e<int>(t,i);
+          const int cCode = codes.e<int>(t,i);
 
           // we're skipping padded values
           if (cIndex < 0) continue;
 
           if (cIndex >= vocabSize) throw std::runtime_error("Index can't be > vocab size");
 
-          hSoftmax_<T>(neu1, syn1 + (cIndex * vectorLength), expTable, neu1e, alpha, vectorLength, cCode, expLength,
+          hSoftmax_<T>(neu1, s1.bufferWithOffset(cIndex * vectorLength), expTable, neu1e, alpha, vectorLength, cCode, expLength,
                        false);
         }
       }
 
       // negative sampling step
       if (!negStarters.isEmpty() && nsRounds > 0) {
-        int irow = bStarters[e];
+        int irow = bStarters[t];
         const int nsStarter = irow;
-        unsigned long long randomValue = nextRandom.e<sd::LongType>(e);
+        unsigned long long randomValue = nextRandom.e<sd::LongType>(t);
 
         for (int r = 0; r < nsRounds + 1; r++) {
           // we're skipping rng on 0 step
@@ -568,8 +561,8 @@ void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, voi
       // applying previously averaged results
       for (int c = starter; c < contextWidth; c++) {
         // getting context
-        auto cContext = bContext[c + (e * contextWidth)];
-        auto cLock = bLocker[c + (e * contextWidth)];
+        auto cContext = bContext[c + (t * contextWidth)];
+        auto cLock = bLocker[c + (t * contextWidth)];
 
         // skipping padded values
         if (cContext < 0 || cLock == 1) continue;
@@ -577,8 +570,8 @@ void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, voi
         if (cContext >= vocabSize) throw std::runtime_error("ContextID can't be > vocab size");
 
         // one word from context
-        T *syn0word = syn0 + (cContext * vectorLength);
-
+        T *syn0word = s0.bufferWithOffset(cContext * vectorLength);
+        PRAGMA_OMP_SIMD
         for (int i = 0; i < vectorLength; i++) syn0word[i] += neu1e[i];
       }
 
@@ -587,12 +580,11 @@ void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, voi
         delete[] neu1;
         delete[] neu1e;
       }
-    }
-  };
 
-  for(int i = 0; i < iterations; i++) {
-    iteration = i;
-    samediff::Threads::parallel_tad(func, 0, numTargets, 1, numThreads);
+      alpha = ((alpha - minLearningRate) / (iterations - iteration)) + minLearningRate;
+      lr.p<T>(t,alpha);
+    }
+
   }
 
 }
