@@ -177,6 +177,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
 
     public double doExec(List<BatchItem<T>> items, INDArray inferenceVector) {
+
         boolean useHS = configuration.isUseHierarchicSoftmax();
         boolean useNegative = configuration.getNegative() > 0;
         boolean useInference = inferenceVector != null;

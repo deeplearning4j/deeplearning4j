@@ -42,7 +42,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -255,6 +254,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
                     BatchItem<T> batchItem = new BatchItem<>(word, lastWord, nextRandom.get(), alpha);
                     score = iterateSample(batchItem,null);
+
                 }
             }
         }
@@ -304,6 +304,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             INDArray indices = Nd4j.create(DataType.INT32, items.size(), maxCols);
 
             for (int cnt = 0; cnt < items.size(); cnt++) {
+
                 T w1 = items.get(cnt).getWord();
                 T lastWord = items.get(cnt).getLastWord();
 
@@ -311,6 +312,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 double alpha = items.get(cnt).getAlpha();
 
                 if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && inferenceVector == null)
+
                         || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP")
                         || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK")
                         || lastWord.getLabel().equals("UNK")) {
@@ -320,6 +322,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
                 int target = lastWord.getIndex();
                 int ngStarter = w1.getIndex();
+
 
                 targetArray.putScalar(cnt, target);
                 ngStarterArray.putScalar(cnt, ngStarter);
@@ -349,6 +352,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
 
 
+
             SkipGramRound sg = SkipGramRound.builder()
                     .target(targetArray)
                     .expTable(expTable.get())
@@ -359,6 +363,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     .negTable((negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()))
                     .indices(configuration.isUseHierarchicSoftmax() ? indices : Nd4j.empty(DataType.INT32))
                     .codes(configuration.isUseHierarchicSoftmax() ? codes: Nd4j.empty(DataType.INT8))
+
                     .alpha(alphasArray)
                     .randomValue(randomValuesArr)
                     .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
@@ -375,6 +380,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             arrayCacheMemoryMgr.release(alphasArray);
             getBatch().clear();
 
+
         } else {
             int cnt = 0;
 
@@ -382,6 +388,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             T lastWord = items.get(cnt).getLastWord();
             byte[] codes = new byte[w1.getCodeLength()];
             int[] indices = new int[w1.getCodeLength()];
+
             double alpha = items.get(cnt).getAlpha();
 
             if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && inferenceVector == null)
@@ -396,6 +403,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
 
             if (configuration.isUseHierarchicSoftmax()) {
+
                 for (int i = 0; i < w1.getCodeLength(); i++) {
                     int code = w1.getCodes().get(i);
                     int point = w1.getPoints().get(i);
@@ -430,6 +438,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     .negTable((negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()))
                     .alpha(new double[]{alpha})
                     .iteration(1)
+
                     .ngStarter(ngStarter)
                     .indices(indices)
                     .target(target)
@@ -442,5 +451,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
         }
         return 0.0;
+
     }
 }

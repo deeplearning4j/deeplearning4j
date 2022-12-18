@@ -78,6 +78,7 @@ CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
   auto nsRounds = block.numI() > numMin + 1 ? INT_ARG(currIdx++) : 0;
 
   auto alpha = T_ARG(0);
+
   // required part
 
 
@@ -124,6 +125,7 @@ CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
                                       *inferenceVector,
                                       isPreciseMode,
                                       numWorkers,1e-4,numIterations);
+
 
  delete codes;
  delete indices;

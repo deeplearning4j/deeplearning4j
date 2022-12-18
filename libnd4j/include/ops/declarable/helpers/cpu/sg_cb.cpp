@@ -29,6 +29,7 @@ namespace ops {
 namespace helpers {
 template <typename T>
 void hSoftmax_(T *vsyn0, T *vsyn1, T *vexpTable, T *vneu1e, const double alpha, const int vectorLength, const int code,
+
                const int expLength, const bool isInference) {
   auto syn0 = reinterpret_cast<T *>(vsyn0);
   auto syn1 = reinterpret_cast<T *>(vsyn1);
@@ -62,8 +63,41 @@ void hSoftmax_(T *vsyn0, T *vsyn1, T *vexpTable, T *vneu1e, const double alpha, 
     for (int x = 0; x < vectorLength; x++) {
       neu1e[x] += g * syn1[x];
       syn1[x] += g * syn0[x];
+
     }
   } else {
+    PRAGMA_OMP_SIMD
+    for (int e = 0; e < vectorLength; e++) {
+      neu1e[e] = g * syn1[e] + neu1e[e];
+    }
+  }
+}
+
+template <typename T>
+void hSoftmaxDot_(T dot,void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double alpha, int vectorLength, int code,
+               int expLength, bool isInference) {
+  // gradient
+  if (dot < (T)-HS_MAX_EXP || dot >= (T) HS_MAX_EXP) return;
+  auto syn0 = reinterpret_cast<T *>(vsyn0);
+  auto syn1 = reinterpret_cast<T *>(vsyn1);
+  auto expTable = reinterpret_cast<T *>(vexpTable);
+  auto neu1e = reinterpret_cast<T *>(vneu1e);
+
+  T g(0.0f);
+  T f(0.0f);
+
+  int idx = static_cast<int>((dot + HS_MAX_EXP) * ((float)expLength / HS_MAX_EXP / 2.0f));
+  if (idx >= expLength || idx < 0) return;
+
+  f = expTable[idx];
+  g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * (T)alpha;
+  PRAGMA_OMP_SIMD
+  for (int x = 0; x < vectorLength; x++) {
+    neu1e[x] = g * syn1[x] + neu1e[x];
+  }
+
+  // axpy2
+  if (!isInference) {
     PRAGMA_OMP_SIMD
     for (int x = 0; x < vectorLength; x++) {
       neu1e[x] += g * syn1[x];
@@ -241,6 +275,8 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
   for(int i = 0; i < iterations; i++) {
     // hierarchic softmax goes first (if enabled)
     auto syn0row = infVector != nullptr ? infVector : syn0 + (target * vectorLength);
+    alpha = ((alpha - minLearningRate) / (iterations - i)) + minLearningRate;
+
     auto irow = 0;
     if (hsRounds > 0) {
       for (int r = 0; r < hsRounds; r++) {
@@ -285,12 +321,11 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
     }
 
     alpha = ((alpha - minLearningRate) / (iterations - i)) + minLearningRate;
-
-
   }
 
   delete[] neu1e;
 }
+  
 BUILD_SINGLE_TEMPLATE(template void skipgram_,
                       (void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector,
                           int target, int ngStarter,NDArray &indices, NDArray &codes, double alpha, sd::LongType randomValue,
