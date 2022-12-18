@@ -291,8 +291,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
     }
 
-    private  Double doExec(List<BatchItem<T>> items,INDArray inferenceVector, boolean useHS, boolean isInference) {
-        if (items.size() > 1 && !isInference) {
+    public  Double doExec(List<BatchItem<T>> items,INDArray inferenceVector, boolean useHS, boolean isInference) {
+        if (items.size() > 1) {
             INDArray targetArray = arrayCacheMemoryMgr.allocate(false, DataType.INT32, items.size());
             INDArray ngStarterArray = arrayCacheMemoryMgr.allocate(false, DataType.INT32, items.size());
             INDArray alphasArray = arrayCacheMemoryMgr.allocate(false, DataType.DOUBLE, items.size());

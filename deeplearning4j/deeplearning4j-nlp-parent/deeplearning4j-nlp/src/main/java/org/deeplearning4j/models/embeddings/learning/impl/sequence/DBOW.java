@@ -132,6 +132,16 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
         if (sentence.isEmpty() || labels.isEmpty())
             return;
 
+
+
+        if (sequence.getSequenceLabel() == null)
+            return;
+
+
+
+        if (sentence.isEmpty() || labels.isEmpty())
+            return;
+
         List<BatchItem<T>> batches = new ArrayList<>();
         for (T lastWord : labels) {
             for (T word : sentence) {
@@ -139,13 +149,16 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
                     continue;
 
                 BatchItem<T> batchItem = new BatchItem<>(word,lastWord,nextRandom.get(),alpha);
-                if(inferenceVector == null)
-                    batches.add(batchItem);
-                if(inferenceVector != null)
-                    skipGram.iterateSample(batchItem,inferenceVector);
+                batches.add(batchItem);
+
 
             }
         }
+
+
+        if(inferenceVector != null)
+            skipGram.doExec(batches,inferenceVector,configuration.isUseHierarchicSoftmax(),true);
+
 
 
         if(inferenceVector == null) {
@@ -154,7 +167,6 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
             if(skipGram.getBatch().size() >= configuration.getBatchSize())
                 finish();
         }
-
     }
 
     /**
