@@ -259,31 +259,25 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             }
         }
 
-
-
         return score;
     }
 
 
     public double iterateSample(BatchItem<T> item,INDArray inferenceVector) {
-        boolean useHS = configuration.isUseHierarchicSoftmax();
-        boolean useNegative = configuration.getNegative() > 0;
         double score = 0.0;
-        boolean isInference = inferenceVector != null;
-
 
         List<BatchItem<T>> items = getBatch();
         //inference case just perform inference
         if(inferenceVector != null) {
-            score = doExec(Arrays.asList(item),inferenceVector, useHS, isInference);
+            score = doExec(Arrays.asList(item),inferenceVector);
         } else if(item != null) {
             items.add(item);
             if(items.size() >= configuration.getBatchSize()) {
-                score = doExec(items,inferenceVector, useHS, isInference);
+                score = doExec(items, null);
             }
         } else if(item == null && !items.isEmpty()) {
             if(items.size() >= configuration.getBatchSize()) {
-                score = doExec(items,inferenceVector, useHS, isInference);
+                score = doExec(items, null);
             }
         }
 
@@ -291,7 +285,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
     }
 
-    public  Double doExec(List<BatchItem<T>> items,INDArray inferenceVector, boolean useHS, boolean isInference) {
+    public  Double doExec(List<BatchItem<T>> items,INDArray inferenceVector) {
         if (items.size() > 1) {
             INDArray targetArray = arrayCacheMemoryMgr.allocate(false, DataType.INT32, items.size());
             INDArray ngStarterArray = arrayCacheMemoryMgr.allocate(false, DataType.INT32, items.size());
@@ -316,7 +310,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 randomValuesArr.putScalar(cnt, items.get(cnt).getRandomValue());
                 double alpha = items.get(cnt).getAlpha();
 
-                if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && !isInference)
+                if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && inferenceVector == null)
                         || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP")
                         || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK")
                         || lastWord.getLabel().equals("UNK")) {
@@ -332,7 +326,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 alphasArray.putScalar(cnt, alpha);
 
 
-                if (useHS) {
+                if (configuration.isUseHierarchicSoftmax()) {
                     for (int i = 0; i < w1.getCodeLength(); i++) {
                         int code = w1.getCodes().get(i);
                         int point = w1.getPoints().get(i);
@@ -360,17 +354,17 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     .expTable(expTable.get())
                     .ngStarter((negative > 0) ? ngStarterArray : Nd4j.empty(DataType.INT32))
                     .syn0(syn0.get())
-                    .syn1(useHS ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
+                    .syn1(configuration.isUseHierarchicSoftmax() ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
                     .syn1Neg((negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()))
                     .negTable((negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()))
-                    .indices(useHS ? indices : Nd4j.empty(DataType.INT32))
-                    .codes(useHS ? codes: Nd4j.empty(DataType.INT8))
+                    .indices(configuration.isUseHierarchicSoftmax() ? indices : Nd4j.empty(DataType.INT32))
+                    .codes(configuration.isUseHierarchicSoftmax() ? codes: Nd4j.empty(DataType.INT8))
                     .alpha(alphasArray)
                     .randomValue(randomValuesArr)
                     .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
                     .preciseMode(configuration.isPreciseMode())
                     .numWorkers(workers)
-                    .iterations(1)
+                    .iterations(inferenceVector != null ? configuration.getIterations() * configuration.getEpochs() : 1)
                     .build();
 
             Nd4j.getExecutioner().exec(sg);
@@ -390,7 +384,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             int[] indices = new int[w1.getCodeLength()];
             double alpha = items.get(cnt).getAlpha();
 
-            if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && !isInference)
+            if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && inferenceVector == null)
                     || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP")
                     || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK")
                     || lastWord.getLabel().equals("UNK")) {
@@ -401,7 +395,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             int ngStarter = w1.getIndex();
 
 
-            if (useHS) {
+            if (configuration.isUseHierarchicSoftmax()) {
                 for (int i = 0; i < w1.getCodeLength(); i++) {
                     int code = w1.getCodes().get(i);
                     int point = w1.getPoints().get(i);
@@ -431,7 +425,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     .syn0(syn0.get())
                     .negTable((negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()))
                     .expTable(expTable.get())
-                    .syn1(useHS ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
+                    .syn1(configuration.isUseHierarchicSoftmax() ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
                     .syn1Neg((negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()))
                     .negTable((negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()))
                     .alpha(new double[]{alpha})

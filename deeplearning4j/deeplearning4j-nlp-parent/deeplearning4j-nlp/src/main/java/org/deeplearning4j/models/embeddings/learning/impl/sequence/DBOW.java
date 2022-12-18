@@ -148,6 +148,8 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
                 if (word == null)
                     continue;
 
+                nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
+
                 BatchItem<T> batchItem = new BatchItem<>(word,lastWord,nextRandom.get(),alpha);
                 batches.add(batchItem);
 
@@ -157,7 +159,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
 
         if(inferenceVector != null)
-            skipGram.doExec(batches,inferenceVector,configuration.isUseHierarchicSoftmax(),true);
+            skipGram.doExec(batches,inferenceVector);
 
 
 
@@ -185,13 +187,9 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
             return null;
 
 
-
         INDArray ret = inferenceVector;
+        dbow(sequence, nr, learningRate, ret);
 
-        for(int i = 0; i < iterations; i++) {
-            dbow(sequence, nr, learningRate, ret);
-            learningRate = ((learningRate - minLearningRate) / (iterations - i)) + minLearningRate;
-        }
 
         return ret;
     }

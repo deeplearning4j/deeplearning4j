@@ -21,7 +21,6 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/sg_cb.h>
-#include <ops/specials.h>
 #include <math/templatemath.h>
 #define HS_MAX_EXP 6.0f
 
@@ -29,7 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 template <typename T>
-void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, const double alpha, const int vectorLength, const int code,
+void hSoftmax_(T *vsyn0, T *vsyn1, T *vexpTable, T *vneu1e, const double alpha, const int vectorLength, const int code,
                const int expLength, const bool isInference) {
   auto syn0 = reinterpret_cast<T *>(vsyn0);
   auto syn1 = reinterpret_cast<T *>(vsyn1);
@@ -40,48 +39,35 @@ void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, const do
   T g(0.0f);
   T f(0.0f);
 
-  //sd_printf("syn0:",0);
 
   // dot
   PRAGMA_OMP_SIMD
   for (int e = 0; e < vectorLength; e++) {
     dot += syn0[e] * syn1[e];
-    //sd_printf(" %f ",syn0[e]);
 
   }
 
-  //sd_printf("\n",0);
-
-  //sd_printf("HS: dot before dot < (T)-HS_MAX_EXP || dot >= (T)HS_MAX_EXP: %d\n",dot,dot < (T)-HS_MAX_EXP || dot >= (T)HS_MAX_EXP);
 
   // gradient
   if (dot < (T)-HS_MAX_EXP || dot >= (T)HS_MAX_EXP) return;
   int idx = static_cast<int>((dot + HS_MAX_EXP) * ((float)expLength / HS_MAX_EXP / 2.0f));
-  //sd_printf("HS: idx %d  idx >= expLength || idx < 0 %d \n",idx,idx >= expLength || idx < 0);
 
   if (idx >= expLength || idx < 0) return;
 
   f = expTable[idx];
   g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * (T)alpha;
-  //sd_printf("HS: dot [%f] idx [%d] f [%f] g [%f] code %d\n",dot,idx,f,g,code);
-  //sd_printf("neu1e:",0);
 
-  PRAGMA_OMP_SIMD
-  for (int x = 0; x < vectorLength; x++) {
-    neu1e[x] = g * syn1[x] + neu1e[x];
-    //sd_printf(" %f ",neu1e[x]);
-  }
-  //sd_printf("\n",0);
-  // axpy2
-  if (!isInference) {
-    //sd_printf("syn1: ",0);
-PRAGMA_OMP_SIMD
+  if(!isInference) {
+    PRAGMA_OMP_SIMD
     for (int x = 0; x < vectorLength; x++) {
-      syn1[x] = g * syn0[x] + syn1[x];
-      //sd_printf(" %f ",syn1[x]);
+      neu1e[x] += g * syn1[x];
+      syn1[x] += g * syn0[x];
     }
-
-    //sd_printf("\n",0);
+  } else {
+    PRAGMA_OMP_SIMD
+    for (int x = 0; x < vectorLength; x++) {
+      neu1e[x] += g * syn1[x];
+    }
   }
 }
 
@@ -118,14 +104,14 @@ void nSampling_(void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, doub
   if (!isInference) {
     PRAGMA_OMP_SIMD
     for (int e = 0; e < vectorLength; e++) {
-      neu1e[e] = g * syn1Neg[e] + neu1e[e];
-      syn1Neg[e] = g * syn0[e] + syn1Neg[e];
+      neu1e[e] += g * syn1Neg[e];
+      syn1Neg[e] += g * syn0[e];
     }
   } else {
     // axpy1
     PRAGMA_OMP_SIMD
     for (int e = 0; e < vectorLength; e++) {
-      neu1e[e] = g * syn1Neg[e] + neu1e[e];
+      neu1e[e] += g * syn1Neg[e];
     }
   }
 
@@ -251,8 +237,7 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
   auto infVector = reinterpret_cast<T *>(vinfVector);
   auto neu1e = new T[vectorLength];
   memset(neu1e, 0, vectorLength * sizeof(T));
-  //sd_printf("BEGIN skipgram syn0Row: [%i] vecLen: [%i] hsRounds [%d] expLength: [%i] vocabSize [%i]\n",target,vectorLength,hsRounds,expLength,vocabSize);
-
+ PRAGMA_OMP_SIMD
   for(int i = 0; i < iterations; i++) {
     // hierarchic softmax goes first (if enabled)
     auto syn0row = infVector != nullptr ? infVector : syn0 + (target * vectorLength);
@@ -260,7 +245,6 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
     if (hsRounds > 0) {
       for (int r = 0; r < hsRounds; r++) {
         irow = indices.e<int>(r);
-        //sd_printf("Code %d Index %d\n",codes.e<int>(r),irow);
         hSoftmax_<T>(syn0row, syn1 + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, codes.e<int>(r), expLength,
                      infVector != nullptr);
       }
@@ -304,8 +288,6 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
 
 
   }
-
-  //sd_printf("END skipgram\n",0);
 
   delete[] neu1e;
 }
@@ -383,50 +365,44 @@ static void do_negative(int target, int positive, T *syn0, T *syn1Neg, T *expTab
   }
 }
 
-template <typename T>
-T _dot(T *x,T *y,int vectorLength) {
-  T dot(0.0f);
-  // dot
-  PRAGMA_OMP_SIMD
-  for (int e = 0; e < vectorLength; e++) {
-    dot += x[e] * y[e];
-  }
-  return dot;
-}
 
 template <typename T>
-void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, NDArray &vinfVector,
+void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable,NDArray &vnegTable, NDArray &vinfVector,
                         NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr,
                         NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
                         const int expLength, const int negLength, const bool preciseMode, const int numThreads,const int iterations,double minLearningRate) {
-  const auto expTable = reinterpret_cast<T *>(vexpTable);
-  const auto negTable = reinterpret_cast<T *>(vnegTable);
+  const auto expTable = reinterpret_cast<T *>(vexpTable.buffer());
+  const auto negTable = reinterpret_cast<T *>(vnegTable.buffer());
   const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
-   
+
   // regular mode provides 0 guarantees for reproducibility
   auto numTargets = targets.lengthOf();
-  int iteration = 0;
   for(int i = 0; i < iterations; i++) {
   for (auto t = 0; t < numTargets; t++) {
     T *neu1e = new T[vectorLength];
     memset(neu1e, 0, vectorLength * sizeof(T));
 
-    auto alpha = lr.e<double>(t);
+    auto alpha = lr.e<T>(t);
+
+
     sd::LongType randomValue = nextRandom.e<sd::LongType>(t);
     auto target = targets.e<int>(t);
     auto syn0row = vinfVector.isEmpty() ?  reinterpret_cast<T *>(s0.bufferWithOffset(target * vectorLength)) : reinterpret_cast<T *>(vinfVector.buffer());
-    //sd_printf("BEGIN skipgram syn0Row: [%i] vecLen: [%i] hsRounds [%d] expLength: [%i] vocabSize [%i]\n",target,vectorLength,hsRounds,expLength,vocabSize);
     if(hsRounds > 0) {
+
       for (sd::LongType e = 0; e < hsRounds; e++) {
         int currRow = indices.e<int>(t,e);
         int code = codes.e<int>(t,e);
         //codes are only 0 and 1, -1 are placeholders for invalid codes
         //the codes matrix is padded with extra values at time of allocation
         //this is due to the code rows effectively being a ragged matrix (rows have different shapes)
-        if(code < 0) continue;
+        if(code < 0)  {
+          continue;
+        }
+
         T *syn1row = (T *) s1.bufferWithOffset(currRow * vectorLength);
-        //sd_printf("skipgram syn0row [%i] idx syn1: [%i] code [%i] at hsRound [%i]\n",target,currRow,code,e);
-        hSoftmax_<T>(syn0row,syn1row,vexpTable,neu1e,alpha,vectorLength,code,expLength,!vinfVector.isEmpty());
+        hSoftmax_<T>(syn0row,syn1row,expTable,neu1e,alpha,vectorLength,code,expLength,!vinfVector.isEmpty());
+
       }
     }
 
@@ -452,27 +428,26 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable,
         }
       }
 
-
-    if (vinfVector.isEmpty()) {
+      PRAGMA_OMP_SIMD
       for (int e = 0; e < vectorLength; e++) {
         syn0row[e] += neu1e[e];
       }
-    } else {
-      T *infVector = reinterpret_cast<T *>(vinfVector.buffer());
-      for (int e = 0; e < vectorLength; e++) {
-        infVector[e] += neu1e[e];
-      }
-    }
 
-    delete[] neu1e;
+      alpha = ((alpha - minLearningRate) / (iterations - i)) + minLearningRate;
+      lr.p<T>(t,alpha);
+      delete[] neu1e;
+
   }
+
+
    }
 
-   //sd_printf("END skipgram\n",0);
+
+
   }
 
 BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_,
-                      (NDArray & s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, NDArray &vinfVector,
+                      (NDArray & s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable, NDArray &vnegTable, NDArray &vinfVector,
                           NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr,
                           NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
                           const int expLength, const int negLength, const bool preciseMode, const int numThreads,const int iterations,double minLearningRate),
@@ -686,7 +661,7 @@ void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable,
   } else if (ngStarter.isVector() || target.isVector()) {
     // batch mode
     BUILD_SINGLE_SELECTOR(xType, skipgramBatchExec_,
-                          (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), inferenceVector, target, ngStarter,
+                          (syn0, syn1, syn1Neg, expTable, negTable, inferenceVector, target, ngStarter,
                               indices, codes, alpha, randomValue, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1),
                               expTable.lengthOf(), negTable.lengthOf(), preciseMode, numWorkers,iterations,minLearningRate),
                           SD_FLOAT_TYPES);
