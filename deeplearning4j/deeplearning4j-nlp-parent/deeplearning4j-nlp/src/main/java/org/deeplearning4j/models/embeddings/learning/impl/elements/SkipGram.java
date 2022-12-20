@@ -268,10 +268,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         double score = 0.0;
 
         List<BatchItem<T>> items = getBatch();
-        //inference case just perform inference
-        if(inferenceVector != null) {
-            score = doExec(Arrays.asList(item),inferenceVector);
-        } else if(item != null) {
+        if(item != null) {
             items.add(item);
             if(items.size() >= configuration.getBatchSize()) {
                 score = doExec(items, null);
@@ -379,7 +376,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             arrayCacheMemoryMgr.release(targetArray);
             arrayCacheMemoryMgr.release(randomValuesArr);
             arrayCacheMemoryMgr.release(alphasArray);
-            getBatch().clear();
+            items.clear();
 
 
         } else {
@@ -449,6 +446,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     .build();
 
             Nd4j.getExecutioner().exec(sg);
+            items.clear();
 
         }
         return 0.0;

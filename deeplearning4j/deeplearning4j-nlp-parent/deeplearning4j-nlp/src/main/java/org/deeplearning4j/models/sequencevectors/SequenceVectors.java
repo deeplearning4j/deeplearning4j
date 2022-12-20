@@ -385,7 +385,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             return;
 
         /*
-            we do NOT train elements separately if sequnceLearningAlgorithm isn't CBOW
+            we do NOT train elements separately if sequenceLearningAlgorithm isn't CBOW
             we skip that, because PV-DM includes CBOW
           */
 
