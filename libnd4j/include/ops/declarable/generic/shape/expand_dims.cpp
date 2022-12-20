@@ -68,11 +68,12 @@ DECLARE_SHAPE_FN(expand_dims) {
   char order = shape::order(inShape);
 
   sd::LongType axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->e<int>(0);
+  if (axis < 0) axis += x_rank + 1;
+
   REQUIRE_TRUE(axis >= 0 && axis <= input->rankOf(), 0,
                "ExpandDims: axis should be in range of 0...%i in this case, but got %i instead", input->rankOf() + 1,
                axis);
 
-  if (axis < 0) axis += x_rank + 1;
   std::vector<sd::LongType> shape;
   for (int e = 0; e < x_rank; e++) shape.emplace_back(shape::shapeOf(inShape)[e]);
 

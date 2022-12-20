@@ -235,11 +235,19 @@ public class TestShapeOpValidation extends BaseOpValidation {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @ParameterizedTest()
     public void testExpandDimsOutofBounds(Nd4jBackend backend) {
-       assertThrows(ND4JIllegalStateException.class,() -> {
-           INDArray v1 = Nd4j.zeros(1, 1);
-           INDArray v2 = Nd4j.base().expandDims(v1, 3); // crashes
-       });
+        assertThrows(ND4JIllegalStateException.class,() -> {
+            INDArray v1 = Nd4j.zeros(1, 1);
+            INDArray v2 = Nd4j.base().expandDims(v1, 3); // crashes
+        });
 
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testNegativeIndicesExpandDims(Nd4jBackend backend) {
+        INDArray v1 = Nd4j.ones(2, 2);
+        INDArray v2 = Nd4j.expandDims(v1, -1); // throws exception
+        assertArrayEquals(new long[]{2,2,1},v2.shape());
     }
 
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
