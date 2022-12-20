@@ -121,12 +121,12 @@ public class TrainingSession extends InferenceSession {
 
         //Also add evaluations - in case we want to evaluate something that isn't required to determine loss
         // (hence wouldn't normally be calculated)
-        if(config.getTrainEvaluations() != null){
+        if(config.getTrainEvaluations() != null) {
             requiredActivations.addAll(config.getTrainEvaluations().keySet());
         }
 
-        if(config.getLossVariables() != null) {
-            requiredActivations.addAll(config.getLossVariables());
+        if(sameDiff.getLossVariables() != null) {
+            requiredActivations.addAll(sameDiff.getLossVariables());
         }
 
         //Set up losses
@@ -140,6 +140,7 @@ public class TrainingSession extends InferenceSession {
 
         //Do training iteration
         List<String> outputVars = new ArrayList<>(gradVarToVarMap.keySet());    //TODO this should be empty, and grads calculated in requiredActivations
+        outputVars.addAll(lossVariables);
         Map<String, INDArray> m = output(outputVars, placeholders, batch, requiredActivations, listeners, at);
 
 

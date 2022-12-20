@@ -38,12 +38,12 @@ public class LossCurve {
     @Getter
     private INDArray lossValues;
 
-    public LossCurve(List<Loss> losses){
+    public LossCurve(List<Loss> losses) {
         lossNames = Collections.unmodifiableList(losses.get(0).getLossNames());
         int numLossValues = losses.get(0).lossValues().length;
         lossValues = Nd4j.create(DataType.FLOAT, losses.size(), losses.get(0).lossValues().length);
 
-        for(int i = 0 ; i < losses.size() ; i++){
+        for(int i = 0 ; i < losses.size() ; i++) {
             Loss l = losses.get(i);
             Preconditions.checkArgument(l.getLossNames().equals(lossNames),
                     "Loss names for loss %s differ from others.  Expected %s, got %s",
@@ -57,12 +57,12 @@ public class LossCurve {
         }
     }
 
-    public LossCurve(double[] lossValues, List<String> lossNames){
+    public LossCurve(double[] lossValues, List<String> lossNames) {
         this.lossValues = Nd4j.createFromArray(new double[][]{ lossValues}).castTo(DataType.FLOAT);
         this.lossNames = lossNames;
     }
 
-    protected LossCurve(INDArray lossValues, List<String> lossNames){
+    protected LossCurve(INDArray lossValues, List<String> lossNames) {
         Preconditions.checkArgument(lossValues.rank() == 2, "lossValues must have a rank of 2, got %s", lossValues.rank());
         Preconditions.checkArgument(lossValues.dataType() == DataType.FLOAT, "lossValues must be type FLOAT, got %s", lossValues.dataType());
         this.lossValues = lossValues;

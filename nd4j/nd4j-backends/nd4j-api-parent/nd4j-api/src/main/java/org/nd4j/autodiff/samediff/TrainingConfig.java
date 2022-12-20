@@ -48,7 +48,6 @@ public class TrainingConfig {
     private List<String> dataSetLabelMapping;
     private List<String> dataSetFeatureMaskMapping;
     private List<String> dataSetLabelMaskMapping;
-    private List<String> lossVariables;
     private int iterationCount;
     private int epochCount;
     private DataType initialLossDataType;

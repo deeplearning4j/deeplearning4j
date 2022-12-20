@@ -107,7 +107,7 @@ public class History {
      *
      * Only works if there is only one evaluation with the given metric for param
      */
-    public List<Double> trainingEval(String param, IMetric metric){
+    public List<Double> trainingEval(String param, IMetric metric) {
         List<Double> data = new ArrayList<>();
         for(EvaluationRecord er : trainingHistory)
             data.add(er.getValue(param, metric));
@@ -130,7 +130,7 @@ public class History {
      * Note that it returns all recorded evaluations.
      * Index determines the evaluation used not the epoch's results to return.
      */
-    public List<Double> trainingEval(String param, int index, IMetric metric){
+    public List<Double> trainingEval(String param, int index, IMetric metric) {
         List<Double> data = new ArrayList<>();
         for(EvaluationRecord er : trainingHistory)
             data.add(er.getValue(param, index, metric));
@@ -144,7 +144,7 @@ public class History {
      * Note that it returns all recorded evaluations.
      * Index determines the evaluation used not the epoch's results to return.
      */
-    public List<Double> trainingEval(SDVariable param, int index, IMetric metric){
+    public List<Double> trainingEval(SDVariable param, int index, IMetric metric) {
         return trainingEval(param.name(), index, metric);
     }
 
@@ -153,7 +153,7 @@ public class History {
      *
      * Only works if there is only one evaluation with the given metric
      */
-    public List<Double> trainingEval(IMetric metric){
+    public List<Double> trainingEval(IMetric metric) {
         List<Double> data = new ArrayList<>();
         for(EvaluationRecord er : trainingHistory)
             data.add(er.getValue(metric));
@@ -166,7 +166,7 @@ public class History {
      *
      * Only works if there is only one evaluation for param.
      */
-    public List<IEvaluation> trainingEval(String param){
+    public List<IEvaluation> trainingEval(String param) {
         List<IEvaluation> data = new ArrayList<>();
         for(EvaluationRecord er : trainingHistory)
             data.add(er.evaluation(param));
@@ -189,7 +189,7 @@ public class History {
      * Note that it returns all recorded evaluations.
      * Index determines the evaluation used not the epoch's results to return.
      */
-    public List<IEvaluation> trainingEval(String param, int index){
+    public List<IEvaluation> trainingEval(String param, int index) {
         List<IEvaluation> data = new ArrayList<>();
         for(EvaluationRecord er : trainingHistory)
             data.add(er.evaluation(param, index));
@@ -212,7 +212,7 @@ public class History {
      *
      * Only works if there is only one evaluation with the given metric for param
      */
-    public List<Double> validationEval(String param, IMetric metric){
+    public List<Double> validationEval(String param, IMetric metric) {
         List<Double> data = new ArrayList<>();
         for(EvaluationRecord er : validationHistory)
             data.add(er.getValue(param, metric));
@@ -225,7 +225,7 @@ public class History {
      *
      * Only works if there is only one evaluation with the given metric for param
      */
-    public List<Double> validationEval(SDVariable param, IMetric metric){
+    public List<Double> validationEval(SDVariable param, IMetric metric) {
         return validationEval(param.name(), metric);
     }
 
@@ -235,7 +235,7 @@ public class History {
      * Note that it returns all recorded evaluations.
      * Index determines the evaluation used not the epoch's results to return.
      */
-    public List<Double> validationEval(String param, int index, IMetric metric){
+    public List<Double> validationEval(String param, int index, IMetric metric) {
         List<Double> data = new ArrayList<>();
         for(EvaluationRecord er : validationHistory)
             data.add(er.getValue(param, index, metric));
@@ -249,7 +249,7 @@ public class History {
      * Note that it returns all recorded evaluations.
      * Index determines the evaluation used not the epoch's results to return.
      */
-    public List<Double> validationEval(SDVariable param, int index, IMetric metric){
+    public List<Double> validationEval(SDVariable param, int index, IMetric metric) {
         return validationEval(param.name(), index, metric);
     }
 
@@ -258,7 +258,7 @@ public class History {
      *
      * Only works if there is only one evaluation with the given metric
      */
-    public List<Double> validationEval(IMetric metric){
+    public List<Double> validationEval(IMetric metric) {
         List<Double> data = new ArrayList<>();
         for(EvaluationRecord er : validationHistory)
             data.add(er.getValue(metric));
@@ -271,7 +271,7 @@ public class History {
      *
      * Only works if there is only one evaluation for param.
      */
-    public List<IEvaluation> validationEval(String param){
+    public List<IEvaluation> validationEval(String param) {
         List<IEvaluation> data = new ArrayList<>();
         for(EvaluationRecord er : validationHistory)
             data.add(er.evaluation(param));
@@ -294,7 +294,7 @@ public class History {
      * Note that it returns all recorded evaluations.
      * Index determines the evaluation used not the epoch's results to return.
      */
-    public List<IEvaluation> validationEval(String param, int index){
+    public List<IEvaluation> validationEval(String param, int index) {
         List<IEvaluation> data = new ArrayList<>();
         for(EvaluationRecord er : validationHistory)
             data.add(er.evaluation(param, index));
@@ -315,7 +315,7 @@ public class History {
     /**
      * Gets the training evaluations ran during the last epoch
      */
-    public EvaluationRecord finalTrainingEvaluations(){
+    public EvaluationRecord finalTrainingEvaluations() {
         Preconditions.checkState(!trainingHistory.isEmpty(), "Cannot get final training evaluation - history is empty");
         return trainingHistory.get(trainingHistory.size() - 1);
     }
@@ -323,7 +323,7 @@ public class History {
     /**
      * Gets the validation evaluations ran during the last epoch
      */
-    public EvaluationRecord finalValidationEvaluations(){
+    public EvaluationRecord finalValidationEvaluations() {
         Preconditions.checkState(!validationHistory.isEmpty(), "Cannot get final validation evaluation - history is empty");
         return validationHistory.get(validationHistory.size() - 1);
     }
@@ -332,7 +332,7 @@ public class History {
      * Gets the evaluation record for a given epoch.
      * @param epoch The epoch to get results for.  If negative, returns results for the epoch that many epochs from the end.
      */
-    public EvaluationRecord trainingEvaluations(int epoch){
+    public EvaluationRecord trainingEvaluations(int epoch) {
         if(epoch >= 0){
             return trainingHistory.get(epoch);
         } else {
@@ -344,7 +344,7 @@ public class History {
      * Gets the evaluation record for a given epoch.
      * @param epoch The epoch to get results for.  If negative, returns results for the epoch that many epochs from the end.
      */
-    public EvaluationRecord validationEvaluations(int epoch){
+    public EvaluationRecord validationEvaluations(int epoch) {
         if(epoch >= 0){
             return trainingHistory.get(epoch);
         } else {
