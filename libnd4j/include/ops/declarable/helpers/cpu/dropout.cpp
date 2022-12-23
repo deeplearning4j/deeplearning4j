@@ -39,7 +39,7 @@ static void dropoutSimple(NDArray const* input, NDArray* output, double probValu
     for (auto e = start; e < stop; e++) {
       float val = nodeRng.relativeT<T>(e, T(0.f), T(1.f));
 
-      if (val < probValue) output->p<T>(e, input->e<T>(e) / probValue);
+      if (val < probValue) output->p<T>(e, input->e<T>(e));
     }
   };
 
@@ -51,11 +51,7 @@ BUILD_SINGLE_TEMPLATE(template void dropoutSimple, (NDArray const* input, NDArra
 template <typename T>
 sd::Status dropOutFunctor_(graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed,
                            double probValue) {
-  // NativeOps native;
-  // sd::graph::RandomGenerator nodeRng(seed);   //static sd::Status dropOutFunctor_(sd::random::RandomBuffer* rng,
-  // NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue) { NativeOps native;
-  // native.reSeedBuffer(nullptr, (long)seed, rng);
-  // if (newRng )
+
   if (reduceShape == nullptr) {
     dropoutSimple<T>(input, output, probValue, seed);
   } else {
@@ -79,9 +75,6 @@ sd::Status dropOutFunctor_(graph::Context& context, NDArray* input, NDArray* out
     REQUIRE_TRUE(fit, 0, "dropout: Noise shape should fit to input rank.");
     std::unique_ptr<NDArray> chunk(new NDArray('c', dims, output->dataType(), output->getContext()));
     chunk->assign(1.f);
-    // chunk->applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, chunk.get(), &probValue);
-    // NativeOpExecutioner::execRandom(random::DropOutInverted, rng, chunk->buffer(), chunk->shapeInfo(),
-    // chunk->buffer(), chunk->shapeInfo(), &prob);
     dropoutSimple<T>(chunk.get(), chunk.get(), probValue, seed);
     // broadcast chunk to full matrix
     std::unique_ptr<NDArray> dropOutMultiplier(new NDArray(*input));
@@ -89,8 +82,7 @@ sd::Status dropOutFunctor_(graph::Context& context, NDArray* input, NDArray* out
 
     *dropOutMultiplier += *chunk;
 
-    output->assign(*input * *dropOutMultiplier);  // input->applyPairwiseTransform(pairwise::Multiply,
-                                                  // dropOutMultiplier.get(), output, nullptr);
+    output->assign(*input * *dropOutMultiplier);
   }
 
   return sd::Status::OK;
@@ -126,13 +118,7 @@ static sd::Status dropOutFunctorBP_(graph::Context& context, NDArray* input, NDA
 template <typename T>
 static sd::Status alphaDropOutFunctor_(graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape,
                                        int seed, double probValue, double alpha, double alpha1, double beta) {
-  // NativeOps native;
-  // auto rng = context.getRNG();
-  // native.reSeedBuffer(nullptr, (long)seed, rng);
-  // if (rng == nullptr)
-  //    return sd::Status::BAD_RNG;
-  // T probValueArr[] = {probValue, alpha, alpha1, beta};
-  // input->template applyRandom<randomOps::AlphaDropOut<T>>(rng, nullptr, output, probValueArr);
+
   sd::graph::RandomGenerator nodeRng(3019L, seed);
 
   auto func = PRAGMA_THREADS_FOR {
@@ -155,7 +141,7 @@ sd::Status alphaDropOutFunctorBP_(graph::Context& context, NDArray* input, NDArr
   auto res = alphaDropOutFunctor(context, input, output, reduceShape, seed, probValue, alpha, alpha1, beta);
   if (res == sd::Status::OK) {
     (*output) *= alpha;
-    (*output) *= (*gradOut);  //->applyPairwiseTransform<transform::Multiply>(gradOut, output, nullptr);
+    (*output) *= (*gradOut);
   }
   return res;
 }

@@ -158,6 +158,19 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, arrayZ);
     }
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSameDiffDropout(Nd4jBackend backend) {
+        INDArray in = Nd4j.ones(4, 8);
+        INDArray res1 = Nd4j.nn.dropout(in, false, 0.2);
+       for(int i = 0; i < res1.rows(); i++) {
+           for(int j = 0;  j < res1.columns(); j++) {
+               assertTrue(res1.getInt(i,j) == 0 || res1.getInt(i,j) == 1);
+           }
+       }
+    }
+
     /**
      * This test works inplace, but without inplace declaration
      */
