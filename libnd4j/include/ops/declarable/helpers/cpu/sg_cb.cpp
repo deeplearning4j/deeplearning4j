@@ -73,37 +73,6 @@ void hSoftmax_(T *vsyn0, T *vsyn1, T *vexpTable, T *vneu1e, const double alpha, 
   }
 }
 
-template <typename T>
-void hSoftmaxDot_(T dot,void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double alpha, int vectorLength, int code,
-               int expLength, bool isInference) {
-  // gradient
-  if (dot < (T)-HS_MAX_EXP || dot >= (T) HS_MAX_EXP) return;
-  auto syn0 = reinterpret_cast<T *>(vsyn0);
-  auto syn1 = reinterpret_cast<T *>(vsyn1);
-  auto expTable = reinterpret_cast<T *>(vexpTable);
-  auto neu1e = reinterpret_cast<T *>(vneu1e);
-
-  T g(0.0f);
-  T f(0.0f);
-
-  int idx = static_cast<int>((dot + HS_MAX_EXP) * ((float)expLength / HS_MAX_EXP / 2.0f));
-  if (idx >= expLength || idx < 0) return;
-
-  f = expTable[idx];
-  g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * (T)alpha;
-  PRAGMA_OMP_SIMD
-  for (int x = 0; x < vectorLength; x++) {
-    neu1e[x] = g * syn1[x] + neu1e[x];
-  }
-
-  // axpy2
-  if (!isInference) {
-    PRAGMA_OMP_SIMD
-    for (int x = 0; x < vectorLength; x++) {
-      neu1e[x] += g * syn1[x];
-    }
-  }
-}
 
 template <typename T>
 void nSampling_(void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, double alpha, int vectorLength, int code,
@@ -245,6 +214,8 @@ void cbow_(NDArray &vsyn0, NDArray &vsyn1, NDArray &vsyn1Neg, NDArray &vexpTable
       }
     }
 
+    alpha = ((alpha - static_cast<double>(minLearningRate)) / static_cast<double>((iterations - i))) + static_cast<double>(minLearningRate);
+
     delete[] neu1;
     delete[] neu1e;
 
@@ -320,7 +291,7 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
 
     }
 
-    alpha = ((alpha - minLearningRate) / (iterations - i)) + minLearningRate;
+    alpha = ((alpha - static_cast<double>(minLearningRate)) / static_cast<double>((iterations - i))) + static_cast<double>(minLearningRate);
   }
 
   delete[] neu1e;
@@ -415,7 +386,6 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
         const sd::LongType  targetsLen = targets.lengthOf();
 
         auto func = PRAGMA_THREADS_FOR {
-          //sd_printf("Begin at %d end at %d\n",start,stop);
           for (auto t = start; t < stop; t++) {
             T neu1e[vectorLength];
             memset(neu1e, 0, vectorLength * sizeof(T));
@@ -438,6 +408,8 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
                 }
 
                 T *syn1row = (T *) s1.bufferWithOffset(currRow * vectorLength);
+
+
                 hSoftmax_<T>(syn0row,syn1row,expTable,neu1e,alpha,vectorLength,code,expLength,!vinfVector.isEmpty());
 
               }
@@ -469,9 +441,6 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
               syn0row[e] += neu1e[e];
             }
 
-            alpha = ((alpha - minLearningRate) / (iterations - iterations_)) + minLearningRate;
-            lr.p<T>(t,alpha);
-
           }
         };
 
@@ -481,12 +450,12 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
   } else {
     // regular mode provides 0 guarantees for reproducibility
     auto numTargets = targets.lengthOf();
-    for(int i = 0; i < iterations; i++) {
-      for (auto t = 0; t < numTargets; t++) {
+    for(int iteration = 0; iteration < iterations; iteration++) {
+         for (auto t = 0; t < numTargets; t++) {
         T *neu1e = new T[vectorLength];
         memset(neu1e, 0, vectorLength * sizeof(T));
 
-        auto alpha = lr.e<T>(t);
+        auto alpha = lr.e<double>(t);
 
 
         sd::LongType randomValue = nextRandom.e<sd::LongType>(t);
@@ -504,7 +473,7 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
             }
 
             T *syn1row = (T *) s1.bufferWithOffset(currRow * vectorLength);
-            hSoftmax_<T>(syn0row,syn1row,expTable,neu1e,alpha,vectorLength,code,expLength,!vinfVector.isEmpty());
+            hSoftmax_<T>(syn0row,syn1row,expTable,neu1e,lr.e<double>(t),vectorLength,code,expLength,!vinfVector.isEmpty());
 
           }
         }
@@ -535,8 +504,7 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
           syn0row[e] += neu1e[e];
         }
 
-        alpha = ((alpha - minLearningRate) / (iterations - i)) + minLearningRate;
-        lr.p<T>(t,alpha);
+        lr.p<double>(t,((lr.e<double>(t) - static_cast<double>(minLearningRate)) / (static_cast<double>(iterations - iteration))) + static_cast<double>(minLearningRate));
         delete[] neu1e;
 
       }
@@ -743,7 +711,6 @@ void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable,
 
   // single round case
   if ((ngStarter.isScalar() && !ngStarter.isEmpty()) || (target.isScalar() && !target.isEmpty())) {
-    sd_printf("Singular case %d\n",0);
     auto hsRounds = codes.lengthOf();
 
     BUILD_SINGLE_SELECTOR(

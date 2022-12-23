@@ -176,7 +176,7 @@ CONFIGURABLE_OP_IMPL(skipgram, 12, 12, true, 0, 0) {
   auto isInference = block.numB() > 0 ? B_ARG(0) : false;
   auto isPreciseMode = block.numB() > 1 ? B_ARG(1) : false;
 
-  auto minLearningRate = block.numT() > 0 ? T_ARG(0) : 1e-3;
+  auto minLearningRate = block.numT() > 0 ? T_ARG(0) : 1e-4;
 
 
   REQUIRE_TRUE(block.isInplace(), 0, "SkipGram: this operation requires inplace execution only");
