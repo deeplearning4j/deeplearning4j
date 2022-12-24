@@ -20,7 +20,10 @@
 
 package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
+import static org.deeplearning4j.datasets.iterator.RandomDataSetIterator.Values.ONE_HOT;
+import static org.deeplearning4j.datasets.iterator.RandomDataSetIterator.Values.ZEROS;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.nd4j.linalg.api.buffer.DataType.FLOAT;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 
 import java.io.IOException;
@@ -35,6 +38,8 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.collection.CollectionRecordReader;
 import org.datavec.api.writable.IntWritable;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+import org.deeplearning4j.datasets.iterator.RandomDataSetIterator;
+import org.deeplearning4j.datasets.iterator.ReconstructionDataSetIterator;
 import org.junit.jupiter.api.*;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -165,6 +170,40 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         inputMap.put("y", labels);
         return inputMap;
     }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLinearEquivlency(Nd4jBackend backend) {
+        int batchSize = 32;
+        int modelDim = 10;
+
+        SameDiff sd = SameDiff.create();
+
+        SDVariable features = sd.placeHolder("features", FLOAT, batchSize, modelDim);
+        SDVariable labels = sd.placeHolder("labels", FLOAT, batchSize, modelDim);
+        SDVariable weights = sd.var("weights", new OneInitScheme('c'), FLOAT, modelDim, modelDim);
+        SDVariable bias = sd.zero("bias", FLOAT,modelDim);
+      //  SDVariable predictions = sd.nn.linear("predictions", features, weights, bias);       // <<< variant 2 (doesn't work)
+       SDVariable predictions = sd.nn.reluLayer("predictions", features, weights, bias); // <<< variant 3 (doesn't work)
+        sd.loss.meanSquaredError("loss", labels, predictions, null);
+
+        TrainingConfig config = new TrainingConfig.Builder()
+                .updater(new Adam(0.1))
+                .dataSetFeatureMapping("features")
+                .dataSetLabelMapping("labels")
+                .build();
+        sd.setTrainingConfig(config);
+
+// the task is to reconstruct the one-hot encoded input
+        DataSetIterator iterator = new ReconstructionDataSetIterator(new RandomDataSetIterator(100, new long[]{batchSize, modelDim}, new long[]{}, ONE_HOT, ZEROS));
+
+        sd.fit(iterator, 10);
+
+        Evaluation evaluation = new Evaluation();
+        sd.evaluate(iterator, "predictions", evaluation);
+        System.out.println(evaluation.stats());
+    }
+
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
