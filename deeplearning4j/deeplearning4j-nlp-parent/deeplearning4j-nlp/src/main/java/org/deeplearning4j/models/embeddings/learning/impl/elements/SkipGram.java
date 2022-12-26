@@ -42,7 +42,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -206,26 +205,31 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         }
 
         if (getBatch() != null && getBatch().size() >= configuration.getBatchSize()) {
-            score = iterateSample(null, null);
+            doExec(getBatch(),null);
             getBatch().clear();
         }
 
         return score;
     }
 
+
+    public void clearBatch() {
+        getBatch().clear();
+    }
+
     @Override
     public void finish() {
         if (batches != null && batches.get() != null && !batches.get().isEmpty()) {
-            iterateSample(null, null);
-            batches.get().clear();
+            iterateSample(null);
+            clearBatch();
         }
     }
 
     @Override
     public void finish(INDArray inferenceVector) {
         if (batches != null && batches.get() != null && !batches.get().isEmpty()) {
-            iterateSample(null, inferenceVector);
-            batches.get().clear();
+            iterateSample(null);
+            clearBatch();
         }
     }
 
@@ -239,6 +243,9 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         return false;
     }
 
+    public void addBatchItem(BatchItem<T> batchItem) {
+        getBatch().add(batchItem);
+    }
 
     private double skipGram(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha, int currentWindow) {
         final T word = sentence.get(i);
@@ -254,7 +261,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     T lastWord = sentence.get(c);
                     nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
                     BatchItem<T> batchItem = new BatchItem<>(word, lastWord, nextRandom.get(), alpha);
-                    score = iterateSample(batchItem,null);
+                    addBatchItem(batchItem);
 
                 }
             }
@@ -264,7 +271,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     }
 
 
-    public double iterateSample(BatchItem<T> item,INDArray inferenceVector) {
+    public double iterateSample(BatchItem<T> item) {
         double score = 0.0;
 
         List<BatchItem<T>> items = getBatch();

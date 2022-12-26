@@ -34,6 +34,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.nlp.CbowInference;
 import org.nd4j.linalg.api.ops.impl.nlp.CbowRound;
 import org.nd4j.linalg.factory.Nd4j;
@@ -76,6 +77,16 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
     public List<BatchItem<T>> getBatch() {
         return batches.get();
+    }
+
+
+    public void addBatchItem(BatchItem<T> batchItem) {
+        getBatch().add(batchItem);
+    }
+
+
+    public void clearBatch() {
+        getBatch().clear();
     }
 
     @Override

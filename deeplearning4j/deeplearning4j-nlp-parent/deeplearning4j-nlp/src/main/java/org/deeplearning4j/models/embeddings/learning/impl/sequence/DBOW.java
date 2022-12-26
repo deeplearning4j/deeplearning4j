@@ -142,7 +142,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
         if (sentence.isEmpty() || labels.isEmpty())
             return;
 
-        List<BatchItem<T>> batches = new ArrayList<>();
+        List<BatchItem<T>> batches = inferenceVector != null ?  new ArrayList<>() : skipGram.getBatch();
         for (T lastWord : labels) {
             for (T word : sentence) {
                 if (word == null)
@@ -151,7 +151,9 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
                 nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
                 BatchItem<T> batchItem = new BatchItem<>(word,lastWord,nextRandom.get(),alpha);
-                batches.add(batchItem);
+                if(inferenceVector != null)
+                    batches.add(batchItem);
+                else skipGram.addBatchItem(batchItem);
 
 
             }
@@ -161,13 +163,10 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
         if(inferenceVector != null)
             skipGram.doExec(batches,inferenceVector);
 
-
-
-        if(inferenceVector == null) {
-            if(skipGram != null)
-                skipGram.getBatch().addAll(batches);
-            if(skipGram.getBatch().size() >= configuration.getBatchSize())
-                finish();
+        if (skipGram != null && skipGram.getBatch() != null && skipGram.getBatch() != null
+                && skipGram.getBatch().size() >= configuration.getBatchSize()) {
+            skipGram.doExec(skipGram.getBatch(),null);
+            skipGram.clearBatch();
         }
     }
 
@@ -206,7 +205,6 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
     @Override
     public INDArray inferSequence(Sequence<T> sequence, long nextRandom, double learningRate, double minLearningRate,
                                   int iterations) {
-        AtomicLong nr = new AtomicLong(nextRandom);
         if (sequence.isEmpty())
             return null;
 

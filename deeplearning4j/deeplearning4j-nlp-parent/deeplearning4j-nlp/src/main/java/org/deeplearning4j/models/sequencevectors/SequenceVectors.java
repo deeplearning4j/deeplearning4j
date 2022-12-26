@@ -391,14 +391,14 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         if (trainElementsVectors && !(trainSequenceVectors && sequenceLearningAlgorithm instanceof DM)) {
             // call for ElementsLearningAlgorithm
-            nextRandom.set(nextRandom.get() * 25214903917L + 11);
+            nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             if (!elementsLearningAlgorithm.isEarlyTerminationHit()) {
                 scoreElements.set(elementsLearningAlgorithm.learnSequence(sequence, nextRandom, alpha));
             }
         }
         if (trainSequenceVectors) {
             // call for SequenceLearningAlgorithm
-            nextRandom.set(nextRandom.get() * 25214903917L + 11);
+            nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             if (!sequenceLearningAlgorithm.isEarlyTerminationHit())
                 scoreSequences.set(sequenceLearningAlgorithm.learnSequence(sequence, nextRandom, alpha));
         }

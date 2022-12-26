@@ -390,9 +390,10 @@ namespace samediff {
 		}
 
 #ifdef _OPENMP
-		if (tryAcquire(numThreads)) {
+                if (tryAcquire(numThreads)) {
+
 			auto span = delta / numThreads;
-#pragma omp parallel for
+#pragma omp parallel for  schedule(guided) proc_bind(close) default(shared)
 			for (int e = 0; e < numThreads; e++) {
 				auto start_ = span * e + start;
 				auto stop_ = start_ + span;
@@ -404,7 +405,7 @@ namespace samediff {
 			return numThreads;
 		}
 		else {
-			// if there were no threads available - we'll execute function right within current thread
+                  // if there were no threads available - we'll execute function right within current thread
 			function(0, start, stop, increment);
 
 			// we tell that parallelism request declined

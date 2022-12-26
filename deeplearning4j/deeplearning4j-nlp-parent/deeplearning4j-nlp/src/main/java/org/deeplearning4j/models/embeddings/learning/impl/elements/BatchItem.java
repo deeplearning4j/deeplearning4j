@@ -21,13 +21,19 @@
 package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.nd4j.common.primitives.CounterMap;
+import org.nd4j.shade.guava.collect.HashBasedTable;
+import org.nd4j.shade.guava.collect.Table;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class BatchItem<T extends SequenceElement>  {
     private T word;
     private T lastWord;
+
+
 
     private int[] windowWords; // CBOW only
     private boolean[] wordStatuses;
@@ -69,6 +75,9 @@ public class BatchItem<T extends SequenceElement>  {
 
     private int numLabel;
 
+
+
+
     public BatchItem(T word, T lastWord, long randomValue, double alpha) {
         this.word = word;
         this.lastWord = lastWord;
@@ -84,6 +93,7 @@ public class BatchItem<T extends SequenceElement>  {
         this.numLabel = numLabel;
         this.windowWords = windowWords.clone();
         this.wordStatuses = wordStatuses.clone();
+
     }
 
     public BatchItem(T word, int[] windowWords, boolean[] wordStatuses, long randomValue, double alpha) {
