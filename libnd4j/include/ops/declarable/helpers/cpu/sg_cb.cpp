@@ -539,7 +539,6 @@ void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable, 
       samediff::Threads::parallel_tad(func,start,end,1);
     }
 
-    samediff::Threads::parallel_tad(func,0,targets.lengthOf(),1);
 
   } else {
     // regular mode provides 0 guarantees for reproducibility
