@@ -395,14 +395,22 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
           }
         };
 
+
         int chunkSize = 1024;
-       int chunks = targetsLen / chunkSize;
-       for(int i = 0; i < chunks; i++) {
-         int start = i * chunkSize;
-         int potentialEnd = start + chunkSize;
-         int end = sd::math::sd_min<int>(targetsLen,potentialEnd);
-         samediff::Threads::parallel_tad(func,start,end,1);
-       }
+
+        if(targetsLen < chunkSize) {
+          samediff::Threads::parallel_tad(func,0,targetsLen,1);
+        } else {
+          int chunks = targetsLen / chunkSize;
+          for(int i = 0; i < chunks; i++) {
+            int start = i * chunkSize;
+            int potentialEnd = start + chunkSize;
+            int end = sd::math::sd_min<int>(targetsLen,potentialEnd);
+            samediff::Threads::parallel_tad(func,start,end,1);
+          }
+
+        }
+
 
 
   } else {
@@ -531,13 +539,19 @@ void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable, 
 
     int targetsLen = targets.lengthOf();
     int chunkSize = 1024;
-    int chunks = targetsLen / chunkSize;
-    for(int i = 0; i < chunks; i++) {
-      int start = i * chunkSize;
-      int potentialEnd = start + chunkSize;
-      int end = sd::math::sd_min<int>(targetsLen,potentialEnd);
-      samediff::Threads::parallel_tad(func,start,end,1);
+    if(targetsLen < chunkSize) {
+      samediff::Threads::parallel_tad(func,0,targetsLen,1);
+    } else {
+      int chunks = targetsLen / chunkSize;
+      for(int i = 0; i < chunks; i++) {
+        int start = i * chunkSize;
+        int potentialEnd = start + chunkSize;
+        int end = sd::math::sd_min<int>(targetsLen,potentialEnd);
+        samediff::Threads::parallel_tad(func,start,end,1);
+      }
     }
+
+
 
 
   } else {
