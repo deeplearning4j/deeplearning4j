@@ -21,7 +21,6 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/sg_cb.h>
-#include <ops/specials.h>
 #include <math/templatemath.h>
 #define HS_MAX_EXP 6.0f
 
@@ -29,7 +28,8 @@ namespace sd {
 namespace ops {
 namespace helpers {
 template <typename T>
-void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, const double alpha, const int vectorLength, const int code,
+void hSoftmax_(T *vsyn0, T *vsyn1, T *vexpTable, T *vneu1e, const double alpha, const int vectorLength, const int code,
+
                const int expLength, const bool isInference) {
   auto syn0 = reinterpret_cast<T *>(vsyn0);
   auto syn1 = reinterpret_cast<T *>(vsyn1);
@@ -45,11 +45,14 @@ void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, const do
   PRAGMA_OMP_SIMD
   for (int e = 0; e < vectorLength; e++) {
     dot += syn0[e] * syn1[e];
+
   }
+
 
   // gradient
   if (dot < (T)-HS_MAX_EXP || dot >= (T)HS_MAX_EXP) return;
   int idx = static_cast<int>((dot + HS_MAX_EXP) * ((float)expLength / HS_MAX_EXP / 2.0f));
+
   if (idx >= expLength || idx < 0) return;
 
   f = expTable[idx];
@@ -57,11 +60,11 @@ void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, const do
 
   if(!isInference) {
     PRAGMA_OMP_SIMD
-    for (int e = 0; e < vectorLength; e++) {
-      syn1[e] = g * syn0[e] + syn1[e];
-      neu1e[e] = g * syn1[e] + neu1e[e];
-    }
+    for (int x = 0; x < vectorLength; x++) {
+      neu1e[x] += g * syn1[x];
+      syn1[x] += g * syn0[x];
 
+    }
   } else {
     PRAGMA_OMP_SIMD
     for (int e = 0; e < vectorLength; e++) {
@@ -69,39 +72,6 @@ void hSoftmax_(void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, const do
     }
   }
 }
-
-template <typename T>
-void hSoftmaxDot_(T dot,void *vsyn0, void *vsyn1, void *vexpTable, void *vneu1e, double alpha, int vectorLength, int code,
-               int expLength, bool isInference) {
-  // gradient
-  if (dot < (T)-HS_MAX_EXP || dot >= (T) HS_MAX_EXP) return;
-  auto syn0 = reinterpret_cast<T *>(vsyn0);
-  auto syn1 = reinterpret_cast<T *>(vsyn1);
-  auto expTable = reinterpret_cast<T *>(vexpTable);
-  auto neu1e = reinterpret_cast<T *>(vneu1e);
-
-  T g(0.0f);
-  T f(0.0f);
-
-  int idx = static_cast<int>((dot + HS_MAX_EXP) * ((float)expLength / HS_MAX_EXP / 2.0f));
-  if (idx >= expLength || idx < 0) return;
-
-  f = expTable[idx];
-  g = (static_cast<T>(1.0f) - static_cast<T>(code) - f) * (T)alpha;
-  PRAGMA_OMP_SIMD
-  for (int x = 0; x < vectorLength; x++) {
-    neu1e[x] = g * syn1[x] + neu1e[x];
-  }
-
-  // axpy2
-  if (!isInference) {
-    PRAGMA_OMP_SIMD
-    for (int x = 0; x < vectorLength; x++) {
-      syn1[x] = g * syn0[x] + syn1[x];
-    }
-  }
-
-  }
 
 
 template <typename T>
@@ -137,31 +107,31 @@ void nSampling_(void *vsyn0, void *vsyn1Neg, void *vexpTable, void *vneu1e, doub
   if (!isInference) {
     PRAGMA_OMP_SIMD
     for (int e = 0; e < vectorLength; e++) {
-      neu1e[e] = g * syn1Neg[e] + neu1e[e];
-      syn1Neg[e] = g * syn0[e] + syn1Neg[e];
+      neu1e[e] += g * syn1Neg[e];
+      syn1Neg[e] += g * syn0[e];
     }
   } else {
     // axpy1
     PRAGMA_OMP_SIMD
     for (int e = 0; e < vectorLength; e++) {
-      neu1e[e] = g * syn1Neg[e] + neu1e[e];
+      neu1e[e] += g * syn1Neg[e];
     }
   }
 
 }
 
 template <typename T>
-void cbow_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vnegTable, void *vinfVector, int target,
-           int ngStarter, int *context, int *lockedWords, int *indices, int8_t *codes, double alpha,
+void cbow_(NDArray &vsyn0, NDArray &vsyn1, NDArray &vsyn1Neg, NDArray &vexpTable, NDArray &vnegTable, NDArray &vinfVector, int target,
+           int ngStarter, int *context, int *lockedWords, int *indices, int *codes, double alpha,
            sd::LongType randomValue, const int contextWidth, const int hsRounds, const int nsRounds,
            const int vocabSize, const int vectorLength, const int expLength, const int negLength, const int numLabels,
            const bool trainWords,double minLearningRate,const int iterations) {
-  auto syn0 = reinterpret_cast<T *>(vsyn0);
-  auto syn1 = reinterpret_cast<T *>(vsyn1);
-  auto syn1Neg = reinterpret_cast<T *>(vsyn1Neg);
-  auto expTable = reinterpret_cast<T *>(vexpTable);
-  auto negTable = reinterpret_cast<T *>(vnegTable);
-  auto infVector = reinterpret_cast<T *>(vinfVector);
+  auto syn0 = reinterpret_cast<T *>(vsyn0.bufferAsT<T>());
+  auto syn1 = reinterpret_cast<T *>(vsyn1.bufferAsT<T>());
+  auto syn1Neg = reinterpret_cast<T *>(vsyn1Neg.bufferAsT<T>());
+  auto expTable = reinterpret_cast<T *>(vexpTable.bufferAsT<T>());
+  auto negTable = reinterpret_cast<T *>(vnegTable.bufferAsT<T>());
+  auto infVector = reinterpret_cast<T *>(vinfVector.bufferAsT<T>());
 
   auto neu1 = new T[vectorLength];
   auto neu1e = new T[vectorLength];
@@ -244,14 +214,16 @@ void cbow_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vneg
       }
     }
 
+    alpha = ((alpha - static_cast<double>(minLearningRate)) / static_cast<double>((iterations - i))) + static_cast<double>(minLearningRate);
+
     delete[] neu1;
     delete[] neu1e;
 
   }
 }
 BUILD_SINGLE_TEMPLATE(template void cbow_,
-                      (void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector,
-                          int target, int ngStarter, int *context, int *lockedWords, int *indices, int8_t *codes,
+                      (NDArray &syn0, NDArray &syn1,NDArray &syn1Neg, NDArray &expTable, NDArray &vnegTable, NDArray &vinfVector,
+                          int target, int ngStarter, int *context, int *lockedWords, int *indices, int *codes,
                           double alpha, sd::LongType randomValue, const int contextWidth, const int hsRounds,
                           const int nsRounds, const int vocabSize, const int vectorLength, const int expLength,
                           const int negLength, const int numLabels, const bool trainWords,double minLearningRate,const int iterations),
@@ -259,20 +231,18 @@ BUILD_SINGLE_TEMPLATE(template void cbow_,
 
 template <typename T>
 void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vnegTable, void *vinfVector, int target,
-               int ngStarter, int *indices, int8_t *codes, double alpha, sd::LongType randomValue, const int hsRounds,
+               int ngStarter, NDArray &indices, NDArray &codes, double alpha, sd::LongType randomValue, const int hsRounds,
                const int nsRounds, const int vocabSize, const int vectorLength, const int expLength,
                const int negLength,double minLearningRate,const int iterations) {
-
   auto syn0 = reinterpret_cast<T *>(vsyn0);
   auto syn1 = reinterpret_cast<T *>(vsyn1);
   auto syn1Neg = reinterpret_cast<T *>(vsyn1Neg);
   auto expTable = reinterpret_cast<T *>(vexpTable);
   auto negTable = reinterpret_cast<T *>(vnegTable);
   auto infVector = reinterpret_cast<T *>(vinfVector);
-
   auto neu1e = new T[vectorLength];
   memset(neu1e, 0, vectorLength * sizeof(T));
-
+ PRAGMA_OMP_SIMD
   for(int i = 0; i < iterations; i++) {
     // hierarchic softmax goes first (if enabled)
     auto syn0row = infVector != nullptr ? infVector : syn0 + (target * vectorLength);
@@ -280,12 +250,9 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
 
     auto irow = 0;
     if (hsRounds > 0) {
-
       for (int r = 0; r < hsRounds; r++) {
-        irow = indices[r];
-        if (irow < 0 || irow >= vocabSize) break;
-
-        hSoftmax_<T>(syn0row, syn1 + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, codes[r], expLength,
+        irow = indices.e<int>(r);
+        hSoftmax_<T>(syn0row, syn1 + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, codes.e<int>(r), expLength,
                      infVector != nullptr);
       }
 
@@ -324,13 +291,15 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
 
     }
 
+    alpha = ((alpha - static_cast<double>(minLearningRate)) / static_cast<double>((iterations - i))) + static_cast<double>(minLearningRate);
   }
 
   delete[] neu1e;
 }
+  
 BUILD_SINGLE_TEMPLATE(template void skipgram_,
                       (void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector,
-                          int target, int ngStarter, int *indices, int8_t *codes, double alpha, sd::LongType randomValue,
+                          int target, int ngStarter,NDArray &indices, NDArray &codes, double alpha, sd::LongType randomValue,
                           const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength,
                           const int expLength, const int negLength,double minLearningRate,const int iterations),
                       SD_FLOAT_TYPES);
@@ -403,125 +372,150 @@ static void do_negative(int target, int positive, T *syn0, T *syn1Neg, T *expTab
 }
 
 template <typename T>
-T _dot(T *x,T *y,int vectorLength) {
-  T dot(0.0f);
-  // dot
-  PRAGMA_OMP_SIMD
-  for (int e = 0; e < vectorLength; e++) {
-    dot += x[e] * y[e];
-  }
-  return dot;
-}
-
+void doSkipGramLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector, const NDArray &targets,
+                     const NDArray &negStarters, const NDArray &indices, const NDArray &codes, const NDArray &lr,
+                     const NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
+                     const int expLength, const int negLength, T *const expTable, const T *negTable,
+                     const LongType hsRounds, int t);
 template <typename T>
-void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector,
+void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable,NDArray &vnegTable, NDArray &vinfVector,
                         NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr,
                         NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
                         const int expLength, const int negLength, const bool preciseMode, const int numThreads,const int iterations,double minLearningRate) {
-  const auto expTable = reinterpret_cast<T *>(vexpTable);
-  const auto negTable = reinterpret_cast<T *>(vnegTable);
-  const auto infVector = reinterpret_cast<T *>(vinfVector);
-
-  const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
+  const auto expTable = reinterpret_cast<T *>(vexpTable.buffer());
+  const auto negTable = reinterpret_cast<T *>(vnegTable.buffer());
   const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
+  if(vinfVector.isEmpty()) {
+        const sd::LongType  targetsLen = targets.lengthOf();
 
-  // regular mode provides 0 guarantees for reproducibility
-  auto numTargets = targets.lengthOf();
-  auto bTarget = targets.bufferAsT<int>();
-  auto bIndices = indices.bufferAsT<int>();
-  auto bCodes = codes.bufferAsT<int8_t>();
-  int iteration = 0;
-  auto func = PRAGMA_THREADS_FOR {
-    T sneu1e[600];
-    for (auto t = start; t < stop; t++) {
-      T *neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
-      memset(neu1e, 0, vectorLength * sizeof(T));
-      auto alpha = lr.e<double>(t);
-      alpha = ((alpha - minLearningRate) / (iterations - iteration)) + minLearningRate;
-      sd::LongType randomValue = nextRandom.e<sd::LongType>(t);
-       auto target = bTarget[t];
-
-       auto syn0row = reinterpret_cast<T *>(s0.bufferWithOffset(target * vectorLength));
-       if (hsRounds > 0) {
-         auto cShift = t * idxShift;
-         for (sd::LongType e = 0; e < hsRounds; e++) {
-           int currRow = bIndices[e + cShift];
-           if (currRow > 0 && currRow < vocabSize) {
-             signed int code = bCodes[e + cShift];
-             T *syn1row = (T *) s1.bufferWithOffset(currRow * vectorLength);
-             T dot = _dot(syn0row, syn1row, vectorLength);
-             hSoftmaxDot_<T>(dot, syn0row, syn1row, expTable, neu1e, alpha, vectorLength, code, expLength, vinfVector != nullptr);
-           }
-         }
-       }
-
-       if (nsRounds > 0) {
-         int irow = negStarters.e<int>(t);
-         int nsStarter = irow;
-         for (int r = 0; r < nsRounds + 1; r++) {
-           if (r == 0) {
-             // target is known in advance
-           } else {
-             randomValue = randomValue * (unsigned long long)25214903917 + 11;
-             auto idx = sd::math::sd_abs<sd::LongType>((randomValue >> 16) % negLength);
-             irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
-
-             if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
-
-             if (irow == nsStarter) continue;
-           }
-
-           nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength,
-                         r == 0 ? 1 : 0, expLength, infVector != nullptr);
-         }
-       }
+        auto func = PRAGMA_THREADS_FOR {
+          for (auto t = start; t < stop; t+= increment) {
+            doSkipGramLoop_(s0, s1, s1n, vinfVector, targets, negStarters, indices, codes, lr, nextRandom, nsRounds,
+                            vocabSize, vectorLength, expLength, negLength, expTable, negTable, hsRounds, t);
+          }
+        };
 
 
-       if (infVector == nullptr) {
-         for (int e = 0; e < vectorLength; e++) {
-           syn0row[e] += neu1e[e];
-         }
-       } else {
-         for (int e = 0; e < vectorLength; e++) {
-           infVector[e] += neu1e[e];
-         }
-     }
+        int chunkSize = 1024;
 
-        // optionally release temp arrays
-        if (vectorLength > 600) {
-          delete[] neu1e;
+        if(targetsLen < chunkSize) {
+          samediff::Threads::parallel_tad(func,0,targetsLen,1);
+        } else {
+          int chunks = targetsLen / chunkSize;
+          for(int i = 0; i < chunks; i++) {
+            int start = i * chunkSize;
+            int potentialEnd = start + chunkSize;
+            int end = sd::math::sd_min<int>(targetsLen,potentialEnd);
+            samediff::Threads::parallel_tad(func,start,end,1);
+          }
 
         }
-    }
-    };
 
-    for(int i = 0; i < iterations; i++) {
-      iteration = i;
-      samediff::Threads::parallel_tad(func, 0, numTargets, 1, numThreads);
+
+
+  } else {
+    // regular mode provides 0 guarantees for reproducibility
+    auto numTargets = targets.lengthOf();
+    PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
+    for(int iteration = 0; iteration < iterations; iteration++) {
+      for (auto t = 0; t < numTargets; t++) {
+        doSkipGramLoop_(s0, s1, s1n, vinfVector, targets, negStarters, indices, codes, lr, nextRandom, nsRounds,
+                        vocabSize, vectorLength, expLength, negLength, expTable, negTable, hsRounds, t);
+
+        lr.p<double>(t,((lr.e<double>(t) - static_cast<double>(minLearningRate)) / (static_cast<double>(iterations - iteration))) + static_cast<double>(minLearningRate));
+
+      }
+
+
     }
 
   }
 
-BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_,
-                      (NDArray & s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector,
+  }
+  template <typename T>
+  void doSkipGramLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector, const NDArray &targets,
+                       const NDArray &negStarters, const NDArray &indices, const NDArray &codes, const NDArray &lr,
+                       const NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
+                       const int expLength, const int negLength, T *const expTable, const T *negTable,
+                       const LongType hsRounds, int t) {
+    T *neu1e = new T[vectorLength];
+    memset(neu1e, 0, vectorLength * sizeof(T));
+
+    auto alpha = lr.e<double>(t);
+
+    LongType randomValue = nextRandom.e<LongType>(t);
+    auto target = targets.e<int>(t);
+    auto syn0row = vinfVector.isEmpty() ?  reinterpret_cast<T *>(s0.bufferWithOffset(target * vectorLength)) : reinterpret_cast<T *>(vinfVector.buffer());
+    if(hsRounds > 0) {
+      for (LongType e = 0; e < hsRounds; e++) {
+        int currRow = indices.e<int>(t,e);
+        int code = codes.e<int>(t,e);
+        //codes are only 0 and 1, -1 are placeholders for invalid codes
+        //the codes matrix is padded with extra values at time of allocation
+        //this is due to the code rows effectively being a ragged matrix (rows have different shapes)
+        if(code < 0)  {
+          continue;
+        }
+
+        T *syn1row = (T *) s1.bufferWithOffset(currRow * vectorLength);
+        hSoftmax_<T>(syn0row,syn1row,expTable,neu1e,lr.e<double>(t),vectorLength,code,expLength,!vinfVector.isEmpty());
+
+      }
+    }
+
+    if(nsRounds > 0) {
+      int irow = negStarters.e<int>(t);
+      int nsStarter = irow;
+      for (int r = 0; r < nsRounds + 1; r++) {
+        if (r == 0) {
+          // target is known in advance
+        } else {
+          randomValue = randomValue * (unsigned long long)25214903917 + 11;
+          auto idx = math::sd_abs<LongType>((randomValue >> 16) % negLength);
+          irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
+
+          if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
+
+          if (irow == nsStarter) continue;
+        }
+
+        nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength,
+                      r == 0 ? 1 : 0, expLength, !vinfVector.isEmpty());
+      }
+    }
+    PRAGMA_OMP_SIMD
+        for (int e = 0; e < vectorLength; e++) {
+          syn0row[e] += neu1e[e];
+        }
+        delete[] neu1e;
+  }
+
+  BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_,
+                      (NDArray & s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable, NDArray &vnegTable, NDArray &vinfVector,
                           NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr,
                           NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
                           const int expLength, const int negLength, const bool preciseMode, const int numThreads,const int iterations,double minLearningRate),
                       SD_FLOAT_TYPES);
 
-template <typename T>
-void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector,
+  template <typename T>
+  void doCbowLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, const NDArray &negStarters, const NDArray &indices,
+                   const NDArray &codes, const NDArray &lr, const NDArray &nextRandom, const NDArray &nLabels,
+                   const int nsRounds, const int vocabSize, const int vectorLength, const int expLength,
+                   const int negLength, const bool trainWords, T *const expTable, const T *negTable, const T *infVector,
+                   const int contextWidth, const int *bContext, const int *bLocker, const int *bStarters,
+                   const LongType numIndices, int t);
+  template <typename T>
+void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable, NDArray &vnegTable, NDArray &vinfVector,
                     NDArray &context, NDArray &lockedWords, NDArray &targets, NDArray &negStarters, NDArray &indices,
                     NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &nLabels, const int nsRounds,
                     const int vocabSize, const int vectorLength, const int expLength, const int negLength,
                     const bool trainWords, const int numThreads,double minLearningRate,int iterations) {
-  const auto syn0 = s0.bufferAsT<T>();
-  const auto syn1 = s1.bufferAsT<T>();
+
   const auto syn1Neg = s1n.bufferAsT<T>();
 
-  const auto expTable = reinterpret_cast<T *>(vexpTable);
-  const auto negTable = reinterpret_cast<T *>(vnegTable);
-  const auto infVector = reinterpret_cast<T *>(vinfVector);
+  const auto expTable = vexpTable.bufferAsT<T>();
+  const auto negTable = vnegTable.bufferAsT<T>();
+  const auto infVector = vinfVector.bufferAsT<T>();
 
   const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
   const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
@@ -530,132 +524,164 @@ void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, voi
 
   const auto bContext = context.bufferAsT<int>();
   const auto bLocker = lockedWords.bufferAsT<int>();
-  const auto bIndices = indices.bufferAsT<int>();
-  const auto bCodes = codes.bufferAsT<int8_t>();
   const auto bStarters = negStarters.bufferAsT<int>();
   const auto numIndices = indices.isEmpty() ? 0 : indices.sizeAt(1);
+  if(vinfVector.isEmpty()) {
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto t = start; t < stop; t+= increment) {
+        doCbowLoop_(s0, s1, s1n, negStarters, indices, codes, lr, nextRandom, nLabels, nsRounds, vocabSize,
+                    vectorLength, expLength, negLength, trainWords, expTable, negTable, infVector, contextWidth,
+                    bContext, bLocker, bStarters, numIndices, t);
 
-  int iteration = 0;
-  auto func = PRAGMA_THREADS_FOR {
-    T sneu1[600];
-    T sneu1e[600];
-
-    for (auto e = start; e < stop; e++) {
-      T *neu1 = vectorLength <= 600 ? sneu1 : new T[vectorLength];
-      T *neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
-
-      // optionally we nullify temp arrays after successful (and on first) cycle
-      memset(neu1, 0, sizeof(T) * vectorLength);
-      memset(neu1e, 0, sizeof(T) * vectorLength);
-
-      auto alpha = lr.e<double>(e);
-      alpha = ((alpha - minLearningRate) / (iterations - iteration)) + minLearningRate;
-
-      auto numLabels = nLabels.isEmpty() ? 0 : nLabels.e<int>(e);
-
-      int actualContext = 0;
-
-      // building neu1 for current window
-      for (int c = 0; c < contextWidth; c++) {
-        // getting next context word
-        auto cContext = bContext[c + (e * contextWidth)];
-
-        // skipping padded values
-        if (cContext < 0) continue;
-
-        if (cContext >= vocabSize) throw std::runtime_error("ContextID can't be >= vocab size");
-
-        T *syn0word = syn0 + (cContext * vectorLength);
-
-        for (int i = 0; i < vectorLength; i++) neu1[i] += syn0word[i];
-
-        actualContext++;
       }
+    };
 
-      if (infVector != nullptr) actualContext++;
 
-      if (actualContext > 1) {
-        for (int i = 0; i < vectorLength; i++) neu1[i] /= actualContext;
-      }
-
-      // hierarchic softmax step
-      if (!indices.isEmpty()) {
-        for (sd::LongType i = 0; i < numIndices; i++) {
-          const int cIndex = bIndices[(e * numIndices) + i];
-          const int cCode = bCodes[(e * numIndices) + i];
-
-          // we're skipping padded values
-          if (cIndex < 0) continue;
-
-          if (cIndex >= vocabSize) throw std::runtime_error("Index can't be > vocab size");
-
-          hSoftmax_<T>(neu1, syn1 + (cIndex * vectorLength), expTable, neu1e, alpha, vectorLength, cCode, expLength,
-                       false);
-        }
-      }
-
-      // negative sampling step
-      if (!negStarters.isEmpty() && nsRounds > 0) {
-        int irow = bStarters[e];
-        const int nsStarter = irow;
-        unsigned long long randomValue = nextRandom.e<sd::LongType>(e);
-
-        for (int r = 0; r < nsRounds + 1; r++) {
-          // we're skipping rng on 0 step
-          if (r != 0) {
-            randomValue = randomValue * (unsigned long long)25214903917 + 11;
-            auto idx = sd::math::sd_abs<sd::LongType>((randomValue >> 16) % negLength);
-            irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
-
-            if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
-            if (irow == nsStarter) continue;
-
-            nSampling_<T>(neu1, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength,
-                          r == 0 ? 1 : 0, expLength, infVector != nullptr);
-          } else {
-            nSampling_<T>(neu1, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength,
-                          r == 0 ? 1 : 0, expLength, infVector != nullptr);
-          }
-
-        }
-      }
-
-      // if we're skipping labels
-      int starter = trainWords == 1 ? 0 : contextWidth - numLabels;
-
-      // applying previously averaged results
-      for (int c = starter; c < contextWidth; c++) {
-        // getting context
-        auto cContext = bContext[c + (e * contextWidth)];
-        auto cLock = bLocker[c + (e * contextWidth)];
-
-        // skipping padded values
-        if (cContext < 0 || cLock == 1) continue;
-
-        if (cContext >= vocabSize) throw std::runtime_error("ContextID can't be > vocab size");
-
-        // one word from context
-        T *syn0word = syn0 + (cContext * vectorLength);
-
-        for (int i = 0; i < vectorLength; i++) syn0word[i] += neu1e[i];
-      }
-
-      // optionally release temp arrays
-      if (vectorLength > 600) {
-        delete[] neu1;
-        delete[] neu1e;
+    int targetsLen = targets.lengthOf();
+    int chunkSize = 1024;
+    if(targetsLen < chunkSize) {
+      samediff::Threads::parallel_tad(func,0,targetsLen,1);
+    } else {
+      int chunks = targetsLen / chunkSize;
+      for(int i = 0; i < chunks; i++) {
+        int start = i * chunkSize;
+        int potentialEnd = start + chunkSize;
+        int end = sd::math::sd_min<int>(targetsLen,potentialEnd);
+        samediff::Threads::parallel_tad(func,start,end,1);
       }
     }
-  };
 
-  for(int i = 0; i < iterations; i++) {
-    iteration = i;
-    samediff::Threads::parallel_tad(func, 0, numTargets, 1, numThreads);
+
+
+
+  } else {
+    // regular mode provides 0 guarantees for reproducibility
+    auto numTargets = targets.lengthOf();
+    PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
+    for(int iteration = 0; iteration < iterations; iteration++) {
+      for (auto t = 0; t < numTargets; t++) {
+        doCbowLoop_(s0, s1, s1n, negStarters, indices, codes, lr, nextRandom, nLabels, nsRounds, vocabSize,
+                    vectorLength, expLength, negLength, trainWords, expTable, negTable, infVector, contextWidth,
+                    bContext, bLocker, bStarters, numIndices, t);
+      }
+      }
   }
 
+
+}
+template <typename T>
+void doCbowLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, const NDArray &negStarters, const NDArray &indices,
+                 const NDArray &codes, const NDArray &lr, const NDArray &nextRandom, const NDArray &nLabels,
+                 const int nsRounds, const int vocabSize, const int vectorLength, const int expLength,
+                 const int negLength, const bool trainWords, T *const expTable, const T *negTable, const T *infVector,
+                 const int contextWidth, const int *bContext, const int *bLocker, const int *bStarters,
+                 const LongType numIndices, int t) {
+  T *neu1 =  new T[vectorLength];
+  T *neu1e =  new T[vectorLength];
+
+  // optionally we nullify temp arrays after successful (and on first) cycle
+  memset(neu1, 0, sizeof(T) * vectorLength);
+  memset(neu1e, 0, sizeof(T) * vectorLength);
+
+  auto alpha = lr.e<double>(t);
+
+  auto numLabels = nLabels.isEmpty() ? 0 : nLabels.e<int>(t);
+
+  int actualContext = 0;
+
+  // building neu1 for current window
+  for (int c = 0; c < contextWidth; c++) {
+    // getting next context word
+    auto cContext = bContext[c + (t * contextWidth)];
+
+    // skipping padded values
+    if (cContext < 0) continue;
+
+    if (cContext >= vocabSize) throw std::runtime_error("ContextID can't be >= vocab size");
+
+    T *syn0word = (T *) s0.bufferWithOffset(cContext * vectorLength);
+
+    for (int i = 0; i < vectorLength; i++) neu1[i] += syn0word[i];
+
+    actualContext++;
+  }
+
+  if (infVector != nullptr) actualContext++;
+
+  if (actualContext > 1) {
+          for (int i = 0; i < vectorLength; i++) neu1[i] /= actualContext;
+  }
+
+  // hierarchic softmax step
+        if (!indices.isEmpty()) {
+          for (LongType i = 0; i < numIndices; i++) {
+            const int cIndex = indices.e<int>(t,i);
+            const int cCode = codes.e<int>(t,i);
+
+            // we're skipping padded values
+            if (cIndex < 0) continue;
+
+            if (cIndex >= vocabSize) throw std::runtime_error("Index can't be > vocab size");
+
+            hSoftmax_<T>(neu1, s1.bufferasTWithOffset<T>(cIndex * vectorLength), expTable, neu1e, alpha, vectorLength, cCode, expLength,
+                         false);
+          }
+        }
+
+        // negative sampling step
+        if (!negStarters.isEmpty() && nsRounds > 0) {
+          int irow = bStarters[t];
+          const int nsStarter = irow;
+          unsigned long long randomValue = nextRandom.e<LongType>(t);
+
+          for (int r = 0; r < nsRounds + 1; r++) {
+            // we're skipping rng on 0 step
+            if (r != 0) {
+              randomValue = randomValue * (unsigned long long)25214903917 + 11;
+              auto idx = math::sd_abs<LongType>((randomValue >> 16) % negLength);
+              irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
+
+              if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
+              if (irow == nsStarter) continue;
+
+              nSampling_<T>(neu1, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength,
+                            r == 0 ? 1 : 0, expLength, infVector != nullptr);
+            } else {
+              nSampling_<T>(neu1, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength,
+                            r == 0 ? 1 : 0, expLength, infVector != nullptr);
+            }
+
+          }
+        }
+
+        // if we're skipping labels
+        int starter = trainWords == 1 ? 0 : contextWidth - numLabels;
+
+        // applying previously averaged results
+        for (int c = starter; c < contextWidth; c++) {
+          // getting context
+          auto cContext = bContext[c + (t * contextWidth)];
+          auto cLock = bLocker[c + (t * contextWidth)];
+
+          // skipping padded values
+          if (cContext < 0 || cLock == 1) continue;
+
+          if (cContext >= vocabSize) throw std::runtime_error("ContextID can't be > vocab size");
+
+          // one word from context
+          T *syn0word = (T *) s0.bufferWithOffset(cContext * vectorLength);
+          PRAGMA_OMP_SIMD
+          for (int i = 0; i < vectorLength; i++) syn0word[i] += neu1e[i];
+        }
+
+        // optionally release temp arrays
+        if (vectorLength > 600) {
+          delete[] neu1;
+          delete[] neu1e;
+        }
 }
 BUILD_SINGLE_TEMPLATE(template void cbowBatchExec_,
-                      (NDArray & s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector,
+                      (NDArray & s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable, NDArray &vnegTable, NDArray &vinfVector,
                           NDArray &context, NDArray &lockedWords, NDArray &targets, NDArray &negStarters, NDArray &indices,
                           NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &nLabels, const int nsRounds,
                           const int vocabSize, const int vectorLength, const int expLength, const int negLength,
@@ -669,12 +695,11 @@ void skipgramInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &
               NDArray &inferenceVector, const bool preciseMode, const int numWorkers,double minLearningRate,const int iterations) {
   auto xType = syn0.dataType();
   auto hsRounds = codes.lengthOf();
-
   BUILD_SINGLE_SELECTOR(
       xType, skipgram_,
       (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(),
         target, ngStarter,
-       reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t *>(codes.buffer()), alpha,
+       indices, codes, alpha,
        randomValue, hsRounds, nsRounds, (int)syn0.sizeAt(0), (int)syn0.sizeAt(1),
        (int)expTable.lengthOf(), (int)negTable.lengthOf(),minLearningRate,iterations),
       SD_FLOAT_TYPES);
@@ -690,10 +715,10 @@ void cbowInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expT
 
   BUILD_SINGLE_SELECTOR(
       xType, cbow_,
-      (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(),
+      (syn0, syn1, syn1Neg, expTable, negTable, inferenceVector,
       target, ngStarter,
-       reinterpret_cast<int *>(context.buffer()), reinterpret_cast<int *>(lockedWords.buffer()),
-       reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t *>(codes.buffer()), alpha,
+       context.bufferAsT<int>(), lockedWords.bufferAsT<int>(),
+      indices.bufferAsT<int>(), codes.bufferAsT<int>(), alpha,
        randomValue, (int)context.lengthOf(), hsRounds, nsRounds, (int)syn0.sizeAt(0),
        (int)syn0.sizeAt(1), (int)expTable.lengthOf(), (int)negTable.lengthOf(),
        numLabels, trainWords,minLearningRate,iterations),
@@ -713,14 +738,14 @@ void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable,
         xType, skipgram_,
         (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(),
             target.isEmpty() ? -1 : target.e<int>(0), ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0),
-            reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t *>(codes.buffer()), alpha.e<double>(0),
+            indices, codes, alpha.e<double>(0),
             randomValue.e<sd::LongType>(0), hsRounds, nsRounds, (int)syn0.sizeAt(0), (int)syn0.sizeAt(1),
             (int)expTable.lengthOf(), (int)negTable.lengthOf(),minLearningRate,iterations),
         SD_FLOAT_TYPES);
   } else if (ngStarter.isVector() || target.isVector()) {
     // batch mode
     BUILD_SINGLE_SELECTOR(xType, skipgramBatchExec_,
-                          (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), inferenceVector.buffer(), target, ngStarter,
+                          (syn0, syn1, syn1Neg, expTable, negTable, inferenceVector, target, ngStarter,
                               indices, codes, alpha, randomValue, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1),
                               expTable.lengthOf(), negTable.lengthOf(), preciseMode, numWorkers,iterations,minLearningRate),
                           SD_FLOAT_TYPES);
@@ -739,10 +764,10 @@ void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDA
 
     BUILD_SINGLE_SELECTOR(
         xType, cbow_,
-        (syn0.buffer(), syn1.buffer(), syn1Neg.buffer(), expTable.buffer(), negTable.buffer(), inferenceVector.buffer(),
+        (syn0, syn1, syn1Neg, expTable, negTable, inferenceVector,
             target.isEmpty() ? -1 : target.e<int>(0), ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0),
-            reinterpret_cast<int *>(context.buffer()), reinterpret_cast<int *>(lockedWords.buffer()),
-            reinterpret_cast<int *>(indices.buffer()), reinterpret_cast<int8_t *>(codes.buffer()), alpha.e<double>(0),
+            context.bufferAsT<int>(), lockedWords.bufferAsT<int>(),
+            indices.bufferAsT<int>(), codes.bufferAsT<int>(), alpha.e<double>(0),
             randomValue.e<sd::LongType>(0), (int)context.lengthOf(), hsRounds, nsRounds, (int)syn0.sizeAt(0),
             (int)syn0.sizeAt(1), (int)expTable.lengthOf(), (int)negTable.lengthOf(),
             numLabels.isEmpty() ? 0 : numLabels.e<int>(0), trainWords,minLearningRate,iterations),
@@ -750,7 +775,7 @@ void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDA
   } else if (context.rankOf() == 2 && indices.rankOf() == 2) {
     BUILD_SINGLE_SELECTOR(
         xType, cbowBatchExec_,
-        (syn0, syn1, syn1Neg, expTable.buffer(), negTable.buffer(), nullptr, context, lockedWords, target, ngStarter,
+        (syn0, syn1, syn1Neg, expTable, negTable, inferenceVector, context, lockedWords, target, ngStarter,
             indices, codes, alpha, randomValue, numLabels, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(),
             negTable.isEmpty() ? 0 : negTable.lengthOf(), trainWords, numWorkers,minLearningRate,iterations),
         SD_FLOAT_TYPES);

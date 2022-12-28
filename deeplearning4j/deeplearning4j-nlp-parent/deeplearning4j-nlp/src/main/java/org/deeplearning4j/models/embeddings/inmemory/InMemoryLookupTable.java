@@ -255,7 +255,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
                 if (d == 0)
                     label = 1;
                 else {
-                    nextRandom.set(nextRandom.get() * 25214903917L + 11);
+                    nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
                     int idx = (int) Math.abs((int) (nextRandom.get() >> 16) % table.length());
 

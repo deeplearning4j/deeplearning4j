@@ -51,6 +51,9 @@ public interface SequenceLearningAlgorithm<T extends SequenceElement> {
 
     boolean isEarlyTerminationHit();
 
+    INDArray inferSequence(INDArray inferenceVector, Sequence<T> sequence, long nextRandom, double learningRate, double minLearningRate,
+                           int iterations);
+
     /**
      * This method does training on previously unseen paragraph, and returns inferred vector
      *

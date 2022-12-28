@@ -34,6 +34,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.nlp.CbowInference;
 import org.nd4j.linalg.api.ops.impl.nlp.CbowRound;
 import org.nd4j.linalg.factory.Nd4j;
@@ -76,6 +77,16 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
     public List<BatchItem<T>> getBatch() {
         return batches.get();
+    }
+
+
+    public void addBatchItem(BatchItem<T> batchItem) {
+        getBatch().add(batchItem);
+    }
+
+
+    public void clearBatch() {
+        getBatch().clear();
     }
 
     @Override
@@ -127,7 +138,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     @Override
     public void finish() {
         if (batches != null && batches.get() != null && !batches.get().isEmpty()) {
-            iterateSample(batches.get(),null);
+            doExec(batches.get(),null);
             batches.get().clear();
         }
     }
@@ -135,7 +146,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     @Override
     public void finish(INDArray inferenceVector) {
         if (batches != null && batches.get() != null && !batches.get().isEmpty()) {
-            iterateSample(batches.get(),inferenceVector);
+            doExec(batches.get(),inferenceVector);
             batches.get().clear();
         }
     }
@@ -160,7 +171,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         }
 
         if (getBatch() != null && getBatch().size() >= configuration.getBatchSize()) {
-            iterateSample(getBatch(),null);
+            doExec(getBatch(),null);
             getBatch().clear();
         }
 
@@ -176,7 +187,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
 
 
-    public double iterateSample(List<BatchItem<T>> items,INDArray inferenceVector) {
+    public double doExec(List<BatchItem<T>> items, INDArray inferenceVector) {
         boolean useHS = configuration.isUseHierarchicSoftmax();
         boolean useNegative = configuration.getNegative() > 0;
         boolean useInference = inferenceVector != null;
@@ -396,7 +407,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
             batches.get().addAll(batch);
 
         if(batches.get().size() >= configuration.getBatchSize()) {
-            score = iterateSample(batches.get(),null);
+            score = doExec(batches.get(),null);
             batches.get().clear();
 
         }

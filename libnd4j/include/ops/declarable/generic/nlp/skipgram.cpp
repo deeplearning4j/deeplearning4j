@@ -71,7 +71,6 @@ CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
   auto codesArr = new NDArray(codesArrOne);
 
 
-
   auto target = I_ARG(currIdx++);
   auto ngStarter = I_ARG(currIdx++);
   auto randomValue = I_ARG(currIdx++);
@@ -125,7 +124,8 @@ CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
                                       randomValue,
                                       *inferenceVector,
                                       isPreciseMode,
-                                      numWorkers,1e-3,numIterations);
+                                      numWorkers,1e-4,numIterations);
+
 
  delete codes;
  delete indices;
@@ -169,15 +169,15 @@ CONFIGURABLE_OP_IMPL(skipgram, 12, 12, true, 0, 0) {
   auto inferenceVector = INPUT_VARIABLE(11);
 
 
-
   auto numWorkers = block.numI() > 0 ? INT_ARG(0) : omp_get_max_threads();
   auto nsRounds = block.numI() > 1 ? INT_ARG(1) : 0;
-  auto iterations = block.numI() > 2 ? INT_ARG(2) : 1;
+  auto iterations = block.numI() > 2  && inferenceVector != nullptr ? INT_ARG(2) : 1;
 
   auto isInference = block.numB() > 0 ? B_ARG(0) : false;
   auto isPreciseMode = block.numB() > 1 ? B_ARG(1) : false;
 
-  auto minLearningRate = block.numT() > 0 ? T_ARG(0) : 1e-3;
+  auto minLearningRate = block.numT() > 0 ? T_ARG(0) : 1e-4;
+
 
   REQUIRE_TRUE(block.isInplace(), 0, "SkipGram: this operation requires inplace execution only");
 
@@ -197,7 +197,7 @@ DECLARE_TYPES(skipgram) {
       ->setAllowedInputTypes(0, sd::DataType::INT32)
       ->setAllowedInputTypes(1, sd::DataType::INT32)
       ->setAllowedInputTypes(2, sd::DataType::INT32)
-      ->setAllowedInputTypes(3, sd::DataType::INT8)
+      ->setAllowedInputTypes(3, sd::DataType::INT32)
       ->setAllowedInputTypes(4, {ALL_FLOATS})
       ->setAllowedInputTypes(5, {ALL_FLOATS})
       ->setAllowedInputTypes(6, {ALL_FLOATS})
