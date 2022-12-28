@@ -181,6 +181,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         DataSetIterator iterator = new ReconstructionDataSetIterator(new RandomDataSetIterator(100, new long[]{batchSize, modelDim}, new long[]{}, ONE_HOT, ZEROS));
         DataSet next = iterator.next();
         assertEquals(testLinearLayers(true,batchSize,modelDim,next),testLinearLayers(false,batchSize,modelDim,next));
+        assertEquals(testLinearLayersManual(true,batchSize,modelDim,next),testLinearLayersManual(false,batchSize,modelDim,next));
+
     }
 
     private INDArray testLinearLayers(boolean relu, int batchSize, int modelDim, DataSet dataInput) {
@@ -191,6 +193,34 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable weights = sd.var("weights", new OneInitScheme('c'), FLOAT, modelDim, modelDim);
         SDVariable bias = sd.zero("bias", FLOAT,modelDim);
         SDVariable predictions = relu?  sd.nn.reluLayer("predictions", features, weights, bias) : sd.nn.linear("predictions", features, weights, bias);       // <<< variant 2 (doesn't work)
+        sd.loss.meanSquaredError("loss", labels, predictions, null);
+
+        TrainingConfig config = new TrainingConfig.Builder()
+                .updater(new Adam(0.1))
+                .dataSetFeatureMapping("features")
+                .dataSetLabelMapping("labels")
+                .build();
+        sd.setTrainingConfig(config);
+
+// the task is to reconstruct the one-hot encoded input
+
+        sd.fit(data, 10);
+
+        Evaluation evaluation = new Evaluation();
+        sd.evaluate(data, "predictions", evaluation);
+
+        return sd.getVariable("predictions").eval(Collections.singletonMap("features",dataInput.getFeatures()));
+    }
+
+
+    private INDArray testLinearLayersManual(boolean manual, int batchSize, int modelDim, DataSet dataInput) {
+        SameDiff sd = SameDiff.create();
+        DataSetIterator data = new SingletonDataSetIterator(dataInput);
+        SDVariable features = sd.placeHolder("features", FLOAT, batchSize, modelDim);
+        SDVariable labels = sd.placeHolder("labels", FLOAT, batchSize, modelDim);
+        SDVariable weights = sd.var("weights", new OneInitScheme('c'), FLOAT, modelDim, modelDim);
+        SDVariable bias = sd.zero("bias", FLOAT,modelDim);
+        SDVariable predictions = manual?  features.mmul(weights).add("predictions", bias) : sd.nn.linear("predictions", features, weights, bias);       // <<< variant 2 (doesn't work)
         sd.loss.meanSquaredError("loss", labels, predictions, null);
 
         TrainingConfig config = new TrainingConfig.Builder()
