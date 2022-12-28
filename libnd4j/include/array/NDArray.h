@@ -526,6 +526,13 @@ class SD_LIB_EXPORT NDArray {
   template <typename T>
   const T *bufferAsT() const;
 
+
+  template <typename T>
+  T *  bufferasTWithOffset(sd::LongType offset);
+
+  template <typename T>
+  const T *bufferasTWithOffset(sd::LongType offset) const;
+
   /**
    *   returns _shapeInfo
    */
@@ -1592,6 +1599,7 @@ class SD_LIB_EXPORT NDArray {
   NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<sd::LongType> &shape, DataType dtype,
           LaunchContext *context, const bool isBuffAlloc, const bool isView, LongType offset);
 #endif
+
 };
 
 //////////////////////////////////////////////////////////////////////////

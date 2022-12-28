@@ -201,30 +201,35 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         for (int i = 0; i < tempSequence.getElements().size(); i++) {
             nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
             score = skipGram(i, tempSequence.getElements(), (int) nextRandom.get() % currentWindow, nextRandom,
-                    learningRate, currentWindow, getBatch());
+                    learningRate, currentWindow);
         }
 
         if (getBatch() != null && getBatch().size() >= configuration.getBatchSize()) {
-            score = iterateSample(getBatch(), null);
+            doExec(getBatch(),null);
             getBatch().clear();
         }
 
         return score;
     }
 
+
+    public void clearBatch() {
+        getBatch().clear();
+    }
+
     @Override
     public void finish() {
         if (batches != null && batches.get() != null && !batches.get().isEmpty()) {
-            iterateSample(batches.get(), null);
-            batches.get().clear();
+            iterateSample(null);
+            clearBatch();
         }
     }
 
     @Override
     public void finish(INDArray inferenceVector) {
         if (batches != null && batches.get() != null && !batches.get().isEmpty()) {
-            iterateSample(batches.get(), inferenceVector);
-            batches.get().clear();
+            iterateSample(null);
+            clearBatch();
         }
     }
 
@@ -238,9 +243,11 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
         return false;
     }
 
+    public void addBatchItem(BatchItem<T> batchItem) {
+        getBatch().add(batchItem);
+    }
 
-    private double skipGram(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha, int currentWindow,
-                            List<BatchItem<T>> batchSequences) {
+    private double skipGram(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha, int currentWindow) {
         final T word = sentence.get(i);
         if (word == null || sentence.isEmpty() || word.isLocked())
             return 0.0;
@@ -254,71 +261,87 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     T lastWord = sentence.get(c);
                     nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
                     BatchItem<T> batchItem = new BatchItem<>(word, lastWord, nextRandom.get(), alpha);
-                    batchSequences.add(batchItem);
+                    addBatchItem(batchItem);
+
                 }
             }
         }
-
 
         return score;
     }
 
 
-    public double iterateSample(List<BatchItem<T>> items, INDArray inferenceVector) {
-        boolean useHS = configuration.isUseHierarchicSoftmax();
-        boolean useNegative = configuration.getNegative() > 0;
+    public double iterateSample(BatchItem<T> item) {
         double score = 0.0;
-        boolean isInference = inferenceVector != null;
 
+        List<BatchItem<T>> items = getBatch();
+        if(item != null) {
+            items.add(item);
+            if(items.size() >= configuration.getBatchSize()) {
+                score = doExec(items, null);
+            }
+        } else if(item == null && !items.isEmpty()) {
+            if(items.size() >= configuration.getBatchSize()) {
+                score = doExec(items, null);
+            }
+        }
 
+        return score;
+
+    }
+
+    public  Double doExec(List<BatchItem<T>> items,INDArray inferenceVector) {
         if (items.size() > 1) {
             INDArray targetArray = arrayCacheMemoryMgr.allocate(false, DataType.INT32, items.size());
             INDArray ngStarterArray = arrayCacheMemoryMgr.allocate(false, DataType.INT32, items.size());
             INDArray alphasArray = arrayCacheMemoryMgr.allocate(false, DataType.DOUBLE, items.size());
             INDArray randomValuesArr = arrayCacheMemoryMgr.allocate(false, DataType.INT64, items.size());
             int maxCols = 1;
-            for (int i = 0; i < items.size(); ++i) {
+            for (int i = 0; i < items.size(); i++) {
                 int curr = items.get(i).getWord().getCodeLength();
                 if (curr > maxCols)
                     maxCols = curr;
             }
 
-            INDArray codes = arrayCacheMemoryMgr.allocate(false, DataType.INT8, items.size(), maxCols);
-            INDArray indices = arrayCacheMemoryMgr.allocate(false, DataType.INT32, items.size(), maxCols);
 
-            for (int cnt = 0; cnt < items.size(); ++cnt) {
+            //use -1 as padding for codes that are not actually valid for a given row
+            INDArray codes = Nd4j.valueArrayOf(new long[]{items.size(),maxCols},-1,DataType.INT32);
+            INDArray indices = Nd4j.create(DataType.INT32, items.size(), maxCols);
+
+            for (int cnt = 0; cnt < items.size(); cnt++) {
+
                 T w1 = items.get(cnt).getWord();
                 T lastWord = items.get(cnt).getLastWord();
 
                 randomValuesArr.putScalar(cnt, items.get(cnt).getRandomValue());
                 double alpha = items.get(cnt).getAlpha();
 
-                if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && !isInference)
+                if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && inferenceVector == null)
+
                         || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP")
                         || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK")
                         || lastWord.getLabel().equals("UNK")) {
                     continue;
                 }
 
-                int target = w1.getIndex();
-                int ngStarter = lastWord.getIndex();
+
+                int target = lastWord.getIndex();
+                int ngStarter = w1.getIndex();
+
 
                 targetArray.putScalar(cnt, target);
                 ngStarterArray.putScalar(cnt, ngStarter);
                 alphasArray.putScalar(cnt, alpha);
 
 
-                if (useHS) {
+                if (configuration.isUseHierarchicSoftmax()) {
                     for (int i = 0; i < w1.getCodeLength(); i++) {
                         int code = w1.getCodes().get(i);
                         int point = w1.getPoints().get(i);
                         if (point >= vocabCache.numWords() || point < 0)
                             continue;
-                        if (i < w1.getCodeLength()) {
-                            codes.putScalar(cnt, i, code);
-                            indices.putScalar(cnt, i, point);
-                        }
-
+                        codes.putScalar(cnt, i, code);
+                        indices.putScalar(cnt, i, point);
                     }
 
                 }
@@ -333,8 +356,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             }
 
 
-            INDArray indicesArray = indices;
-            INDArray codesArray = codes;
 
 
             SkipGramRound sg = SkipGramRound.builder()
@@ -342,25 +363,28 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     .expTable(expTable.get())
                     .ngStarter((negative > 0) ? ngStarterArray : Nd4j.empty(DataType.INT32))
                     .syn0(syn0.get())
-                    .syn1(useHS ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
+                    .syn1(configuration.isUseHierarchicSoftmax() ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
                     .syn1Neg((negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()))
                     .negTable((negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()))
-                    .indices(useHS ? indicesArray : Nd4j.empty(DataType.INT32))
-                    .codes(useHS ? codesArray : Nd4j.empty(DataType.INT8))
+                    .indices(configuration.isUseHierarchicSoftmax() ? indices : Nd4j.empty(DataType.INT32))
+                    .codes(configuration.isUseHierarchicSoftmax() ? codes: Nd4j.empty(DataType.INT8))
+
                     .alpha(alphasArray)
                     .randomValue(randomValuesArr)
                     .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
                     .preciseMode(configuration.isPreciseMode())
                     .numWorkers(workers)
-                    .iterations(isInference ? configuration.getIterations() * configuration.getEpochs() : 1)
+                    .iterations(inferenceVector != null ? configuration.getIterations() * configuration.getEpochs() : 1)
                     .build();
 
             Nd4j.getExecutioner().exec(sg);
-            arrayCacheMemoryMgr.release(codesArray);
-            arrayCacheMemoryMgr.release(indicesArray);
+            arrayCacheMemoryMgr.release(codes);
+            arrayCacheMemoryMgr.release(indices);
             arrayCacheMemoryMgr.release(targetArray);
             arrayCacheMemoryMgr.release(randomValuesArr);
             arrayCacheMemoryMgr.release(alphasArray);
+            items.clear();
+
 
         } else {
             int cnt = 0;
@@ -368,21 +392,23 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             T w1 = items.get(cnt).getWord();
             T lastWord = items.get(cnt).getLastWord();
             byte[] codes = new byte[w1.getCodeLength()];
-            int[] indices = new int[w1.getPoints().size()];
+            int[] indices = new int[w1.getCodeLength()];
+
             double alpha = items.get(cnt).getAlpha();
 
-            if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && !isInference)
+            if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && inferenceVector == null)
                     || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP")
                     || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK")
                     || lastWord.getLabel().equals("UNK")) {
                 return 0.0;
             }
 
-            int target = w1.getIndex();
-            int ngStarter = lastWord.getIndex();
+            int target = lastWord.getIndex();
+            int ngStarter = w1.getIndex();
 
 
-            if (useHS) {
+            if (configuration.isUseHierarchicSoftmax()) {
+
                 for (int i = 0; i < w1.getCodeLength(); i++) {
                     int code = w1.getCodes().get(i);
                     int point = w1.getPoints().get(i);
@@ -412,11 +438,12 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     .syn0(syn0.get())
                     .negTable((negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()))
                     .expTable(expTable.get())
-                    .syn1(useHS ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
+                    .syn1(configuration.isUseHierarchicSoftmax() ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
                     .syn1Neg((negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()))
                     .negTable((negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()))
                     .alpha(new double[]{alpha})
-                    .iteration(isInference ? configuration.getIterations() * configuration.getEpochs() : 1)
+                    .iteration(1)
+
                     .ngStarter(ngStarter)
                     .indices(indices)
                     .target(target)
@@ -426,10 +453,10 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     .build();
 
             Nd4j.getExecutioner().exec(sg);
+            items.clear();
 
         }
-
-        return score;
+        return 0.0;
 
     }
 }

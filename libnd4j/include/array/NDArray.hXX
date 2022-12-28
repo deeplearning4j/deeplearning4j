@@ -1730,7 +1730,6 @@ static void printFormatted(NDArray const *arr, int depth, int limit) {
     printf("]");
     if (padding) delete[] padding;
   } else {
-    // std::unique_ptr<ResultSet> arrs(arr->allTensorsAlongDimension({0}));
     size_t restCount = 2;
     printf("[");
     restCount = ShapeUtils::getNumOfSubArrs(arr->shapeInfo(), {0});
@@ -1757,7 +1756,7 @@ void NDArray::printIndexedBuffer(const char *msg, sd::LongType limit) const {
   if (msg) printf("%s: ", msg);
 
   if (this->isEmpty()) {
-    printf("Empty\n");
+     printf("Empty\n");
   } else if (this->rankOf() == 0) {
     if (this->isZ())
       printf("%lld\n", this->e<sd::LongType>(0));
@@ -1766,9 +1765,7 @@ void NDArray::printIndexedBuffer(const char *msg, sd::LongType limit) const {
     else if (this->isB()) {
       printf("%s\n", this->e<bool>(0) ? "true" : "false");
     } else if (this->isS()) {
-      // todo do we need this
-      // printf("\"%lld\"\n", this->getOffset(e));
-      printf("\"%s\"\n", this->e<std::string>(0).c_str());
+      sd_printf("\"%s\"\n", this->e<std::string>(0).c_str());
     }
   } else if (rowFlag && ews() == 1)
     printBuffer(nullptr, limit);
@@ -2119,6 +2116,9 @@ const T *NDArray::bufferAsT() const {
 
   return reinterpret_cast<const T *>(buffer());
 }
+
+
+
 BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT const, *NDArray::bufferAsT() const, SD_COMMON_TYPES);
 
 template <typename T>
@@ -2126,7 +2126,32 @@ T *NDArray::bufferAsT() {
   syncToHost();
   return reinterpret_cast<T *>(buffer());
 }
+
+
+
 BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT, *NDArray::bufferAsT(), SD_COMMON_TYPES);
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+T *NDArray::bufferasTWithOffset(sd::LongType offset) {
+  return reinterpret_cast<T *>(bufferWithOffset(offset));
+
+}
+
+
+BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT, *NDArray::bufferasTWithOffset(sd::LongType), SD_COMMON_TYPES_ALL);
+
+
+template <typename T>
+const T*  NDArray::bufferasTWithOffset(sd::LongType offset) const {
+  return static_cast<const T *>(bufferWithOffset(offset));
+}
+
+
+BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT const, *NDArray::bufferasTWithOffset(sd::LongType) const, SD_COMMON_TYPES_ALL);
+
+
+
 
 ////////////////////////////////////////////////////////////////////////
 NDArray NDArray::subarray(IndicesList &idx) const {

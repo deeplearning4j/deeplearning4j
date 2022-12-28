@@ -120,7 +120,6 @@ public class VocabConstructor<T extends SequenceElement> {
             if (!fetchLabels && element.isLabel())
                 continue;
 
-            //element.setIndex(t);
             cache.addToken(element);
             cache.addWordToIndex(element.getIndex(), element.getLabel());
 
@@ -158,9 +157,7 @@ public class VocabConstructor<T extends SequenceElement> {
 
                                 // backward compatibility code
                                 cache.putVocabWord(label.getLabel());
-
-                                //  log.info("Adding label ["+label.getLabel()+"]: " + cache.wordFor(label.getLabel()));
-                            } // else log.info("Label ["+label.getLabel()+"] already exists: " + cache.wordFor(label.getLabel()));
+                            }
                         }
                 }
             }
@@ -197,7 +194,6 @@ public class VocabConstructor<T extends SequenceElement> {
                                 AtomicLong finalCounter, AtomicLong loopCounter) {
         try {
             Map<String, AtomicLong> seqMap = new HashMap<>();
-            //  log.info("Sequence length: ["+ document.getElements().size()+"]");
 
             if (fetchLabels && document.getSequenceLabels() != null) {
                 for (T labelWord : document.getSequenceLabels()) {
@@ -223,7 +219,6 @@ public class VocabConstructor<T extends SequenceElement> {
                     element.setElementFrequency(1);
                     element.setSequencesCount(1);
                     targetVocab.addToken(element);
-                    //                    elementsCounter.incrementAndGet();
                     loopCounter.incrementAndGet();
 
                     // if there's no such element in tempHolder, it's safe to set seqCount to 1
@@ -325,8 +320,6 @@ public class VocabConstructor<T extends SequenceElement> {
 
                     double seconds = (currentTime - lastTime) / (double) 1000;
 
-                    //                    Collections.sort(timesHasNext);
-                    //                    Collections.sort(timesNext);
 
                     double seqPerSec = (currentSequences - lastSequences) / seconds;
                     double elPerSec = (currentElements - lastElements) / seconds;
@@ -338,8 +331,7 @@ public class VocabConstructor<T extends SequenceElement> {
                     lastElements = currentElements;
                     lastSequences = currentSequences;
 
-                    //                    timesHasNext.clear();
-                    //                    timesNext.clear();
+
                 }
 
                 /**
@@ -355,10 +347,6 @@ public class VocabConstructor<T extends SequenceElement> {
                     loopCounter.set(0);
                 }
 
-                //                timesNext.add((time2 - time1) / 1000L);
-                //                timesHasNext.add((time1 - time3) / 1000L);
-
-                //                time3 = System.nanoTime();
             }
 
             // block untill all threads are finished
@@ -385,7 +373,6 @@ public class VocabConstructor<T extends SequenceElement> {
 
         // at this moment, we have vocabulary full of words, and we have to reset counters before transfer everything back to VocabCache
 
-        //topHolder.resetWordCounters();
 
 
         System.gc();

@@ -1725,7 +1725,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             if (context.getOutputArrays().isEmpty())
                 return new INDArray[0];
             else
-                return context.getOutputArrays().toArray(new INDArray[context.getOutputArrays().size()]);
+                return op.isInplaceCall() ? context.getInputArrays().toArray(new INDArray[context.getInputArrays().size()])
+                        :context.getOutputArrays().toArray(new INDArray[context.getOutputArrays().size()]);
         } catch (Exception e) {
             val sb = new StringBuilder();
             sb.append("Inputs: [(");
