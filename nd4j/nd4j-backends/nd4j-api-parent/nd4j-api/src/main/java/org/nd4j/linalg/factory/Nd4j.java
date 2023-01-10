@@ -250,6 +250,7 @@ public class Nd4j {
     private final static String COMPRESSION_DEBUG = "compressiondebug";
 
     private final static String BLAS_LAPACK_DELEGATOR = "blaslapackdelegator";
+    private final static String STATS_PROVIDER_KEY = "statsprovider";
 
 
     private final static String MEMORY_MANAGER = "memorymanager";
@@ -285,6 +286,9 @@ public class Nd4j {
     private static MemoryManager memoryManager;
 
     private static BLASLapackDelegator BLAS_HANDLER;
+
+    private static INDArrayStatisticsProvider STATS_PROVIDER;
+
     private static AtomicBoolean fallbackMode;
 
     protected static Properties props = new Properties();
@@ -1523,7 +1527,7 @@ public class Nd4j {
     }
 
     // refactoring of duplicate code.
-    private static DataBuffer getDataBuffer(int length, DataType dataType){
+    private static DataBuffer getDataBuffer(int length, DataType dataType) {
         return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
@@ -2550,6 +2554,28 @@ public class Nd4j {
             ret[i] = buffer.getInt(i);
         }
         return ret;
+    }
+
+
+
+    /**
+     * Create array based in data buffer and shape info,
+     *
+     * @param data Data buffer.
+     * @param shapeInfo shape information.
+     * @return new INDArray.
+     */
+    public static INDArray createArrayFromShapeBuffer(DataBuffer data, long[] shapeInfo) {
+        val jvmShapeInfo = shapeInfo;
+        val dataType = ArrayOptionsHelper.dataType(jvmShapeInfo);
+        val shape = Shape.shape(jvmShapeInfo);
+        val strides = Shape.stridesOf(jvmShapeInfo);
+        val order = Shape.order(jvmShapeInfo);
+        INDArray result = Nd4j.create(data, shape, strides, 0, order, dataType);
+        if (data instanceof CompressedDataBuffer)
+            result.markAsCompressed(true);
+
+        return result;
     }
 
     /**
@@ -5133,6 +5159,11 @@ public class Nd4j {
                     .loadClassByName(pp.toString(BLAS_LAPACK_DELEGATOR));
             BLAS_HANDLER = blasLapackDelegator.newInstance();
 
+
+            Class<? extends INDArrayStatisticsProvider> arrayStatsProviderClazz = ND4JClassLoading
+                    .loadClassByName(pp.toString(STATS_PROVIDER_KEY));
+            STATS_PROVIDER = arrayStatsProviderClazz.newInstance();
+
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
             Constructor c2 = ndArrayFactoryClazz.getConstructor(DataType.class, char.class);
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
@@ -5270,6 +5301,15 @@ public class Nd4j {
      */
     public static BasicNDArrayCompressor getCompressor() {
         return BasicNDArrayCompressor.getInstance();
+    }
+
+
+    /**
+     * Returns the statistics provider to use with the backend
+     * @return
+     */
+    public static INDArrayStatisticsProvider getStatsProvider() {
+        return STATS_PROVIDER;
     }
 
     /**

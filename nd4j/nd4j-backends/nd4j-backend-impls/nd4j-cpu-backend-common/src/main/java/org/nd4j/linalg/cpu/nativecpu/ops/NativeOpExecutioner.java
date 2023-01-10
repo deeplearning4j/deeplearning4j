@@ -349,9 +349,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension, DataType.INT).addressPointer();
         val xb = ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
         val zb = ((BaseCpuDataBuffer) z.data()).getOpaqueDataBuffer();
-        Shape.assertShapeInfoConsistentWithJava( getX(op, oc));
-        Shape.assertShapeInfoConsistentWithJava(getY(op, oc));
-        Shape.assertShapeInfoConsistentWithJava(getZ(op, oc));
         if (op instanceof Variance) {
             if (ret.isScalar()) {
                 loop.execSummaryStatsScalar(null, op.opNum(),
@@ -486,9 +483,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         if (loop.lastErrorCode() != 0)
             throw new RuntimeException(loop.lastErrorMessage());
-        Shape.assertShapeInfoConsistentWithJava( getX(op, oc));
-        Shape.assertShapeInfoConsistentWithJava(getY(op, oc));
-        Shape.assertShapeInfoConsistentWithJava(getZ(op, oc));
         return getZ(op, oc);
     }
 
