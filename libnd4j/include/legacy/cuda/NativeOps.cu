@@ -3480,8 +3480,10 @@ void setVedaDeviceLibFolder(std::string path){
 }
 
 
-void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order) {
+void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order,int elementWiseStride) {
   sd::LongType  rank = inputShapeData[0];
+  if(rank > SD_MAX_RANK || rank < 0)
+    throw std::runtime_error("Invalid rank for shape buffer.");
   std::vector<sd::LongType> shape;
   std::vector<sd::LongType> strides;
   //shape, stride, data type
@@ -3494,12 +3496,13 @@ void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *b
   }
 
 
-
-  auto buffer = ShapeDescriptor(dt ,order,shape,strides).toShapeInfo();
   auto len = shape::shapeInfoLength(rank);
+  auto buffer = ShapeDescriptor(dt ,order,shape,strides,elementWiseStride).toShapeInfo();
   for(sd::LongType i = 0; i < len; i++) {
     bufferToSet[i] = buffer[i];
   }
+
+
 
   delete[] buffer;
 }
