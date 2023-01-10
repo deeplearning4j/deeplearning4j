@@ -285,7 +285,12 @@ void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, void** buffe
 void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer * shapeInfo,
                                       sd::Pointer * specialShapeInfo) {
   auto inputShapeBuffers = (void **) shapeInfo;
+  if(shapeInfo == nullptr)
+    throw std::runtime_error("Input shape info was null!");
   for(int i = 0; i < numArrays; i++) {
+  if(inputShapeBuffers[i] == nullptr)
+    throw std::runtime_error("Input shape at index was null!");
+
     setGraphContextInputBuffer(ptr,i,buffer != nullptr  && buffer[i] != nullptr ? buffer[i] : nullptr,inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
   }
 
@@ -1680,6 +1685,7 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
                                       sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
                                       sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
                                       int numDArgs) {
+
   sd::graph::VariableSpace varSpace;
   Context block(2, &varSpace);
   sd::ShapeList inShapes;
@@ -1694,6 +1700,13 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
 
   for (int e = 0; e < numInputShapes; e++) {
     auto shape_ = reinterpret_cast<sd::LongType *>(inputShapes[e]);
+    if(shape_ == nullptr) {
+      throw std::runtime_error("Input shape was null!");
+    }
+
+    if(shape_ != nullptr && shape_[0] > SD_MAX_RANK || shape_[0] < 0) {
+      throw std::runtime_error("Input shape rank is invalid. Either > 32 or < 0. Likely corrupt. Please check your input shapes.");
+    }
 
     // we shouldn't copy buffer if that's empty array
     void *buffer_ = sd::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
@@ -1987,15 +2000,9 @@ sd::Status realExec(sd::ops::DeclarableOp *op, sd::Pointer *extraPointers, sd::L
 
   // hypothetically at this point we have everything filled
   auto hZ = op->execute(inputs, outputs, ttArgs, iiArgs, biArgs, std::vector<sd::DataType>(), isInplace);
-  // auto hZ = op->execute(inputs, ttArgs, iiArgs, isInplace);
 
   if (!isInplace)
     for (int e = 0; e < numOutputs; e++) {
-      // shape::printShapeInfoLinear("JVM output shape", (int *) outputShapes[e]);
-      // shape::printShapeInfoLinear("C++ output shape", (int *) outputs[e]->shapeInfo());
-      // outputs[e]->printIndexedBuffer("C++ raw output");
-      // outputs[e]->printBuffer("C++ indexed output");
-
       if (outputs[e]->ordering() != shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])))
         outputs[e]->streamline(shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])));
     }
@@ -2409,8 +2416,10 @@ void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer hX, sd::LongType
 
 
 
-void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order) {
+void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order,int elementWiseStride) {
   sd::LongType  rank = inputShapeData[0];
+  if(rank > SD_MAX_RANK || rank < 0)
+    throw std::runtime_error("Invalid rank for shape buffer.");
   std::vector<sd::LongType> shape;
   std::vector<sd::LongType> strides;
   //shape, stride, data type
@@ -2423,12 +2432,13 @@ void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *b
   }
 
 
-
-  auto buffer = ShapeDescriptor(dt ,order,shape,strides).toShapeInfo();
   auto len = shape::shapeInfoLength(rank);
+  auto buffer = ShapeDescriptor(dt ,order,shape,strides,elementWiseStride).toShapeInfo();
   for(sd::LongType i = 0; i < len; i++) {
     bufferToSet[i] = buffer[i];
   }
+
+
 
   delete[] buffer;
 }

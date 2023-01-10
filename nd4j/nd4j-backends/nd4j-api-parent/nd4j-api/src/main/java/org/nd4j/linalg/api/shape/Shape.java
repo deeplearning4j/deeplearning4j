@@ -3170,6 +3170,18 @@ public class Shape {
     }
 
     /**
+     * Get the element wise stride for the
+     * shape info buffer
+     * @param shapeInfo the buffer to get the element
+     *               wise stride from
+     * @return the element wise stride for the buffer
+     */
+    public static void setElementWiseStride(long[] shapeInfo, int elementWiseStride) {
+        int length2 = shapeInfoLength(Shape.rank(shapeInfo));
+        shapeInfo[length2 - 2] =  elementWiseStride;
+    }
+
+    /**
      * Prints the {@link IntBuffer}
      * @param buffer the buffer to print
      * @return the to string for the buffer
