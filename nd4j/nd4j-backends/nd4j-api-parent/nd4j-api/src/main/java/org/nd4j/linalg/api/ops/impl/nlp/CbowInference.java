@@ -77,6 +77,8 @@ public class CbowInference extends DynamicCustomOp {
         iArguments.add((long) context.length);
         iArguments.add((long) lockedWords.length);
         iArguments.add((long) iterations);
+        iArguments.add((long) numWorkers);
+        iArguments.add((long) nsRounds);
         for(int i = 0; i < codes.length; i++) {
             iArguments.add((long) codes[i]);
         }
