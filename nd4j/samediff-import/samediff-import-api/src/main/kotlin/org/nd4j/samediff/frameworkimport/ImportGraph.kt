@@ -442,7 +442,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             //Get array, create a constant
                             val arr = irGraph.getConstantArrayForName(name)
                             //probably implicit output like in tensorflow
-                            if(nd.numOutputs() < 1)
+                            if(nd.numOutputs() < 1 || irGraph.frameworkName().contains("tensorflow"))
                                 sd.constant(name, arr)
                             else //onnx case
                                 sd.constant(nd.outputAt(0),arr)
