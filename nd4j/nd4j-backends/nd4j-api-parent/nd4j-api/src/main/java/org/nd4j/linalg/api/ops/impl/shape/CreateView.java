@@ -31,6 +31,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -44,6 +45,9 @@ public class CreateView extends DynamicCustomOp  {
     public static int NEW_AXIS = 3;
 
     public static int DEFAULT_INCLUSIVE = 1;
+
+    public final static String OP_NAME = "create_view";
+
 
     public CreateView() {
     }
@@ -72,6 +76,14 @@ public class CreateView extends DynamicCustomOp  {
     public List<DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes) {
         //Output type is same as input type
         return Collections.singletonList(dataTypes.get(0));
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        List<SDVariable> ret = new ArrayList<>();
+        ret.add(f1.get(0));
+        ret.addAll(Arrays.asList(args()).subList(1, args().length));
+        return new CreateView(sameDiff,f1.get(0),Arrays.copyOfRange(args(),1,args().length)).outputs();
     }
 
     @Override

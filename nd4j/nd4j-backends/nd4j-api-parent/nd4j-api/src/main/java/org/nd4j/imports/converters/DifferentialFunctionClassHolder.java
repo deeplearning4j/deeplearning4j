@@ -31,6 +31,7 @@ import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
+import org.nd4j.linalg.api.ops.impl.shape.CreateView;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.OpDef;
@@ -362,8 +363,10 @@ public class DifferentialFunctionClassHolder {
         return nodeConverters.get(name);
     }
 
-    public Class<?> customOpClassForHashAndName(long customOpHash, String name){
+    public Class<?> customOpClassForHashAndName(long customOpHash, String name) {
         switch (name) {
+            case CreateView.OP_NAME:
+                return CreateView.class;
             case Enter.OP_NAME:
                 return Enter.class;
             case Exit.OP_NAME:
@@ -379,9 +382,9 @@ public class DifferentialFunctionClassHolder {
             case ExternalErrorsFunction.OP_NAME:
                 return ExternalErrorsFunction.class;
             default:
-                if(customOpHashToClasses.containsKey(customOpHash)){
+                if(customOpHashToClasses.containsKey(customOpHash)) {
                     return customOpHashToClasses.get(customOpHash).get(name);
-                } else if(customOpHashToClass.containsKey(customOpHash)){
+                } else if(customOpHashToClass.containsKey(customOpHash)) {
                     return customOpHashToClass.get(customOpHash);
                 } else if(ImportClassMapping.getOpNameMapping().containsKey(name)) {
                     return ImportClassMapping.getOpNameMapping().get(name).getClass();
