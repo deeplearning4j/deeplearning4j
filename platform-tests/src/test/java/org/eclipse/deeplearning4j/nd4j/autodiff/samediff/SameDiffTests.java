@@ -20,7 +20,10 @@
 
 package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
+import static org.deeplearning4j.datasets.iterator.RandomDataSetIterator.Values.ONE_HOT;
+import static org.deeplearning4j.datasets.iterator.RandomDataSetIterator.Values.ZEROS;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.nd4j.linalg.api.buffer.DataType.FLOAT;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 
 import java.io.IOException;
@@ -35,6 +38,8 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.collection.CollectionRecordReader;
 import org.datavec.api.writable.IntWritable;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+import org.deeplearning4j.datasets.iterator.RandomDataSetIterator;
+import org.deeplearning4j.datasets.iterator.ReconstructionDataSetIterator;
 import org.junit.jupiter.api.*;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -82,6 +87,7 @@ import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
+import org.nd4j.linalg.dataset.adapter.SingletonDataSetIterator;
 import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -165,6 +171,75 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         inputMap.put("y", labels);
         return inputMap;
     }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testLinearEquivalency(Nd4jBackend backend) {
+        int batchSize = 32;
+        int modelDim = 10;
+
+        DataSetIterator iterator = new ReconstructionDataSetIterator(new RandomDataSetIterator(100, new long[]{batchSize, modelDim}, new long[]{}, ONE_HOT, ZEROS));
+        DataSet next = iterator.next();
+        assertEquals(testLinearLayers(true,batchSize,modelDim,next),testLinearLayers(false,batchSize,modelDim,next));
+        assertEquals(testLinearLayersManual(true,batchSize,modelDim,next),testLinearLayersManual(false,batchSize,modelDim,next));
+
+    }
+
+    private INDArray testLinearLayers(boolean relu, int batchSize, int modelDim, DataSet dataInput) {
+        SameDiff sd = SameDiff.create();
+        DataSetIterator data = new SingletonDataSetIterator(dataInput);
+        SDVariable features = sd.placeHolder("features", FLOAT, batchSize, modelDim);
+        SDVariable labels = sd.placeHolder("labels", FLOAT, batchSize, modelDim);
+        SDVariable weights = sd.var("weights", new OneInitScheme('c'), FLOAT, modelDim, modelDim);
+        SDVariable bias = sd.zero("bias", FLOAT,modelDim);
+        SDVariable predictions = relu?  sd.nn.reluLayer("predictions", features, weights, bias) : sd.nn.linear("predictions", features, weights, bias);       // <<< variant 2 (doesn't work)
+        sd.loss.meanSquaredError("loss", labels, predictions, null);
+
+        TrainingConfig config = new TrainingConfig.Builder()
+                .updater(new Adam(0.1))
+                .dataSetFeatureMapping("features")
+                .dataSetLabelMapping("labels")
+                .build();
+        sd.setTrainingConfig(config);
+
+// the task is to reconstruct the one-hot encoded input
+
+        sd.fit(data, 10);
+
+        Evaluation evaluation = new Evaluation();
+        sd.evaluate(data, "predictions", evaluation);
+
+        return sd.getVariable("predictions").eval(Collections.singletonMap("features",dataInput.getFeatures()));
+    }
+
+
+    private INDArray testLinearLayersManual(boolean manual, int batchSize, int modelDim, DataSet dataInput) {
+        SameDiff sd = SameDiff.create();
+        DataSetIterator data = new SingletonDataSetIterator(dataInput);
+        SDVariable features = sd.placeHolder("features", FLOAT, batchSize, modelDim);
+        SDVariable labels = sd.placeHolder("labels", FLOAT, batchSize, modelDim);
+        SDVariable weights = sd.var("weights", new OneInitScheme('c'), FLOAT, modelDim, modelDim);
+        SDVariable bias = sd.zero("bias", FLOAT,modelDim);
+        SDVariable predictions = manual?  features.mmul(weights).add("predictions", bias) : sd.nn.linear("predictions", features, weights, bias);       // <<< variant 2 (doesn't work)
+        sd.loss.meanSquaredError("loss", labels, predictions, null);
+
+        TrainingConfig config = new TrainingConfig.Builder()
+                .updater(new Adam(0.1))
+                .dataSetFeatureMapping("features")
+                .dataSetLabelMapping("labels")
+                .build();
+        sd.setTrainingConfig(config);
+
+// the task is to reconstruct the one-hot encoded input
+
+        sd.fit(data, 10);
+
+        Evaluation evaluation = new Evaluation();
+        sd.evaluate(data, "predictions", evaluation);
+
+        return sd.getVariable("predictions").eval(Collections.singletonMap("features",dataInput.getFeatures()));
+    }
+
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
