@@ -76,6 +76,8 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     protected ThreadLocal<List<BatchItem<T>>> batches = new ThreadLocal<>();
 
     public List<BatchItem<T>> getBatch() {
+        if(batches.get() == null)
+            batches.set(new ArrayList<>());
         return batches.get();
     }
 
@@ -204,7 +206,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
             int maxWinWordsCols = -1;
             for (int i = 0; i < items.size(); ++i) {
-                int curr = items.get(i).getWindowWords().length;
+                int curr = items.get(i).getWord().getCodeLength();
                 if (curr > maxWinWordsCols)
                     maxWinWordsCols = curr;
             }
@@ -276,6 +278,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                     .syn1(useHS ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
                     .syn1Neg((negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()))
                     .expTable(expTable.get())
+                    .negTable(negative > 0 ? table.get() : Nd4j.empty(syn0.get().dataType()) )
                     .indices(useHS ? indices : Nd4j.empty(DataType.INT32))
                     .codes(useHS ? codes : Nd4j.empty(DataType.INT8))
                     .nsRounds((int) negative)
@@ -341,7 +344,8 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                     .syn1(!useHS ? Nd4j.empty(syn0.get().dataType()) : syn1.get())
                     .syn1Neg(syn1Neg.get())
                     .alpha(alpha)
-                    .indices(!useHS || useNegative ? points : new int[0])
+                    .context(windowWords == null ? new int[0] : windowWords)
+                    .indices(useHS || useNegative ? points : new int[0])
                     .codes(useHS ? codes : new byte[0])
                     .lockedWords(inputStatuses)
                     .randomValue((int) randomValue)
