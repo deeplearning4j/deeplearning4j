@@ -53,6 +53,7 @@ public class Eps extends BaseTransformBoolOp {
 
     public Eps(INDArray x, INDArray y, INDArray z) {
         super(x, y, z);
+        this.extraArgs = new Object[]{1e-6};
     }
 
     @Override
