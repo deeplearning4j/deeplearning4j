@@ -119,7 +119,7 @@ public class MaskZeroLayer extends BaseWrapperLayer {
             return this;
         }
 
-        public Builder underlying(Layer underlying){
+        public Builder underlying(Layer underlying) {
             setUnderlying(underlying);
             return this;
         }

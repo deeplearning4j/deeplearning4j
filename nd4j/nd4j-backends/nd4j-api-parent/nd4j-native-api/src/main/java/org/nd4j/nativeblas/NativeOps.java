@@ -21,7 +21,6 @@
 package org.nd4j.nativeblas;
 
 import org.bytedeco.javacpp.*;
-import org.bytedeco.javacpp.annotation.ByPtrPtr;
 import org.bytedeco.javacpp.annotation.Cast;
 
 import java.nio.LongBuffer;

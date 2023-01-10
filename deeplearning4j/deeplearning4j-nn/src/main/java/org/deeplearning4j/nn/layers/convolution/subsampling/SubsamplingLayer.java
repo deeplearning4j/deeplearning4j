@@ -116,12 +116,12 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             } catch (ND4JOpProfilerException e){
                 throw e;    //NaN panic etc for debugging
             } catch (Exception e){
-                if(e.getMessage() != null && e.getMessage().contains("Failed to allocate")){
+                if(e.getMessage() != null && e.getMessage().contains("Failed to allocate")) {
                     //This is a memory exception - don't fallback to built-in implementation
                     throw e;
                 }
 
-                if(layerConf().isCudnnAllowFallback()){
+                if(layerConf().isCudnnAllowFallback()) {
                     helperCountFail++;
                     if(helper instanceof MKLDNNSubsamplingHelper){
                         log.warn("MKL-DNN execution failed - falling back on built-in implementation",e);
@@ -145,7 +145,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         INDArray epsAtInput = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), input.shape(), 'c');
         DynamicCustomOp.DynamicCustomOpsBuilder b;
         int extra = 0;
-        switch (layerConf().getPoolingType()){
+        switch (layerConf().getPoolingType()) {
             case MAX:
                 b = DynamicCustomOp.builder("maxpool2d_bp");
                 break;
@@ -210,7 +210,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 break;
             case AVG:
                 b = DynamicCustomOp.builder("avgpool2d");
-                if(layerConf().isAvgPoolIncludePadInDivisor()){
+                if(layerConf().isAvgPoolIncludePadInDivisor()) {
                     //Mostly this is a legacy case - beta4 and earlier models.
                     extra = 1;    //Divide by "number present" excluding padding
                 } else {

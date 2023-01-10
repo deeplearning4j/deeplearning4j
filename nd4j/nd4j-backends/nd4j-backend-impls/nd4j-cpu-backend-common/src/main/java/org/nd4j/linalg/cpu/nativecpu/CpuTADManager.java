@@ -34,24 +34,17 @@ import org.nd4j.nativeblas.NativeOps;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class CpuTADManager implements TADManager {
     private Map<TadDescriptor, Pair<DataBuffer, DataBuffer>> cache = new ConcurrentHashMap<>();
-    private NativeOps nativeOps;
-    private ConstantHandler constantHandler;
     private AtomicLong bytes = new AtomicLong(0);
-    private AtomicInteger counter = new AtomicInteger(0);
-    private static final int MAX_ENTRIES = 100;
 
     public CpuTADManager() {
         //
     }
 
     public void init(@NonNull NativeOps nativeOps, @NonNull ConstantHandler constantHandler) {
-        this.nativeOps = nativeOps;
-        this.constantHandler = constantHandler;
     }
 
     /**
@@ -72,63 +65,10 @@ public class CpuTADManager implements TADManager {
 
         val pack = Nd4j.getExecutioner().tadShapeInfoAndOffsets(array, dimension);
 
-        //   logger.info("TAD shapeInfo after construction: {}", Arrays.toString(TadDescriptor.dataBufferToArray(outputBuffer)));
         // now we need to copy this buffer to either device global memory or device cache
 
         return new Pair<>(pack.getTadShapeInfo(), pack.getTadOffsets());
 
-        /*
-        if (dimension != null && dimension.length > 1)
-            Arrays.sort(dimension);
-
-        if (dimension == null || dimension.length >= 1 && dimension[0] == Integer.MAX_VALUE) {
-            return new Pair<>(array.shapeInfoDataBuffer(), null);
-        } else {
-            TadDescriptor descriptor = new TadDescriptor(array, dimension);
-
-            if (!cache.containsKey(descriptor)) {
-                int dimensionLength = dimension.length;
-
-                // FIXME: this is fast triage, remove it later
-                int targetRank = array.rank(); //dimensionLength <= 1 ? 2 : dimensionLength;
-                long offsetLength;
-                long tadLength = 1;
-                for (int i = 0; i < dimensionLength; i++) {
-                    tadLength *= array.shape()[dimension[i]];
-                }
-
-                offsetLength = array.lengthLong() / tadLength;
-
-                DataBuffer outputBuffer = new LongBuffer(targetRank * 2 + 4);
-                DataBuffer offsetsBuffer = new LongBuffer(offsetLength);
-
-                DataBuffer dimensionBuffer = constantHandler.getConstantBuffer(dimension, DataType.INT);
-                Pointer dimensionPointer = dimensionBuffer.addressPointer();
-
-                Pointer xShapeInfo = array.shapeInfoDataBuffer().addressPointer();
-                Pointer targetPointer = outputBuffer.addressPointer();
-                Pointer offsetsPointer = offsetsBuffer.addressPointer();
-
-                nativeOps.tadOnlyShapeInfo((LongPointer) xShapeInfo, (IntPointer) dimensionPointer, dimension.length);
-                if (1 > 0)
-                    throw new RuntimeException();
-
-
-                // If the line below will be uncommented, shapes from JVM will be used on native side
-                //outputBuffer = array.tensorAlongDimension(0, dimension).shapeInfoDataBuffer();
-                Pair<DataBuffer, DataBuffer> pair = new Pair<>(outputBuffer, offsetsBuffer);
-                if (counter.get() < MAX_ENTRIES) {
-                    counter.incrementAndGet();
-                    cache.put(descriptor, pair);
-
-                    bytes.addAndGet((outputBuffer.length() * 4) + (offsetsBuffer.length() * 8));
-                }
-                return pair;
-            }
-
-            return cache.get(descriptor);
-        }
-        */
     }
 
     @Override

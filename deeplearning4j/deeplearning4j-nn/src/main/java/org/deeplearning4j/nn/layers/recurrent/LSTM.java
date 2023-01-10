@@ -124,7 +124,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         boolean nwc = TimeSeriesUtils.getFormatFromRnnLayer(layerConf()) == RNNFormat.NWC;
 
         INDArray origInput = input;
-        if(nwc){
+        if(nwc) {
             input = permuteIfNWC(input);
         }
 
@@ -154,7 +154,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
             cachedFwdPass = fwd;
         }
 
-        if(nwc){
+        if(nwc) {
             input = origInput;
         }
 

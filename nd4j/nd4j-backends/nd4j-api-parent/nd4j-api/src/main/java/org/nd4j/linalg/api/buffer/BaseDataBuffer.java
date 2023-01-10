@@ -49,7 +49,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     private static int TO_STRING_MAX;
     static {
         String s = System.getProperty(ND4JSystemProperties.DATABUFFER_TO_STRING_MAX_ELEMENTS);
-        if(s != null ){
+        if(s != null) {
             try {
                 TO_STRING_MAX = Integer.parseInt(s);
             } catch (NumberFormatException e){
@@ -63,6 +63,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected DataType type;
     protected long length;
+
     protected long underlyingLength;
     protected long offset;
     protected byte elementSize;
@@ -101,11 +102,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public long getGenerationId() {
-        if(parentWorkspace != null){
+        if(parentWorkspace != null) {
             return workspaceGenerationId;
-        } else if(wrappedDataBuffer != null && wrappedDataBuffer.isAttached()){
+        } else if(wrappedDataBuffer != null && wrappedDataBuffer.isAttached()) {
             return wrappedDataBuffer.getGenerationId();
-        } else if(originalBuffer != null && originalBuffer.isAttached()){
+        } else if(originalBuffer != null && originalBuffer.isAttached()) {
             return originalBuffer.getGenerationId();
         }
         return workspaceGenerationId;
@@ -720,8 +721,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     if(ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)) {
                         //Switch endianness to big endian
                         for (int i = 0; i < temp2.length / 8; i++) {
-                            for( int j=0; j<8; j++ ){
-                                dos.write(temp2[8 * i + (7-j)]);
+                            for( int j = 0; j < 8; j++) {
+                                dos.write(temp2[8 * i + (7 - j)]);
                             }
                         }
                     } else {
@@ -864,9 +865,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 if(indexer instanceof LongIndexer) {
                     LongIndexer longIndexer = (LongIndexer) indexer;
                     return longIndexer.get(i);
-                } else if(indexer instanceof ULongRawIndexer) {
-                    ULongRawIndexer uLongRawIndexer = (ULongRawIndexer) indexer;
-                    return uLongRawIndexer.get(i).longValue();
+                } else if(indexer instanceof LongIndexer) {
+                    LongIndexer LongIndexer = (LongIndexer) indexer;
+                    return LongIndexer.get(i);
                 }
             case LONG:
                 return ((LongIndexer) indexer).get(i);
@@ -915,7 +916,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case SHORT:
                 return ((ShortIndexer) indexer).get(i);
             case BYTE:
-                return  (short) ((ByteIndexer) indexer).get(i);
+                return ((ByteIndexer) indexer).get(i);
             case UINT64:
             case LONG:
                 return (short) ((LongIndexer) indexer).get(i);
@@ -952,7 +953,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case UINT16:
                 return ((UShortIndexer) indexer).get(i);
             case SHORT:
-                return (float) ((ShortIndexer) indexer).get(i);
+                return ((ShortIndexer) indexer).get(i);
             case BFLOAT16:
                 return ((Bfloat16Indexer) indexer).get(i);
             case HALF:
@@ -960,8 +961,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case UBYTE:
                 return (float) ((UByteIndexer) indexer).get(i);
             case BYTE:
-                return (float) ((ByteIndexer) indexer).get(i);
+                return ((ByteIndexer) indexer).get(i);
             case UINT64:  //Fall through
+                return ((LongIndexer) indexer).get(i);
             case LONG:
                 return (float)  ((LongIndexer) indexer).get(i);
             case FLOAT:
@@ -997,7 +999,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 return ((UByteIndexer) indexer).get(i);
             case BYTE:
                 return ((ByteIndexer) indexer).get(i);
-            case UINT64:  //Fall through
+            case UINT64:
             case LONG:
                 return (int) ((LongIndexer) indexer).get(i);
             case FLOAT:
@@ -1069,6 +1071,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((IntIndexer) indexer).put(i, (int) element);
                 break;
             case UINT64:
+                ((LongIndexer) indexer).put(i, (long) element);
+                break;
             case LONG:
                 ((LongIndexer) indexer).put(i, (long) element);
                 break;
@@ -1117,6 +1121,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((IntIndexer) indexer).put(i, (int) element);
                 break;
             case UINT64:
+                ((LongIndexer) indexer).put(i, (long) element);
+                break;
             case LONG:
                 ((LongIndexer) indexer).put(i, (long) element);
                 break;
@@ -1166,7 +1172,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 break;
             case UINT64: //Fall through
             case LONG:
-                ((LongIndexer) indexer).put(i, element);
+                ((LongIndexer) indexer).put(i,element);
                 break;
             case BFLOAT16:
                 ((Bfloat16Indexer) indexer).put(i, element);
@@ -1261,6 +1267,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((IntIndexer) indexer).put(i, (int) element);
                 break;
             case UINT64:
+                ((LongIndexer) indexer).put(i, element);
+                break;
             case LONG:
                 ((LongIndexer) indexer).put(i, element);
                 break;
@@ -1912,33 +1920,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return true;
     }
 
-    protected void markReleased() {
-        this.released = true;
-/*
-        for (val r:references) {
-            val b = r.get();
-
-            if (b != null)
-                b.markReleased();
-        }
-        */
-    }
 
     @Override
     public void close()  {
         if (!closeable())
             throw new IllegalStateException("Can't release this data buffer");
-
-        // notifying other databuffers that their underlying
-        /*
-        for (val r:references) {
-
-            val b = r.get();
-
-            if (b != null)
-                b.markReleased();
-        }
-         */
 
         release();
     }

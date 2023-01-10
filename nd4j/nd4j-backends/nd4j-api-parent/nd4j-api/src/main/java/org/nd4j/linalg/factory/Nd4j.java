@@ -2557,7 +2557,6 @@ public class Nd4j {
     }
 
 
-
     /**
      * Create array based in data buffer and shape info,
      *
