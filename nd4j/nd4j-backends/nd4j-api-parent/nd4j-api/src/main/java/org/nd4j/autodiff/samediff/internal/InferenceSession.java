@@ -911,7 +911,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 long[] inputShapeArr = tensorArray1.requiredShape();
                 for(int j = 0; j < list.size(); j++) {
                     if(list.get(j) != null)
-                        if(!Arrays.equals(inputShapeArr,list.get(j).shape())) {
+                        if(!Arrays.equals(inputShapeArr,list.get(j).shape()) && inputShapeArr.length > 0) {
                             throw new IllegalArgumentException("Element " + j  + " of list " + v.getVariable() + " did not have correct shape of " + Arrays.toString(inputShapeArr) + " was shape " + Arrays.toString(list.get(j).shape()));
                         }
 
@@ -965,8 +965,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             tArr = new VarId(tArrOp.outputVariable().name(),OUTER_FRAME,0,null);
             if(tArrOp.args().length > 1) {
                 long[] shape = tArrOp.arg(1).getArr().toLongVector();
-                if(!Arrays.equals(arr.shape(),shape)) {
-                    throw new IllegalArgumentException("Unable to write array of shape " + Arrays.toString(arr.shape()) + " must be " + shape + " for op " + op.getOwnName() + " and tensor array " + tArrOp.getOwnName());
+                if(!Arrays.equals(arr.shape(),shape) && shape.length > 0) {
+                    throw new IllegalArgumentException("Unable to write array of shape " + Arrays.toString(arr.shape()) + " must be " + Arrays.toString(shape) + " for op " + op.getOwnName() + " and tensor array " + tArrOp.getOwnName());
                 }
             }
 
@@ -1123,7 +1123,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 INDArray get = mmgr.dup(getView);
                 if(ta.args().length > 1) {
                     long[] shape = ta.arg(1).getArr().toLongVector();
-                    if(!Arrays.equals(get.shape(),shape)) {
+                    if(!Arrays.equals(get.shape(),shape) && shape.length > 0) {
                         throw new IllegalArgumentException("Unable to write array of shape " + Arrays.toString(get.shape()) + " must be " + shape + " for op " + op.getOwnName() + " and tensor array " + ta.getOwnName());
                     }
                 }

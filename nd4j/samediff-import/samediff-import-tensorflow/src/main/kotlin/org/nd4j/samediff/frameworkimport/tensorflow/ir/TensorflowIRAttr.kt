@@ -77,7 +77,7 @@ class TensorflowIRAttr(inputAttributeDef: OpDef.AttrDef, inputAttributeValue: At
     }
 
     override fun listDataTypes(): List<TensorNamespace.DataType> {
-        throw UnsupportedOperationException("Unable to map list of data types")
+        return attributeValue.list.typeList.map { input -> TensorflowIRDataType(input).nameSpaceDataType() }
     }
 
     override fun attributeValueType(): AttributeValueType {
