@@ -47,6 +47,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.workspace.WorkspaceUtils;
 
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -89,7 +90,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
 
         assertEquals(0, workspace.getStepNumber());
 
-        long requiredMemory = 1000 * DataType.DOUBLE.width();
+        long requiredMemory = WorkspaceUtils.getTotalRequiredMemoryForWorkspace(Nd4j.create(DataType.DOUBLE,500)) * 2;
         long shiftedSize = ((long) (requiredMemory * 1.3)) + (8 - (((long) (requiredMemory * 1.3)) % 8));
         assertEquals(requiredMemory, workspace.getSpilledSize());
         assertEquals(shiftedSize, workspace.getInitialBlockSize());
@@ -101,8 +102,9 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
 
         assertEquals(0, workspace.getStepNumber());
 
-        assertEquals(1000 * DataType.DOUBLE.width(), workspace.getSpilledSize());
-        assertEquals(2000 * DataType.DOUBLE.width(), workspace.getPinnedSize());
+        assertEquals(requiredMemory , workspace.getSpilledSize());
+        //+ 192 is for shape buffers and alignment padding
+        assertEquals(requiredMemory * 2 - 192, workspace.getPinnedSize());
 
         assertEquals(0, workspace.getDeviceOffset());
 
@@ -112,7 +114,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         assertEquals(0, workspace.getThisCycleAllocations());
         log.info("------------------");
 
-        assertEquals(1, workspace.getNumberOfPinnedAllocations());
+        //1 array data buffer 1 shape buffer
+        assertEquals(2, workspace.getNumberOfPinnedAllocations());
 
         for (int e = 0; e < 4; e++) {
             for (int i = 0; i < 4; i++) {
@@ -128,7 +131,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
             if (e >= 2) {
                 assertEquals(0, workspace.getNumberOfPinnedAllocations(),"Failed on iteration " + e);
             } else {
-                assertEquals(1, workspace.getNumberOfPinnedAllocations(),"Failed on iteration " + e);
+                assertEquals(2, workspace.getNumberOfPinnedAllocations(),"Failed on iteration " + e);
             }
         }
 
@@ -149,7 +152,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
                 Nd4j.create(DataType.DOUBLE,500);
                 Nd4j.create(DataType.DOUBLE,500);
 
-                assertEquals(1500 * Nd4j.sizeOfDataType(), workspace.getThisCycleAllocations());
+                //192 accounts for shape buffer creation
+                assertEquals(1500 * DataType.DOUBLE.width() + 192, workspace.getThisCycleAllocations());
             }
         }
 

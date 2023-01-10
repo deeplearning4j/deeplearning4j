@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
@@ -85,7 +86,7 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     public MemoryWorkspace notifyScopeEntered(@NonNull T arrayType) {
         validateConfig(arrayType);
 
-        if(isScopedOut(arrayType)){
+        if(isScopedOut(arrayType)) {
             return Nd4j.getWorkspaceManager().scopeOutOfWorkspaces();
         } else {
             MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
@@ -108,7 +109,7 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
         validateConfig(arrayType);
         enforceExistsAndActive(arrayType);
 
-        if(scopeOutOfWs.contains(arrayType)){
+        if(scopeOutOfWs.contains(arrayType)) {
             return Nd4j.getWorkspaceManager().scopeOutOfWorkspaces();
         } else {
             MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
@@ -129,7 +130,7 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
 
     @Override
     public void setWorkspace(@NonNull T forEnum, @NonNull String wsName, @NonNull WorkspaceConfiguration configuration) {
-        if(scopeOutOfWs.contains(forEnum)){
+        if(scopeOutOfWs.contains(forEnum)) {
             scopeOutOfWs.remove(forEnum);
         }
         setWorkspaceName(forEnum, wsName);
@@ -258,20 +259,20 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     }
 
     @Override
-    public INDArray createUninitialized(T arrayType, DataType dataType, long... shape){
+    public INDArray createUninitialized(T arrayType, DataType dataType, long... shape) {
         return createUninitialized(arrayType, dataType, shape, Nd4j.order());
     }
 
     @Override
     public INDArray createUninitialized(@NonNull T arrayType, @NonNull DataType dataType, @NonNull long[] shape, char order) {
         enforceExistsAndActive(arrayType);
-        try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
+        try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)) {
             return Nd4j.createUninitialized(dataType, shape, order);
         }
     }
 
     @Override
-    public INDArray dup(@NonNull T arrayType, @NonNull INDArray toDup, char order){
+    public INDArray dup(@NonNull T arrayType, @NonNull INDArray toDup, char order) {
         enforceExistsAndActive(arrayType);
         try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
             return toDup.dup(order);
@@ -279,29 +280,29 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     }
 
     @Override
-    public INDArray dup(@NonNull T arrayType, @NonNull INDArray toDup){
+    public INDArray dup(@NonNull T arrayType, @NonNull INDArray toDup) {
         return dup(arrayType, toDup, toDup.ordering());
     }
 
     @Override
-    public INDArray castTo(@NonNull T arrayType, @NonNull DataType dataType, @NonNull INDArray toCast, boolean dupIfCorrectType){
-        if(toCast.dataType() == dataType){
-            if(!dupIfCorrectType){
+    public INDArray castTo(@NonNull T arrayType, @NonNull DataType dataType, @NonNull INDArray toCast, boolean dupIfCorrectType) {
+        if(toCast.dataType() == dataType) {
+            if(!dupIfCorrectType) {
                 //Check if we can avoid duping... if not in workspace, or already in correct workspace
-                if(!toCast.isAttached() || toCast.data().getParentWorkspace().getId().equals(workspaceNames.get(arrayType))){
+                if(!toCast.isAttached() || toCast.data().getParentWorkspace().getId().equals(workspaceNames.get(arrayType))) {
                     return toCast;
                 }
             }
             return dup(arrayType, toCast);
         } else {
-            try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
+            try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)) {
                 return toCast.castTo(dataType);
             }
         }
     }
 
 
-    private void validateConfig(@NonNull T arrayType){
+    private void validateConfig(@NonNull T arrayType) {
         if(scopeOutOfWs.contains(arrayType)){
             return;
         }
@@ -314,13 +315,13 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
         }
     }
 
-    private void enforceExistsAndActive(@NonNull T arrayType){
+    private void enforceExistsAndActive(@NonNull T arrayType) {
         validateConfig(arrayType);
         if(scopeOutOfWs.contains(arrayType)){
             return;
         }
 
-        if(!Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceNames.get(arrayType))){
+        if(!Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceNames.get(arrayType))) {
             throw new ND4JWorkspaceException("Workspace \"" + workspaceNames.get(arrayType) + "\" for array type " + arrayType
                     + " is not open");
         }

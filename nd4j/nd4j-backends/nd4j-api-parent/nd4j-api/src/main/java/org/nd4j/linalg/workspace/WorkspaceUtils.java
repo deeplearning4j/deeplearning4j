@@ -22,7 +22,9 @@ package org.nd4j.linalg.workspace;
 
 import lombok.NonNull;
 import lombok.val;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.abstracts.DummyWorkspace;
@@ -134,5 +136,23 @@ public class WorkspaceUtils {
             }
         }
         return workspaces;
+    }
+
+    public static int getAligned(int requiredMemory) {
+        long div = requiredMemory % Nd4jWorkspace.alignmentBase;
+        if (div != 0) requiredMemory += (Nd4jWorkspace.alignmentBase - div);
+        return requiredMemory;
+    }
+
+    public static int getAligned(long requiredMemory) {
+        return  getAligned((int) requiredMemory);
+    }
+
+    public static int getShapeBufferRequireMemoryForWorkspace(INDArray arr) {
+        return  getAligned(arr.shapeInfoJava().length * DataType.INT64.width());
+    }
+
+    public static int getTotalRequiredMemoryForWorkspace(INDArray arr) {
+        return getAligned(arr.length() * arr.dataType().width()) + getAligned(arr.shapeInfoJava().length * DataType.INT64.width());
     }
 }

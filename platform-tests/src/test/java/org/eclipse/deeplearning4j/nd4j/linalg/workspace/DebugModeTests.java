@@ -44,6 +44,7 @@ import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
+import org.nd4j.linalg.workspace.WorkspaceUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -105,7 +106,7 @@ public class DebugModeTests extends BaseNd4jTestWithBackends {
             assertEquals(0, ws.getDeviceOffset());
 
             // array buffer should be spilled now
-            assertEquals(10 * 10 * Nd4j.sizeOfDataType(DataType.DOUBLE), ws.getSpilledSize());
+            assertEquals(1024, ws.getSpilledSize());
         }
     }
 
@@ -133,7 +134,7 @@ public class DebugModeTests extends BaseNd4jTestWithBackends {
             assertEquals(0, ws.getDeviceOffset());
 
             // array buffer should be spilled now
-            assertEquals(10 * 10 * Nd4j.sizeOfDataType(DataType.DOUBLE), ws.getSpilledSize());
+            assertEquals(WorkspaceUtils.getTotalRequiredMemoryForWorkspace(array) + WorkspaceUtils.getShapeBufferRequireMemoryForWorkspace(array) * 3 - 32 , ws.getSpilledSize());
         }
 
         try (val ws = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "R_119_1992")) {
