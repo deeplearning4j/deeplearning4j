@@ -78,6 +78,7 @@ public class MaskZeroLayer extends BaseWrapperLayer {
                 ((BaseRecurrentLayer)underlying).getDataFormat() == NWC)){
             input = input.permute(0, 2, 1);
         }
+
         INDArray mask = input.eq(maskingValue).castTo(input.dataType()).sum(1).neq(input.shape()[1]).castTo(input.dataType());
         underlying.setMaskArray(mask.detach());
     }

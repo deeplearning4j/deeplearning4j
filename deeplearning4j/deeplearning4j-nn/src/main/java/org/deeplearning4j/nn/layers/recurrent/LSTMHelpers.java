@@ -86,7 +86,7 @@ public class LSTMHelpers {
         INDArray inputWeights = originalInputWeights;
         INDArray prevOutputActivations = originalPrevOutputActivations;
 
-        if(maskArray != null){
+        if(maskArray != null) {
             maskArray = maskArray.castTo(recurrentWeights.dataType());
         }
 
@@ -242,8 +242,8 @@ public class LSTMHelpers {
                     }
                 }
                 layer.layerConf().getActivationFn().getActivation(inputActivations, training);
-                if (forBackprop){
-                    if(shouldCache(training, cacheMode, workspaceMgr)){
+                if (forBackprop) {
+                    if(shouldCache(training, cacheMode, workspaceMgr)) {
                         cacheEnter(training, cacheMode, workspaceMgr);
                         toReturn.ia[time] = inputActivations.dup('f');
                         cacheExit(training, cacheMode, workspaceMgr);
@@ -293,7 +293,7 @@ public class LSTMHelpers {
                     cacheExit(training, cacheMode, workspaceMgr);
                 }
                 gateActivationFn.getActivation(inputModGateActivations, training);
-                if (forBackprop){
+                if (forBackprop) {
                     if(shouldCache(training, cacheMode, workspaceMgr)){
                         cacheEnter(training, cacheMode, workspaceMgr);
                         toReturn.ga[time] = inputModGateActivations.dup('f');
@@ -400,7 +400,6 @@ public class LSTMHelpers {
 
 
 
-        //toReturn.leverageTo(ComputationGraph.workspaceExternal);
 
         toReturn.prevAct = originalPrevOutputActivations;
         toReturn.prevMemCell = originalPrevMemCellState;

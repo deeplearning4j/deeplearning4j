@@ -31,6 +31,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.util.*;
 import org.nd4j.adapters.OutputAdapter;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.AsyncMultiDataSetIterator;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.*;
@@ -369,6 +370,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             throw new IllegalArgumentException("Invalid input array: network has " + numInputArrays
                     + " inputs, but array is of length " + inputs.length);
         }
+
         this.inputs = inputs;
     }
 
@@ -2386,6 +2388,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     INDArray out = null;
                     if (current.isInputVertex()) {
                         out = features[vIdx];
+
                     } else {
 
                         if (fwdPassType == FwdPassType.STANDARD) {
@@ -2442,13 +2445,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                 if(preLayerFormat != currLayerFormat) {
                                     current.setInput(inputIdx,current.getInputs()[inputIdx].permute(0,2,1),workspaceMgr);
                                 }
-
                                 out = current.doForward(train, workspaceMgr);
 
 
                             }  else {
                                 out = current.doForward(train, workspaceMgr);
                             }
+
                         } else if (fwdPassType == FwdPassType.RNN_TIMESTEP) {
                             if (current.hasLayer()) {
                                 //Layer
@@ -2509,7 +2512,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
             }
-        } catch (Throwable t2){
+        } catch (Throwable t2) {
             t = t2;
         } finally {
             //Close all open workspaces... usually this list will be empty, but not if an exception is thrown
@@ -2521,7 +2524,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     // number of times to actually close it, in all cases
                     try{
                         ws.close();
-                    } catch (Throwable t2){
+                    } catch (Throwable t2) {
                         if(t != null){
                             log.error("Encountered second exception while trying to close workspace after initial exception");
                             log.error("Original exception:", t);
@@ -2533,7 +2536,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
 
             if(t != null){
-                if(t instanceof RuntimeException){
+                if(t instanceof RuntimeException) {
                     throw ((RuntimeException)t);
                 }
                 throw new RuntimeException("Error during neural network forward pass", t);

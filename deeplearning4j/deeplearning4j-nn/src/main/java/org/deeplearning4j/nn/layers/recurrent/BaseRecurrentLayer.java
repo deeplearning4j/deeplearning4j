@@ -96,11 +96,11 @@ public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.n
         return layerConf().getRnnDataFormat();
     }
 
-    protected INDArray permuteIfNWC(INDArray arr){
-        if (arr == null){
+    protected INDArray permuteIfNWC(INDArray arr) {
+        if (arr == null) {
             return null;
         }
-        if (getDataFormat() == RNNFormat.NWC){
+        if (getDataFormat() == RNNFormat.NWC) {
             return arr.permute(0, 2, 1);
         }
         return arr;
