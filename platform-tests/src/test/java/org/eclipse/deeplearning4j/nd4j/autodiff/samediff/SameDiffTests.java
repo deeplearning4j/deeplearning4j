@@ -2300,6 +2300,54 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         System.out.println(putResult.eval());
     }
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCreateViewBp(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.placeHolder("in", DataType.FLOAT, 2, 3);
+        SDVariable viewIn = sd.createView(in,CreateView.createPoint(sd,1));
+        SDVariable expandDims = sd.expandDims(viewIn,0);
+        SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 3, 4));
+        SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 1, 4));
+        SDVariable mmul = expandDims.mmul(w);
+        SDVariable add = mmul.add(b);
+        SDVariable tanh = sd.math().tanh(add);
+        SDVariable loss = sd.variance(tanh, true);
+        loss.markAsLoss();
+        INDArray inArr = Nd4j.rand(DataType.FLOAT, 2, 3);
+        in.setArray(inArr);
+
+        TrainingConfig c = TrainingConfig.builder()
+                .updater(new Adam(0.1))
+                .weightDecay(0.01, true)
+                .dataSetFeatureMapping("in")
+                .skipBuilderValidation(true)
+                .build();
+        sd.setTrainingConfig(c);
+
+        sd.fit(new SingletonMultiDataSetIterator(new DataSet(inArr, null).toMultiDataSet()), 1);
+
+        INDArray out = tanh.eval();
+
+        w.convertToConstant();
+
+        INDArray out2 = tanh.eval();
+
+        assertEquals(out, out2);
+        Assertions.assertEquals(VariableType.CONSTANT, w.getVariableType());
+        assertEquals(VariableType.VARIABLE, b.getVariableType());
+        assertEquals(VariableType.ARRAY, add.getVariableType());
+        assertEquals(VariableType.ARRAY, tanh.getVariableType());
+
+        //Sanity check on training:
+        sd.fit(new SingletonMultiDataSetIterator(new DataSet(inArr, null).toMultiDataSet()), 1);
+
+
+    }
+
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -2740,13 +2788,10 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         Map<String, INDArray> phMap = new HashMap<>();
         phMap.put(fn.getGradPlaceholderName(), grad);
 
-//        log.info("--------------- out.eval() ---------------");
         out.eval();
-//        log.info("--------------- sd.execBackwards() #1 ---------------");
         sd.calculateGradients(phMap, "in", "W", "b");
 
-//        log.info("--------------- sd.execBackwards() #2 ---------------");
-//        System.out.println(sd.getFunction("grad").summary());
+
         sd.getFunction("grad").summary();
 
         in.setArray(Nd4j.linspace(1, 10, 10).reshape(2, 5));
