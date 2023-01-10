@@ -2552,6 +2552,27 @@ public class Nd4j {
         return ret;
     }
 
+
+    /**
+     * Create array based in data buffer and shape info,
+     *
+     * @param data Data buffer.
+     * @param shapeInfo shape information.
+     * @return new INDArray.
+     */
+    public static INDArray createArrayFromShapeBuffer(DataBuffer data, long[] shapeInfo) {
+        val jvmShapeInfo = shapeInfo;
+        val dataType = ArrayOptionsHelper.dataType(jvmShapeInfo);
+        val shape = Shape.shape(jvmShapeInfo);
+        val strides = Shape.stridesOf(jvmShapeInfo);
+        val order = Shape.order(jvmShapeInfo);
+        INDArray result = Nd4j.create(data, shape, strides, 0, order, dataType);
+        if (data instanceof CompressedDataBuffer)
+            result.markAsCompressed(true);
+
+        return result;
+    }
+
     /**
      * Create array based in data buffer and shape info,
      *
