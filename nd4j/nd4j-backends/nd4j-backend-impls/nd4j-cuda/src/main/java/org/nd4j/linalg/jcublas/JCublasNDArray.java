@@ -68,8 +68,6 @@ public class JCublasNDArray extends BaseNDArray {
 
     public JCublasNDArray(DataBuffer buffer, CudaLongDataBuffer shapeInfo, long[] javaShapeInfo) {
         this.jvmShapeInfo = new JvmShapeInfo(javaShapeInfo);
-        this.shapeInformation = shapeInfo;
-        this.data = buffer;
     }
 
     public JCublasNDArray(double[][] data) {
@@ -429,39 +427,6 @@ public class JCublasNDArray extends BaseNDArray {
         /*
             Special case for cuda: if we have not a view, and shapes do match - we
         */
-        /*
-        if (!isView() && ordering() == Nd4j.order() && Shape.strideDescendingCAscendingF(this)) {
-            AtomicAllocator allocator = AtomicAllocator.getInstance();
-            INDArray array = Nd4j.createUninitialized(shape(), ordering());
-        
-            CudaContext context = allocator.getFlowController().prepareAction(array, this);
-        
-            Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
-        
-            if (configuration.getMemoryModel() == Configuration.MemoryModel.IMMEDIATE && configuration.getFirstMemory() == AllocationStatus.DEVICE) {
-        //                log.info("Path 0");
-                allocator.memcpyDevice(array.data(), allocator.getPointer(this.data, context), this.data.length() * this.data().getElementSize(), 0, context);
-            } else if (configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED || configuration.getFirstMemory() == AllocationStatus.HOST) {
-                AllocationPoint pointSrc = allocator.getAllocationPoint(this);
-                AllocationPoint pointDst = allocator.getAllocationPoint(array);
-        
-                if (pointSrc.getAllocationStatus() == AllocationStatus.HOST) {
-        //                    log.info("Path A");
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getPointers().getHostPointer(), pointSrc.getPointers().getHostPointer(), length * data.getElementSize(), CudaConstants.cudaMemcpyHostToHost, context.getOldStream());
-                } else {
-        //                    log.info("Path B. SRC dId: [{}], DST dId: [{}], cId: [{}]", pointSrc.getDeviceId(), pointDst.getDeviceId(), allocator.getDeviceId());
-                    // this code branch is possible only with DELAYED memoryModel and src point being allocated on device
-                    if (pointDst.getAllocationStatus() != AllocationStatus.DEVICE) {
-                        allocator.getMemoryHandler().alloc(AllocationStatus.DEVICE, pointDst, pointDst.getShape(), false);
-                    }
-        
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getPointers().getDevicePointer(), pointSrc.getPointers().getHostPointer(), length * data.getElementSize(), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream());
-                }
-            }
-        
-            allocator.getFlowController().registerAction(context, array, this);
-            return array;
-        } else */
 
         val res = super.dup();
         Nd4j.getExecutioner().commit();
@@ -475,43 +440,12 @@ public class JCublasNDArray extends BaseNDArray {
             ret.markAsCompressed(true);
             return ret;
         }
-        /*
-        if (!isView() && ordering() == order && Shape.strideDescendingCAscendingF(this)) {
-            AtomicAllocator allocator = AtomicAllocator.getInstance();
-            INDArray array = Nd4j.createUninitialized(shape(), order);
-        
-            CudaContext context = allocator.getFlowController().prepareAction(array, this);
-        
-            Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
-        
-            if (configuration.getMemoryModel() == Configuration.MemoryModel.IMMEDIATE && configuration.getFirstMemory() == AllocationStatus.DEVICE) {
-                allocator.memcpyDevice(array.data(), allocator.getPointer(this.data, context), this.data.length() * this.data().getElementSize(), 0, context);
-            } else if (configuration.getMemoryModel() == Configuration.MemoryModel.DELAYED || configuration.getFirstMemory() == AllocationStatus.HOST) {
-                AllocationPoint pointSrc = allocator.getAllocationPoint(this);
-                AllocationPoint pointDst = allocator.getAllocationPoint(array);
-        
-                if (pointSrc.getAllocationStatus() == AllocationStatus.HOST) {
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getPointers().getHostPointer(), pointSrc.getPointers().getHostPointer(), length * data.getElementSize(), CudaConstants.cudaMemcpyHostToHost, context.getOldStream());
-                } else {
-                    // this code branch is possible only with DELAYED memoryModel and src point being allocated on device
-                    if (pointDst.getAllocationStatus() != AllocationStatus.DEVICE) {
-                        allocator.getMemoryHandler().alloc(AllocationStatus.DEVICE, pointDst, pointDst.getShape(), false);
-                    }
-        
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getPointers().getDevicePointer(), pointSrc.getPointers().getDevicePointer(), length * data.getElementSize(), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream());
-                }
-            }
-        
-            allocator.getFlowController().registerAction(context, array, this);
-        
-            return array;
-        } else */return super.dup(order);
+
+      return super.dup(order);
     }
 
     @Override
     public boolean equals(Object o) {
-        //if (o != null) AtomicAllocator.getInstance().synchronizeHostData((INDArray) o);
-        //AtomicAllocator.getInstance().synchronizeHostData(this);
         return super.equals(o);
     }
 
@@ -532,8 +466,7 @@ public class JCublasNDArray extends BaseNDArray {
      * @param buffer
      */
     public void setShapeInfoDataBuffer(DataBuffer buffer) {
-        this.shapeInformation = buffer;
-        this.jvmShapeInfo = new JvmShapeInfo(shapeInformation.asLong());
+        this.jvmShapeInfo = new JvmShapeInfo(buffer.asLong());
     }
 
     private Object writeReplace() throws java.io.ObjectStreamException {
@@ -569,7 +502,6 @@ public class JCublasNDArray extends BaseNDArray {
             Nd4j.getExecutioner().push();
 
 
-        //Nd4j.getExecutioner().commit();
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
         val context = (CudaContext) allocator.getDeviceContext();
@@ -595,7 +527,6 @@ public class JCublasNDArray extends BaseNDArray {
         }
 
 
-        //allocator.memcpyDevice(ret.data(), allocator.getAllocationPoint(this.data).getDevicePointer(), this.data.length() * this.data().getElementSize(), 0, context);
 
         if (blocking)
             context.syncOldStream();
@@ -604,29 +535,17 @@ public class JCublasNDArray extends BaseNDArray {
 
         PerformanceTracker.getInstance().helperRegisterTransaction(dstPoint.getDeviceId(), prof, dstPoint.getNumberOfBytes(), direction);
 
-//        AtomicAllocator.getInstance().synchronizeHostData(ret);
-/*
-        long time2 = System.currentTimeMillis();
 
-        long bytes = this.data.length() * this.data.getElementSize();
-        long spent = time2 - time1;
-
-        float bw = (1000 * bytes / spent) / 1024 / 1024.0f / 1024; //1000 / spent * bytes / 1024 / 1024 / 1024;
-
-        log.info("Route: [{}]; Blocking: {}; {} bytes; {} ms; Bandwidth: {} GB/s", route, blocking, bytes, spent, String.format("%.2f", bw));
-*/
         return ret;
     }
 
     @Override
     public INDArray leverageTo(String id) {
         if (!isAttached()) {
-//            log.info("Skipping detached");
             return this;
         }
 
         if (!Nd4j.getWorkspaceManager().checkIfWorkspaceExists(id)) {
-//            log.info("Skipping non-existent");
             return this;
         }
 
@@ -637,12 +556,10 @@ public class JCublasNDArray extends BaseNDArray {
         MemoryWorkspace target = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(id);
 
         if (current == target) {
-//            log.info("Skipping equals A");
             return this;
         }
 
         if (this.data.getParentWorkspace() == target) {
-//            log.info("Skipping equals B");
             return this;
         }
 

@@ -5,7 +5,7 @@ import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ndarray.INDArrayStatisticsProvider;
-import org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu;
+import org.nd4j.linalg.jcublas.bindings.Nd4jCuda;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
