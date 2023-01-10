@@ -340,9 +340,10 @@ BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_,
                        const int nsRounds, const bool preciseMode, const int numThreads),
                       SD_FLOAT_TYPES);
 
+
 void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target,
               NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue,
-              NDArray &inferenceVector, const bool preciseMode, const int numWorkers,const int iterations) {
+              NDArray &inferenceVector, const bool preciseMode, const int numWorkers,const int iterations,double minLearningRate) {
   auto xType = syn0.dataType();
   // single round case
   if ((ngStarter.isScalar() && !ngStarter.isEmpty()) || (target.isScalar() && !target.isEmpty())) {
@@ -372,7 +373,7 @@ void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable,
 
 void skipgramInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, int target,
                        int ngStarter, int nsRounds, NDArray &indices, NDArray &codes, double alpha, sd::LongType randomValue,
-                       NDArray &inferenceVector, const bool preciseMode, const int numWorkers,double minLearningRate) {
+                       NDArray &inferenceVector, const bool preciseMode, const int numWorkers,double minLearningRate,const int iterations) {
   auto xType = syn0.dataType();
   auto hsRounds = codes.lengthOf();
 
@@ -554,7 +555,7 @@ BUILD_SINGLE_TEMPLATE(template void cbow_,
 void cbowInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, int target,
                    int ngStarter, int nsRounds, NDArray &context, NDArray &lockedWords, NDArray &indices, NDArray &codes,
                    double alpha, sd::LongType randomValue, int numLabels, NDArray &inferenceVector, const bool trainWords,
-                   int numWorkers) {
+                   int numWorkers,int iterations,double minLearningRate) {
   throw cuda_exception::build("cbow:: cbow inference not currently supported please use normal cbow",0);
 }
 
@@ -572,8 +573,7 @@ static SD_KERNEL void buildCurrentWindowKernel(int vocabSize, int contextWidth, 
     // skipping padded values
     if (cContext < 0) continue;
 
-    //                    if (cContext >= vocabSize)
-    //                        throw std::runtime_error("ContextID can't be >= vocab size");
+
 
     T *syn0word = syn0 + (cContext * vectorLength);
 
@@ -762,7 +762,7 @@ BUILD_SINGLE_TEMPLATE(template void cbowBatchExec_,
 void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target,
           NDArray &ngStarter, int nsRounds, NDArray &context, NDArray &lockedWords, NDArray &indices, NDArray &codes,
           NDArray &alpha, NDArray &randomValue, NDArray &numLabels, NDArray &inferenceVector, const bool trainWords,
-          int numWorkers) {
+          int numWorkers,double minLearningRate,const int iterations) {
   auto xType = syn0.dataType();
   auto lc = context.getContext();
   indices.syncToHost();
