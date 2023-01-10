@@ -56,8 +56,8 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         setInput(input, workspaceMgr);
         INDArray last = stateMap.get(STATE_KEY_PREV_ACTIVATION);
         INDArray out = activateHelper(last, false, false, workspaceMgr).getFirst();
-        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-            stateMap.put(STATE_KEY_PREV_ACTIVATION, out.get(all(), all(), point(out.size(2)-1)).dup());
+        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            stateMap.put(STATE_KEY_PREV_ACTIVATION, out.get(all(), all(), point(out.size(2) - 1)).dup());
         }
         return out;
     }
@@ -67,7 +67,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         setInput(input, workspaceMgr);
         INDArray last = tBpttStateMap.get(STATE_KEY_PREV_ACTIVATION);
         INDArray out = activateHelper(last, training, false, workspaceMgr).getFirst();
-        if(storeLastForTBPTT){
+        if(storeLastForTBPTT) {
             try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
                 tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, out.get(all(), all(), point(out.size(2)-1)).dup());
             }
@@ -182,7 +182,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
                 dldzNext = dldzCurrent;
             }
 
-            if( maskArray != null){
+            if( maskArray != null) {
                 //If mask array is present: Also need to zero out errors to avoid sending anything but 0s to layer below for masked steps
                 epsOutCurrent.muliColumnVector(maskCol);
             }
@@ -257,7 +257,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
             //out = activationFn(in*w + last*rw + bias)
             INDArray currOut = out.get(all(), all(), point(i)); //F order
             INDArray currIn = input.get(all(), all(), point(i));
-            if(hasLayerNorm()){
+            if(hasLayerNorm()) {
                 INDArray currOutPreNorm = (forBackprop ? outPreNorm : out).get(all(), all(), point(i));
                 Nd4j.gemm(currIn, w, currOutPreNorm, false, false, 1.0, 0.0);
                 Nd4j.getExecutioner().exec(new LayerNorm(currOutPreNorm, gx, b, currOut, true, 1));
@@ -283,7 +283,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
             a.getActivation(currOut, training);
 
-            if( maskArray != null){
+            if( maskArray != null) {
                 //If mask array is present: Also need to zero out errors to avoid sending anything but 0s to layer below for masked steps
                 INDArray maskCol = maskArray.getColumn(i, true).castTo(dataType);
                 currOut.muliColumnVector(maskCol);
@@ -307,8 +307,11 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
             outPreNorm = permuteIfNWC(outPreNorm);
             recPreNorm = permuteIfNWC(recPreNorm);
         }
-        return new Quad<>(out, outZ, outPreNorm, recPreNorm);
+        return new Quad<>(out != null ? workspaceMgr.dup(ArrayType.ACTIVATIONS,out) : null, outZ != null ? workspaceMgr.dup(ArrayType.ACTIVATIONS,outZ) : null,
+                outPreNorm != null ? workspaceMgr.dup(ArrayType.ACTIVATIONS,outPreNorm) : null, recPreNorm != null ? workspaceMgr.dup(ArrayType.ACTIVATIONS,recPreNorm) : null);
     }
+
+
 
     @Override
     public boolean hasLayerNorm(){

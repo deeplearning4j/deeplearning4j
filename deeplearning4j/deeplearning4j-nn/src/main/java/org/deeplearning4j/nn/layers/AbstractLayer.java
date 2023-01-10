@@ -38,6 +38,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.*;
 
@@ -116,7 +117,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr) {
-        this.input = workspaceMgr.leverageTo(ArrayType.INPUT, input);
+        this.input = workspaceMgr.leverageTo(ArrayType.INPUT,input);
         dropoutApplied = false;
     }
 
@@ -283,13 +284,13 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         input = null;
         maskArray = null;
         maskState = null;
-        if(layerConf().getIDropout() != null){
+        if(layerConf().getIDropout() != null) {
             layerConf().getIDropout().clear();
         }
     }
 
     protected void applyDropOutIfNecessary(boolean training, LayerWorkspaceMgr workspaceMgr){
-        if(training && !dropoutApplied && layerConf().getIDropout() != null ){
+        if(training && !dropoutApplied && layerConf().getIDropout() != null) {
             INDArray result;
             if(inputModificationAllowed){
                 result = input;
@@ -404,7 +405,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         }
     }
 
-    public void assertInputSet(boolean backprop){
+    public void assertInputSet(boolean backprop) {
         if(input == null){
             if(backprop){
                 throw new IllegalStateException("Cannot perform backprop in layer " + getClass().getSimpleName()

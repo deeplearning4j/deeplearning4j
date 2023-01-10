@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNormBp;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.regularization.Regularization;
@@ -270,7 +271,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
      */
     protected INDArray getParamWithNoise(String param, boolean training, LayerWorkspaceMgr workspaceMgr){
         INDArray p;
-        if(layerConf().getWeightNoise() != null){
+        if(layerConf().getWeightNoise() != null) {
             if(training && weightNoiseParams.size() > 0 && weightNoiseParams.containsKey(param) ){
                 //Re-use these weights for both forward pass and backprop - don't want to use 2 different params here
                 //These should be cleared during  backprop
@@ -302,7 +303,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training, workspaceMgr);
         INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training, workspaceMgr);
         INDArray g = (hasLayerNorm() ? getParam(DefaultParamInitializer.GAIN_KEY) : null);
-
         INDArray input = this.input.castTo(dataType);
 
         //Input validation:
@@ -318,9 +318,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
                             + W.size(0) + ") " + layerId());
         }
 
-
-        INDArray ret = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, W.dataType(), input.size(0), W.size(1));
-        input.castTo(ret.dataType()).mmuli(W, ret);     //TODO Can we avoid this cast? (It sohuld be a no op if not required, however)
+         INDArray ret = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, W.dataType(), input.size(0), W.size(1));
+        input.mmuli(W, ret);
 
         INDArray preNorm = ret;
         if(hasLayerNorm()) {
@@ -359,7 +358,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             if(l == null || l.isEmpty()){
                 continue;
             }
-            for(Regularization r : l){
+            for(Regularization r : l) {
                 scoreSum += r.score(e.getValue(), getIterationCount(), getEpochCount());
             }
         }

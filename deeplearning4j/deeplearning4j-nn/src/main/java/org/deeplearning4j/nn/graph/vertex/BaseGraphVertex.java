@@ -22,6 +22,7 @@ package org.deeplearning4j.nn.graph.vertex;
 
 import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -29,11 +30,13 @@ import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Collections;
 import java.util.Map;
 
 @Data
+@NoArgsConstructor
 public abstract class BaseGraphVertex implements GraphVertex {
 
     protected ComputationGraph graph;
@@ -59,7 +62,7 @@ public abstract class BaseGraphVertex implements GraphVertex {
     protected INDArray epsilon;
 
     //Set outputVertex to true when Layer is an OutputLayer, OR For use in specialized situations like reinforcement learning
-    // For RL situations, this Layer insn't an OutputLayer, but is the last layer in a graph, that gets its error/epsilon
+    // For RL situations, this Layer isn't an OutputLayer, but is the last layer in a graph, that gets its error/epsilon
     // passed in externally
     @Setter @Getter
     protected boolean outputVertex;
@@ -137,6 +140,7 @@ public abstract class BaseGraphVertex implements GraphVertex {
         if (inputNumber >= getNumInputArrays()) {
             throw new IllegalArgumentException("Invalid input number");
         }
+
         inputs[inputNumber] = input;
     }
 

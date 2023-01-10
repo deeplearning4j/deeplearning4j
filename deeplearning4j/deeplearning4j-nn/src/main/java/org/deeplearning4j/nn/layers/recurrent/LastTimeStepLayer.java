@@ -113,17 +113,14 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
     }
 
 
-    private INDArray getLastStep(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType){
-        if(in.rank() != 3){
+    private INDArray getLastStep(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
+        if(in.rank() != 3) {
             throw new IllegalArgumentException("Expected rank 3 input with shape [minibatch, layerSize, tsLength]. Got " +
                     "rank " + in.rank() + " with shape " + Arrays.toString(in.shape()));
         }
         origOutputShape = in.shape();
         boolean nwc = TimeSeriesUtils.getFormatFromRnnLayer(underlying.conf().getLayer()) == RNNFormat.NWC;
-//        underlying instanceof  BaseRecurrentLayer && ((BaseRecurrentLayer)underlying).getDataFormat() == RNNFormat.NWC)||
-//                underlying instanceof MaskZeroLayer && ((MaskZeroLayer)underlying).getUnderlying() instanceof BaseRecurrentLayer &&
-//                        ((BaseRecurrentLayer)((MaskZeroLayer)underlying).getUnderlying()).getDataFormat() == RNNFormat.NWC;
-        if (nwc){
+        if (nwc) {
             in = in.permute(0, 2, 1);
         }
 

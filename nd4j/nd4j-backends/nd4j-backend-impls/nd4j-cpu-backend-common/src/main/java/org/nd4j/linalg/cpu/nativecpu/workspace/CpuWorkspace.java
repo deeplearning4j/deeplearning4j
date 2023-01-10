@@ -66,14 +66,6 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
     @Override
     public Deallocator deallocator() {
-        /*
-        return new Deallocator() {
-            @Override
-            public void deallocate() {
-                log.info("Deallocator invoked!");
-            }
-        };
-        */
          return new CpuWorkspaceDeallocator(this);
     }
 
@@ -190,7 +182,6 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
     @Override
     protected void resetWorkspace() {
-        //Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + SAFETY_OFFSET);
     }
 
     protected PointersPair workspace() {

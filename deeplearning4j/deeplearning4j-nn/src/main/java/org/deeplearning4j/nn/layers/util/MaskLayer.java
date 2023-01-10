@@ -92,12 +92,12 @@ public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.u
                 //CNN input. Expect column vector to be shape [mb,1,h,1], [mb,1,1,w], or [mb,1,h,w]
                 int[] dimensions = new int[4];
                 int count = 0;
-                for(int i=0; i<4; i++ ){
-                    if(input.size(i) == maskArray.size(i)){
+                for(int i = 0; i < 4; i++) {
+                    if(input.size(i) == maskArray.size(i)) {
                         dimensions[count++] = i;
                     }
                 }
-                if(count < 4){
+                if(count < 4) {
                     dimensions = Arrays.copyOfRange(dimensions, 0, count);
                 }
 

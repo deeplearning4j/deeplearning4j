@@ -219,7 +219,7 @@ public class TimeSeriesUtils {
      * @param in Input activations to reverse, with shape [minibatch, size, timeSeriesLength]
      * @return Reversed activations
      */
-    public static INDArray reverseTimeSeries(INDArray in){
+    public static INDArray reverseTimeSeries(INDArray in) {
         if(in == null){
             return null;
         }
@@ -229,8 +229,8 @@ public class TimeSeriesUtils {
         }
 
         int[] idxs = new int[(int) in.size(2)];
-        int j=0;
-        for( int i=idxs.length-1; i>=0; i--){
+        int j = 0;
+        for( int i = idxs.length - 1; i >= 0; i--) {
             idxs[j++] = i;
         }
 
@@ -274,18 +274,6 @@ public class TimeSeriesUtils {
         INDArray outReshape = workspaceMgr.create(arrayType, in.dataType(), new long[]{inReshape.size(0), idxs.length}, 'f');
         Nd4j.pullRows(inReshape, outReshape, 0, idxs);
         return workspaceMgr.leverageTo(arrayType, outReshape.reshape('f', in.size(0), in.size(1), in.size(2)));
-
-        /*
-        INDArray out = Nd4j.createUninitialized(in.shape(), 'f');
-        CustomOp op = DynamicCustomOp.builder("reverse")
-                .addIntegerArguments(new int[]{0,1})
-                .addInputs(in)
-                .addOutputs(out)
-                .callInplace(false)
-                .build();
-        Nd4j.getExecutioner().exec(op);
-        return out;
-        */
     }
 
     /**
@@ -326,7 +314,7 @@ public class TimeSeriesUtils {
         if(mask == null){
             return null;
         }
-        if(mask.rank() == 3){
+        if(mask.rank() == 3) {
             //Should normally not be used - but handle the per-output masking case
             return reverseTimeSeries(mask, workspaceMgr, arrayType);
         } else if(mask.rank() != 2){
@@ -346,18 +334,6 @@ public class TimeSeriesUtils {
 
         return Nd4j.pullRows(mask, ret, 0, idxs);
 
-        /*
-        //Assume input mask is 2d: [minibatch, tsLength]
-        INDArray out = Nd4j.createUninitialized(mask.shape(), 'f');
-        CustomOp op = DynamicCustomOp.builder("reverse")
-                .addIntegerArguments(new int[]{1})
-                .addInputs(mask)
-                .addOutputs(out)
-                .callInplace(false)
-                .build();
-        Nd4j.getExecutioner().exec(op);
-        return out;
-        */
     }
 
     /**
@@ -442,7 +418,7 @@ public class TimeSeriesUtils {
      * LastTimeStep, etc
      * @param layer Layer to get the RNNFormat from
      */
-    public static RNNFormat getFormatFromRnnLayer(Layer layer){
+    public static RNNFormat getFormatFromRnnLayer(Layer layer) {
         if(layer instanceof BaseRecurrentLayer){
             return ((BaseRecurrentLayer) layer).getRnnDataFormat();
         } else if(layer instanceof MaskZeroLayer){
