@@ -90,9 +90,6 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     protected void checkForCompression(Op op) {
-        // check for INT datatype arrays
-        interceptIntDataType(op);
-
         if (op.x() != null && op.x().isCompressed())
             Nd4j.getCompressor().decompressi(op.x());
 
@@ -108,27 +105,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         return "UNKNOWN";
     }
 
-    /**
-     * This method checks if any Op operand has data opType of INT, and throws exception if any.
-     *
-     * @param op
-     */
-    protected void interceptIntDataType(Op op) {
-        // FIXME: Remove this method, after we'll add support for <int> dtype operations
-/*
-        if (op.x() != null && op.x().data().dataType() == DataType.INT)
-            throw new ND4JIllegalStateException(
-                            "Op.X contains INT data. Operations on INT dataType are not supported yet");
 
-        if (op.z() != null && op.z().data().dataType() == DataType.INT)
-            throw new ND4JIllegalStateException(
-                            "Op.Z contains INT data. Operations on INT dataType are not supported yet");
-
-        if (op.y() != null && op.y().data().dataType() == DataType.INT)
-            throw new ND4JIllegalStateException(
-                            "Op.Y contains INT data. Operations on INT dataType are not supported yet.");
-        */
-    }
 
     @Override
     public abstract INDArray exec(Op op);
@@ -470,18 +447,57 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
 
+    public long profilingConfigurableHookIn(Op op, OpContext oc) {
+        List<INDArray> inArgs = oc != null ? oc.getInputArrays() : Arrays.asList(op.x(),op.y());
+        List<INDArray> outArgs = oc != null ? oc.getOutputArrays(): Arrays.asList(op.x(),op.y());
+
+
+        for (val arr: inArgs) {
+            if(arr == null)
+                continue;;
+
+            if (arr.wasClosed())
+                throw new IllegalStateException("One of Input arguments was closed before call");
+
+
+        }
+        for (val arr: outArgs) {
+            if(arr == null)
+                continue;;
+
+            if (arr.wasClosed())
+                throw new IllegalStateException("One of Output arguments was closed before call");
+        }
+        if (OpProfiler.getInstance().getConfig() == null)
+            return System.nanoTime();
+
+        if (OpProfiler.getInstance().getConfig().isStackTrace() ||
+                OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+            OpProfiler.getInstance().processOpCall(op);
+        }
+
+        if (OpProfiler.getInstance().getConfig().isCheckWorkspaces()) {
+            checkForWorkspaces(op, oc);
+        }
+
+        return System.nanoTime();
+    }
+
     public long profilingConfigurableHookIn(CustomOp op, OpContext oc) {
         List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
         List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
 
-        for (val arr: inArgs)
+
+        for (val arr: inArgs) {
             if (arr.wasClosed())
                 throw new IllegalStateException("One of Input arguments was closed before call");
 
-        for (val arr: outArgs)
+
+        }
+        for (val arr: outArgs) {
             if (arr.wasClosed())
                 throw new IllegalStateException("One of Output arguments was closed before call");
-
+        }
         if (OpProfiler.getInstance().getConfig() == null)
             return System.nanoTime();
 
@@ -498,20 +514,11 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     public long profilingConfigurableHookIn(Op op, DataBuffer... tadBuffers) {
-        if (op.x() != null)
-            if (op.x().wasClosed())
-                throw new IllegalStateException("Op.X argument was closed before call");
-
-        if (op.y() != null)
-            if (op.y().wasClosed())
-                throw new IllegalStateException("Op.Y argument was closed before call");
-
-        if (op.z() != null)
-            if (op.z().wasClosed())
-                throw new IllegalStateException("Op.Z argument was closed before call");
 
         if (OpProfiler.getInstance().getConfig() == null)
             return System.nanoTime();
+
+
 
         if (OpProfiler.getInstance().getConfig().isStackTrace() ||
                 OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
@@ -556,6 +563,8 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             }
         }
 
+
+
         if (Nd4j.getExecutioner().isVerbose()) {
             if (op.z() != null)
                 log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
@@ -599,23 +608,6 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             Nd4j.getCompressor().decompressi(op.z());
         }
 
-        /*
-        if (op.x() != null && !Shape.isEmpty(op.x().shapeInfoJava())
-                && op.x().data().dataType() != expectedType
-                && op.x().data().dataType() != DataType.COMPRESSED) {
-            throw new ND4JIllegalStateException("op.X dataType is [" + op.x().data().dataType()
-                    + "] instead of expected [" + expectedType + "] - x.shape = " + Arrays.toString(op.x().shape())
-                    + (op.y() != null ? ", y.shape=" + Arrays.toString(op.y().shape()) : "")
-                    + ", z.shape=" + Arrays.toString(op.z().shape()) + " - op: " + op.getClass().getName());
-        }
-        */
-/*
-        if (op.z() != null && !Shape.isEmpty(op.z().shapeInfoJava())
-                        && op.z().data().dataType() != expectedType
-                        && op.z().data().dataType() != DataType.COMPRESSED)
-            throw new ND4JIllegalStateException("op.Z dataType is [" + op.z().data().dataType()
-                            + "] instead of expected [" + expectedType + "]");
-        */
 
         if (op.y() != null && !Shape.isEmpty(op.y().shapeInfoJava())
                 && op.y().data().dataType() != expectedType) {
