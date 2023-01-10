@@ -115,7 +115,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(Op op, OpContext opContext) {
         checkForCompression(op);
-
+        long start = profilingConfigurableHookIn(op,opContext);
         if (op instanceof ScalarOp) {
             ScalarOp s = (ScalarOp) op;
             exec(s, opContext);
