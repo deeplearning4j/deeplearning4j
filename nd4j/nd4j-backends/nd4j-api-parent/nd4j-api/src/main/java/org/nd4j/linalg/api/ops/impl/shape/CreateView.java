@@ -80,9 +80,6 @@ public class CreateView extends DynamicCustomOp  {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        List<SDVariable> ret = new ArrayList<>();
-        ret.add(f1.get(0));
-        ret.addAll(Arrays.asList(args()).subList(1, args().length));
         return new CreateView(sameDiff,f1.get(0),Arrays.copyOfRange(args(),1,args().length)).outputs();
     }
 
