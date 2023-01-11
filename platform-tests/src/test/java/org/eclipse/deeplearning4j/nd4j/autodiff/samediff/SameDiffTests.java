@@ -44,6 +44,7 @@ import org.junit.jupiter.api.*;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.internal.matchers.Same;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.*;
 import org.nd4j.autodiff.samediff.api.OutAndGrad;
@@ -122,10 +123,10 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SameDiff sd = SameDiff.create();
         INDArray labelsND = Nd4j.createFromArray(new int[][] {{1917, 3468, 1024, 2744, 4092, 2613,  112,  922, 4785, 1675},
                 {119, 16, 202, 2352, 2945, 3468, 2744, 112, 0, 0}});
-        INDArray labels_len_ND =  Nd4j.createFromArray(new int[] {10, 8});
-        INDArray logits_len_ND =  Nd4j.createFromArray(new int[] {155, 155});
+        INDArray labels_len_ND =  Nd4j.createFromArray(10, 8);
+        INDArray logits_len_ND =  Nd4j.createFromArray(155, 155);
         SDVariable labels = sd.constant(labelsND);
-        SDVariable logits = sd.random.normal(0, 1, DataType.FLOAT, new long[] {2, 155, 5530});
+        SDVariable logits = sd.random.normal(0, 1, DataType.FLOAT, 2, 155, 5530);
         SDVariable labels_len = sd.constant(labels_len_ND);
         SDVariable logits_len = sd.constant(logits_len_ND);
         SDVariable ctc = sd.loss.ctcLoss("ctcLoss", labels, logits, labels_len, logits_len);
@@ -269,7 +270,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         val nodeA = sd.math().square(input);
         val nodeB = sd.math().square(nodeA);
 
-        sd.associateArrayWithVariable(Nd4j.create(new double[]{1, 2, 3, 4, 5, 6}, new long[]{2, 3}).castTo(input.dataType()), input);
+        sd.associateArrayWithVariable(Nd4j.create(new double[]{1, 2, 3, 4, 5, 6}, 2, 3).castTo(input.dataType()), input);
 
         sd.outputAll(null);
 
@@ -1248,7 +1249,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     public void testLrn(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
-        INDArray input = Nd4j.create(new float[]{4, 4, 4, 4}, new long[]{1, 4, 1, 1});
+        INDArray input = Nd4j.create(new float[]{4, 4, 4, 4}, 1, 4, 1, 1);
 
         SDVariable sdInput = sd.var("input", input);
 
@@ -1274,7 +1275,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     public void testMoments(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
-        INDArray input = Nd4j.create(new float[]{1, 2, 3, 4}, new long[]{2, 2});
+        INDArray input = Nd4j.create(new float[]{1, 2, 3, 4}, 2, 2);
 
         SDVariable sdInput = sd.var("input", input);
 
@@ -1299,9 +1300,9 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     public void testNormalizeMoments(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
-        INDArray counts = Nd4j.create(new float[]{2}, new long[]{1, 1});
-        INDArray means = Nd4j.create(new float[]{2, 4}, new long[]{1, 2});
-        INDArray vars = Nd4j.create(new float[]{6, 8}, new long[]{1, 2});
+        INDArray counts = Nd4j.create(new float[]{2}, 1, 1);
+        INDArray means = Nd4j.create(new float[]{2, 4}, 1, 2);
+        INDArray vars = Nd4j.create(new float[]{6, 8}, 1, 2);
 
         SDVariable sdCounts = sd.var("counts", counts);
         SDVariable sdMeans = sd.var("means", means);
@@ -2037,7 +2038,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         INDArray expected = Nd4j.create(new float[]{1, 1, 1,
                         1, 1, 1,
                         0, 0, 0},
-                new long[]{3, 3}).castTo(Nd4j.defaultFloatingPointType());
+                3, 3).castTo(Nd4j.defaultFloatingPointType());
 
         SameDiff sd = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
@@ -2060,7 +2061,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         INDArray expected = Nd4j.create(new float[]{0, 0, 0,
                         0, 0, 0,
                         1, 1, 1},
-                new long[]{3, 3}).castTo(Nd4j.defaultFloatingPointType());
+                3, 3).castTo(Nd4j.defaultFloatingPointType());
 
         SameDiff sd = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
@@ -2083,7 +2084,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         INDArray expected = Nd4j.create(new float[]{0, 0, 0,
                         0, 0, 0,
                         1, 1, 1},
-                new long[]{3, 3}).castTo(Nd4j.defaultFloatingPointType());
+                3, 3).castTo(Nd4j.defaultFloatingPointType());
 
         SameDiff sd = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
@@ -2106,7 +2107,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         INDArray expected = Nd4j.create(new float[]{0.5f, 0.5f, 0.5f,
                         0.5f, 0.5f, 0.5f,
                         1.0f, 1.0f, 1.0f},
-                new long[]{3, 3}).castTo(Nd4j.defaultFloatingPointType());
+                3, 3).castTo(Nd4j.defaultFloatingPointType());
 
         SameDiff sd = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
@@ -2128,7 +2129,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         INDArray expected = Nd4j.create(new float[]{2.0f, 2.0f, 2.0f,
                         2.0f, 2.0f, 2.0f,
                         1.0f, 1.0f, 1.0f},
-                new long[]{3, 3}).castTo(Nd4j.defaultFloatingPointType());
+                3, 3).castTo(Nd4j.defaultFloatingPointType());
 
         SameDiff sd = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
@@ -2150,7 +2151,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         INDArray expected = Nd4j.create(new float[]{1.0f, 1.0f, 1.0f,
                         -2.0f, -2.0f, -2.0f,
                         -2.0f, -2.0f, -2.0f},
-                new long[]{3, 3}).castTo(Nd4j.defaultFloatingPointType());
+                3, 3).castTo(Nd4j.defaultFloatingPointType());
 
         SameDiff sd = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
@@ -2188,7 +2189,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable varIndices = sd.constant("indices", indices);
         SDVariable gather = sd.gather(var, varIndices, 0);
 
-        INDArray exp = Nd4j.pullRows(in, 1, new int[]{0, 1, 5});  //Along dimension 1 -> equiv to "indexes for axis 0"
+        INDArray exp = Nd4j.pullRows(in, 1, 0, 1, 5);  //Along dimension 1 -> equiv to "indexes for axis 0"
         INDArray act = gather.eval();
 
         assertEquals(exp, act);
@@ -2210,7 +2211,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         Nd4j.exec(op);
 
-        INDArray exp = Nd4j.pullRows(in, 1, new int[]{0, 1, 5});  //Along dimension 1 == indexes for dimension 0
+        INDArray exp = Nd4j.pullRows(in, 1, 0, 1, 5);  //Along dimension 1 == indexes for dimension 0
 
         assertEquals(exp, out);
 
@@ -2426,6 +2427,18 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testVariableSplit(Nd4jBackend backend) {
+        SameDiff sameDiff = SameDiff.create();
+        sameDiff.setEagerMode(true);
+        SDVariable splitVar = sameDiff.placeHolder("numSplits",DataType.INT64,1);
+        SDVariable inputSplit = sameDiff.constant("toSplit",Nd4j.zeros(DataType.INT64,2,2));
+        SDVariable[] split = sameDiff.split(inputSplit,splitVar,0);
+
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArrayIndicesPut(Nd4jBackend backend) {
         Nd4j.getExecutioner().enableVerboseMode(true);
         Nd4j.getExecutioner().enableDebugMode(true);
@@ -2473,7 +2486,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L);
         SDVariable x = sd.var(arr);
 
-        SDVariable view = sd.createView(x, new SDVariable[]{CreateView.createAll(sd)});
+        SDVariable view = sd.createView(x, CreateView.createAll(sd));
         INDArray eval = view.eval();
         assertEquals(arr,eval);
 
@@ -2488,7 +2501,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L);
         SDVariable x = sd.var(arr);
 
-        SDVariable view = sd.createView(x, new SDVariable[]{CreateView.createInterval(sd,0,1,1,1)});
+        SDVariable view = sd.createView(x, CreateView.createInterval(sd,0,1,1,1));
         INDArray eval = view.eval();
         assertEquals(arr.get(NDArrayIndex.interval(0,1,true)),eval);
 
@@ -2503,7 +2516,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L);
         SDVariable x = sd.var(arr);
 
-        SDVariable view = sd.createView(x, new SDVariable[]{CreateView.createNewAxis(sd)});
+        SDVariable view = sd.createView(x, CreateView.createNewAxis(sd));
         INDArray eval = view.eval();
         assertEquals(arr.get(NDArrayIndex.newAxis()),eval);
 
@@ -2519,7 +2532,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         INDArray arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L);
         SDVariable x = sd.var(arr);
 
-        SDVariable view = sd.createView(x, new SDVariable[]{CreateView.createPoint(sd,1)});
+        SDVariable view = sd.createView(x, CreateView.createPoint(sd,1));
         INDArray eval = view.eval();
         assertEquals(arr.get(NDArrayIndex.point(1)),eval);
 
@@ -3071,7 +3084,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDoubleUseOfArray(Nd4jBackend backend) {
         //If array is reused, gradient check will fail
-        INDArray a = Nd4j.rand(DataType.DOUBLE, new int[]{3, 4});
+        INDArray a = Nd4j.rand(DataType.DOUBLE, 3, 4);
         SameDiff sd = SameDiff.create();
         SDVariable a1 = sd.var("a", a);
         SDVariable a2 = sd.var("b", a);
@@ -3090,7 +3103,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiGradientRecurrent(Nd4jBackend backend) {
-        final INDArray input = Nd4j.rand(DataType.DOUBLE, new int[]{3, 4, 2});
+        final INDArray input = Nd4j.rand(DataType.DOUBLE, 3, 4, 2);
         final INDArray[] output = new INDArray[(int) input.size(2)];
         for (int i = 0; i < input.size(2); i++) {
             final INDArray x_i = input.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i));
@@ -3135,7 +3148,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiGradientManualRecurrent(Nd4jBackend backend) {
-        final INDArray input = Nd4j.rand(DataType.DOUBLE, new int[]{3, 4, 2});
+        final INDArray input = Nd4j.rand(DataType.DOUBLE, 3, 4, 2);
         final INDArray[] output = new INDArray[(int) input.size(2)];
         for (int i = 0; i < input.size(2); i++) {
             final INDArray x_i = input.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i));
@@ -3178,7 +3191,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiGradient(Nd4jBackend backend) {
-        final INDArray input = Nd4j.rand(DataType.DOUBLE, new int[]{3, 4, 2});
+        final INDArray input = Nd4j.rand(DataType.DOUBLE, 3, 4, 2);
         SameDiff sd = SameDiff.create();
         final SDVariable sdInput = sd.var("input", input);
 
@@ -3410,7 +3423,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         INDArray out = sd.outputSingle(null, "oldName");
 
         SDVariable renamed = v3.rename("newName");
-        assertTrue(v3 == renamed);
+        assertSame(v3, renamed);
         assertEquals("newName", renamed.name());
 
         assertNull(sd.getVariable("oldName"));
@@ -3492,7 +3505,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
 
         //Also try training:
-        SDVariable sum = sd.math.mergeAdd(new SDVariable[]{ph1, ph2, ph3, ph4});
+        SDVariable sum = sd.math.mergeAdd(ph1, ph2, ph3, ph4);
         SDVariable mean = sum.add(scalar).mean();
         mean.markAsLoss();
         MultiDataSet mds = new MultiDataSet(new INDArray[]{wrongShape, wrongShape, wrongShape, wrongShape}, null);
@@ -3896,9 +3909,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
 
         SDVariable[] finalArgs = new SDVariable[args.length + 1];
-        for(int i = 0; i < args.length; i++) {
-            finalArgs[i] = args[i];
-        }
+        System.arraycopy(args, 0, finalArgs, 0, args.length);
         finalArgs[3] = input;
 
         ControlFlow.LoopParams loopParams = ControlFlow.LoopParams.builder()
@@ -4243,14 +4254,13 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         WeightsFormat format = WeightsFormat.OIYX;
 
-        INDArray inArr = Nd4j.linspace(DataType.FLOAT, 25, -0.5, 96).reshape(new long[]{bS, iC, iH, iW});
-        INDArray weights = Nd4j.createFromArray(new float[]{
-                        -3.f, -1.8f, -0.6f, 0.6f, 1.8f, 3.f, -2.7f, -1.5f, -0.3f, 0.9f, 2.1f, 3.3f, -2.4f, -1.2f, 0.f, 1.2f, 2.4f, 3.6f, -2.1f, -0.9f, 0.3f, 1.5f,
+        INDArray inArr = Nd4j.linspace(DataType.FLOAT, 25, -0.5, 96).reshape(bS, iC, iH, iW);
+        INDArray weights = Nd4j.createFromArray(-3.f, -1.8f, -0.6f, 0.6f, 1.8f, 3.f, -2.7f, -1.5f, -0.3f, 0.9f, 2.1f, 3.3f, -2.4f, -1.2f, 0.f, 1.2f, 2.4f, 3.6f, -2.1f, -0.9f, 0.3f, 1.5f,
                         2.7f, 3.9f, -2.9f, -1.7f, -0.5f, 0.7f, 1.9f, 3.1f, -2.6f, -1.4f, -0.2f, 1.f, 2.2f, 3.4f, -2.3f, -1.1f, 0.1f, 1.3f, 2.5f, 3.7f, -2.f, -0.8f, 0.4f, 1.6f,
-                        2.8f, 4.f, -2.8f, -1.6f, -0.4f, 0.8f, 2.f, 3.2f, -2.5f, -1.3f, -0.1f, 1.1f, 2.3f, 3.5f, -2.2f, -1.f, 0.2f, 1.4f, 2.6f, 3.8f, -1.9f, -0.7f, 0.5f, 1.7f, 2.9f, 4.1f}).
-                reshape(new long[]{oC, iC, kH, kW});
+                        2.8f, 4.f, -2.8f, -1.6f, -0.4f, 0.8f, 2.f, 3.2f, -2.5f, -1.3f, -0.1f, 1.1f, 2.3f, 3.5f, -2.2f, -1.f, 0.2f, 1.4f, 2.6f, 3.8f, -1.9f, -0.7f, 0.5f, 1.7f, 2.9f, 4.1f).
+                reshape(oC, iC, kH, kW);
 
-        INDArray bias = Nd4j.createFromArray(new float[]{-1, 2, 0.5f});
+        INDArray bias = Nd4j.createFromArray(-1, 2, 0.5f);
 
         SDVariable sdInput = sd.var("in", inArr);
         SDVariable sdWeights = sd.var("dW", weights);
@@ -4365,10 +4375,10 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         int       oH=2,oW=2;
         SameDiff sd = SameDiff.create();
 
-        INDArray inArr = Nd4j.linspace(DataType.FLOAT, 25, -0.5, 96).reshape(new long[]{bS, iC, iH, iW});
+        INDArray inArr = Nd4j.linspace(DataType.FLOAT, 25, -0.5, 96).reshape(bS, iC, iH, iW);
         INDArray weights = Nd4j.rand(DataType.FLOAT, oC, iC, kH, kW);
 
-        INDArray bias = Nd4j.createFromArray(new float[]{-1, 2, 0.5f});
+        INDArray bias = Nd4j.createFromArray(-1, 2, 0.5f);
 
         SDVariable sdInput = sd.var("in", inArr);
         SDVariable sdWeights = sd.var("dW", weights);

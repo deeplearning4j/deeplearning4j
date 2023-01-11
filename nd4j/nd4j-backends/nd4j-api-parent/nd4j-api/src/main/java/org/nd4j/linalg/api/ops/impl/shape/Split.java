@@ -44,6 +44,7 @@ public class Split extends DynamicCustomOp {
 
     private int numSplit;
     private int splitDim;
+    private SDVariable numSplitVar;
 
     public Split() {
     }
@@ -68,6 +69,7 @@ public class Split extends DynamicCustomOp {
 
     public Split(SameDiff sd, SDVariable input, SDVariable numSplit, int splitDim) {
         super(sd,new SDVariable[]{input,numSplit});
+        this.numSplitVar = numSplit;
         addIArgument(splitDim);
     }
 
@@ -149,7 +151,13 @@ public class Split extends DynamicCustomOp {
     }
 
     @Override
-    public int getNumOutputs(){
+    public int getNumOutputs() {
+        if(numSplit < 1) {
+            if(sameDiff != null && sameDiff.isEagerMode() && numSplitVar != null) {
+                return numSplitVar.eval().getInt(0);
+            }
+        }
+
         return numSplit;
     }
 
