@@ -384,14 +384,14 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
 
   NDArray *array;
-  if (dataBuffer != nullptr)
+  if (dataBuffer != nullptr) {
     array = new NDArray(dataBuffer->dataBuffer(), reinterpret_cast<sd::LongType const *>(shapeInfo),
                         sd::LaunchContext::defaultContext(),
                         dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
                                                    reinterpret_cast<sd::LongType const *>(shapeInfo))));
-  else
+  } else {
     array = new NDArray(nullptr, nullptr, reinterpret_cast<sd::LongType const *>(shapeInfo));
-
+  }
   _fastpath_in[index] = array;
   _handles.emplace_back(array);
 

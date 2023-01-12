@@ -263,9 +263,7 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const ShapeDescriptor &desc
                  const sd::LongType offset) {
   _context = context;
   _offset = offset;
-
   setShapeInfo(descriptor);
-
   _buffer = buffer;
 
   _isView = offset > 0 || _length * DataTypeUtils::sizeOf(_dataType) < buffer->getLenInBytes();

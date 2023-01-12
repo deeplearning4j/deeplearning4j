@@ -199,6 +199,15 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
         Random random = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * sequence.hashCode(),
                 lookupTable.layerSize() + 1);
+
+
+        int numThreadsOriginal = Nd4j.getEnvironment().maxThreads();
+        //when workers are > 1 the openmp in the scalar op can cause a crash
+        //set to 1 to workaround
+        if(configuration.getWorkers() > 1) {
+            Nd4j.getEnvironment().setMaxThreads(1);
+        }
+
         INDArray ret = Nd4j.rand(random,lookupTable.getWeights().dataType(),
                         1, lookupTable.layerSize()).subi(0.5)
                 .divi(lookupTable.layerSize());
@@ -206,6 +215,9 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         log.info("Inf before: {}", ret);
         dm(0, sequence, (int) nextRandom2.get() % window, nextRandom2, learningRate,Collections.emptyList(), ret);
 
+        if(configuration.getWorkers() > 1) {
+            Nd4j.getEnvironment().setMaxThreads(numThreadsOriginal);
+        }
         return ret;
     }
 

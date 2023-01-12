@@ -186,7 +186,7 @@ public interface MemoryWorkspace extends AutoCloseable, Deallocatable {
     long getMaxCycleAllocations();
 
     /**
-     * This methos returns current allocated size of this workspace
+     * This method returns current allocated size of this workspace
      *
      * @return
      */

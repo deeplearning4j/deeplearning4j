@@ -33,8 +33,8 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.nlp.CbowInference;
 import org.nd4j.linalg.api.ops.impl.nlp.CbowRound;
 import org.nd4j.linalg.factory.Nd4j;
@@ -190,71 +190,138 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
 
     public double doExec(List<BatchItem<T>> items, INDArray inferenceVector) {
-        boolean useHS = configuration.isUseHierarchicSoftmax();
-        boolean useNegative = configuration.getNegative() > 0;
-        boolean useInference = inferenceVector != null;
-        if(items.size() > 1) {
-            int maxCols = 1;
-            for (int i = 0; i < items.size(); i++) {
-                int curr = items.get(i).getWord().getCodeLength();
-                if (curr > maxCols)
-                    maxCols = curr;
-            }
+        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfig(),"cbow-exec-" + Thread.currentThread().getName())) {
+            boolean useHS = configuration.isUseHierarchicSoftmax();
+            boolean useNegative = configuration.getNegative() > 0;
+            boolean useInference = inferenceVector != null;
+            if (items.size() > 1) {
+                int maxCols = 1;
+                for (int i = 0; i < items.size(); i++) {
+                    int curr = items.get(i).getWord().getCodeLength();
+                    if (curr > maxCols)
+                        maxCols = curr;
+                }
 
 
-            boolean hasNumLabels = false;
+                boolean hasNumLabels = false;
 
-            int maxWinWordsCols = -1;
-            for (int i = 0; i < items.size(); ++i) {
-                int curr = items.get(i).getWord().getCodeLength();
-                if (curr > maxWinWordsCols)
-                    maxWinWordsCols = curr;
-            }
+                int maxWinWordsCols = -1;
+                for (int i = 0; i < items.size(); ++i) {
+                    int curr = items.get(i).getWord().getCodeLength();
+                    if (curr > maxWinWordsCols)
+                        maxWinWordsCols = curr;
+                }
 
-            INDArray inputWindowWords = Nd4j.create(DataType.INT32,items.size(),maxWinWordsCols);
-            INDArray inputWordsStatuses = Nd4j.create(DataType.INT32,items.size(),maxWinWordsCols);
-            INDArray randoms = Nd4j.create(DataType.INT64,items.size());
-            INDArray alphas = Nd4j.create(DataType.DOUBLE,items.size());
-            INDArray currentWindowIndexes = Nd4j.create(DataType.INT32,items.size());
-            INDArray codes = Nd4j.create(DataType.INT8, items.size(), maxCols);
-            INDArray indices = Nd4j.create( DataType.INT32, items.size(), maxCols);
-            INDArray numLabelsArray = Nd4j.create(DataType.INT32,items.size());
+                INDArray inputWindowWords = Nd4j.create(DataType.INT32, items.size(), maxWinWordsCols);
+                INDArray inputWordsStatuses = Nd4j.create(DataType.INT32, items.size(), maxWinWordsCols);
+                INDArray randoms = Nd4j.create(DataType.INT64, items.size());
+                INDArray alphas = Nd4j.create(DataType.DOUBLE, items.size());
+                INDArray currentWindowIndexes = Nd4j.create(DataType.INT32, items.size());
+                INDArray codes = Nd4j.create(DataType.INT8, items.size(), maxCols);
+                INDArray indices = Nd4j.create(DataType.INT32, items.size(), maxCols);
+                INDArray numLabelsArray = Nd4j.create(DataType.INT32, items.size());
 
-            for (int cnt = 0; cnt < items.size(); cnt++) {
+                for (int cnt = 0; cnt < items.size(); cnt++) {
+                    T currentWord = items.get(cnt).getWord();
+                    currentWindowIndexes.putScalar(0, currentWord.getIndex());
+
+                    int[] windowWords = items.get(cnt).getWindowWords().clone();
+                    boolean[] windowStatuses = items.get(cnt).getWordStatuses().clone();
+
+                    for (int i = 0; i < maxWinWordsCols; i++) {
+                        if (i < windowWords.length) {
+                            inputWindowWords.putScalar(cnt, i, windowWords[i]);
+                            inputWordsStatuses.putScalar(cnt, i, windowStatuses[i] ? 1 : 0);
+                        } else {
+                            inputWindowWords.putScalar(cnt, i, -1);
+                            inputWordsStatuses.putScalar(cnt, i, -1);
+                        }
+                    }
+
+                    long randomValue = items.get(cnt).getRandomValue();
+                    double alpha = items.get(cnt).getAlpha();
+                    alphas.putScalar(cnt, alpha);
+
+                    randoms.putScalar(cnt, randomValue);
+                    numLabelsArray.putScalar(cnt, items.get(cnt).getNumLabel());
+                    if (items.get(cnt).getNumLabel() > 0)
+                        hasNumLabels = true;
+
+                    if (useHS) {
+                        for (int p = 0; p < currentWord.getCodeLength(); p++) {
+                            if (currentWord.getPoints().get(p) < 0)
+                                continue;
+
+
+                            codes.putScalar(cnt, p, currentWord.getCodes().get(p));
+                            indices.putScalar(cnt, p, currentWord.getPoints().get(p));
+                        }
+
+                    }
+
+                    if (negative > 0) {
+                        if (syn1Neg == null) {
+                            ((InMemoryLookupTable<T>) lookupTable).initNegative();
+                            syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
+                        }
+                    }
+
+                }
+
+
+                CbowRound cbow = CbowRound.builder()
+                        .target(currentWindowIndexes)
+                        .context(inputWindowWords)
+                        .lockedWords(inputWordsStatuses)
+                        .ngStarter(currentWindowIndexes)
+                        .syn0(syn0.get())
+                        .syn1(useHS ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
+                        .syn1Neg((negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()))
+                        .expTable(expTable.get())
+                        .negTable(negative > 0 ? table.get() : Nd4j.empty(syn0.get().dataType()))
+                        .indices(useHS ? indices : Nd4j.empty(DataType.INT32))
+                        .codes(useHS ? codes : Nd4j.empty(DataType.INT8))
+                        .nsRounds((int) negative)
+                        .alpha(alphas)
+                        .nextRandom(randoms)
+                        .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
+                        .numLabels(hasNumLabels ? numLabelsArray : Nd4j.empty(DataType.INT32))
+                        .trainWords(configuration.isTrainElementsVectors())
+                        .numWorkers(workers)
+                        .iterations(useInference ? configuration.getIterations() * configuration.getEpochs() : 1)
+                        .build();
+
+
+                Nd4j.getExecutioner().exec(cbow);
+                batches.get().clear();
+                return 0.0;
+            } else {
+                int cnt = 0;
                 T currentWord = items.get(cnt).getWord();
-                currentWindowIndexes.putScalar(0,currentWord.getIndex());
+                int currentWindowIndex = currentWord.getIndex();
 
                 int[] windowWords = items.get(cnt).getWindowWords().clone();
                 boolean[] windowStatuses = items.get(cnt).getWordStatuses().clone();
-
-                for (int i = 0; i < maxWinWordsCols; i++) {
-                    if (i < windowWords.length) {
-                        inputWindowWords.putScalar(cnt,i,windowWords[i]);
-                        inputWordsStatuses.putScalar(cnt,i,windowStatuses[i] ? 1 : 0);
-                    }
-                    else {
-                        inputWindowWords.putScalar(cnt,i,-1);
-                        inputWordsStatuses.putScalar(cnt,i,-1);
-                    }
-                }
-
+                byte[] codes = new byte[currentWord.getCodeLength()];
+                int[] points = new int[currentWord.getCodeLength()];
                 long randomValue = items.get(cnt).getRandomValue();
                 double alpha = items.get(cnt).getAlpha();
-                alphas.putScalar(cnt,alpha);
-
-                randoms.putScalar(cnt,randomValue);
-                numLabelsArray.putScalar(cnt,items.get(cnt).getNumLabel());
-                if (items.get(cnt).getNumLabel() > 0)
-                    hasNumLabels = true;
+                int numLabels = items.get(cnt).getNumLabel();
+                int[] inputStatuses = new int[windowWords.length];
+                for (int i = 0; i < windowWords.length; ++i) {
+                    if (i < windowStatuses.length)
+                        inputStatuses[i] = windowStatuses[i] ? 1 : 0;
+                    else
+                        inputStatuses[i] = -1;
+                }
 
                 if (useHS) {
                     for (int p = 0; p < currentWord.getCodeLength(); p++) {
                         if (currentWord.getPoints().get(p) < 0)
                             continue;
 
-
-                        codes.putScalar(cnt,p,currentWord.getCodes().get(p));
-                        indices.putScalar(cnt,p,currentWord.getPoints().get(p));
+                        codes[p] = currentWord.getCodes().get(p);
+                        points[p] = currentWord.getPoints().get(p);
                     }
 
                 }
@@ -264,111 +331,42 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                         ((InMemoryLookupTable<T>) lookupTable).initNegative();
                         syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
                     }
+                } else {
+                    syn1Neg.set(Nd4j.empty(syn0.get().dataType()));
                 }
 
+                CbowInference cbowInference = CbowInference.builder()
+                        .target(currentWord.getIndex())
+                        .ngStarter(currentWord.getIndex())
+                        .negTable(table.get() == null ? Nd4j.empty(syn0.get().dataType()) : table.get())
+                        .expTable(expTable.get() == null ? Nd4j.empty(syn0.get().dataType()) : expTable.get())
+                        .syn0(syn0.get())
+                        .syn1(!useHS ? Nd4j.empty(syn0.get().dataType()) : syn1.get())
+                        .syn1Neg(syn1Neg.get())
+                        .alpha(alpha)
+                        .context(windowWords == null ? new int[0] : windowWords)
+                        .indices(useHS || useNegative ? points : new int[0])
+                        .codes(useHS ? codes : new byte[0])
+                        .lockedWords(inputStatuses)
+                        .randomValue((int) randomValue)
+                        .numWorkers(workers)
+                        .numLabels(numLabels)
+                        .nsRounds(useNegative ? (int) negative : 0)
+                        .preciseMode(configuration.isPreciseMode())
+                        .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
+                        .iterations(useInference ? configuration.getIterations() * configuration.getEpochs() : 1)
+                        .build();
+
+
+                Nd4j.getExecutioner().exec(cbowInference);
             }
 
-
-            CbowRound cbow = CbowRound.builder()
-                    .target(currentWindowIndexes)
-                    .context(inputWindowWords)
-                    .lockedWords(inputWordsStatuses)
-                    .ngStarter(currentWindowIndexes)
-                    .syn0(syn0.get())
-                    .syn1(useHS ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
-                    .syn1Neg((negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()))
-                    .expTable(expTable.get())
-                    .negTable(negative > 0 ? table.get() : Nd4j.empty(syn0.get().dataType()) )
-                    .indices(useHS ? indices : Nd4j.empty(DataType.INT32))
-                    .codes(useHS ? codes : Nd4j.empty(DataType.INT8))
-                    .nsRounds((int) negative)
-                    .alpha(alphas)
-                    .nextRandom(randoms)
-                    .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
-                    .numLabels(hasNumLabels ? numLabelsArray : Nd4j.empty(DataType.INT32))
-                    .trainWords(configuration.isTrainElementsVectors())
-                    .numWorkers(workers)
-                    .iterations(useInference ? configuration.getIterations() * configuration.getEpochs() : 1)
-                    .build();
-
-
-            Nd4j.getExecutioner().exec(cbow);
-            batches.get().clear();
-            return 0.0;
-        } else {
-            int cnt = 0;
-            T currentWord = items.get(cnt).getWord();
-            int currentWindowIndex = currentWord.getIndex();
-
-            int[] windowWords = items.get(cnt).getWindowWords().clone();
-            boolean[] windowStatuses = items.get(cnt).getWordStatuses().clone();
-            byte[] codes = new byte[currentWord.getCodeLength()];
-            int[] points = new int[currentWord.getCodeLength()];
-            long randomValue = items.get(cnt).getRandomValue();
-            double alpha = items.get(cnt).getAlpha();
-            int numLabels = items.get(cnt).getNumLabel();
-            int[] inputStatuses = new int[windowWords.length];
-            for (int i = 0; i < windowWords.length; ++i) {
-                if (i < windowStatuses.length)
-                    inputStatuses[i] = windowStatuses[i] ? 1 : 0;
-                else
-                    inputStatuses[i] = -1;
-            }
-
-            if (useHS) {
-                for (int p = 0; p < currentWord.getCodeLength(); p++) {
-                    if (currentWord.getPoints().get(p) < 0)
-                        continue;
-
-                    codes[p] = currentWord.getCodes().get(p);
-                    points[p] = currentWord.getPoints().get(p);
-                }
-
-            }
-
-            if (negative > 0) {
-                if (syn1Neg == null) {
-                    ((InMemoryLookupTable<T>) lookupTable).initNegative();
-                    syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
-                }
-            } else {
-                syn1Neg.set(Nd4j.empty(syn0.get().dataType()));
-            }
-
-            CbowInference cbowInference  = CbowInference.builder()
-                    .target(currentWord.getIndex())
-                    .ngStarter(currentWord.getIndex())
-                    .negTable(table.get() == null ? Nd4j.empty(syn0.get().dataType()) : table.get())
-                    .expTable(expTable.get() == null ? Nd4j.empty(syn0.get().dataType()) : expTable.get())
-                    .syn0(syn0.get())
-                    .syn1(!useHS ? Nd4j.empty(syn0.get().dataType()) : syn1.get())
-                    .syn1Neg(syn1Neg.get())
-                    .alpha(alpha)
-                    .context(windowWords == null ? new int[0] : windowWords)
-                    .indices(useHS || useNegative ? points : new int[0])
-                    .codes(useHS ? codes : new byte[0])
-                    .lockedWords(inputStatuses)
-                    .randomValue((int) randomValue)
-                    .numWorkers(workers)
-                    .numLabels(numLabels)
-                    .nsRounds(useNegative ? (int) negative : 0)
-                    .preciseMode(configuration.isPreciseMode())
-                    .inferenceVector( inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
-                    .iterations(useInference ? configuration.getIterations() * configuration.getEpochs() : 1)
-                    .build();
-
-
-
-            Nd4j.getExecutioner().exec(cbowInference);
         }
-
-
         return 0.0;
     }
 
     public void cbow(int i, List<T> sentence, int b, AtomicLong nextRandom, double alpha, int currentWindow,
                      List<BatchItem<T>> batch) {
-        int batchSize = configuration.getBatchSize();
 
         int end = window * 2 + 1 - b;
 

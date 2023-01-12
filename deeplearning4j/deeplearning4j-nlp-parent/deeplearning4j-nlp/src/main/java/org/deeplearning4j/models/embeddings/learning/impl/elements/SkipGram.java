@@ -35,6 +35,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.nlp.SkipGramInference;
 import org.nd4j.linalg.api.ops.impl.nlp.SkipGramRound;
@@ -290,58 +291,139 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
     }
 
+
+
+
     public  Double doExec(List<BatchItem<T>> items,INDArray inferenceVector) {
-        if (items.size() > 1) {
-            INDArray targetArray = arrayCacheMemoryMgr.allocate(false, DataType.INT32, items.size());
-            INDArray ngStarterArray = arrayCacheMemoryMgr.allocate(false, DataType.INT32, items.size());
-            INDArray alphasArray = arrayCacheMemoryMgr.allocate(false, DataType.DOUBLE, items.size());
-            INDArray randomValuesArr = arrayCacheMemoryMgr.allocate(false, DataType.INT64, items.size());
-            int maxCols = 1;
-            for (int i = 0; i < items.size(); i++) {
-                int curr = items.get(i).getWord().getCodeLength();
-                if (curr > maxCols)
-                    maxCols = curr;
-            }
+        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfig(),"skipgram-exec-" + Thread.currentThread().getName())) {
+            if (items.size() > 1) {
+                INDArray targetArray = Nd4j.create(DataType.INT32, items.size());
+                INDArray ngStarterArray = Nd4j.create(DataType.INT32, items.size());
+                INDArray alphasArray = Nd4j.create(DataType.DOUBLE, items.size());
+                INDArray randomValuesArr = Nd4j.create(DataType.INT64, items.size());
+                int maxCols = 1;
+                for (int i = 0; i < items.size(); i++) {
+                    int curr = items.get(i).getWord().getCodeLength();
+                    if (curr > maxCols)
+                        maxCols = curr;
+                }
 
 
-            //use -1 as padding for codes that are not actually valid for a given row
-            INDArray codes = Nd4j.valueArrayOf(new long[]{items.size(),maxCols},-1,DataType.INT32);
-            INDArray indices = Nd4j.create(DataType.INT32, items.size(), maxCols);
+                //use -1 as padding for codes that are not actually valid for a given row
+                INDArray codes = Nd4j.valueArrayOf(new long[]{items.size(),maxCols},-1,DataType.INT32);
+                INDArray indices = Nd4j.create(DataType.INT32, items.size(), maxCols);
 
-            for (int cnt = 0; cnt < items.size(); cnt++) {
+                for (int cnt = 0; cnt < items.size(); cnt++) {
+
+                    T w1 = items.get(cnt).getWord();
+                    T lastWord = items.get(cnt).getLastWord();
+
+                    randomValuesArr.putScalar(cnt, items.get(cnt).getRandomValue());
+                    double alpha = items.get(cnt).getAlpha();
+
+                    if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && inferenceVector == null)
+
+                            || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP")
+                            || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK")
+                            || lastWord.getLabel().equals("UNK")) {
+                        continue;
+                    }
+
+
+                    int target = lastWord.getIndex();
+                    int ngStarter = w1.getIndex();
+
+
+                    targetArray.putScalar(cnt, target);
+                    ngStarterArray.putScalar(cnt, ngStarter);
+                    alphasArray.putScalar(cnt, alpha);
+
+
+                    if (configuration.isUseHierarchicSoftmax()) {
+                        for (int i = 0; i < w1.getCodeLength(); i++) {
+                            int code = w1.getCodes().get(i);
+                            int point = w1.getPoints().get(i);
+                            if (point >= vocabCache.numWords() || point < 0)
+                                continue;
+                            codes.putScalar(cnt, i, code);
+                            indices.putScalar(cnt, i, point);
+                        }
+
+                    }
+
+                    //negative sampling
+                    if (negative > 0) {
+                        if (syn1Neg == null) {
+                            ((InMemoryLookupTable<T>) lookupTable).initNegative();
+                            syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
+                        }
+                    }
+                }
+
+
+
+
+                SkipGramRound sg = SkipGramRound.builder()
+                        .target(targetArray)
+                        .expTable(expTable.get())
+                        .ngStarter((negative > 0) ? ngStarterArray : Nd4j.empty(DataType.INT32))
+                        .syn0(syn0.get())
+                        .syn1(configuration.isUseHierarchicSoftmax() ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
+                        .syn1Neg((negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()))
+                        .negTable((negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()))
+                        .indices(configuration.isUseHierarchicSoftmax() ? indices : Nd4j.empty(DataType.INT32))
+                        .codes(configuration.isUseHierarchicSoftmax() ? codes: Nd4j.empty(DataType.INT8))
+
+                        .alpha(alphasArray)
+                        .randomValue(randomValuesArr)
+                        .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
+                        .preciseMode(configuration.isPreciseMode())
+                        .numWorkers(workers)
+                        .iterations(inferenceVector != null ? configuration.getIterations() * configuration.getEpochs() : 1)
+                        .build();
+
+                Nd4j.getExecutioner().exec(sg);
+               /* arrayCacheMemoryMgr.release(codes);
+                arrayCacheMemoryMgr.release(indices);
+                arrayCacheMemoryMgr.release(targetArray);
+                arrayCacheMemoryMgr.release(randomValuesArr);
+                arrayCacheMemoryMgr.release(alphasArray);*/
+                items.clear();
+
+
+            } else {
+                int cnt = 0;
 
                 T w1 = items.get(cnt).getWord();
                 T lastWord = items.get(cnt).getLastWord();
+                byte[] codes = new byte[w1.getCodeLength()];
+                int[] indices = new int[w1.getCodeLength()];
 
-                randomValuesArr.putScalar(cnt, items.get(cnt).getRandomValue());
                 double alpha = items.get(cnt).getAlpha();
 
                 if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && inferenceVector == null)
-
                         || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP")
                         || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK")
                         || lastWord.getLabel().equals("UNK")) {
-                    continue;
+                    return 0.0;
                 }
-
 
                 int target = lastWord.getIndex();
                 int ngStarter = w1.getIndex();
 
 
-                targetArray.putScalar(cnt, target);
-                ngStarterArray.putScalar(cnt, ngStarter);
-                alphasArray.putScalar(cnt, alpha);
-
-
                 if (configuration.isUseHierarchicSoftmax()) {
+
                     for (int i = 0; i < w1.getCodeLength(); i++) {
                         int code = w1.getCodes().get(i);
                         int point = w1.getPoints().get(i);
                         if (point >= vocabCache.numWords() || point < 0)
                             continue;
-                        codes.putScalar(cnt, i, code);
-                        indices.putScalar(cnt, i, point);
+                        if (i < w1.getCodeLength()) {
+                            codes[i] = (byte) code;
+                            indices[i] = point;
+                        }
+
                     }
 
                 }
@@ -353,110 +435,35 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                         syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
                     }
                 }
-            }
 
 
+                SkipGramInference sg = SkipGramInference.builder()
+                        .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
+                        .randomValue((int) items.get(0).getRandomValue())
+                        .syn0(syn0.get())
+                        .negTable((negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()))
+                        .expTable(expTable.get())
+                        .syn1(configuration.isUseHierarchicSoftmax() ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
+                        .syn1Neg((negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()))
+                        .negTable((negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()))
+                        .alpha(new double[]{alpha})
+                        .iteration(1)
 
+                        .ngStarter(ngStarter)
+                        .indices(indices)
+                        .target(target)
+                        .codes(codes)
+                        .preciseMode(configuration.getPreciseMode())
+                        .numWorkers(configuration.getWorkers())
+                        .build();
 
-            SkipGramRound sg = SkipGramRound.builder()
-                    .target(targetArray)
-                    .expTable(expTable.get())
-                    .ngStarter((negative > 0) ? ngStarterArray : Nd4j.empty(DataType.INT32))
-                    .syn0(syn0.get())
-                    .syn1(configuration.isUseHierarchicSoftmax() ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
-                    .syn1Neg((negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()))
-                    .negTable((negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()))
-                    .indices(configuration.isUseHierarchicSoftmax() ? indices : Nd4j.empty(DataType.INT32))
-                    .codes(configuration.isUseHierarchicSoftmax() ? codes: Nd4j.empty(DataType.INT8))
-
-                    .alpha(alphasArray)
-                    .randomValue(randomValuesArr)
-                    .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
-                    .preciseMode(configuration.isPreciseMode())
-                    .numWorkers(workers)
-                    .iterations(inferenceVector != null ? configuration.getIterations() * configuration.getEpochs() : 1)
-                    .build();
-
-            Nd4j.getExecutioner().exec(sg);
-            arrayCacheMemoryMgr.release(codes);
-            arrayCacheMemoryMgr.release(indices);
-            arrayCacheMemoryMgr.release(targetArray);
-            arrayCacheMemoryMgr.release(randomValuesArr);
-            arrayCacheMemoryMgr.release(alphasArray);
-            items.clear();
-
-
-        } else {
-            int cnt = 0;
-
-            T w1 = items.get(cnt).getWord();
-            T lastWord = items.get(cnt).getLastWord();
-            byte[] codes = new byte[w1.getCodeLength()];
-            int[] indices = new int[w1.getCodeLength()];
-
-            double alpha = items.get(cnt).getAlpha();
-
-            if (w1 == null || lastWord == null || (lastWord.getIndex() < 0 && inferenceVector == null)
-                    || w1.getIndex() == lastWord.getIndex() || w1.getLabel().equals("STOP")
-                    || lastWord.getLabel().equals("STOP") || w1.getLabel().equals("UNK")
-                    || lastWord.getLabel().equals("UNK")) {
-                return 0.0;
-            }
-
-            int target = lastWord.getIndex();
-            int ngStarter = w1.getIndex();
-
-
-            if (configuration.isUseHierarchicSoftmax()) {
-
-                for (int i = 0; i < w1.getCodeLength(); i++) {
-                    int code = w1.getCodes().get(i);
-                    int point = w1.getPoints().get(i);
-                    if (point >= vocabCache.numWords() || point < 0)
-                        continue;
-                    if (i < w1.getCodeLength()) {
-                        codes[i] = (byte) code;
-                        indices[i] = point;
-                    }
-
-                }
+                Nd4j.getExecutioner().exec(sg);
+                items.clear();
 
             }
-
-            //negative sampling
-            if (negative > 0) {
-                if (syn1Neg == null) {
-                    ((InMemoryLookupTable<T>) lookupTable).initNegative();
-                    syn1Neg = new DeviceLocalNDArray(((InMemoryLookupTable<T>) lookupTable).getSyn1Neg());
-                }
-            }
-
-
-            SkipGramInference sg = SkipGramInference.builder()
-                    .inferenceVector(inferenceVector != null ? inferenceVector : Nd4j.empty(syn0.get().dataType()))
-                    .randomValue((int) items.get(0).getRandomValue())
-                    .syn0(syn0.get())
-                    .negTable((negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()))
-                    .expTable(expTable.get())
-                    .syn1(configuration.isUseHierarchicSoftmax() ? syn1.get() : Nd4j.empty(syn0.get().dataType()))
-                    .syn1Neg((negative > 0) ? syn1Neg.get() : Nd4j.empty(syn0.get().dataType()))
-                    .negTable((negative > 0) ? table.get() : Nd4j.empty(syn0.get().dataType()))
-                    .alpha(new double[]{alpha})
-                    .iteration(1)
-
-                    .ngStarter(ngStarter)
-                    .indices(indices)
-                    .target(target)
-                    .codes(codes)
-                    .preciseMode(configuration.getPreciseMode())
-                    .numWorkers(configuration.getWorkers())
-                    .build();
-
-            Nd4j.getExecutioner().exec(sg);
-            items.clear();
+            return 0.0;
 
         }
-        return 0.0;
 
     }
 }

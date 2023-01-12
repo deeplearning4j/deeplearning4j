@@ -305,10 +305,6 @@ public class OpProfiler {
 
         updatePairs(op.opName(), opClass);
 
-        // TODO: to be implemented
-        //for (OpProfilerListener listener : listeners) {
-        //  listener.invoke(op);
-        //}
     }
 
     /**
@@ -322,15 +318,15 @@ public class OpProfiler {
         PenaltyCause[] causes = processTADOperands(tadBuffers);
         for (PenaltyCause cause : causes) {
             switch (cause) {
-               case TAD_NON_EWS_ACCESS:
-                  tadNonEwsAggregator.incrementCount();
-                   break;
-               case TAD_STRIDED_ACCESS:
-                  tadStridedAggregator.incrementCount();
-                  break;
-               case NONE:
-               default:
-                   break;
+                case TAD_NON_EWS_ACCESS:
+                    tadNonEwsAggregator.incrementCount();
+                    break;
+                case TAD_STRIDED_ACCESS:
+                    tadStridedAggregator.incrementCount();
+                    break;
+                case NONE:
+                default:
+                    break;
             }
         }
     }
@@ -409,75 +405,61 @@ public class OpProfiler {
      * This method prints out dashboard state
      */
     public void printOutDashboard() {
-        log.info("---Total Op Calls: {}", invocationsCount.get());
-        System.out.println();
-        log.info("--- OpClass calls statistics: ---");
-        System.out.println(classCounter.asString());
-        System.out.println();
-        log.info("--- OpClass pairs statistics: ---");
-        System.out.println(classPairsCounter.asString());
-        System.out.println();
-        log.info("--- Individual Op calls statistics: ---");
-        System.out.println(opCounter.asString());
-        System.out.println();
-        log.info("--- Matching Op calls statistics: ---");
-        System.out.println(matchingCounter.asString());
-        System.out.println();
-        log.info("--- Matching detailed Op calls statistics: ---");
-        System.out.println(matchingCounterDetailed.asString());
-        System.out.println();
-        log.info("--- Matching inverts Op calls statistics: ---");
-        System.out.println(matchingCounterInverted.asString());
-        System.out.println();
-        log.info("--- Time for OpClass calls statistics: ---");
-        System.out.println(classAggergator.asString());
-        System.out.println();
-        log.info("--- Time for long Op calls statistics: ---");
-        System.out.println(longAggergator.asString());
-        System.out.println();
-        log.info("--- Time spent for Op calls statistics: ---");
-        System.out.println(classAggergator.asPercentageString());
-        System.out.println();
-        log.info("--- Time spent for long Op calls statistics: ---");
-        System.out.println(longAggergator.asPercentageString());
-        System.out.println();
-        log.info("--- Time spent within methods: ---");
-        methodsAggregator.renderTree(true);
-        System.out.println();
-        log.info("--- Bad strides stack tree: ---");
-        System.out.println("Unique entries: " + stridedAggregator.getUniqueBranchesNumber());
-        stridedAggregator.renderTree();
-        System.out.println();
-        log.info("--- non-EWS access stack tree: ---");
-        System.out.println("Unique entries: " + nonEwsAggregator.getUniqueBranchesNumber());
-        nonEwsAggregator.renderTree();
-        System.out.println();
-        log.info("--- Mixed orders access stack tree: ---");
-        System.out.println("Unique entries: " + mixedOrderAggregator.getUniqueBranchesNumber());
-        mixedOrderAggregator.renderTree();
-        System.out.println();
-        log.info("--- TAD bad strides stack tree: ---");
-        System.out.println("Unique entries: " + tadStridedAggregator.getUniqueBranchesNumber());
-        tadStridedAggregator.renderTree();
-        System.out.println();
-        log.info("--- TAD non-EWS access stack tree: ---");
-        System.out.println("Unique entries: " + tadNonEwsAggregator.getUniqueBranchesNumber());
-        tadNonEwsAggregator.renderTree();
-        System.out.println();
-        log.info("--- Scalar access stack tree: ---");
-        System.out.println("Unique entries: " + scalarAggregator.getUniqueBranchesNumber());
-        scalarAggregator.renderTree(false);
-        System.out.println();
-        log.info("--- Blas GEMM odrders count: ---");
-        System.out.println(blasOrderCounter.asString());
-        System.out.println();
-        log.info("--- BLAS access stack trace: ---");
-        System.out.println("Unique entries: " + blasAggregator.getUniqueBranchesNumber());
-        blasAggregator.renderTree(false);
-        System.out.println();
-
+        log.info(statsAsString());
     }
 
+
+
+    public String statsAsString() {
+        StringBuffer stringBuffer = new StringBuffer();
+        stringBuffer.append("---Total Op Calls: +  invocationsCount.get()\n");
+        stringBuffer.append("--- OpClass calls statistics: ---\n");
+        stringBuffer.append(classCounter.asString() + "\n");
+        stringBuffer.append("--- OpClass pairs statistics: ---");
+        stringBuffer.append(classPairsCounter.asString() + "\n");
+        stringBuffer.append("--- Individual Op calls statistics: ---\n");
+        stringBuffer.append(opCounter.asString() + "\n");
+        stringBuffer.append("--- Matching Op calls statistics: ---");
+        stringBuffer.append(matchingCounter.asString() + "\n");
+        stringBuffer.append("--- Matching detailed Op calls statistics: ---\n");
+        stringBuffer.append(matchingCounterDetailed.asString() + "\n");
+        stringBuffer.append("--- Matching inverts Op calls statistics: ---\n");
+        stringBuffer.append(matchingCounterInverted.asString()  + "\n");
+        stringBuffer.append("--- Time for OpClass calls statistics: ---\n");
+        stringBuffer.append(classAggergator.asString() + "\n");
+        stringBuffer.append("--- Time for long Op calls statistics: ---\n");
+        stringBuffer.append(longAggergator.asString() + "\n");
+        stringBuffer.append("--- Time spent for Op calls statistics: ---\n");
+        stringBuffer.append(classAggergator.asPercentageString() + "\n");
+        stringBuffer.append("--- Time spent for long Op calls statistics: ---\n");
+        stringBuffer.append(longAggergator.asPercentageString() + "\n");
+        stringBuffer.append("--- Time spent within methods: ---\n");
+        stringBuffer.append(methodsAggregator.renderTree(true) + "\n");
+        stringBuffer.append("--- Bad strides stack tree: ---\n");
+        stringBuffer.append("Unique entries: " + stridedAggregator.getUniqueBranchesNumber() + "\n");
+        stringBuffer.append(stridedAggregator.renderTree());
+        stringBuffer.append("--- non-EWS access stack tree: ---\n");
+        stringBuffer.append("Unique entries: " + nonEwsAggregator.getUniqueBranchesNumber() + "\n");
+        stringBuffer.append(nonEwsAggregator.renderTree());
+        stringBuffer.append("--- Mixed orders access stack tree: ---\n");
+        stringBuffer.append("Unique entries: " + mixedOrderAggregator.getUniqueBranchesNumber() + "\n");
+        stringBuffer.append(mixedOrderAggregator.renderTree());
+        stringBuffer.append("--- TAD bad strides stack tree: ---\n");
+        stringBuffer.append("Unique entries: " + tadStridedAggregator.getUniqueBranchesNumber() + "\n");
+        stringBuffer.append(tadStridedAggregator.renderTree());
+        stringBuffer.append("--- TAD non-EWS access stack tree: ---");
+        stringBuffer.append("Unique entries: " + tadNonEwsAggregator.getUniqueBranchesNumber());
+        stringBuffer.append(tadNonEwsAggregator.renderTree());
+        stringBuffer.append("--- Scalar access stack tree: ---\n");
+        stringBuffer.append("Unique entries: " + scalarAggregator.getUniqueBranchesNumber() + "\n");
+        stringBuffer.append(scalarAggregator.renderTree(false));
+        stringBuffer.append("--- Blas GEMM odrders count: ---\n");
+        stringBuffer.append(blasOrderCounter.asString() + "\n");
+        stringBuffer.append("--- BLAS access stack trace: ---\n");
+        stringBuffer.append("Unique entries: " + blasAggregator.getUniqueBranchesNumber() + "\n");
+        stringBuffer.append(blasAggregator.renderTree(false) + "\n");
+        return stringBuffer.toString();
+    }
 
 
     public long getInvocationsCount() {
@@ -553,7 +535,7 @@ public class OpProfiler {
                     case NONE: {
                         blasAggregator.incrementCount();
                     }
-                        break;
+                    break;
                     case MIXED_ORDER: // we wo nothing for gemm in this case
                     default:
                         break;
@@ -626,7 +608,7 @@ public class OpProfiler {
             int ews = tadBuffer.getInt(length - 2);
 
             if ((ews < 1 || rank > 2 || (rank == 2 && tadBuffer.getInt(1) > 1 && tadBuffer.getInt(2) > 1))
-                            && !causes.contains(PenaltyCause.TAD_NON_EWS_ACCESS))
+                    && !causes.contains(PenaltyCause.TAD_NON_EWS_ACCESS))
                 causes.add(PenaltyCause.TAD_NON_EWS_ACCESS);
             else if (ews > 1 && !causes.contains(PenaltyCause.TAD_STRIDED_ACCESS))
                 causes.add(PenaltyCause.TAD_STRIDED_ACCESS);

@@ -20,6 +20,7 @@
 
 package org.nd4j.linalg.api.memory;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -31,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class DeviceAllocationsTracker {
+    @Getter
     private Map<AllocationKind, AtomicLong> bytesMap = new HashMap<>();
 
     public DeviceAllocationsTracker() {

@@ -30,12 +30,12 @@ public class StackAggregator {
         // nothing to do here so far
     }
 
-    public void renderTree() {
-        tree.renderTree(false);
+    public String renderTree() {
+        return tree.renderTree(false);
     }
 
-    public void renderTree(boolean displayCounts) {
-        tree.renderTree(displayCounts);
+    public String renderTree(boolean displayCounts) {
+        return tree.renderTree(displayCounts);
     }
 
     public void reset() {

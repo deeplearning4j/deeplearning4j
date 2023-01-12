@@ -257,9 +257,8 @@ int Environment::maxThreads() { return _maxThreads.load(); }
 int Environment::maxMasterThreads() { return _maxMasterThreads.load(); }
 
 void Environment::setMaxThreads(int max) {
-  // FIXME: not possible at this moment, since maxThreads is limited by number of threads in pool. however we can
-  // allocate more threads if we want
-  //_maxThreads.store(max);
+  // allocate more threads if we want or limit number of threads
+  _maxThreads.store(max);
 }
 
 void Environment::setMaxMasterThreads(int max) {
