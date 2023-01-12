@@ -84,6 +84,12 @@ public class AllocationsTracker {
     }
 
 
+    /**
+     * Print on/off heap memory information.
+     * This information is a mix of what's available from
+     * the {@link Pointer} and heap information from {@link Runtime}
+     * @return
+     */
     public String memoryPerDevice() {
         StringBuilder stringBuilder = new StringBuilder();
         if(devices.isEmpty()) {
