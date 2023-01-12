@@ -121,7 +121,7 @@ public class AllocationsTracker {
 
             Arrays.stream(MemoryKind.values()).forEach(memoryKind -> {
                 if(workspaceAllocationsTracker1.currentBytes(memoryKind) > 0) {
-                    stringBuilder.append("Memory kind: " + workspaceAllocationsTracker1.currentBytes(memoryKind) + "\n");
+                    stringBuilder.append("Memory kind: " + memoryKind + " " + workspaceAllocationsTracker1.currentBytes(memoryKind) + "\n");
                 }
             });
 
