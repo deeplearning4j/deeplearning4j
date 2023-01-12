@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.memory;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
@@ -98,6 +99,17 @@ public class AllocationsTracker {
         });
 
         return stringBuilder.toString();
+    }
+
+    public String memoryInfo() {
+        StringBuilder ret = new StringBuilder();
+        ret.append("Javacpp pointer max bytes: " + Pointer.maxBytes() + "\n");
+        ret.append("Javacpp pointer max physical bytes: " + Pointer.maxPhysicalBytes() + "\n");
+        ret.append("Javacpp available physical bytes: " + Pointer.availablePhysicalBytes() + "\n");
+        ret.append("Javacpp max physical bytes " + Pointer.maxPhysicalBytes() + "\n");
+        ret.append("Java free memory: " + Runtime.getRuntime().freeMemory() + "\n");
+        ret.append("Java max memory: " + Runtime.getRuntime().maxMemory() + "\n");
+        return ret.toString();
     }
 
     /**

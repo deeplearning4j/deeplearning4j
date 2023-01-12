@@ -90,6 +90,7 @@ public class UnifiedProfiler {
         stringBuilder.append(workspaceInfo());
         stringBuilder.append(memoryStats());
         stringBuilder.append(executionStats());
+        stringBuilder.append(AllocationsTracker.getInstance().memoryInfo());
         return stringBuilder.toString();
     }
 
