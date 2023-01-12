@@ -37,9 +37,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
-    // TODO: to be removed
-    private Map<ShapeDescriptor, Pair<DataBuffer, long[]>> shapeCache = new ConcurrentHashMap<>();
-
     private Map<LongShapeDescriptor, Pair<DataBuffer, long[]>> longCache = new ConcurrentHashMap<>();
     private AtomicInteger counter = new AtomicInteger(0);
     private static final int MAX_ENTRIES = 1000;
@@ -82,6 +79,5 @@ public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
 
     @Override
     public void purgeCache() {
-        shapeCache = new ConcurrentHashMap<>();
     }
 }

@@ -57,7 +57,7 @@ public class RandomFactory {
     }
 
     /**
-     * This method returns new onject implementing Random interface, initialized with System.currentTimeMillis() as seed
+     * This method returns new object implementing Random interface, initialized with System.currentTimeMillis() as seed
      *
      * @return object implementing Random interface
      */
@@ -67,7 +67,7 @@ public class RandomFactory {
 
 
     /**
-     * This method returns new onject implementing Random interface, initialized with seed value
+     * This method returns new object implementing Random interface, initialized with seed value
      *
      * @param seed seed for this rng object
      * @return object implementing Random interface

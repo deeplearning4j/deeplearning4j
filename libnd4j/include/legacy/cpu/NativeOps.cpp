@@ -290,8 +290,8 @@ void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataB
   for(int i = 0; i < numArrays; i++) {
   if(inputShapeBuffers[i] == nullptr)
     throw std::runtime_error("Input shape at index was null!");
-
     setGraphContextInputBuffer(ptr,i,buffer != nullptr  && buffer[i] != nullptr ? buffer[i] : nullptr,inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+
   }
 
 }
@@ -1853,7 +1853,6 @@ int calculateOutputShapesAndFill(sd::graph::Context *ctx, sd::LongType hash, voi
   }
 
   if (*handleState != nullptr) {
-    // sd_printf("%s\n","handle");
     sHandle = reinterpret_cast<ShapeFillerHandle *>(*handleState);
     shapeList = sHandle->shapeList;
   } else {
@@ -2640,6 +2639,8 @@ void setGraphContextOutputArray(sd::graph::Context *ptr, int index, void *buffer
 
 void setGraphContextInputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer, void *shapeInfo,
                                 void *specialShapeInfo) {
+  if(ptr == nullptr)
+    throw std::runtime_error("Context pointer is null!");
   ptr->setInputArray(index, buffer, shapeInfo, specialShapeInfo);
 }
 

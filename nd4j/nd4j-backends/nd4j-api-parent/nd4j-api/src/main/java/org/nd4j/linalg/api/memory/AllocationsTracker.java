@@ -22,9 +22,13 @@ package org.nd4j.linalg.api.memory;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.enums.AllocationKind;
+import org.nd4j.linalg.api.memory.enums.MemoryKind;
 
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -32,13 +36,101 @@ public class AllocationsTracker {
     private static final AllocationsTracker INSTANCE = new AllocationsTracker();
     private Map<Integer, DeviceAllocationsTracker> devices = new ConcurrentHashMap<>();
 
+
+    private Map<String,WorkspaceAllocationsTracker> workspaceAllocationsTracker = new ConcurrentHashMap<>();
+
     protected AllocationsTracker() {
 
+    }
+
+    /**
+     * Returns the tracker for the given workspace id
+     * @param workspaceId the id of the workspace to track
+     * @return
+     */
+    public WorkspaceAllocationsTracker getTracker(String workspaceId) {
+        return workspaceAllocationsTracker.get(workspaceId);
+    }
+
+    /**
+     * Register a workspace for tracking
+     * @param workspace the id of the workspace to register
+     */
+    public void registerWorkspace(String workspace) {
+        workspaceAllocationsTracker.put(workspace,new WorkspaceAllocationsTracker());
+    }
+
+
+    /**
+     * Deregister a workspace to track
+     * @param workspace the workspace to delete
+     */
+    public void deregisterWorkspace(String workspace) {
+        workspaceAllocationsTracker.remove(workspace);
+    }
+
+
+    /**
+     * The set of tracked devices
+     * @return
+     */
+    public  Set<Integer> trackedDevices() {
+        return devices.keySet();
     }
 
     public static AllocationsTracker getInstance() {
         return INSTANCE;
     }
+
+
+    public String memoryPerDevice() {
+        StringBuilder stringBuilder = new StringBuilder();
+        if(devices.isEmpty()) {
+            stringBuilder.append("------No device memory found----------\n");
+            return stringBuilder.toString();
+        }
+
+        devices.forEach((integer, deviceAllocationsTracker) -> {
+            stringBuilder.append("Device: " + integer + "\n");
+            deviceAllocationsTracker.getBytesMap().forEach((allocationKind, atomicLong) -> {
+                stringBuilder.append("Allocation type: " + allocationKind  + " bytes allocated: " + atomicLong.get() + "\n");
+            });
+        });
+
+        return stringBuilder.toString();
+    }
+
+    /**
+     * Prints the memory per workspace including data type and memory kind
+     * @return
+     */
+    public String memoryPerWorkspace() {
+        StringBuilder stringBuilder = new StringBuilder();
+        if(workspaceAllocationsTracker.isEmpty()) {
+            stringBuilder.append("------No workspaces found----------\n");
+            return stringBuilder.toString();
+        }
+
+        workspaceAllocationsTracker.forEach((s, workspaceAllocationsTracker1) -> {
+            stringBuilder.append("-------------Workspace: " + s + "--------------\n");
+            Arrays.stream(DataType.values()).forEach(dataType -> {
+                if(workspaceAllocationsTracker1.currentDataTypeCount(dataType) > 0) {
+                    stringBuilder.append(dataType + " bytes allocated : " + workspaceAllocationsTracker1.currentDataTypeCount(dataType) + "\n");
+                }
+            });
+
+            Arrays.stream(MemoryKind.values()).forEach(memoryKind -> {
+                if(workspaceAllocationsTracker1.currentBytes(memoryKind) > 0) {
+                    stringBuilder.append("Memory kind: " + workspaceAllocationsTracker1.currentBytes(memoryKind) + "\n");
+                }
+            });
+
+            stringBuilder.append("-------------End Workspace: " + s + "--------------\n");
+        });
+
+        return stringBuilder.toString();
+    }
+
 
     protected DeviceAllocationsTracker trackerForDevice(Integer deviceId) {
         DeviceAllocationsTracker tracker = devices.get(deviceId);
@@ -54,6 +146,7 @@ public class AllocationsTracker {
 
         return tracker;
     }
+
 
     public void markAllocated(AllocationKind kind, Integer deviceId, long bytes) {
         val tracker = trackerForDevice(deviceId);

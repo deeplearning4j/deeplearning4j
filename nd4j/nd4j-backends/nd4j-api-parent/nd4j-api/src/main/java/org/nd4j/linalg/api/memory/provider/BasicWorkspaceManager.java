@@ -45,9 +45,6 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     protected AtomicLong counter = new AtomicLong();
     protected WorkspaceConfiguration defaultConfiguration;
     protected ThreadLocal<Map<String, MemoryWorkspace>> backingMap = new ThreadLocal<>();
-    //private ReferenceQueue<MemoryWorkspace> queue;
-    //private WorkspaceDeallocatorThread thread;
-    //private Map<String, Nd4jWorkspace.GarbageWorkspaceReference> referenceMap = new ConcurrentHashMap<>();
 
     // default mode is DISABLED, as in: production mode
     protected SynchronizedObject<DebugMode> debugMode = new SynchronizedObject<>(DebugMode.DISABLED);
@@ -60,10 +57,6 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
     public BasicWorkspaceManager(@NonNull WorkspaceConfiguration defaultConfiguration) {
         this.defaultConfiguration = defaultConfiguration;
-        //this.queue = new ReferenceQueue<>();
-
-        //thread = new WorkspaceDeallocatorThread(this.queue);
-        //thread.start();
     }
 
     /**
@@ -112,28 +105,10 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         debugMode.set(mode);
     }
 
-    /*
-    @Override
-    public MemoryWorkspace getWorkspaceForCurrentThread(@NonNull WorkspaceConfiguration configuration, @NonNull String id) {
-        ensureThreadExistense();
-    
-        MemoryWorkspace workspace = backingMap.get().get(id);
-        if (workspace == null) {
-            workspace = new Nd4jWorkspace(configuration, id);
-            backingMap.get().put(id, workspace);
-        }
-    
-        return workspace;
-    }
-    */
+
 
     protected abstract void pickReference(MemoryWorkspace workspace);
-    /*
-    protected void pickReference(MemoryWorkspace workspace) {
-        Nd4jWorkspace.GarbageWorkspaceReference reference = new Nd4jWorkspace.GarbageWorkspaceReference(workspace, queue);
-        referenceMap.put(reference.getKey(), reference);
-    }
-    */
+
 
 
 
@@ -171,8 +146,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         ensureThreadExistense();
 
         MemoryWorkspace workspace = backingMap.get().get(MemoryWorkspace.DEFAULT_ID);
-        //if (workspace != null)
-        //workspace.destroyWorkspace();
+
 
         backingMap.get().remove(MemoryWorkspace.DEFAULT_ID);
     }
@@ -196,7 +170,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
     protected void ensureThreadExistense() {
         if (backingMap.get() == null)
-            backingMap.set(new HashMap<String, MemoryWorkspace>());
+            backingMap.set(new HashMap<>());
     }
 
     /**
@@ -276,70 +250,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     @Deprecated // For test use within the github.com/deeplearning4j/deeplearning4j repo only.
     public static final String WorkspaceDeallocatorThreadName = "Workspace deallocator thread";
 
-    /*
-    protected class WorkspaceDeallocatorThread extends Thread implements Runnable {
-        private final ReferenceQueue<MemoryWorkspace> queue;
 
-        protected WorkspaceDeallocatorThread(ReferenceQueue<MemoryWorkspace> queue) {
-            this.queue = queue;
-            this.setDaemon(true);
-            this.setName(WorkspaceDeallocatorThreadName);
-        }
-
-        @Override
-        public void run() {
-            while (true) {
-                try {
-                    Nd4jWorkspace.GarbageWorkspaceReference reference =
-                                    (Nd4jWorkspace.GarbageWorkspaceReference) queue.remove();
-                    if (reference != null) {
-                        //                      log.info("Releasing reference for Workspace [{}]", reference.getId());
-                        PointersPair pair = reference.getPointersPair();
-                        // purging workspace planes
-                        if (pair != null) {
-                            if (pair.getDevicePointer() != null) {
-                                //log.info("Deallocating device...");
-                                Nd4j.getMemoryManager().release(pair.getDevicePointer(), MemoryKind.DEVICE);
-                            }
-
-
-                            if (pair.getHostPointer() != null) {
-                                //                                log.info("Deallocating host...");
-                                Nd4j.getMemoryManager().release(pair.getHostPointer(), MemoryKind.HOST);
-                            }
-                        }
-
-                        // purging all spilled pointers
-                        for (PointersPair pair2 : reference.getExternalPointers()) {
-                            if (pair2 != null) {
-                                if (pair2.getHostPointer() != null)
-                                    Nd4j.getMemoryManager().release(pair2.getHostPointer(), MemoryKind.HOST);
-
-                                if (pair2.getDevicePointer() != null)
-                                    Nd4j.getMemoryManager().release(pair2.getDevicePointer(), MemoryKind.DEVICE);
-                            }
-                        }
-
-                        // purging all pinned pointers
-                        while ((pair = reference.getPinnedPointers().poll()) != null) {
-                            if (pair.getHostPointer() != null)
-                                Nd4j.getMemoryManager().release(pair.getHostPointer(), MemoryKind.HOST);
-
-                            if (pair.getDevicePointer() != null)
-                                Nd4j.getMemoryManager().release(pair.getDevicePointer(), MemoryKind.DEVICE);
-                        }
-
-                        referenceMap.remove(reference.getKey());
-                    }
-                } catch (InterruptedException e) {
-                    return; // terminate thread when being interrupted
-                } catch (Exception e) {
-                    //
-                }
-            }
-        }
-    }
-    */
 
     /**
      * This method prints out basic statistics for workspaces allocated in current thread

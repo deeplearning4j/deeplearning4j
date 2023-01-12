@@ -168,7 +168,6 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
         if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.RAM) {
             if (workspace.getHostPointer() != null) {
                 NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
-
                 AllocationsTracker.getInstance().markReleased(AllocationKind.WORKSPACE, 0, sizez);
             }
         } else if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.MMAP) {

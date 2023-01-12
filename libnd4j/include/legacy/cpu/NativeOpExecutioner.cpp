@@ -829,13 +829,14 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, const voi
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo)) return;
 
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform,
                           ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams), SD_COMMON_TYPES,
                           SD_COMMON_TYPES_ALL);
+  sd_printf("execScalar: RAfter unning experimental transform\n",0);
+
 #else
   if (xType != yType || xType != zType)
     throw sd::datatype_exception::build("NativeOpExecutioner::execScalar", zType, xType, yType);
@@ -853,6 +854,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, const voi
           ? 1
           : sd::math::sd_max<int>(
                 1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
+
 
 #endif
 }
@@ -1233,10 +1235,8 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext *lc, int opNum, sd::Point
                                      const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
                                      void *extraArguments) {
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-
   BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction,
                         ::execTransform(opNum, state, hZ, hZShapeInfo, extraArguments), SD_FLOAT_TYPES);
-
   auto rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
   rng->rewindH(shape::length(hZShapeInfo));
 }

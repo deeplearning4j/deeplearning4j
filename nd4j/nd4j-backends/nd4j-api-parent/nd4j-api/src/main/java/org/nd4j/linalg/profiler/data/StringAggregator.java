@@ -43,12 +43,10 @@ public class StringAggregator {
 
     public void reset() {
         for (String key : times.keySet()) {
-            //            times.remove(key);
             times.put(key, new TimeSet());
         }
 
         for (String key : longCalls.keySet()) {
-            //          longCalls.remove(key);
             longCalls.put(key, new ComparableAtomicLong(0));
         }
     }

@@ -50,7 +50,6 @@ public class CpuMemoryManager extends BasicMemoryManager {
         if (ptr == null || ptr.address() == 0L)
             throw new OutOfMemoryError("Failed to allocate [" + bytes + "] bytes");
 
-        //log.info("Allocating {} bytes at MemoryManager", bytes);
 
         if (initialize)
             Pointer.memset(ptr, 0, bytes);

@@ -275,14 +275,11 @@ public class CudaWorkspace extends Nd4jWorkspace {
                     return alloc(requiredMemory, kind, type, initialize);
                 }
 
-                val shape = new AllocationShape(requiredMemory / Nd4j.sizeOfDataType(type), Nd4j.sizeOfDataType(type), type);
 
                 switch (workspaceConfiguration.getPolicySpill()) {
                     case REALLOCATE:
                     case EXTERNAL:
                         if (!trimmer) {
-                            //memoryManager.allocate(requiredMemory, MemoryKind.HOST, true)
-                            //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
                             PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
 
                             externalAllocations.add(new PointersPair(pointer, null));
@@ -303,7 +300,6 @@ public class CudaWorkspace extends Nd4jWorkspace {
             }
         } else throw new ND4JIllegalStateException("Unknown MemoryKind was passed in: " + kind);
 
-        //throw new ND4JIllegalStateException("Shouldn't ever reach this line");
     }
 
     @Override
@@ -390,24 +386,6 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
     @Override
     protected void resetWorkspace() {
-        if (currentSize.get() < 1)
-            return;
-
-
-/*
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
-
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-
-        //log.info("workspace: {}, size: {}", workspace.getDevicePointer().address(), currentSize.get());
-
-        NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(workspace.getDevicePointer(), 0, currentSize.get() + SAFETY_OFFSET, 0, context.getSpecialStream());
-
-        Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + SAFETY_OFFSET);
-
-        context.getSpecialStream().synchronize();
-        */
     }
 
     protected PointersPair workspace() {

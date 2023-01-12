@@ -50,9 +50,8 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         if (x.isCompressed())
             Nd4j.getCompressor().decompressi(x);
 
-        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            this.scalarValue = Nd4j.scalar(x.dataType(), num);
-        }
+        this.scalarValue = Nd4j.scalar(x.dataType(), num);
+
     }
 
     public BaseScalarOp(INDArray x, Number num) {
@@ -60,9 +59,8 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         if (x.isCompressed())
             Nd4j.getCompressor().decompressi(x);
 
-        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            this.scalarValue = Nd4j.scalar(x.dataType(), num);
-        }
+        this.scalarValue = Nd4j.scalar(x.dataType(), num);
+
 
     }
     public BaseScalarOp(INDArray x, INDArray z, Number set) {
@@ -70,9 +68,8 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         if (x.isCompressed())
             Nd4j.getCompressor().decompressi(x);
 
-        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            this.scalarValue = Nd4j.scalar(x.dataType(), set);
-        }
+        this.scalarValue = Nd4j.scalar(x.dataType(), set);
+
     }
 
 

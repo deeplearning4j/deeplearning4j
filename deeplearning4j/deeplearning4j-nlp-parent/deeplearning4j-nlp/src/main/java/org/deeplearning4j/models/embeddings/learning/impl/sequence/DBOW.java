@@ -31,6 +31,7 @@ import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
@@ -210,12 +211,22 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
 
 
-
+       //when workers are > 1 the openmp in the scalar op can cause a crash
+        //set to 1 to workaround
+        int numThreadsOriginal = Nd4j.getEnvironment().maxThreads();
+        if(configuration.getWorkers() > 1) {
+            Nd4j.getEnvironment().setMaxThreads(1);
+        }
         Random random = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * sequence.hashCode(),
                 lookupTable.layerSize() + 1);
-        INDArray ret = Nd4j.rand(random,new long[] {lookupTable.layerSize()}).subi(0.5)
-                .divi(lookupTable.layerSize());
 
+
+        INDArray ret = Nd4j.createUninitialized(this.lookupTable.getWeights().dataType(),'c',lookupTable.layerSize());
+        Nd4j.rand(ret,random);
+        ret.subi(0.5).divi(lookupTable.layerSize());
+        if(configuration.getWorkers() > 1) {
+            Nd4j.getEnvironment().setMaxThreads(numThreadsOriginal);
+        }
         return inferSequence(ret,sequence,nextRandom,learningRate,minLearningRate,iterations);
     }
 

@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
 import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.linalg.factory.ops.*;
+import org.nd4j.linalg.profiler.UnifiedProfiler;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
@@ -5324,6 +5325,16 @@ public class Nd4j {
      */
     public static MemoryManager getMemoryManager() {
         return memoryManager;
+    }
+
+
+    /**
+     * Returns the {@link UnifiedProfiler}
+     * containing methods for both op execution and memory.
+     * @return
+     */
+    public static UnifiedProfiler getProfiler() {
+        return UnifiedProfiler.getInstance();
     }
 
     /**
