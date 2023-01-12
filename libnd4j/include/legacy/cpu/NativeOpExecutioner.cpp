@@ -835,7 +835,6 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, const voi
   BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform,
                           ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams), SD_COMMON_TYPES,
                           SD_COMMON_TYPES_ALL);
-  sd_printf("execScalar: RAfter unning experimental transform\n",0);
 
 #else
   if (xType != yType || xType != zType)
