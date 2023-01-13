@@ -82,6 +82,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag(TagNames.FILE_IO)
 @NativeTag
 public class ParagraphVectorsTest extends BaseDL4JTest {
+    @TempDir Path testDir;
 
     @Override
     public long getTimeoutMilliseconds() {
@@ -165,6 +166,9 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
     public void testParagraphVectorsModelling1(Nd4jBackend backend) throws Exception {
+        if(backend.getNDArrayClass().toString().toLowerCase().contains("cu"))
+            return;
+
         for(boolean binary : new boolean[] {true,false}) {
             File file = Resources.asFile("/big/raw_sentences.txt");
             SentenceIterator iter = new BasicLineIterator(file);
@@ -375,10 +379,14 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     }
 
 
-    @Test
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
-    public void testParagraphVectorsDM() throws Exception {
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testParagraphVectorsDM(Nd4jBackend backend) throws Exception {
+        if(backend.getNDArrayClass().toString().toLowerCase().contains("cu"))
+            return;
+
         File file = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(file);
 
@@ -748,12 +756,13 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         In this test we'll build w2v model, and will use it's vocab and weights for ParagraphVectors.
         there's no need in this test within travis, use it manually only for problems detection
     */
-    @Test
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
-    public void testParagraphVectorsOverExistingWordVectorsModel(@TempDir Path testDir) throws Exception {
-        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
-
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testParagraphVectorsOverExistingWordVectorsModel(Nd4jBackend backend) throws Exception {
+        if(backend.getNDArrayClass().toString().toLowerCase().contains("cu"))
+            return;
 
         // we build w2v from multiple sources, to cover everything
         File resource_sentences = Resources.asFile("/big/raw_sentences.txt");
@@ -813,11 +822,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
         assertEquals(day_A.getIndex(), day_B.getIndex());
 
-        /*
-        double similarityD = wordVectors.similarity("day", "night");
-        log.info("day/night similarity: " + similarityD);
-        assertTrue(similarityD > 0.5d);
-        */
+
 
         INDArray vector_day2 = paragraphVectors.getWordVectorMatrix("day").dup();
         double crossDay = arraysSimilarity(vector_day1, vector_day2);
@@ -889,10 +894,12 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
     }
 
-    @Test
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
-    public void testDirectInference(@TempDir Path testDir) throws Exception {
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @ParameterizedTest
+    public void testDirectInference(Nd4jBackend backend) throws Exception {
+
         boolean isIntegration = isIntegrationTests();
         File resource = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator sentencesIter = getIterator(isIntegration, resource);

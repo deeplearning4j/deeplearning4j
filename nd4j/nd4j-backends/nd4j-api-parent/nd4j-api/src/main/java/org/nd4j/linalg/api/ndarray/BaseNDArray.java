@@ -4512,8 +4512,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public DataBuffer shapeInfoDataBuffer() {
-        DataBuffer buffer = Nd4j.createBuffer(jvmShapeInfo.javaShapeInformation);
-        return buffer;
+        Nd4j.getCompressor().autoDecompress(this);
+        val si = Nd4j.getShapeInfoProvider().createShapeInformation(jvmShapeInfo.shape, jvmShapeInfo.stride,  jvmShapeInfo.ews, jvmShapeInfo.order, dataType(), isEmpty());
+        return si.getFirst();
     }
 
     @Override
@@ -4869,8 +4870,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride, 0, newOrder, dataType(), isEmpty()));
         }
 
-        //this.shape = null;
-        //this.stride = null;
+
 
 
         return this;

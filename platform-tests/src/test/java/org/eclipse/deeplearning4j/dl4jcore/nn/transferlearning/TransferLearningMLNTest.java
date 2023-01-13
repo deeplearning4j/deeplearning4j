@@ -68,7 +68,7 @@ class TransferLearningMLNTest extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(rng);
         DataSet randomData = new DataSet(Nd4j.rand(DataType.FLOAT, 10, 4), TestUtils.randomOneHot(DataType.FLOAT, 10, 3));
         // original conf
-        NeuralNetConfiguration.Builder confToChange = new NeuralNetConfiguration.Builder().seed(rng).optimizationAlgo(OptimizationAlgorithm.LBFGS).updater(new Nesterovs(0.01, 0.99));
+        NeuralNetConfiguration.Builder confToChange = new NeuralNetConfiguration.Builder().seed(rng).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new Nesterovs(0.01, 0.99));
         MultiLayerNetwork modelToFineTune = new MultiLayerNetwork(confToChange.list().layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build()).layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).build()).build());
         modelToFineTune.init();
         // model after applying changes with transfer learning

@@ -1514,7 +1514,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        //validateDataType(Nd4j.dataType(), op);
 
         if (rng.getStatePointer() == null)
             throw new IllegalStateException(
@@ -2077,9 +2076,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         for (val out:op.outputArguments()) {
             if (!out.isEmpty()) {
                 ((BaseCudaDataBuffer) out.data()).actualizePointerAndIndexer();
+                AtomicAllocator.getInstance().tickDeviceWrite(out);
             }
 
-            AtomicAllocator.getInstance().tickDeviceWrite(out);
         }
 
 

@@ -73,7 +73,7 @@ import java.util.Collection;
  * @author raver119@gmail.com
  */
 public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCudaBuffer, Deallocatable {
-    protected OpaqueDataBuffer ptrDataBuffer;
+    protected transient OpaqueDataBuffer ptrDataBuffer;
 
     @Getter
     protected transient volatile AllocationPoint allocationPoint;
@@ -613,6 +613,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         if (released)
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
+        if(allocationPoint.getHostPointer() == null)
+            return -1;
         return allocationPoint.getHostPointer().address();
     }
 

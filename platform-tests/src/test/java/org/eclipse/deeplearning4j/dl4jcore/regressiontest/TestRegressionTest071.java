@@ -38,6 +38,7 @@ import org.deeplearning4j.nn.weights.WeightInitRelu;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -106,6 +107,7 @@ public class TestRegressionTest071 extends BaseDL4JTest {
     }
 
     @Test
+    @Disabled("Invalid optimizer now used here")
     public void regressionTestMLP2() throws Exception {
 
         File f = Resources.asFile("regression_testing/071/071_ModelSerializer_Regression_MLP_2.zip");

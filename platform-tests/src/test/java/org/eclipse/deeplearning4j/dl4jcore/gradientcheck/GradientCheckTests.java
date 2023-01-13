@@ -178,7 +178,7 @@ public class GradientCheckTests extends BaseDL4JTest {
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                     .dataType(DataType.DOUBLE)
-                                    .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp())
+                                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new NoOp())
                                     .seed(12345L)
                                     .list().layer(0,
                                                     new DenseLayer.Builder().nIn(4).nOut(3)
@@ -269,7 +269,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                                         new NeuralNetConfiguration.Builder().l2(l2).l1(l1)
                                                         .dataType(DataType.DOUBLE)
                                                         .l2Bias(biasL2[k]).l1Bias(biasL1[k])
-                                                        .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                                         .seed(12345L)
                                                         .list().layer(0,
                                                                         new DenseLayer.Builder().nIn(4).nOut(3)
@@ -414,7 +414,7 @@ public class GradientCheckTests extends BaseDL4JTest {
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                     .dataType(DataType.DOUBLE)
-                    .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp())
+                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new NoOp())
                     .seed(12345L)
                     .weightInit(new UniformDistribution(0, 1))
                     .graphBuilder()
@@ -598,7 +598,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                                     .dataType(DataType.DOUBLE)
                                     .l2Bias(biasL2[k]).l1Bias(biasL1[k])
                                     .weightDecay(wdVals[k]).weightDecayBias(wdBias[k])
-                                    .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                     .seed(12345L)
                                     .list().layer(0,
                                     new DenseLayer.Builder().nIn(4).nOut(3)

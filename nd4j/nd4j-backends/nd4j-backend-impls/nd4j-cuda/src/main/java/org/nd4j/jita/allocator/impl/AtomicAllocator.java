@@ -418,24 +418,7 @@ public class AtomicAllocator implements Allocator {
     }
 
 
-    public AllocationPoint pickExternalBuffer(DataBuffer buffer) {
-        /**
-        AllocationPoint point = new AllocationPoint();
-        Long allocId = objectsTracker.getAndIncrement();
-        point.setObjectId(allocId);
-        point.setConstant(true);
-        point.setDeviceId(Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
-        allocationsMap.put(allocId, point);
-
-        point.tickDeviceWrite();
-        point.tickHostRead();
-
-        return point;
-         */
-
-        throw new UnsupportedOperationException("Pew-pew");
-    }
 
     /**
      * This method allocates required chunk of memory in specific location
@@ -447,7 +430,7 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public AllocationPoint allocateMemory(DataBuffer buffer, AllocationShape requiredMemory, AllocationStatus location, boolean initialize) {
-        throw new UnsupportedOperationException("Pew-pew");
+        throw new UnsupportedOperationException("Unable to allocate memory.");
     }
 
 

@@ -93,7 +93,6 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTestWithBackends {
             SDVariable loss1 = add.std("l1", true);
             SDVariable loss2 = mmul.mean("l2");
 
-//            System.out.println(sd.summary());
             sd.summary();
 
             if(i == 0){
