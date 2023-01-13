@@ -58,7 +58,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     protected Type workspaceType = Type.SCOPED;
 
-    protected static final long SAFETY_OFFSET = 1024L;
+    public static final long SAFETY_OFFSET = 1024L;
 
     @Getter
     protected String id;

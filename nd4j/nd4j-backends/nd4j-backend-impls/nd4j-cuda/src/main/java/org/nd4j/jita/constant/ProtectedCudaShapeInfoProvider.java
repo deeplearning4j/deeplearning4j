@@ -92,18 +92,10 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
             Pair<DataBuffer, long[]> buffer = null;
             synchronized (this) {
                 if (!protector.containsDataBuffer(deviceId, descriptor)) {
-                    //log.info("Cache miss: {}", descriptor);
                     buffer = super.createShapeInformation(shape, stride, elementWiseStride, order, extras);
                     buffer.getFirst().setConstant(true);
 
-                    /*
-                    // constant space is allocated at cpp level
-                    if (CudaEnvironment.getInstance().getConfiguration().getMemoryModel() == Configuration.MemoryModel.IMMEDIATE) {
-                        Nd4j.getConstantHandler().moveToConstantSpace(buffer.getFirst());
-                    }
-                     */
 
-                    //deviceCache.get(deviceId).put(descriptor, buffer);
                     protector.persistDataBuffer(deviceId, descriptor, buffer);
 
                     bytes.addAndGet(buffer.getFirst().length() * 8 * 2);
@@ -115,10 +107,9 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
             }
             return buffer;
         } else {
-            //       log.info("Cache hit: {}", descriptor);
             cacheHit.incrementAndGet();
         }
 
-        return protector.getDataBuffer(deviceId, descriptor); //deviceCache.get(deviceId).get(descriptor);
+        return protector.getDataBuffer(deviceId, descriptor);
     }
 }

@@ -73,7 +73,6 @@ public class CudaWorkspace extends Nd4jWorkspace {
         super.init();
 
         if (currentSize.get() > 0) {
-            //log.info("Allocating {} bytes at DEVICE & HOST space...", currentSize.get());
             isInit.set(true);
 
             long bytes = currentSize.get();
@@ -97,7 +96,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
                 MemoryTracker.getInstance().incrementWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), bytes + SAFETY_OFFSET);
 
-                // if base pointer isn't aligned to 16 bytes (128 bits) - adjust the offfset then
+                // if base pointer isn't aligned to 16 bytes (128 bits) - adjust the offset then
                 val addr = workspace.getDevicePointer().address();
                 val div = addr % alignmentBase;
                 if (div != 0) {
@@ -110,7 +109,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
     @Override
     public PagedPointer alloc(long requiredMemory, DataType type, boolean initialize) {
-	    return this.alloc(requiredMemory, MemoryKind.DEVICE, type, initialize);
+        return this.alloc(requiredMemory, MemoryKind.DEVICE, type, initialize);
     }
 
 
@@ -150,7 +149,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
         if (!isUsed.get()) {
             if (disabledCounter.incrementAndGet() % 10 == 0)
-                log.warn("Worskpace was turned off, and wasn't enabled after {} allocations", disabledCounter.get());
+                log.warn("Workspace was turned off, and wasn't enabled after {} allocations", disabledCounter.get());
 
             if (kind == MemoryKind.DEVICE) {
                 val pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, initialize), numElements);
@@ -228,8 +227,6 @@ public class CudaWorkspace extends Nd4jWorkspace {
                     case EXTERNAL:
                         if (!trimmer) {
                             externalCount.incrementAndGet();
-                            //
-                            //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
                             val pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, initialize), numElements);
                             pointer.isLeaked();
 
@@ -267,7 +264,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                     Pointer.memset(ptr, 0, requiredMemory);
                 return ptr;
             } else {
-           //     log.info("Spilled HOST array of {} bytes, capacity of {} elements", requiredMemory, numElements);
+                //     log.info("Spilled HOST array of {} bytes, capacity of {} elements", requiredMemory, numElements);
                 if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0 && !trimmer && Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING) {
                     //log.info("End of space reached. Current offset: {}; requiredMemory: {}", deviceOffset.get(), requiredMemory);
                     hostOffset.set(0);

@@ -25,7 +25,6 @@ import lombok.val;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -134,6 +133,7 @@ public class DebugModeTests extends BaseNd4jTestWithBackends {
             assertEquals(0, ws.getDeviceOffset());
 
             // array buffer should be spilled now
+            int shapeBufferAdd = backend.getClass().getName().toLowerCase().contains("cu") ? 0 : WorkspaceUtils.getShapeBufferRequireMemoryForWorkspace(array);
             assertEquals(WorkspaceUtils.getTotalRequiredMemoryForWorkspace(array) + WorkspaceUtils.getShapeBufferRequireMemoryForWorkspace(array) * 3 - 32 , ws.getSpilledSize());
         }
 

@@ -34,7 +34,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -47,6 +46,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
+import org.nd4j.linalg.workspace.WorkspaceUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.nd4j.linalg.workspace.WorkspaceUtils.getTotalRequiredMemoryForWorkspace;
 
 @Slf4j
 @Tag(TagNames.WORKSPACES)
@@ -349,7 +350,7 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
                 assertEquals(1.0f, restored.meanNumber().floatValue(), 1.0f);
 
                 // we want to ensure it's the same cached shapeInfo used here
-                assertEquals(array.shapeInfoDataBuffer(), restored.shapeInfoDataBuffer().addressPointer());
+                assertEquals(array.shapeInfoDataBuffer(), restored.shapeInfoDataBuffer());
             }
         }
     }
@@ -415,18 +416,19 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
     public void testCircularBufferReset1(Nd4jBackend backend) {
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager()
                 .getWorkspaceForCurrentThread(circularConfiguration, "WSR_1");
+        int cudaDiv = WorkspaceUtils.getNumBuffersAllocatedForBackendPerArray(backend);
 
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WSR_1")) {
             Nd4j.create(10000);
             assertEquals(0, workspace.getCurrentSize());
             //note: 1 allocation of the array and a shape buffer should be the allocations here
-            assertEquals(2, workspace.getNumberOfExternalAllocations());
+            assertEquals(2 / cudaDiv, workspace.getNumberOfExternalAllocations());
         }
 
         assertEquals(10 * 1024L * 1024L, workspace.getCurrentSize());
         assertEquals(0, workspace.getPrimaryOffset());
         //note: 1 allocation of the array and a shape buffer should be the allocations here
-        assertEquals(2, workspace.getNumberOfExternalAllocations());
+        assertEquals(2 / cudaDiv, workspace.getNumberOfExternalAllocations());
 
         for (int i = 0; i < 11 * 1024 * 1024; i += 10000 * DataType.DOUBLE.width()) {
             try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WSR_1")) {
@@ -443,6 +445,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariableInput1(Nd4jBackend backend) {
+      //divide by 2 when since cuda doesn't allocate buffers from workspaces
+      int cudaDiv = WorkspaceUtils.getNumBuffersAllocatedForBackendPerArray(backend);
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager()
                 .getWorkspaceForCurrentThread(adsiConfiguration, "ADSI");
 
@@ -486,7 +490,7 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         assertEquals(workspace.getInitialBlockSize(), workspace.getPrimaryOffset());
         assertEquals(workspace.getInitialBlockSize(), workspace.getDeviceOffset());
         //shape buffer + data buffer
-        assertEquals(2, workspace.getNumberOfPinnedAllocations());
+        assertEquals(2 / cudaDiv, workspace.getNumberOfPinnedAllocations());
 
         assertEquals(3, workspace.getCyclesCount());
         assertEquals(0, workspace.getStepNumber());
@@ -498,7 +502,7 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         }
 
         //shape buffer + data buffer * 2
-        assertEquals(4, workspace.getNumberOfPinnedAllocations());
+        assertEquals(4 / cudaDiv, workspace.getNumberOfPinnedAllocations());
         assertEquals(0, workspace.getStepNumber());
         assertEquals(4, workspace.getCyclesCount());
 
@@ -507,7 +511,7 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
             array1 = Nd4j.create(DataType.DOUBLE, 8, 128, 100);
         }
         //shape buffer + data buffer * 3
-        assertEquals(6, workspace.getNumberOfPinnedAllocations());
+        assertEquals(6 / cudaDiv, workspace.getNumberOfPinnedAllocations());
         assertEquals(1, workspace.getStepNumber());
         assertEquals(5, workspace.getCyclesCount());
 
@@ -986,9 +990,7 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
 
 
 
-    public int getTotalRequiredMemoryForWorkspace(INDArray arr) {
-        return getAligned(arr.length() * arr.dataType().width()) + getAligned(arr.shapeInfoJava().length * DataType.INT64.width());
-    }
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNewWorkspace1(Nd4jBackend backend) {
