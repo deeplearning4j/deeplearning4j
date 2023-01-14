@@ -93,12 +93,12 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTestWithBackends {
             SDVariable loss1 = add.std("l1", true);
             SDVariable loss2 = mmul.mean("l2");
 
-//            System.out.println(sd.summary());
             sd.summary();
 
             if(i == 0){
                 sd.setLossVariables("l1", "l2");
                 sd.createGradFunction();
+
             } else {
                 TrainingConfig tc = TrainingConfig.builder()
                         .updater(new Adam(0.01))
@@ -106,8 +106,9 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTestWithBackends {
                         .markLabelsUnused()
                         .build();
                 sd.setTrainingConfig(tc);
+                sd.setLossVariables("l1", "l2");
+
                 DataSet ds = new DataSet(Nd4j.create(3,4), null);
-                sd.fit(ds);
                 sd.fit(ds);
             }
 

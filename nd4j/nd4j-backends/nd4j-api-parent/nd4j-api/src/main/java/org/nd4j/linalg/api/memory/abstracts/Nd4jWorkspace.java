@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.MemoryManager;
@@ -58,7 +59,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     protected Type workspaceType = Type.SCOPED;
 
-    protected static final long SAFETY_OFFSET = 1024L;
+    public static final long SAFETY_OFFSET = 1024L;
 
     @Getter
     protected String id;
@@ -329,6 +330,21 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         this.isDebug.set(reallyEnable);
     }
 
+    public abstract long requiredMemoryPerArray(INDArray arr);
+
+    /**
+     * Enforces 8 byte alignment for requested memory amounts.
+     * @param requiredMemory the requested memory amount
+     * @return
+     */
+    public static long alignMemory(long requiredMemory) {
+        // we enforce 8 byte alignment to ensure CUDA doesn't blame us
+        long div = requiredMemory % alignmentBase;
+        if (div != 0)
+            requiredMemory += (alignmentBase - div);
+        return requiredMemory;
+    }
+
     public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataType type, boolean initialize) {
 
         /*
@@ -340,11 +356,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
 
         // we enforce 8 byte alignment to ensure CUDA doesn't blame us
-        long div = requiredMemory % alignmentBase;
-        if (div != 0)
-            requiredMemory += (alignmentBase - div);
+        requiredMemory = alignMemory(requiredMemory);
 
-        AllocationsTracker.getInstance().getTracker(this.id).allocate(type,kind,requiredMemory);
+        AllocationsTracker.getInstance().getTracker(this.id).allocate(type,kind,numElements,requiredMemory);
 
         // shortcut made to skip workspace
         if (!isUsed.get()) {
@@ -355,7 +369,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                     numElements);
 
             externalAllocations.add(new PointersPair(pointer, null));
-
+            AllocationsTracker.getInstance().getTracker(id).allocateExternal(type,kind,numElements,requiredMemory);
             return pointer;
         }
 
@@ -403,10 +417,13 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             }
 
             // updating respective counters
-            if (!trimmer)
+            if (!trimmer) {
                 spilledAllocationsSize.addAndGet(requiredMemory);
-            else
+                AllocationsTracker.getInstance().getTracker(id).allocateSpilled(type,kind,numElements,requiredMemory);
+            } else {
                 pinnedAllocationsSize.addAndGet(requiredMemory);
+                AllocationsTracker.getInstance().getTracker(id).allocatePinned(type,kind,numElements,requiredMemory);
+            }
 
             if (isDebug.get())
                 log.info("Workspace [{}]: step: {}, spilled  {} bytes, capacity of {} elements", id, stepsCount.get(),
@@ -418,7 +435,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                     cycleAllocations.addAndGet(requiredMemory);
                     if (!trimmer) {
                         externalCount.incrementAndGet();
-
+                        AllocationsTracker.getInstance().getTracker(id).allocateExternal(type,kind,numElements,requiredMemory);
                         PagedPointer pointer = new PagedPointer(
                                 memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize),
                                 numElements);

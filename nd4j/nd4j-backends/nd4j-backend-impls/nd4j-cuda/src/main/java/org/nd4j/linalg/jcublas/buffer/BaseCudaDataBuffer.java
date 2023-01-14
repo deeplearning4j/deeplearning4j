@@ -73,7 +73,7 @@ import java.util.Collection;
  * @author raver119@gmail.com
  */
 public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCudaBuffer, Deallocatable {
-    protected OpaqueDataBuffer ptrDataBuffer;
+    protected transient OpaqueDataBuffer ptrDataBuffer;
 
     @Getter
     protected transient volatile AllocationPoint allocationPoint;
@@ -111,7 +111,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, this.type,  pointer, specialPointer);
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, this.type.width() * length);
 
-        Nd4j.getDeallocatorService().pickObject(this);if (released)
+        Nd4j.getDeallocatorService().pickObject(this);
+        if (released)
             throw new IllegalStateException("You can't use DataBuffer once it was released");
     }
 
@@ -613,6 +614,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         if (released)
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
+        if(allocationPoint.getHostPointer() == null)
+            return -1;
         return allocationPoint.getHostPointer().address();
     }
 
@@ -1378,37 +1381,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void pointerIndexerByCurrentType(DataType currentType) {
-        //
-        /*
-        switch (currentType) {
-            case LONG:
-                pointer = new LongPointer(length());
-                setIndexer(LongIndexer.create((LongPointer) pointer));
-                type = DataType.LONG;
-                break;
-            case INT:
-                pointer = new IntPointer(length());
-                setIndexer(IntIndexer.create((IntPointer) pointer));
-                type = DataType.INT;
-                break;
-            case DOUBLE:
-                pointer = new DoublePointer(length());
-                indexer = DoubleIndexer.create((DoublePointer) pointer);
-                break;
-            case FLOAT:
-                pointer = new FloatPointer(length());
-                setIndexer(FloatIndexer.create((FloatPointer) pointer));
-                break;
-            case HALF:
-                pointer = new ShortPointer(length());
-                setIndexer(HalfIndexer.create((ShortPointer) pointer));
-                break;
-            case COMPRESSED:
-                break;
-            default:
-                throw new UnsupportedOperationException();
+        type = currentType;
+
+        if (ptrDataBuffer == null) {
+            ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length(), type, false);
+            Nd4j.getDeallocatorService().pickObject(this);
         }
-        */
+
+        actualizePointerAndIndexer();
     }
 
     //@Override

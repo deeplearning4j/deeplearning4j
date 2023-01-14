@@ -33,14 +33,10 @@ import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
-import org.nd4j.linalg.api.memory.enums.LearningPolicy;
-import org.nd4j.linalg.api.memory.enums.LocationPolicy;
-import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
-import org.nd4j.linalg.api.memory.enums.ResetPolicy;
-import org.nd4j.linalg.api.memory.enums.SpillPolicy;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -234,12 +230,12 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
                          (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "INT")) {
                 INDArray array2 = Nd4j.create(new double[] {1f, 2f, 3f, 4f, 5f});
 
-                long reqMemory = WorkspaceUtils.getTotalRequiredMemoryForWorkspace(array2);
+                long reqMemory = wsTwo.requiredMemoryPerArray(array2);
                 assertEquals(reqMemory, wsOne.getPrimaryOffset());
 
                 array2.leverageTo("EXT");
 
-                assertEquals(320, wsOne.getPrimaryOffset());
+                assertEquals(reqMemory * 2, wsOne.getPrimaryOffset());
             }
         }
     }
@@ -290,7 +286,7 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
 
                 assertEquals(0, wsOne.getPrimaryOffset());
 
-                long reqMemory = WorkspaceUtils.getTotalRequiredMemoryForWorkspace(array);
+                long reqMemory = wsTwo.requiredMemoryPerArray(array);
                 assertEquals(reqMemory, wsTwo.getPrimaryOffset());
 
                 INDArray copy = array.leverage();
@@ -341,7 +337,7 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
 
             array2.assign(array1);
 
-            long reqMemory = WorkspaceUtils.getTotalRequiredMemoryForWorkspace(array1) * 2;
+            long reqMemory = wsI.requiredMemoryPerArray(array1);
             assertEquals(reqMemory , wsI.getPrimaryOffset());
             assertEquals(array1, array2);
 
@@ -366,7 +362,7 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
             assertTrue(array.isInScope());
             assertTrue(array.isAttached());
 
-            long reqMemory = WorkspaceUtils.getTotalRequiredMemoryForWorkspace(array);
+            long reqMemory = wsI.requiredMemoryPerArray(array);
             assertEquals(reqMemory, wsI.getPrimaryOffset());
 
             copy = array.detach();
@@ -752,6 +748,7 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
     public void testAllocation5(Nd4jBackend backend) {
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "testAllocation5");
 
+        Nd4j.getProfiler().start();
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
         assertNotEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -761,19 +758,32 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
         INDArray array = Nd4j.create(DOUBLE, new long[] {1, 5}, 'c');
 
         // checking if allocation actually happened
-        long reqMemory = WorkspaceUtils.getTotalRequiredMemoryForWorkspace(array);
+        long reqMemory = workspace.requiredMemoryPerArray(array);
         assertEquals(reqMemory, workspace.getPrimaryOffset());
 
         array.assign(1.0f);
 
         INDArray dup = array.dup();
 
+        System.out.println(Nd4j.getProfiler().printCurrentStats());
         //execution allocations (1 for each x,y,z shape info data buffer calls), data buffer allocations, dup allocations
-        assertEquals(544, workspace.getPrimaryOffset());
+        /**
+         * -------------Workspace: testAllocation5--------------
+         * --------Data type: DOUBLE------ Allocation count: 2
+         *  Number of elements: 1:  Bytes allocated: 32 Number of allocations: 1 Total bytes allocated: 32
+         *  Number of elements: 5:  Bytes allocated: 64 Number of allocations: 2 Total bytes allocated: 128
+         * --------Data type: LONG------ Allocation count: 4
+         *  Number of elements: 1:  Bytes allocated: 32 Number of allocations: 6 Total bytes allocated: 192
+         *  Number of elements: 4:  Bytes allocated: 32 Number of allocations: 14 Total bytes allocated: 448
+         *  Number of elements: 6:  Bytes allocated: 64 Number of allocations: 6 Total bytes allocated: 384
+         *  Number of elements: 8:  Bytes allocated: 64 Number of allocations: 21 Total bytes allocated: 1344
+         */
+        assertEquals(AllocationsTracker.getInstance().totalMemoryForWorkspace(workspace.getId(), MemoryKind.DEVICE), workspace.getPrimaryOffset());
 
         assertEquals(5, dup.sumNumber().doubleValue(), 0.01);
 
         workspace.close();
+        Nd4j.getProfiler().stop();
     }
 
 
@@ -797,7 +807,7 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
         INDArray array = Nd4j.create(DOUBLE, new long[] {1, 5}, 'c');
 
         // checking if allocation actually happened
-        long reqMem = WorkspaceUtils.getTotalRequiredMemoryForWorkspace(array);
+        long reqMem = workspace.requiredMemoryPerArray(array);;
         assertEquals(reqMem, workspace.getPrimaryOffset());
 
         try {
@@ -829,7 +839,7 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
         INDArray array = Nd4j.create(DOUBLE, new long[] {1, 5}, 'c');
 
         // checking if allocation actually happened
-        long reqMem = WorkspaceUtils.getTotalRequiredMemoryForWorkspace(array);
+        long reqMem = workspace.requiredMemoryPerArray(array);;
         assertEquals(reqMem, workspace.getPrimaryOffset());
 
         array.assign(1.0f);
@@ -854,7 +864,7 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
         INDArray array = Nd4j.create(DOUBLE, 5);
 
         // checking if allocation actually happened
-        long reqMem = WorkspaceUtils.getTotalRequiredMemoryForWorkspace(array);
+        long reqMem = workspace.requiredMemoryPerArray(array);
         assertEquals(reqMem, workspace.getPrimaryOffset());
 
         array.assign(1.0f);
@@ -885,7 +895,7 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
         INDArray array = Nd4j.create(new double[] {1f, 2f, 3f, 4f, 5f});
 
         // checking if allocation actually happened
-        long reqMem = WorkspaceUtils.getTotalRequiredMemoryForWorkspace(array);
+        long reqMem = workspace.requiredMemoryPerArray(array);
         assertEquals(reqMem, workspace.getPrimaryOffset());
 
 

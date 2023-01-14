@@ -60,14 +60,19 @@ public interface NativeOps {
                                @Cast("sd::LongType *") LongPointer dZShapeInfo);
 
     /**
+     *
+     * @param extraPointers
      * @param opNum
      * @param x
      * @param xShapeInfo
+     * @param dXShapeInfo
      * @param extraParams
      * @param result
      * @param resultShapeInfoBuffer
-     * @param dimension
-     * @param dimensionLength
+     * @param dResultShapeInfoBuffer
+     * @param hDimension
+     * @param hDimensionShape
+     * @param dDimensionShape
      */
     void execIndexReduce(PointerPointer extraPointers,
                          int opNum,
@@ -83,15 +88,21 @@ public interface NativeOps {
                          @Cast("sd::LongType *") LongPointer dDimensionShape);
 
     /**
+     *
+     * @param extraPointers
      * @param opNum
      * @param x
      * @param xShapeInfo
+     * @param dxShapeInfo
      * @param y
      * @param yShapeInfo
+     * @param dyShapeInfo
      * @param result
      * @param resultShapeInfo
-     * @param dimension
-     * @param dimensionLength
+     * @param dresultShapeInfo
+     * @param hDimension
+     * @param hDimensionShape
+     * @param dDimensionShape
      */
     void execBroadcast(PointerPointer extraPointers,
                        int opNum,
@@ -126,13 +137,18 @@ public interface NativeOps {
 
 
     /**
+     *
+     * @param extraPointers
      * @param opNum
-     * @param dx
+     * @param x
      * @param xShapeInfo
+     * @param dxShapeInfo
      * @param y
      * @param yShapeInfo
+     * @param dyShapeInfo
      * @param result
      * @param resultShapeInfo
+     * @param dresultShapeInfo
      * @param extraParams
      */
     void execPairwiseTransform(PointerPointer extraPointers,
@@ -317,16 +333,26 @@ public interface NativeOps {
                            @Cast("sd::LongType *") LongPointer dzShapeInfo);
 
     /**
+     *
+     * @param extraPointers
      * @param opNum
      * @param x
      * @param xShapeInfo
+     * @param dxShapeInfo
      * @param extraParamsVals
      * @param y
      * @param yShapeInfo
+     * @param dyShapeInfo
      * @param result
      * @param resultShapeInfoBuffer
-     * @param dimension
-     * @param dimensionLength
+     * @param dresultShapeInfoBuffer
+     * @param hDimension
+     * @param hDimensionShape
+     * @param dDimensionShape
+     * @param tadOnlyShapeInfo
+     * @param tadOffsets
+     * @param yTadOnlyShapeInfo
+     * @param yTadOffsets
      */
     void execReduce3Tad(PointerPointer extraPointers,
                         int opNum,
@@ -441,14 +467,22 @@ public interface NativeOps {
                           boolean biasCorrected);
 
     /**
+     *
+     * @param extraPointers
      * @param opNum
      * @param x
      * @param xShapeInfo
+     * @param dxShapeInfo
      * @param extraParams
      * @param result
      * @param resultShapeInfoBuffer
-     * @param dimension
-     * @param dimensionLength
+     * @param dresultShapeInfoBuffer
+     * @param hDimension
+     * @param hDimensionShape
+     * @param dDimensionShape
+     * @param biasCorrected
+     * @param tadShapeInfo
+     * @param tadOffsets
      */
     void execSummaryStatsTad(PointerPointer extraPointers,
                              int opNum,
@@ -468,12 +502,15 @@ public interface NativeOps {
 
 
     /**
+     *
      * @param extraPointers
      * @param opNum
-     * @param dx
+     * @param x
      * @param xShapeInfo
+     * @param dxShapeInfo
      * @param result
      * @param resultShapeInfo
+     * @param dresultShapeInfo
      * @param extraParams
      */
     void execTransformFloat(PointerPointer extraPointers,
@@ -527,18 +564,26 @@ public interface NativeOps {
                           Pointer extraParams);
 
     /**
-     * ScalarOp along dimension
      *
-     * @param extraPointers   pointers to tadShapes and tadoffsets
+     * @param extraPointers
      * @param opNum
      * @param x
      * @param xShapeInfo
+     * @param dxShapeInfo
      * @param z
      * @param zShapeInfo
+     * @param dzShapeInfo
      * @param scalars
+     * @param scalarShapeInfo
+     * @param dscalarShapeInfo
      * @param extraParams
-     * @param dimension
-     * @param dimensionLength
+     * @param hDimension
+     * @param hDimensionShape
+     * @param dDimensionShape
+     * @param tadShapeInfo
+     * @param tadOffsets
+     * @param tadShapeInfoZ
+     * @param tadOffsetsZ
      */
     void execScalarTad(PointerPointer extraPointers,
                        int opNum,

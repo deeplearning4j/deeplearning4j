@@ -5579,13 +5579,13 @@ public class Nd4j {
 
         if(x == null && (outShapes.get(0) == null || outShapes.get(0).getShape().length == 0 || outShapes.get(0).getShape()[0] == 0)){
             //Empty: no conditions match
-            for( int i=0; i<outputs.length; i++ ){
+            for( int i=0; i<outputs.length; i++) {
                 outputs[i]  = Nd4j.empty();
             }
             return outputs;
         }
 
-        for(int i=0; i<outputs.length; i++){
+        for(int i = 0; i < outputs.length; i++) {
             outputs[i] = Nd4j.create(outShapes.get(i), false);
         }
         op.addOutputs(outputs);

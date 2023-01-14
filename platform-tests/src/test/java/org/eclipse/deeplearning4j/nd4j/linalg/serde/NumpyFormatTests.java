@@ -181,10 +181,8 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
             int lastDot = path.lastIndexOf('.');
             int lastSlash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
             String dtype = path.substring(lastSlash+1, lastDot);
-//            System.out.println(path + " : " + dtype);
 
             DataType dt = DataType.fromNumpy(dtype);
-            //System.out.println(dt);
 
             INDArray arr = Nd4j.arange(12).castTo(dt).reshape(3,4);
             INDArray arr2 = Nd4j.linspace(DataType.FLOAT, 0, 3, 10);

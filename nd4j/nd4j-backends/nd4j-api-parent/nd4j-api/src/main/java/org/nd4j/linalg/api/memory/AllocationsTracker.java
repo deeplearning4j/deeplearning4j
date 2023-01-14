@@ -23,9 +23,12 @@ package org.nd4j.linalg.api.memory;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.common.primitives.CounterMap;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
+import org.nd4j.linalg.workspace.WorkspaceUtils;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -118,6 +121,11 @@ public class AllocationsTracker {
         return ret.toString();
     }
 
+
+    public long totalMemoryForWorkspace(String workspace,MemoryKind memoryKind) {
+        return workspaceAllocationsTracker.get(workspace).currentBytes(memoryKind);
+    }
+
     /**
      * Prints the memory per workspace including data type and memory kind
      * @return
@@ -132,10 +140,33 @@ public class AllocationsTracker {
         workspaceAllocationsTracker.forEach((s, workspaceAllocationsTracker1) -> {
             stringBuilder.append("-------------Workspace: " + s + "--------------\n");
             Arrays.stream(DataType.values()).forEach(dataType -> {
-                if(workspaceAllocationsTracker1.currentDataTypeCount(dataType) > 0) {
-                    stringBuilder.append(dataType + " bytes allocated : " + workspaceAllocationsTracker1.currentDataTypeCount(dataType) + "\n");
+                if(workspaceAllocationsTracker1.currentDataTypeCount(dataType).size() > 0) {
+                    stringBuilder.append("--------Data type: " + dataType + "------ Allocation count: " + workspaceAllocationsTracker1.currentDataTypeCount(dataType).size() + "\n");
+                    CounterMap<Long, Long> allocations = workspaceAllocationsTracker1.currentDataTypeCount(dataType);
+                    allocations.getIterator().forEachRemaining((numberOfElementsAndallocationSize) -> {
+                        long numAllocations = (long) allocations.getCount(numberOfElementsAndallocationSize.getFirst(),numberOfElementsAndallocationSize.getSecond());
+                        stringBuilder.append(" Number of elements: " + numberOfElementsAndallocationSize.getKey() + ":  Bytes allocated: " + numberOfElementsAndallocationSize.getValue() + " Number of allocations: " + numAllocations  + " Total bytes allocated: "  + (numAllocations * numberOfElementsAndallocationSize.getValue()) + "\n");
+                    });
+
+
+                    CounterMap<Long, Long> spilledAllocations = workspaceAllocationsTracker1.currentDataTypeSpilledCount(dataType);
+                    spilledAllocations.getIterator().forEachRemaining((numberOfElementsAndallocationSize) -> {
+                        long numAllocations = (long) spilledAllocations.getCount(numberOfElementsAndallocationSize.getFirst(),numberOfElementsAndallocationSize.getSecond());
+                        stringBuilder.append(" Spilled Number of elements: " + numberOfElementsAndallocationSize.getKey() + ":  Bytes allocated: " + numberOfElementsAndallocationSize.getValue() + " Number of allocations: " + numAllocations  + " Total bytes allocated: "  + (numAllocations * numberOfElementsAndallocationSize.getValue()) + "\n");
+                    });
+
+
+                    CounterMap<Long, Long> pinnedAllocations = workspaceAllocationsTracker1.currentDataTypePinnedCount(dataType);
+                    spilledAllocations.getIterator().forEachRemaining((numberOfElementsAndallocationSize) -> {
+                        long numAllocations = (long) pinnedAllocations.getCount(numberOfElementsAndallocationSize.getFirst(),numberOfElementsAndallocationSize.getSecond());
+                        stringBuilder.append(" Pinned Number of elements: " + numberOfElementsAndallocationSize.getKey() + ":  Bytes allocated: " + numberOfElementsAndallocationSize.getValue() + " Number of allocations: " + numAllocations  + " Total bytes allocated: "  + (numAllocations * numberOfElementsAndallocationSize.getValue()) + "\n");
+                    });
+
+
+
                 }
             });
+            stringBuilder.append("----------------------\n");
 
             Arrays.stream(MemoryKind.values()).forEach(memoryKind -> {
                 if(workspaceAllocationsTracker1.currentBytes(memoryKind) > 0) {

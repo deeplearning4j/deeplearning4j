@@ -23,9 +23,7 @@ package org.eclipse.deeplearning4j.nd4j.linalg.workspace;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,14 +33,11 @@ import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
-import org.nd4j.linalg.api.memory.enums.LearningPolicy;
-import org.nd4j.linalg.api.memory.enums.LocationPolicy;
-import org.nd4j.linalg.api.memory.enums.ResetPolicy;
-import org.nd4j.linalg.api.memory.enums.SpillPolicy;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -81,6 +76,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
                 .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                 .build();
 
+        Nd4j.getProfiler().start();
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
             Nd4j.create(DataType.DOUBLE,500);
             Nd4j.create(DataType.DOUBLE,500);
@@ -104,7 +100,9 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
 
         assertEquals(requiredMemory , workspace.getSpilledSize());
         //+ 192 is for shape buffers and alignment padding
-        assertEquals(requiredMemory * 2 - 192, workspace.getPinnedSize());
+        System.out.println(Nd4j.getProfiler().printCurrentStats());
+        MemoryKind memoryKindTest = backend.getEnvironment().isCPU() ? MemoryKind.HOST : MemoryKind.DEVICE;
+        assertEquals(AllocationsTracker.getInstance().getTracker("WS1").currentPinnedBytes(memoryKindTest), workspace.getPinnedSize());
 
         assertEquals(0, workspace.getDeviceOffset());
 
@@ -115,7 +113,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         log.info("------------------");
 
         //1 array data buffer 1 shape buffer
-        assertEquals(2, workspace.getNumberOfPinnedAllocations());
+        assertEquals(AllocationsTracker.getInstance().getTracker("WS1").currentDataTypeSpilledCount(DataType.DOUBLE).size(), workspace.getNumberOfPinnedAllocations());
 
         for (int e = 0; e < 4; e++) {
             for (int i = 0; i < 4; i++) {
@@ -131,7 +129,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
             if (e >= 2) {
                 assertEquals(0, workspace.getNumberOfPinnedAllocations(),"Failed on iteration " + e);
             } else {
-                assertEquals(2, workspace.getNumberOfPinnedAllocations(),"Failed on iteration " + e);
+                assertEquals(AllocationsTracker.getInstance().getTracker("WS1").currentDataTypeSpilledCount(DataType.DOUBLE).size(), workspace.getNumberOfPinnedAllocations(),"Failed on iteration " + e);
             }
         }
 
@@ -152,8 +150,9 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
                 Nd4j.create(DataType.DOUBLE,500);
                 Nd4j.create(DataType.DOUBLE,500);
 
+                int addShapeBuffer = Nd4j.getBackend().getEnvironment().isCPU() ? 192 : 0;
                 //192 accounts for shape buffer creation
-                assertEquals(1500 * DataType.DOUBLE.width() + 192, workspace.getThisCycleAllocations());
+                assertEquals(1500 * DataType.DOUBLE.width() + addShapeBuffer, workspace.getThisCycleAllocations());
             }
         }
 

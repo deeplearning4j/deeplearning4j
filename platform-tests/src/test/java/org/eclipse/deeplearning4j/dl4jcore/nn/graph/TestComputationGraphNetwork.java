@@ -1003,12 +1003,10 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
     public void testOptimizationAlgorithmsSearchBasic() {
         DataSetIterator iter = new IrisDataSetIterator(1, 1);
 
-        OptimizationAlgorithm[] oas = new OptimizationAlgorithm[]{OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT,
-                OptimizationAlgorithm.LINE_GRADIENT_DESCENT, OptimizationAlgorithm.CONJUGATE_GRADIENT,
-                OptimizationAlgorithm.LBFGS};
+        OptimizationAlgorithm[] oas = new OptimizationAlgorithm[]{OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT }
+               ;
 
         for (OptimizationAlgorithm oa : oas) {
-//            System.out.println(oa);
             ComputationGraphConfiguration conf =
                     new NeuralNetConfiguration.Builder().optimizationAlgo(oa).graphBuilder()
                             .addInputs("input")

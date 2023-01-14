@@ -105,7 +105,7 @@ class LocalResponseTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Multi CNN Layer")
     void testMultiCNNLayer() throws Exception {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).seed(123).list().layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER).activation(Activation.RELU).build()).layer(1, new LocalResponseNormalization.Builder().build()).layer(2, new DenseLayer.Builder().nOut(2).build()).layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(2).nOut(10).build()).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123).list().layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER).activation(Activation.RELU).build()).layer(1, new LocalResponseNormalization.Builder().build()).layer(2, new DenseLayer.Builder().nOut(2).build()).layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(2).nOut(10).build()).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
         DataSetIterator iter = new MnistDataSetIterator(2, 2);

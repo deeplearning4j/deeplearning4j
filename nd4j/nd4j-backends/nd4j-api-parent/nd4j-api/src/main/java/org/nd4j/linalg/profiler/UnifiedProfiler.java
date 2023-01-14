@@ -19,6 +19,7 @@
  */
 package org.nd4j.linalg.profiler;
 
+import org.nd4j.allocator.impl.MemoryTracker;
 import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
@@ -91,6 +92,7 @@ public class UnifiedProfiler {
         stringBuilder.append(memoryStats());
         stringBuilder.append(executionStats());
         stringBuilder.append(AllocationsTracker.getInstance().memoryInfo());
+        stringBuilder.append(MemoryTracker.getInstance().memoryPerDevice());
         return stringBuilder.toString();
     }
 
@@ -108,6 +110,15 @@ public class UnifiedProfiler {
      */
     public String executionStats() {
         return OpProfiler.getInstance().statsAsString();
+    }
+
+
+    /**
+     * Per device information.
+     * @return
+     */
+    public String deviceStats() {
+        return MemoryTracker.getInstance().memoryPerDevice();
     }
 
     /**

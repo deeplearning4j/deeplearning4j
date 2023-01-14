@@ -1154,9 +1154,9 @@ public class TestLayerOpValidation extends BaseOpValidation {
                 .build();
 
         SDVariable out = sd.cnn().conv3d(in,w,conv3DConfig);
-        out = sd.nn().tanh("loss", out).shape().rename("out");
+        out = sd.nn().tanh("loss", out).rename("out");
 
-        sd.setLossVariables("loss");
+        sd.setLossVariables("out");
 
         //Expected output size, NOT same mode: out = (in - k)/d + 1 = (28-2+0)/1+1 = 27
         //Expected output size, WITH same mode: out = in/stride
@@ -1198,9 +1198,9 @@ public class TestLayerOpValidation extends BaseOpValidation {
                 .build();
 
         SDVariable out = sd.cnn().deconv3d(in, w, conv3DConfig);
-        out = sd.nn().tanh("loss", out).shape().rename("out");
+        out = sd.nn().tanh("loss", out).rename("out");
 
-        sd.setLossVariables("loss");
+        sd.setLossVariables("out");
 
         //Expected conv3d size, NOT same mode: out = (in - k)/d + 1 = (28-2+0)/1+1 = 27
         //Expected conv3d size, WITH same mode: out = in/stride
