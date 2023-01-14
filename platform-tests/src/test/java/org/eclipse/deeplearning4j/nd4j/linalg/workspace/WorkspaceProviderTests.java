@@ -414,23 +414,24 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
     public void testCircularBufferReset1(Nd4jBackend backend) {
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager()
                 .getWorkspaceForCurrentThread(circularConfiguration, "WSR_1");
-        int cudaDiv = WorkspaceUtils.getNumBuffersAllocatedForBackendPerArray(backend);
 
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WSR_1")) {
-            Nd4j.create(10000);
+            Nd4j.create(DataType.DOUBLE,10000);
             assertEquals(0, workspace.getCurrentSize());
             //note: 1 allocation of the array and a shape buffer should be the allocations here
-            assertEquals(2 / cudaDiv, workspace.getNumberOfExternalAllocations());
+            assertEquals(AllocationsTracker.getInstance()
+                    .getTracker(workspace.getId()).totalExternalAllocationCount(), workspace.getNumberOfExternalAllocations());
         }
 
         assertEquals(10 * 1024L * 1024L, workspace.getCurrentSize());
         assertEquals(0, workspace.getPrimaryOffset());
         //note: 1 allocation of the array and a shape buffer should be the allocations here
-        assertEquals(2 / cudaDiv, workspace.getNumberOfExternalAllocations());
+        assertEquals(AllocationsTracker.getInstance()
+                .getTracker(workspace.getId()).totalExternalAllocationCount(), workspace.getNumberOfExternalAllocations());
 
         for (int i = 0; i < 11 * 1024 * 1024; i += 10000 * DataType.DOUBLE.width()) {
             try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WSR_1")) {
-                Nd4j.create(10000);
+                Nd4j.create(DataType.DOUBLE,10000);
             }
 
 
@@ -444,7 +445,6 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariableInput1(Nd4jBackend backend) {
         //divide by 2 when since cuda doesn't allocate buffers from workspaces
-        int cudaDiv = WorkspaceUtils.getNumBuffersAllocatedForBackendPerArray(backend);
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager()
                 .getWorkspaceForCurrentThread(adsiConfiguration, "ADSI");
 

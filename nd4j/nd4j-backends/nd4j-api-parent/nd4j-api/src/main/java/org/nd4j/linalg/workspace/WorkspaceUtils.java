@@ -154,17 +154,7 @@ public class WorkspaceUtils {
     }
 
 
-    /**
-     * Each backend might allocate different numbers of buffers per array.
-     * CPU typically does 2 from workspaces (shape buffer + data buffer)
-     * where as cuda only does 1 from workspaces.
-     * @param backend the backend to use
-     * @return
-     */
-    public static int getNumBuffersAllocatedForBackendPerArray(Nd4jBackend backend) {
-        int ret = backend.getClass().getName().toLowerCase().contains("cu") ? 2 : 1;
-        return ret;
-    }
+
 
     /**
      * Returns the total amount of memory required per array for workspaces.

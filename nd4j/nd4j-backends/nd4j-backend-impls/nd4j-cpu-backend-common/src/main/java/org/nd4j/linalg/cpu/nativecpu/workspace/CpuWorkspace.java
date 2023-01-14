@@ -70,7 +70,7 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
     @Override
     public Deallocator deallocator() {
-         return new CpuWorkspaceDeallocator(this);
+        return new CpuWorkspaceDeallocator(this);
     }
 
     @Override
@@ -156,6 +156,9 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
             if (pair.getHostPointer() != null)
                 nativeOps.freeHost(pair.getHostPointer());
         }
+
+
+        externalCount.incrementAndGet();
         externalAllocations.clear();
         externalCount.set(0);
         spilledAllocationsSize.set(0);

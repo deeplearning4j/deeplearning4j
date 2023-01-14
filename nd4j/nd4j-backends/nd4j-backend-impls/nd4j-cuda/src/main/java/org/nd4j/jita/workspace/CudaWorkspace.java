@@ -244,7 +244,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
                             val pp = new PointersPair(null, pointer);
                             pp.setRequiredMemory(requiredMemory);
                             externalAllocations.add(pp);
-
+                            AllocationsTracker.getInstance()
+                                    .getTracker(id).allocateExternal(type,kind,numElements,requiredMemory);
                             MemoryTracker.getInstance().incrementWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory);
                             return pointer;
                         } else {
@@ -288,11 +289,12 @@ public class CudaWorkspace extends Nd4jWorkspace {
                     case EXTERNAL:
                         if (!trimmer) {
                             PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
+                            AllocationsTracker.getInstance()
+                                    .getTracker(id).allocateExternal(type,kind,numElements,requiredMemory);
 
                             externalAllocations.add(new PointersPair(pointer, null));
                             return pointer;
                         } else {
-                            //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
                             PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
                             pointer.isLeaked();
 

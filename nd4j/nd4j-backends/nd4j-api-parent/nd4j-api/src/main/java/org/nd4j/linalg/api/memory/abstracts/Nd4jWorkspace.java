@@ -369,7 +369,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                     numElements);
 
             externalAllocations.add(new PointersPair(pointer, null));
-
+            AllocationsTracker.getInstance().getTracker(id).allocateExternal(type,kind,numElements,requiredMemory);
             return pointer;
         }
 
@@ -435,7 +435,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                     cycleAllocations.addAndGet(requiredMemory);
                     if (!trimmer) {
                         externalCount.incrementAndGet();
-
+                        AllocationsTracker.getInstance().getTracker(id).allocateExternal(type,kind,numElements,requiredMemory);
                         PagedPointer pointer = new PagedPointer(
                                 memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize),
                                 numElements);
