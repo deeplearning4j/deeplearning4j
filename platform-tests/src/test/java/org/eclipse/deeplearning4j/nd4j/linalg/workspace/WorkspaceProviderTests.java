@@ -38,11 +38,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
-import org.nd4j.linalg.api.memory.enums.LearningPolicy;
-import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
-import org.nd4j.linalg.api.memory.enums.ResetPolicy;
-import org.nd4j.linalg.api.memory.enums.SpillPolicy;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -247,7 +243,7 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
 
         assertFalse(Nd4j.getWorkspaceManager().checkIfWorkspaceExists("WS1"));
         assertFalse(Nd4j.getWorkspaceManager().checkIfWorkspaceExists("WS2"));
-
+        MemoryKind memoryKind = backend.getEnvironment().isCPU() ? MemoryKind.HOST : MemoryKind.DEVICE;
         try (Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1")
                 .notifyScopeEntered()) {
             INDArray array = Nd4j.create(new double[] {6f, 3f, 1f, 9f, 21f});
@@ -272,14 +268,15 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
                     array3 = array2.unsafeDuplication();
                     assertTrue(ws1 == array3.data().getParentWorkspace());
                     assertEquals(reqMem + reqMem % 16, ws2.getPrimaryOffset());
-                    assertEquals((reqMem + reqMem % 16) * 2, ws1.getPrimaryOffset());
+                    assertEquals(AllocationsTracker.getInstance().getTracker(ws1.getId()).currentBytes(memoryKind),
+                            ws1.getPrimaryOffset());
                 }
 
                 log.info("Current workspace: {}", Nd4j.getMemoryManager().getCurrentWorkspace());
                 assertTrue(ws2 == Nd4j.getMemoryManager().getCurrentWorkspace());
 
                 assertEquals(reqMem + reqMem % 16, ws2.getPrimaryOffset());
-                assertEquals((reqMem + reqMem % 16) * 2, ws1.getPrimaryOffset());
+                assertEquals((AllocationsTracker.getInstance().getTracker(ws1.getId())).currentBytes(memoryKind), ws1.getPrimaryOffset());
 
                 assertEquals(15f, array3.sumNumber().floatValue(), 0.01f);
             }
@@ -638,27 +635,6 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
             INDArray array = Nd4j.create(DataType.DOUBLE,500).assign(1.0);
 
             assertEquals(1.0, array.meanNumber().doubleValue(), 0.01);
-        }
-    }
-
-    @Test
-    @Disabled("raver119: This test doesn't make any sense to me these days. We're borrowing from the same workspace. Why?")
-    public void testNestedWorkspaces11(Nd4jBackend backend) {
-        for (int x = 1; x < 10; x++) {
-            try (MemoryWorkspace ws1 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
-                INDArray array1 = Nd4j.create(DataType.DOUBLE,100 * x);
-
-                for (int i = 1; i < 10; i++) {
-                    try (MemoryWorkspace ws2 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
-                        INDArray array2 = Nd4j.create(DataType.DOUBLE,100 * x);
-                        for (int e = 1; e < 10; e++) {
-                            try (MemoryWorkspace ws3 = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfiguration, "WS_1").notifyScopeBorrowed()) {
-                                INDArray array3 = Nd4j.create(DataType.DOUBLE,100 * x);
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 
