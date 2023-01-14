@@ -417,10 +417,13 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             }
 
             // updating respective counters
-            if (!trimmer)
+            if (!trimmer) {
                 spilledAllocationsSize.addAndGet(requiredMemory);
-            else
+                AllocationsTracker.getInstance().getTracker(id).allocateSpilled(type,kind,numElements,requiredMemory);
+            } else {
                 pinnedAllocationsSize.addAndGet(requiredMemory);
+                AllocationsTracker.getInstance().getTracker(id).allocatePinned(type,kind,numElements,requiredMemory);
+            }
 
             if (isDebug.get())
                 log.info("Workspace [{}]: step: {}, spilled  {} bytes, capacity of {} elements", id, stepsCount.get(),

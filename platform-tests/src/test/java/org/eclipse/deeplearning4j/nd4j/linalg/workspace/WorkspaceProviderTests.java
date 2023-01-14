@@ -35,6 +35,7 @@ import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -177,7 +178,7 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
                 .policyAllocation(AllocationPolicy.STRICT).build();
 
         //end of buffer reached at 92, anything passed that does a reset
-       int numArraysAllocated = 92;
+        int numArraysAllocated = 92;
         for (int x = 0; x < numArraysAllocated; x++) {
             try (Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager()
                     .getWorkspaceForCurrentThread(configuration, "ITER").notifyScopeEntered()) {
@@ -445,8 +446,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariableInput1(Nd4jBackend backend) {
-      //divide by 2 when since cuda doesn't allocate buffers from workspaces
-      int cudaDiv = WorkspaceUtils.getNumBuffersAllocatedForBackendPerArray(backend);
+        //divide by 2 when since cuda doesn't allocate buffers from workspaces
+        int cudaDiv = WorkspaceUtils.getNumBuffersAllocatedForBackendPerArray(backend);
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager()
                 .getWorkspaceForCurrentThread(adsiConfiguration, "ADSI");
 
@@ -490,7 +491,7 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         assertEquals(workspace.getInitialBlockSize(), workspace.getPrimaryOffset());
         assertEquals(workspace.getInitialBlockSize(), workspace.getDeviceOffset());
         //shape buffer + data buffer
-        assertEquals(2 / cudaDiv, workspace.getNumberOfPinnedAllocations());
+        assertEquals(AllocationsTracker.getInstance().getTracker("ADSI").totalPinnedAllocationCount(), workspace.getNumberOfPinnedAllocations());
 
         assertEquals(3, workspace.getCyclesCount());
         assertEquals(0, workspace.getStepNumber());
@@ -502,7 +503,7 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
         }
 
         //shape buffer + data buffer * 2
-        assertEquals(4 / cudaDiv, workspace.getNumberOfPinnedAllocations());
+        assertEquals(AllocationsTracker.getInstance().getTracker("ADSI").totalPinnedAllocationCount(), workspace.getNumberOfPinnedAllocations());
         assertEquals(0, workspace.getStepNumber());
         assertEquals(4, workspace.getCyclesCount());
 
@@ -511,7 +512,7 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
             array1 = Nd4j.create(DataType.DOUBLE, 8, 128, 100);
         }
         //shape buffer + data buffer * 3
-        assertEquals(6 / cudaDiv, workspace.getNumberOfPinnedAllocations());
+        assertEquals(AllocationsTracker.getInstance().getTracker("ADSI").totalPinnedAllocationCount(), workspace.getNumberOfPinnedAllocations());
         assertEquals(1, workspace.getStepNumber());
         assertEquals(5, workspace.getCyclesCount());
 

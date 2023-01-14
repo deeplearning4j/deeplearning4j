@@ -138,6 +138,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
         if (workspace.getDevicePointer() != null) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(workspace.getDevicePointer(), 0);
             AllocationsTracker.getInstance().markReleased(AllocationKind.GENERAL, Nd4j.getAffinityManager().getDeviceForCurrentThread(), size + SAFETY_OFFSET);
+            AllocationsTracker.getInstance().getTracker(id).deallocatePinned(MemoryKind.DEVICE,size + SAFETY_OFFSET);
 
             MemoryTracker.getInstance().decrementWorkspaceAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), size + SAFETY_OFFSET);
         }
@@ -214,11 +215,13 @@ public class CudaWorkspace extends Nd4jWorkspace {
                     return alloc(requiredMemory, kind, type, initialize);
                 }
 
-                if (!trimmer)
+                if (!trimmer) {
                     spilledAllocationsSize.addAndGet(requiredMemory);
-                else
+                    AllocationsTracker.getInstance().getTracker(id).allocateSpilled(type,kind,numElements,requiredMemory);
+                } else {
                     pinnedAllocationsSize.addAndGet(requiredMemory);
-
+                    AllocationsTracker.getInstance().getTracker(id).allocatePinned(type,kind,numElements,requiredMemory);
+                }
                 if (isDebug.get()) {
                     log.info("Workspace [{}] device_{}: spilled DEVICE array of {} bytes, capacity of {} elements", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements);
                 }
@@ -267,7 +270,6 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
                 val ptr = workspace.getHostPointer().withOffset(prevOffset, numElements);
 
-                // && workspaceConfiguration.getPolicyMirroring() == MirroringPolicy.HOST_ONLY
                 if (initialize)
                     Pointer.memset(ptr, 0, requiredMemory);
                 return ptr;
@@ -330,6 +332,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                     NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getDevicePointer(), 0);
                     MemoryTracker.getInstance().decrementWorkspaceAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), pair.getRequiredMemory());
                     pinnedCount.decrementAndGet();
+                    AllocationsTracker.getInstance().getTracker(id).deallocatePinned(MemoryKind.DEVICE,pair.getRequiredMemory());
 
                     if (isDebug.get())
                         log.info("deleting external device allocation ");
@@ -344,6 +347,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
                 val sizez = pair.getRequiredMemory() * -1;
                 pinnedAllocationsSize.addAndGet(sizez);
+                AllocationsTracker.getInstance().getTracker(id).deallocatePinned(MemoryKind.DEVICE,sizez);
+
             } else {
                 break;
             }

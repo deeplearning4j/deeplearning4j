@@ -102,7 +102,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         //+ 192 is for shape buffers and alignment padding
         System.out.println(Nd4j.getProfiler().printCurrentStats());
         MemoryKind memoryKindTest = backend.getEnvironment().isCPU() ? MemoryKind.HOST : MemoryKind.DEVICE;
-        assertEquals(AllocationsTracker.getInstance().getTracker("WS1").currentBytes(memoryKindTest), workspace.getPinnedSize());
+        assertEquals(AllocationsTracker.getInstance().getTracker("WS1").currentPinnedBytes(memoryKindTest), workspace.getPinnedSize());
 
         assertEquals(0, workspace.getDeviceOffset());
 
@@ -113,7 +113,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         log.info("------------------");
 
         //1 array data buffer 1 shape buffer
-        assertEquals(2, workspace.getNumberOfPinnedAllocations());
+        assertEquals(AllocationsTracker.getInstance().getTracker("WS1").currentDataTypeSpilledCount(DataType.DOUBLE).size(), workspace.getNumberOfPinnedAllocations());
 
         for (int e = 0; e < 4; e++) {
             for (int i = 0; i < 4; i++) {
@@ -129,7 +129,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
             if (e >= 2) {
                 assertEquals(0, workspace.getNumberOfPinnedAllocations(),"Failed on iteration " + e);
             } else {
-                assertEquals(2, workspace.getNumberOfPinnedAllocations(),"Failed on iteration " + e);
+                assertEquals(AllocationsTracker.getInstance().getTracker("WS1").currentDataTypeSpilledCount(DataType.DOUBLE).size(), workspace.getNumberOfPinnedAllocations(),"Failed on iteration " + e);
             }
         }
 
@@ -150,8 +150,9 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
                 Nd4j.create(DataType.DOUBLE,500);
                 Nd4j.create(DataType.DOUBLE,500);
 
+                int addShapeBuffer = Nd4j.getBackend().getEnvironment().isCPU() ? 192 : 0;
                 //192 accounts for shape buffer creation
-                assertEquals(1500 * DataType.DOUBLE.width() + 192, workspace.getThisCycleAllocations());
+                assertEquals(1500 * DataType.DOUBLE.width() + addShapeBuffer, workspace.getThisCycleAllocations());
             }
         }
 

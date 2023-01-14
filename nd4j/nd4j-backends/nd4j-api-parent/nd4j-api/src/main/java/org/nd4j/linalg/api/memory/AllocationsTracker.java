@@ -148,6 +148,22 @@ public class AllocationsTracker {
                         stringBuilder.append(" Number of elements: " + numberOfElementsAndallocationSize.getKey() + ":  Bytes allocated: " + numberOfElementsAndallocationSize.getValue() + " Number of allocations: " + numAllocations  + " Total bytes allocated: "  + (numAllocations * numberOfElementsAndallocationSize.getValue()) + "\n");
                     });
 
+
+                    CounterMap<Long, Long> spilledAllocations = workspaceAllocationsTracker1.currentDataTypeSpilledCount(dataType);
+                    spilledAllocations.getIterator().forEachRemaining((numberOfElementsAndallocationSize) -> {
+                        long numAllocations = (long) spilledAllocations.getCount(numberOfElementsAndallocationSize.getFirst(),numberOfElementsAndallocationSize.getSecond());
+                        stringBuilder.append(" Spilled Number of elements: " + numberOfElementsAndallocationSize.getKey() + ":  Bytes allocated: " + numberOfElementsAndallocationSize.getValue() + " Number of allocations: " + numAllocations  + " Total bytes allocated: "  + (numAllocations * numberOfElementsAndallocationSize.getValue()) + "\n");
+                    });
+
+
+                    CounterMap<Long, Long> pinnedAllocations = workspaceAllocationsTracker1.currentDataTypePinnedCount(dataType);
+                    spilledAllocations.getIterator().forEachRemaining((numberOfElementsAndallocationSize) -> {
+                        long numAllocations = (long) pinnedAllocations.getCount(numberOfElementsAndallocationSize.getFirst(),numberOfElementsAndallocationSize.getSecond());
+                        stringBuilder.append(" Pinned Number of elements: " + numberOfElementsAndallocationSize.getKey() + ":  Bytes allocated: " + numberOfElementsAndallocationSize.getValue() + " Number of allocations: " + numAllocations  + " Total bytes allocated: "  + (numAllocations * numberOfElementsAndallocationSize.getValue()) + "\n");
+                    });
+
+
+
                 }
             });
             stringBuilder.append("----------------------\n");
