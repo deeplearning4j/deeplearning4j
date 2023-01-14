@@ -33,14 +33,11 @@ import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
-import org.nd4j.linalg.api.memory.enums.LearningPolicy;
-import org.nd4j.linalg.api.memory.enums.LocationPolicy;
-import org.nd4j.linalg.api.memory.enums.ResetPolicy;
-import org.nd4j.linalg.api.memory.enums.SpillPolicy;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -79,6 +76,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
                 .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                 .build();
 
+        Nd4j.getProfiler().start();
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
             Nd4j.create(DataType.DOUBLE,500);
             Nd4j.create(DataType.DOUBLE,500);
@@ -102,7 +100,9 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
 
         assertEquals(requiredMemory , workspace.getSpilledSize());
         //+ 192 is for shape buffers and alignment padding
-        assertEquals(requiredMemory * 2 - 192, workspace.getPinnedSize());
+        System.out.println(Nd4j.getProfiler().printCurrentStats());
+        MemoryKind memoryKindTest = backend.getEnvironment().isCPU() ? MemoryKind.HOST : MemoryKind.DEVICE;
+        assertEquals(AllocationsTracker.getInstance().getTracker("WS1").currentBytes(memoryKindTest), workspace.getPinnedSize());
 
         assertEquals(0, workspace.getDeviceOffset());
 

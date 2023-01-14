@@ -133,7 +133,6 @@ public class DebugModeTests extends BaseNd4jTestWithBackends {
             assertEquals(0, ws.getDeviceOffset());
 
             // array buffer should be spilled now
-            int shapeBufferAdd = backend.getClass().getName().toLowerCase().contains("cu") ? 0 : WorkspaceUtils.getShapeBufferRequireMemoryForWorkspace(array);
             assertEquals(WorkspaceUtils.getTotalRequiredMemoryForWorkspace(array) + WorkspaceUtils.getShapeBufferRequireMemoryForWorkspace(array) * 3 - 32 , ws.getSpilledSize());
         }
 

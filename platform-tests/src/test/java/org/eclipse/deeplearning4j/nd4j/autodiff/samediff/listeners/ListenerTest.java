@@ -203,9 +203,9 @@ public class ListenerTest extends BaseNd4jTestWithBackends {
             assertEquals(0, tl.iterationDoneCount);
             assertEquals(Collections.singletonMap(Operation.TRAINING, i), tl.operationStartCount);
             assertEquals(Collections.singletonMap(Operation.TRAINING, i), tl.operationEndCount);
-            assertEquals(7*i, tl.preOpExecutionCount);    //mmul, add, softmax, loss grad, softmax backward, add backward, mmul backward
-            assertEquals(7*i, tl.opExecutionCount);
-            assertEquals(11*i, tl.activationAvailableCount); //mmul, add, softmax, loss grad (weight, in, label), softmax bp, add backward (z, b), mmul (in, w)
+            assertEquals(7 * i, tl.preOpExecutionCount);    //mmul, add, softmax, loss grad, softmax backward, add backward, mmul backward
+            assertEquals(7 * i, tl.opExecutionCount);
+            assertEquals(11 * i, tl.activationAvailableCount); //mmul, add, softmax, loss grad (weight, in, label), softmax bp, add backward (z, b), mmul (in, w)
             assertEquals(0, tl.preUpdateCount);
         }
 
@@ -213,7 +213,7 @@ public class ListenerTest extends BaseNd4jTestWithBackends {
         //Check listener NOT called during gradient calculation - when listener is still set to INFERENCE mode
         tl = new TestListener(Operation.INFERENCE);
         sd.setListeners(tl);
-        for( int i=1; i<=3; i++ ) {
+        for( int i = 1; i <= 3; i++) {
             sd.calculateGradients(phMap, "in", "w", "b");
             assertEquals(0, tl.epochStartCount);
             assertEquals(0, tl.epochEndCount);
@@ -247,10 +247,10 @@ public class ListenerTest extends BaseNd4jTestWithBackends {
             assertEquals(i, tl.iterationDoneCount);
             assertEquals(Collections.singletonMap(Operation.TRAINING, i), tl.operationStartCount);
             assertEquals(Collections.singletonMap(Operation.TRAINING, i), tl.operationEndCount);
-            assertEquals(7*i, tl.preOpExecutionCount);    //mmul, add, softmax, loss grad, softmax backward, add backward, mmul backward
-            assertEquals(7*i, tl.opExecutionCount);
-            assertEquals(11*i, tl.activationAvailableCount); //mmul, add, softmax, loss grad (weight, in, label), softmax bp, add backward (z, b), mmul (in, w)
-            assertEquals(2*i, tl.preUpdateCount);   //w, b
+            assertEquals(7 * i, tl.preOpExecutionCount);    //mmul, add, softmax, loss grad, softmax backward, add backward, mmul backward
+            assertEquals(7 * i, tl.opExecutionCount);
+            assertEquals(11 * i, tl.activationAvailableCount); //mmul, add, softmax, loss grad (weight, in, label), softmax bp, add backward (z, b), mmul (in, w)
+            assertEquals(2 * i, tl.preUpdateCount);   //w, b
         }
 
 
@@ -258,7 +258,7 @@ public class ListenerTest extends BaseNd4jTestWithBackends {
         tl = new TestListener(Operation.EVALUATION);
         sd.setListeners(tl);
 
-        for( int i=1; i<=3; i++ ) {
+        for( int i=1; i <= 3; i++ ) {
             sd.evaluate(dsi, "softmax", new Evaluation());
             assertEquals(0, tl.epochStartCount);
             assertEquals(0, tl.epochEndCount);

@@ -95,7 +95,7 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
             mmgr.release(toRelease);
             //oldest N only should be closed by this point...
             for( int j = 0; j < 10; j++) {
-                if(j <= i){
+                if(j <= i) {
                     //Should have been closed
                     assertTrue(arrays[j].wasClosed());
                 } else {

@@ -24,6 +24,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.LongPointer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationKind;
@@ -31,6 +32,7 @@ import org.nd4j.linalg.api.memory.enums.LocationPolicy;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.api.memory.Deallocatable;
@@ -40,6 +42,8 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.List;
 import java.util.Queue;
+
+import static org.nd4j.linalg.workspace.WorkspaceUtils.getAligned;
 
 @Slf4j
 public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
@@ -98,6 +102,12 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
             workspace.setHostPointer(new PagedPointer(mmap.get(0)));
         }
+    }
+
+    @Override
+    public long requiredMemoryPerArray(INDArray arr) {
+        long ret =  getAligned(arr.length() * arr.dataType().width()) + getAligned(arr.shapeInfoJava().length * DataType.INT64.width());
+        return ret;
     }
 
     @Override

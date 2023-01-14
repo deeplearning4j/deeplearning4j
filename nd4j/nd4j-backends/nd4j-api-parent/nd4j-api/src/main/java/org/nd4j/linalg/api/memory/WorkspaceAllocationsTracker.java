@@ -19,6 +19,8 @@
  */
 package org.nd4j.linalg.api.memory;
 
+import org.nd4j.common.primitives.Counter;
+import org.nd4j.common.primitives.CounterMap;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 
@@ -30,11 +32,11 @@ import java.util.concurrent.atomic.AtomicLong;
 public class WorkspaceAllocationsTracker {
 
     private Map<MemoryKind,AtomicLong> bytesTracked = new HashMap<>();
-    private Map<DataType,AtomicLong> dataTypeCounts = new HashMap<>();
+    private Map<DataType, CounterMap<Long,Long>> dataTypeCounts = new HashMap<>();
 
     public WorkspaceAllocationsTracker() {
         Arrays.stream(DataType.values()).forEach(dataType -> {
-            dataTypeCounts.put(dataType,new AtomicLong(0));
+            dataTypeCounts.put(dataType,new CounterMap<>());
         });
 
         Arrays.stream(MemoryKind.values()).forEach(memoryKind -> {
@@ -49,8 +51,8 @@ public class WorkspaceAllocationsTracker {
         return bytesTracked.get(memoryKind).get();
     }
 
-    public long currentDataTypeCount(DataType toCount) {
-        return dataTypeCounts.get(toCount).get();
+    public CounterMap<Long,Long> currentDataTypeCount(DataType toCount) {
+        return dataTypeCounts.get(toCount);
     }
 
 
@@ -60,20 +62,11 @@ public class WorkspaceAllocationsTracker {
      * @param memoryKind  the kind of memory to add allocation for
      * @param bytes the bytes to add to the workspace
      */
-    public void allocate(DataType dataType, MemoryKind memoryKind, long bytes) {
-        dataTypeCounts.get(dataType).incrementAndGet();
+    public void allocate(DataType dataType, MemoryKind memoryKind,long size, long bytes) {
+        dataTypeCounts.get(dataType).incrementCount(size,bytes,1.0);
         bytesTracked.get(memoryKind).addAndGet(bytes);
     }
 
-    /**
-     * DeAllocate bytes in the workspace tracking
-     * @param dataType the data type to add
-     * @param memoryKind the kind of memory to de allocate
-     * @param bytes the bytes to add to the workspace
-     */
-    public void deAllocate(DataType dataType,MemoryKind memoryKind,long bytes) {
-        dataTypeCounts.get(dataType).incrementAndGet();
-        bytesTracked.get(memoryKind).addAndGet(-bytes);
-    }
+
 
 }

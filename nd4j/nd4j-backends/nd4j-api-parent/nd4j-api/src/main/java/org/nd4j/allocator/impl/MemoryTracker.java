@@ -52,6 +52,27 @@ public class MemoryTracker {
         }
     }
 
+
+    /**
+     * toString() overview of every device's current status including available memory,
+     * number of workspaces per device, free memory per device, total memory available for a device
+     * @return
+     */
+    public String memoryPerDevice() {
+        StringBuilder stringBuilder = new StringBuilder();
+        for(int i = 0; i < Nd4j.getAffinityManager().getNumberOfDevices(); i++) {
+            stringBuilder.append("------Device: " + i + "---------------\n");
+            stringBuilder.append("Allocated on device: " + allocatedPerDevice.get(i).get() + "\n");
+            stringBuilder.append("Total workspace memory allocated for device: " + workspacesPerDevice.get(i).get() + "\n");
+            stringBuilder.append("Cached memory for device: " + cachedPerDevice.get(i).get() + "\n");
+            stringBuilder.append("Total device memory available: " + totalPerDevice.get(i).get() + "\n");
+            stringBuilder.append("Free total memory for device: " + freePerDevice.get(i).get() + "\n");
+            stringBuilder.append("-----------------------------------------\n");
+        }
+
+        return stringBuilder.toString();
+    }
+
     public static MemoryTracker getInstance() {
         return INSTANCE;
     }
@@ -136,8 +157,6 @@ public class MemoryTracker {
     public long getPreciseFreeMemory(int deviceId) {
         // we refresh free memory on device
         val extFree = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(deviceId);
-        //freePerDevice.get(deviceId).set(extFree);
-
         return extFree;
     }
 
@@ -240,8 +259,6 @@ public class MemoryTracker {
 
 
     private long matchBlock(long numBytes) {
-        //int align = 65536 * 2;
-        //return numBytes + (align - (numBytes % align));
         return numBytes;
     }
 }

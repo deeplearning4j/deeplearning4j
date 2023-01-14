@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
@@ -40,6 +41,8 @@ import org.nd4j.linalg.api.memory.Deallocator;
 import java.util.List;
 import java.util.Queue;
 import org.nd4j.allocator.impl.MemoryTracker;
+
+import static org.nd4j.linalg.workspace.WorkspaceUtils.getAligned;
 
 
 /**
@@ -112,6 +115,12 @@ public class CudaWorkspace extends Nd4jWorkspace {
         return this.alloc(requiredMemory, MemoryKind.DEVICE, type, initialize);
     }
 
+    @Override
+    public long requiredMemoryPerArray(INDArray arr) {
+        long ret = getAligned(arr.length() * arr.dataType().width());
+        return (int) ret;
+    }
+
 
     @Override
     public synchronized void destroyWorkspace(boolean extended) {
@@ -144,8 +153,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
         long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
 
         // alignment
-        if (requiredMemory % alignmentBase != 0)
-            requiredMemory += alignmentBase - (requiredMemory % alignmentBase);
+        requiredMemory = alignMemory(requiredMemory);
+        AllocationsTracker.getInstance().getTracker(id).allocate(type,kind,numElements,requiredMemory);
 
         if (!isUsed.get()) {
             if (disabledCounter.incrementAndGet() % 10 == 0)
@@ -176,7 +185,6 @@ public class CudaWorkspace extends Nd4jWorkspace {
             if (deviceOffset.get() + requiredMemory <= currentSize.get() && !trimmer && Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING) {
                 cycleAllocations.addAndGet(requiredMemory);
                 long prevOffset = deviceOffset.getAndAdd(requiredMemory);
-
                 if (workspaceConfiguration.getPolicyMirroring() == MirroringPolicy.HOST_ONLY)
                     return null;
 
