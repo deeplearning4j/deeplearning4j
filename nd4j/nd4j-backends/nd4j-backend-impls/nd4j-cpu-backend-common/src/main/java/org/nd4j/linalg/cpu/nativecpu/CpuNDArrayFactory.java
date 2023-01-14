@@ -89,7 +89,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
             log.warn("*********************************** CPU Feature Check Failed ***********************************");
             log.error("Error initializing ND4J: Attempting to use " + binLevel + " ND4J binary on a CPU with only " + optLevel + " support");
-            log.error( binLevel + " binaries cannot be run on a CPU without these instructions. See deeplearning4j.org/cpu for more details");
+            log.error( binLevel + " binaries cannot be run on a CPU without these instructions. See https://deeplearning4j.konduit.ai/multi-project/explanation/configuration/backends/performance-issues#step-11-check-cpu-support-for-hardware-extensions-avx-etc for more details");
             log.error("ND4J will now exit.");
             log.warn("************************************************************************************************");
             System.exit(1);
