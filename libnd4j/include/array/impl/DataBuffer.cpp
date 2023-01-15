@@ -283,7 +283,6 @@ void DataBuffer::deleteBuffers() {
 DataBuffer::~DataBuffer() { deleteBuffers(); }
 
 void DataBuffer::setPrimaryBuffer(void* buffer, size_t length) {
-  sd_printf("Setting primary\n",0);
   if (_primaryBuffer != nullptr && _isOwnerPrimary) {
     deletePrimary();
   }
@@ -291,7 +290,6 @@ void DataBuffer::setPrimaryBuffer(void* buffer, size_t length) {
   _primaryBuffer = buffer;
   _isOwnerPrimary = false;
   _lenInBytes = length * DataTypeUtils::sizeOf(_dataType);
-  sd_printf("End setting primary\n",0);
 }
 
 void DataBuffer::setSpecialBuffer(void* buffer, size_t length) {
