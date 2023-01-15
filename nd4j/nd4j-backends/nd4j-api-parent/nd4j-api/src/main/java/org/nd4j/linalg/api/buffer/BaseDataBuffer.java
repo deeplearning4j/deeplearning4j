@@ -31,6 +31,7 @@ import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.primitives.AtomicDouble;
 import org.nd4j.common.primitives.Triple;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import java.io.*;
 import java.nio.*;
@@ -60,6 +61,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             TO_STRING_MAX = 1000;
         }
     }
+    protected transient OpaqueDataBuffer ptrDataBuffer;
 
     protected DataType type;
     protected long length;

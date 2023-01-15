@@ -1162,7 +1162,6 @@ int memcpyAsync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, 
 
   cudaMemcpyKind kind;
 
-  // sd::DebugHelper::checkErrorCode(pStream, "Preliminary sync failed");
 
   switch (flags) {
     case 0: {

@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.performance.primitives.AveragingTransactionsHolder;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.MemcpyDirection;
+import org.nd4j.linalg.profiler.OpProfiler;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -57,7 +58,7 @@ public class PerformanceTracker {
      * PLEASE NOTE: Bandwidth is stored in per millisecond value.
      *
      * @param deviceId device used for this transaction
-     * @param timeSpent time spent on this transaction in nanoseconds
+     * @param timeSpentNanos time spent on this transaction in nanoseconds
      * @param numberOfBytes number of bytes
      */
     public long addMemoryTransaction(int deviceId, long timeSpentNanos, long numberOfBytes) {
@@ -71,7 +72,7 @@ public class PerformanceTracker {
      * PLEASE NOTE: Bandwidth is stored in per millisecond value.
      *
      * @param deviceId device used for this transaction
-     * @param timeSpent time spent on this transaction in nanoseconds
+     * @param timeSpentNanos time spent on this transaction in nanoseconds
      * @param numberOfBytes number of bytes
      * @param direction direction for the given memory transaction
      */
@@ -93,7 +94,7 @@ public class PerformanceTracker {
 
 
     public long helperStartTransaction() {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.BANDWIDTH)
+        if (OpProfiler.getInstance().getConfig().isCheckBandwidth())
             return System.nanoTime();
         else
             return 0L;
@@ -102,7 +103,8 @@ public class PerformanceTracker {
 
     public void helperRegisterTransaction(int deviceId, long timeSpentNanos, long numberOfBytes, @NonNull MemcpyDirection direction) {
         // only do something if profiling is enabled
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.BANDWIDTH) {
+
+        if (OpProfiler.getInstance().getConfig().isCheckBandwidth()) {
             addMemoryTransaction(deviceId, System.nanoTime() - timeSpentNanos, numberOfBytes, direction);
         }
     }
@@ -112,7 +114,7 @@ public class PerformanceTracker {
         val keys = bandwidth.keySet();
         for (val d: keys) {
 
-            result.put(d, new HashMap<MemcpyDirection, Long>());
+            result.put(d, new HashMap<>());
 
             // get average for each MemcpyDirection and store it
             for (val m: MemcpyDirection.values())

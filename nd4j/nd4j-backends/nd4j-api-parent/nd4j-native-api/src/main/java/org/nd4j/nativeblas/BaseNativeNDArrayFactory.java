@@ -605,7 +605,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                     doubleData[i] = Double.longBitsToDouble(l);
                 }
                 map.put(fName, Nd4j.create(doubleData, shape, order));
-            } else if(dt == DataType.FLOAT){
+            } else if(dt == DataType.FLOAT) {
                 float[] floatData = new float[(int)size];
                 for (int i = 0; i < size; i++) {
                     int i2 = bb.getInt(4 * i);
@@ -614,10 +614,10 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                     floatData[i] = f;
                 }
                 map.put(fName, Nd4j.create(floatData, shape, order));
-            } else if(dt == DataType.HALF || dt == DataType.FLOAT16){
+            } else if(dt == DataType.HALF || dt == DataType.FLOAT16) {
                 INDArray arr = Nd4j.create(DataType.FLOAT16, size);
                 ByteBuffer bb2 = arr.data().pointer().asByteBuffer();
-                for( int i=0; i<size; i++ ) {
+                for( int i = 0; i < size; i++ ) {
                     short s = bb.getShort(2*i);
                     bb2.put((byte)((s >> 8) & 0xff));
                     bb2.put((byte)(s & 0xff));
@@ -626,7 +626,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                 map.put(fName, arr.reshape(order, shape));
             } else if(dt == DataType.LONG || dt == DataType.INT64){
                 long[] d = new long[(int)size];
-                for (int i=0; i<size; i++){
+                for (int i = 0; i < size; i++){
                     long l = bb.getLong(8 * i);
                     l = Long.reverseBytes(l);
                     d[i] = l;
@@ -640,7 +640,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                     d[i] = l;
                 }
                 map.put(fName, Nd4j.createFromArray(d).reshape(order, shape));
-            } else if(dt == DataType.SHORT || dt == DataType.INT8) {
+            } else if(dt == DataType.SHORT) {
                 short[] d = new short[(int)size];
                 for (int i = 0; i < size; i++) {
                     short l = bb.getShort(2 * i);
@@ -648,7 +648,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                     d[i] = l;
                 }
                 map.put(fName, Nd4j.createFromArray(d).reshape(order, shape));
-            } else if(dt == DataType.BYTE) {
+            } else if(dt == DataType.BYTE || dt == DataType.INT8) {
                 map.put(fName, Nd4j.createFromArray(data).reshape(order, shape));
             } else if(dt == DataType.UBYTE) {
                 short[] d = new short[(int)size];

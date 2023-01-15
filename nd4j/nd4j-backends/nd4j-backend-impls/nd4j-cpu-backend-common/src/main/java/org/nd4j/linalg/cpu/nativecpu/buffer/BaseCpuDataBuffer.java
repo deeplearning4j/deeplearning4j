@@ -40,7 +40,6 @@ import static org.nd4j.linalg.api.buffer.DataType.INT8;
 
 public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallocatable {
 
-    protected transient OpaqueDataBuffer ptrDataBuffer;
     protected transient Pointer addressPointer;
 
     private transient final long instanceId = Nd4j.getDeallocatorService().nextValue();
@@ -653,7 +652,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         Nd4j.getDeallocatorService().pickObject(this);
 
         setIndexer(FloatIndexer.create((FloatPointer) pointer));
-        //wrappedBuffer = pointer.asByteBuffer();
 
         length = data.length;
         underlyingLength = data.length;
@@ -668,7 +666,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         initTypeAndSize();
 
-        //log.info("Allocating FloatPointer from array of {} elements", data.length);
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asFloatPointer().put(data);
 
@@ -677,7 +674,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         workspaceGenerationId = workspace.getGenerationId();
         setIndexer(FloatIndexer.create((FloatPointer) pointer));
-        //wrappedBuffer = pointer.asByteBuffer();
     }
 
     public BaseCpuDataBuffer(double[] data, boolean copy, MemoryWorkspace workspace) {
@@ -689,7 +685,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         initTypeAndSize();
 
-        //log.info("Allocating FloatPointer from array of {} elements", data.length);
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asDoublePointer().put(data);
 
@@ -698,7 +693,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         workspaceGenerationId = workspace.getGenerationId();
         indexer = DoubleIndexer.create((DoublePointer) pointer);
-        //wrappedBuffer = pointer.asByteBuffer();
     }
 
 
@@ -711,7 +705,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         initTypeAndSize();
 
-        //log.info("Allocating FloatPointer from array of {} elements", data.length);
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asIntPointer().put(data);
 
@@ -720,7 +713,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         workspaceGenerationId = workspace.getGenerationId();
         indexer = IntIndexer.create((IntPointer) pointer);
-        //wrappedBuffer = pointer.asByteBuffer();
     }
 
     public BaseCpuDataBuffer(long[] data, boolean copy, MemoryWorkspace workspace) {
@@ -732,7 +724,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         initTypeAndSize();
 
-        //log.info("Allocating FloatPointer from array of {} elements", data.length);
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asLongPointer().put(data);
 
@@ -741,7 +732,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         workspaceGenerationId = workspace.getGenerationId();
         indexer = LongIndexer.create((LongPointer) pointer);
-        //wrappedBuffer = pointer.asByteBuffer();
     }
 
 

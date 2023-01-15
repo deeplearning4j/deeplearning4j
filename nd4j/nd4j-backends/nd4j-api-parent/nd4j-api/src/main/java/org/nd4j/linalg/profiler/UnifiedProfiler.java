@@ -21,11 +21,14 @@ package org.nd4j.linalg.profiler;
 
 import org.nd4j.allocator.impl.MemoryTracker;
 import org.nd4j.linalg.api.memory.AllocationsTracker;
+import org.nd4j.linalg.api.memory.MemcpyDirection;
 import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
+import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * A unified profiler covering both memory and op execution timing.
@@ -57,6 +60,7 @@ public class UnifiedProfiler {
                 .nativeStatistics(true)
                 .checkForINF(true)
                 .checkForNAN(true)
+                .checkBandwidth(true)
                 .checkElapsedTime(true)
                 .checkWorkspaces(true)
                 .checkLocality(true)
@@ -70,6 +74,7 @@ public class UnifiedProfiler {
         ProfilerConfig profilerConfig = ProfilerConfig.builder()
                 .nativeStatistics(false)
                 .checkForINF(false)
+                .checkBandwidth(false)
                 .checkForNAN(false)
                 .checkElapsedTime(false)
                 .checkWorkspaces(false)
@@ -80,6 +85,23 @@ public class UnifiedProfiler {
 
     }
 
+
+    /**
+     * Returns bandwidth info for each device
+     * @return
+     */
+    public String bandwidthInfo() {
+        StringBuilder stringBuilder = new StringBuilder();
+        Map<Integer, Map<MemcpyDirection, Long>> currentBandwidth = PerformanceTracker.getInstance().getCurrentBandwidth();
+        currentBandwidth.entrySet().forEach(device -> {
+           stringBuilder.append("Device " + device.getKey() + " memcpy bandwidth info:-------\n");
+            device.getValue().entrySet().forEach(memcpyDirectionLongEntry -> {
+                stringBuilder.append("Direction " + memcpyDirectionLongEntry.getKey() + " bandwidth transferred: " + memcpyDirectionLongEntry.getValue() + "\n");
+
+            });
+        });
+        return stringBuilder.toString();
+    }
 
     /**
      * Prints full current state including workspace info,
@@ -93,6 +115,7 @@ public class UnifiedProfiler {
         stringBuilder.append(executionStats());
         stringBuilder.append(AllocationsTracker.getInstance().memoryInfo());
         stringBuilder.append(MemoryTracker.getInstance().memoryPerDevice());
+        stringBuilder.append(bandwidthInfo());
         return stringBuilder.toString();
     }
 

@@ -43,7 +43,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public double dot(long n, double alpha, INDArray X, INDArray Y) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, X, Y);
 
         if (X.data().dataType() == DataType.DOUBLE) {
@@ -89,7 +89,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public double nrm2(INDArray arr) {
 
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, arr);
 
         if (arr.data().dataType() == DataType.DOUBLE) {
@@ -111,7 +111,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public double asum(INDArray arr) {
 
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, arr);
 
         if (arr.data().dataType() == DataType.DOUBLE) {
@@ -146,7 +146,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
 
     @Override
     public int iamax(long n, INDArray arr, int stride) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, arr);
 
         if (arr.data().dataType() == DataType.DOUBLE) {
@@ -184,7 +184,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public int iamax(INDArray arr) {
 
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, arr);
 
         if (arr.data().dataType() == DataType.DOUBLE) {
@@ -215,7 +215,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public void swap(INDArray x, INDArray y) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, x, y);
 
         if (x.data().dataType() == DataType.DOUBLE) {
@@ -236,7 +236,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public void copy(INDArray x, INDArray y) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, x, y);
 
         if (x.data().dataType() == DataType.DOUBLE) {
@@ -284,7 +284,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public void axpy(long n, double alpha, INDArray x, INDArray y) {
 
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, x, y);
 
         if (x.data().dataType() == DataType.DOUBLE) {
@@ -345,7 +345,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public void rot(long N, INDArray X, INDArray Y, double c, double s) {
 
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, X, Y);
 
         if (X.data().dataType() == DataType.DOUBLE) {
@@ -380,7 +380,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public void scal(long N, double alpha, INDArray X) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, X);
 
         if (X.data().dataType() == DataType.DOUBLE)
