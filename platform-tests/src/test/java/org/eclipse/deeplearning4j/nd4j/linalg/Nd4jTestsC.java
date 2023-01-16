@@ -2288,7 +2288,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEps2(Nd4jBackend backend) {
 
-        INDArray first = Nd4j.valueArrayOf(10, 1e-2).castTo(DataType.DOUBLE); //0.01
+        INDArray first = Nd4j.valueArrayOf(10, 1e-6).castTo(DataType.DOUBLE); //0.01
         INDArray second = Nd4j.zeros(10).castTo(DataType.DOUBLE); //0.0
 
         INDArray expAllZeros1 = Nd4j.getExecutioner().exec(new Eps(first, second, Nd4j.create(DataType.BOOL, new long[] {1, 10}, 'f')));

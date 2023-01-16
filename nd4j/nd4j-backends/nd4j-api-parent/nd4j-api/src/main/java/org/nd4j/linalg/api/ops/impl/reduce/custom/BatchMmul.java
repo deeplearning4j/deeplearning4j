@@ -55,6 +55,7 @@ public class BatchMmul extends DynamicCustomOp {
     protected int N;
     protected int K;
 
+    protected int lda,ldb,ldc;
     public BatchMmul(SameDiff sameDiff, SDVariable[] matricesA, SDVariable[] matricesB, boolean transposeA, boolean transposeB) {
         this(sameDiff, ArrayUtils.addAll(matricesA, matricesB), transposeA, transposeB);
     }
@@ -101,6 +102,9 @@ public class BatchMmul extends DynamicCustomOp {
         this.M = transposeA ? (int) firstShape[1]: (int) firstShape[0];
         this.N = transposeB ? (int) lastShape[0]: (int) lastShape[1];
         this.K = transposeB ? (int) lastShape[1]: (int) lastShape[0];
+        this.lda = (int) firstShape[0];
+        this.ldb = (int) lastShape[0];
+        this.ldc = (int) firstShape[0];
         addArgs();
     }
 
@@ -110,7 +114,7 @@ public class BatchMmul extends DynamicCustomOp {
         SDVariable[] matrices = args();
         Preconditions.checkState(matrices.length % 2 == 0, "The number of provided matrices needs" +
                 "to be divisible by two.");
-        this.batchSize = (matrices.length - 2)/ 2;
+        this.batchSize = (matrices.length - 2) / 2;
 
         SDVariable firstMatrix = matrices[2];
         long[] firstShape = firstMatrix.getShape();
@@ -121,17 +125,23 @@ public class BatchMmul extends DynamicCustomOp {
 
         if(firstShape != null) {
             this.M = transposeA > 0 ? (int) firstShape[1]: (int) firstShape[0];
+            this.lda = (int) firstShape[0];
         }
 
         if(lastShape != null) {
             this.N = transposeB > 0? (int) lastShape[0]: (int) lastShape[1];
             this.K = transposeB > 0 ? (int) lastShape[1]: (int) lastShape[0];
+            this.ldb = (int) lastShape[0];
+            this.ldc = this.M;
         }
 
 
+
         //only add arguments when fully initialized
-        if(M > 0 && N > 0 && K > 0 && firstShape != null && lastShape != null)
+        if(M > 0 && N > 0 && K > 0 && firstShape != null && lastShape != null) {
             addArgs();
+
+        }
     }
 
     @Override
@@ -143,7 +153,7 @@ public class BatchMmul extends DynamicCustomOp {
         if(iArguments.isEmpty())
             addIArgument(transposeA, transposeB,
                     M, N, K, // K and N are swapped in libnd4j
-                    M, N, M, // these three are LDA, LDB and LDC (leading dims / strides) from blas. set to matrix dims here
+                     lda,ldb,ldc, // these three are LDA, LDB and LDC (leading dims / strides) from blas. set to matrix dims here
                     batchSize);
     }
 

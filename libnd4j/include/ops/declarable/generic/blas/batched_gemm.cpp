@@ -40,6 +40,30 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
   int ldB = INT_ARG(6);
   int ldC = INT_ARG(7);
   int batchSize = INT_ARG(8);
+  if(transA == 0) {
+    int ldaComp = M > 1 ? M : 1;
+    if(ldA < ldaComp) throw std::runtime_error("LDA must be >= max(1,m) when transa == false");
+  } else {
+    int ldaComp = K > 1 ? K : 1;
+    if(ldA < ldaComp)
+      throw std::runtime_error("LDA must be >= max(1,k) when transa == true");
+  }
+
+  if(transB == 0) {
+    int ldBComp = K > 1 ? K : 1;
+    if(ldB < ldBComp) {
+      throw std::runtime_error("LDB must be >= max(1,k) when transb == false");
+    }
+  } else {
+    int ldbComp = N > 1 ? N : 1;
+    if(ldB < ldbComp)
+      throw std::runtime_error("LDB must be >= max(1,N) when transb == true");
+  }
+
+  int ldcComp = M > 1 ? M : 1;
+  if(ldC < ldcComp) {
+    throw std::runtime_error("LDC must be < max(1,M) when transc != false");
+  }
 
 
   if (transA == 0) transA = 111;
@@ -49,7 +73,9 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
   if (transA == 1) transA = 112;
 
   if (transB == 1) transB = 112;
-
+  if(M < 0) throw std::runtime_error("M < 0");
+  if(N < 0) throw std::runtime_error("N < 0");
+  if(K < 0) throw std::runtime_error("K < 0");
 
   REQUIRE_TRUE((transA == 111 || transA == 112) && (transB == 111 || transB == 112), 0,
                "BatchedGemm: valid values for transA and transB are: 0/1 or 111/112, for NoTrans/Trans respectively")

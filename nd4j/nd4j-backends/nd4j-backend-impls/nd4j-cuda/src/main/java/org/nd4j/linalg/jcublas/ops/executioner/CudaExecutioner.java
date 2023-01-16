@@ -71,6 +71,8 @@ import org.nd4j.nativeblas.*;
 
 import java.util.*;
 
+import static org.bytedeco.cuda.global.cudart.*;
+
 
 /**
  * JCuda executioner.
@@ -1876,7 +1878,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         } catch (ND4JOpProfilerException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Op [" + name + "] execution failed", e);
+            StringBuilder message = new StringBuilder();
+            message.append("Op [" + name + "] execution failed with error " + "Cuda last error message: " + cudaGetErrorName(org.bytedeco.cuda.global.cublas.cublasGetError()).getString());
+            throw new RuntimeException(message.toString(), e);
         }
     }
 

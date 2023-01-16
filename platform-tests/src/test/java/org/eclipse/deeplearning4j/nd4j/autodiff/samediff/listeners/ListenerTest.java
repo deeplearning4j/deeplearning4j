@@ -249,7 +249,7 @@ public class ListenerTest extends BaseNd4jTestWithBackends {
             assertEquals(Collections.singletonMap(Operation.TRAINING, i), tl.operationEndCount);
             assertEquals(8 * i, tl.preOpExecutionCount);    //mmul, add, softmax, loss grad, softmax backward, add backward, mmul backward
             assertEquals(8 * i, tl.opExecutionCount);
-            assertEquals(11 * i, tl.activationAvailableCount); //mmul, add, softmax, loss grad (weight, in, label), softmax bp, add backward (z, b), mmul (in, w)
+            assertEquals(12 * i, tl.activationAvailableCount); //mmul, add, softmax, loss grad (weight, in, label), softmax bp, add backward (z, b), mmul (in, w)
             assertEquals(2 * i, tl.preUpdateCount);   //w, b
         }
 
