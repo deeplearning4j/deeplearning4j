@@ -48,6 +48,12 @@ typedef sd::InteropDataBuffer OpaqueDataBuffer;
 extern "C" {
 
 /**
+ * Print the device buffer
+ * @param buffer
+ */
+SD_LIB_EXPORT void printDeviceBuffer(OpaqueDataBuffer *buffer);
+
+/**
  * This function returns last error code stored,
  * @return non-zero if something bad happened
  */

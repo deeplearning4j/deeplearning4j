@@ -37,7 +37,6 @@
 #include <ops/specials_cuda.h>
 #include <system/buffer.h>
 
-//#include <sys/time.h>
 #include <curand.h>
 #include <helpers/DebugHelper.h>
 
@@ -145,6 +144,72 @@ class ScalarShapeInformation {
 
   sd::LongType *getDimensionGpuPointer() { return scalarDimension->gData; }
 };
+
+template <typename T>
+SD_KERNEL  void _printBuffers(void* buffer, sd::LongType bufferLength) {
+  T * inputBuffer = reinterpret_cast<T *>(buffer);
+  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if(tid == 0) {
+    printf("Host buffer: ");
+  }
+  const auto step = gridDim.x * blockDim.x;
+  for (int t = tid; t < bufferLength; t += step) {
+    if(t == 0) {
+      printf("Host buffer: ");
+    }
+    printf(" %f ",t,inputBuffer[t]);
+    if(t == bufferLength - 1) {
+      printf("\n");
+    }
+  }
+
+
+
+}
+
+template <typename T>
+void _printHostBuffer(InteropDataBuffer *buffer) {
+  auto xType = buffer->dataBuffer()->getDataType();
+  sd::LongType len = buffer->dataBuffer()->getNumElements();
+  auto buff = buffer->dataBuffer()->template primaryAsT<T>();
+  sd_printf("Host buffer: ",0);
+  for(int i = 0; i < len; i++) {
+    sd_printf("%f ",buff[i]);
+  }
+
+  sd_printf("\n",0);
+}
+
+template <typename T>
+void _printDeviceBuffer(InteropDataBuffer *buffer) {
+  auto xType = buffer->dataBuffer()->getDataType();
+  sd::LongType len = buffer->dataBuffer()->getNumElements();
+  _printBuffers<T><<<256, 512, 1024>>>(buffer->special(),len);
+  cudaDeviceSynchronize();
+
+}
+
+void printDeviceBuffer(InteropDataBuffer *buffer) {
+  auto xType = buffer->dataBuffer()->getDataType();
+
+  if(buffer->special() != nullptr) {
+    sd_printf("Device pointer address: %d\n", reinterpret_cast<sd::LongType>(buffer->special()));
+  } else {
+    sd_printf("Device pointer address: none\n",0);
+  }
+
+  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(buffer),SD_COMMON_TYPES_ALL);
+
+  if(buffer->primary() != nullptr) {
+    sd_printf("Host pointer address: %d\n",  reinterpret_cast<sd::LongType>(buffer->primary()));
+  } else  {
+    sd_printf("Host pointer address: none\n",0);
+  }
+
+  BUILD_SINGLE_SELECTOR(xType, _printDeviceBuffer,(buffer),SD_COMMON_TYPES_ALL);
+
+}
+
 
 template <typename T>
 class ScalarInfo {
@@ -940,18 +1005,8 @@ void initializeDevicesAndFunctions() {
 
 void initializeFunctions(sd::Pointer *functions) {
   sd::BlasHelper::getInstance().initializeDeviceFunctions(functions);
-  /*
-  cublasSgemv = (CublasSgemv)functions[0];
-  cublasDgemv = (CublasDgemv)functions[1];
-  cublasHgemm = (CublasHgemm)functions[2];
-  cublasSgemm = (CublasSgemm)functions[3];
-  cublasDgemm = (CublasDgemm)functions[4];
-  cublasSgemmEx = (CublasSgemmEx)functions[5];
-  cublasHgemmBatched = (CublasHgemmBatched)functions[6];
-  cublasSgemmBatched = (CublasSgemmBatched)functions[7];
-  cublasDgemmBatched = (CublasDgemmBatched)functions[8];
-  */
 }
+
 
 /**
  * This method acquires memory chunk of requested size on host side
@@ -1160,42 +1215,50 @@ int memcpySync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, s
 int memcpyAsync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, sd::Pointer reserved) {
   auto pStream = reinterpret_cast<cudaStream_t *>(reserved);
 
+  printf("About to copy data of size %d\n",size);
   cudaMemcpyKind kind;
 
 
   switch (flags) {
     case 0: {
       kind = cudaMemcpyHostToHost;
+      printf("Copying data host to host\n",0);
     } break;
     case 1: {
       kind = cudaMemcpyHostToDevice;
+      printf("Copying data host to device\n",0);
     } break;
     case 2: {
       kind = cudaMemcpyDeviceToHost;
+      printf("Copying data device to host\n",0);
     } break;
     case 3: {
       kind = cudaMemcpyDeviceToDevice;
+      printf("Copying data device to device\n",0);
     } break;
     default: {
       sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("UNDEFNED MEMCPY");
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("UNDEFINED MEMCPY");
       return 0;
     }
   }
 
   auto dZ = cudaMemcpyAsync(reinterpret_cast<void *>(dst), const_cast<const void *>(reinterpret_cast<void *>(src)),
                             static_cast<size_t>(size), kind, *pStream);
-  // auto dZ = cudaMemcpy(reinterpret_cast<void *>(dst), const_cast<const void *>(reinterpret_cast<void *>(src)),
-  // static_cast<size_t>(size), kind);
+  printf("After copy data of size %d\n",size);
+
   if (dZ != 0) {
     printf("Failed on [%p] -> [%p], size: [%i], direction: [%i], dZ: [%i]\n", src, dst, size, flags,
            static_cast<int>(dZ));
+
     fflush(stdout);
     fflush(stderr);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemcpyAsync failed");
     return 0;
   }
+
+  printf("Returning 1 from copying data\n",0);
 
   return 1;
 }
@@ -1378,7 +1441,7 @@ void pullRows(sd::Pointer *extraPointers, OpaqueDataBuffer *dbX, sd::LongType co
     auto xType = sd::ArrayOptions::dataType(xShapeInfo);
     BUILD_SINGLE_SELECTOR(xType, pullRowsKernelGeneric,
                           (launchDims, stream, dbX->special(), dbZ->special(), n, indexes, tadShapeInfo, tadOffsets,
-                           zTadShapeInfo, zTadOffsets),
+                              zTadShapeInfo, zTadOffsets),
                           SD_COMMON_TYPES);
 
     DEBUG_KERNEL(stream, -1);
@@ -1840,8 +1903,7 @@ sd::Pointer initRandom(sd::Pointer *extraPointers, long seed, long bufferSize, s
   unsigned long long *ptrHost = reinterpret_cast<unsigned long long *>(extraPointers[0]);
   cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
-  // we don't synchronize at random initialization, it's safe to go unsync here
-  // cudaStreamSynchronize(*stream);
+  // we don't synchronize at random initialization, it's safe to go async here
 
   auto ptrDev = reinterpret_cast<unsigned long long *>(ptrToBuffer);
   auto buffer = new sd::random::RandomBuffer(seed, bufferSize, reinterpret_cast<uint64_t *>(ptrHost),
@@ -2015,7 +2077,7 @@ void prescanArrayRecursive(sd::Pointer *extras, int *dZ, int *dX, int numElement
 
     if (np2LastBlock) {
       sd::uniformAdd<<<1, numThreadsLastBlock, 1024, *stream>>>(dZ, g_scanBlockSums[level], numEltsLastBlock,
-                                                                numBlocks - 1, numElements - numEltsLastBlock);
+          numBlocks - 1, numElements - numEltsLastBlock);
     }
   } else if (isPowerOfTwo(numElements)) {
     sd::prescanLauncher<false, false>(grid, threads, sharedMemSize, stream, dZ, dX, 0, numThreads * 2, 0, 0);
@@ -2260,7 +2322,7 @@ void sortTadByKey(sd::Pointer *extraPointers, void *x, sd::LongType const *xShap
     auto yType = sd::ArrayOptions::dataType(yShapeInfo);
     BUILD_DOUBLE_SELECTOR(xType, yType, oesTadGenericKey,
                           (launchDims, stream, dX, dXShapeInfo, dy, dyShapeInfo, nullptr, dimensionLength,
-                           tadPack.platformShapeInfo(), tadPack.platformOffsets(), descending),
+                              tadPack.platformShapeInfo(), tadPack.platformOffsets(), descending),
                           SD_COMMON_TYPES, SD_COMMON_TYPES);
 
     sd::DebugHelper::checkErrorCode(stream, "sortTadKey(...) failed");
@@ -2284,7 +2346,7 @@ void sortTadByValue(sd::Pointer *extraPointers, void *x, sd::LongType const *xSh
 
     BUILD_DOUBLE_SELECTOR(xType, yType, oesTadGenericKey,
                           (launchDims, stream, dy, dyShapeInfo, dX, dXShapeInfo, nullptr, dimensionLength,
-                           tadPack.platformShapeInfo(), tadPack.platformOffsets(), descending),
+                              tadPack.platformShapeInfo(), tadPack.platformOffsets(), descending),
                           SD_COMMON_TYPES, SD_COMMON_TYPES);
 
     sd::DebugHelper::checkErrorCode(stream, "sortTadValue(...) failed");
@@ -2443,77 +2505,77 @@ sd::LongType getShapeListSize(sd::ShapeList *list) { return list->size(); }
 sd::LongType const *getShape(sd::ShapeList *list, sd::LongType i) { return list->at(i); }
 
 static SD_INLINE sd::Status realExec(sd::ops::DeclarableOp *op, sd::Pointer *extraPointers, sd::LongType hash,
-                                     sd::Pointer *inputBuffers, sd::Pointer *inputShapes, int numInputs,
-                                     sd::Pointer *outputBuffers, sd::Pointer *outputShapes, int numOutputs,
-                                     double *tArgs, int numTArgs, sd::LongType *iArgs, int numIArgs, bool *bArgs,
-                                     int numBArgs, bool isInplace) {
-  if (op == nullptr) sd_printf("Can't find requested operation: [%lld]\n", hash);
+sd::Pointer *inputBuffers, sd::Pointer *inputShapes, int numInputs,
+    sd::Pointer *outputBuffers, sd::Pointer *outputShapes, int numOutputs,
+double *tArgs, int numTArgs, sd::LongType *iArgs, int numIArgs, bool *bArgs,
+int numBArgs, bool isInplace) {
+if (op == nullptr) sd_printf("Can't find requested operation: [%lld]\n", hash);
 
-  // we're using the same fake nodeId everywhere here
+// we're using the same fake nodeId everywhere here
 
-  std::vector<sd::NDArray *> inputs(numInputs);
-  std::vector<sd::NDArray *> outputs(numOutputs);
-  std::vector<double> ttArgs(numTArgs);
-  std::vector<bool> bbArgs(numBArgs);
-  std::vector<sd::LongType> iiArgs(numIArgs);
+std::vector<sd::NDArray *> inputs(numInputs);
+std::vector<sd::NDArray *> outputs(numOutputs);
+std::vector<double> ttArgs(numTArgs);
+std::vector<bool> bbArgs(numBArgs);
+std::vector<sd::LongType> iiArgs(numIArgs);
 
-  // filling block now with inputs
-  for (int e = 0; e < numInputs; e++) {
-    auto shape = reinterpret_cast<sd::LongType *>(inputShapes[e]);
-    void *buffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
-    void *bufferD = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e + numInputs];
+// filling block now with inputs
+for (int e = 0; e < numInputs; e++) {
+auto shape = reinterpret_cast<sd::LongType *>(inputShapes[e]);
+void *buffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
+void *bufferD = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e + numInputs];
 
-    inputs[e] = new sd::NDArray(buffer, bufferD, shape);
-  }
+inputs[e] = new sd::NDArray(buffer, bufferD, shape);
+}
 
-  // if not inplace - transferring output arrays
+// if not inplace - transferring output arrays
 
-  if (!isInplace)
-    for (int e = 0; e < numOutputs; e++) {
-      // we want to keep original output shape intact
-      auto shape = shape::copyShape(reinterpret_cast<sd::LongType *>(outputShapes[e]));
-      void *buffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e];
-      void *bufferD = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e + numOutputs];
+if (!isInplace)
+for (int e = 0; e < numOutputs; e++) {
+// we want to keep original output shape intact
+auto shape = shape::copyShape(reinterpret_cast<sd::LongType *>(outputShapes[e]));
+void *buffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e];
+void *bufferD = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e + numOutputs];
 
-      // FIXME: revisit this.
-      bool canNullify = true;
-      for (int i = 0; i < numInputs; i++) {
-        void *ibuffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[i];
-        if (ibuffer == buffer) {
-          canNullify = false;
-          break;
-        }
-      }
+// FIXME: revisit this.
+bool canNullify = true;
+for (int i = 0; i < numInputs; i++) {
+void *ibuffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[i];
+if (ibuffer == buffer) {
+canNullify = false;
+break;
+}
+}
 
-      if (canNullify && buffer != nullptr)
-        memset((uint8_t *)buffer, '\0',
-               shape::length(shape) * DataTypeUtils::sizeOfElement(ArrayOptions::dataType(shape)));
+if (canNullify && buffer != nullptr)
+memset((uint8_t *)buffer, '\0',
+shape::length(shape) * DataTypeUtils::sizeOfElement(ArrayOptions::dataType(shape)));
 
-      auto array = new sd::NDArray(buffer, bufferD, shape);
-      outputs[e] = array;
-    }
+auto array = new sd::NDArray(buffer, bufferD, shape);
+outputs[e] = array;
+}
 
-  for (int e = 0; e < numIArgs; e++) iiArgs[e] = iArgs[e];
+for (int e = 0; e < numIArgs; e++) iiArgs[e] = iArgs[e];
 
-  for (int e = 0; e < numTArgs; e++) ttArgs[e] = tArgs[e];
+for (int e = 0; e < numTArgs; e++) ttArgs[e] = tArgs[e];
 
-  for (int e = 0; e < numBArgs; e++) bbArgs[e] = bArgs[e];
+for (int e = 0; e < numBArgs; e++) bbArgs[e] = bArgs[e];
 
-  // hypothetically at this point we have everything filled
-  auto dZ = op->execute(inputs, outputs, ttArgs, iiArgs, bbArgs, std::vector<sd::DataType>(), isInplace);
-  // auto dZ = op->execute(inputs, ttArgs, iiArgs, isInplace);
+// hypothetically at this point we have everything filled
+auto dZ = op->execute(inputs, outputs, ttArgs, iiArgs, bbArgs, std::vector<sd::DataType>(), isInplace);
+// auto dZ = op->execute(inputs, ttArgs, iiArgs, isInplace);
 
-  if (!isInplace)
-    for (int e = 0; e < numOutputs; e++) {
-      if (outputs[e]->ordering() != shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])))
-        outputs[e]->streamline(shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])));
-    }
+if (!isInplace)
+for (int e = 0; e < numOutputs; e++) {
+if (outputs[e]->ordering() != shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])))
+outputs[e]->streamline(shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])));
+}
 
-  for (auto v : inputs) delete v;
+for (auto v : inputs) delete v;
 
-  for (auto v : outputs) delete v;
+for (auto v : outputs) delete v;
 
-  return Status::OK;
+return Status::OK;
 }
 
 Status execCustomOp(sd::Pointer *extraPointers, sd::LongType hash, sd::Pointer *inputBuffers, sd::Pointer *inputShapes,
@@ -3438,8 +3500,8 @@ OpaqueDataBuffer *dbCreateView(OpaqueDataBuffer *dataBuffer, sd::LongType length
 }
 
 int dbUseCount(OpaqueDataBuffer* dataBuffer){
- if(dataBuffer) return dataBuffer->useCount();
- return 0;
+  if(dataBuffer) return dataBuffer->useCount();
+  return 0;
 }
 
 void dbSyncToSpecial(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->syncToSpecial(); }
@@ -3528,7 +3590,7 @@ void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, void** buffe
 
 }
 void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer * shapeInfo,
-                                 sd::Pointer * specialShapeInfo) {
+                                  sd::Pointer * specialShapeInfo) {
   auto inputShapeBuffers = (void **) shapeInfo;
   for(int i = 0; i < numArrays; i++) {
     setGraphContextInputBuffer(ptr,i,buffer != nullptr  && buffer[i] != nullptr ? buffer[i] : nullptr,inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);

@@ -28,7 +28,7 @@
 #include <memory/MemoryCounter.h>
 
 namespace sd {
-///// IMLEMENTATION OF COMMON METHODS /////
+///// IMPLEMENTATION OF COMMON METHODS /////
 
 ////////////////////////////////////////////////////////////////////////
 // default constructor
@@ -200,6 +200,7 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
   return *this;
 }
 
+
 ////////////////////////////////////////////////////////////////////////
 void* DataBuffer::primary() { return _primaryBuffer; }
 
@@ -211,6 +212,7 @@ DataType DataBuffer::getDataType() { return _dataType; }
 
 ////////////////////////////////////////////////////////////////////////
 size_t DataBuffer::getLenInBytes() const { return _lenInBytes; }
+size_t DataBuffer::getNumElements()   { return _lenInBytes / DataTypeUtils::sizeOfElement(getDataType()); }
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocatePrimary() {
@@ -225,7 +227,7 @@ void DataBuffer::allocatePrimary() {
                                                 sd::memory::MemoryCounter::getInstance().deviceLimit(deviceId),
                                                 getLenInBytes());
       } else {
-        // in heterogenous mode we valdate against device group
+        // in heterogenous mode we validate against device group
         if (!sd::memory::MemoryCounter::getInstance().validateGroup(sd::memory::MemoryType::HOST, getLenInBytes()))
           throw sd::allocation_exception::build(
               "Requested amount exceeds HOST group limits",

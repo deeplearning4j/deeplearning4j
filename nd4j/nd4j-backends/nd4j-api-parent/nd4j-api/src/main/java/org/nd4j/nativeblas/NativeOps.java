@@ -26,7 +26,20 @@ import org.bytedeco.javacpp.annotation.Cast;
 import java.nio.LongBuffer;
 
 
+/**
+ * A common interface for misc operations
+ * needed from c++
+ *
+ */
 public interface NativeOps {
+
+
+    /**
+     * Prints device buffers.
+     * @param buffer
+     */
+    void printDeviceBuffer(org.nd4j.nativeblas.OpaqueDataBuffer buffer);
+
     /**
      * This method allows you to specify minimal number of elements per thread/block during op call
      * PLEASE NOTE: Changing this value might and will affect performance.

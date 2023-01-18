@@ -118,18 +118,22 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().enableDebugMode(true);
         Nd4j.getExecutioner().enableVerboseMode(true);
 
-        INDArray classes = Nd4j.createFromArray(0, 0, 0, 1, 1, 2);
-        INDArray clusters = Nd4j.createFromArray(0, 0, 0, 1, 1, 1);
+        INDArray classes = Nd4j.createFromArray(new long[]{0, 0, 0, 1, 1, 2});
+        INDArray clusters = Nd4j.createFromArray(new long[]{0, 0, 0, 1, 1, 1});
+        classes.data().opaqueBuffer().syncToSpecial();
+        clusters.data().opaqueBuffer().syncToSpecial();
+        NativeOpsHolder.getInstance().getDeviceNativeOps().printDeviceBuffer(clusters.data().opaqueBuffer());
+        NativeOpsHolder.getInstance().getDeviceNativeOps().printDeviceBuffer(classes.data().opaqueBuffer());
 
         INDArray confMatrix = Nd4j.math().confusionMatrix(
-              classes,clusters,3
+                classes,clusters,3
         );
 
-        INDArray assertion = Nd4j.create(new double[][]{
+        INDArray assertion = Nd4j.create(new double[][] {
                 {3,0,0},
                 {0,2,0},
                 {0,1,0}
-        }).castTo(DataType.INT32);
+        }).castTo(DataType.INT64);
         assertEquals(assertion,confMatrix);
 
     }
@@ -164,11 +168,11 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
     public void testSameDiffDropout(Nd4jBackend backend) {
         INDArray in = Nd4j.ones(4, 8);
         INDArray res1 = Nd4j.nn.dropout(in, false, 0.2);
-       for(int i = 0; i < res1.rows(); i++) {
-           for(int j = 0;  j < res1.columns(); j++) {
-               assertTrue(res1.getInt(i,j) == 0 || res1.getInt(i,j) == 1);
-           }
-       }
+        for(int i = 0; i < res1.rows(); i++) {
+            for(int j = 0;  j < res1.columns(); j++) {
+                assertTrue(res1.getInt(i,j) == 0 || res1.getInt(i,j) == 1);
+            }
+        }
     }
 
     /**
@@ -1155,19 +1159,19 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
                 0.3f, 0.3f, 0.7f, 0.7f,
                 0.4f, 0.4f, 0.6f, 0.6f}).reshape(2,2,4);
         INDArray colors = Nd4j.createFromArray(new float[]{
-                201.0f, 202.0f, 203.0f, 127.0f, 128.0f, 129.0f}).
+                        201.0f, 202.0f, 203.0f, 127.0f, 128.0f, 129.0f}).
                 reshape(2,3);
         INDArray output = Nd4j.create(DataType.FLOAT, images.shape());
         INDArray expected = Nd4j.createFromArray(new float[]{127.f, 128.f, 129.f,    127.f, 128.f, 129.f,    127.f, 128.f, 129.f,
-                127.f, 128.f, 129.f,    201.f, 202.f, 203.f,
-                127.f, 128.f,  129.f,    19.f,  20.f,  21.f,     22.f,  23.f,  24.f,    127.f, 128.f, 129.f,    201.f, 202.f, 203.f,
-                127.f, 128.f,  129.f,   127.f, 128.f, 129.f,    127.f, 128.f, 129.f,    127.f, 128.f, 129.f,    201.f, 202.f, 203.f,
-                201.f, 202.f,  203.f,    201.f ,202.f ,203.f,   201.f, 202.f, 203.f,    201.f, 202.f, 203.f,    201.f, 202.f, 203.f,
+                        127.f, 128.f, 129.f,    201.f, 202.f, 203.f,
+                        127.f, 128.f,  129.f,    19.f,  20.f,  21.f,     22.f,  23.f,  24.f,    127.f, 128.f, 129.f,    201.f, 202.f, 203.f,
+                        127.f, 128.f,  129.f,   127.f, 128.f, 129.f,    127.f, 128.f, 129.f,    127.f, 128.f, 129.f,    201.f, 202.f, 203.f,
+                        201.f, 202.f,  203.f,    201.f ,202.f ,203.f,   201.f, 202.f, 203.f,    201.f, 202.f, 203.f,    201.f, 202.f, 203.f,
 
-                61.f,  62.f,   63.f,    201.f, 202.f, 203.f,    201.f, 202.f, 203.f,     70.f,  71.f,  72.f,     73.f,  74.f,  75.f,
-                76.f,  77.f,   78.f,    127.f, 128.f, 129.f,    127.f, 128.f, 129.f,     85.f,  86.f,  87.f,     88.f,  89.f,  90.f,
-                91.f,  92.f,   93.f,    201.f, 202.f, 203.f,    201.f, 202.f, 203.f,    100.f, 101.f, 102.f,    103.f, 104.f, 105.f,
-                106.f, 107.f,  108.f,    109.f, 110.f, 111.f,    112.f, 113.f, 114.f,    115.f, 116.f, 117.f,    118.f, 119.f, 120.f}).
+                        61.f,  62.f,   63.f,    201.f, 202.f, 203.f,    201.f, 202.f, 203.f,     70.f,  71.f,  72.f,     73.f,  74.f,  75.f,
+                        76.f,  77.f,   78.f,    127.f, 128.f, 129.f,    127.f, 128.f, 129.f,     85.f,  86.f,  87.f,     88.f,  89.f,  90.f,
+                        91.f,  92.f,   93.f,    201.f, 202.f, 203.f,    201.f, 202.f, 203.f,    100.f, 101.f, 102.f,    103.f, 104.f, 105.f,
+                        106.f, 107.f,  108.f,    109.f, 110.f, 111.f,    112.f, 113.f, 114.f,    115.f, 116.f, 117.f,    118.f, 119.f, 120.f}).
                 reshape(2,4,5,3);
 
         Nd4j.exec(new DrawBoundingBoxes(images, boxes, colors, output));
@@ -1398,7 +1402,7 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRoll(Nd4jBackend backend) {
         INDArray x = Nd4j.createFromArray(new double[]{    11.11, 11.12, 11.21, 11.22, 11.31, 11.32, 11.41, 11.42,     12.11, 12.12, 12.21, 12.22, 12.31, 12.32, 12.41, 12.42,
-                21.11, 21.12, 21.21, 21.22, 21.31, 21.32, 21.41, 21.42,     22.11, 22.12, 22.21, 22.22, 22.31, 22.32, 22.41, 22.42}).
+                        21.11, 21.12, 21.21, 21.22, 21.31, 21.32, 21.41, 21.42,     22.11, 22.12, 22.21, 22.22, 22.31, 22.32, 22.41, 22.42}).
                 reshape(2,2,4,2);
 
         INDArray expected = Nd4j.createFromArray(new double[]{    22.21, 22.22, 22.31, 22.32, 22.41, 22.42, 11.11, 11.12, 11.21, 11.22, 11.31, 11.32, 11.41, 11.42,

@@ -97,6 +97,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected abstract void initTypeAndSize();
 
     @Override
+    public OpaqueDataBuffer opaqueBuffer() {
+        return ptrDataBuffer;
+    }
+
+    @Override
     public int getElementSize() {
         return elementSize;
     }
@@ -315,56 +320,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     public abstract Pointer addressPointer();
-
-    /*
-    @Override
-    public Pointer addressPointer() {
-        if (released)
-            throw new IllegalStateException("You can't use DataBuffer once it was released");
-
-        if (offset() > 0) {
-            Pointer ret;
-            // offset is accounted at native side
-            final long retAddress = pointer().address();
-            // directly set address at construction since Pointer.address has not setter.
-            if (dataType() == DataType.DOUBLE) {
-                ret = new DoublePointer(pointer()) {
-                    {
-                        address = retAddress;
-                    }
-                };
-            } else if (dataType() == DataType.FLOAT) {
-                ret = new FloatPointer(pointer()) {
-                    {
-                        address = retAddress;
-                    }
-                };
-            } else if (dataType() == DataType.INT) {
-                ret = new IntPointer(pointer()) {
-                    {
-                        address = retAddress;
-                    }
-                };
-            } else if (dataType() == DataType.LONG) {
-                ret = new LongPointer(pointer()) {
-                    {
-                        address = retAddress;
-                    }
-                };
-            } else {
-                ret = new Pointer(pointer()) {
-                    {
-                        address = retAddress;
-                    }
-                };
-            }
-            ret.limit(ret.limit() - offset());
-            ret.capacity(ret.capacity() - offset());
-            return ret;
-        }
-        return pointer();
-    }
-    */
 
     @Override
     public long address() {

@@ -376,7 +376,7 @@ public class CudaZeroHandler implements MemoryHandler {
                 if (point.getAllocationStatus() == AllocationStatus.HOST)
                     flowController.registerAction(context, point);
 
-                point.tickHostRead();
+                point.tickHostWrite();
             }
         }
     }

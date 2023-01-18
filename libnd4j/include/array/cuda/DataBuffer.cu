@@ -121,6 +121,8 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
   readPrimary();
 }
 
+
+
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::syncToSpecial(const bool forceSync) {
   // in this case there's nothing to do here

@@ -23,6 +23,7 @@ package org.nd4j.linalg.api.buffer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -199,6 +200,8 @@ public interface DataBuffer extends Serializable, AutoCloseable {
      * Un persist the buffer
      */
     void unPersist();
+
+    OpaqueDataBuffer opaqueBuffer();
 
     /**
      * The number of bytes for each individual element
