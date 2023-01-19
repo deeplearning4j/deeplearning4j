@@ -22,11 +22,39 @@ package org.nd4j.nativeblas;
 
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.annotation.Cast;
+import org.bytedeco.javacpp.annotation.Const;
+import org.bytedeco.javacpp.annotation.StdString;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 
+import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 
 
 public interface NativeOps {
+
+    void copyBuffer(org.nd4j.nativeblas.OpaqueDataBuffer target, long n,  org.nd4j.nativeblas.OpaqueDataBuffer from, long fromOffset, long targetOffset);
+
+
+    void saveNpy( BytePointer fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  IntPointer shape,  int ndims,
+                                BytePointer mode/*="w"*/);
+    void saveNpy( BytePointer fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  IntPointer shape,  int ndims);
+    void saveNpy( String fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  IntBuffer shape,  int ndims,
+                                String mode/*="w"*/);
+    void saveNpy( String fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  IntBuffer shape,  int ndims);
+    void saveNpy( BytePointer fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  int[] shape,  int ndims,
+                                BytePointer mode/*="w"*/);
+    void saveNpy( BytePointer fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  int[] shape,  int ndims);
+    void saveNpy( String fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  IntPointer shape,  int ndims,
+                                String mode/*="w"*/);
+    void saveNpy( String fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  IntPointer shape,  int ndims);
+    void saveNpy( BytePointer fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  IntBuffer shape,  int ndims,
+                                BytePointer mode/*="w"*/);
+    void saveNpy( BytePointer fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  IntBuffer shape,  int ndims);
+    void saveNpy( String fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  int[] shape,  int ndims,
+                                String mode/*="w"*/);
+    void saveNpy( String fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  int[] shape,  int ndims);
+
+
     /**
      * This method allows you to specify minimal number of elements per thread/block during op call
      * PLEASE NOTE: Changing this value might and will affect performance.
@@ -1224,18 +1252,18 @@ public interface NativeOps {
 
 
 
-     void setGraphContextInputArrays(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, PointerPointer buffer, PointerPointer shapeInfo,
-                                                  PointerPointer specialBuffer, PointerPointer specialShapeInfo);
-     void setGraphContextOutputArrays(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, PointerPointer buffer, PointerPointer shapeInfo,
-                                                   PointerPointer specialBuffer, PointerPointer specialShapeInfo);
-     void setGraphContextInputBuffers(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, PointerPointer buffer, PointerPointer shapeInfo,
-                                                   PointerPointer specialShapeInfo);
-     void setGraphContextInputBuffers(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays,  org.nd4j.nativeblas.OpaqueDataBuffer buffer, PointerPointer shapeInfo,
-                                                   PointerPointer specialShapeInfo);
-     void setGraphContextOutputBuffers(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, PointerPointer buffer, PointerPointer shapeInfo,
-                                                    PointerPointer specialShapeInfo);
-     void setGraphContextOutputBuffers(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays,  org.nd4j.nativeblas.OpaqueDataBuffer buffer, PointerPointer shapeInfo,
-                                                    PointerPointer specialShapeInfo);
+    void setGraphContextInputArrays(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, PointerPointer buffer, PointerPointer shapeInfo,
+                                    PointerPointer specialBuffer, PointerPointer specialShapeInfo);
+    void setGraphContextOutputArrays(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, PointerPointer buffer, PointerPointer shapeInfo,
+                                     PointerPointer specialBuffer, PointerPointer specialShapeInfo);
+    void setGraphContextInputBuffers(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, PointerPointer buffer, PointerPointer shapeInfo,
+                                     PointerPointer specialShapeInfo);
+    void setGraphContextInputBuffers(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays,  org.nd4j.nativeblas.OpaqueDataBuffer buffer, PointerPointer shapeInfo,
+                                     PointerPointer specialShapeInfo);
+    void setGraphContextOutputBuffers(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, PointerPointer buffer, PointerPointer shapeInfo,
+                                      PointerPointer specialShapeInfo);
+    void setGraphContextOutputBuffers(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays,  org.nd4j.nativeblas.OpaqueDataBuffer buffer, PointerPointer shapeInfo,
+                                      PointerPointer specialShapeInfo);
 
 
     void setShapeBuffer( LongPointer inputShapeData, int dt, LongPointer bufferToSet,char order,int elementWiseStride);
@@ -1266,7 +1294,7 @@ public interface NativeOps {
     long getRandomGeneratorNextLong(OpaqueRandomGenerator ptr);
     void deleteRandomGenerator(OpaqueRandomGenerator ptr);
 
-  
+
 
     long getCachedMemory(int deviceId);
 

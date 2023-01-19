@@ -31,6 +31,8 @@ import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.primitives.AtomicDouble;
 import org.nd4j.common.primitives.Triple;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import java.io.*;
 import java.nio.*;
@@ -63,6 +65,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected DataType type;
     protected long length;
+    protected transient OpaqueDataBuffer ptrDataBuffer;
 
     protected long underlyingLength;
     protected long offset;
@@ -99,6 +102,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return elementSize;
     }
 
+    @Override
+    public OpaqueDataBuffer opaqueBuffer() {
+        return ptrDataBuffer;
+    }
 
     @Override
     public long getGenerationId() {
@@ -187,7 +194,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             // FIXME: please don't remove this comment, since there's probably a bug in current offset() impl,
             // and this line will change originalOffset according to proper offset() impl
             // FIXME: raver119@gmail.com
-            this.originalOffset = offset; // + underlyingBuffer.originalOffset();
+            this.originalOffset = offset;
         }
 
         pointer = underlyingBuffer.pointer();
@@ -208,7 +215,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected void setNioBuffer() {
         if (elementSize * length >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Unable to create buffer of length " + length);
-        //wrappedBuffer = pointer().asByteBuffer();
 
     }
 
@@ -287,6 +293,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void copyAtStride(DataBuffer buf, long n, long stride, long yStride, long offset, long yOffset) {
+
         if (dataType() == DataType.FLOAT) {
             for (int i = 0; i < n; i++) {
                 put(offset + i * stride, buf.getFloat(yOffset + i * yStride));
@@ -302,7 +309,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     @Deprecated
     public void removeReferencing(String id) {
-        //referencing.remove(id);
     }
 
     @Override
@@ -314,55 +320,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     public abstract Pointer addressPointer();
 
-    /*
-    @Override
-    public Pointer addressPointer() {
-        if (released)
-            throw new IllegalStateException("You can't use DataBuffer once it was released");
 
-        if (offset() > 0) {
-            Pointer ret;
-            // offset is accounted at native side
-            final long retAddress = pointer().address();
-            // directly set address at construction since Pointer.address has not setter.
-            if (dataType() == DataType.DOUBLE) {
-                ret = new DoublePointer(pointer()) {
-                    {
-                        address = retAddress;
-                    }
-                };
-            } else if (dataType() == DataType.FLOAT) {
-                ret = new FloatPointer(pointer()) {
-                    {
-                        address = retAddress;
-                    }
-                };
-            } else if (dataType() == DataType.INT) {
-                ret = new IntPointer(pointer()) {
-                    {
-                        address = retAddress;
-                    }
-                };
-            } else if (dataType() == DataType.LONG) {
-                ret = new LongPointer(pointer()) {
-                    {
-                        address = retAddress;
-                    }
-                };
-            } else {
-                ret = new Pointer(pointer()) {
-                    {
-                        address = retAddress;
-                    }
-                };
-            }
-            ret.limit(ret.limit() - offset());
-            ret.capacity(ret.capacity() - offset());
-            return ret;
-        }
-        return pointer();
-    }
-    */
 
     @Override
     public long address() {

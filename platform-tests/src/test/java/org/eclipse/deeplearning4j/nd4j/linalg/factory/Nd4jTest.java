@@ -45,6 +45,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -274,13 +275,22 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
 
     @Test
     public void testLargeNumpyWrite() throws Exception {
-        INDArray largeArr = Nd4j.create(DataType.FLOAT,115240, 2400);
-        File tempFile = new File("large-npy.npy");
-        tempFile.deleteOnExit();
-        Nd4j.writeAsNumpy(largeArr,tempFile);
-        assertTrue(tempFile.exists());
-        INDArray read = Nd4j.createFromNpyFile(tempFile);
-        assertEquals(largeArr,read);
+        Arrays.stream(DataType.values()).forEach(dataType -> {
+            System.out.println("Trying with data type " + dataType);
+            INDArray largeArr = Nd4j.create(dataType,115240, 2400);
+
+            File tempFile = new File("large-npy-" + dataType.name() + ".npy");
+            tempFile.deleteOnExit();
+            try {
+                Nd4j.writeAsNumpy(largeArr,tempFile);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            assertTrue(tempFile.exists());
+            INDArray read = Nd4j.createFromNpyFile(tempFile);
+            assertEquals(largeArr,read);
+        });
+
     }
 
 

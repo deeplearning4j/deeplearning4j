@@ -60,6 +60,19 @@ int minThreads = 32;
 
 __constant__ char deviceConstantMemory[49152];
 
+void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long fromOffset, long targetOffset) {
+  OpaqueDataBuffer *copyFrom = dbCreateView(from,n,fromOffset);
+  OpaqueDataBuffer *targetView = dbCreateView(target,n,targetOffset);
+  const DataBuffer targetBuf = *copyFrom->dataBuffer().get();
+  const DataBuffer srcBuf = *targetView->dataBuffer().get();
+  DataBuffer::memcpy(targetBuf,srcBuf);
+}
+
+void saveNpy(std::string fname, const InteropDataBuffer *data, const unsigned int *shape, const unsigned int ndims,
+             std::string mode) {
+  cnpy::npy_save(fname,data->primary(),shape,ndims,mode);
+}
+
 // this method just does type conversion in fancy way
 int getDeviceId(sd::Pointer ptrToDeviceId) { return (int)(sd::LongType)ptrToDeviceId; }
 

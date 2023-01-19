@@ -40,7 +40,6 @@ import static org.nd4j.linalg.api.buffer.DataType.INT8;
 
 public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallocatable {
 
-    protected transient OpaqueDataBuffer ptrDataBuffer;
     protected transient Pointer addressPointer;
 
     private transient final long instanceId = Nd4j.getDeallocatorService().nextValue();
