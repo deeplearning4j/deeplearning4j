@@ -42,7 +42,7 @@ There are some limitations. Some of them will be lifted eventually, others won't
 
 
 ### Documentation 
-Documentation for individual operations, and basic classes (like NDArray, Graph etc) is available as part of Nd4j javadoc: https://nd4j.org/doc/
+Documentation for individual operations, and basic classes (like NDArray, Graph etc) is available as part of Nd4j javadoc: https://javadoc.io/doc/org.nd4j/nd4j-api/latest/index.html
 
 ### Embedded profiling
 If you're adding new ops, and want to make sure they run ok on your specific device - you might want to give a shot to embedded Graph profiling helper.

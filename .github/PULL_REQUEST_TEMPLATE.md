@@ -10,7 +10,7 @@
 
 The following checklist helps ensure your PR is complete:
 
-- [ ] Eclipse Contributor Agreement signed, and signed commits - see [IP Requirements](https://deeplearning4j.org/eclipse-contributors) page for details
+- [ ] Eclipse Contributor Agreement signed, and signed commits - see [IP Requirements](https://deeplearning4j.konduit.ai/multi-project/how-to-guides/contribute/eclipse-contributors) page for details
 - [ ] Reviewed the [Contributing Guidelines](https://github.com/eclipse/deeplearning4j/blob/master/CONTRIBUTING.md) and followed the steps within.
 - [ ] Created tests for any significant new code additions.
 - [ ] Relevant tests for your changes are passing.
