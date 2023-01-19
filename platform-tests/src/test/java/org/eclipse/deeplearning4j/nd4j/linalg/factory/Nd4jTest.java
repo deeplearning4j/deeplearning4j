@@ -52,8 +52,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  */
@@ -271,6 +270,17 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
         INDArray numpyFromFile = Nd4j.createFromNpyFile(tmpFile);
         assertEquals(linspace,numpyFromFile);
 
+    }
+
+    @Test
+    public void testLargeNumpyWrite() throws Exception {
+        INDArray largeArr = Nd4j.create(DataType.FLOAT,115240, 2400);
+        File tempFile = new File("large-npy.npy");
+        tempFile.deleteOnExit();
+        Nd4j.writeAsNumpy(largeArr,tempFile);
+        assertTrue(tempFile.exists());
+        INDArray read = Nd4j.createFromNpyFile(tempFile);
+        assertEquals(largeArr,read);
     }
 
 
