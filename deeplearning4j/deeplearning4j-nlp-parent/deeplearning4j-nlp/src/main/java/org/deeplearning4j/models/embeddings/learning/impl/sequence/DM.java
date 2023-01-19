@@ -208,9 +208,9 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
             Nd4j.getEnvironment().setMaxThreads(1);
         }
 
-        INDArray ret = Nd4j.rand(random,lookupTable.getWeights().dataType(),
-                        1, lookupTable.layerSize()).subi(0.5)
-                .divi(lookupTable.layerSize());
+        INDArray ret = Nd4j.createUninitialized(this.lookupTable.getWeights().dataType(),lookupTable.layerSize());
+        Nd4j.rand(ret,random);
+        ret.subi(0.5).divi(lookupTable.layerSize());
 
         log.info("Inf before: {}", ret);
         dm(0, sequence, (int) nextRandom2.get() % window, nextRandom2, learningRate,Collections.emptyList(), ret);
