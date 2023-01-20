@@ -274,8 +274,11 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
     }
 
     @Test
+    @Disabled("Test is very large compared to most tests. It needs to be to test the limits of memcpy/heap space.")
     public void testLargeNumpyWrite() throws Exception {
-        Arrays.stream(DataType.values()).forEach(dataType -> {
+        Arrays.stream(DataType.values()).filter(input ->
+                       input != DataType.BFLOAT16 && input != DataType.COMPRESSED && input != DataType.UTF8)
+                .forEach(dataType -> {
             System.out.println("Trying with data type " + dataType);
             INDArray largeArr = Nd4j.create(dataType,115240, 2400);
 

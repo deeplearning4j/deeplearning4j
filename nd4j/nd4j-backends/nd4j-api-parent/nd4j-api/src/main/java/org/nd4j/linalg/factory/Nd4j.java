@@ -5604,6 +5604,9 @@ public class Nd4j {
      */
     @SuppressWarnings("WeakerAccess")
     public static void writeAsNumpy(INDArray arr, File file) throws IOException {
+       if(arr.dataType() == DataType.BFLOAT16 || arr.dataType() == DataType.BFLOAT16 || arr.dataType() == DataType.UTF8)
+           throw new IllegalArgumentException("Unable to write array data type of " + arr.dataType());
+
         NativeOpsHolder.getInstance().getDeviceNativeOps().saveNpy(file.getAbsolutePath(),arr.data().opaqueBuffer(),ArrayUtil.toInts(arr.shape()),arr.rank());
     }
 

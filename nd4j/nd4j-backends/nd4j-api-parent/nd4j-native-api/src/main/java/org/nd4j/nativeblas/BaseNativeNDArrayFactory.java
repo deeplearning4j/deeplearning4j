@@ -125,7 +125,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
         DataBuffer shapeBuffer = Nd4j.createBuffer(
                 newPointer,
-                DataType.LONG,
+                DataType.INT64,
                 length,
                 LongIndexer.create(newPointer));
 

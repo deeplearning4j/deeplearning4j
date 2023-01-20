@@ -2747,7 +2747,7 @@ void deleteRandomGenerator(sd::graph::RandomGenerator *ptr) { delete ptr; }
 void saveNpy(std::string fname, const InteropDataBuffer *data, const unsigned int *shape, const unsigned int ndims,
              std::string mode) {
   auto dtype = data->getDataBuffer()->getDataType();
-  BUILD_SINGLE_SELECTOR(dtype,cnpy::npy_save,(fname,data->primaryAsT(),shape,ndims,mode),SD_COMMON_TYPES);
+  BUILD_SINGLE_SELECTOR(dtype,cnpy::npy_save,(fname,data->getDataBuffer()->primary(),shape,ndims,mode),SD_COMMON_TYPES);
 }
 
 int dataTypeFromNpyHeader(void *header) { return (int)cnpy::dataTypeFromHeader(reinterpret_cast<char *>(header)); }
