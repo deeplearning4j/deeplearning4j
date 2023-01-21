@@ -1568,15 +1568,7 @@ SD_HOST sd::LongType *shapeBufferOfNpy(cnpy::NpyArray arr) {
   return shape::shapeBufferOfNpy(arr.shape.size(), (unsigned int *)arr.shape.data(), arr.fortranOrder);
 }
 
-//    SD_HOST sd::LongType *shapeBufferOfNpyBuffer(char *buffer) {
-//        unsigned sd::LongType *shape;
-//        unsigned int ndims, wordSize;
-//        bool fortranOrder;
-//        cnpy::parseNpyHeaderStr(std::string(buffer),wordSize,shape,ndims,fortranOrder);
-//        sd::LongType * ret =  shape::shapeBufferOfNpy(ndims,shape,fortranOrder);
-//        delete[] shape;
-//        return ret;
-//    }
+
 
 SD_HOST sd::LongType *shapeBufferOfNpy(int rank, unsigned int *shape, bool fortranOrder) {
   if (fortranOrder) {

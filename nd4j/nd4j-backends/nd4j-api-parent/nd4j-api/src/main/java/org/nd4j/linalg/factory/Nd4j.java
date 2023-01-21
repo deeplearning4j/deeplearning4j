@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
 import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.linalg.factory.ops.*;
 import org.nd4j.linalg.profiler.UnifiedProfiler;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
@@ -2978,7 +2979,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(@NonNull org.nd4j.linalg.api.rng.Random rng, @NonNull long... shape) {
-        INDArray ret = createUninitialized(shape, Nd4j.order()).castTo(Nd4j.defaultFloatingPointType()); 
+        INDArray ret = createUninitialized(shape, Nd4j.order()).castTo(Nd4j.defaultFloatingPointType());
         return rand(ret, rng);
     }
 
@@ -5603,7 +5604,10 @@ public class Nd4j {
      */
     @SuppressWarnings("WeakerAccess")
     public static void writeAsNumpy(INDArray arr, File file) throws IOException {
-        writeAsNumpy(arr, new FileOutputStream(file));
+       if(arr.dataType() == DataType.BFLOAT16 || arr.dataType() == DataType.BFLOAT16 || arr.dataType() == DataType.UTF8)
+           throw new IllegalArgumentException("Unable to write array data type of " + arr.dataType());
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().saveNpy(file.getAbsolutePath(),arr.data().opaqueBuffer(),ArrayUtil.toInts(arr.shape()),arr.rank());
     }
 
 
@@ -5644,8 +5648,11 @@ public class Nd4j {
     public static long writeAsNumpy(Pointer asNumpy, OutputStream writeTo,boolean closeFlush) throws IOException {
         if(closeFlush) {
             try(BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(writeTo)) {
-                WritableByteChannel channel = Channels.newChannel(bufferedOutputStream);
-
+                WritableByteChannel channel = Channels.newChannel(writeTo);
+                ByteBuffer byteBuffer = asNumpy.asByteBuffer();
+                if(byteBuffer == null) {
+                    throw new IllegalStateException("Unable to allocate numpy array byte buffer. Too large in size.");
+                }
                 int written = channel.write(asNumpy.asByteBuffer());
                 if(written != asNumpy.capacity()) {
                     throw new IllegalStateException("Not all bytes were written! Original capacity " + asNumpy.capacity() + " but wrote " + written);

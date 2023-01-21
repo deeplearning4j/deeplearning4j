@@ -23,6 +23,7 @@ package org.nd4j.linalg.api.buffer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -53,6 +54,12 @@ public interface DataBuffer extends Serializable, AutoCloseable {
 
         MIXED_DATA_TYPES, // latest generation of INDArrays support multiple data types, with information stored within shapeInfo "offset" field.
     }
+
+    /**
+     * Returns the underlying opaque buffer for this data buffer
+     * @return
+     */
+    OpaqueDataBuffer opaqueBuffer();
 
     /**
      * Returns an underlying pointer if one exists
