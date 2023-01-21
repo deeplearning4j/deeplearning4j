@@ -31,15 +31,15 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nd4j-cuda-11.6</artifactId>
+    <artifactId>nd4j-cuda-11.8</artifactId>
 
     <name>nd4j-cuda</name>
 
     <properties>
         <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
-        <cuda.version>11.6</cuda.version>
-        <cudnn.version>8.3</cudnn.version>
-        <javacpp-presets.cuda.version>1.5.7</javacpp-presets.cuda.version>
+        <cuda.version>11.8</cuda.version>
+        <cudnn.version>8.6</cudnn.version>
+        <javacpp-presets.cuda.version>1.5.8</javacpp-presets.cuda.version>
         <!-- Try to avoid setting this. This is mainly for being able to override for where we put binaries in javacpp jars for android. -->
         <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
         <module.name>nd4j.cuda</module.name>
@@ -49,7 +49,7 @@
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-cuda-11.6-preset</artifactId>
+            <artifactId>nd4j-cuda-11.8-preset</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -127,7 +127,7 @@
                 <dependencies>
                     <dependency>
                         <groupId>org.nd4j</groupId>
-                        <artifactId>nd4j-cuda-11.6-preset</artifactId>
+                        <artifactId>nd4j-cuda-11.8-preset</artifactId>
                         <version>${project.version}</version>
                     </dependency>
                     <dependency>

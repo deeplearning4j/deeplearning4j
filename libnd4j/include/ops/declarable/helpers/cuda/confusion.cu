@@ -86,8 +86,6 @@ void _confusionFunctor(sd::LaunchContext* context, NDArray* labels, NDArray* pre
  auto stream = context->getCudaStream();
 
  auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), 1);
- labels->printBuffer("Labels host buffer");
- predictions->printBuffer("Predictions host buffer");
  PointersManager manager(context, "helpers::confusion");
 predictions->syncToDevice();
  sd::LongType* labelsLongBuffer =
