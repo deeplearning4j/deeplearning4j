@@ -111,7 +111,6 @@ sd::DataType cnpy::dataTypeFromHeader(char *data) {
   const int st = 10;
   const int ti = 22;
   const int si = 23;
-  printf("Reading datatype from header %s\n",data);
   // read first char to make sure it looks like a header
   if (data == nullptr || data[st] != '{')
     throw std::runtime_error(
@@ -143,10 +142,8 @@ sd::DataType cnpy::dataTypeFromHeader(char *data) {
         case '2':
           return sd::DataType::HALF;
         case '4':
-          printf("Returning float data type\n",0);
           return sd::DataType::FLOAT32;
         case '8':
-          printf("Returning double data type\n",0);
           return sd::DataType::DOUBLE;
         default:
           throw std::runtime_error("Only data sizes of [1, 2, 4, 8] are supported for Float data types import");
@@ -283,9 +280,7 @@ void cnpy::parseNpyHeaderStr(std::string header, unsigned int &wordSize, unsigne
 
   std::string str_ws = header.substr(loc1 + 2);
   loc2 = str_ws.find("'");
-  printf("Header for word size %s complete header is %s\n",str_ws.c_str(),header.c_str());
   wordSize = atoi(str_ws.substr(0, loc2).c_str());
-  printf("Obtained word size of %d\n",wordSize);
 }
 
 /**
@@ -626,7 +621,6 @@ void cnpy::npy_save(std::string fname, const void *data, const unsigned int *sha
   }
 
 
-  printf("Saving data type %s with size of %d\n",typeid(T).name(),sizeof(T));
 
   unsigned long long nels = 1;
   for (int i = 0; i < ndims; i++) nels *= shape[i];
