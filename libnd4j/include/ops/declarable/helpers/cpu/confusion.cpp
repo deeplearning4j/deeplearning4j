@@ -39,7 +39,6 @@ static void _confusionFunctor(NDArray* labels, NDArray* predictions, NDArray* we
       T curr = arrs.at(label)->e<T>(pred);
       arrs.at(label)->p<T>(pred, curr + value);
       auto idx = shape::getIndexOffset(pred, arrs[0]->shapeInfo());
-      sd_printf("Label %d pred %d idx %d weight val %f\n",label,pred,idx,value);
     }
   };
 

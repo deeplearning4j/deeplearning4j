@@ -36,7 +36,6 @@ SD_KERNEL static void copyBuffers(sd::LongType* destination, void const* source,
  const T * sourceCast = reinterpret_cast<T const*>(source);
  for (int t = tid; t < bufferLength; t += step) {
    destination[t] = static_cast<sd::LongType>(sourceCast[t]);
-   printf("New value at value %d is %d source was %d\n",t,destination[t],static_cast<sd::LongType>(reinterpret_cast<T const*>(source)[t]));
  }
 
 
@@ -47,7 +46,6 @@ SD_KERNEL static void printBuffers(sd::LongType* buffer, sd::LongType bufferLeng
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
   for (int t = tid; t < bufferLength; t += step) {
-    printf("Value at %d is %d\n",t,buffer[t]);
   }
 
 
@@ -74,7 +72,6 @@ SD_KERNEL static void confusionFunctorKernel(sd::LongType* labelsBuffer, sd::Lon
  for (int t = tid; t < bufferLength; t += step) {
    auto label = labelsBuffer[t];     //->e<sd::LongType>(j);
    auto pred = predictionBuffer[t];  //->e<sd::LongType>(j);
-   printf("Label is %d pred is %d\n",label,pred);
    auto tZ = z + tadOffsets[label];
    T val = (weightsBuffer == nullptr ? (T)1.0f : w[t]);
 
@@ -117,13 +114,6 @@ predictions->syncToDevice();
 
  manager.synchronize();
 
-
- sd_printf("Printing labels device\n",0);
- printBuffers<<<256, 512, 1024, *stream>>>(labelsLongBuffer, labels->lengthOf());
- manager.synchronize();
- sd_printf("Printing predictions device buffer\n",0);
- printBuffers<<<256, 512, 1024, *stream>>>(predictionLongBuffer,  labels->lengthOf());
- manager.synchronize();
 
 
  auto bufferLength = labels->lengthOf();
