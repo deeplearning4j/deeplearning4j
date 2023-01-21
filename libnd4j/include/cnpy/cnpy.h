@@ -110,9 +110,10 @@ SD_LIB_EXPORT std::vector<char> createNpyHeader(const void *data, const unsigned
  * @param fp the file to parse from
  * @param wordSize the size of
  * the individual elements
- * @param shape
- * @param ndims
- * @param fortranOrder
+ * @param shape the shape of the array
+ * @param ndims the number of dimensions in the array
+ * @param fortranOrder whether the array is fortran ordered or not
+ * @param dtype the datatype of the array
  */
 SD_LIB_EXPORT void parseNpyHeader(FILE *fp, unsigned int &wordSize, unsigned int *&shape, unsigned int &ndims,
                                   bool &fortranOrder);
@@ -124,9 +125,9 @@ SD_LIB_EXPORT void parseNpyHeader(FILE *fp, unsigned int &wordSize, unsigned int
  * @param header the file to parse from
  * @param word_size the size of
  * the individual elements
- * @param shape
- * @param ndims
- * @param fortran_order
+ * @param shape the shape of the array
+ * @param ndims the number of dimensions of the ndarray
+ * @param fortran_order whether the array is fortran ordered or not
  */
 SD_LIB_EXPORT void parseNpyHeaderPointer(const char *header, unsigned int &word_size, unsigned int *&shape,
                                          unsigned int &ndims, bool &fortran_order);
@@ -162,9 +163,9 @@ SD_LIB_EXPORT NpyArray npyLoad(std::string fname);
  * @param fp the file to parse from
  * @param wordSize the size of
  * the individual elements
- * @param shape
- * @param ndims
- * @param fortranOrder
+ * @param shape the shape of the array
+ * @param ndims the number of dimensions of the shape
+ * @param fortranOrder whether the array is fortran ordered or c ordered
  */
 SD_LIB_EXPORT void parseNpyHeaderStr(std::string header, unsigned int &wordSize, unsigned int *&shape,
                                      unsigned int &ndims, bool &fortranOrder);
@@ -243,7 +244,7 @@ SD_INLINE std::string tostring(T i, int pad = 0, char padval = ' ') {
 }
 
 template <typename T>
-SD_LIB_EXPORT void npy_save(std::string fname, const T *data, const unsigned int *shape, const unsigned int ndims,
+SD_LIB_EXPORT void npy_save(std::string fname, const void *data, const unsigned int *shape, const unsigned int ndims,
                             std::string mode = "w");
 
 }  // namespace cnpy

@@ -31,6 +31,7 @@ import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.primitives.AtomicDouble;
 import org.nd4j.common.primitives.Triple;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import java.io.*;
@@ -65,6 +66,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected DataType type;
     protected long length;
+    protected transient OpaqueDataBuffer ptrDataBuffer;
 
     protected long underlyingLength;
     protected long offset;
@@ -106,6 +108,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return elementSize;
     }
 
+    @Override
+    public OpaqueDataBuffer opaqueBuffer() {
+        return ptrDataBuffer;
+    }
 
     @Override
     public long getGenerationId() {
@@ -194,7 +200,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             // FIXME: please don't remove this comment, since there's probably a bug in current offset() impl,
             // and this line will change originalOffset according to proper offset() impl
             // FIXME: raver119@gmail.com
-            this.originalOffset = offset; // + underlyingBuffer.originalOffset();
+            this.originalOffset = offset;
         }
 
         pointer = underlyingBuffer.pointer();
@@ -215,7 +221,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected void setNioBuffer() {
         if (elementSize * length >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Unable to create buffer of length " + length);
-        //wrappedBuffer = pointer().asByteBuffer();
 
     }
 
@@ -294,6 +299,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void copyAtStride(DataBuffer buf, long n, long stride, long yStride, long offset, long yOffset) {
+
         if (dataType() == DataType.FLOAT) {
             for (int i = 0; i < n; i++) {
                 put(offset + i * stride, buf.getFloat(yOffset + i * yStride));
@@ -309,7 +315,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     @Deprecated
     public void removeReferencing(String id) {
-        //referencing.remove(id);
     }
 
     @Override
@@ -320,6 +325,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     public abstract Pointer addressPointer();
+
 
     @Override
     public long address() {
@@ -332,7 +338,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     @Deprecated
     public void addReferencing(String id) {
-        //referencing.add(id);
     }
 
     @Override

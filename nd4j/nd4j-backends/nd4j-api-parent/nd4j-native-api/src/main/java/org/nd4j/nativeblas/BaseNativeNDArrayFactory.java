@@ -22,6 +22,7 @@ package org.nd4j.nativeblas;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.io.FileUtils;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -61,9 +62,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
     public BaseNativeNDArrayFactory() {}
 
 
-
     @Override
-    public Pointer convertToNumpy(INDArray array) {
+    public DataBuffer convertToNumpyBuffer(INDArray array) {
         val size = new LongPointer(1);
         Pointer header = NativeOpsHolder
                 .getInstance().getDeviceNativeOps()
@@ -76,24 +76,20 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         val headerSize = size.get() - 1;
         header.capacity(headerSize);
         header.position(0);
-
-
-
-        BytePointer bytePointer = new BytePointer((int) (headerSize + (array.data().getElementSize() * array.data().length())));
         BytePointer headerCast = new BytePointer(header);
-        val indexer = ByteIndexer.create(headerCast);
+        DataBuffer buffer = Nd4j.createBuffer(DataType.INT8, (headerSize + (array.data().getElementSize() * array.data().length())), false);
+        DataBuffer headCopyFrom = Nd4j.createBuffer(headerCast,headerSize,DataType.INT8);
         int pos = 0;
-        bytePointer.position(pos);
-        Pointer.memcpy(bytePointer, headerCast,headerCast.capacity());
+        buffer.copyAtStride(headCopyFrom,headCopyFrom.length(),1,1,0,0);
         pos += (headerCast.capacity());
-        bytePointer.position(pos);
-
-        // make sure data is copied to the host memory
+        buffer.copyAtStride(array.data(),array.data().length(),1,1,pos,0);
         Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.HOST);
+        return buffer;
+    }
 
-        Pointer.memcpy(bytePointer,array.data().pointer(),(array.data().getElementSize() * array.data().length()));
-        bytePointer.position(0);
-        return bytePointer;
+    @Override
+    public Pointer convertToNumpy(INDArray array) {
+        return convertToNumpyBuffer(array).pointer();
     }
 
     /**
@@ -129,7 +125,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
         DataBuffer shapeBuffer = Nd4j.createBuffer(
                 newPointer,
-                DataType.LONG,
+                DataType.INT64,
                 length,
                 LongIndexer.create(newPointer));
 
@@ -529,7 +525,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                 is.read(new byte[extraFieldLength]);
             }
             is.read(new byte[11]);
-            
+
             String headerStr = "";
             int b;
             while((b = is.read()) != ((int)'\n')){

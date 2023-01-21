@@ -47,6 +47,20 @@ typedef sd::InteropDataBuffer OpaqueDataBuffer;
 
 extern "C" {
 
+
+SD_LIB_EXPORT void saveNpy(std::string fname, const OpaqueDataBuffer *data, const unsigned int *shape, const unsigned int ndims,
+                          std::string mode = "w");
+
+/**
+ * Copy n elements from the buffer from the src
+ * buffer to the target buffer
+ * @param target the target buffer
+ * @param n the number of elements
+ * @param from the src buffer
+ * @param fromOffset the starting offset for the source
+ * @param targetOffset the starting offset for the target
+ */
+SD_LIB_EXPORT void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long fromOffset, long targetOffset);
 /**
  * Print the device buffer
  * @param buffer
@@ -64,6 +78,7 @@ SD_LIB_EXPORT int lastErrorCode();
  * @return
  */
 SD_LIB_EXPORT const char* lastErrorMessage();
+
 
 /**
  *

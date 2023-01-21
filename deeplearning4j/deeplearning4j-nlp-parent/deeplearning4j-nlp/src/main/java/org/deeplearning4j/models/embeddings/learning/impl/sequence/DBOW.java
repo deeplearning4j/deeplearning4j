@@ -221,7 +221,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
                 lookupTable.layerSize() + 1);
 
 
-        INDArray ret = Nd4j.createUninitialized(this.lookupTable.getWeights().dataType(),'c',lookupTable.layerSize());
+        INDArray ret = Nd4j.createUninitialized(this.lookupTable.getWeights().dataType(),lookupTable.layerSize());
         Nd4j.rand(ret,random);
         ret.subi(0.5).divi(lookupTable.layerSize());
         if(configuration.getWorkers() > 1) {

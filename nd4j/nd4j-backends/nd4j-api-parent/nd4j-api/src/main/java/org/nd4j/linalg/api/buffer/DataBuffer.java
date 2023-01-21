@@ -56,6 +56,12 @@ public interface DataBuffer extends Serializable, AutoCloseable {
     }
 
     /**
+     * Returns the underlying opaque buffer for this data buffer
+     * @return
+     */
+    OpaqueDataBuffer opaqueBuffer();
+
+    /**
      * Returns an underlying pointer if one exists
      * @return
      */

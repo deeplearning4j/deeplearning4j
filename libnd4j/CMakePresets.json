@@ -5,7 +5,6 @@
             "name": "base_cpu",
             "displayName": "Configure preset for the base",
             "description": "Sets generator, build and install directory",
-            "hidden": true,
             "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/blasbuild/cpu",
             "cacheVariables": {
@@ -37,6 +36,7 @@
             }
 
         },
+
         {
             "name": "veda_vednn_base",
             "displayName": "Configure preset for the Veda and Vednn",
@@ -101,6 +101,13 @@
         }
     ],
     "buildPresets": [
+        {
+            "name": "cpu_build",
+            "description": "",
+            "displayName": "",
+            "configurePreset": "base_cpu",
+            "jobs": 64
+        },
         {
             "name": "veda_vednn_debug_build",
             "description": "",

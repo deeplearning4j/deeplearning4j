@@ -1086,7 +1086,7 @@ public interface NDArrayFactory {
     INDArray createUninitialized(long[] shape, char ordering);
 
     INDArray createUninitialized(DataType dataType, long[] shape, char ordering, MemoryWorkspace workspace);
-    
+
     /**
      * Create an uninitialized ndArray. Detached from workspace.
      * @param dataType data type. Exceptions will be thrown for UTF8, COMPRESSED and UNKNOWN data types.
@@ -1402,6 +1402,21 @@ public interface NDArrayFactory {
      * a pointer to a numpy header
      */
     Pointer convertToNumpy(INDArray array);
+
+    /**
+     * Convert an {@link INDArray}
+     * to a numpy array.
+     * This will usually be used
+     * for writing out to an external source.
+     * Note that this will create a zero copy reference
+     * to this ndarray's underlying data.
+     *
+     *
+     * @param array the array to convert
+     * @returnthe created pointer representing
+     * a pointer to a numpy header
+     */
+    DataBuffer convertToNumpyBuffer(INDArray array);
 
     INDArray create(float[] data, long[] shape, long[] stride, long offset, char ordering);
 

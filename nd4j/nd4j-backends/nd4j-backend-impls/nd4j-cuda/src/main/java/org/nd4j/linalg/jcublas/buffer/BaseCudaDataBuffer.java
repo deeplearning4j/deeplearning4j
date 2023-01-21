@@ -1701,7 +1701,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         int fbits = Float.floatToIntBits( fval );
         int sign = fbits >>> 16 & 0x8000;          // sign only
         int val = ( fbits & 0x7fffffff ) + 0x1000; // rounded value
-    
+
         if( val >= 0x47800000 )               // might be or become NaN/Inf
         {                                     // avoid Inf due to rounding
             if( ( fbits & 0x7fffffff ) >= 0x47800000 )

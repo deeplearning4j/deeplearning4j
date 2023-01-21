@@ -45,6 +45,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -52,8 +53,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  */
@@ -270,6 +270,29 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
 
         INDArray numpyFromFile = Nd4j.createFromNpyFile(tmpFile);
         assertEquals(linspace,numpyFromFile);
+
+    }
+
+    @Test
+    @Disabled("Test is very large compared to most tests. It needs to be to test the limits of memcpy/heap space.")
+    public void testLargeNumpyWrite() throws Exception {
+        Arrays.stream(DataType.values()).filter(input ->
+                       input != DataType.BFLOAT16 && input != DataType.COMPRESSED && input != DataType.UTF8)
+                .forEach(dataType -> {
+            System.out.println("Trying with data type " + dataType);
+            INDArray largeArr = Nd4j.create(dataType,115240, 2400);
+
+            File tempFile = new File("large-npy-" + dataType.name() + ".npy");
+            tempFile.deleteOnExit();
+            try {
+                Nd4j.writeAsNumpy(largeArr,tempFile);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            assertTrue(tempFile.exists());
+            INDArray read = Nd4j.createFromNpyFile(tempFile);
+            assertEquals(largeArr,read);
+        });
 
     }
 

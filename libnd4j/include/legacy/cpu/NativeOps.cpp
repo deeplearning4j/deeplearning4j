@@ -134,6 +134,15 @@ static bool execHelperScalar(int opNum, OpaqueDataBuffer *dbX, const sd::LongTyp
 
 #endif
 
+
+void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long fromOffset, long targetOffset) {
+   OpaqueDataBuffer *copyFrom = dbCreateView(from,n,fromOffset);
+   OpaqueDataBuffer *targetView = dbCreateView(target,n,targetOffset);
+   const DataBuffer targetBuf = *copyFrom->dataBuffer().get();
+   const DataBuffer srcBuf = *targetView->dataBuffer().get();
+   DataBuffer::memcpy(targetBuf,srcBuf);
+}
+
 /**
  *
  * @param opNum
@@ -2733,6 +2742,13 @@ double getRandomGeneratorNextDouble(sd::graph::RandomGenerator *ptr) {
 }
 
 void deleteRandomGenerator(sd::graph::RandomGenerator *ptr) { delete ptr; }
+
+
+void saveNpy(std::string fname, const InteropDataBuffer *data, const unsigned int *shape, const unsigned int ndims,
+             std::string mode) {
+  auto dtype = data->getDataBuffer()->getDataType();
+  BUILD_SINGLE_SELECTOR(dtype,cnpy::npy_save,(fname,data->getDataBuffer()->primary(),shape,ndims,mode),SD_COMMON_TYPES);
+}
 
 int dataTypeFromNpyHeader(void *header) { return (int)cnpy::dataTypeFromHeader(reinterpret_cast<char *>(header)); }
 
