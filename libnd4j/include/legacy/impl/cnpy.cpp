@@ -579,7 +579,7 @@ cnpy::NpyArray cnpy::npyLoad(std::string fname) {
  * @param mode the mode for writing
  */
 template <typename T>
-void cnpy::npy_save(std::string fname, const T *data, const unsigned int *shape, const unsigned int ndims,
+void cnpy::npy_save(std::string fname, const void *data, const unsigned int *shape, const unsigned int ndims,
                     std::string mode) {
   FILE *fp = NULL;
 
@@ -683,7 +683,4 @@ std::vector<char> cnpy::createNpyHeader(const void *vdata, const unsigned int *s
 BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT std::vector<char> cnpy::createNpyHeader,
                       (const void *data, const unsigned int *shape, const unsigned int ndims, unsigned int wordSize),
                       SD_COMMON_TYPES);
-// template SD_LIB_EXPORT std::vector<char> cnpy::createNpyHeader<void>(const void *data, const unsigned int *shape,
-// const unsigned int ndims, unsigned int wordSize);
-template SD_LIB_EXPORT void cnpy::npy_save<float>(std::string fname, const float *data, const unsigned int *shape,
-                                                  const unsigned int ndims, std::string mode);
+

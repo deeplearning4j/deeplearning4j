@@ -67,10 +67,7 @@ void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long 
   DataBuffer::memcpy(targetBuf,srcBuf);
 }
 
-void saveNpy(std::string fname, const InteropDataBuffer *data, const unsigned int *shape, const unsigned int ndims,
-             std::string mode) {
-  cnpy::npy_save(fname,data->primary(),shape,ndims,mode);
-}
+
 
 // this method just does type conversion in fancy way
 int getDeviceId(sd::Pointer ptrToDeviceId) { return (int)(sd::LongType)ptrToDeviceId; }
@@ -1373,8 +1370,9 @@ void specialConcat(sd::Pointer *extraPointers, int dimension, int numArrays, sd:
 void saveNpy(std::string fname, const InteropDataBuffer *data, const unsigned int *shape, const unsigned int ndims,
              std::string mode) {
   auto dtype = data->getDataBuffer()->getDataType();
-  BUILD_SINGLE_SELECTOR(dtype,cnpy::npy_save,(fname,data->primary(),shape,ndims,mode),SD_COMMON_TYPES);
+  BUILD_SINGLE_SELECTOR(dtype,cnpy::npy_save,(fname,data->getDataBuffer()->primary(),shape,ndims,mode),SD_COMMON_TYPES);
 }
+
 
 /**
  * This method saves
