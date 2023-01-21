@@ -1134,17 +1134,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(long rows, long columns, int[] stride, long offset) {
-        /*
-        if (Nd4j.dataType() == DataType.DOUBLE)
-            return create(new double[rows * columns], new int[] {rows, columns}, stride, offset);
-        if (Nd4j.dataType() == DataType.FLOAT || Nd4j.dataType() == DataType.HALF)
-            return create(new float[rows * columns], new int[] {rows, columns}, stride, offset);
-        if (Nd4j.dataType() == DataType.INT)
-            return create(new int[rows * columns], new int[] {rows, columns}, stride, offset);
-        throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
-        */
-
-        throw new UnsupportedOperationException();
+      return create(new int[]{(int) rows,(int) columns},stride,0,'c');
     }
 
 

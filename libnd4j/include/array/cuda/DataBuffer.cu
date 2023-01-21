@@ -208,6 +208,7 @@ void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinByte
 void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinBytes, const sd::LongType offsetThis,
                                     const sd::LongType offsetHostBuffer) {  // copies only to special buffer
 
+
   if (hostBuffer == nullptr) return;
 
   if (sizeToCopyinBytes == 0) sizeToCopyinBytes = getLenInBytes();
@@ -232,7 +233,6 @@ void DataBuffer::setSpecial(void* special, const bool isOwnerSpecial) {
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate special buffer only (cuda case)
-
   allocateSpecial();
 
   if (allocBoth) allocatePrimary();

@@ -129,7 +129,6 @@ class ScalarShapeInformation {
     scalarDimensionBuff[0] = SD_MAX_DIMENSION;
     scalarDimension = sd::buffer::createBuffer(scalarDimensionBuff, 1, stream);
     scalarShapeInfo = createScalarBuffer(stream);
-    //        threadId = std::this_thread::get_id();
   }
   ~ScalarShapeInformation() {
     sd::buffer::freeBuffer(&scalarShapeInfo);
@@ -1215,26 +1214,21 @@ int memcpySync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, s
 int memcpyAsync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, sd::Pointer reserved) {
   auto pStream = reinterpret_cast<cudaStream_t *>(reserved);
 
-  printf("About to copy data of size %d\n",size);
   cudaMemcpyKind kind;
 
 
   switch (flags) {
     case 0: {
       kind = cudaMemcpyHostToHost;
-      printf("Copying data host to host\n",0);
     } break;
     case 1: {
       kind = cudaMemcpyHostToDevice;
-      printf("Copying data host to device\n",0);
     } break;
     case 2: {
       kind = cudaMemcpyDeviceToHost;
-      printf("Copying data device to host\n",0);
     } break;
     case 3: {
       kind = cudaMemcpyDeviceToDevice;
-      printf("Copying data device to device\n",0);
     } break;
     default: {
       sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1245,7 +1239,6 @@ int memcpyAsync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, 
 
   auto dZ = cudaMemcpyAsync(reinterpret_cast<void *>(dst), const_cast<const void *>(reinterpret_cast<void *>(src)),
                             static_cast<size_t>(size), kind, *pStream);
-  printf("After copy data of size %d\n",size);
 
   if (dZ != 0) {
     printf("Failed on [%p] -> [%p], size: [%i], direction: [%i], dZ: [%i]\n", src, dst, size, flags,
@@ -1258,7 +1251,6 @@ int memcpyAsync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, 
     return 0;
   }
 
-  printf("Returning 1 from copying data\n",0);
 
   return 1;
 }
@@ -1649,7 +1641,6 @@ void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
 
     if (tadLength == yLength || tadLength == xLength) {
-      // sd_printf("== way\n","");
       NativeOpExecutioner::execReduce3(
           &lc, opNum, dbX->primary(), hXShapeInfo, dbX->special(),
           ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo).special(), extraParams, dbY->primary(),
@@ -2789,7 +2780,6 @@ sd::Status execCustomOpWithScope(sd::Pointer *extraPointers, sd::graph::GraphSta
     // we should check scope existence in GraphState/Graph
     int scopeId = (int)scopes[e];
     if (!state->hasScope(scopeId)) {
-      // sd_printf("execCustomOpWithScope: referenced scope [%i] doesn't exist\n", scopeId);
       return Logger::logKernelFailureMsg();
     }
     node.pickInput(scopeId, 0);
