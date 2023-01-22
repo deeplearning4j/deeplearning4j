@@ -21,6 +21,7 @@
 package org.nd4j.linalg.factory;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.imports.graphmapper.tf.tensors.TFTensorMappers;
 import org.nd4j.linalg.api.blas.BLASLapackDelegator;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
@@ -1154,6 +1155,49 @@ public class Nd4j {
         return ret;
     }
 
+    private static boolean sameDataType(Pointer pointer,DataType dataType) {
+        switch(dataType) {
+            case BOOL:
+                return pointer instanceof BooleanPointer;
+            case FLOAT:
+                return pointer instanceof FloatPointer;
+            case DOUBLE:
+                return pointer instanceof DoublePointer;
+            case UTF8:
+            case BYTE:
+            case UBYTE:
+                return pointer instanceof BytePointer;
+            case UINT64:
+            case LONG:
+                return pointer instanceof LongPointer;
+            case INT:
+            case UINT32:
+                return pointer instanceof IntPointer;
+            case HALF:
+                return pointer instanceof FloatPointer;
+            case SHORT:
+                return pointer instanceof ShortPointer;
+            default:
+                return false;
+        }
+    }
+
+    private static DataType dataTypeForPointer(Pointer pointer) {
+        if(pointer instanceof LongPointer)
+            return DataType.LONG;
+        else if(pointer instanceof IntPointer)
+            return DataType.INT32;
+        else if(pointer instanceof FloatPointer)
+            return DataType.FLOAT;
+        else if(pointer instanceof ShortPointer)
+            return DataType.INT8;
+        else if(pointer instanceof BytePointer)
+            return DataType.BYTE;
+        else if(pointer instanceof BooleanPointer)
+            return DataType.BOOL;
+       return null;
+    }
+
     private static Indexer getIndexerByType(Pointer pointer, DataType dataType) {
         switch (dataType) {
             case UINT64:
@@ -1195,6 +1239,9 @@ public class Nd4j {
      * @return the created buffer
      */
     public static DataBuffer createBuffer(@NonNull Pointer pointer, long length, @NonNull DataType dataType) {
+        if(dataType != dataTypeForPointer(pointer)) {
+           return  Nd4j.create(Nd4j.createBuffer(pointer,length,dataTypeForPointer(pointer))).castTo(dataType).data();
+        }
         Pointer nPointer = getPointer(pointer, dataType);
         return DATA_BUFFER_FACTORY_INSTANCE.create(nPointer, dataType, length, getIndexerByType(nPointer, dataType));
     }
@@ -1214,7 +1261,7 @@ public class Nd4j {
         return DATA_BUFFER_FACTORY_INSTANCE.create(nPointer, devicePointer, dataType, length, getIndexerByType(nPointer, dataType));
     }
 
-    private static Pointer getPointer(@NonNull Pointer pointer, @NonNull DataType dataType ){
+    private static Pointer getPointer(@NonNull Pointer pointer, @NonNull DataType dataType) {
         Pointer nPointer;
         switch (dataType) {
             case UINT64:
@@ -1567,7 +1614,9 @@ public class Nd4j {
      * See {@link #createTypedBuffer(float[], DataType)}
      */
     public static DataBuffer createTypedBuffer(long[] data, DataType dataType) {
-        return Nd4j.createBuffer(new LongPointer(data),data.length,dataType);
+        DataBuffer buffer = getDataBuffer(data.length, dataType);
+        buffer.setData(data);
+        return buffer;
     }
 
     /**
@@ -1611,7 +1660,6 @@ public class Nd4j {
      * @return created buffer,
      */
     public static DataBuffer createTypedBuffer(double[] data, DataType dataType, MemoryWorkspace workspace) {
-        //val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
         DataBuffer  buffer = getDataBuffer(data.length, dataType, workspace);
         buffer.setData(data);
         return buffer;
@@ -1621,7 +1669,6 @@ public class Nd4j {
      * See {@link #createTypedBuffer(double[], DataType, MemoryWorkspace)}
      */
     public static DataBuffer createTypedBuffer(float[] data, DataType dataType, MemoryWorkspace workspace) {
-        //val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
         DataBuffer  buffer = getDataBuffer(data.length, dataType, workspace);
         buffer.setData(data);
         return buffer;
