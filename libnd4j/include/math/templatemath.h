@@ -592,7 +592,6 @@ namespace sd {
             }
 
             auto diff = static_cast<double>(sd::math::sd_abs<T>(d1 - d2));
-            printf("Diff was %f\n",diff);
             // works well except in the range of very large numbers
             if (diff <= eps) return true;
 
