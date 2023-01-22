@@ -111,6 +111,7 @@ sd::DataType cnpy::dataTypeFromHeader(char *data) {
   const int st = 10;
   const int ti = 22;
   const int si = 23;
+
   // read first char to make sure it looks like a header
   if (data == nullptr || data[st] != '{')
     throw std::runtime_error(
@@ -217,6 +218,7 @@ char *cnpy::loadFile(const char *path) {
   char *buffer = 0;
   long length;
   FILE *f = fopen(path, "rb");  // was "rb"
+
   if (f) {
     fseek(f, 0, SEEK_END);
     length = ftell(f);
@@ -277,6 +279,9 @@ void cnpy::parseNpyHeaderStr(std::string header, unsigned int &wordSize, unsigne
   loc1 = header.find("descr") + 9;
   bool littleEndian = (header[loc1] == '<' || header[loc1] == '|' ? true : false);
   assert(littleEndian);
+
+  // char type = header[loc1+1];
+  // assert(type == map_type(T));
 
   std::string str_ws = header.substr(loc1 + 2);
   loc2 = str_ws.find("'");
@@ -577,6 +582,7 @@ template <typename T>
 void cnpy::npy_save(std::string fname, const void *data, const unsigned int *shape, const unsigned int ndims,
                     std::string mode) {
   FILE *fp = NULL;
+
   if (mode == "a") fp = fopen(fname.c_str(), "r+b");
 
   if (fp) {
@@ -609,18 +615,16 @@ void cnpy::npy_save(std::string fname, const void *data, const unsigned int *sha
     tmp_shape[0] += shape[0];
 
     fseek(fp, 0, SEEK_SET);
-    std::vector<char> header = createNpyHeader<T>(data, tmp_shape, ndims,sizeof(T));
+    std::vector<char> header = createNpyHeader<T>(data, tmp_shape, ndims);
     fwrite(&header[0], sizeof(char), header.size(), fp);
     fseek(fp, 0, SEEK_END);
 
     delete[] tmp_shape;
   } else {
     fp = fopen(fname.c_str(), "wb");
-    std::vector<char> header = createNpyHeader<T>(data, shape, ndims,sizeof(T));
+    std::vector<char> header = createNpyHeader<T>(data, shape, ndims);
     fwrite(&header[0], sizeof(char), header.size(), fp);
   }
-
-
 
   unsigned long long nels = 1;
   for (int i = 0; i < ndims; i++) nels *= shape[i];
@@ -640,6 +644,7 @@ void cnpy::npy_save(std::string fname, const void *data, const unsigned int *sha
 template <typename T>
 std::vector<char> cnpy::createNpyHeader(const void *vdata, const unsigned int *shape, const unsigned int ndims,
                                         unsigned int wordSize) {
+  auto data = reinterpret_cast<const T *>(vdata);
 
   std::vector<char> dict;
   dict += "{'descr': '";
@@ -678,7 +683,4 @@ std::vector<char> cnpy::createNpyHeader(const void *vdata, const unsigned int *s
 BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT std::vector<char> cnpy::createNpyHeader,
                       (const void *data, const unsigned int *shape, const unsigned int ndims, unsigned int wordSize),
                       SD_COMMON_TYPES);
-// template SD_LIB_EXPORT std::vector<char> cnpy::createNpyHeader<void>(const void *data, const unsigned int *shape,
-// const unsigned int ndims, unsigned int wordSize);
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void cnpy::npy_save,(std::string fname, const void *data, const unsigned int *shape,
-    const unsigned int ndims, std::string mode),SD_COMMON_TYPES);
+

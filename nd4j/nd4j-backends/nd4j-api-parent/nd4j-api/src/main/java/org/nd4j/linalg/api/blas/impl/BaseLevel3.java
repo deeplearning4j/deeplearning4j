@@ -54,7 +54,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void gemm(char Order, char TransA, char TransB, double alpha, INDArray A, INDArray B, double beta,
                     INDArray C) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(true, A, B, C);
 
 
@@ -70,7 +70,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void gemm(INDArray A, INDArray B, INDArray C, boolean transposeA, boolean transposeB, double alpha,
                     double beta) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(true, A, B, C);
 
         Nd4j.exec(new Mmul(A, B, C, alpha, beta, MMulTranspose.builder().transposeA(transposeA).transposeB(transposeB).build()));
@@ -97,7 +97,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void symm(char Order, char Side, char Uplo, double alpha, INDArray A, INDArray B, double beta, INDArray C) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, A, B, C);
 
         if (C.rows() > Integer.MAX_VALUE || C.columns() > Integer.MAX_VALUE ||
@@ -134,7 +134,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void syrk(char Order, char Uplo, char Trans, double alpha, INDArray A, double beta, INDArray C) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, A, C);
 
         if (C.rows() > Integer.MAX_VALUE ||
@@ -173,7 +173,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void syr2k(char Order, char Uplo, char Trans, double alpha, INDArray A, INDArray B, double beta,
                     INDArray C) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, A, B, C);
 
         if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE ||
@@ -212,7 +212,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void trmm(char Order, char Side, char Uplo, char TransA, char Diag, double alpha, INDArray A, INDArray B,
                     INDArray C) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, A, B, C);
 
         if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE ||
@@ -250,7 +250,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void trsm(char Order, char Side, char Uplo, char TransA, char Diag, double alpha, INDArray A, INDArray B) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, A, B);
 
         if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE ||

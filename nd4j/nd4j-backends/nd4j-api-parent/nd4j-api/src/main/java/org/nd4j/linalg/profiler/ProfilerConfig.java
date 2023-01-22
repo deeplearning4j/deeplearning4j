@@ -34,6 +34,7 @@ public class ProfilerConfig {
     @Builder.Default private boolean checkForINF = false;
     @Builder.Default private boolean stackTrace = false;
     @Builder.Default private boolean checkElapsedTime = false;
+    @Builder.Default private boolean checkBandwidth = false;
 
     /**
      * If enabled, each pointer will be workspace validation will be performed one each call

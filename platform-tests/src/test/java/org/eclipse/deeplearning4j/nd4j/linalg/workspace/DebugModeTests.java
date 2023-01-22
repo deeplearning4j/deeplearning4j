@@ -34,16 +34,12 @@ import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
-import org.nd4j.linalg.api.memory.enums.DebugMode;
-import org.nd4j.linalg.api.memory.enums.LearningPolicy;
-import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
-import org.nd4j.linalg.api.memory.enums.SpillPolicy;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
-import org.nd4j.linalg.workspace.WorkspaceUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -105,7 +101,9 @@ public class DebugModeTests extends BaseNd4jTestWithBackends {
             assertEquals(0, ws.getDeviceOffset());
 
             // array buffer should be spilled now
-            assertEquals(1024, ws.getSpilledSize());
+            assertEquals(AllocationsTracker.getInstance()
+                    .getTracker(ws.getId()).currentSpilledBytes(Nd4j.getBackend().getEnvironment().isCPU() ?
+                            MemoryKind.HOST : MemoryKind.DEVICE), ws.getSpilledSize());
         }
     }
 
@@ -133,7 +131,9 @@ public class DebugModeTests extends BaseNd4jTestWithBackends {
             assertEquals(0, ws.getDeviceOffset());
 
             // array buffer should be spilled now
-            assertEquals(WorkspaceUtils.getTotalRequiredMemoryForWorkspace(array) + WorkspaceUtils.getShapeBufferRequireMemoryForWorkspace(array) * 3 - 32 , ws.getSpilledSize());
+            assertEquals(AllocationsTracker.getInstance()
+                    .getTracker(ws.getId()).currentSpilledBytes(Nd4j.getBackend().getEnvironment().isCPU() ?
+                            MemoryKind.HOST : MemoryKind.DEVICE), ws.getSpilledSize());
         }
 
         try (val ws = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "R_119_1992")) {

@@ -46,6 +46,7 @@
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
         <backend.artifactId>nd4j-native</backend.artifactId>
+
         <lombok.version>1.18.24</lombok.version>
         <derby.version>10.13.1.1</derby.version>
         <maven-surefire-plugin.version>3.0.0-M1</maven-surefire-plugin.version>

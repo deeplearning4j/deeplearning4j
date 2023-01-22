@@ -32,8 +32,7 @@
 #include <system/op_boilerplate.h>
 #include <types/bfloat16.h>
 #include <types/float16.h>
-//#include <templatemath.h>
-//#include <helpers/shape.h>
+
 #include <helpers/logger.h>
 
 namespace sd {

@@ -30,7 +30,19 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 
 
+/**
+ * A common interface for misc operations
+ * needed from c++
+ *
+ */
 public interface NativeOps {
+
+
+    /**
+     * Prints device buffers.
+     * @param buffer
+     */
+    void printDeviceBuffer(org.nd4j.nativeblas.OpaqueDataBuffer buffer);
 
     void copyBuffer(org.nd4j.nativeblas.OpaqueDataBuffer target, long n,  org.nd4j.nativeblas.OpaqueDataBuffer from, long fromOffset, long targetOffset);
 

@@ -53,9 +53,8 @@ public class TestNDArrayCreation extends BaseNd4jTestWithBackends {
     public void testBufferCreation(Nd4jBackend backend) {
         DataBuffer dataBuffer = Nd4j.createBuffer(new float[] {1, 2});
         Pointer pointer = dataBuffer.pointer();
-        FloatPointer floatPointer = new FloatPointer(pointer);
+        FloatPointer floatPointer = (FloatPointer) pointer;
         DataBuffer dataBuffer1 = Nd4j.createBuffer(floatPointer, 2, DataType.FLOAT);
-
         assertEquals(2, dataBuffer.length());
         assertEquals(1.0, dataBuffer.getDouble(0), 1e-1);
         assertEquals(2.0, dataBuffer.getDouble(1), 1e-1);

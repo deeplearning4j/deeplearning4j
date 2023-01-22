@@ -807,7 +807,13 @@ class Epsilon {
     return static_cast<Z>(0);
   }
 
-  SD_OP_DEF static Z op(X d1, X d2, X *params) { return op(d1, d2); }
+  SD_OP_DEF static Z op(X d1, X d2, X *params) {
+    X diff = d1 - d2;
+    X absDiff = sd::math::sd_abs<X>(diff);
+    if (params != nullptr && absDiff <= static_cast<X>(params[0])) return static_cast<Z>(1);
+    return static_cast<Z>(0);
+  }
+
 
   SD_OP_DEF static Z op(X d1, X *params) { return d1; }
 };

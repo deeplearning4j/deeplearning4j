@@ -1567,9 +1567,7 @@ public class Nd4j {
      * See {@link #createTypedBuffer(float[], DataType)}
      */
     public static DataBuffer createTypedBuffer(long[] data, DataType dataType) {
-        DataBuffer buffer = getDataBuffer(data.length, dataType);
-        buffer.setData(data);
-        return buffer;
+        return Nd4j.createBuffer(new LongPointer(data),data.length,dataType);
     }
 
     /**

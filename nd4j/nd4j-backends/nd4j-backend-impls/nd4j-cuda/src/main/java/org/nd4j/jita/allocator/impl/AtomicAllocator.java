@@ -824,9 +824,6 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public void memcpyAsync(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
-        //        if (dstBuffer.isConstant()) {
-        //            this.memoryHandler.memcpySpecial(dstBuffer, srcPointer, length, dstOffset);
-        //        } else
         this.memoryHandler.memcpyAsync(dstBuffer, srcPointer, length, dstOffset);
     }
 

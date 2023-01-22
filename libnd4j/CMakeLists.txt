@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
 project(libnd4j)
-
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 message("CMAKE MODULE PATH ${CMAKE_MODULE_PATH}")
 
@@ -21,6 +20,18 @@ option(SD_USE_LTO "Use link time optimization" OFF)
 option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OFF)
 
 set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
+
+
+macro(print_all_variables)
+    message(STATUS "print_all_variables------------------------------------------{")
+    get_cmake_property(_variableNames VARIABLES)
+    foreach (_variableName ${_variableNames})
+        message(STATUS "${_variableName}=${${_variableName}}")
+    endforeach()
+    message(STATUS "print_all_variables------------------------------------------}")
+endmacro()
+
+print_all_variables()
 
 if(SD_AURORA)
     set(SD_CUDA false)

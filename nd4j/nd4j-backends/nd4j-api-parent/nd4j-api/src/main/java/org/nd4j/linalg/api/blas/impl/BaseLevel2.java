@@ -51,7 +51,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void gemv(char order, char transA, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
         GemvParameters parameters = new GemvParameters(A, X, Y);
@@ -112,7 +112,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
     @Override
     public void gbmv(char order, char TransA, int KL, int KU, double alpha, INDArray A, INDArray X, double beta,
                     INDArray Y) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
         if (A.data().dataType() == DataType.DOUBLE) {
@@ -141,7 +141,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void ger(char order, double alpha, INDArray X, INDArray Y, INDArray A) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
         if (X.data().dataType() == DataType.DOUBLE) {
@@ -172,7 +172,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void sbmv(char order, char Uplo, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
         if (X.length() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE) {
@@ -202,7 +202,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void spmv(char order, char Uplo, double alpha, INDArray Ap, INDArray X, double beta, INDArray Y) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, Ap, X, Y);
 
         if (X.length() > Integer.MAX_VALUE) {
@@ -232,7 +232,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void spr(char order, char Uplo, double alpha, INDArray X, INDArray Ap) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, Ap, X);
 
 
@@ -263,7 +263,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void spr2(char order, char Uplo, double alpha, INDArray X, INDArray Y, INDArray A) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
         if (X.length() > Integer.MAX_VALUE)
@@ -295,7 +295,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void symv(char order, char Uplo, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
         if (X.length() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE)
@@ -326,7 +326,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void syr(char order, char Uplo, int N, double alpha, INDArray X, INDArray A) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, A, X);
 
         if (X.length() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE)
@@ -353,7 +353,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void syr2(char order, char Uplo, double alpha, INDArray X, INDArray Y, INDArray A) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
         if (X.length() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE)
@@ -383,7 +383,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void tbmv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, A, X);
 
         if (X.length() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE) {
@@ -411,7 +411,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void tbsv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, A, X);
 
         if (X.length() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE ) {
@@ -440,7 +440,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void tpmv(char order, char Uplo, char TransA, char Diag, INDArray Ap, INDArray X) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, Ap, X);
 
         if (Ap.length() > Integer.MAX_VALUE)
@@ -469,7 +469,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void tpsv(char order, char Uplo, char TransA, char Diag, INDArray Ap, INDArray X) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, Ap, X);
 
         if (X.length() > Integer.MAX_VALUE)
@@ -498,7 +498,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void trmv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, A, X);
 
         if (X.length() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE)
@@ -527,7 +527,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void trsv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X) {
-        if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
+        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
             OpProfiler.getInstance().processBlasCall(false, A, X);
 
         if (A.length() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE)

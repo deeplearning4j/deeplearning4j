@@ -38,6 +38,7 @@ static void _confusionFunctor(NDArray* labels, NDArray* predictions, NDArray* we
       T value = (weights == nullptr ? (T)1.0f : weights->e<T>(j));
       T curr = arrs.at(label)->e<T>(pred);
       arrs.at(label)->p<T>(pred, curr + value);
+      auto idx = shape::getIndexOffset(pred, arrs[0]->shapeInfo());
     }
   };
 

@@ -305,17 +305,6 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public void initializeDevice(Long threadId, Integer deviceId) {
-        /*
-        JCuda.cudaSetDevice(deviceId);
-        
-        CudaContext context = new CudaContext();
-        context.initHandle();
-        context.initOldStream();
-        //        context.initStream();
-        context.associateHandle();
-        
-        contextPool.put(threadId, context);
-        */
     }
 
     /**
@@ -387,7 +376,7 @@ public class CudaZeroHandler implements MemoryHandler {
                 if (point.getAllocationStatus() == AllocationStatus.HOST)
                     flowController.registerAction(context, point);
 
-                point.tickHostRead();
+                point.tickHostWrite();
             }
         }
     }

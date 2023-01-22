@@ -30,8 +30,11 @@
                 "SD_ALL_OPS": true,
                 "SD_CUDA": true,
                 "BLAS":true,
-                "COMPUTE": "auto"
+                "COMPUTE": "auto",
+                "CUDA_TOOLKIT_ROOT_DIR": "/usr/local/cuda-11.6",
+                "CMAKE_CUDA_COMPILER": "/usr/local/cuda-11.6/bin/nvcc"
             }
+
         },
 
         {

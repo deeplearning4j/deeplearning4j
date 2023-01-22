@@ -247,9 +247,9 @@ public class ListenerTest extends BaseNd4jTestWithBackends {
             assertEquals(i, tl.iterationDoneCount);
             assertEquals(Collections.singletonMap(Operation.TRAINING, i), tl.operationStartCount);
             assertEquals(Collections.singletonMap(Operation.TRAINING, i), tl.operationEndCount);
-            assertEquals(7 * i, tl.preOpExecutionCount);    //mmul, add, softmax, loss grad, softmax backward, add backward, mmul backward
-            assertEquals(7 * i, tl.opExecutionCount);
-            assertEquals(11 * i, tl.activationAvailableCount); //mmul, add, softmax, loss grad (weight, in, label), softmax bp, add backward (z, b), mmul (in, w)
+            assertEquals(8 * i, tl.preOpExecutionCount);    //mmul, add, softmax, loss grad, softmax backward, add backward, mmul backward
+            assertEquals(8 * i, tl.opExecutionCount);
+            assertEquals(12 * i, tl.activationAvailableCount); //mmul, add, softmax, loss grad (weight, in, label), softmax bp, add backward (z, b), mmul (in, w)
             assertEquals(2 * i, tl.preUpdateCount);   //w, b
         }
 
@@ -267,9 +267,9 @@ public class ListenerTest extends BaseNd4jTestWithBackends {
             assertEquals(0, tl.iterationDoneCount);
             assertEquals(Collections.singletonMap(Operation.EVALUATION, i), tl.operationStartCount);
             assertEquals(Collections.singletonMap(Operation.EVALUATION, i), tl.operationEndCount);
-            assertEquals(3*i, tl.preOpExecutionCount);    //mmul, add, softmax
-            assertEquals(3*i, tl.opExecutionCount);
-            assertEquals(3*i, tl.activationAvailableCount); //mmul, add, softmax
+            assertEquals(3 * i, tl.preOpExecutionCount);    //mmul, add, softmax
+            assertEquals(3 * i, tl.opExecutionCount);
+            assertEquals(3 * i, tl.activationAvailableCount); //mmul, add, softmax
             assertEquals(0, tl.preUpdateCount);   //w, b
         }
     }

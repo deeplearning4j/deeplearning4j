@@ -54,6 +54,8 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCholesky(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         INDArray input = Nd4j.createFromArray(
                 new float[]{
                         10.f,  14.f,
@@ -72,7 +74,8 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
 
         SDVariable sdinput = sameDiff.var(input);
         SDVariable out = sameDiff.linalg().cholesky(sdinput);
-        assertEquals(expected, out.eval());
+        INDArray eval =  out.eval();
+        assertEquals(expected, eval);
     }
 
     @ParameterizedTest
@@ -275,7 +278,7 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSvd2(Nd4jBackend backend) {
-     //https://stackoverflow.com/questions/74157832/runtime-error-from-nd4j-when-executing-svd
+        //https://stackoverflow.com/questions/74157832/runtime-error-from-nd4j-when-executing-svd
         var a = Nd4j.create(new double[] {
                 0.0, 1.0, -2.0, 3.0,
                 5.0, -3.0, 1.0, -2.0,

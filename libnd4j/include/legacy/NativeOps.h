@@ -62,6 +62,12 @@ SD_LIB_EXPORT void saveNpy(std::string fname, const OpaqueDataBuffer *data, cons
  */
 SD_LIB_EXPORT void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long fromOffset, long targetOffset);
 /**
+ * Print the device buffer
+ * @param buffer
+ */
+SD_LIB_EXPORT void printDeviceBuffer(OpaqueDataBuffer *buffer);
+
+/**
  * This function returns last error code stored,
  * @return non-zero if something bad happened
  */

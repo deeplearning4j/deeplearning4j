@@ -62,10 +62,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
             TO_STRING_MAX = 1000;
         }
     }
+    protected transient OpaqueDataBuffer ptrDataBuffer;
 
     protected DataType type;
     protected long length;
-    protected transient OpaqueDataBuffer ptrDataBuffer;
 
     protected long underlyingLength;
     protected long offset;
@@ -98,14 +98,16 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected abstract void initTypeAndSize();
 
     @Override
+    public OpaqueDataBuffer opaqueBuffer() {
+        return ptrDataBuffer;
+    }
+
+    @Override
     public int getElementSize() {
         return elementSize;
     }
 
-    @Override
-    public OpaqueDataBuffer opaqueBuffer() {
-        return ptrDataBuffer;
-    }
+
 
     @Override
     public long getGenerationId() {
@@ -321,7 +323,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public abstract Pointer addressPointer();
 
 
-
     @Override
     public long address() {
         if (released)
@@ -333,7 +334,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     @Deprecated
     public void addReferencing(String id) {
-        //referencing.add(id);
     }
 
     @Override

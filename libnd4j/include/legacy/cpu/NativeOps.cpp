@@ -2944,6 +2944,39 @@ bool isOptimalRequirementsMet() {
 #endif
 }
 
+
+template <typename T>
+void _printHostBuffer(InteropDataBuffer *buffer) {
+  auto xType = buffer->dataBuffer()->getDataType();
+  sd::LongType len = buffer->dataBuffer()->getNumElements();
+  auto buff = buffer->dataBuffer()->template primaryAsT<T>();
+  sd_printf("Host buffer: ",0);
+  for(int i = 0; i < len; i++) {
+    sd_printf("%f ",buff[i]);
+  }
+
+  sd_printf("\n",0);
+}
+
+void printDeviceBuffer(OpaqueDataBuffer *buffer) {
+  if(buffer->special() != nullptr) {
+    sd_printf("Device pointer address: %d\n", buffer->special());
+  } else {
+    sd_printf("Device pointer address: none\n",0);
+  }
+
+  if(buffer->primary() != nullptr) {
+    sd_printf("Host pointer address: %d\n", buffer->primary());
+  } else  {
+    sd_printf("Host pointer address: none\n",0);
+  }
+
+  auto xType = buffer->dataBuffer()->getDataType();
+  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(buffer),SD_COMMON_TYPES_ALL);
+  
+
+}
+
 OpaqueDataBuffer *dbAllocateDataBuffer(sd::LongType elements, int dataType, bool allocateBoth) {
   return allocateDataBuffer(elements, dataType, allocateBoth);
 }

@@ -94,6 +94,8 @@ class SD_LIB_EXPORT DataBuffer {
   void setDataType(DataType dataType);
   size_t getLenInBytes() const;
 
+  size_t getNumElements();
+
   void *primary();
   void *special();
 
@@ -117,6 +119,8 @@ class SD_LIB_EXPORT DataBuffer {
   SD_INLINE T *primaryAsT();
   template <typename T>
   SD_INLINE T *specialAsT();
+
+
 
   void syncToPrimary(const LaunchContext *context, const bool forceSync = false);
   void syncToSpecial(const bool forceSync = false);

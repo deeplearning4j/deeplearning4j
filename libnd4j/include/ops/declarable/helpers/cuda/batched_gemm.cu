@@ -89,6 +89,8 @@ void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std
     pCbuffs[i] = pC[i]->specialBuffer();
   }
 
+
+
   sd::LaunchContext* context = vA[0]->getContext();
   PointersManager manager(context, "helpers::bgemm cuda");
 
@@ -96,18 +98,15 @@ void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std
   const void** bBuffers = reinterpret_cast<const void**>(manager.replicatePointer(pBbuffs.data(), bS * sizeof(void*)));
   void** cBuffers = reinterpret_cast<void**>(manager.replicatePointer(pCbuffs.data(), bS * sizeof(void*)));
 
-  // const auto aOrder = pA->ordering();
-  // const auto bOrder = pB->ordering();
 
-  // const bool transA = aOrder != 'f';
-  // const bool transB = bOrder != 'f';
 
   const cublasOperation_t transAblas = transA == 112 ? CUBLAS_OP_T : CUBLAS_OP_N;
   const cublasOperation_t transBblas = transB == 112 ? CUBLAS_OP_T : CUBLAS_OP_N;
 
-  // const int lda = aOrder == 'f' ? M : K;
-  // const int ldb = bOrder == 'f' ? K : N;
-  // const int ldc = M; // cOrder == 'f' ? M : N;
+  if(M < 0) throw std::runtime_error("M < 0");
+  if(N < 0) throw std::runtime_error("N < 0");
+  if(K < 0) throw std::runtime_error("K < 0");
+
 
   const auto aType = pA[0]->dataType();
   const auto bType = pB[0]->dataType();
@@ -120,7 +119,7 @@ void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std
 
   auto status = cublasSetStream_v2(*handle, *stream);
 
-  if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
+  if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda set stream failed ! Please double check the passed in handle.", status);
 
   const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
 
@@ -154,10 +153,15 @@ void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std
   } else
     throw std::runtime_error("batched gemm cuda: this mode is not implemented yet !");
 
-  if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
+  if (status != CUBLAS_STATUS_SUCCESS) {
+    sd_printf("Status was: %d\n",status);
+    throw cuda_exception::build("MmulHelper::mmulMxM cuda execution failed !", status);
+  }
 
   auto cudaResult = cudaStreamSynchronize(*stream);
-  if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
+  if (cudaResult != 0) {
+    throw cuda_exception::build("MmulHelper::mmulMxM cuda stream synchronize failed !", cudaResult);
+  }
 
   for (int i = 0; i < bS; ++i)
     if (vC[i]->ews() != 1) vC[i]->assign(pC[i]);
