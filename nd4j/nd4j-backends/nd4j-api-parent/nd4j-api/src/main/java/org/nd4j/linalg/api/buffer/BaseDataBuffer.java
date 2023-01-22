@@ -66,7 +66,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected DataType type;
     protected long length;
-    protected transient OpaqueDataBuffer ptrDataBuffer;
 
     protected long underlyingLength;
     protected long offset;
@@ -108,10 +107,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return elementSize;
     }
 
-    @Override
-    public OpaqueDataBuffer opaqueBuffer() {
-        return ptrDataBuffer;
-    }
+
 
     @Override
     public long getGenerationId() {

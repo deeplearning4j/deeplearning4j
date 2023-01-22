@@ -207,7 +207,6 @@ public interface DataBuffer extends Serializable, AutoCloseable {
      */
     void unPersist();
 
-    OpaqueDataBuffer opaqueBuffer();
 
     /**
      * The number of bytes for each individual element
