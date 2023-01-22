@@ -31,6 +31,7 @@ import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.primitives.AtomicDouble;
 import org.nd4j.common.primitives.Triple;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 

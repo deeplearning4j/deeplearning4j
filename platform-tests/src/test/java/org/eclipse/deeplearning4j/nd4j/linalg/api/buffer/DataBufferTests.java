@@ -295,12 +295,10 @@ public class DataBufferTests extends BaseNd4jTestWithBackends {
                     continue;
                 }
 
-//                log.info("Testing source [{}]; target: [{}]", sourceType, dt);
 
                 for (boolean useWs : new boolean[]{false, true}) {
 
                     try (MemoryWorkspace ws = (useWs ? workspace.notifyScopeEntered() : null)) {
-
                         DataBuffer db1;
                         DataBuffer db2;
                         switch (sourceType) {
@@ -339,10 +337,10 @@ public class DataBufferTests extends BaseNd4jTestWithBackends {
                         checkTypes(dt, db1, 3);
                         checkTypes(dt, db2, 3);
 
-                        assertEquals(useWs, db1.isAttached());
+                        assertEquals(useWs, db1.isAttached(),"useWs: " + useWs + " db1 data type " + db1.dataType() + " sourceType: " + sourceType);
                         assertFalse(db2.isAttached());
 
-                        if(!sourceType.equals("boolean")){
+                        if(!sourceType.equals("boolean")) {
                             testDBOps(db1);
                             testDBOps(db2);
                         }

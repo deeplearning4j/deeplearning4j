@@ -463,7 +463,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         }
         for (val arr: outArgs) {
             if(arr == null)
-                continue;;
+                continue;
 
             if (arr.wasClosed())
                 throw new IllegalStateException("One of Output arguments was closed before call");
