@@ -1239,7 +1239,8 @@ public class Nd4j {
      * @return the created buffer
      */
     public static DataBuffer createBuffer(@NonNull Pointer pointer, long length, @NonNull DataType dataType) {
-        if(dataType != dataTypeForPointer(pointer)) {
+        DataType dataType1 = dataTypeForPointer(pointer);
+        if(dataType1 != null && dataType1 != dataTypeForPointer(pointer) ) {
            return  Nd4j.create(Nd4j.createBuffer(pointer,length,dataTypeForPointer(pointer))).castTo(dataType).data();
         }
         Pointer nPointer = getPointer(pointer, dataType);
