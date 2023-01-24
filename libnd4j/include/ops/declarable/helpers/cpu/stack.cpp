@@ -34,13 +34,14 @@ template <typename T>
 static void stack_(const std::vector<const NDArray*>& inArrs, NDArray& output, const int dim) {
   const int numOfSubArrs = inArrs.size();
 
-  if (inArrs[0]->rankOf() == 0) {
+  //no op on empty
+  if (inArrs[0]->rankOf() == 0 && !inArrs[0]->isEmpty()) {
     auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) output.p<T>(i, inArrs[i]->t<T>(0));
+      for (auto i = start; i < stop; i++) if(!output.isEmpty() && !inArrs[i]->isEmpty()) output.p<T>(i, inArrs[i]->t<T>(0));
     };
 
     samediff::Threads::parallel_for(func, 0, numOfSubArrs);
-  } else {
+  } else if(!output.isEmpty()) {
     auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(
         output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(), {dim}));
     auto zTadShapeInfo = zTadPack.primaryShapeInfo();

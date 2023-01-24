@@ -155,7 +155,7 @@ CONFIGURABLE_OP_IMPL(skipgram, 12, 12, true, 0, 0) {
   // required part
   auto indices = INPUT_VARIABLE(2);
   auto codes = INPUT_VARIABLE(3);
-
+  sd_printf("Input variable 3 datatype is %s\n",DataTypeUtils::asString(codes->dataType()).c_str());
   auto syn0 = INPUT_VARIABLE(4);
   auto syn1 = INPUT_VARIABLE(5);
   auto syn1neg = INPUT_VARIABLE(6);
@@ -197,7 +197,7 @@ DECLARE_TYPES(skipgram) {
       ->setAllowedInputTypes(0, sd::DataType::INT32)
       ->setAllowedInputTypes(1, sd::DataType::INT32)
       ->setAllowedInputTypes(2, sd::DataType::INT32)
-      ->setAllowedInputTypes(3, sd::DataType::INT32)
+      ->setAllowedInputTypes(3, {ALL_INTS})
       ->setAllowedInputTypes(4, {ALL_FLOATS})
       ->setAllowedInputTypes(5, {ALL_FLOATS})
       ->setAllowedInputTypes(6, {ALL_FLOATS})

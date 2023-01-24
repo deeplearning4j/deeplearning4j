@@ -457,12 +457,27 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
   if (block.isFastPath()) {
     for (auto array : block.fastpath_in()) {
       if (array == nullptr) continue;
+      auto inputTypes = _descriptor->getInputTypesForInput(cnt);
 
       inputTypes[inT++] = array->dataType();
       if (!_descriptor->checkInputMatch(cnt, array->dataType())) {
         auto ctype = DataTypeUtils::asString(array->dataType());
-        sd_printf("Op [%s] failed check for input [%i], DataType: [%s]\n", _descriptor->getOpName()->data(), cnt,
-                  ctype.c_str());
+        if(inputTypes.size() > 1) {
+          std::string allTypes;
+          for(int i = 0; i < inputTypes.size(); i++) {
+            allTypes += DataTypeUtils::asString(inputTypes[i]);
+            if(i < inputTypes.size() - 1) {
+              allTypes += ",";
+            }
+          }
+          sd_printf("Op [%s] failed check for input [%i], DataType: [%s] Expected data types[%s]\n", _descriptor->getOpName()->data(), cnt,
+                    ctype.c_str(),allTypes.c_str());
+        } else {
+          auto typeAsString = DataTypeUtils::asString(inputTypes[0]);
+          sd_printf("Op [%s] failed check for input [%i], DataType: [%s] Expected data type[%s]\n", _descriptor->getOpName()->data(), cnt,
+                    ctype.c_str(),typeAsString.c_str());
+        }
+
         return sd::Status::BAD_ARGUMENTS;
       }
       cnt++;
@@ -1162,9 +1177,9 @@ sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const
 
   if (!isInplace) {
     if(block.isFastPath()) {
-     //note this *is* similar to the code below but we use fast paths instead
-     //we need to ensure variables don't get freed allowing reuse of outputs
-     //as views
+      //note this *is* similar to the code below but we use fast paths instead
+      //we need to ensure variables don't get freed allowing reuse of outputs
+      //as views
       for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
         std::pair<int, int> pair(1, e);
         if (variableSpace.hasVariable(pair)) {

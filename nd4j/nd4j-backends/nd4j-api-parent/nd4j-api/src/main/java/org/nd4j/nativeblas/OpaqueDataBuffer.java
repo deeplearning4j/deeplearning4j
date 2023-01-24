@@ -27,7 +27,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 
 @Slf4j
 public class OpaqueDataBuffer extends Pointer {
-    // TODO: make this configurable
     private static final int MAX_TRIES = 5;
 
     public OpaqueDataBuffer(Pointer p) { super(p); }

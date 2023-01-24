@@ -1278,9 +1278,13 @@ public interface NativeOps {
                                       PointerPointer specialShapeInfo);
 
 
-    void setShapeBuffer( LongPointer inputShapeData, int dt, LongPointer bufferToSet,char order,int elementWiseStride);
-    void setShapeBuffer( LongBuffer inputShapeData,  int dt,  LongBuffer bufferToSet,char order,int elementWiseStride);
-    void setShapeBuffer( long[] inputShapeData, int dt, long[] bufferToSet,char order,int elementWiseStride);
+     void setShapeBuffer( LongPointer inputShapeData, int dt, LongPointer bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/, boolean isEmpty/*=false*/);
+     void setShapeBuffer( LongPointer inputShapeData, int dt, LongPointer bufferToSet);
+     void setShapeBuffer( LongBuffer inputShapeData, int dt, LongBuffer bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/, boolean isEmpty/*=false*/);
+     void setShapeBuffer( LongBuffer inputShapeData, int dt, LongBuffer bufferToSet);
+     void setShapeBuffer( long[] inputShapeData, int dt, long[] bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/, boolean isEmpty/*=false*/);
+     void setShapeBuffer( long[] inputShapeData, int dt, long[] bufferToSet);
+
 
     void setGraphContextTArguments(OpaqueContext ptr, DoublePointer arguments, int numberOfArguments);
     void setGraphContextIArguments(OpaqueContext ptr, LongPointer arguments, int numberOfArguments);

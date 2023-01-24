@@ -4512,7 +4512,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public DataBuffer shapeInfoDataBuffer() {
         Nd4j.getCompressor().autoDecompress(this);
-        val si = Nd4j.getShapeInfoProvider().createShapeInformation(jvmShapeInfo.shape, jvmShapeInfo.stride,  jvmShapeInfo.ews, jvmShapeInfo.order, dataType(), isEmpty());
+        val si = Nd4j.getShapeInfoProvider().createShapeInformation(jvmShapeInfo.shape, jvmShapeInfo.stride,  jvmShapeInfo.ews, jvmShapeInfo.order, ArrayOptionsHelper.dataType(jvmShapeInfo.javaShapeInformation), Shape.isEmpty(jvmShapeInfo.javaShapeInformation));
         return si.getFirst();
     }
 

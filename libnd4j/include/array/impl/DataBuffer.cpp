@@ -68,7 +68,7 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
 ////////////////////////////////////////////////////////////////////////
 DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, const DataType dataType,
                        const bool isOwnerPrimary, const bool isOwnerSpecial, memory::Workspace* workspace) {
-  if (primary == nullptr && special == nullptr)
+  if (primary == nullptr && special == nullptr && lenInBytes > 0)
     throw std::runtime_error("DataBuffer constructor: can't be initialized with both nullptr buffers !");
 
   _primaryBuffer = primary;
@@ -90,6 +90,7 @@ DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, co
 DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary,
                        memory::Workspace* workspace)
     : DataBuffer(primary, nullptr, lenInBytes, dataType, isOwnerPrimary, false, workspace) {
+ if(primary != nullptr)
   syncToSpecial(true);
 }
 

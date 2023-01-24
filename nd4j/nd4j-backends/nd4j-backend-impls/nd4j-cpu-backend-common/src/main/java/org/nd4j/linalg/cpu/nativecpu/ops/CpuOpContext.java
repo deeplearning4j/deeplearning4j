@@ -190,7 +190,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             INDArray array = arrays.get(i);
             buffers.put(i,array.isEmpty() ? null : ((BaseCpuDataBuffer) array.data()).getOpaqueDataBuffer());
             shapeInfoBuffer.put(i,array.shapeInfoDataBuffer().addressPointer());
-            fastpath_in.put(i,array);
+            fastpath_in.put(i,array.isEmpty() ? null : array);
         }
 
         buffers.retainReference();

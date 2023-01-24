@@ -38,15 +38,7 @@ namespace sd {
 #define SHAPE_DESC_INCORRECT_RANK 4     // rank > 32 or shape size and rank does not match
 
 class SD_LIB_EXPORT ShapeDescriptor {
- private:
-  int _rank = 0;
-  std::vector<sd::LongType> _shape_strides;
-  // std::vector<sd::LongType> _strides;
-  sd::LongType _ews = 1;
-  char _order = 'c';
-  DataType _dataType;
-  sd::LongType _extraProperties = 0;
-  sd::LongType _paddedAllocSize = 0;
+
 
   SD_INLINE void fillStrides() {
     // double checks if the _rank and _shape_strides are set correctly before filling strides
@@ -74,6 +66,14 @@ class SD_LIB_EXPORT ShapeDescriptor {
   }
 
  public:
+  int _rank = 0;
+  std::vector<sd::LongType> _shape_strides;
+  // std::vector<sd::LongType> _strides;
+  sd::LongType _ews = 1;
+  char _order = 'c';
+  DataType _dataType;
+  sd::LongType _extraProperties = 0;
+  sd::LongType _paddedAllocSize = 0;
   ShapeDescriptor(const ShapeDescriptor &other);
   ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtype = true);
   explicit ShapeDescriptor(const sd::LongType *shapeInfo, const sd::DataType dtypeOverride);

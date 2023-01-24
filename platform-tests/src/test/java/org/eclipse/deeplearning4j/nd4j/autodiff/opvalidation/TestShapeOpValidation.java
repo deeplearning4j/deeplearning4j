@@ -156,7 +156,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
                         .expectedOutput("out", expOut);
 
                 String error = OpValidation.validate(tc);
-                if(error != null){
+                if(error != null) {
                     failed.add(error);
                 }
             }

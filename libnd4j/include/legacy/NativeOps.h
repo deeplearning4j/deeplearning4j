@@ -1495,7 +1495,7 @@ SD_LIB_EXPORT void setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays
 SD_LIB_EXPORT void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer * shapeInfo,
                                                 sd::Pointer * specialShapeInfo);
 
-SD_LIB_EXPORT void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order = 'c',int elementWiseStride = 1);
+SD_LIB_EXPORT void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order = 'c',int elementWiseStride = 1,bool isEmpty = false);
 
 SD_LIB_EXPORT void setGraphContextDArguments(OpaqueContext* ptr, int* arguments, int numberOfArguments);
 SD_LIB_EXPORT void setGraphContextTArguments(OpaqueContext* ptr, double* arguments, int numberOfArguments);

@@ -273,7 +273,7 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const ShapeDescriptor &desc
 
 NDArray::NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc)
     : NDArray::NDArray(buffer, const_cast<const sd::LongType *>(shapeInfo), context, isBuffAlloc) {
-  //
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -309,16 +309,37 @@ NDArray::NDArray(void *buffer, void *bufferD, const sd::LongType *shapeInfo, sd:
                  const bool isBuffAlloc, const bool isBuffDAlloc) {
   if (shapeInfo == nullptr) throw std::runtime_error("NDArray constructor cuda: can't be initialized without shapeinfo");
 
+  if (buffer == nullptr && ArrayOptions::arrayType(shapeInfo) != ArrayType::EMPTY) {
+    std::string errorMessage = "NDArray constructor: buffer was null but array shape info did not indicate empty! Shape buffer was: ";
+    errorMessage += "[";
+    int len = shape::shapeInfoLength(shape::rank(shapeInfo));
+    for(int i = 0; i < len; i++) {
+           errorMessage += std::string(std::to_string(shapeInfo[i]));
+           if(i < len) {
+             errorMessage += std::string(",");
+           }
+
+    }
+
+    ShapeDescriptor shapeDescriptor(shapeInfo);
+    errorMessage += std::string("]");
+    errorMessage += std::string(" wasEmpty: " + std::to_string(shapeDescriptor.isEmpty()));
+    errorMessage += std::string(" data type: " + DataTypeUtils::asString(shapeDescriptor.dataType()));
+    errorMessage += std::string( "order: " + shapeDescriptor.order());
+    throw std::runtime_error(errorMessage);
+  }
+
   if ((int)shapeInfo[0] > SD_MAX_RANK)
-    throw std::invalid_argument("NDArray constructor cuda: rank of NDArray can't exceed 32");
+    throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32");
 
   _context = context;
   _offset = 0;
 
   setShapeInfo(ShapeDescriptor(shapeInfo));
 
-  if (!isEmpty())
-    _buffer = std::make_shared<DataBuffer>(buffer, bufferD, lengthOf() * sizeOfT(), dataType(), isBuffAlloc,
+  if (!isEmpty() && buffer != nullptr)
+    _buffer = std::make_shared<DataBuffer>(buffer != nullptr ? buffer : buffer,
+                                           bufferD, lengthOf() * sizeOfT(), dataType(), isBuffAlloc,
                                            isBuffDAlloc, getContext()->getWorkspace());
 }
 
@@ -1639,15 +1660,6 @@ void NDArray::printBuffer(const char *msg, sd::LongType limit, const bool sync) 
       if (e < limit - 1) printf(", ");
     }
   } else if (this->isS()) {
-    // todo do we need this print offsets
-    /*
-for (sd::LongType e = 0; e < limit; e++) {
-    printf("\"%lld\"", this->getOffset(e));
-    if (e < limit - 1)
-        printf(", ");
-}
-printf("]\n[");
-*/
     for (sd::LongType e = 0; e < limit; e++) {
       printf("\"%s\"", this->e<std::string>(e).c_str());
       if (e < limit - 1) printf(", ");

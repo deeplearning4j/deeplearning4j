@@ -23,7 +23,9 @@ package org.nd4j.linalg.api.ndarray;
 
 import lombok.Getter;
 import lombok.NonNull;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 
 public class JvmShapeInfo {
     @Getter protected final long[] javaShapeInformation;
@@ -34,6 +36,7 @@ public class JvmShapeInfo {
     @Getter protected final long extras;
     @Getter protected final char order;
     @Getter protected final int rank;
+    @Getter protected final DataType dataType;
 
     public JvmShapeInfo(@NonNull long[] javaShapeInformation) {
         this.javaShapeInformation = javaShapeInformation;
@@ -44,5 +47,6 @@ public class JvmShapeInfo {
         this.extras = Shape.extras(javaShapeInformation);
         this.order = Shape.order(javaShapeInformation);
         this.rank = Shape.rank(javaShapeInformation);
+        this.dataType = ArrayOptionsHelper.dataType(javaShapeInformation);
     }
 }

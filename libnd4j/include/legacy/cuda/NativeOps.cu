@@ -3548,7 +3548,7 @@ void setVedaDeviceLibFolder(std::string path){
 }
 
 
-void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order,int elementWiseStride) {
+void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order,int elementWiseStride,bool isEmpty) {
   sd::LongType  rank = inputShapeData[0];
   if(rank > SD_MAX_RANK || rank < 0)
     throw std::runtime_error("Invalid rank for shape buffer.");
@@ -3565,10 +3565,18 @@ void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *b
 
 
   auto len = shape::shapeInfoLength(rank);
-  auto buffer = ShapeDescriptor(dt ,order,shape,strides,elementWiseStride).toShapeInfo();
+  auto descriptor = ShapeDescriptor(dt ,order,shape,strides,elementWiseStride);
+  if(isEmpty) {
+    descriptor._extraProperties = ARRAY_EMPTY;
+    sd_printf("Setting empty for shape buffer \n",0);
+  }
+
+  auto buffer = descriptor.toShapeInfo();
   for(sd::LongType i = 0; i < len; i++) {
     bufferToSet[i] = buffer[i];
   }
+
+  sd_printf("Shape buffer is empty: %d\n",shape::isEmpty(buffer));
 
 
 
@@ -3600,7 +3608,8 @@ void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataB
                                   sd::Pointer * specialShapeInfo) {
   auto inputShapeBuffers = (void **) shapeInfo;
   for(int i = 0; i < numArrays; i++) {
-    setGraphContextInputBuffer(ptr,i,buffer != nullptr  && buffer[i] != nullptr ? buffer[i] : nullptr,inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+    if(buffer != nullptr && buffer[i] != nullptr)
+      setGraphContextInputBuffer(ptr,i, buffer[i] : nullptr,inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
   }
 
 }
@@ -3609,7 +3618,8 @@ void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataB
   auto inputShapeBuffers = (void **) shapeInfo;
 
   for(int i = 0; i < numArrays; i++) {
-    setGraphContextOutputBuffer(ptr,i,buffer != nullptr && buffer[i] != nullptr ? buffer[i] : nullptr,inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : specialShapeInfo);
+    if(buffer != nullptr && buffer[i] != nullptr)
+      setGraphContextOutputBuffer(ptr,i,buffer[i] : nullptr,inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : specialShapeInfo);
   }
 
 }

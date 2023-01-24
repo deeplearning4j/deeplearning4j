@@ -50,7 +50,7 @@ bool ShapeDescriptor::operator<(const ShapeDescriptor &other) const {
 sd::LongType *ShapeDescriptor::toShapeInfo() const {
   auto _shape = _shape_strides.data();
   auto _strides = _shape_strides.data() + _rank;
-  // for empy array use original
+  // for empty array use original
   if (isEmpty()) {
     if (_rank == 0)
       return ShapeBuilders::emptyShapeInfo(_dataType);
@@ -77,6 +77,8 @@ sd::LongType *ShapeDescriptor::toShapeInfo() const {
       shapeInfo[2 + _rank * 2] = _ews;
     }
   }
+
+
   ArrayOptions::setPropertyBit(shapeInfo, _extraProperties);
   return shapeInfo;
 }

@@ -136,11 +136,11 @@ static bool execHelperScalar(int opNum, OpaqueDataBuffer *dbX, const sd::LongTyp
 
 
 void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long fromOffset, long targetOffset) {
-   OpaqueDataBuffer *copyFrom = dbCreateView(from,n,fromOffset);
-   OpaqueDataBuffer *targetView = dbCreateView(target,n,targetOffset);
-   const DataBuffer targetBuf = *copyFrom->dataBuffer().get();
-   const DataBuffer srcBuf = *targetView->dataBuffer().get();
-   DataBuffer::memcpy(targetBuf,srcBuf);
+  OpaqueDataBuffer *copyFrom = dbCreateView(from,n,fromOffset);
+  OpaqueDataBuffer *targetView = dbCreateView(target,n,targetOffset);
+  const DataBuffer targetBuf = *copyFrom->dataBuffer().get();
+  const DataBuffer srcBuf = *targetView->dataBuffer().get();
+  DataBuffer::memcpy(targetBuf,srcBuf);
 }
 
 /**
@@ -283,7 +283,7 @@ void setGraphContextInputArrays(OpaqueContext* ptr, int numArrays, sd::Pointer *
 
 }
 void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, void** buffer, sd::Pointer * shapeInfo,
-                                      sd::Pointer * specialBuffer, sd::Pointer * specialShapeInfo) {
+                                 sd::Pointer * specialBuffer, sd::Pointer * specialShapeInfo) {
   auto inputBuffers = (void **) buffer;
   auto inputShapeBuffers = (void **) shapeInfo;
   for(int i = 0; i < numArrays; i++) {
@@ -292,24 +292,32 @@ void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, void** buffe
 
 }
 void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer * shapeInfo,
-                                      sd::Pointer * specialShapeInfo) {
+                                  sd::Pointer * specialShapeInfo) {
   auto inputShapeBuffers = (void **) shapeInfo;
   if(shapeInfo == nullptr)
     throw std::runtime_error("Input shape info was null!");
   for(int i = 0; i < numArrays; i++) {
-  if(inputShapeBuffers[i] == nullptr)
-    throw std::runtime_error("Input shape at index was null!");
-    setGraphContextInputBuffer(ptr,i,buffer != nullptr  && buffer[i] != nullptr ? buffer[i] : nullptr,inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
-
+    if(inputShapeBuffers[i] == nullptr)
+      throw std::runtime_error("Input shape at index was null!");
+    if(buffer != nullptr && buffer[i] != nullptr)
+      setGraphContextInputBuffer(ptr,i,buffer[i],inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+    else {
+      setGraphContextInputBuffer(ptr,i, nullptr,inputShapeBuffers[i],specialShapeInfo);
+    }
   }
 
 }
 void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer* shapeInfo,
-                                               sd::Pointer * specialShapeInfo) {
+                                  sd::Pointer * specialShapeInfo) {
   auto inputShapeBuffers = (void **) shapeInfo;
 
   for(int i = 0; i < numArrays; i++) {
-    setGraphContextOutputBuffer(ptr,i,buffer != nullptr && buffer[i] != nullptr ? buffer[i] : nullptr,inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : specialShapeInfo);
+    if(buffer != nullptr && buffer[i] != nullptr)
+      setGraphContextOutputBuffer(ptr,i,buffer[i],inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+    else {
+      setGraphContextOutputBuffer(ptr,i, nullptr,inputShapeBuffers[i],specialShapeInfo);
+    }
+
   }
 
 }
@@ -698,11 +706,11 @@ void execScalar(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, co
         execHelperScalar(opNum, dbX, hXShapeInfo, dbScalar, hScalarShapeInfo, dbZ, hZShapeInfo, extraParams);
     if (!helperIsUsed) {
 #endif
-      OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX, dbScalar});
-      NativeOpExecutioner::execScalar(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
-                                      dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, dbScalar->primary(),
-                                      hScalarShapeInfo, dbScalar->special(), dScalarShapeInfo, extraParams);
-      OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX, dbScalar});
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX, dbScalar});
+    NativeOpExecutioner::execScalar(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
+                                    dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, dbScalar->primary(),
+                                    hScalarShapeInfo, dbScalar->special(), dScalarShapeInfo, extraParams);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX, dbScalar});
 #if defined(HAVE_VEDA)
     }
 #endif
@@ -883,11 +891,11 @@ void execTransformStrict(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer
     auto helperIsUsed = execHelperTransformStrict(opNum, dbX, hXShapeInfo, dbZ, hZShapeInfo, extraParams);
     if (!helperIsUsed) {
 #endif
-      OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
-      NativeOpExecutioner::execTransformStrict(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
-                                               dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, extraParams,
-                                               nullptr, nullptr);
-      OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
+    OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
+    NativeOpExecutioner::execTransformStrict(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
+                                             dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo, extraParams,
+                                             nullptr, nullptr);
+    OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
 #if defined(HAVE_VEDA)
     }
 #endif
@@ -1157,7 +1165,7 @@ void pullRows(sd::Pointer *extraPointers, OpaqueDataBuffer *dbX, sd::LongType co
 
     BUILD_SINGLE_SELECTOR(xType, pullRowsGeneric,
                           (dbX->primary(), hXShapeInfo, dbZ->primary(), hZShapeInfo, n, indexes, tadShapeInfo,
-                           tadOffsets, zTadShapeInfo, zTadOffsets),
+                              tadOffsets, zTadShapeInfo, zTadOffsets),
                           SD_COMMON_TYPES);
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -2270,7 +2278,7 @@ void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer hX, sd::LongType
     } else if (dstType == ND4J_DOUBLE) {
       // sd::TypeCast::convertGeneric<sd::float8, double>(nullptr, hx, N, hz);
     } else {
-       sd_debug("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+      sd_debug("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
     }
   } else if (srcType == ND4J_INT8) {
     if (dstType == ND4J_FLOAT8) {
@@ -2424,7 +2432,7 @@ void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer hX, sd::LongType
 
 
 
-void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order,int elementWiseStride) {
+void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order,int elementWiseStride,bool isEmpty) {
   sd::LongType  rank = inputShapeData[0];
   if(rank > SD_MAX_RANK || rank < 0)
     throw std::runtime_error("Invalid rank for shape buffer.");
@@ -2441,10 +2449,16 @@ void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *b
 
 
   auto len = shape::shapeInfoLength(rank);
-  auto buffer = ShapeDescriptor(dt ,order,shape,strides,elementWiseStride).toShapeInfo();
+  auto descriptor = ShapeDescriptor(dt ,order,shape,strides,elementWiseStride);
+  if(isEmpty) {
+    descriptor._extraProperties = ARRAY_EMPTY;
+  }
+
+  auto buffer = descriptor.toShapeInfo();
   for(sd::LongType i = 0; i < len; i++) {
     bufferToSet[i] = buffer[i];
   }
+
 
 
 
@@ -2538,7 +2552,7 @@ void scatterUpdate(sd::Pointer *extraPointers, int opCode, int numOfSubArrs, voi
     BUILD_SINGLE_SELECTOR(
         iType, _scatterUpdate,
         (extraPointers, opCode, numOfSubArrs, hX, hXShapeInfo, hXOffsets, dX, dXShapeInfo, dXOffsets, hY, hYShapeInfo,
-         hYOffsets, dY, dYShapeInfo, dYOffsets, hIindexes, hIndicesShapeInfo, dIindexes, dIndicesShapeInfo),
+            hYOffsets, dY, dYShapeInfo, dYOffsets, hIindexes, hIndicesShapeInfo, dIindexes, dIndicesShapeInfo),
         SD_INDEXING_TYPES);
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -2973,7 +2987,7 @@ void printDeviceBuffer(OpaqueDataBuffer *buffer) {
 
   auto xType = buffer->dataBuffer()->getDataType();
   BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(buffer),SD_COMMON_TYPES_ALL);
-  
+
 
 }
 
@@ -2996,7 +3010,9 @@ sd::Pointer dbPrimaryBuffer(OpaqueDataBuffer *dataBuffer) { return dataBuffer->p
 
 sd::Pointer dbSpecialBuffer(OpaqueDataBuffer *dataBuffer) { return dataBuffer->special(); }
 
-void deleteDataBuffer(OpaqueDataBuffer *dataBuffer) { delete dataBuffer; }
+void deleteDataBuffer(OpaqueDataBuffer *dataBuffer) {
+  delete dataBuffer;
+}
 
 OpaqueDataBuffer *dbCreateExternalDataBuffer(sd::LongType elements, int dataType, sd::Pointer primary,
                                              sd::Pointer special) {
@@ -3035,8 +3051,8 @@ OpaqueDataBuffer *dbCreateView(OpaqueDataBuffer *dataBuffer, sd::LongType length
 }
 
 int dbUseCount(OpaqueDataBuffer* dataBuffer){
- if(dataBuffer) return dataBuffer->useCount();
- return 0;
+  if(dataBuffer) return dataBuffer->useCount();
+  return 0;
 }
 
 void dbSyncToSpecial(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->syncToSpecial(); }
@@ -3070,13 +3086,13 @@ void setVedaDeviceLibFolder(std::string path) {
 
 BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric,
                       (void *, sd::LongType const *, void *, sd::LongType const *, const int, sd::LongType const *,
-                       sd::LongType const *, sd::LongType const *, sd::LongType const *, sd::LongType const *),
+                          sd::LongType const *, sd::LongType const *, sd::LongType const *, sd::LongType const *),
                       SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template void tearGeneric,
                       (void *, sd::LongType const *, sd::Pointer *, sd::LongType const *, sd::LongType const *,
-                       sd::LongType const *),
+                          sd::LongType const *),
                       SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template void shuffleGeneric,
                       (void **, sd::LongType *const *, void **, sd::LongType *const *, int, int *,
-                       sd::LongType *const *, sd::LongType *const *),
+                          sd::LongType *const *, sd::LongType *const *),
                       SD_COMMON_TYPES);
