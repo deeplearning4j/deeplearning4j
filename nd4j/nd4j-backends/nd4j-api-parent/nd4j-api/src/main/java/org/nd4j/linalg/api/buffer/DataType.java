@@ -240,8 +240,8 @@ public enum DataType {
         }
     }
 
-    public static DataType fromNumpy(String numpyDtypeName){
-        switch (numpyDtypeName.toLowerCase()){
+    public static DataType fromNumpy(String numpyDtypeName) {
+        switch (numpyDtypeName.toLowerCase()) {
             case "bool": return BOOL;
             case "byte":
             case "int8":

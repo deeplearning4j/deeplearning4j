@@ -457,16 +457,16 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
   if (block.isFastPath()) {
     for (auto array : block.fastpath_in()) {
       if (array == nullptr) continue;
-      auto inputTypes = _descriptor->getInputTypesForInput(cnt);
-
-      inputTypes[inT++] = array->dataType();
+      auto dtype = array->dataType();
+      inputTypes[inT++] = dtype;
       if (!_descriptor->checkInputMatch(cnt, array->dataType())) {
         auto ctype = DataTypeUtils::asString(array->dataType());
-        if(inputTypes.size() > 1) {
+        auto inputTypes2 = _descriptor->getInputTypesForInput(cnt);
+        if(inputTypes2.size() > 1) {
           std::string allTypes;
-          for(int i = 0; i < inputTypes.size(); i++) {
-            allTypes += DataTypeUtils::asString(inputTypes[i]);
-            if(i < inputTypes.size() - 1) {
+          for(int i = 0; i < inputTypes2.size(); i++) {
+            allTypes += DataTypeUtils::asString(inputTypes2[i]);
+            if(i < inputTypes2.size() - 1) {
               allTypes += ",";
             }
           }
@@ -485,10 +485,6 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
   } else {
     for (auto &p : *(block.inputs())) {
       auto var = block.variable(p);
-
-      // we're not checking validity, if ANY types were explicitly allowed
-      // if (block.dataType(cnt) == sd::DataType::ANY)
-      //    continue;
 
       // only validating non-null variables
       if (var != nullptr && var->hasNDArray()) {
@@ -555,6 +551,7 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
       index++;
     }
   } else {
+    sd_printf("Not Fast path out\n",0);
     // checking optionally available outputs
     auto varSpace = block.getVariableSpace();
     for (int index = 0; index < DataTypeUtils::max<int>(); index++) {
@@ -612,7 +609,7 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
 
   return sd::Status::OK;
 }
-//#define DEBUG_VEDA_LOGS 1
+
 sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   sd_debug("Executing op: [%s]\n", this->getOpName()->c_str());
 

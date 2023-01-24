@@ -56,16 +56,15 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToNpyFormat(Nd4jBackend backend) throws Exception {
-
-        val dir = testDir.resolve("new-dir-" + UUID.randomUUID().toString()).toFile();
+        val dir = testDir.resolve("new-dir-" + UUID.randomUUID()).toFile();
         assertTrue(dir.mkdirs());
         new ClassPathResource("numpy_arrays/").copyDirectory(dir);
 
         File[] files = dir.listFiles();
         int cnt = 0;
 
-        for(File f : files){
-            if(!f.getPath().endsWith(".npy")){
+        for(File f : files) {
+            if(!f.getPath().endsWith(".npy")) {
                 log.warn("Skipping: {}", f);
                 continue;
             }
@@ -73,31 +72,17 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
             String path = f.getAbsolutePath();
             int lastDot = path.lastIndexOf('.');
             int lastUnderscore = path.lastIndexOf('_');
-            String dtype = path.substring(lastUnderscore+1, lastDot);
-//            System.out.println(path + " : " + dtype);
+            String dtype = path.substring(lastUnderscore + 1, lastDot);
 
             DataType dt = DataType.fromNumpy(dtype);
-            //System.out.println(dt);
 
             INDArray arr = Nd4j.arange(12).castTo(dt).reshape(3,4);
+            arr.dataType();
             byte[] bytes = Nd4j.toNpyByteArray(arr);
             byte[] expected = FileUtils.readFileToByteArray(f);
-/*
-            log.info("E: {}", Arrays.toString(expected));
-            for( int i=0; i<expected.length; i++ ){
-                System.out.print((char)expected[i]);
-            }
 
-            System.out.println();System.out.println();
 
-            log.info("A: {}", Arrays.toString(bytes));
-            for( int i=0; i<bytes.length; i++ ){
-                System.out.print((char)bytes[i]);
-            }
-            System.out.println();
-*/
-
-            assertArrayEquals(expected, bytes,"Failed with file [" + f.getName() + "]");
+            assertArrayEquals(expected, bytes,"Failed with file [" + f.getName() + "] on data type " + dt);
             cnt++;
         }
 
@@ -107,9 +92,7 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToNpyFormatScalars(Nd4jBackend backend) throws Exception {
-//        File dir = new File("C:\\DL4J\\Git\\dl4j-test-resources\\src\\main\\resources\\numpy_arrays\\scalar");
-
-        val dir = testDir.resolve("new-path0" + UUID.randomUUID().toString()).toFile();
+        val dir = testDir.resolve("new-path0" + UUID.randomUUID()).toFile();
         dir.mkdirs();
         new ClassPathResource("numpy_arrays/scalar/").copyDirectory(dir);
 
@@ -125,31 +108,13 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
             String path = f.getAbsolutePath();
             int lastDot = path.lastIndexOf('.');
             int lastUnderscore = path.lastIndexOf('_');
-            String dtype = path.substring(lastUnderscore+1, lastDot);
-//            System.out.println(path + " : " + dtype);
+            String dtype = path.substring(lastUnderscore + 1, lastDot);
 
             DataType dt = DataType.fromNumpy(dtype);
-            //System.out.println(dt);
 
             INDArray arr = Nd4j.scalar(dt, 1);
             byte[] bytes = Nd4j.toNpyByteArray(arr);
             byte[] expected = FileUtils.readFileToByteArray(f);
-
-            /*
-            log.info("E: {}", Arrays.toString(expected));
-            for( int i=0; i<expected.length; i++ ){
-                System.out.print((char)expected[i]);
-            }
-
-            System.out.println();System.out.println();
-
-            log.info("A: {}", Arrays.toString(bytes));
-            for( int i=0; i<bytes.length; i++ ){
-                System.out.print((char)bytes[i]);
-            }
-            System.out.println();
-            */
-
             assertArrayEquals(expected, bytes,"Failed with file [" + f.getName() + "]");
             cnt++;
 

@@ -5817,14 +5817,11 @@ public class Nd4j {
      * For more on the format, see: https://docs.scipy.org/doc/numpy-1.14.0/neps/npy-format.html
      */
     public static byte[] toNpyByteArray(INDArray input) {
-        try {
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            writeAsNumpy(input, byteArrayOutputStream);
-            return byteArrayOutputStream.toByteArray();
-        } catch (IOException e){
-            //Should never happen
-            throw new RuntimeException(e);
-        }
+        Pointer asNumpy = convertToNumpy(input);
+        ByteBuffer directBuffer = asNumpy.asByteBuffer();
+        byte[] ret = new byte[directBuffer.capacity()];
+        directBuffer.get(ret);
+        return ret;
     }
 
 

@@ -144,8 +144,9 @@ public class CompressionTests extends BaseNd4jTestWithBackends {
 
         INDArray compressed = BasicNDArrayCompressor.getInstance().compress(new float[] {1f, 2f, 3f, 4f, 5f});
         assertNotEquals(null, compressed.data());
-        assertNotEquals(null, compressed.shapeInfoDataBuffer());
+        //shape info databuffer call will decompress, order here is important
         assertTrue(compressed.isCompressed());
+        assertNotEquals(null, compressed.shapeInfoDataBuffer());
 
         INDArray decomp = BasicNDArrayCompressor.getInstance().decompress(compressed);
 

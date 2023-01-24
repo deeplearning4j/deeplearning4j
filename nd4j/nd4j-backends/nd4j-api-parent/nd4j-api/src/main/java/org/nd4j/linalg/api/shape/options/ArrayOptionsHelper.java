@@ -83,7 +83,7 @@ public class ArrayOptionsHelper {
         if (hasBitSet(opt, DTYPE_COMPRESSED_BIT))
             return DataType.COMPRESSED;
         else if (hasBitSet(opt, DTYPE_HALF_BIT))
-            return DataType.HALF;
+            return DataType.FLOAT16;
         else if (hasBitSet(opt, DTYPE_BFLOAT16_BIT))
             return DataType.BFLOAT16;
         else if (hasBitSet(opt, DTYPE_FLOAT_BIT))
@@ -91,15 +91,15 @@ public class ArrayOptionsHelper {
         else if (hasBitSet(opt, DTYPE_DOUBLE_BIT))
             return DataType.DOUBLE;
         else if (hasBitSet(opt, DTYPE_INT_BIT))
-            return hasBitSet(opt, DTYPE_UNSIGNED_BIT) ? DataType.UINT32 : DataType.INT;
+            return hasBitSet(opt, DTYPE_UNSIGNED_BIT) ? DataType.UINT32 : DataType.INT32;
         else if (hasBitSet(opt, DTYPE_LONG_BIT))
-            return hasBitSet(opt, DTYPE_UNSIGNED_BIT) ? DataType.UINT64 : DataType.LONG;
+            return hasBitSet(opt, DTYPE_UNSIGNED_BIT) ? DataType.UINT64 : DataType.INT64;
         else if (hasBitSet(opt, DTYPE_BOOL_BIT))
             return DataType.BOOL;
         else if (hasBitSet(opt, DTYPE_BYTE_BIT)) {
-            return hasBitSet(opt, DTYPE_UNSIGNED_BIT) ? DataType.UBYTE : DataType.BYTE;     //Byte bit set for both UBYTE and BYTE
+            return hasBitSet(opt, DTYPE_UNSIGNED_BIT) ? DataType.UINT8 : DataType.INT8;     //Byte bit set for both UBYTE and BYTE
         } else if (hasBitSet(opt, DTYPE_SHORT_BIT))
-            return hasBitSet(opt, DTYPE_UNSIGNED_BIT) ? DataType.UINT16 : DataType.SHORT;
+            return hasBitSet(opt, DTYPE_UNSIGNED_BIT) ? DataType.UINT16 : DataType.INT16;
         else if (hasBitSet(opt, DTYPE_UTF8_BIT))
             return DataType.UTF8;
         else
@@ -201,19 +201,19 @@ public class ArrayOptionsHelper {
             case DT_FLOAT:
                 return DataType.FLOAT;
             case DT_INT32:
-                return DataType.INT;
+                return DataType.INT32;
             case DT_INT64:
-                return DataType.LONG;
+                return DataType.INT64;
             case DT_INT8:
-                return DataType.BYTE;
+                return DataType.INT8;
             case DT_INT16:
-                return DataType.SHORT;
+                return DataType.INT16;
             case DT_DOUBLE:
                 return DataType.DOUBLE;
             case DT_UINT8:
-                return DataType.UBYTE;
+                return DataType.UINT8;
             case DT_HALF:
-                return DataType.HALF;
+                return DataType.FLOAT16;
             case DT_STRING:
                 return DataType.UTF8;
             default:
@@ -230,13 +230,13 @@ public class ArrayOptionsHelper {
             case "uint16":
                 return DataType.UINT16;
             case "int64":
-                return DataType.LONG;
+                return DataType.INT64;
             case "int32":
-                return DataType.INT;
+                return DataType.INT32;
             case "int16":
-                return DataType.SHORT;
+                return DataType.INT16;
             case "int8":
-                return DataType.BYTE;
+                return DataType.INT8;
             case "bool":
                 return DataType.BOOL;
             case "resource": //special case, nodes like Enter
@@ -249,11 +249,11 @@ public class ArrayOptionsHelper {
                 return DataType.UTF8;
             case "uint8":
             case "ubyte":
-                return DataType.UBYTE;
+                return DataType.UINT8;
             case "bfloat16":
                 return DataType.BFLOAT16;
             case "float16":
-                return DataType.HALF;
+                return DataType.FLOAT16;
             default:
                 throw new ND4JIllegalStateException("Unknown data type used: [" + dataType + "]");
         }
