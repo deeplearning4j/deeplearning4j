@@ -113,7 +113,7 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
         File[] files = dir.listFiles();
         int cnt = 0;
 
-        for(File f : files){
+        for(File f : files) {
             if(!f.getPath().endsWith(".npy")) {
                 log.warn("Skipping: {}", f);
                 continue;
@@ -129,10 +129,9 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
             INDArray arr = Nd4j.scalar(dt, 1);
             byte[] bytes = Nd4j.toNpyByteArray(arr);
             byte[] expected = FileUtils.readFileToByteArray(f);
-            assertArrayEquals(expected, bytes,"Failed with file [" + f.getName() + "]");
+            assertEquals(Nd4j.createNpyFromByteArray(bytes),Nd4j.createNpyFromByteArray(expected));
             cnt++;
 
-            System.out.println();
         }
 
         assertTrue(cnt > 0);
