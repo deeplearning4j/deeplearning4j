@@ -3605,11 +3605,18 @@ void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, void** buffe
 
 }
 void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer * shapeInfo,
-                                  sd::Pointer * specialShapeInfo) {
+                                 sd::Pointer * specialShapeInfo) {
   auto inputShapeBuffers = (void **) shapeInfo;
+  if(shapeInfo == nullptr)
+    throw std::runtime_error("Input shape info was null!");
   for(int i = 0; i < numArrays; i++) {
+    if(inputShapeBuffers[i] == nullptr)
+      throw std::runtime_error("Input shape at index was null!");
     if(buffer != nullptr && buffer[i] != nullptr)
-      setGraphContextInputBuffer(ptr,i, buffer[i] : nullptr,inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+      setGraphContextInputBuffer(ptr,i,buffer[i],inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+    else {
+      setGraphContextInputBuffer(ptr,i, nullptr,inputShapeBuffers[i],specialShapeInfo);
+    }
   }
 
 }
@@ -3619,7 +3626,11 @@ void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataB
 
   for(int i = 0; i < numArrays; i++) {
     if(buffer != nullptr && buffer[i] != nullptr)
-      setGraphContextOutputBuffer(ptr,i,buffer[i] : nullptr,inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : specialShapeInfo);
+      setGraphContextOutputBuffer(ptr,i,buffer[i],inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+    else {
+      setGraphContextOutputBuffer(ptr,i, nullptr,inputShapeBuffers[i],specialShapeInfo);
+    }
+
   }
 
 }

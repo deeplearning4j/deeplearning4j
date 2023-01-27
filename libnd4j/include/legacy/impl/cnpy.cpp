@@ -396,7 +396,7 @@ cnpy::NpyArray cnpy::loadNpyFromHeader(char *data) {
       throw std::runtime_error(firstError);
     }
   } else {
-    throw std::runtime_error("ointer doesn't look like a NumPy header. Missing expected character at first value.");
+    throw std::runtime_error("Pointer doesn't look like a NumPy header. Missing expected character at first value.");
   }
   // move passed magic
   data += 11;
