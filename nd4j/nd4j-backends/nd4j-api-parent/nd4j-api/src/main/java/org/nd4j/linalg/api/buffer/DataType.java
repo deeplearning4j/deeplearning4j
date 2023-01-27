@@ -140,7 +140,7 @@ public enum DataType {
     /**
      * @return Returns true if the datatype is an integer type (long, integer, short, ubyte or byte)
      */
-    public boolean isIntType(){
+    public boolean isIntType() {
         return this == LONG || this == INT || this == SHORT || this == UBYTE || this == BYTE || this == UINT16 || this == UINT32 || this == UINT64;
     }
 
@@ -156,7 +156,7 @@ public enum DataType {
     /**
      * @return True if the datatype is a numerical type and is signed (supports negative values)
      */
-    public boolean isSigned(){
+    public boolean isSigned() {
         switch (this){
             case DOUBLE:
             case FLOAT:
@@ -213,8 +213,8 @@ public enum DataType {
     /**
      * @return For fixed-width types, this returns the number of bytes per array element
      */
-    public int width(){
-        switch (this){
+    public int width() {
+        switch (this) {
             case DOUBLE:
             case LONG:
             case UINT64:

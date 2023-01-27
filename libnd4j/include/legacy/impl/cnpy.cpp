@@ -615,14 +615,14 @@ void cnpy::npy_save(std::string fname, const void *data, const unsigned int *sha
     tmp_shape[0] += shape[0];
 
     fseek(fp, 0, SEEK_SET);
-    std::vector<char> header = createNpyHeader<T>(data, tmp_shape, ndims);
+    std::vector<char> header = createNpyHeader<T>(tmp_shape, ndims,sizeof(T));
     fwrite(&header[0], sizeof(char), header.size(), fp);
     fseek(fp, 0, SEEK_END);
 
     delete[] tmp_shape;
   } else {
     fp = fopen(fname.c_str(), "wb");
-    std::vector<char> header = createNpyHeader<T>(data, shape, ndims);
+    std::vector<char> header = createNpyHeader<T>( shape, ndims,sizeof(T));
     fwrite(&header[0], sizeof(char), header.size(), fp);
   }
 
@@ -642,9 +642,8 @@ void cnpy::npy_save(std::string fname, const void *data, const unsigned int *sha
  * @return
  */
 template <typename T>
-std::vector<char> cnpy::createNpyHeader(const void *vdata, const unsigned int *shape, const unsigned int ndims,
+std::vector<char> cnpy::createNpyHeader( const unsigned int *shape, const unsigned int ndims,
                                         unsigned int wordSize) {
-  auto data = reinterpret_cast<const T *>(vdata);
 
   std::vector<char> dict;
   dict += "{'descr': '";
@@ -681,6 +680,12 @@ std::vector<char> cnpy::createNpyHeader(const void *vdata, const unsigned int *s
 }
 
 BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT std::vector<char> cnpy::createNpyHeader,
-                      (const void *data, const unsigned int *shape, const unsigned int ndims, unsigned int wordSize),
+                      (const unsigned int *shape, const unsigned int ndims, unsigned int wordSize),
                       SD_COMMON_TYPES);
 
+
+
+BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void cnpy::npy_save,
+                      (std::string fname, const void *data, const unsigned int *shape, const unsigned int ndims,
+                       std::string mode),
+                      SD_COMMON_TYPES);

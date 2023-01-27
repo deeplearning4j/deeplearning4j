@@ -48,14 +48,13 @@ DataBuffer::DataBuffer() {
 ////////////////////////////////////////////////////////////////////////
 // copy constructor
 DataBuffer::DataBuffer(const DataBuffer& other) {
-  throw std::runtime_error("DataBuffer copy constructor: we don't expect using of this constructor!");
 
   _lenInBytes = other._lenInBytes;
   _dataType = other._dataType;
   _workspace = other._workspace;
 
-  _primaryBuffer = nullptr;
-  _specialBuffer = nullptr;
+  _primaryBuffer = other._primaryBuffer;
+  _specialBuffer = other._specialBuffer;
 
   _deviceId.store(other._deviceId.load());
 

@@ -23,6 +23,8 @@ package org.eclipse.deeplearning4j.nd4j.linalg.serde;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.Pointer;
 import org.junit.jupiter.api.Disabled;
 
 import org.junit.jupiter.api.Tag;
@@ -33,14 +35,21 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
@@ -79,10 +88,15 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
             INDArray arr = Nd4j.arange(12).castTo(dt).reshape(3,4);
             arr.dataType();
             byte[] bytes = Nd4j.toNpyByteArray(arr);
+            //strip out null terminated characters, most runtimes ignore this
             byte[] expected = FileUtils.readFileToByteArray(f);
-
-
-            assertArrayEquals(expected, bytes,"Failed with file [" + f.getName() + "] on data type " + dt);
+            String bytesString = new String(bytes);
+            String expectedString = new String(expected);
+            String bytesReplaceNul = bytesString.replaceAll("\0","");
+            String expectedReplaceNull = expectedString.replaceAll("\0","");
+            INDArray resultArr = Nd4j.createNpyFromByteArray(bytes);
+            INDArray expectedArr = Nd4j.createNpyFromByteArray(expected);
+            assertEquals(expectedArr, resultArr,"Failed with file [" + f.getName() + "] on data type " + dt);
             cnt++;
         }
 
@@ -124,6 +138,87 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
         assertTrue(cnt > 0);
     }
 
+
+
+    @Test
+    public void testNumpyConversion() throws Exception {
+        INDArray linspace = Nd4j.linspace(1,4,4, DataType.FLOAT);
+        DataBuffer convertBuffer = Nd4j.getNDArrayFactory().convertToNumpyBuffer(linspace);
+        OpaqueDataBuffer convert = Nd4j.getNDArrayFactory().convertToNumpy(linspace);
+        Pointer pointer = NativeOpsHolder.getInstance().getDeviceNativeOps().loadNpyFromHeader(convert);
+        Pointer pointer1 = NativeOpsHolder.getInstance().getDeviceNativeOps().dataPointForNumpyStruct(pointer);
+        pointer1.capacity(linspace.data().getElementSize() * linspace.data().length());
+        ByteBuffer byteBuffer = linspace.data().pointer().asByteBuffer();
+        byte[] originalData = new byte[byteBuffer.capacity()];
+        byteBuffer.get(originalData);
+
+
+        ByteBuffer floatBuffer = pointer1.asByteBuffer();
+        byte[] dataTwo = new byte[floatBuffer.capacity()];
+        floatBuffer.get(dataTwo);
+        assertArrayEquals(originalData,dataTwo);
+        Buffer buffer = (Buffer) floatBuffer;
+        buffer.position(0);
+
+        DataBuffer dataBuffer = Nd4j.createBuffer(new FloatPointer(floatBuffer.asFloatBuffer()),linspace.length(), DataType.FLOAT);
+        assertArrayEquals(new float[]{1,2,3,4}, dataBuffer.asFloat(), 1e-5f);
+
+        INDArray convertedFrom = Nd4j.getNDArrayFactory().createFromNpyHeaderPointer(dataBuffer.opaqueBuffer());
+        assertEquals(linspace,convertedFrom);
+
+        File tmpFile = new File(System.getProperty("java.io.tmpdir"),"nd4j-numpy-tmp-" + UUID.randomUUID().toString() + ".bin");
+        tmpFile.deleteOnExit();
+        Nd4j.writeAsNumpy(linspace,tmpFile);
+
+        INDArray numpyFromFile = Nd4j.createFromNpyFile(tmpFile);
+        assertEquals(linspace,numpyFromFile);
+
+    }
+
+    @Test
+    @Disabled("Test is very large compared to most tests. It needs to be to test the limits of memcpy/heap space.")
+    public void testLargeNumpyWrite() throws Exception {
+        Arrays.stream(DataType.values()).filter(input ->
+                        input != DataType.BFLOAT16 && input != DataType.COMPRESSED && input != DataType.UTF8)
+                .forEach(dataType -> {
+                    System.out.println("Trying with data type " + dataType);
+                    INDArray largeArr = Nd4j.create(dataType,115240, 2400);
+
+                    File tempFile = new File("large-npy-" + dataType.name() + ".npy");
+                    tempFile.deleteOnExit();
+                    try {
+                        Nd4j.writeAsNumpy(largeArr,tempFile);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    assertTrue(tempFile.exists());
+                    INDArray read = Nd4j.createFromNpyFile(tempFile);
+                    assertEquals(largeArr,read);
+                });
+
+    }
+
+
+
+    @Test
+    public void testNumpyWrite() throws Exception {
+        INDArray linspace = Nd4j.linspace(1,4,4, Nd4j.dataType());
+        File tmpFile = new File(System.getProperty("java.io.tmpdir"),"nd4j-numpy-tmp-" + UUID.randomUUID().toString() + ".bin");
+        tmpFile.deleteOnExit();
+        Nd4j.writeAsNumpy(linspace,tmpFile);
+
+        INDArray numpyFromFile = Nd4j.createFromNpyFile(tmpFile);
+        assertEquals(linspace,numpyFromFile);
+    }
+
+    @Test
+    public void testNpyByteArray() throws Exception {
+        INDArray linspace = Nd4j.linspace(1,4,4, Nd4j.dataType());
+        byte[] bytes = Nd4j.toNpyByteArray(linspace);
+        INDArray fromNpy = Nd4j.createNpyFromByteArray(bytes);
+        assertEquals(linspace,fromNpy);
+
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -210,10 +305,7 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
                 int lastDot = path.lastIndexOf('.');
                 int lastUnderscore = path.lastIndexOf('_');
                 String dtype = path.substring(lastUnderscore + 1, lastDot);
-//                System.out.println(path + " : " + dtype);
-
                 DataType dt = DataType.fromNumpy(dtype);
-                //System.out.println(dt);
 
                 INDArray exp;
                 if(empty){

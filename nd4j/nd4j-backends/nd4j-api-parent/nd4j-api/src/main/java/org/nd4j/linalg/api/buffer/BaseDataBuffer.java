@@ -296,17 +296,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void copyAtStride(DataBuffer buf, long n, long stride, long yStride, long offset, long yOffset) {
-
-        if (dataType() == DataType.FLOAT) {
-            for (int i = 0; i < n; i++) {
-                put(offset + i * stride, buf.getFloat(yOffset + i * yStride));
-            }
-        } else {
-            for (int i = 0; i < n; i++) {
-                put(offset + i * stride, buf.getDouble(yOffset + i * yStride));
-            }
-        }
-
+        NativeOpsHolder.getInstance().getDeviceNativeOps().copyBuffer(buf.opaqueBuffer(),n,this.opaqueBuffer(),offset,yOffset);
     }
 
     @Override

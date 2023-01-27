@@ -178,7 +178,7 @@ public class LongBuffer extends BaseCpuDataBuffer {
     @Override
     protected void initTypeAndSize() {
         elementSize = 8;
-        type = DataType.LONG;
+        type = DataType.INT64;
     }
 
 

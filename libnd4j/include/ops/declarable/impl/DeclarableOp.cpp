@@ -551,7 +551,6 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
       index++;
     }
   } else {
-    sd_printf("Not Fast path out\n",0);
     // checking optionally available outputs
     auto varSpace = block.getVariableSpace();
     for (int index = 0; index < DataTypeUtils::max<int>(); index++) {

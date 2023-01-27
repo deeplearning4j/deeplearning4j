@@ -21,7 +21,6 @@
 package org.nd4j.linalg.factory;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.imports.graphmapper.tf.tensors.TFTensorMappers;
 import org.nd4j.linalg.api.blas.BLASLapackDelegator;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
@@ -29,6 +28,7 @@ import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.linalg.factory.ops.*;
 import org.nd4j.linalg.profiler.UnifiedProfiler;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
@@ -1195,7 +1195,7 @@ public class Nd4j {
             return DataType.BYTE;
         else if(pointer instanceof BooleanPointer)
             return DataType.BOOL;
-       return null;
+        return null;
     }
 
     private static Indexer getIndexerByType(Pointer pointer, DataType dataType) {
@@ -1241,7 +1241,7 @@ public class Nd4j {
     public static DataBuffer createBuffer(@NonNull Pointer pointer, long length, @NonNull DataType dataType) {
         DataType dataType1 = dataTypeForPointer(pointer);
         if(dataType1 != null && dataType1 != dataTypeForPointer(pointer) ) {
-           return  Nd4j.create(Nd4j.createBuffer(pointer,length,dataTypeForPointer(pointer))).castTo(dataType).data();
+            return  Nd4j.create(Nd4j.createBuffer(pointer,length,dataTypeForPointer(pointer))).castTo(dataType).data();
         }
         Pointer nPointer = getPointer(pointer, dataType);
         return DATA_BUFFER_FACTORY_INSTANCE.create(nPointer, dataType, length, getIndexerByType(nPointer, dataType));
@@ -5246,7 +5246,7 @@ public class Nd4j {
                     try {
                         action.process(value);
                     } catch (Exception e2) {
-                        logger.info("Failed to process env variable [" + e + "], got exception: " + e2.toString());
+                        logger.info("Failed to process env variable [" + e + "], got exception: " + e2);
                     }
                 }
             }
@@ -5650,8 +5650,8 @@ public class Nd4j {
      */
     @SuppressWarnings("WeakerAccess")
     public static void writeAsNumpy(INDArray arr, File file) throws IOException {
-       if(arr.dataType() == DataType.BFLOAT16 || arr.dataType() == DataType.BFLOAT16 || arr.dataType() == DataType.UTF8)
-           throw new IllegalArgumentException("Unable to write array data type of " + arr.dataType());
+        if(arr.dataType() == DataType.BFLOAT16 || arr.dataType() == DataType.BFLOAT16 || arr.dataType() == DataType.UTF8)
+            throw new IllegalArgumentException("Unable to write array data type of " + arr.dataType());
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().saveNpy(file.getAbsolutePath(),arr.data().opaqueBuffer(),ArrayUtil.toInts(arr.shape()),arr.rank());
     }
@@ -5659,12 +5659,13 @@ public class Nd4j {
 
     /**
      * Converts an {@link INDArray} to a numpy struct.
+     *
      * @param arr the array to convert
      * @return a pointer to the numpy struct
      */
     @SuppressWarnings("WeakerAccess")
-    public static Pointer convertToNumpy(INDArray arr)  {
-        return INSTANCE.convertToNumpy(arr);
+    public static DataBuffer convertToNumpy(INDArray arr)  {
+        return INSTANCE.convertToNumpyBuffer(arr);
     }
 
 
@@ -5677,8 +5678,8 @@ public class Nd4j {
      */
     @SuppressWarnings("WeakerAccess")
     public static long writeAsNumpy(INDArray arr, OutputStream writeTo,boolean closeFlush) throws IOException {
-        Pointer asNumpy = convertToNumpy(arr);
-        return writeAsNumpy(asNumpy,writeTo,closeFlush);
+        DataBuffer asNumpy = convertToNumpy(arr);
+        return writeAsNumpy(asNumpy.pointer(),writeTo,closeFlush);
 
     }
 
@@ -5817,8 +5818,12 @@ public class Nd4j {
      * For more on the format, see: https://docs.scipy.org/doc/numpy-1.14.0/neps/npy-format.html
      */
     public static byte[] toNpyByteArray(INDArray input) {
-        Pointer asNumpy = convertToNumpy(input);
-        ByteBuffer directBuffer = asNumpy.asByteBuffer();
+        DataBuffer asNumpy = convertToNumpy(input);
+        long len = NativeOpsHolder.getInstance().getDeviceNativeOps().lengthInBytes(asNumpy.opaqueBuffer()) + input.dataType().width() * input.length();
+        Pointer pointer = asNumpy.addressPointer();
+        pointer.limit(len);
+        ByteBuffer directBuffer = pointer.asByteBuffer();
+
         byte[] ret = new byte[directBuffer.capacity()];
         directBuffer.get(ret);
         return ret;
