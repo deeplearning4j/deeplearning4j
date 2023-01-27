@@ -384,10 +384,20 @@ cnpy::NpyArray cnpy::loadNpyFromHeader(char *data) {
   if (data[0] == (char)0x93) {
     std::vector<char> exp({(char)0x93, 'N', 'U', 'M', 'P', 'Y', (char)0x01});
     std::vector<char> hdr(data, data + 7);
-    if (hdr != exp) throw std::runtime_error("Pointer doesn't look like a NumPy header");
-  } else
-    throw std::runtime_error("Pointer doesn't look like a NumPy header");
+    if (hdr != exp) {
+      std::string firstError;
+      firstError += std::string("Pointer doesn't look like a NumPy header. Missing expected characters in middle.");
+      std::string header;
+      for(int i = 0; i < hdr.size(); i++) {
+        header+= hdr[i];
+      }
 
+      firstError += header;
+      throw std::runtime_error(firstError);
+    }
+  } else {
+    throw std::runtime_error("ointer doesn't look like a NumPy header. Missing expected character at first value.");
+  }
   // move passed magic
   data += 11;
   unsigned int *shape;

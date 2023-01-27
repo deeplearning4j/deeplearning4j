@@ -29,7 +29,6 @@ import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
-import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import java.io.File;
 import java.util.*;
@@ -1401,7 +1400,7 @@ public interface NDArrayFactory {
      * @returnthe created pointer representing
      * a pointer to a numpy header
      */
-    OpaqueDataBuffer convertToNumpy(INDArray array);
+    Pointer convertToNumpy(INDArray array);
 
     /**
      * Convert an {@link INDArray}

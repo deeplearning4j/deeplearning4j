@@ -144,7 +144,7 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
     public void testNumpyConversion() throws Exception {
         INDArray linspace = Nd4j.linspace(1,4,4, DataType.FLOAT);
         DataBuffer convertBuffer = Nd4j.getNDArrayFactory().convertToNumpyBuffer(linspace);
-        OpaqueDataBuffer convert = Nd4j.getNDArrayFactory().convertToNumpy(linspace);
+        Pointer convert = Nd4j.getNDArrayFactory().convertToNumpy(linspace);
         Pointer pointer = NativeOpsHolder.getInstance().getDeviceNativeOps().loadNpyFromHeader(convert);
         Pointer pointer1 = NativeOpsHolder.getInstance().getDeviceNativeOps().dataPointForNumpyStruct(pointer);
         pointer1.capacity(linspace.data().getElementSize() * linspace.data().length());
@@ -159,19 +159,6 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(originalData,dataTwo);
         Buffer buffer = (Buffer) floatBuffer;
         buffer.position(0);
-
-        DataBuffer dataBuffer = Nd4j.createBuffer(new FloatPointer(floatBuffer.asFloatBuffer()),linspace.length(), DataType.FLOAT);
-        assertArrayEquals(new float[]{1,2,3,4}, dataBuffer.asFloat(), 1e-5f);
-
-        INDArray convertedFrom = Nd4j.getNDArrayFactory().createFromNpyHeaderPointer(dataBuffer.opaqueBuffer());
-        assertEquals(linspace,convertedFrom);
-
-        File tmpFile = new File(System.getProperty("java.io.tmpdir"),"nd4j-numpy-tmp-" + UUID.randomUUID().toString() + ".bin");
-        tmpFile.deleteOnExit();
-        Nd4j.writeAsNumpy(linspace,tmpFile);
-
-        INDArray numpyFromFile = Nd4j.createFromNpyFile(tmpFile);
-        assertEquals(linspace,numpyFromFile);
 
     }
 

@@ -66,19 +66,22 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         Pointer pointer = NativeOpsHolder.getInstance().getDeviceNativeOps().numpyFromNd4j(array.data().addressPointer(), array.shapeInfoDataBuffer().pointer(), array.data().getElementSize());
         Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.HOST);
         long len = NativeOpsHolder.getInstance().getDeviceNativeOps().numpyHeaderLength(array.data().opaqueBuffer(),array.shapeInfoDataBuffer().pointer());
+        pointer.capacity(len + array.length() * array.data().getElementSize());
+        pointer.limit(len + array.length() * array.data().getElementSize());
         BytePointer wrapper = new BytePointer(pointer);
         wrapper.capacity(len + array.length() * array.data().getElementSize());
+        wrapper.limit(len + array.length() * array.data().getElementSize());
         DataBuffer buffer = Nd4j.createBuffer(wrapper,len  + array.length() * array.data().getElementSize(),DataType.INT8);
         return buffer;
     }
 
     @Override
-    public OpaqueDataBuffer convertToNumpy(INDArray array) {
+    public Pointer convertToNumpy(INDArray array) {
         DataBuffer dataBuffer = convertToNumpyBuffer(array);
         OpaqueDataBuffer opaqueDataBuffer = dataBuffer.opaqueBuffer();
         opaqueDataBuffer.capacity(dataBuffer.length());
         opaqueDataBuffer.limit(dataBuffer.length());
-        return opaqueDataBuffer;
+        return opaqueDataBuffer.primaryBuffer();
     }
 
     /**
