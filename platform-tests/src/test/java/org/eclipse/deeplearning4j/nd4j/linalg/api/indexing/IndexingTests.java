@@ -45,8 +45,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class IndexingTests extends BaseNd4jTestWithBackends {
 
 
-
-
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testINDArrayIndexingEqualToRank(Nd4jBackend backend) {
@@ -104,7 +102,7 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
         INDArray vals = Nd4j.valueArrayOf(new long[] {2,2,2,2},5, DataType.DOUBLE);
         assertEquals(vals,x);
     }
-    
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetScalar(Nd4jBackend backend) {

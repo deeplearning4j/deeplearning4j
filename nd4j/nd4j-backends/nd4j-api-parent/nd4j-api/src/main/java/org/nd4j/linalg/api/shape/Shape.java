@@ -3695,13 +3695,13 @@ public class Shape {
         } else if (number instanceof Float) {
             return pickPairwiseDataType(typeX, DataType.FLOAT);
         } else if (number instanceof Long) {
-            return pickPairwiseDataType(typeX, DataType.LONG);
+            return pickPairwiseDataType(typeX, DataType.INT64);
         } else if (number instanceof Integer) {
-            return pickPairwiseDataType(typeX, DataType.INT);
+            return pickPairwiseDataType(typeX, DataType.INT32);
         } else if (number instanceof Short) {
-            return pickPairwiseDataType(typeX, DataType.SHORT);
+            return pickPairwiseDataType(typeX, DataType.INT16);
         } else if (number instanceof Byte) {
-            return pickPairwiseDataType(typeX, DataType.BYTE);
+            return pickPairwiseDataType(typeX, DataType.INT8);
         } else {
             throw new UnsupportedOperationException("Unknown Number used: [" + number.getClass().getCanonicalName() + "]");
         }

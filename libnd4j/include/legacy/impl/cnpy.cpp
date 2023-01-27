@@ -384,10 +384,20 @@ cnpy::NpyArray cnpy::loadNpyFromHeader(char *data) {
   if (data[0] == (char)0x93) {
     std::vector<char> exp({(char)0x93, 'N', 'U', 'M', 'P', 'Y', (char)0x01});
     std::vector<char> hdr(data, data + 7);
-    if (hdr != exp) throw std::runtime_error("Pointer doesn't look like a NumPy header");
-  } else
-    throw std::runtime_error("Pointer doesn't look like a NumPy header");
+    if (hdr != exp) {
+      std::string firstError;
+      firstError += std::string("Pointer doesn't look like a NumPy header. Missing expected characters in middle.");
+      std::string header;
+      for(int i = 0; i < hdr.size(); i++) {
+        header+= hdr[i];
+      }
 
+      firstError += header;
+      throw std::runtime_error(firstError);
+    }
+  } else {
+    throw std::runtime_error("Pointer doesn't look like a NumPy header. Missing expected character at first value.");
+  }
   // move passed magic
   data += 11;
   unsigned int *shape;
@@ -615,14 +625,14 @@ void cnpy::npy_save(std::string fname, const void *data, const unsigned int *sha
     tmp_shape[0] += shape[0];
 
     fseek(fp, 0, SEEK_SET);
-    std::vector<char> header = createNpyHeader<T>(data, tmp_shape, ndims);
+    std::vector<char> header = createNpyHeader<T>(tmp_shape, ndims,sizeof(T));
     fwrite(&header[0], sizeof(char), header.size(), fp);
     fseek(fp, 0, SEEK_END);
 
     delete[] tmp_shape;
   } else {
     fp = fopen(fname.c_str(), "wb");
-    std::vector<char> header = createNpyHeader<T>(data, shape, ndims);
+    std::vector<char> header = createNpyHeader<T>( shape, ndims,sizeof(T));
     fwrite(&header[0], sizeof(char), header.size(), fp);
   }
 
@@ -642,9 +652,8 @@ void cnpy::npy_save(std::string fname, const void *data, const unsigned int *sha
  * @return
  */
 template <typename T>
-std::vector<char> cnpy::createNpyHeader(const void *vdata, const unsigned int *shape, const unsigned int ndims,
+std::vector<char> cnpy::createNpyHeader( const unsigned int *shape, const unsigned int ndims,
                                         unsigned int wordSize) {
-  auto data = reinterpret_cast<const T *>(vdata);
 
   std::vector<char> dict;
   dict += "{'descr': '";
@@ -681,6 +690,12 @@ std::vector<char> cnpy::createNpyHeader(const void *vdata, const unsigned int *s
 }
 
 BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT std::vector<char> cnpy::createNpyHeader,
-                      (const void *data, const unsigned int *shape, const unsigned int ndims, unsigned int wordSize),
+                      (const unsigned int *shape, const unsigned int ndims, unsigned int wordSize),
                       SD_COMMON_TYPES);
 
+
+
+BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void cnpy::npy_save,
+                      (std::string fname, const void *data, const unsigned int *shape, const unsigned int ndims,
+                       std::string mode),
+                      SD_COMMON_TYPES);

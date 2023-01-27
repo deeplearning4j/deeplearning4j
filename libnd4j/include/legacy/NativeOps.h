@@ -32,6 +32,8 @@
 #include <array/ConstantDataBuffer.h>
 #include <array/ConstantDescriptor.h>
 #include <array/InteropDataBuffer.h>
+#include <array/ArrayOptions.h>
+#include <array/DataTypeUtils.h>
 #include <array/ShapeList.h>
 #include <array/TadPack.h>
 #include <graph/GraphState.h>
@@ -49,7 +51,7 @@ extern "C" {
 
 
 SD_LIB_EXPORT void saveNpy(std::string fname, const OpaqueDataBuffer *data, const unsigned int *shape, const unsigned int ndims,
-                          std::string mode = "w");
+                           std::string mode = "w");
 
 /**
  * Copy n elements from the buffer from the src
@@ -972,7 +974,7 @@ static sd::Pointer _numpyHeaderForNd4j(sd::Pointer data, const sd::Pointer shape
   }
 
   sd::LongType length = shape::prodLong(shape, rank);
-  auto npHeader = cnpy::createNpyHeader<T>(data, npShape, rank, wordSize);
+  auto npHeader = cnpy::createNpyHeader<T>(npShape, rank, wordSize);
   char* ret = new char[npHeader.size() + 1];
   int count = 0;
   for (int i = 0; i < npHeader.size(); i++) {
@@ -988,6 +990,10 @@ static sd::Pointer _numpyHeaderForNd4j(sd::Pointer data, const sd::Pointer shape
 }
 
 extern "C" {
+
+static long lengthInBytes(OpaqueDataBuffer *buffer) {
+  return buffer->dataBuffer()->getLenInBytes();
+}
 
 static sd::Pointer numpyHeaderForNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd::LongType wordSize,
                                       sd::LongType* headerSize) {
@@ -1039,26 +1045,74 @@ static sd::Pointer _numpyFromNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd:
   }
 
   sd::LongType length = shape::prodLong(shape, rank);
-  auto npHeader = cnpy::createNpyHeader<T>(data, npShape, rank, wordSize);
+  auto npHeader = cnpy::createNpyHeader<T>( npShape, rank, wordSize);
   char* dataChar = reinterpret_cast<char*>(data);
   char* npHeaderData = npHeader.data();
   char* ret = new char[(wordSize * length) + npHeader.size()];
-  char* cursorStart = ret;
-  std::memcpy(reinterpret_cast<void*>(ret), reinterpret_cast<void*>(npHeaderData),
-              npHeader.size() * sizeof(sd::LongType));
-  // move to next
-  cursorStart += npHeader.size();
-  std::memcpy(reinterpret_cast<void*>(ret), reinterpret_cast<void*>(dataChar),
-              length * wordSize * sizeof(sd::LongType));
+  char* cursorStart = ret + npHeader.size();
+  std::memcpy(ret, npHeaderData,
+              npHeader.size());
+  std::memcpy(cursorStart, dataChar,length  * wordSize);
   sd::Pointer rettPointer = reinterpret_cast<sd::Pointer>(ret);
   return rettPointer;
 }
+template<typename T>
+static long _numpyHeaderLength(OpaqueDataBuffer *opaqueDataBuffer,sd::Pointer shapeBuffer) {
+  sd::LongType wordSize = opaqueDataBuffer->dataBuffer()->getLenInBytes() / opaqueDataBuffer->dataBuffer()->getNumElements();
+  sd::LongType* shapeBufferCast = reinterpret_cast<sd::LongType*>(shapeBuffer);
+  int rank = shape::rank(shapeBufferCast);
+  sd::LongType* shape = shape::shapeOf(shapeBufferCast);
+  unsigned int* npShape = new unsigned int[rank];
+  for (int i = 0; i < rank; i++) {
+    npShape[i] = shape[i];
+  }
+
+  sd::LongType length = shape::prodLong(shape, rank);
+  auto npHeader = cnpy::createNpyHeader<T>(npShape, rank, wordSize);
+  long ret = npHeader.size();
+  return ret;
+}
+
+template<typename  T>
+SD_LIB_EXPORT static long _numpyHeaderLengthWordSize(sd::Pointer shapeBuffer,long wordSize) {
+  sd::LongType* shapeBufferCast = reinterpret_cast<sd::LongType*>(shapeBuffer);
+  int rank = shape::rank(shapeBufferCast);
+  sd::LongType* shape = shape::shapeOf(shapeBufferCast);
+  unsigned int* npShape = new unsigned int[rank];
+  for (int i = 0; i < rank; i++) {
+    npShape[i] = shape[i];
+  }
+
+  sd::LongType length = shape::prodLong(shape, rank);
+  auto npHeader = cnpy::createNpyHeader<T>(npShape, rank, wordSize);
+  long ret = npHeader.size();
+  return ret;
+}
+
 
 extern "C" {
 
-static sd::Pointer numpyFromNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd::LongType wordSize) {
+SD_LIB_EXPORT static long numpyHeaderLengthWordSize(sd::Pointer shapeBuffer,long wordSize) {
   auto shapeBufferCast = reinterpret_cast<sd::LongType*>(shapeBuffer);
   auto type = sd::ArrayOptions::dataType(shapeBufferCast);
+  BUILD_SINGLE_SELECTOR(type, return _numpyHeaderLengthWordSize, (shapeBuffer, wordSize), SD_COMMON_TYPES);
+
+}
+
+SD_LIB_EXPORT static long numpyHeaderLength(OpaqueDataBuffer *opaqueDataBuffer,sd::Pointer shapeBuffer) {
+  auto shapeBufferCast = reinterpret_cast<sd::LongType*>(shapeBuffer);
+  auto type = sd::ArrayOptions::dataType(shapeBufferCast);
+
+  BUILD_SINGLE_SELECTOR(type, return _numpyHeaderLength, (opaqueDataBuffer, shapeBuffer), SD_COMMON_TYPES);
+
+}
+
+
+
+SD_LIB_EXPORT static sd::Pointer numpyFromNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd::LongType wordSize) {
+  auto shapeBufferCast = reinterpret_cast<sd::LongType*>(shapeBuffer);
+  auto type = sd::ArrayOptions::dataType(shapeBufferCast);
+
   BUILD_SINGLE_SELECTOR(type, return _numpyFromNd4j, (data, shapeBuffer, wordSize), SD_COMMON_TYPES);
 }
 
@@ -1495,7 +1549,7 @@ SD_LIB_EXPORT void setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays
 SD_LIB_EXPORT void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer * shapeInfo,
                                                 sd::Pointer * specialShapeInfo);
 
-SD_LIB_EXPORT void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order = 'c',int elementWiseStride = 1);
+SD_LIB_EXPORT void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order = 'c',int elementWiseStride = 1,bool isEmpty = false);
 
 SD_LIB_EXPORT void setGraphContextDArguments(OpaqueContext* ptr, int* arguments, int numberOfArguments);
 SD_LIB_EXPORT void setGraphContextTArguments(OpaqueContext* ptr, double* arguments, int numberOfArguments);

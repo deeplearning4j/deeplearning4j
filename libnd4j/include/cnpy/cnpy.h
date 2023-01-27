@@ -101,8 +101,8 @@ SD_LIB_EXPORT char mapType();
  * @return
  */
 template <typename T>
-SD_LIB_EXPORT std::vector<char> createNpyHeader(const void *data, const unsigned int *shape, const unsigned int ndims,
-                                                unsigned int wordSize = 4);
+SD_LIB_EXPORT std::vector<char> createNpyHeader(const unsigned int *shape, const unsigned int ndims,
+                                                unsigned int wordSize);
 /**
  * Parse the numpy header from
  * the given file

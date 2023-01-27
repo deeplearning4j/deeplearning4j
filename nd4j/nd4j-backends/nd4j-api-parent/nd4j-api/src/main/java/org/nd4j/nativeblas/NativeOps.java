@@ -931,6 +931,27 @@ public interface NativeOps {
 
 
     /**
+     * Length of a numpy header given a word size and shape buffer
+     * @param shapeBuffer the shape buffer to get the header length for
+     * @param wordSize the word size
+     * @return
+     */
+      long numpyHeaderLengthWordSize( Pointer shapeBuffer,long wordSize);
+
+    /**
+     *
+     * Length in bytes of a numpy header + buffer
+     */
+
+     long numpyHeaderLength(org.nd4j.nativeblas.OpaqueDataBuffer opaqueDataBuffer, Pointer shapeBuffer);
+    /**
+     *
+     * Length in bytes of the opaque buffer
+     */
+
+     long lengthInBytes(org.nd4j.nativeblas.OpaqueDataBuffer buffer);
+
+    /**
      * Create a numpy array from an nd4j
      * array
      *
@@ -1278,9 +1299,13 @@ public interface NativeOps {
                                       PointerPointer specialShapeInfo);
 
 
-    void setShapeBuffer( LongPointer inputShapeData, int dt, LongPointer bufferToSet,char order,int elementWiseStride);
-    void setShapeBuffer( LongBuffer inputShapeData,  int dt,  LongBuffer bufferToSet,char order,int elementWiseStride);
-    void setShapeBuffer( long[] inputShapeData, int dt, long[] bufferToSet,char order,int elementWiseStride);
+     void setShapeBuffer( LongPointer inputShapeData, int dt, LongPointer bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/, boolean isEmpty/*=false*/);
+     void setShapeBuffer( LongPointer inputShapeData, int dt, LongPointer bufferToSet);
+     void setShapeBuffer( LongBuffer inputShapeData, int dt, LongBuffer bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/, boolean isEmpty/*=false*/);
+     void setShapeBuffer( LongBuffer inputShapeData, int dt, LongBuffer bufferToSet);
+     void setShapeBuffer( long[] inputShapeData, int dt, long[] bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/, boolean isEmpty/*=false*/);
+     void setShapeBuffer( long[] inputShapeData, int dt, long[] bufferToSet);
+
 
     void setGraphContextTArguments(OpaqueContext ptr, DoublePointer arguments, int numberOfArguments);
     void setGraphContextIArguments(OpaqueContext ptr, LongPointer arguments, int numberOfArguments);

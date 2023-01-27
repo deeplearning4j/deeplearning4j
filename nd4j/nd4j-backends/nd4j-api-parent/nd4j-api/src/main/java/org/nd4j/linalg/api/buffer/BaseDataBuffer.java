@@ -296,17 +296,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void copyAtStride(DataBuffer buf, long n, long stride, long yStride, long offset, long yOffset) {
-
-        if (dataType() == DataType.FLOAT) {
-            for (int i = 0; i < n; i++) {
-                put(offset + i * stride, buf.getFloat(yOffset + i * yStride));
-            }
-        } else {
-            for (int i = 0; i < n; i++) {
-                put(offset + i * stride, buf.getDouble(yOffset + i * yStride));
-            }
-        }
-
+        NativeOpsHolder.getInstance().getDeviceNativeOps().copyBuffer(buf.opaqueBuffer(),n,this.opaqueBuffer(),offset,yOffset);
     }
 
     @Override
@@ -975,9 +965,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         if (dataType() == DataType.DOUBLE)
             return getDouble(i);
-        else if (dataType() == DataType.INT)
+        else if (dataType() == DataType.INT || dataType() == DataType.INT32)
             return getInt(i);
-        else if (dataType() == DataType.LONG)
+        else if (dataType() == DataType.LONG || dataType() == DataType.INT64)
             return getLong(i);
         return getFloat(i);
     }
@@ -985,10 +975,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public abstract void pointerIndexerByCurrentType(DataType currentType);
 
     public void putByDestinationType(long i, Number element, DataType globalType) {
-        if (globalType == DataType.INT || type == DataType.INT || globalType == DataType.UINT16 || globalType == DataType.UBYTE || globalType == DataType.SHORT|| globalType == DataType.BYTE || globalType == DataType.BOOL) {
+        if (globalType == DataType.INT32 || globalType == DataType.INT || type == DataType.INT || globalType == DataType.UINT16 || globalType == DataType.UBYTE || globalType == DataType.SHORT|| globalType == DataType.BYTE || globalType == DataType.BOOL) {
             int anElement = element.intValue();
             put(i, anElement);
-        } else if (globalType == DataType.LONG || type == DataType.LONG || globalType == DataType.UINT32 || globalType == DataType.UINT64) {
+        } else if (globalType == DataType.INT64 || globalType == DataType.LONG || type == DataType.LONG || globalType == DataType.UINT32 || globalType == DataType.UINT64) {
             long anElement = element.longValue();
             put(i, anElement);
         } else if (globalType == DataType.FLOAT || globalType == DataType.HALF || globalType == DataType.BFLOAT16) {
@@ -1282,7 +1272,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if (offset() == 0) {
             return wrappedBuffer().asLongBuffer();
         } else
-            return (LongBuffer) wrappedBuffer().asLongBuffer().position((int) offset());
+            return wrappedBuffer().asLongBuffer().position((int) offset());
     }
 
     @Override
@@ -1293,7 +1283,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if (offset() == 0) {
             return wrappedBuffer().asDoubleBuffer();
         } else {
-            return (DoubleBuffer) wrappedBuffer().asDoubleBuffer().position((int) (offset()));
+            return wrappedBuffer().asDoubleBuffer().position((int) (offset()));
         }
     }
 
@@ -1305,7 +1295,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if (offset() == 0) {
             return wrappedBuffer().asFloatBuffer();
         } else {
-            return (FloatBuffer) wrappedBuffer().asFloatBuffer().position((int) (offset()));
+            return wrappedBuffer().asFloatBuffer().position((int) (offset()));
         }
 
     }
@@ -1482,7 +1472,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
                 // we should switch types here
 
-                //wrappedBuffer = pointer().asByteBuffer();
 
             } else if (savedMode.equals(AllocationMode.LONG_SHAPE)) {
                 length = len;
@@ -1779,8 +1768,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public int hashCode() {
         int result = (int) length;
-        //result = 31 * result + (referencing != null ? referencing.hashCode() : 0);
-        //result = 31 * result + (isPersist ? 1 : 0);
         result = 31 * result + (allocationMode != null ? allocationMode.hashCode() : 0);
         return result;
     }

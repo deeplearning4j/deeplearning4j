@@ -269,5 +269,12 @@ std::vector<sd::DataType> OpDescriptor::getOutputTypesForOutput(int index) {
   else
     return std::vector<sd::DataType>();
 }
+
+std::vector<sd::DataType> OpDescriptor::getInputTypesForInput(int index) {
+  if (_inputTypes.count(index) > 0)
+    return _inputTypes.at(index);
+  else
+    return std::vector<sd::DataType>();
+}
 }  // namespace ops
 }  // namespace sd

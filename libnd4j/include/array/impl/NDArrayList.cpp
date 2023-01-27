@@ -35,7 +35,7 @@ NDArrayList::NDArrayList(int height, bool expandable) {
   _id.first = 0;
   _id.second = 0;
   _height = height;
-  // sd_printf("\nCreating NDArrayList\n","");
+   sd_debug("\nCreating NDArrayList\n","");
 }
 
 NDArrayList::~NDArrayList() {
@@ -129,7 +129,6 @@ sd::Status NDArrayList::write(int idx, NDArray* array) {
                                   "NDArrayList: all arrays must have same size along inner dimensions");
   }
 
-  //_elements++;
 
   // storing reference
   _chunks[idx] = array;
@@ -147,19 +146,26 @@ void NDArrayList::unstack(NDArray* array, int axis) {
   auto newAxis = ShapeUtils::evalDimsToExclude(array->rankOf(), args);
   auto result = array->allTensorsAlongDimension(newAxis);
   for (int e = 0; e < result.size(); e++) {
-    auto chunk = result.at(e);  //->dup(array->ordering());
+    auto chunk = result.at(e);
     write(e, new NDArray(chunk->dup(array->ordering())));
   }
 }
 
 NDArray* NDArrayList::stack() {
-  // FIXME: this is bad for perf, but ok as poc
-
   int numElements = _elements.load();
+  if(numElements < 1) {
+    return  new NDArray(NDArrayFactory::empty<double>());
+
+  }
   std::vector<const NDArray*> inputs(numElements);
   for (int e = 0; e < numElements; e++) {
-    _chunks[e]->syncToDevice();
+    if(!_chunks[e]->isEmpty())
+      _chunks[e]->syncToDevice();
     inputs[e] = _chunks[e];
+  }
+
+  if(inputs[0] == nullptr) {
+    throw std::runtime_error("First input element was a null ptr!");
   }
 
   auto inShapeInfo = inputs[0]->shapeInfo();
@@ -178,6 +184,7 @@ NDArray* NDArrayList::stack() {
       }
     }
   } else {
+
     std::vector<sd::LongType> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
     outShape.insert(outShape.begin(), (sd::LongType)numElements);
     array =
@@ -198,9 +205,6 @@ sd::LaunchContext* NDArrayList::context() { return _context; }
 int NDArrayList::elements() { return _elements.load(); }
 
 int NDArrayList::height() {
-  // if (_height != 0)
-  //    return _height;
-  // else
   return (int)_chunks.size();
 }
 
@@ -219,7 +223,6 @@ NDArray* NDArrayList::pick(std::initializer_list<int> indices) {
 NDArray* NDArrayList::pick(std::vector<int>& indices) {
   std::vector<sd::LongType> shape(_shape);
 
-  // shape.insert(shape.begin() + _axis, indices.size());
   shape[_axis] = indices.size();
   // do we have to enforce C order here?
   auto array = new NDArray('c', shape, _chunks[0]->dataType(), _context);

@@ -154,7 +154,7 @@ class SD_LIB_EXPORT OpDescriptor {
   // this method returns opNum (applicable for legacy XYZ ops only)
   int getOpNum();
 
-  // this method allows to set specifc opNum
+  // this method allows to set specific opNum
   void setOpNum(int opNum);
 
   void setHash(sd::LongType hash);
@@ -176,6 +176,9 @@ class SD_LIB_EXPORT OpDescriptor {
   OpDescriptor* setOutputType(int idx, sd::DataType dtype);
 
   std::vector<sd::DataType> getOutputTypesForOutput(int index);
+  std::vector<sd::DataType> getInputTypesForInput(int index);
+
+
 
   bool checkInputMatch(int index, sd::DataType dataType);
   bool checkOutputMatch(int index, sd::DataType dataType);

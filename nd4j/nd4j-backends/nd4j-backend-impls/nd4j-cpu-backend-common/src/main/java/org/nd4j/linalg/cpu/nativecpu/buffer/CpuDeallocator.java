@@ -21,14 +21,17 @@
 package org.nd4j.linalg.cpu.nativecpu.buffer;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 @Slf4j
 public class CpuDeallocator implements Deallocator {
     private final transient OpaqueDataBuffer opaqueDataBuffer;
-
     public CpuDeallocator(BaseCpuDataBuffer buffer) {
         opaqueDataBuffer = buffer.getOpaqueDataBuffer();
     }
@@ -37,7 +40,6 @@ public class CpuDeallocator implements Deallocator {
     public void deallocate() {
         if (opaqueDataBuffer == null)
             throw new RuntimeException("opaqueDataBuffer is null");
-
         NativeOpsHolder.getInstance().getDeviceNativeOps().deleteDataBuffer(opaqueDataBuffer);
     }
 }

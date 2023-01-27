@@ -89,7 +89,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     protected static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
-    //    private static final Allocator allocator = AtomicAllocator.getInstance();
 
     @Getter
     protected static TADManager tadManager = new DeviceTADManager();

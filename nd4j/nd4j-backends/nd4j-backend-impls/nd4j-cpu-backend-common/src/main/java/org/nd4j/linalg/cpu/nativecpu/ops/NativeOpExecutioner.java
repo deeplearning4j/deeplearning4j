@@ -1797,7 +1797,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         Shape.setElementWiseStride(merged,(int) elementWiseStride);
         LongPointer longPointer = new LongPointer(merged);
-        loop.setShapeBuffer(new LongPointer(longPointer),dtype.toInt(),new LongPointer(ret.pointer()),order,(int) elementWiseStride);
+        loop.setShapeBuffer(new LongPointer(longPointer),dtype.toInt(),new LongPointer(ret.pointer()),order,(int) elementWiseStride,empty);
 
         return ret;
     }

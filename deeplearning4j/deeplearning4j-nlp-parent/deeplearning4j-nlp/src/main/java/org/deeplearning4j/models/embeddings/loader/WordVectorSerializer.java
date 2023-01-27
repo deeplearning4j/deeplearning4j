@@ -60,6 +60,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.OneTimeLogger;
 import org.nd4j.compression.impl.NoOp;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -401,23 +402,23 @@ public class WordVectorSerializer {
 
         if(lookupTable.getSyn0() != null) {
             //get length first so we can read later
-            Pointer numpyPointer = Nd4j.convertToNumpy(lookupTable.getSyn0());
-            writer.writeLong(numpyPointer.capacity());
-            long written = Nd4j.writeAsNumpy(numpyPointer,stream,false);
+            DataBuffer numpyPointer = Nd4j.convertToNumpy(lookupTable.getSyn0());
+            writer.writeLong(numpyPointer.length());
+            long written = Nd4j.writeAsNumpy(numpyPointer.addressPointer(),stream,false);
         }
 
         writer.writeBoolean(lookupTable.getSyn1() != null);
         if(lookupTable.getSyn1() != null) {
-            Pointer numpyPointer = Nd4j.convertToNumpy(lookupTable.getSyn1());
+            DataBuffer numpyPointer = Nd4j.convertToNumpy(lookupTable.getSyn1());
             writer.writeLong(numpyPointer.capacity());
-            long written = Nd4j.writeAsNumpy(numpyPointer,stream,false);
+            long written = Nd4j.writeAsNumpy(numpyPointer.addressPointer(),stream,false);
         }
 
         writer.writeBoolean(lookupTable.getSyn1Neg() != null);
         if(lookupTable.getSyn1Neg() != null) {
-            Pointer numpyPointer = Nd4j.convertToNumpy(lookupTable.getSyn1Neg());
+            DataBuffer numpyPointer = Nd4j.convertToNumpy(lookupTable.getSyn1Neg());
             writer.writeLong(numpyPointer.capacity());
-            long written = Nd4j.writeAsNumpy(numpyPointer,stream,false);
+            long written = Nd4j.writeAsNumpy(numpyPointer.addressPointer(),stream,false);
         }
 
     }

@@ -457,12 +457,27 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
   if (block.isFastPath()) {
     for (auto array : block.fastpath_in()) {
       if (array == nullptr) continue;
-
-      inputTypes[inT++] = array->dataType();
+      auto dtype = array->dataType();
+      inputTypes[inT++] = dtype;
       if (!_descriptor->checkInputMatch(cnt, array->dataType())) {
         auto ctype = DataTypeUtils::asString(array->dataType());
-        sd_printf("Op [%s] failed check for input [%i], DataType: [%s]\n", _descriptor->getOpName()->data(), cnt,
-                  ctype.c_str());
+        auto inputTypes2 = _descriptor->getInputTypesForInput(cnt);
+        if(inputTypes2.size() > 1) {
+          std::string allTypes;
+          for(int i = 0; i < inputTypes2.size(); i++) {
+            allTypes += DataTypeUtils::asString(inputTypes2[i]);
+            if(i < inputTypes2.size() - 1) {
+              allTypes += ",";
+            }
+          }
+          sd_printf("Op [%s] failed check for input [%i], DataType: [%s] Expected data types[%s]\n", _descriptor->getOpName()->data(), cnt,
+                    ctype.c_str(),allTypes.c_str());
+        } else {
+          auto typeAsString = DataTypeUtils::asString(inputTypes[0]);
+          sd_printf("Op [%s] failed check for input [%i], DataType: [%s] Expected data type[%s]\n", _descriptor->getOpName()->data(), cnt,
+                    ctype.c_str(),typeAsString.c_str());
+        }
+
         return sd::Status::BAD_ARGUMENTS;
       }
       cnt++;
@@ -470,10 +485,6 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
   } else {
     for (auto &p : *(block.inputs())) {
       auto var = block.variable(p);
-
-      // we're not checking validity, if ANY types were explicitly allowed
-      // if (block.dataType(cnt) == sd::DataType::ANY)
-      //    continue;
 
       // only validating non-null variables
       if (var != nullptr && var->hasNDArray()) {
@@ -597,7 +608,7 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
 
   return sd::Status::OK;
 }
-//#define DEBUG_VEDA_LOGS 1
+
 sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   sd_debug("Executing op: [%s]\n", this->getOpName()->c_str());
 
@@ -1162,9 +1173,9 @@ sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const
 
   if (!isInplace) {
     if(block.isFastPath()) {
-     //note this *is* similar to the code below but we use fast paths instead
-     //we need to ensure variables don't get freed allowing reuse of outputs
-     //as views
+      //note this *is* similar to the code below but we use fast paths instead
+      //we need to ensure variables don't get freed allowing reuse of outputs
+      //as views
       for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
         std::pair<int, int> pair(1, e);
         if (variableSpace.hasVariable(pair)) {

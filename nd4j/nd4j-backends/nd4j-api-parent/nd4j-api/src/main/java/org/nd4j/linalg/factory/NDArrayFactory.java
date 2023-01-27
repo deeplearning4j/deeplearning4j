@@ -1396,7 +1396,6 @@ public interface NDArrayFactory {
      * Note that this will create a zero copy reference
      * to this ndarray's underlying data.
      *
-     *
      * @param array the array to convert
      * @returnthe created pointer representing
      * a pointer to a numpy header

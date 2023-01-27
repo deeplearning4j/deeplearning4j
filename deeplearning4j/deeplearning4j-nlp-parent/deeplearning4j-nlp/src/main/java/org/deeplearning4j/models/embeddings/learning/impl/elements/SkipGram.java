@@ -299,7 +299,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
             if (items.size() > 1) {
                 INDArray targetArray = Nd4j.create(DataType.INT32, items.size());
                 INDArray ngStarterArray = Nd4j.create(DataType.INT32, items.size());
-                INDArray alphasArray = Nd4j.create(DataType.DOUBLE, items.size());
+                INDArray alphasArray = Nd4j.create(syn0.get().dataType(), items.size());
                 INDArray randomValuesArr = Nd4j.create(DataType.INT64, items.size());
                 int maxCols = 1;
                 for (int i = 0; i < items.size(); i++) {
@@ -383,11 +383,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                         .build();
 
                 Nd4j.getExecutioner().exec(sg);
-               /* arrayCacheMemoryMgr.release(codes);
-                arrayCacheMemoryMgr.release(indices);
-                arrayCacheMemoryMgr.release(targetArray);
-                arrayCacheMemoryMgr.release(randomValuesArr);
-                arrayCacheMemoryMgr.release(alphasArray);*/
                 items.clear();
 
 

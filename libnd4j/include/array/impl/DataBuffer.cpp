@@ -48,14 +48,13 @@ DataBuffer::DataBuffer() {
 ////////////////////////////////////////////////////////////////////////
 // copy constructor
 DataBuffer::DataBuffer(const DataBuffer& other) {
-  throw std::runtime_error("DataBuffer copy constructor: we don't expect using of this constructor!");
 
   _lenInBytes = other._lenInBytes;
   _dataType = other._dataType;
   _workspace = other._workspace;
 
-  _primaryBuffer = nullptr;
-  _specialBuffer = nullptr;
+  _primaryBuffer = other._primaryBuffer;
+  _specialBuffer = other._specialBuffer;
 
   _deviceId.store(other._deviceId.load());
 
@@ -68,7 +67,7 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
 ////////////////////////////////////////////////////////////////////////
 DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, const DataType dataType,
                        const bool isOwnerPrimary, const bool isOwnerSpecial, memory::Workspace* workspace) {
-  if (primary == nullptr && special == nullptr)
+  if (primary == nullptr && special == nullptr && lenInBytes > 0)
     throw std::runtime_error("DataBuffer constructor: can't be initialized with both nullptr buffers !");
 
   _primaryBuffer = primary;
@@ -90,6 +89,7 @@ DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, co
 DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary,
                        memory::Workspace* workspace)
     : DataBuffer(primary, nullptr, lenInBytes, dataType, isOwnerPrimary, false, workspace) {
+ if(primary != nullptr)
   syncToSpecial(true);
 }
 

@@ -246,7 +246,7 @@ public class BasicNDArrayCompressor {
      * ndarray. If the ndarray isn't compressed
      * this will do nothing
      * @param array the array to decompressed
-     *              if it is comprssed
+     *              if it is compressed
      */
     public void decompressi(INDArray array) {
         if (array.data().dataType() != DataType.COMPRESSED)
