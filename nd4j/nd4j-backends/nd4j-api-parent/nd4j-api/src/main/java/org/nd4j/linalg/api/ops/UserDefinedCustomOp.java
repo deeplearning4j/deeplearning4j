@@ -29,6 +29,28 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A mandatory base class for creating UDFs.
+ * UDFs are custom ops created by a user to handle
+ * creating custom gradients while being properly integrated
+ * with samediff.
+ *
+ * Users should override:
+ * 1. {@link #exec()} for execution with plain input arrays
+ * 2. {@link #exec(OpContext)} for execution with op contexts.
+ *
+ * Lastly, for metadata purposes, users need to override every method
+ * like providing an op name and any properties needed by the op
+ * when being instantiated.
+ * In terms of serialization, a user's UDF should have;
+ * 1. an empty constructor. This is used when creating a graph from flatbuffers.
+ * 2. {@link #configureWithSameDiff(SameDiff)} implemented: this is for handling initialization after
+ * the op is created.
+ * 3. {@link #configureFromArguments()} for configuration from specified arguments such as ints, floats/doubles, and input variables.
+ *
+ *
+ * @author Adam Gibson
+ */
 public abstract class UserDefinedCustomOp extends DynamicCustomOp {
 
     public UserDefinedCustomOp() {
@@ -124,7 +146,14 @@ public abstract class UserDefinedCustomOp extends DynamicCustomOp {
     @Override
     public abstract  List<SDVariable> doDiff(List<SDVariable> f1);
 
+    /**
+     * Override this method for execution.
+     */
     public abstract void exec();
 
+    /**
+     * Override this method for execution with an op context.
+     * @param opContext
+     */
     public abstract void exec(OpContext opContext);
 }
