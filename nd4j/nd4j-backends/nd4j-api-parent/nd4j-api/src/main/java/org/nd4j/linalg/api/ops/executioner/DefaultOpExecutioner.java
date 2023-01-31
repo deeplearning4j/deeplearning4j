@@ -769,8 +769,18 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         throw new UnsupportedOperationException();
     }
 
+
+    public void execUdf(UserDefinedCustomOp userDefinedCustomOp) {
+        userDefinedCustomOp.exec();
+    }
+
     @Override
     public CustomOp execAndReturn(CustomOp op) {
+        if(op instanceof UserDefinedCustomOp) {
+            execUdf((UserDefinedCustomOp) op);
+            return op;
+        }
+
         exec(op);
         return op;
     }

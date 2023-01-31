@@ -67,6 +67,7 @@ enum OpType:byte {
     VARIABLE = 40,
     BOOLEAN = 60, // booleanOps, for conditionals
     LOGIC = 119, //
+    UDF = 120,
 }
 
 enum InputType:byte {

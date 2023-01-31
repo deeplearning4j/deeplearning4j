@@ -54,14 +54,12 @@ import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.graph.*;
+import org.nd4j.graph.ExecutionMode;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseOp;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.custom.Invoke;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
@@ -1547,7 +1545,7 @@ public class SameDiff extends SDBaseOps {
      * setting here) using {@link #outputs()}
      * @param outputs Outputs to set. Must be valid variable names in this SameDiff instance
      */
-    public void setOutputs(List<String> outputs){
+    public void setOutputs(List<String> outputs) {
         if(outputs != null){
             for(String s : outputs){
                 Preconditions.checkArgument(variables.containsKey(s), "Cannot set variable \"%s\" as an output: SameDiff instance does not contain a variable with this name");
@@ -1571,10 +1569,16 @@ public class SameDiff extends SDBaseOps {
      * Variables can be marked as loss variables in a few different ways:<br>
      * (a) Losses are automatically added when creating loss functions via {@link #sd }<br>
      * (b) Via {@link #setLossVariables(String...)}, @link #addLossVariable(String)} or {@link SDVariable#markAsLoss()}<br>
-     * (c) Via {@link TrainingConfig#setLossVariables(List)}<br>
      */
     public List<String> getLossVariables() {
         return Collections.unmodifiableList(this.lossVariables);
+    }
+
+
+    public SDVariable[] doUdf(UserDefinedCustomOp userDefinedCustomOp) {
+        userDefinedCustomOp.configureWithSameDiff(this);
+        userDefinedCustomOp.setSameDiff(this);
+        return userDefinedCustomOp.outputVariables();
     }
 
 
@@ -5894,8 +5898,7 @@ public class SameDiff extends SDBaseOps {
                 placeholdersOffset,
                 lossVarOffset,
                 trainingConfigOffset,
-                updaterStateOffset,
-                sequenceItemsOffset);
+                updaterStateOffset);
         bufferBuilder.finish(fg);
 
         synchronized (this) {

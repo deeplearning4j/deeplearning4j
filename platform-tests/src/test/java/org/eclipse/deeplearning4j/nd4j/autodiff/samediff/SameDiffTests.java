@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.api.buffer.DataType.FLOAT;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
@@ -47,6 +48,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.*;
 import org.nd4j.autodiff.samediff.api.OutAndGrad;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
@@ -66,6 +68,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.TestUdf;
 import org.nd4j.linalg.api.ops.custom.Invoke;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
@@ -113,6 +116,26 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testUdf(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        SameDiff sd = SameDiff.create();
+        SDVariable inputArg = sd.constant(0);
+        SDVariable[] sdVariables = sd.doUdf(new TestUdf(sd, inputArg));
+        assertEquals(1,sdVariables.length);
+        assertEquals(inputArg.dataType(),sdVariables[0].dataType());
+        File save = new File("tmp-udf.fb");
+        save.deleteOnExit();
+        sd.save(save,true);
+        SameDiff sd2 = SameDiff.load(save,true);
+        assertEquals(sd,sd2);
+        System.out.println(sd.summary());
+        sdVariables[0].eval();
+
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

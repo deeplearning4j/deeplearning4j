@@ -76,8 +76,8 @@ public class LegacyOpMapper {
 
     }
 
-    public static Class<?> getLegacyOpClassForId(Op.Type opType, int opNum){
-        switch (opType){
+    public static Class<?> getLegacyOpClassForId(Op.Type opType, int opNum) {
+        switch (opType) {
             case SCALAR:
                 return scalarOpClass(opNum);
             case SCALAR_BOOL:
@@ -127,6 +127,7 @@ public class LegacyOpMapper {
             case LOOP:
             case LOOP_COND:
             case RETURN:
+            case UDF:
             default:
                 throw new UnsupportedOperationException("Unable to map op " + opNum + " of type " + opType);
         }
