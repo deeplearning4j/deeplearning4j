@@ -20,8 +20,8 @@
 
 package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
-import static org.deeplearning4j.datasets.iterator.RandomDataSetIterator.Values.ONE_HOT;
-import static org.deeplearning4j.datasets.iterator.RandomDataSetIterator.Values.ZEROS;
+import static org.deeplearning4j.datasets.iterator.RandomDataSetIterator.Values.*;
+import static org.deeplearning4j.datasets.iterator.RandomDataSetIterator.Values.INTEGER_0_10;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.nd4j.linalg.api.buffer.DataType.FLOAT;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
@@ -68,6 +68,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.TestAddUdf;
 import org.nd4j.linalg.api.ops.TestUdf;
 import org.nd4j.linalg.api.ops.custom.Invoke;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
@@ -103,6 +104,8 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.shade.guava.collect.Maps;
 import org.nd4j.weightinit.impl.OneInitScheme;
 import org.nd4j.weightinit.impl.UniformInitScheme;
+import org.nd4j.weightinit.impl.XavierInitScheme;
+import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 @Slf4j
 @NativeTag
@@ -134,6 +137,35 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(sd,sd2);
         System.out.println(sd.summary());
         sdVariables[0].eval();
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testUdfTrain(Nd4jBackend backend) {
+        int batchSize = 4;
+        int modelDim = 8;
+
+        SameDiff sd = SameDiff.create();
+
+        SDVariable features = sd.placeHolder("features", FLOAT, batchSize, modelDim);
+        SDVariable labels = sd.placeHolder("labels", FLOAT, batchSize, modelDim);
+        SDVariable weights = sd.var("weights", new XavierInitScheme('c', modelDim, modelDim), FLOAT, modelDim, modelDim);
+        SDVariable bias = sd.var("bias", new ZeroInitScheme('c'), FLOAT, modelDim);
+        SDVariable predictions = sd.nn.linear("predictions", features, weights, bias);
+        SDVariable[] sdVariables = sd.doUdf(new TestAddUdf(sd, new SDVariable[]{predictions, sd.constant(1.0)}));
+        SDVariable loss = sd.loss.meanSquaredError("loss", labels, sdVariables[0], null);
+        loss.markAsLoss();
+        TrainingConfig config = new TrainingConfig.Builder()
+                .updater(new Adam(0.1))
+                .dataSetFeatureMapping("features")
+                .dataSetLabelMapping("labels")
+                .build();
+        sd.setTrainingConfig(config);
+
+        DataSetIterator iterator = new RandomDataSetIterator(1, new long[]{batchSize, modelDim}, new long[]{batchSize, modelDim}, INTEGER_0_10, INTEGER_0_10);
+
+        sd.fit(iterator, 10);
 
     }
 
