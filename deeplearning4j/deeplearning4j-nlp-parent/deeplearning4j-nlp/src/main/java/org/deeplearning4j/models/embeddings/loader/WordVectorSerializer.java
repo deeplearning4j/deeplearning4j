@@ -404,21 +404,21 @@ public class WordVectorSerializer {
             //get length first so we can read later
             DataBuffer numpyPointer = Nd4j.convertToNumpy(lookupTable.getSyn0());
             writer.writeLong(numpyPointer.length());
-            long written = Nd4j.writeAsNumpy(numpyPointer.addressPointer(),stream,false);
+            long written = Nd4j.writeAsNumpy(numpyPointer.pointer(),stream,false);
         }
 
         writer.writeBoolean(lookupTable.getSyn1() != null);
         if(lookupTable.getSyn1() != null) {
             DataBuffer numpyPointer = Nd4j.convertToNumpy(lookupTable.getSyn1());
             writer.writeLong(numpyPointer.capacity());
-            long written = Nd4j.writeAsNumpy(numpyPointer.addressPointer(),stream,false);
+            long written = Nd4j.writeAsNumpy(numpyPointer.pointer(),stream,false);
         }
 
         writer.writeBoolean(lookupTable.getSyn1Neg() != null);
         if(lookupTable.getSyn1Neg() != null) {
             DataBuffer numpyPointer = Nd4j.convertToNumpy(lookupTable.getSyn1Neg());
             writer.writeLong(numpyPointer.capacity());
-            long written = Nd4j.writeAsNumpy(numpyPointer.addressPointer(),stream,false);
+            long written = Nd4j.writeAsNumpy(numpyPointer.pointer(),stream,false);
         }
 
     }

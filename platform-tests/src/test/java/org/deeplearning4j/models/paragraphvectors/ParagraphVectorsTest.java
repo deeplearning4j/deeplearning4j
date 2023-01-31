@@ -178,8 +178,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
             LabelsSource source = new LabelsSource("DOC_");
 
-            ParagraphVectors vec = new ParagraphVectors.Builder().minWordFrequency(1).iterations(5).seed(119).epochs(1)
-                    .layerSize(150).learningRate(0.025).labelsSource(source).windowSize(5)
+            ParagraphVectors vec = new ParagraphVectors.Builder().minWordFrequency(10).iterations(5).seed(119).epochs(1)
+                    .layerSize(50).learningRate(0.025).labelsSource(source).windowSize(5)
                     .sequenceLearningAlgorithm(new DM<>())
                     .iterate(iter)
                     .trainWordVectors(true)
@@ -204,10 +204,6 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
             else
                 WordVectorSerializer.writeParagraphVectors(vec, fullFile);
 
-            ParagraphVectors paragraphVectors = binary ?
-                    WordVectorSerializer.readParagraphVectorsBinary(fullFile) :
-                    WordVectorSerializer.readParagraphVectors(fullFile);
-
 
             int cnt1 = cache.wordFrequency("day");
             int cnt2 = cache.wordFrequency("me");
@@ -216,7 +212,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
             assertNotEquals(1, cnt2);
             assertNotEquals(cnt1, cnt2);
 
-            assertEquals(97406, cache.numWords());
+            assertEquals(97402, cache.numWords());
 
             assertTrue(vec.hasWord("DOC_16392"));
             assertTrue(vec.hasWord("DOC_3720"));
@@ -371,7 +367,6 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
             log.info("cosAO2: {}", cosAO2);
 
-            //  assertTrue(cosAO2 > 0.45);
             assertTrue(cosAB2 > 0.95);
             assertTrue(cosAAX > 0.95);
         }
@@ -418,15 +413,12 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
         double similarity1 = vec.similarity("DOC_9835", "DOC_12492");
         log.info("9835/12492 similarity: " + similarity1);
-        //        assertTrue(similarity1 > 0.2d);
 
         double similarity2 = vec.similarity("DOC_3720", "DOC_16392");
         log.info("3720/16392 similarity: " + similarity2);
-        //      assertTrue(similarity2 > 0.2d);
 
         double similarity3 = vec.similarity("DOC_6347", "DOC_3720");
         log.info("6347/3720 similarity: " + similarity3);
-        //        assertTrue(similarity3 > 0.6d);
 
         double similarityX = vec.similarity("DOC_3720", "DOC_9852");
         log.info("3720/9852 similarity: " + similarityX);

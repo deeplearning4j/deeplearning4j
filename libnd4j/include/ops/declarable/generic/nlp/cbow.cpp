@@ -89,30 +89,42 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
   const std::vector<sd::LongType> *contextShape = contextSize;
 
   std::vector<sd::LongType> *lockedWordsSize = new std::vector<sd::LongType>();
-  contextSize->push_back(lockedWords->size());
+  lockedWordsSize->push_back(lockedWords->size());
   const std::vector<sd::LongType> *lockedWordsShape = lockedWordsSize;
 
+  //sd_printf("Before converting args to ndarrays\n",0);
 
-  auto indicesArrOne = NDArrayFactory::create('c',*indicesShape,*indicesVec);
+  auto indicesArrOne = indicesVec->size() > 0 ? NDArrayFactory::create('c',*indicesShape,*indicesVec) : NDArrayFactory::empty<sd::LongType>();
   auto indicesArr = new NDArray(indicesArrOne);
+  //sd_printf("After converting args to ndarrays indices\n",0);
 
-  auto codesArrOne = NDArrayFactory::create('c',*codesShape,*codesVec);
+  auto codesArrOne = codesVec->size() > 0 ?  NDArrayFactory::create('c',*codesShape,*codesVec) :  NDArrayFactory::empty<sd::LongType>();
   auto codesArr = new NDArray(codesArrOne);
+  //sd_printf("After converting args to ndarrays codes\n",0);
 
-  auto contextArrOne = NDArrayFactory::create('c',*contextShape,*contextVec);
+  //sd_printf("Context arr size %d Context shape entry is %d\n",context->size(),contextShape->at(0));
+  //sd_printf("Context: elements: ",0);
+  for(int i = 0; i < context->size(); i++) {
+    //sd_printf(" %d ",context->at(i));
+  }
+  //sd_printf("\n",0);
+
+  auto contextArrOne = context->size() > 0 ? NDArrayFactory::create('c',*contextShape,*contextVec) : NDArrayFactory::empty<sd::LongType>();
   auto contextArr = new NDArray(contextArrOne);
+  //sd_printf("After converting args to ndarrays contexts\n",0);
 
 
-  auto lockedWordsOne = NDArrayFactory::create('c',*lockedWordsShape,*lockedWordsVec);
+  auto lockedWordsOne = lockedWordsVec->size() > 0 ?  NDArrayFactory::create('c',*lockedWordsShape,*lockedWordsVec) : NDArrayFactory::empty<sd::LongType>();
   auto lockedWordsArr = new NDArray(lockedWordsOne);
+  //sd_printf("After converting args to ndarrays locked words\n",0);
 
   auto target = I_ARG(currIdx++);
   auto ngStarter = I_ARG(currIdx++);
   auto numLabels = I_ARG(currIdx++);
   auto randomValue = I_ARG(currIdx++);
   auto iterations = I_ARG(currIdx++);
-  auto numWorkers = block.numI() > 0 ? INT_ARG(4) : omp_get_max_threads();
-  auto nsRounds = block.numI() > 1 ? INT_ARG(5) : 0;
+  auto numWorkers = block.numI() > 0 ? INT_ARG(5) : omp_get_max_threads();
+  auto nsRounds = block.numI() > 1 ? INT_ARG(6) : 0;
 
   auto alpha = T_ARG(0);
    auto minLearningRate = block.numT() > 1 ? T_ARG(1) : 1e-3;
@@ -128,6 +140,7 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
 
   auto inferenceVector = INPUT_VARIABLE(5);
 
+  //sd_printf("After input args\n",0);
 
 
   auto trainWords = block.numB() > 0 ? B_ARG(0) : true;
@@ -139,6 +152,9 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
                "CBOW: all syn tables must have the same data type");
   REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0,
                "CBOW: expTable must have the same data type as syn0 table");
+
+  //sd_printf("Before inference call syn0 nullptr %d syn1 null ptr %d exp table null %d neg table null %d contextArr null\n",
+     //       syn0 == nullptr,syn1 == nullptr,expTable == nullptr,negTable == nullptr,contextArr == nullptr);
 
   sd::ops::helpers::cbowInference(
                                  *syn0,
