@@ -19,9 +19,9 @@
 //
 // @author raver119@gmail.com
 //
-#include <graph/generated/graph_generated.h>
-#include <graph/generated/node_generated.h>
-#include <graph/generated/result_generated.h>
+#include <graph/scheme/graph_generated.h>
+#include <graph/scheme/node_generated.h>
+#include <graph/scheme/result_generated.h>
 
 //#include <protobuf/core/framework/graph.pb.h>
 #include <graph/GraphExecutioner.h>
@@ -46,7 +46,7 @@
 #include <graph/FlatUtils.h>
 #include <graph/ResultWrapper.h>
 #include <graph/execution/LogicExecutor.h>
-#include <graph/generated/array_generated.h>
+#include <graph/scheme/array_generated.h>
 #include <helpers/BitwiseUtils.h>
 #include <helpers/ShapeUtils.h>
 

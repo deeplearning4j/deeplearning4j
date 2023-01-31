@@ -23,7 +23,7 @@
 #ifndef LIBND4J_GNODE_H
 #define LIBND4J_GNODE_H
 #include <array/NDArray.h>
-#include <graph/generated/node_generated.h>
+#include <graph/scheme/node_generated.h>
 #include <ops/declarable/DeclarableOp.h>
 
 #include <atomic>

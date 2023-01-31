@@ -23,7 +23,7 @@
 #ifndef LIBND4J_OPDESCRIPTOR_H
 #define LIBND4J_OPDESCRIPTOR_H
 #include <array/DataType.h>
-#include <graph/generated/node_generated.h>
+#include <graph/scheme/node_generated.h>
 #include <helpers/helper_hash.h>
 #include <ops/InputType.h>
 

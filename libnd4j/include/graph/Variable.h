@@ -25,9 +25,9 @@
 #include <array/NDArray.h>
 #include <array/NDArrayList.h>
 #include <graph/VariableType.h>
-#include <graph/generated/array_generated.h>
-#include <graph/generated/graph_generated.h>
-#include <graph/generated/node_generated.h>
+#include <graph/scheme/array_generated.h>
+#include <graph/scheme/graph_generated.h>
+#include <graph/scheme/node_generated.h>
 
 #include <string>
 

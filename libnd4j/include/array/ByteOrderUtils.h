@@ -23,7 +23,7 @@
 #ifndef LIBND4J_BYTEORDERUTILS_H
 #define LIBND4J_BYTEORDERUTILS_H
 #include <array/ByteOrder.h>
-#include <graph/generated/array_generated.h>
+#include <graph/scheme/array_generated.h>
 #include <system/common.h>
 
 namespace sd {

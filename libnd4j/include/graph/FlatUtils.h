@@ -23,8 +23,8 @@
 #ifndef LIBND4J_FLATUTILS_H
 #define LIBND4J_FLATUTILS_H
 #include <array/NDArray.h>
-#include <graph/generated/array_generated.h>
-#include <graph/generated/node_generated.h>
+#include <graph/scheme/array_generated.h>
+#include <graph/scheme/node_generated.h>
 
 #include <utility>
 

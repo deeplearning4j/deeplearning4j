@@ -22,7 +22,7 @@
 
 #ifndef LIBND4J_EXECUTORCONFIGURATION_H
 #define LIBND4J_EXECUTORCONFIGURATION_H
-#include <graph/generated/config_generated.h>
+#include <graph/scheme/config_generated.h>
 #include <system/common.h>
 
 namespace sd {

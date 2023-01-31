@@ -28,8 +28,8 @@
 #include <graph/ResultWrapper.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
-#include <graph/generated/graph_generated.h>
-#include <graph/generated/node_generated.h>
+#include <graph/scheme/graph_generated.h>
+#include <graph/scheme/node_generated.h>
 #include <sys/stat.h>
 
 #define TF_INPUT "Placeholder"
