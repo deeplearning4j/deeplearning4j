@@ -62,15 +62,15 @@ SD_INLINE void registerUse(const std::vector<const NDArray *> &writeList,
 NDArray::NDArray(const NDArray &other) {
   _context = other._context;
   _offset = 0;
+  setShapeInfo(other.shapeInfo());
 
-  setShapeInfo(ShapeDescriptor(other.dataType(), other.ordering(), other.shapeOf(), other.rankOf()));
-
-  if (!isEmpty()) {
+  if (!isEmpty() && other.lengthOf() > 0) {
     _buffer = std::make_shared<DataBuffer>(other.lengthOf() * other.sizeOfT(), other.dataType(),
                                            other.getContext()->getWorkspace());
     this->assign(&other);
-  } else
+  } else {
     _buffer = std::make_shared<DataBuffer>();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2133,6 +2133,8 @@ BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT const, *NDArray::bufferAs
 
 template <typename T>
 T *NDArray::bufferAsT() {
+  if(buffer() == nullptr)
+    return nullptr;
   syncToHost();
   return reinterpret_cast<T *>(buffer());
 }
