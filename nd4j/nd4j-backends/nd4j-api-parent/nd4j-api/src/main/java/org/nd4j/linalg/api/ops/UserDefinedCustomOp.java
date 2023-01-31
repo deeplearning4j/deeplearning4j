@@ -36,17 +36,38 @@ import java.util.Map;
  * with samediff.
  *
  * Users should override:
- * 1. {@link #exec()} for execution with plain input arrays
- * 2. {@link #exec(OpContext)} for execution with op contexts.
+ * 1. {@link #exec()} for execution with plain input arrays. A user may
+ * add anything they wish in here. Just ensure that when done
+ * {@link #outputArguments} contains the final outputs to match the
+ * expected op outputs.
+ * 2. {@link #exec(OpContext)} for execution with op contexts. Same as above
+ * but please use {@link OpContext#getOutputArrays()} add for the final results.
  *
- * Lastly, for metadata purposes, users need to override every method
+ *
+ *  Lastly, for metadata purposes, users need to override every method
  * like providing an op name and any properties needed by the op
  * when being instantiated.
  * In terms of serialization, a user's UDF should have;
- * 1. an empty constructor. This is used when creating a graph from flatbuffers.
+ * 1. an empty constructor. This is used when creating a graph from flatbuffers in the underlying {@link org.nd4j.autodiff.samediff.serde.FlatBuffersMapper}.
  * 2. {@link #configureWithSameDiff(SameDiff)} implemented: this is for handling initialization after
- * the op is created.
+ * the op is created. This will initiate values using the relevant samediff metadata. This includes obtaining things like
+ * input and output argument metadata from {@link SDVariable} found as {@link #args()}
  * 3. {@link #configureFromArguments()} for configuration from specified arguments such as ints, floats/doubles, and input variables.
+ * The arguments referenced are the underlying arguments that get passed to every c/c++ ops. This includes
+ * the {@link #iArguments} {@link #tArguments} {@link #dArguments} {@link #inputArguments}
+ * {@link #outputArguments}
+ *
+ *
+ * 4. A user can define properties as fields. if a user does so,
+ * please ensure that you implement {@link #setPropertiesForFunction(Map)}
+ * {@link #propertiesForFunction()} these are used to create an op from scratch
+ * when saving/loading a model.
+ *
+ * 5. A user must implement {@link #calculateOutputDataTypes(List)} this is used in
+ * samediff to determine how many output variables are needed when it can't determine that
+ * from {@link #getNumOutputs()}
+ *
+ * 6. A user must implement {@link #doDiff(List)} this is where a user's custom gradient definition goes.
  *
  *
  * @author Adam Gibson
