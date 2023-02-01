@@ -22,6 +22,7 @@ package org.deeplearning4j.models.paragraphvectors;
 
 
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.IOUtils;
@@ -74,6 +75,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -931,6 +934,64 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         log.info("vec1/vec2: {}", Transforms.cosineSim(vec1, vec2));
     }
 
+
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @ParameterizedTest
+    public void testParallelLoading(Nd4jBackend backend) throws Exception {
+
+        boolean isIntegration = isIntegrationTests();
+        Executor executor = Executors.newFixedThreadPool(4);
+        File resource = Resources.asFile("/big/raw_sentences.txt");
+        SentenceIterator sentencesIter = getIterator(isIntegration, resource);
+
+        ClassPathResource resource_mixed = new ClassPathResource("paravec/");
+        File local_resource_mixed = testDir.toFile();
+        resource_mixed.copyDirectory(local_resource_mixed);
+        SentenceIterator iter = new AggregatingSentenceIterator.Builder()
+                .addSentenceIterator(sentencesIter)
+                .addSentenceIterator(new FileSentenceIterator(local_resource_mixed)).build();
+
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        Word2Vec wordVectors = new Word2Vec.Builder().minWordFrequency(1).batchSize(250).iterations(1).epochs(1)
+                .learningRate(0.025).layerSize(150).minLearningRate(0.001)
+                .elementsLearningAlgorithm(new SkipGram<>()).useHierarchicSoftmax(true).windowSize(5)
+                .iterate(iter).tokenizerFactory(t).build();
+
+        wordVectors.fit();
+
+        ParagraphVectors pv = new ParagraphVectors.Builder().tokenizerFactory(t).iterations(10)
+                .useHierarchicSoftmax(true).trainWordVectors(true).useExistingWordVectors(wordVectors)
+                .negativeSample(0).sequenceLearningAlgorithm(new DBOW<>()).build();
+
+        for(int i = 0; i < 4; i++) {
+            File write = new File("pv_" + i + ".zip");
+            WordVectorSerializer.writeParagraphVectors(pv,write);
+
+        }
+
+        int count = 0;
+        int till = 100000000;
+        while(count < till) {
+            for(int i = 0; i < 4; i++) {
+                File write = new File("pv_" + i + ".zip");
+
+                executor.execute(new Runnable() {
+                    @SneakyThrows
+                    @Override
+                    public void run() {
+                        WordVectorSerializer.readParagraphVectors(write.getAbsolutePath());
+                    }
+                });
+            }
+
+            count++;
+        }
+
+    }
 
     @Test()
     @Timeout(300000)
