@@ -141,8 +141,6 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
   REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0,
                "CBOW: expTable must have the same data type as syn0 table");
 
-  //sd_printf("Before inference call syn0 nullptr %d syn1 null ptr %d exp table null %d neg table null %d contextArr null\n",
-     //       syn0 == nullptr,syn1 == nullptr,expTable == nullptr,negTable == nullptr,contextArr == nullptr);
 
   sd::ops::helpers::cbowInference(
                                  *syn0,
