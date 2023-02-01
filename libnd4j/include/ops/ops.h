@@ -810,7 +810,11 @@ class Epsilon {
   SD_OP_DEF static Z op(X d1, X d2, X *params) {
     X diff = d1 - d2;
     X absDiff = sd::math::sd_abs<X>(diff);
-    if (params != nullptr && absDiff <= static_cast<X>(params[0])) return static_cast<Z>(1);
+    if(params != nullptr && absDiff <= static_cast<X>(params[0])) {
+      return static_cast<Z>(1);
+    } else  if(absDiff <= static_cast<X>(1e-5)) {
+      return static_cast<Z>(1);
+    }
     return static_cast<Z>(0);
   }
 

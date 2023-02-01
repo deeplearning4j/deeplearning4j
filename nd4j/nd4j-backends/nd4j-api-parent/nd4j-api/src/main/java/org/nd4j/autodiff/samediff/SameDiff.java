@@ -4853,6 +4853,8 @@ public class SameDiff extends SDBaseOps {
      *                                    be calculated and available after backprop has been done
      */
     public void createGradFunction(final String... variablesRequiringGradients) {
+        if(this.sameDiffFunctionInstances.containsKey(GRAD_FN_KEY))
+            sameDiffFunctionInstances.remove(GRAD_FN_KEY);
         List<String> lossInferred = bestGuessLossVariables();
         if (lossInferred.size() == 1) {
             String outName = lossInferred.get(0);
@@ -4862,9 +4864,9 @@ public class SameDiff extends SDBaseOps {
                         "Use SameDiff.setLossVariables() or SDVariable.markAsLoss() to override", lossInferred.get(0));
             }
             lossVariables.add(lossInferred.get(0));
-        } else if(lossInferred.isEmpty()){
+        } else if(lossInferred.isEmpty()) {
             //Check for external errors function
-            for(SameDiffOp o : ops.values()){
+            for(SameDiffOp o : ops.values()) {
                 if(o.getOp() instanceof ExternalErrorsFunction) {
                     List<String> l = o.getOutputsOfOp();
                     lossVariables.add(l.get(0));

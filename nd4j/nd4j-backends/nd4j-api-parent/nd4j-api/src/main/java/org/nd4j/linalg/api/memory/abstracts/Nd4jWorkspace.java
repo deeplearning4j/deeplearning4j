@@ -416,14 +416,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 return alloc(requiredMemory, kind, type, initialize);
             }
 
-            // updating respective counters
-            if (!trimmer) {
-                spilledAllocationsSize.addAndGet(requiredMemory);
-                AllocationsTracker.getInstance().getTracker(id).allocateSpilled(type,kind,numElements,requiredMemory);
-            } else {
-                pinnedAllocationsSize.addAndGet(requiredMemory);
-                AllocationsTracker.getInstance().getTracker(id).allocatePinned(type,kind,numElements,requiredMemory);
-            }
 
             if (isDebug.get())
                 log.info("Workspace [{}]: step: {}, spilled  {} bytes, capacity of {} elements", id, stepsCount.get(),
@@ -435,7 +427,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                     cycleAllocations.addAndGet(requiredMemory);
                     if (!trimmer) {
                         externalCount.incrementAndGet();
-                        AllocationsTracker.getInstance().getTracker(id).allocateExternal(type,kind,numElements,requiredMemory);
+                        AllocationsTracker.getInstance().getTracker(id).allocateSpilled(type,kind,numElements,requiredMemory);
+                        spilledAllocationsSize.addAndGet(requiredMemory);
                         PagedPointer pointer = new PagedPointer(
                                 memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize),
                                 numElements);
@@ -445,6 +438,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                         return pointer;
                     } else {
                         pinnedCount.incrementAndGet();
+                        AllocationsTracker.getInstance().getTracker(id).allocatePinned(type,kind,numElements,requiredMemory);
+                        pinnedAllocationsSize.addAndGet(requiredMemory);
                         PagedPointer pointer = new PagedPointer(
                                 memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize),
                                 numElements);

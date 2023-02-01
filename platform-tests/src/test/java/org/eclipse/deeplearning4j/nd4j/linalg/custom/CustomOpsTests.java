@@ -129,11 +129,11 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
                 classes,clusters,3
         );
 
-        INDArray assertion = Nd4j.create(new double[][] {
+        INDArray assertion = Nd4j.create(new int[][] {
                 {3,0,0},
                 {0,2,0},
                 {0,1,0}
-        }).castTo(DataType.INT64);
+        });
         assertEquals(assertion,confMatrix);
 
     }

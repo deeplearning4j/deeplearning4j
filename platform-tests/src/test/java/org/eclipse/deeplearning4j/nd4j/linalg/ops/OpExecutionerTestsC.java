@@ -865,7 +865,9 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
     public void testEpsOps(Nd4jBackend backend) {
         INDArray ones = Nd4j.ones(DataType.DOUBLE, 1, 6);
         double tiny = 1.000000000000001;
-        assertTrue(ones.eps(tiny).all());
+        INDArray eps = ones.eps(tiny);
+        boolean all = eps.all();
+        assertTrue(all);
         INDArray consec = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1);
         assertTrue(consec.eps(5).any());
         assertTrue(consec.sub(1).eps(5).any());

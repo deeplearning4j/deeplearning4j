@@ -235,7 +235,8 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
 
                 array2.leverageTo("EXT");
 
-                assertEquals(reqMemory * 2, wsOne.getPrimaryOffset());
+                //64 is  an extra shape buffer being allocated
+                assertEquals(reqMemory * 2 + 64, wsOne.getPrimaryOffset());
             }
         }
     }
@@ -338,7 +339,8 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
             array2.assign(array1);
 
             long reqMemory = wsI.requiredMemoryPerArray(array1);
-            assertEquals(reqMemory , wsI.getPrimaryOffset());
+            //multiply by 2 for the dup() calling assign
+            assertEquals(reqMemory * 2 , wsI.getPrimaryOffset());
             assertEquals(array1, array2);
 
             INDArray array3 = Nd4j.createUninitializedDetached(DataType.FLOAT, new long[0]);
@@ -778,7 +780,7 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
          *  Number of elements: 6:  Bytes allocated: 64 Number of allocations: 6 Total bytes allocated: 384
          *  Number of elements: 8:  Bytes allocated: 64 Number of allocations: 21 Total bytes allocated: 1344
          */
-        assertEquals(AllocationsTracker.getInstance().totalMemoryForWorkspace(workspace.getId(), MemoryKind.DEVICE), workspace.getPrimaryOffset());
+        assertEquals(AllocationsTracker.getInstance().totalMemoryForWorkspace(workspace.getId(), MemoryKind.HOST), workspace.getPrimaryOffset());
 
         assertEquals(5, dup.sumNumber().doubleValue(), 0.01);
 
