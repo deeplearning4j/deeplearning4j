@@ -1575,6 +1575,12 @@ public class SameDiff extends SDBaseOps {
     }
 
 
+    /**
+     * Registers a user defined op in the graph.
+     * For more information, see {@link UserDefinedCustomOp}
+     * @param userDefinedCustomOp the op to register
+     * @return  the op's output variables
+     */
     public SDVariable[] doUdf(UserDefinedCustomOp userDefinedCustomOp) {
         userDefinedCustomOp.configureWithSameDiff(this);
         userDefinedCustomOp.setSameDiff(this);
