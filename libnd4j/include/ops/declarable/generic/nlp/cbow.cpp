@@ -89,21 +89,22 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
   const std::vector<sd::LongType> *contextShape = contextSize;
 
   std::vector<sd::LongType> *lockedWordsSize = new std::vector<sd::LongType>();
-  contextSize->push_back(lockedWords->size());
+  lockedWordsSize->push_back(lockedWords->size());
   const std::vector<sd::LongType> *lockedWordsShape = lockedWordsSize;
 
 
-  auto indicesArrOne = NDArrayFactory::create('c',*indicesShape,*indicesVec);
+  auto indicesArrOne = indicesVec->size() > 0 ? NDArrayFactory::create('c',*indicesShape,*indicesVec) : NDArrayFactory::empty<sd::LongType>();
   auto indicesArr = new NDArray(indicesArrOne);
 
-  auto codesArrOne = NDArrayFactory::create('c',*codesShape,*codesVec);
+  auto codesArrOne = codesVec->size() > 0 ?  NDArrayFactory::create('c',*codesShape,*codesVec) :  NDArrayFactory::empty<sd::LongType>();
   auto codesArr = new NDArray(codesArrOne);
 
-  auto contextArrOne = NDArrayFactory::create('c',*contextShape,*contextVec);
+
+  auto contextArrOne = context->size() > 0 ? NDArrayFactory::create('c',*contextShape,*contextVec) : NDArrayFactory::empty<sd::LongType>();
   auto contextArr = new NDArray(contextArrOne);
 
 
-  auto lockedWordsOne = NDArrayFactory::create('c',*lockedWordsShape,*lockedWordsVec);
+  auto lockedWordsOne = lockedWordsVec->size() > 0 ?  NDArrayFactory::create('c',*lockedWordsShape,*lockedWordsVec) : NDArrayFactory::empty<sd::LongType>();
   auto lockedWordsArr = new NDArray(lockedWordsOne);
 
   auto target = I_ARG(currIdx++);
@@ -111,8 +112,8 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
   auto numLabels = I_ARG(currIdx++);
   auto randomValue = I_ARG(currIdx++);
   auto iterations = I_ARG(currIdx++);
-  auto numWorkers = block.numI() > 0 ? INT_ARG(4) : omp_get_max_threads();
-  auto nsRounds = block.numI() > 1 ? INT_ARG(5) : 0;
+  auto numWorkers = block.numI() > 0 ? INT_ARG(5) : omp_get_max_threads();
+  auto nsRounds = block.numI() > 1 ? INT_ARG(6) : 0;
 
   auto alpha = T_ARG(0);
    auto minLearningRate = block.numT() > 1 ? T_ARG(1) : 1e-3;
@@ -139,6 +140,7 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
                "CBOW: all syn tables must have the same data type");
   REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0,
                "CBOW: expTable must have the same data type as syn0 table");
+
 
   sd::ops::helpers::cbowInference(
                                  *syn0,
