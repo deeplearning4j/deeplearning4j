@@ -95,9 +95,7 @@ class ScalarBoolTransform {
                                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                                         const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ);
 
-/*
-#include "cuda/scalar_temp.cu"
-*/
+
 #else
   template <typename OpType>
   static void transform(const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z,

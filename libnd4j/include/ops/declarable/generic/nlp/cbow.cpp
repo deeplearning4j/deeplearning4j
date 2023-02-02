@@ -100,6 +100,7 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
   auto codesArr = new NDArray(codesArrOne);
 
 
+
   auto contextArrOne = context->size() > 0 ? NDArrayFactory::create('c',*contextShape,*contextVec) : NDArrayFactory::empty<sd::LongType>();
   auto contextArr = new NDArray(contextArrOne);
 
@@ -116,7 +117,7 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
   auto nsRounds = block.numI() > 1 ? INT_ARG(6) : 0;
 
   auto alpha = T_ARG(0);
-   auto minLearningRate = block.numT() > 1 ? T_ARG(1) : 1e-3;
+  auto minLearningRate = block.numT() > 1 ? T_ARG(1) : 1e-3;
 
 
 
@@ -140,6 +141,7 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
                "CBOW: all syn tables must have the same data type");
   REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0,
                "CBOW: expTable must have the same data type as syn0 table");
+
 
 
   sd::ops::helpers::cbowInference(

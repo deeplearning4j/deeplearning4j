@@ -62,7 +62,8 @@ public class JDBCRecordReaderTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        FileUtils.forceDelete(new File(dbName));
+        if(new File(dbName).exists())
+            FileUtils.forceDelete(new File(dbName));
         dataSource = new EmbeddedDataSource();
         dataSource.setDatabaseName(dbName);
         dataSource.setCreateDatabase("create");
@@ -249,7 +250,7 @@ public class JDBCRecordReaderTest {
             // varchar to text
             assertEquals(Text.class, item.get(6).getClass());
             assertEquals(DoubleWritable.class, // float to double (derby's float is an alias of double by default)
-            item.get(7).getClass());
+                    item.get(7).getClass());
             // real to float
             assertEquals(FloatWritable.class, item.get(8).getClass());
             // decimal to double

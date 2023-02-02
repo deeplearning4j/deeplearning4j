@@ -102,7 +102,9 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         //+ 192 is for shape buffers and alignment padding
         System.out.println(Nd4j.getProfiler().printCurrentStats());
         MemoryKind memoryKindTest = backend.getEnvironment().isCPU() ? MemoryKind.HOST : MemoryKind.DEVICE;
-        assertEquals(AllocationsTracker.getInstance().getTracker("WS1").currentPinnedBytes(memoryKindTest), workspace.getPinnedSize());
+       long trackedMem = AllocationsTracker.getInstance().getTracker("WS1").currentPinnedBytes(memoryKindTest);
+       long pinned = workspace.getPinnedSize();
+        assertEquals(trackedMem, pinned);
 
         assertEquals(0, workspace.getDeviceOffset());
 
@@ -113,7 +115,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         log.info("------------------");
 
         //1 array data buffer 1 shape buffer
-        assertEquals(AllocationsTracker.getInstance().getTracker("WS1").currentDataTypeSpilledCount(DataType.DOUBLE).size(), workspace.getNumberOfPinnedAllocations());
+        assertEquals(AllocationsTracker.getInstance().getTracker("WS1").totalPinnedAllocationCount(), workspace.getNumberOfPinnedAllocations());
 
         for (int e = 0; e < 4; e++) {
             for (int i = 0; i < 4; i++) {
@@ -129,7 +131,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
             if (e >= 2) {
                 assertEquals(0, workspace.getNumberOfPinnedAllocations(),"Failed on iteration " + e);
             } else {
-                assertEquals(AllocationsTracker.getInstance().getTracker("WS1").currentDataTypeSpilledCount(DataType.DOUBLE).size(), workspace.getNumberOfPinnedAllocations(),"Failed on iteration " + e);
+                assertEquals(AllocationsTracker.getInstance().getTracker("WS1").totalPinnedAllocationCount(), workspace.getNumberOfPinnedAllocations(),"Failed on iteration " + e);
             }
         }
 
@@ -187,7 +189,6 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
 
         Nd4jWorkspace workspace =
                 (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "WS1");
-//        workspace.enableDebug(true);
 
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
             Nd4j.create(DataType.DOUBLE,500);
@@ -195,9 +196,10 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         }
 
         assertEquals(0, workspace.getStepNumber());
-        long requiredMemory = 1000 * DataType.DOUBLE.width();
+        long requiredMemory = workspace.requiredMemoryPerArray(Nd4j.create(DataType.DOUBLE,500)) * 2;
         long shiftedSize = ((long) (requiredMemory * 1.3)) + (8 - (((long) (requiredMemory * 1.3)) % 8));
-        assertEquals(requiredMemory, workspace.getSpilledSize());
+        MemoryKind testKind = Nd4j.getEnvironment().isCPU() ? MemoryKind.HOST : MemoryKind.DEVICE;
+        assertEquals(AllocationsTracker.getInstance().getTracker("WS1").currentSpilledBytes(testKind), workspace.getSpilledSize());
         assertEquals(shiftedSize, workspace.getInitialBlockSize());
         assertEquals(workspace.getInitialBlockSize() * 4, workspace.getCurrentSize());
 

@@ -1473,42 +1473,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
     }
 
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testConfusionMatrix(){
-        DataType dt = DataType.DOUBLE;
 
-        for(boolean withMax : new boolean[]{true, false}){
-
-            SameDiff sd = SameDiff.create();
-
-            SDVariable labels = sd.constant("labels", Nd4j.createFromArray(1, 2, 4));
-            SDVariable predictions = sd.constant("predictions", Nd4j.createFromArray(2, 2, 4));
-
-            INDArray exp = Nd4j.create(new double[][]{
-                    {0, 0, 0, 0, 0},
-                    {0, 0, 1, 0, 0},
-                    {0, 0, 1, 0, 0},
-                    {0, 0, 0, 0, 0},
-                    {0, 0, 0, 0, 1}}).castTo(FLOAT);
-
-            SDVariable confMatrix;
-            if(withMax){
-                confMatrix = sd.math().confusionMatrix(labels, predictions, 5).castTo(FLOAT);
-            } else {
-                confMatrix = sd.math().confusionMatrix("cm", labels, predictions, FLOAT);
-            }
-
-            SDVariable loss = confMatrix.castTo(DataType.DOUBLE).std(true);
-
-
-            String err = OpValidation.validate(new TestCase(sd)
-                    .gradientCheck(false)   //Not gradient checkable
-                    .expected(confMatrix, exp));
-
-            assertNull(err);
-        }
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

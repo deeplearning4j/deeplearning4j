@@ -57,26 +57,30 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
   // multiply x to y
   MmulHelper::mmul(x, w, z, 1.0, 0.0);
   if(bTranspose && b->rankOf() == 1) {
-      b = new NDArray(INPUT_VARIABLE(2)->reshape('c',{INPUT_VARIABLE(2)->lengthOf(),1}));
+    b = new NDArray(INPUT_VARIABLE(2)->reshape('c',{INPUT_VARIABLE(2)->lengthOf(),1}));
+    if(z->isMatrix()) {
       z->addiColumnVector(*b);
+    } else {
+      *z += *b;
+    }
   } else {
-
-    b->printShapeInfo("Shape buffer of bias before is \n");
-
+    
     if(b->rankOf() == 1) {
       b = new NDArray(INPUT_VARIABLE(2)->reshape('c',{1,INPUT_VARIABLE(2)->lengthOf()}));
     }
-    b->printShapeInfo("Shape buffer of bias after is \n");
+
+    if(z->isMatrix()) {
+      // adding b vector
+      z->addiRowVector(*b);
+    } else  {
+      *z += *b;
+    }
+  }
 
 
-     // adding b vector
-     z->addiRowVector(*b);
-   }
-
-
-   if(bTranspose || b->lengthOf() == 1) {
-     delete b;
-   }
+  if(bTranspose || b->lengthOf() == 1) {
+    delete b;
+  }
 
   if (bTranspose) {
     delete w;

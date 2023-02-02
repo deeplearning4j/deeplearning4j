@@ -72,7 +72,9 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
         int timeSeriesLength = 12;
 
         //4 layer network: 2 GravesLSTM + DenseLayer + RnnOutputLayer. Hence also tests preprocessors.
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).graphBuilder()
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .miniBatch(false)
+                .seed(12345).graphBuilder()
                 .addInputs("in")
                 .addLayer("0", new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(5).nOut(7)
                         .activation(Activation.TANH)

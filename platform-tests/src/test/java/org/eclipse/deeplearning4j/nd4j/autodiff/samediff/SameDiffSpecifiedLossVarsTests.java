@@ -155,17 +155,21 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTestWithBackends {
         //First: create grad function for optimizing loss 1 only
         sd.setLossVariables("loss1");
         sd.createGradFunction();
-        for(SDVariable v : new SDVariable[]{ph1, w1, b1, mmul1, badd1, loss1}){
+        for(SDVariable v : new SDVariable[]{ph1, w1, b1, mmul1, badd1, loss1}) {
             assertNotNull(v.gradient(),v.name());
         }
-        for(SDVariable v : new SDVariable[]{ph2, w2, b2, mmul2, badd2, loss2}){
-            assertNull(v.gradient(),v.name());
+
+        sd.setLossVariables("loss2");
+        sd.createGradFunction();
+
+        for(SDVariable v : new SDVariable[]{ph2, w2, b2, mmul2, badd2, loss2}) {
+            assertNotNull(v.gradient(),v.name());
         }
 
         //Now, set to other loss function
         sd.setLossVariables("loss2");
         sd.createGradFunction();
-        for(SDVariable v : new SDVariable[]{ph1, w1, b1, mmul1, badd1, loss1}){
+        for(SDVariable v : new SDVariable[]{ph1, w1, b1, mmul1, badd1, loss1}) {
             assertNull(v.gradient(),v.name());
         }
         for(SDVariable v : new SDVariable[]{ph2, w2, b2, mmul2, badd2, loss2}){

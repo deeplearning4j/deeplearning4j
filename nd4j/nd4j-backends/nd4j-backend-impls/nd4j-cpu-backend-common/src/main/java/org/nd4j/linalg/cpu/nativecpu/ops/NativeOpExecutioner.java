@@ -562,7 +562,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw new RuntimeException(loop.lastErrorMessage());
     }
 
-    public INDArray exec(ScalarOp op){
+    public INDArray exec(ScalarOp op) {
         return exec(op, null);
     }
 
