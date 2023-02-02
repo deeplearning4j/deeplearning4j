@@ -20,8 +20,13 @@ package org.nd4j.jita.allocator.impl;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.api.memory.Deallocator;
+import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
+import org.nd4j.linalg.profiler.data.eventlogger.EventType;
+import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
+import org.nd4j.linalg.profiler.data.eventlogger.ObjectAllocationType;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 
@@ -29,14 +34,34 @@ import org.nd4j.nativeblas.OpaqueDataBuffer;
 public class CudaDeallocator implements Deallocator {
 
     private OpaqueDataBuffer opaqueDataBuffer;
+    private LogEvent logEvent;
 
     public CudaDeallocator(@NonNull BaseCudaDataBuffer buffer) {
         opaqueDataBuffer = buffer.getOpaqueDataBuffer();
+        if(EventLogger.getInstance().isEnabled()) {
+            logEvent = LogEvent.builder()
+                    .eventType(EventType.DEALLOCATION)
+                    .objectAllocationType(ObjectAllocationType.DATA_BUFFER)
+                    .associatedWorkspace(Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread().getId())
+                    .build();
+
+        }
     }
 
     @Override
     public void deallocate() {
         log.trace("Deallocating CUDA memory");
+        //update the log event with the actual time of de allocation and then
+        //perform logging
+        if(logEvent != null) {
+            logEvent.setEventTimeMs(System.currentTimeMillis());
+            EventLogger.getInstance().log(logEvent);
+        }
         NativeOpsHolder.getInstance().getDeviceNativeOps().deleteDataBuffer(opaqueDataBuffer);
+    }
+
+    @Override
+    public LogEvent logEvent() {
+        return null;
     }
 }
