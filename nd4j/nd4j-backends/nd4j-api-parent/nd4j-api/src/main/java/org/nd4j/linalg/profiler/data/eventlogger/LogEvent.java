@@ -17,25 +17,26 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
+package org.nd4j.linalg.profiler.data.eventlogger;
 
-package org.nd4j.linalg.api.memory;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.nd4j.linalg.api.buffer.DataType;
 
-import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class LogEvent {
 
-public interface Deallocator {
-    /**
-     * This method does actual deallocation
-     */
-    void deallocate();
+    private DataType dataType;
+    private EventType eventType;
+    private ObjectAllocationType objectAllocationType;
+    private String threadName;
+    private long eventTimeMs;
+    private String associatedWorkspace;
+    private long bytes;
 
-    /**
-     * Log event for a deallocation.
-     * Only used when {@link org.nd4j.linalg.profiler.data.eventlogger.EventLogger#enabled}
-     * is true. We store events on deallocators to retain metadata
-     * about a be to be deleted buffer without the need to retain a reference
-     * to the deallocatable object. This is to avoid conflict with {@link java.lang.ref.WeakReference}
-     *
-     * @return
-     */
-    LogEvent logEvent();
 }

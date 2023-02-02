@@ -67,6 +67,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.profiler.UnifiedProfiler;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -941,8 +942,9 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     @ParameterizedTest
     public void testParallelLoading(Nd4jBackend backend) throws Exception {
 
+        int numThreads = 12;
         boolean isIntegration = isIntegrationTests();
-        Executor executor = Executors.newFixedThreadPool(4);
+        Executor executor = Executors.newFixedThreadPool(numThreads);
         File resource = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator sentencesIter = getIterator(isIntegration, resource);
 
@@ -956,6 +958,9 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
+        UnifiedProfiler.getInstance().start();
+
+      Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread().enableDebug(true);
         Word2Vec wordVectors = new Word2Vec.Builder().minWordFrequency(1).batchSize(250).iterations(1).epochs(1)
                 .learningRate(0.025).layerSize(150).minLearningRate(0.001)
                 .elementsLearningAlgorithm(new SkipGram<>()).useHierarchicSoftmax(true).windowSize(5)
@@ -963,31 +968,38 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
         wordVectors.fit();
 
-        ParagraphVectors pv = new ParagraphVectors.Builder().tokenizerFactory(t).iterations(10)
+        ParagraphVectors pv = new ParagraphVectors.Builder().tokenizerFactory(t)
+                .iterations(10)
                 .useHierarchicSoftmax(true).trainWordVectors(true).useExistingWordVectors(wordVectors)
                 .negativeSample(0).sequenceLearningAlgorithm(new DBOW<>()).build();
 
-        for(int i = 0; i < 4; i++) {
+        for(int i = 0; i < numThreads; i++) {
             File write = new File("pv_" + i + ".zip");
-            WordVectorSerializer.writeParagraphVectors(pv,write);
+            System.out.println(UnifiedProfiler.getInstance().printCurrentStats());
+            WordVectorSerializer.writeParagraphVectors(pv,write.getAbsolutePath());
+            System.out.println(UnifiedProfiler.getInstance().printCurrentStats());
 
         }
 
         int count = 0;
         int till = 100000000;
         while(count < till) {
-            for(int i = 0; i < 4; i++) {
+            for(int i = 0; i < numThreads; i++) {
                 File write = new File("pv_" + i + ".zip");
 
                 executor.execute(new Runnable() {
                     @SneakyThrows
                     @Override
                     public void run() {
-                        WordVectorSerializer.readParagraphVectors(write.getAbsolutePath());
+                        System.out.println(UnifiedProfiler.getInstance().printCurrentStats());
+                        WordVectorSerializer.readParagraphVectors(write);
+                        Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
+                        System.out.println(UnifiedProfiler.getInstance().printCurrentStats());
                     }
                 });
             }
 
+            Thread.sleep(1000);
             count++;
         }
 

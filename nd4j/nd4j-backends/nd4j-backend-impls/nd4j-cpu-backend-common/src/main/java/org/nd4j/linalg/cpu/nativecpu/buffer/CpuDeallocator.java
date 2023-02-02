@@ -21,25 +21,50 @@
 package org.nd4j.linalg.cpu.nativecpu.buffer;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.Deallocator;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Log;
+import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
+import org.nd4j.linalg.profiler.data.eventlogger.EventType;
+import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
+import org.nd4j.linalg.profiler.data.eventlogger.ObjectAllocationType;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
 @Slf4j
 public class CpuDeallocator implements Deallocator {
     private final transient OpaqueDataBuffer opaqueDataBuffer;
+    private LogEvent logEvent;
+
     public CpuDeallocator(BaseCpuDataBuffer buffer) {
         opaqueDataBuffer = buffer.getOpaqueDataBuffer();
+        if(EventLogger.getInstance().isEnabled()) {
+            logEvent = LogEvent.builder()
+                    .bytes(buffer.getElementSize() * buffer.length())
+                    .dataType(buffer.dataType())
+                    .eventType(EventType.DEALLOCATION)
+                    .objectAllocationType(ObjectAllocationType.DATA_BUFFER)
+                    .associatedWorkspace(buffer.getParentWorkspace().getId())
+                    .build();
+
+        }
     }
 
     @Override
     public void deallocate() {
         if (opaqueDataBuffer == null)
             throw new RuntimeException("opaqueDataBuffer is null");
+
+        //update the log event with the actual time of de allocation and then
+        //perform logging
+        if(logEvent != null) {
+            logEvent.setEventTimeMs(System.currentTimeMillis());
+            EventLogger.getInstance().log(logEvent);
+        }
         NativeOpsHolder.getInstance().getDeviceNativeOps().deleteDataBuffer(opaqueDataBuffer);
+    }
+
+    @Override
+    public LogEvent logEvent() {
+        return logEvent;
     }
 }
