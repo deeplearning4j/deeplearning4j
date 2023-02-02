@@ -132,11 +132,6 @@ public abstract class UserDefinedCustomOp extends DynamicCustomOp {
 
     @Override
     public abstract void setPropertiesForFunction(Map<String, Object> properties);
-    @Override
-    public abstract  Object getValue(Field property);
-
-    @Override
-    public abstract  void setValueFor(Field target, Object value);
 
     @Override
     public abstract  Map<String, Object> propertiesForFunction();
