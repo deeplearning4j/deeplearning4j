@@ -115,10 +115,18 @@ public class CpuWorkspaceDeallocator implements Deallocator {
                 Nd4j.getMemoryManager().release(pair.getDevicePointer(), MemoryKind.DEVICE);
         }
 
+
+        //update the log event with the actual time of de allocation and then
+        //perform logging
+        if(logEvent != null) {
+            logEvent.setEventTimeMs(System.currentTimeMillis());
+            EventLogger.getInstance().log(logEvent);
+        }
+
     }
 
     @Override
     public LogEvent logEvent() {
-        return null;
+        return logEvent;
     }
 }

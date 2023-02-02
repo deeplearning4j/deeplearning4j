@@ -225,6 +225,19 @@ public class ND4JSystemProperties {
      */
     public final static String LARGE_ARRAY_MAX_MULTIPLE = "org.nd4j.cache.large_array_max_multiple";
 
+    /**
+     * For usage with the EventLogger. When the event logger is enabled, extra information will be tracked
+     * including allocations, deallocations and other difficult to track down events.
+     * Note that enabling this will add a certain amount of overhead.
+     */
+    public final static String EVENT_LOGGER_ENABLED = "org.nd4j.linalg.profiler.eventlogger.enabled";
+
+    /**
+     * For usage with the EventLogger. Tells the event logger to
+     * format its log output as a date instead of the default nanoseconds.
+     */
+    public final static String EVENT_LOGGER_FORMAT_AS_DATE = "org.nd4j.linalg.profiler.eventlogger.logdate";
+
     private ND4JSystemProperties() {
     }
 }

@@ -68,6 +68,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.profiler.UnifiedProfiler;
+import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
+import org.nd4j.linalg.profiler.data.eventlogger.EventType;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -941,7 +943,9 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @ParameterizedTest
     public void testParallelLoading(Nd4jBackend backend) throws Exception {
-
+        Nd4j.getProfiler().start();
+        EventLogger.getInstance().setEventTypesToLog(Arrays.asList(EventType.DEALLOCATION));
+        EventLogger.getInstance().setFormatTimeAsDate(true);
         int numThreads = 12;
         boolean isIntegration = isIntegrationTests();
         Executor executor = Executors.newFixedThreadPool(numThreads);
@@ -960,7 +964,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
         UnifiedProfiler.getInstance().start();
 
-      Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread().enableDebug(true);
+        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread().enableDebug(true);
         Word2Vec wordVectors = new Word2Vec.Builder().minWordFrequency(1).batchSize(250).iterations(1).epochs(1)
                 .learningRate(0.025).layerSize(150).minLearningRate(0.001)
                 .elementsLearningAlgorithm(new SkipGram<>()).useHierarchicSoftmax(true).windowSize(5)
@@ -1002,6 +1006,9 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
             Thread.sleep(1000);
             count++;
         }
+
+
+        Nd4j.getProfiler().stop();
 
     }
 

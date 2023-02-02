@@ -68,6 +68,7 @@ public class UnifiedProfiler {
                 .build();
         Nd4j.getExecutioner().setProfilingConfig(profilerConfig);
         OpProfiler.getInstance().setConfig(profilerConfig);
+        EventLogger.getInstance().setEnabled(true);
 
     }
 
@@ -83,6 +84,8 @@ public class UnifiedProfiler {
                 .build();
         Nd4j.getExecutioner().setProfilingConfig(profilerConfig);
         OpProfiler.getInstance().setConfig(profilerConfig);
+        EventLogger.getInstance().setEnabled(false);
+
 
     }
 

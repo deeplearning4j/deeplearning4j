@@ -22,7 +22,7 @@ package org.nd4j.linalg.cpu.nativecpu.buffer;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.memory.Deallocator;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.Log;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
 import org.nd4j.linalg.profiler.data.eventlogger.EventType;
 import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
@@ -43,7 +43,7 @@ public class CpuDeallocator implements Deallocator {
                     .dataType(buffer.dataType())
                     .eventType(EventType.DEALLOCATION)
                     .objectAllocationType(ObjectAllocationType.DATA_BUFFER)
-                    .associatedWorkspace(buffer.getParentWorkspace().getId())
+                    .associatedWorkspace(Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread().getId())
                     .build();
 
         }
