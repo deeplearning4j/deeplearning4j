@@ -231,7 +231,6 @@ public class FlatBuffersMapper {
             } else {
                 return name2.getHash();
             }
-            //return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
 
         } else {
             try {
@@ -294,6 +293,8 @@ public class FlatBuffersMapper {
                 return Type.PAIRWISE_BOOL;
             case OpType.SUMMARYSTATS:
                 return Type.SUMMARYSTATS;
+            case OpType.UDF:
+                return Type.UDF;
             default:
                 throw new UnsupportedOperationException("Unknown op type passed in: " + type);
         }
@@ -356,6 +357,8 @@ public class FlatBuffersMapper {
             case SUMMARYSTATS:
             case VARIANCE:
                 return OpType.SUMMARYSTATS;
+            case UDF:
+                return OpType.UDF;
             default:
                 throw new UnsupportedOperationException("Unknown op type passed in: " + type);
         }
@@ -441,7 +444,7 @@ public class FlatBuffersMapper {
         Map<String, Object> props = FlatBuffersMapper
                 .mapFlatPropertiesToFunctionProperties(Arrays.asList(flatProperties));
 
-        if (opType == Type.CUSTOM || opType == Type.LOGIC) {
+        if (opType == Type.CUSTOM || opType == Type.LOGIC || opType == Type.UDF) {
             String opName = fn.opName();
 
             DifferentialFunction op;

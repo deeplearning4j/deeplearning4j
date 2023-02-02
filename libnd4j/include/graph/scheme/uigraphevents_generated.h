@@ -21,25 +21,34 @@
 
 #ifndef FLATBUFFERS_GENERATED_UIGRAPHEVENTS_SD_GRAPH_H_
 #define FLATBUFFERS_GENERATED_UIGRAPHEVENTS_SD_GRAPH_H_
+
 #include "flatbuffers/flatbuffers.h"
+
 #include "array_generated.h"
 
 namespace sd {
 namespace graph {
 
 struct UIEvent;
+struct UIEventBuilder;
 
 struct FrameIteration;
+struct FrameIterationBuilder;
 
 struct UIAddName;
+struct UIAddNameBuilder;
 
 struct FlatArrayList;
+struct FlatArrayListBuilder;
 
 struct UIHistogram;
+struct UIHistogramBuilder;
 
 struct UISummaryStatistics;
+struct UISummaryStatisticsBuilder;
 
 struct UIHardwareState;
+struct UIHardwareStateBuilder;
 
 enum UIEventType {
   UIEventType_ADD_NAME = 0,
@@ -71,7 +80,7 @@ inline const UIEventType (&EnumValuesUIEventType())[9] {
 }
 
 inline const char * const *EnumNamesUIEventType() {
-  static const char * const names[] = {
+  static const char * const names[10] = {
     "ADD_NAME",
     "SCALAR",
     "ARRAY",
@@ -87,7 +96,7 @@ inline const char * const *EnumNamesUIEventType() {
 }
 
 inline const char *EnumNameUIEventType(UIEventType e) {
-  if (e < UIEventType_ADD_NAME || e > UIEventType_HARDWARE_STATE) return "";
+  if (flatbuffers::IsOutRange(e, UIEventType_ADD_NAME, UIEventType_HARDWARE_STATE)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesUIEventType()[index];
 }
@@ -124,7 +133,7 @@ inline const UIEventSubtype (&EnumValuesUIEventSubtype())[10] {
 }
 
 inline const char * const *EnumNamesUIEventSubtype() {
-  static const char * const names[] = {
+  static const char * const names[11] = {
     "NONE",
     "EVALUATION",
     "LOSS",
@@ -141,7 +150,7 @@ inline const char * const *EnumNamesUIEventSubtype() {
 }
 
 inline const char *EnumNameUIEventSubtype(UIEventSubtype e) {
-  if (e < UIEventSubtype_NONE || e > UIEventSubtype_USER_CUSTOM) return "";
+  if (flatbuffers::IsOutRange(e, UIEventSubtype_NONE, UIEventSubtype_USER_CUSTOM)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesUIEventSubtype()[index];
 }
@@ -164,7 +173,7 @@ inline const UIHistogramType (&EnumValuesUIHistogramType())[3] {
 }
 
 inline const char * const *EnumNamesUIHistogramType() {
-  static const char * const names[] = {
+  static const char * const names[4] = {
     "DISCRETE",
     "EQUAL_SPACING",
     "CUSTOM",
@@ -174,12 +183,13 @@ inline const char * const *EnumNamesUIHistogramType() {
 }
 
 inline const char *EnumNameUIHistogramType(UIHistogramType e) {
-  if (e < UIHistogramType_DISCRETE || e > UIHistogramType_CUSTOM) return "";
+  if (flatbuffers::IsOutRange(e, UIHistogramType_DISCRETE, UIHistogramType_CUSTOM)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesUIHistogramType()[index];
 }
 
 struct UIEvent FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef UIEventBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_EVENTTYPE = 4,
     VT_EVENTSUBTYPE = 6,
@@ -191,11 +201,11 @@ struct UIEvent FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_FRAMEITER = 18,
     VT_PLUGIN = 20
   };
-  UIEventType eventType() const {
-    return static_cast<UIEventType>(GetField<int8_t>(VT_EVENTTYPE, 0));
+  sd::graph::UIEventType eventType() const {
+    return static_cast<sd::graph::UIEventType>(GetField<int8_t>(VT_EVENTTYPE, 0));
   }
-  UIEventSubtype eventSubType() const {
-    return static_cast<UIEventSubtype>(GetField<int8_t>(VT_EVENTSUBTYPE, 0));
+  sd::graph::UIEventSubtype eventSubType() const {
+    return static_cast<sd::graph::UIEventSubtype>(GetField<int8_t>(VT_EVENTSUBTYPE, 0));
   }
   int32_t nameIdx() const {
     return GetField<int32_t>(VT_NAMEIDX, 0);
@@ -212,8 +222,8 @@ struct UIEvent FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int16_t variableId() const {
     return GetField<int16_t>(VT_VARIABLEID, 0);
   }
-  const FrameIteration *frameIter() const {
-    return GetPointer<const FrameIteration *>(VT_FRAMEITER);
+  const sd::graph::FrameIteration *frameIter() const {
+    return GetPointer<const sd::graph::FrameIteration *>(VT_FRAMEITER);
   }
   uint16_t plugin() const {
     return GetField<uint16_t>(VT_PLUGIN, 0);
@@ -235,12 +245,13 @@ struct UIEvent FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct UIEventBuilder {
+  typedef UIEvent Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_eventType(UIEventType eventType) {
+  void add_eventType(sd::graph::UIEventType eventType) {
     fbb_.AddElement<int8_t>(UIEvent::VT_EVENTTYPE, static_cast<int8_t>(eventType), 0);
   }
-  void add_eventSubType(UIEventSubtype eventSubType) {
+  void add_eventSubType(sd::graph::UIEventSubtype eventSubType) {
     fbb_.AddElement<int8_t>(UIEvent::VT_EVENTSUBTYPE, static_cast<int8_t>(eventSubType), 0);
   }
   void add_nameIdx(int32_t nameIdx) {
@@ -258,7 +269,7 @@ struct UIEventBuilder {
   void add_variableId(int16_t variableId) {
     fbb_.AddElement<int16_t>(UIEvent::VT_VARIABLEID, variableId, 0);
   }
-  void add_frameIter(flatbuffers::Offset<FrameIteration> frameIter) {
+  void add_frameIter(flatbuffers::Offset<sd::graph::FrameIteration> frameIter) {
     fbb_.AddOffset(UIEvent::VT_FRAMEITER, frameIter);
   }
   void add_plugin(uint16_t plugin) {
@@ -278,14 +289,14 @@ struct UIEventBuilder {
 
 inline flatbuffers::Offset<UIEvent> CreateUIEvent(
     flatbuffers::FlatBufferBuilder &_fbb,
-    UIEventType eventType = UIEventType_ADD_NAME,
-    UIEventSubtype eventSubType = UIEventSubtype_NONE,
+    sd::graph::UIEventType eventType = sd::graph::UIEventType_ADD_NAME,
+    sd::graph::UIEventSubtype eventSubType = sd::graph::UIEventSubtype_NONE,
     int32_t nameIdx = 0,
     int64_t timestamp = 0,
     int32_t iteration = 0,
     int32_t epoch = 0,
     int16_t variableId = 0,
-    flatbuffers::Offset<FrameIteration> frameIter = 0,
+    flatbuffers::Offset<sd::graph::FrameIteration> frameIter = 0,
     uint16_t plugin = 0) {
   UIEventBuilder builder_(_fbb);
   builder_.add_timestamp(timestamp);
@@ -301,6 +312,7 @@ inline flatbuffers::Offset<UIEvent> CreateUIEvent(
 }
 
 struct FrameIteration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef FrameIterationBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_FRAME = 4,
     VT_ITERATION = 6
@@ -321,6 +333,7 @@ struct FrameIteration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct FrameIterationBuilder {
+  typedef FrameIteration Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_frame(flatbuffers::Offset<flatbuffers::String> frame) {
@@ -363,6 +376,7 @@ inline flatbuffers::Offset<FrameIteration> CreateFrameIterationDirect(
 }
 
 struct UIAddName FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef UIAddNameBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAMEIDX = 4,
     VT_NAME = 6
@@ -383,6 +397,7 @@ struct UIAddName FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct UIAddNameBuilder {
+  typedef UIAddName Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_nameIdx(int32_t nameIdx) {
@@ -425,11 +440,12 @@ inline flatbuffers::Offset<UIAddName> CreateUIAddNameDirect(
 }
 
 struct FlatArrayList FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef FlatArrayListBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_LIST = 4
   };
-  const flatbuffers::Vector<flatbuffers::Offset<FlatArray>> *list() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<FlatArray>> *>(VT_LIST);
+  const flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatArray>> *list() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatArray>> *>(VT_LIST);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -441,9 +457,10 @@ struct FlatArrayList FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct FlatArrayListBuilder {
+  typedef FlatArrayList Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatArray>>> list) {
+  void add_list(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatArray>>> list) {
     fbb_.AddOffset(FlatArrayList::VT_LIST, list);
   }
   explicit FlatArrayListBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -460,7 +477,7 @@ struct FlatArrayListBuilder {
 
 inline flatbuffers::Offset<FlatArrayList> CreateFlatArrayList(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatArray>>> list = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatArray>>> list = 0) {
   FlatArrayListBuilder builder_(_fbb);
   builder_.add_list(list);
   return builder_.Finish();
@@ -468,14 +485,15 @@ inline flatbuffers::Offset<FlatArrayList> CreateFlatArrayList(
 
 inline flatbuffers::Offset<FlatArrayList> CreateFlatArrayListDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<flatbuffers::Offset<FlatArray>> *list = nullptr) {
-  auto list__ = list ? _fbb.CreateVector<flatbuffers::Offset<FlatArray>>(*list) : 0;
+    const std::vector<flatbuffers::Offset<sd::graph::FlatArray>> *list = nullptr) {
+  auto list__ = list ? _fbb.CreateVector<flatbuffers::Offset<sd::graph::FlatArray>>(*list) : 0;
   return sd::graph::CreateFlatArrayList(
       _fbb,
       list__);
 }
 
 struct UIHistogram FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef UIHistogramBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_TYPE = 4,
     VT_NUMBINS = 6,
@@ -483,17 +501,17 @@ struct UIHistogram FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_Y = 10,
     VT_BINLABELS = 12
   };
-  UIHistogramType type() const {
-    return static_cast<UIHistogramType>(GetField<int8_t>(VT_TYPE, 0));
+  sd::graph::UIHistogramType type() const {
+    return static_cast<sd::graph::UIHistogramType>(GetField<int8_t>(VT_TYPE, 0));
   }
   uint32_t numbins() const {
     return GetField<uint32_t>(VT_NUMBINS, 0);
   }
-  const FlatArray *binranges() const {
-    return GetPointer<const FlatArray *>(VT_BINRANGES);
+  const sd::graph::FlatArray *binranges() const {
+    return GetPointer<const sd::graph::FlatArray *>(VT_BINRANGES);
   }
-  const FlatArray *y() const {
-    return GetPointer<const FlatArray *>(VT_Y);
+  const sd::graph::FlatArray *y() const {
+    return GetPointer<const sd::graph::FlatArray *>(VT_Y);
   }
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *binlabels() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_BINLABELS);
@@ -514,18 +532,19 @@ struct UIHistogram FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct UIHistogramBuilder {
+  typedef UIHistogram Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_type(UIHistogramType type) {
+  void add_type(sd::graph::UIHistogramType type) {
     fbb_.AddElement<int8_t>(UIHistogram::VT_TYPE, static_cast<int8_t>(type), 0);
   }
   void add_numbins(uint32_t numbins) {
     fbb_.AddElement<uint32_t>(UIHistogram::VT_NUMBINS, numbins, 0);
   }
-  void add_binranges(flatbuffers::Offset<FlatArray> binranges) {
+  void add_binranges(flatbuffers::Offset<sd::graph::FlatArray> binranges) {
     fbb_.AddOffset(UIHistogram::VT_BINRANGES, binranges);
   }
-  void add_y(flatbuffers::Offset<FlatArray> y) {
+  void add_y(flatbuffers::Offset<sd::graph::FlatArray> y) {
     fbb_.AddOffset(UIHistogram::VT_Y, y);
   }
   void add_binlabels(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> binlabels) {
@@ -545,10 +564,10 @@ struct UIHistogramBuilder {
 
 inline flatbuffers::Offset<UIHistogram> CreateUIHistogram(
     flatbuffers::FlatBufferBuilder &_fbb,
-    UIHistogramType type = UIHistogramType_DISCRETE,
+    sd::graph::UIHistogramType type = sd::graph::UIHistogramType_DISCRETE,
     uint32_t numbins = 0,
-    flatbuffers::Offset<FlatArray> binranges = 0,
-    flatbuffers::Offset<FlatArray> y = 0,
+    flatbuffers::Offset<sd::graph::FlatArray> binranges = 0,
+    flatbuffers::Offset<sd::graph::FlatArray> y = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> binlabels = 0) {
   UIHistogramBuilder builder_(_fbb);
   builder_.add_binlabels(binlabels);
@@ -561,10 +580,10 @@ inline flatbuffers::Offset<UIHistogram> CreateUIHistogram(
 
 inline flatbuffers::Offset<UIHistogram> CreateUIHistogramDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    UIHistogramType type = UIHistogramType_DISCRETE,
+    sd::graph::UIHistogramType type = sd::graph::UIHistogramType_DISCRETE,
     uint32_t numbins = 0,
-    flatbuffers::Offset<FlatArray> binranges = 0,
-    flatbuffers::Offset<FlatArray> y = 0,
+    flatbuffers::Offset<sd::graph::FlatArray> binranges = 0,
+    flatbuffers::Offset<sd::graph::FlatArray> y = 0,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *binlabels = nullptr) {
   auto binlabels__ = binlabels ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*binlabels) : 0;
   return sd::graph::CreateUIHistogram(
@@ -577,6 +596,7 @@ inline flatbuffers::Offset<UIHistogram> CreateUIHistogramDirect(
 }
 
 struct UISummaryStatistics FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef UISummaryStatisticsBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_BITMASK = 4,
     VT_MIN = 6,
@@ -592,11 +612,11 @@ struct UISummaryStatistics FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table 
   uint32_t bitmask() const {
     return GetField<uint32_t>(VT_BITMASK, 0);
   }
-  const FlatArray *min() const {
-    return GetPointer<const FlatArray *>(VT_MIN);
+  const sd::graph::FlatArray *min() const {
+    return GetPointer<const sd::graph::FlatArray *>(VT_MIN);
   }
-  const FlatArray *max() const {
-    return GetPointer<const FlatArray *>(VT_MAX);
+  const sd::graph::FlatArray *max() const {
+    return GetPointer<const sd::graph::FlatArray *>(VT_MAX);
   }
   double mean() const {
     return GetField<double>(VT_MEAN, 0.0);
@@ -638,15 +658,16 @@ struct UISummaryStatistics FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table 
 };
 
 struct UISummaryStatisticsBuilder {
+  typedef UISummaryStatistics Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_bitmask(uint32_t bitmask) {
     fbb_.AddElement<uint32_t>(UISummaryStatistics::VT_BITMASK, bitmask, 0);
   }
-  void add_min(flatbuffers::Offset<FlatArray> min) {
+  void add_min(flatbuffers::Offset<sd::graph::FlatArray> min) {
     fbb_.AddOffset(UISummaryStatistics::VT_MIN, min);
   }
-  void add_max(flatbuffers::Offset<FlatArray> max) {
+  void add_max(flatbuffers::Offset<sd::graph::FlatArray> max) {
     fbb_.AddOffset(UISummaryStatistics::VT_MAX, max);
   }
   void add_mean(double mean) {
@@ -685,8 +706,8 @@ struct UISummaryStatisticsBuilder {
 inline flatbuffers::Offset<UISummaryStatistics> CreateUISummaryStatistics(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t bitmask = 0,
-    flatbuffers::Offset<FlatArray> min = 0,
-    flatbuffers::Offset<FlatArray> max = 0,
+    flatbuffers::Offset<sd::graph::FlatArray> min = 0,
+    flatbuffers::Offset<sd::graph::FlatArray> max = 0,
     double mean = 0.0,
     double stdev = 0.0,
     int64_t countzero = 0,
@@ -709,6 +730,7 @@ inline flatbuffers::Offset<UISummaryStatistics> CreateUISummaryStatistics(
 }
 
 struct UIHardwareState FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef UIHardwareStateBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_GPUMEMORY = 4,
     VT_HOSTMEMORY = 6
@@ -729,6 +751,7 @@ struct UIHardwareState FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct UIHardwareStateBuilder {
+  typedef UIHardwareState Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_gpuMemory(flatbuffers::Offset<flatbuffers::Vector<int64_t>> gpuMemory) {

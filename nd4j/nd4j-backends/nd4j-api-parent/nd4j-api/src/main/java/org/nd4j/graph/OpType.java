@@ -17,6 +17,8 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
+
+
 package org.nd4j.graph;
 
 public final class OpType {
@@ -47,8 +49,9 @@ public final class OpType {
   public static final byte VARIABLE = 40;
   public static final byte BOOLEAN = 60;
   public static final byte LOGIC = 119;
+  public static final byte UDF = 120;
 
-  public static final String[] names = { "TRANSFORM_FLOAT", "TRANSFORM_SAME", "TRANSFORM_BOOL", "TRANSFORM_STRICT", "TRANSFORM_ANY", "REDUCE_FLOAT", "REDUCE_SAME", "REDUCE_LONG", "REDUCE_BOOL", "INDEX_REDUCE", "SCALAR", "SCALAR_BOOL", "BROADCAST", "BROADCAST_BOOL", "PAIRWISE", "PAIRWISE_BOOL", "REDUCE_3", "SUMMARYSTATS", "SHAPE", "AGGREGATION", "RANDOM", "CUSTOM", "GRAPH", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "VARIABLE", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "BOOLEAN", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "LOGIC", };
+  public static final String[] names = { "TRANSFORM_FLOAT", "TRANSFORM_SAME", "TRANSFORM_BOOL", "TRANSFORM_STRICT", "TRANSFORM_ANY", "REDUCE_FLOAT", "REDUCE_SAME", "REDUCE_LONG", "REDUCE_BOOL", "INDEX_REDUCE", "SCALAR", "SCALAR_BOOL", "BROADCAST", "BROADCAST_BOOL", "PAIRWISE", "PAIRWISE_BOOL", "REDUCE_3", "SUMMARYSTATS", "SHAPE", "AGGREGATION", "RANDOM", "CUSTOM", "GRAPH", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "VARIABLE", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "BOOLEAN", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "LOGIC", "UDF", };
 
   public static String name(int e) { return names[e]; }
 }

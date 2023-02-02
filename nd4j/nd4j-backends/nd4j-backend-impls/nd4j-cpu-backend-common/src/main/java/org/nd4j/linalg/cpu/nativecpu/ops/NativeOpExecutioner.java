@@ -1697,7 +1697,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public INDArray[] exec(CustomOp op, @NonNull OpContext context) {
         long st = profilingConfigurableHookIn(op, context);
 
+
         try {
+
+            if(op instanceof UserDefinedCustomOp) {
+                ((UserDefinedCustomOp) op).exec(context);
+                return context.getOutputArrays().toArray(new INDArray[0]);
+            }
+
             val status = loop.execCustomOp2(null, op.opHash(), context.contextPointer());
 
 

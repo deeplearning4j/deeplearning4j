@@ -26,7 +26,7 @@
 
 #ifndef LIBND4J_RESULTSET_H
 #define LIBND4J_RESULTSET_H
-#include <graph/generated/result_generated.h>
+#include <graph/scheme/result_generated.h>
 #include <system/common.h>
 
 #include <vector>

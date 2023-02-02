@@ -19,9 +19,12 @@
  */
 
 
+
 #ifndef FLATBUFFERS_GENERATED_NODE_SD_GRAPH_H_
 #define FLATBUFFERS_GENERATED_NODE_SD_GRAPH_H_
+
 #include "flatbuffers/flatbuffers.h"
+
 #include "array_generated.h"
 #include "properties_generated.h"
 #include "utils_generated.h"
@@ -30,8 +33,10 @@ namespace sd {
 namespace graph {
 
 struct FlatNode;
+struct FlatNodeBuilder;
 
 struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef FlatNodeBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_ID = 4,
     VT_NAME = 6,
@@ -64,20 +69,20 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
   }
-  OpType opType() const {
-    return static_cast<OpType>(GetField<int8_t>(VT_OPTYPE, 0));
+  sd::graph::OpType opType() const {
+    return static_cast<sd::graph::OpType>(GetField<int8_t>(VT_OPTYPE, 0));
   }
   int64_t opNum() const {
     return GetField<int64_t>(VT_OPNUM, 0);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<FlatProperties>> *properties() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<FlatProperties>> *>(VT_PROPERTIES);
+  const flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatProperties>> *properties() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatProperties>> *>(VT_PROPERTIES);
   }
   const flatbuffers::Vector<int32_t> *input() const {
     return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_INPUT);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<IntPair>> *inputPaired() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<IntPair>> *>(VT_INPUTPAIRED);
+  const flatbuffers::Vector<flatbuffers::Offset<sd::graph::IntPair>> *inputPaired() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<sd::graph::IntPair>> *>(VT_INPUTPAIRED);
   }
   const flatbuffers::Vector<int32_t> *output() const {
     return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_OUTPUT);
@@ -112,8 +117,8 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<int8_t> *outputTypes() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_OUTPUTTYPES);
   }
-  const FlatArray *scalar() const {
-    return GetPointer<const FlatArray *>(VT_SCALAR);
+  const sd::graph::FlatArray *scalar() const {
+    return GetPointer<const sd::graph::FlatArray *>(VT_SCALAR);
   }
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_CONTROLDEPS);
@@ -187,6 +192,7 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct FlatNodeBuilder {
+  typedef FlatNode Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_id(int32_t id) {
@@ -195,19 +201,19 @@ struct FlatNodeBuilder {
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
     fbb_.AddOffset(FlatNode::VT_NAME, name);
   }
-  void add_opType(OpType opType) {
+  void add_opType(sd::graph::OpType opType) {
     fbb_.AddElement<int8_t>(FlatNode::VT_OPTYPE, static_cast<int8_t>(opType), 0);
   }
   void add_opNum(int64_t opNum) {
     fbb_.AddElement<int64_t>(FlatNode::VT_OPNUM, opNum, 0);
   }
-  void add_properties(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatProperties>>> properties) {
+  void add_properties(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatProperties>>> properties) {
     fbb_.AddOffset(FlatNode::VT_PROPERTIES, properties);
   }
   void add_input(flatbuffers::Offset<flatbuffers::Vector<int32_t>> input) {
     fbb_.AddOffset(FlatNode::VT_INPUT, input);
   }
-  void add_inputPaired(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<IntPair>>> inputPaired) {
+  void add_inputPaired(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::IntPair>>> inputPaired) {
     fbb_.AddOffset(FlatNode::VT_INPUTPAIRED, inputPaired);
   }
   void add_output(flatbuffers::Offset<flatbuffers::Vector<int32_t>> output) {
@@ -243,7 +249,7 @@ struct FlatNodeBuilder {
   void add_outputTypes(flatbuffers::Offset<flatbuffers::Vector<int8_t>> outputTypes) {
     fbb_.AddOffset(FlatNode::VT_OUTPUTTYPES, outputTypes);
   }
-  void add_scalar(flatbuffers::Offset<FlatArray> scalar) {
+  void add_scalar(flatbuffers::Offset<sd::graph::FlatArray> scalar) {
     fbb_.AddOffset(FlatNode::VT_SCALAR, scalar);
   }
   void add_controlDeps(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDeps) {
@@ -277,11 +283,11 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNode(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t id = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
-    OpType opType = OpType_TRANSFORM_FLOAT,
+    sd::graph::OpType opType = sd::graph::OpType_TRANSFORM_FLOAT,
     int64_t opNum = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatProperties>>> properties = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatProperties>>> properties = 0,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> input = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<IntPair>>> inputPaired = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::IntPair>>> inputPaired = 0,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> output = 0,
     flatbuffers::Offset<flatbuffers::Vector<double>> extraParams = 0,
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> extraInteger = 0,
@@ -293,7 +299,7 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNode(
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> outputNames = 0,
     flatbuffers::Offset<flatbuffers::String> opName = 0,
     flatbuffers::Offset<flatbuffers::Vector<int8_t>> outputTypes = 0,
-    flatbuffers::Offset<FlatArray> scalar = 0,
+    flatbuffers::Offset<sd::graph::FlatArray> scalar = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDeps = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> varControlDeps = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDepFor = 0,
@@ -331,11 +337,11 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t id = 0,
     const char *name = nullptr,
-    OpType opType = OpType_TRANSFORM_FLOAT,
+    sd::graph::OpType opType = sd::graph::OpType_TRANSFORM_FLOAT,
     int64_t opNum = 0,
-    const std::vector<flatbuffers::Offset<FlatProperties>> *properties = nullptr,
+    const std::vector<flatbuffers::Offset<sd::graph::FlatProperties>> *properties = nullptr,
     const std::vector<int32_t> *input = nullptr,
-    const std::vector<flatbuffers::Offset<IntPair>> *inputPaired = nullptr,
+    const std::vector<flatbuffers::Offset<sd::graph::IntPair>> *inputPaired = nullptr,
     const std::vector<int32_t> *output = nullptr,
     const std::vector<double> *extraParams = nullptr,
     const std::vector<int64_t> *extraInteger = nullptr,
@@ -347,16 +353,16 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *outputNames = nullptr,
     const char *opName = nullptr,
     const std::vector<int8_t> *outputTypes = nullptr,
-    flatbuffers::Offset<FlatArray> scalar = 0,
+    flatbuffers::Offset<sd::graph::FlatArray> scalar = 0,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *varControlDeps = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDepFor = nullptr,
     const std::vector<int8_t> *extraTypes = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *extraStrings = nullptr) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
-  auto properties__ = properties ? _fbb.CreateVector<flatbuffers::Offset<FlatProperties>>(*properties) : 0;
+  auto properties__ = properties ? _fbb.CreateVector<flatbuffers::Offset<sd::graph::FlatProperties>>(*properties) : 0;
   auto input__ = input ? _fbb.CreateVector<int32_t>(*input) : 0;
-  auto inputPaired__ = inputPaired ? _fbb.CreateVector<flatbuffers::Offset<IntPair>>(*inputPaired) : 0;
+  auto inputPaired__ = inputPaired ? _fbb.CreateVector<flatbuffers::Offset<sd::graph::IntPair>>(*inputPaired) : 0;
   auto output__ = output ? _fbb.CreateVector<int32_t>(*output) : 0;
   auto extraParams__ = extraParams ? _fbb.CreateVector<double>(*extraParams) : 0;
   auto extraInteger__ = extraInteger ? _fbb.CreateVector<int64_t>(*extraInteger) : 0;

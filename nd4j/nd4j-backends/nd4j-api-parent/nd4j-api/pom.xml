@@ -46,6 +46,13 @@
 
 
     <dependencies>
+       <!-- Annotation scanning for discovering UDFs -->
+        <dependency>
+            <groupId>com.dorkbox</groupId>
+            <artifactId>Annotations</artifactId>
+            <version>3.2</version>
+        </dependency>
+
         <dependency>
             <groupId>com.jakewharton.byteunits</groupId>
             <artifactId>byteunits</artifactId>

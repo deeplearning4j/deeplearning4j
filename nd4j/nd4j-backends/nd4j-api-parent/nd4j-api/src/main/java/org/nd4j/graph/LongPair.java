@@ -17,6 +17,8 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
+
+
 package org.nd4j.graph;
 
 import java.nio.*;
@@ -29,7 +31,7 @@ import com.google.flatbuffers.*;
 public final class LongPair extends Table {
   public static void ValidateVersion() { Constants.FLATBUFFERS_1_12_0(); }
   public static LongPair getRootAsLongPair(ByteBuffer _bb) { return getRootAsLongPair(_bb, new LongPair()); }
-  public static LongPair getRootAsLongPair(ByteBuffer _bb, LongPair obj) { _bb.order(java.nio.ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
+  public static LongPair getRootAsLongPair(ByteBuffer _bb, LongPair obj) { _bb.order(ByteOrder.LITTLE_ENDIAN); return (obj.__assign(_bb.getInt(_bb.position()) + _bb.position(), _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __reset(_i, _bb); }
   public LongPair __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 

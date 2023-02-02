@@ -17,6 +17,8 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
+
+
 package org.nd4j.graph;
 
 import java.nio.*;
@@ -63,16 +65,16 @@ public final class FlatVariable extends Table {
   public StringVector controlDepsForVarVector(StringVector obj) { int o = __offset(22); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
 
   public static int createFlatVariable(FlatBufferBuilder builder,
-                                       int idOffset,
-                                       int nameOffset,
-                                       byte dtype,
-                                       int shapeOffset,
-                                       int ndarrayOffset,
-                                       int device,
-                                       byte variabletype,
-                                       int controlDepsOffset,
-                                       int controlDepForOpOffset,
-                                       int controlDepsForVarOffset) {
+      int idOffset,
+      int nameOffset,
+      byte dtype,
+      int shapeOffset,
+      int ndarrayOffset,
+      int device,
+      byte variabletype,
+      int controlDepsOffset,
+      int controlDepForOpOffset,
+      int controlDepsForVarOffset) {
     builder.startTable(10);
     FlatVariable.addControlDepsForVar(builder, controlDepsForVarOffset);
     FlatVariable.addControlDepForOp(builder, controlDepForOpOffset);

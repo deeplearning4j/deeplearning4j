@@ -27,7 +27,7 @@
 
 #include <array/ArrayOptions.h>
 #include <array/DataType.h>
-#include <graph/generated/array_generated.h>
+#include <graph/scheme/array_generated.h>
 #include <system/Environment.h>
 #include <system/op_boilerplate.h>
 #include <types/bfloat16.h>

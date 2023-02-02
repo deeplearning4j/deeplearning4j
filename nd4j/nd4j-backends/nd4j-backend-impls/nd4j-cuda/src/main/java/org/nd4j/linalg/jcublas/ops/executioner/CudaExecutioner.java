@@ -2060,6 +2060,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     public INDArray[] exec(CustomOp op, OpContext context) {
         Nd4j.getExecutioner().commit();
         long st = profilingConfigurableHookIn(op, context);
+        if(op instanceof UserDefinedCustomOp) {
+            ((UserDefinedCustomOp) op).exec(context);
+            return context.getOutputArrays().toArray(new INDArray[0]);
+        }
+
         val ctx = AtomicAllocator.getInstance().getDeviceContext();
 
 

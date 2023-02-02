@@ -19,20 +19,26 @@
  */
 
 
+
 #ifndef FLATBUFFERS_GENERATED_UTILS_SD_GRAPH_H_
 #define FLATBUFFERS_GENERATED_UTILS_SD_GRAPH_H_
+
 #include "flatbuffers/flatbuffers.h"
 
 namespace sd {
 namespace graph {
 
 struct LongPair;
+struct LongPairBuilder;
 
 struct LongTriple;
+struct LongTripleBuilder;
 
 struct IntPair;
+struct IntPairBuilder;
 
 struct IntTriple;
+struct IntTripleBuilder;
 
 enum OpType {
   OpType_TRANSFORM_FLOAT = 0,
@@ -61,11 +67,12 @@ enum OpType {
   OpType_VARIABLE = 40,
   OpType_BOOLEAN = 60,
   OpType_LOGIC = 119,
+  OpType_UDF = 120,
   OpType_MIN = OpType_TRANSFORM_FLOAT,
-  OpType_MAX = OpType_LOGIC
+  OpType_MAX = OpType_UDF
 };
 
-inline const OpType (&EnumValuesOpType())[26] {
+inline const OpType (&EnumValuesOpType())[27] {
   static const OpType values[] = {
     OpType_TRANSFORM_FLOAT,
     OpType_TRANSFORM_SAME,
@@ -92,13 +99,14 @@ inline const OpType (&EnumValuesOpType())[26] {
     OpType_GRAPH,
     OpType_VARIABLE,
     OpType_BOOLEAN,
-    OpType_LOGIC
+    OpType_LOGIC,
+    OpType_UDF
   };
   return values;
 }
 
 inline const char * const *EnumNamesOpType() {
-  static const char * const names[] = {
+  static const char * const names[122] = {
     "TRANSFORM_FLOAT",
     "TRANSFORM_SAME",
     "TRANSFORM_BOOL",
@@ -219,13 +227,14 @@ inline const char * const *EnumNamesOpType() {
     "",
     "",
     "LOGIC",
+    "UDF",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameOpType(OpType e) {
-  if (e < OpType_TRANSFORM_FLOAT || e > OpType_LOGIC) return "";
+  if (flatbuffers::IsOutRange(e, OpType_TRANSFORM_FLOAT, OpType_UDF)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesOpType()[index];
 }
@@ -252,7 +261,7 @@ inline const InputType (&EnumValuesInputType())[5] {
 }
 
 inline const char * const *EnumNamesInputType() {
-  static const char * const names[] = {
+  static const char * const names[6] = {
     "UNDEFINED",
     "NUMERIC",
     "STRINGULAR",
@@ -264,7 +273,7 @@ inline const char * const *EnumNamesInputType() {
 }
 
 inline const char *EnumNameInputType(InputType e) {
-  if (e < InputType_UNDEFINED || e > InputType_STRINGULAR_SET) return "";
+  if (flatbuffers::IsOutRange(e, InputType_UNDEFINED, InputType_STRINGULAR_SET)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesInputType()[index];
 }
@@ -293,7 +302,7 @@ inline const OpClass (&EnumValuesOpClass())[6] {
 }
 
 inline const char * const *EnumNamesOpClass() {
-  static const char * const names[] = {
+  static const char * const names[7] = {
     "TRANSFORM",
     "REDUCTION",
     "MULTIPLICATOR",
@@ -306,12 +315,13 @@ inline const char * const *EnumNamesOpClass() {
 }
 
 inline const char *EnumNameOpClass(OpClass e) {
-  if (e < OpClass_TRANSFORM || e > OpClass_LOOP) return "";
+  if (flatbuffers::IsOutRange(e, OpClass_TRANSFORM, OpClass_LOOP)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesOpClass()[index];
 }
 
 struct LongPair FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef LongPairBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_FIRST = 4,
     VT_SECOND = 6
@@ -331,6 +341,7 @@ struct LongPair FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct LongPairBuilder {
+  typedef LongPair Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_first(int64_t first) {
@@ -362,6 +373,7 @@ inline flatbuffers::Offset<LongPair> CreateLongPair(
 }
 
 struct LongTriple FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef LongTripleBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_FIRST = 4,
     VT_SECOND = 6,
@@ -386,6 +398,7 @@ struct LongTriple FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct LongTripleBuilder {
+  typedef LongTriple Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_first(int64_t first) {
@@ -422,6 +435,7 @@ inline flatbuffers::Offset<LongTriple> CreateLongTriple(
 }
 
 struct IntPair FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef IntPairBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_FIRST = 4,
     VT_SECOND = 6
@@ -441,6 +455,7 @@ struct IntPair FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct IntPairBuilder {
+  typedef IntPair Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_first(int32_t first) {
@@ -472,6 +487,7 @@ inline flatbuffers::Offset<IntPair> CreateIntPair(
 }
 
 struct IntTriple FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef IntTripleBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_FIRST = 4,
     VT_SECOND = 6,
@@ -496,6 +512,7 @@ struct IntTriple FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 };
 
 struct IntTripleBuilder {
+  typedef IntTriple Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_first(int32_t first) {

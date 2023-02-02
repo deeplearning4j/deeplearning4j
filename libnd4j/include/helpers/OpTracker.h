@@ -22,7 +22,7 @@
 
 #ifndef LIBND4J_OP_TRACKER_H
 #define LIBND4J_OP_TRACKER_H
-#include <graph/generated/utils_generated.h>
+#include <graph/scheme/utils_generated.h>
 #include <ops/declarable/OpDescriptor.h>
 
 #include <atomic>

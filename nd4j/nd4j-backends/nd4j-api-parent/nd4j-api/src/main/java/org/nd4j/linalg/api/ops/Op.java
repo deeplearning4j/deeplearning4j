@@ -58,7 +58,8 @@ public interface Op {
         RETURN,
         RANDOM,
         SUMMARYSTATS,
-        LOGIC
+        LOGIC,
+        UDF
     }
 
     /**

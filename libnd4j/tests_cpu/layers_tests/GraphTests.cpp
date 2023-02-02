@@ -24,8 +24,8 @@
 #include <graph/Graph.h>
 #include <graph/GraphUtils.h>
 #include <graph/Node.h>
-#include <graph/generated/graph_generated.h>
-#include <graph/generated/node_generated.h>
+#include <graph/scheme/graph_generated.h>
+#include <graph/scheme/node_generated.h>
 #include <ops/declarable/DeclarableOp.h>
 
 #include <ops/declarable/generic/parity_ops.cpp>
