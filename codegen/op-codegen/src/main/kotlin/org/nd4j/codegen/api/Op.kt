@@ -49,20 +49,20 @@ interface OpLike {
 }
 
 data class Op (
-        val opName: String,
+        var opName: String,
         var libnd4jOpName: String? = null,
         var javaOpClass: String? = null,
         var isAbstract: Boolean = false,
         var legacy: Boolean = false,
         var argsFirst: Boolean = false,
         var javaPackage: String? = null,
-        val inputs: MutableList<Input> = mutableListOf(),
-        val outputs: MutableList<Output> = mutableListOf(),
-        val args: MutableList<Arg> = mutableListOf(),
-        val constraints: MutableList<Constraint> = mutableListOf(),
-        val signatures: MutableList<Signature> = mutableListOf(),
-        val doc: MutableList<DocSection> = mutableListOf(),
-        val configs: MutableList<Config> = mutableListOf()
+        var inputs: MutableList<Input> = mutableListOf(),
+        var outputs: MutableList<Output> = mutableListOf(),
+        var args: MutableList<Arg> = mutableListOf(),
+        var constraints: MutableList<Constraint> = mutableListOf(),
+        var signatures: MutableList<Signature> = mutableListOf(),
+        var doc: MutableList<DocSection> = mutableListOf(),
+        var configs: MutableList<Config> = mutableListOf()
 ): OpLike {
     override fun name() = opName
     override fun inputs(): List<Input> = inputs
@@ -93,11 +93,11 @@ data class Op (
         }
 
         signatures.forEach {
-            val opParameters = mutableListOf<Parameter>()
+            var opParameters = mutableListOf<Parameter>()
             opParameters.addAll(inputs)
             opParameters.addAll(args)
 
-            val notCovered = opParameters.fold(mutableListOf<Parameter>()){acc, parameter ->
+            var notCovered = opParameters.fold(mutableListOf<Parameter>()){acc, parameter ->
                 if(!(it.parameters.contains(parameter) || parameter.defaultValueIsApplicable(it.parameters))){
                     acc.add(parameter)
                 }
@@ -118,15 +118,15 @@ data class Op (
 }
 
 data class Mixin (
-        val name: String,
+        var name: String,
 
-        val inputs: MutableList<Input> = mutableListOf(),
-        val outputs: MutableList<Output> = mutableListOf(),
-        val args: MutableList<Arg> = mutableListOf(),
-        val constraints: MutableList<Constraint> = mutableListOf(),
-        val signatures: MutableList<Signature> = mutableListOf(),
-        val doc: MutableList<DocSection> = mutableListOf(),
-        val configs: MutableList<Config> = mutableListOf()
+        var inputs: MutableList<Input> = mutableListOf(),
+        var outputs: MutableList<Output> = mutableListOf(),
+        var args: MutableList<Arg> = mutableListOf(),
+        var constraints: MutableList<Constraint> = mutableListOf(),
+        var signatures: MutableList<Signature> = mutableListOf(),
+        var doc: MutableList<DocSection> = mutableListOf(),
+        var configs: MutableList<Config> = mutableListOf()
 ): OpLike {
     override fun name() = name
     override fun inputs(): List<Input> = inputs
@@ -166,11 +166,11 @@ data class Mixin (
      */
     fun checkInvariants() {
         signatures.forEach {
-            val opParameters = mutableListOf<Parameter>()
+            var opParameters = mutableListOf<Parameter>()
             opParameters.addAll(inputs)
             opParameters.addAll(args)
 
-            val notCovered = opParameters.fold(mutableListOf<Parameter>()){acc, parameter ->
+            var notCovered = opParameters.fold(mutableListOf<Parameter>()){acc, parameter ->
                 if(!(it.parameters.contains(parameter) || parameter.defaultValueIsApplicable(it.parameters))){
                     acc.add(parameter)
                 }
@@ -191,7 +191,7 @@ fun <T: Parameter> MutableList<T>.addOrReplaceAll(params: List<T>){
 }
 
 fun <T: Parameter> MutableList<T>.addOrReplace(param: T){
-    val found = this.find { it.name() == param.name() }
+    var found = this.find { it.name() == param.name() }
     if(found != null){
         this.replaceAll { if(it.name() == param.name()){ param } else { it } }
     }else{

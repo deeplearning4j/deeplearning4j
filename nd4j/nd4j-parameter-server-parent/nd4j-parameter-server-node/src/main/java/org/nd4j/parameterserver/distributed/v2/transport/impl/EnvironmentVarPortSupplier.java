@@ -49,7 +49,7 @@ public class EnvironmentVarPortSupplier implements PortSupplier {
 
     @Override
     public int getPort() {
-            val variable = System.getenv(variableName);
+            var variable = System.getenv(variableName);
             if (variable == null)
                 throw new ND4JIllegalStateException("Unable to get networking port from environment variable:" +
                         " environment variable ["+ variableName+"] isn't defined");

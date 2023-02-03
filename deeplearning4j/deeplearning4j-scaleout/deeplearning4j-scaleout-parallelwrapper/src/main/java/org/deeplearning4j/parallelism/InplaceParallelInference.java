@@ -55,7 +55,7 @@ public class InplaceParallelInference extends ParallelInference {
     @Override
     protected void init() {
         for (int e = 0; e < Nd4j.getAffinityManager().getNumberOfDevices(); e++) {
-            val h = ModelHolder.builder()
+            var h = ModelHolder.builder()
                     .sourceModel(model)
                     .workers(workers)
                     .layerIndicesOutputTo(layerIndicesOutputTo)
@@ -76,15 +76,15 @@ public class InplaceParallelInference extends ParallelInference {
 
     @Override
     public synchronized void updateModel(@NonNull Model model) {
-        for (val h:holders)
+        for (var h:holders)
             h.updateModel(model);
     }
 
     @Override
     protected synchronized Model[] getCurrentModelsFromWorkers() {
-        val models = new Model[holders.size()];
+        var models = new Model[holders.size()];
         int cnt = 0;
-        for (val h:holders) {
+        for (var h:holders) {
             models[cnt++] = h.sourceModel;
         }
 
@@ -106,7 +106,7 @@ public class InplaceParallelInference extends ParallelInference {
      * @return
      */
     public <T> T output(@NonNull ModelAdapter<T> adapter, INDArray[] input, INDArray[] inputMasks, INDArray[] labelsMasks) {
-        val holder = selector.getModelForThisThread();
+        var holder = selector.getModelForThisThread();
         Model model = null;
         boolean acquired = false;
         try {
@@ -142,10 +142,10 @@ public class InplaceParallelInference extends ParallelInference {
 
         public ModelHolder getModelForThread(long threadId) {
             // first of all we get mapped device for this thread
-            val device = Nd4j.getAffinityManager().getDeviceForThread(threadId);
+            var device = Nd4j.getAffinityManager().getDeviceForThread(threadId);
 
             // each device has it's own queue
-            val q = map.get(device);
+            var q = map.get(device);
 
             // and we're returning holder right away
             return q;
@@ -194,7 +194,7 @@ public class InplaceParallelInference extends ParallelInference {
             isMLN = sourceModel instanceof MultiLayerNetwork;
 
             // we clone params only if we're not on the same device
-            val params = rootDevice ? sourceModel.params() : sourceModel.params().unsafeDuplication(true);
+            var params = rootDevice ? sourceModel.params() : sourceModel.params().unsafeDuplication(true);
 
             // and moving it to specified device (only if NOT root
             if (!rootDevice)
@@ -203,7 +203,7 @@ public class InplaceParallelInference extends ParallelInference {
             for (int e = 0; e < workers; e++) {
                 if (sourceModel instanceof ComputationGraph) {
                     // building configuration with shared parameters
-                    val model = new ComputationGraph(ComputationGraphConfiguration.fromJson(((ComputationGraph) sourceModel).getConfiguration().toJson()));
+                    var model = new ComputationGraph(ComputationGraphConfiguration.fromJson(((ComputationGraph) sourceModel).getConfiguration().toJson()));
                     model.init(params, false);
                     Nd4j.getExecutioner().commit();
 
@@ -213,7 +213,7 @@ public class InplaceParallelInference extends ParallelInference {
                     if (loadBalanceMode == LoadBalanceMode.FIFO)
                         queue.add(model);
                 } else if (sourceModel instanceof MultiLayerNetwork) {
-                    val model = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(((MultiLayerNetwork) sourceModel).getLayerWiseConfigurations().toJson()));
+                    var model = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(((MultiLayerNetwork) sourceModel).getLayerWiseConfigurations().toJson()));
                     model.init(params, false);
                     Nd4j.getExecutioner().commit();
 
@@ -267,7 +267,7 @@ public class InplaceParallelInference extends ParallelInference {
                 modelLock.readLock().lock();
                 if (isCG) {
                     // acquiring model from pool
-                    val model = acquireModel();
+                    var model = acquireModel();
 
                     // doing inference
                     INDArray[] output;
@@ -286,7 +286,7 @@ public class InplaceParallelInference extends ParallelInference {
                     if (input.length > 1 || (inputMasks != null && inputMasks.length > 1))
                         throw new ND4JIllegalStateException("MultilayerNetwork can't have multiple inputs");
 
-                    val model = acquireModel();
+                    var model = acquireModel();
                     INDArray result;
                     try {
                         if(layerIndicesOutputTo != null) {

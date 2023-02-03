@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -78,7 +78,7 @@ public class MergeVertex extends BaseGraphVertex {
 
         if (inputs.length == 1) {
             //No-op case
-            val shape = inputs[0].shape();
+            var shape = inputs[0].shape();
             forwardPassShapes = new long[][] {Arrays.copyOf(shape, shape.length)};
             return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, inputs[0]);
         }
@@ -89,10 +89,10 @@ public class MergeVertex extends BaseGraphVertex {
         }
 
         forwardPassShapes = new long[in.length][0];
-        val nExamples = in[0].size(0);
+        var nExamples = in[0].size(0);
         fwdPassRank = in[0].rank();
         for (int i = 0; i < in.length; i++) {
-            val currShape = in[i].shape();
+            var currShape = in[i].shape();
             if (fwdPassRank != currShape.length) {
                 throw new IllegalStateException(
                                 "Cannot merge activations with different ranks: first activations have rank "

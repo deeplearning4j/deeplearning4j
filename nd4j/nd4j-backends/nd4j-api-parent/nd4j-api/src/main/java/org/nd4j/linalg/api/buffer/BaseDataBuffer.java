@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.buffer;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.*;
@@ -558,7 +558,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         //NOTE: DataOutputStream is big endian
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
-        val dataType = dataType();
+        var dataType = dataType();
         switch (dataType) {
             case DOUBLE:
                 try {
@@ -1422,7 +1422,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected void doReadObject(ObjectInputStream s) {
         try {
             s.defaultReadObject();
-            val header = BaseDataBuffer.readHeader(s);
+            var header = BaseDataBuffer.readHeader(s);
             read(s, header.getLeft(), header.getMiddle(), header.getRight());
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -1434,14 +1434,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public static Triple<AllocationMode, Long, DataType> readHeader(@NonNull InputStream is)  {
         try {
             DataInputStream dis = is instanceof DataInputStream ? (DataInputStream) is : new DataInputStream(is);
-            val alloc = AllocationMode.valueOf(dis.readUTF());
+            var alloc = AllocationMode.valueOf(dis.readUTF());
             long length = 0;
             if (alloc.ordinal() < 3) {
                 length = dis.readInt();
             } else {
                 length = dis.readLong();
             }
-            val type = DataType.valueOf(dis.readUTF());
+            var type = DataType.valueOf(dis.readUTF());
 
             return Triple.tripleOf(alloc, length, type);
         } catch (IOException e) {
@@ -1453,7 +1453,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public void read(DataInputStream s, @NonNull AllocationMode allocMode, long len, @NonNull DataType dtype) {
         try {
             //referencing = Collections.synchronizedSet(new HashSet<String>());
-            val savedMode = allocMode;
+            var savedMode = allocMode;
             this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
             type = dtype;
             length = len;
@@ -1475,7 +1475,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             } else if (savedMode.equals(AllocationMode.LONG_SHAPE)) {
                 length = len;
-                val currentType = dtype;
+                var currentType = dtype;
                 type = currentType;
 
                 if (currentType == DataType.LONG)
@@ -1551,8 +1551,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
                 pointer = new BytePointer(compressedLength);
                 type = DataType.COMPRESSED;
-                val tp = (BytePointer) pointer;
-                val ti = ByteIndexer.create(tp);
+                var tp = (BytePointer) pointer;
+                var ti = ByteIndexer.create(tp);
 
                 for (long i = 0; i < compressedLength; i++) {
                     ti.put(i, s.readByte());

@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.params;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -58,8 +58,8 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
     @Override
     public long numParams(Layer layer) {
         SimpleRnn c = (SimpleRnn)layer;
-        val nIn = c.getNIn();
-        val nOut = c.getNOut();
+        var nIn = c.getNIn();
+        var nOut = c.getNOut();
         return nIn * nOut + nOut * nOut + nOut + (hasLayerNorm(layer) ? 2 * nOut : 0);
     }
 
@@ -100,8 +100,8 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         SimpleRnn c = (SimpleRnn)conf.getLayer();
-        val nIn = c.getNIn();
-        val nOut = c.getNOut();
+        var nIn = c.getNIn();
+        var nOut = c.getNOut();
 
         Map<String,INDArray> m;
 
@@ -142,8 +142,8 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
         SimpleRnn c = (SimpleRnn)conf.getLayer();
-        val nIn = c.getNIn();
-        val nOut = c.getNOut();
+        var nIn = c.getNIn();
+        var nOut = c.getNOut();
 
         return getSubsets(gradientView, nIn, nOut, true, hasLayerNorm(c));
     }

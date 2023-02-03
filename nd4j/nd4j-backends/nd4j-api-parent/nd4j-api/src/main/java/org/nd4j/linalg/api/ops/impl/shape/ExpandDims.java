@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -78,8 +78,8 @@ public class ExpandDims extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val targetNode = TFGraphMapper.getNodeWithNameFromGraph(graph, nodeDef.getInput(1));
-        val dimArr = TFGraphMapper.getNDArrayFromTensor(targetNode);
+        var targetNode = TFGraphMapper.getNodeWithNameFromGraph(graph, nodeDef.getInput(1));
+        var dimArr = TFGraphMapper.getNDArrayFromTensor(targetNode);
 
         if (dimArr != null) {
             int axis = dimArr.data().asInt()[0];
@@ -118,7 +118,7 @@ public class ExpandDims extends DynamicCustomOp {
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
-        val axisMapping = PropertyMapping.builder()
+        var axisMapping = PropertyMapping.builder()
                 .tfInputPosition(1)
                 .propertyNames(new String[]{"axis"})
                 .build();
@@ -131,7 +131,7 @@ public class ExpandDims extends DynamicCustomOp {
 
     @Override
     public void assertValidForExecution() {
-        val descriptor = getDescriptor();
+        var descriptor = getDescriptor();
         if (descriptor.getNumInputs() > 0 && numInputArguments() > 2 || numInputArguments() < 1)
             throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of inputs is invalid for execution. Specified " + numInputArguments() + " but should be " + descriptor.getNumInputs());
 

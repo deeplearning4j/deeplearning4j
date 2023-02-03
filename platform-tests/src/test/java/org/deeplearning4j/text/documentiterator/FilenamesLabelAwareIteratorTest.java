@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.text.documentiterator;
 
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -52,7 +52,7 @@ public class FilenamesLabelAwareIteratorTest extends BaseDL4JTest {
 
     @Test
     public void testNextDocument(@TempDir Path testDir) throws Exception {
-        val tempDir = testDir.toFile();
+        var tempDir = testDir.toFile();
         Resources.copyDirectory("/big/", tempDir);
 
         FilenamesLabelAwareIterator iterator = new FilenamesLabelAwareIterator.Builder()

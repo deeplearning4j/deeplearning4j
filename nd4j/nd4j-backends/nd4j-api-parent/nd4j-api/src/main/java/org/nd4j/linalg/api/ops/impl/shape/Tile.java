@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -109,7 +109,7 @@ public class Tile extends DynamicCustomOp {
         Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
         Map<String,PropertyMapping> map = new HashMap<>();
 
-        val axisMapping = PropertyMapping.builder()
+        var axisMapping = PropertyMapping.builder()
                 .onnxAttrName("axis")
                 .tfInputPosition(-1)
                 .propertyNames(new String[]{"axis"})

@@ -24,7 +24,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -136,31 +136,31 @@ public class DeConv2DTF extends DynamicCustomOp {
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
         Map<String, PropertyMapping> map = new HashMap<>();
-        val strideMapping = PropertyMapping.builder()
+        var strideMapping = PropertyMapping.builder()
                 .tfAttrName("strides")
                 .onnxAttrName("strides")
                 .propertyNames(new String[]{"sH", "sW"})
                 .build();
 
-        val kernelMapping = PropertyMapping.builder()
+        var kernelMapping = PropertyMapping.builder()
                 .propertyNames(new String[]{"kH", "kW"})
                 .tfInputPosition(1)
                 .onnxAttrName("kernel_shape")
                 .build();
 
-        val dilationMapping = PropertyMapping.builder()
+        var dilationMapping = PropertyMapping.builder()
                 .onnxAttrName("dilations")
                 .propertyNames(new String[]{"dW", "dH"})
                 .tfAttrName("rates")
                 .build();
 
-        val sameMode = PropertyMapping.builder()
+        var sameMode = PropertyMapping.builder()
                 .onnxAttrName("auto_pad")
                 .propertyNames(new String[]{"isSameMode"})
                 .tfAttrName("padding")
                 .build();
 
-        val dataFormat = PropertyMapping.builder()
+        var dataFormat = PropertyMapping.builder()
                 .onnxAttrName("data_format")
                 .tfAttrName("data_format")
                 .propertyNames(new String[]{"dataFormat"})
@@ -184,7 +184,7 @@ public class DeConv2DTF extends DynamicCustomOp {
     public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
         Map<String, Map<String, AttributeAdapter>> ret = new HashMap<>();
         Map<String, AttributeAdapter> tfMappings = new LinkedHashMap<>();
-        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
+        var fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
 
 
         //TF uses [kH, kW, outC, inC] always for weights

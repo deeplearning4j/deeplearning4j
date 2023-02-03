@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.util;
 
-import lombok.val;
+
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -36,7 +36,7 @@ public class FeatureUtil {
         if (index > Integer.MAX_VALUE || numOutcomes > Integer.MAX_VALUE)
             throw new UnsupportedOperationException();
 
-        val nums = new int[(int) numOutcomes];
+        var nums = new int[(int) numOutcomes];
         nums[(int) index] = 1;
         return NDArrayUtil.toNDArray(nums);
     }

@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.crash;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -169,16 +169,16 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcatMulti() throws Exception {
-        val shapeA = new int[] {50, 20};
-        val shapeB = new int[] {50, 497};
+        var shapeA = new int[] {50, 20};
+        var shapeB = new int[] {50, 497};
 
         //Nd4j.create(1);
 
-        val executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
+        var executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
 
         for (int e = 0; e < 1; e++) {
             executor.submit(() -> {
-                val arrayA = Nd4j.createUninitialized(shapeA);
+                var arrayA = Nd4j.createUninitialized(shapeA);
             });
         }
 
@@ -189,7 +189,7 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcatMulti2(Nd4jBackend backend) {
         Nd4j.create(1);
-        val executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
+        var executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
         executor.submit(() -> {
 //                System.out.println("A");
         });
@@ -201,16 +201,16 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
         if (Nd4j.getAffinityManager().getNumberOfDevices() < 2)
             return;
 
-        val list = new CopyOnWriteArrayList<INDArray>();
-        val threads = new ArrayList<Thread>();
-        val devices = Nd4j.getAffinityManager().getNumberOfDevices();
+        var list = new CopyOnWriteArrayList<INDArray>();
+        var threads = new ArrayList<Thread>();
+        var devices = Nd4j.getAffinityManager().getNumberOfDevices();
         for (int e = 0; e < devices; e++) {
-            val f = e;
-            val t = new Thread(() -> {
-                val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            var f = e;
+            var t = new Thread(() -> {
+                var deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
                 log.info("Current device: {}", deviceId);
                 for (int i = 0; i < 10; i++) {
-                    val ar = Nd4j.create(100, 100).assign(1.0f);
+                    var ar = Nd4j.create(100, 100).assign(1.0f);
 
                     assertEquals(deviceId, Nd4j.getAffinityManager().getDeviceForArray(ar));
                     list.add(ar);
@@ -225,11 +225,11 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
 //            log.info("------------------------");
         }
 
-        for (val t:threads)
+        for (var t:threads)
             t.join();
 
-        for (val a:list) {
-            val device = Nd4j.getAffinityManager().getDeviceForArray(a);
+        for (var a:list) {
+            var device = Nd4j.getAffinityManager().getDeviceForArray(a);
             try {
                 assertEquals(1.0f, a.meanNumber().floatValue(), 1e-5);
             } catch (Exception e) {
@@ -245,7 +245,7 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
         if (Nd4j.getAffinityManager().getNumberOfDevices() < 2)
             return;
 
-        val wsConf = WorkspaceConfiguration.builder()
+        var wsConf = WorkspaceConfiguration.builder()
                 .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                 .policyAllocation(AllocationPolicy.STRICT)
                 .initialSize(50 * 1024L * 1024L)
@@ -253,13 +253,13 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
 
         for (int x = 0; x < 10; x++) {
 
-            val list = new CopyOnWriteArrayList<INDArray>();
-            val threads = new ArrayList<Thread>();
+            var list = new CopyOnWriteArrayList<INDArray>();
+            var threads = new ArrayList<Thread>();
             for (int e = 0; e < Nd4j.getAffinityManager().getNumberOfDevices(); e++) {
-                val f = e;
-                val t = new Thread(() -> {
+                var f = e;
+                var t = new Thread(() -> {
                     for (int i = 0; i < 100; i++) {
-                        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf, "id")) {
+                        try (var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf, "id")) {
                             list.add(Nd4j.create(3, 3).assign(1.0f));
                             Nd4j.getExecutioner().commit();
                         }
@@ -270,10 +270,10 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
                 threads.add(t);
             }
 
-            for (val t : threads)
+            for (var t : threads)
                 t.join();
 
-            for (val a : list) {
+            for (var a : list) {
                 assertTrue(a.isAttached());
                 assertEquals(1.0f, a.meanNumber().floatValue(), 1e-5);
             }
@@ -312,9 +312,9 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void reproduceWorkspaceCrash(){
-        val conf = WorkspaceConfiguration.builder().build();
+        var conf = WorkspaceConfiguration.builder().build();
 
-        val ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, "WS");
+        var ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, "WS");
 
         INDArray arr = Nd4j.create(new double[]{1, 0, 0, 0, 1, 0, 0, 0, 0, 0}, new long[]{1, 10});
 
@@ -322,7 +322,7 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
         Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
 
         for( int i=0; i<100; i++ ) {
-            try(val ws2 = ws.notifyScopeEntered()) {
+            try(var ws2 = ws.notifyScopeEntered()) {
 //                System.out.println("Iteration: " + i);
                 INDArray ok = arr.eq(0.0);
                 ok.dup();
@@ -338,15 +338,15 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void reproduceWorkspaceCrash_2(){
-        val dtypes = new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.LONG, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
-        for (val dX : dtypes) {
-            for (val dZ: dtypes) {
-                val array = Nd4j.create(dX, 2, 5).assign(1);
+        var dtypes = new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.LONG, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
+        for (var dX : dtypes) {
+            for (var dZ: dtypes) {
+                var array = Nd4j.create(dX, 2, 5).assign(1);
 
 //                log.info("Trying to cast {} to {}", dX, dZ);
-                val casted = array.castTo(dZ);
+                var casted = array.castTo(dZ);
 
-                val exp = Nd4j.create(dZ, 2, 5).assign(1);
+                var exp = Nd4j.create(dZ, 2, 5).assign(1);
                 assertEquals(exp, casted);
             }
         }
@@ -355,17 +355,17 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void reproduceWorkspaceCrash_3(){
-        val conf = WorkspaceConfiguration.builder().build();
+        var conf = WorkspaceConfiguration.builder().build();
 
-        val ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, "WS");
-        val dtypes = new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.LONG, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
-        for (val dX : dtypes) {
-            for (val dZ: dtypes) {
-                try(val ws2 = ws.notifyScopeEntered()) {
-                    val array = Nd4j.create(dX, 2, 5).assign(1);
+        var ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, "WS");
+        var dtypes = new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.LONG, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
+        for (var dX : dtypes) {
+            for (var dZ: dtypes) {
+                try(var ws2 = ws.notifyScopeEntered()) {
+                    var array = Nd4j.create(dX, 2, 5).assign(1);
 //                    log.info("Trying to cast {} to {}", dX, dZ);
-                    val casted = array.castTo(dZ);
-                    val exp = Nd4j.create(dZ, 2, 5).assign(1);
+                    var casted = array.castTo(dZ);
+                    var exp = Nd4j.create(dZ, 2, 5).assign(1);
                     assertEquals(exp, casted);
 
                     Nd4j.getExecutioner().commit();
@@ -377,11 +377,11 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCastLong_1(Nd4jBackend backend) {
-        val array = Nd4j.create(DataType.LONG, 100, 100).assign(1);
-        val second = Nd4j.create(DataType.LONG, 100, 100).assign(1);
+        var array = Nd4j.create(DataType.LONG, 100, 100).assign(1);
+        var second = Nd4j.create(DataType.LONG, 100, 100).assign(1);
 //        log.info("----------------");
-        val castedA = array.castTo(DataType.BYTE).assign(3);
-        val castedB = array.castTo(DataType.BYTE).assign(3);
+        var castedA = array.castTo(DataType.BYTE).assign(3);
+        var castedB = array.castTo(DataType.BYTE).assign(3);
         Nd4j.getExecutioner().commit();
         assertEquals(castedA, castedB);
 
@@ -391,71 +391,71 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCastHalf_1(Nd4jBackend backend) {
-        val array = Nd4j.create(DataType.HALF, 2, 5).assign(1);
+        var array = Nd4j.create(DataType.HALF, 2, 5).assign(1);
         assertEquals(10.f, array.sumNumber().floatValue(), 1e-3);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCastHalf_2(Nd4jBackend backend) {
-        val array = Nd4j.create(DataType.HALF, 2, 5).assign(1);
+        var array = Nd4j.create(DataType.HALF, 2, 5).assign(1);
         assertEquals(10.f, array.sumNumber().floatValue(), 1e-3);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCastHalf_3(Nd4jBackend backend) {
-        val arrayY = Nd4j.create(DataType.FLOAT, 2, 5).assign(2);
-        val arrayX = Nd4j.create(DataType.HALF, 2, 5).assign(arrayY);
+        var arrayY = Nd4j.create(DataType.FLOAT, 2, 5).assign(2);
+        var arrayX = Nd4j.create(DataType.HALF, 2, 5).assign(arrayY);
         assertEquals(20.f, arrayX.sumNumber().floatValue(), 1e-3);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduce_Small_1(Nd4jBackend backend) {
-        val array = Nd4j.create(DataType.SHORT, 100, 30).assign(1);
+        var array = Nd4j.create(DataType.SHORT, 100, 30).assign(1);
         assertEquals(3000, array.sumNumber().intValue());
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduce_Small_2(Nd4jBackend backend) {
-        val array = Nd4j.create(DataType.BYTE, 100, 100).assign(0);
+        var array = Nd4j.create(DataType.BYTE, 100, 100).assign(0);
         assertEquals(0, array.sumNumber().intValue());
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduce3_Small_1(Nd4jBackend backend) {
-        val arrayA = Nd4j.create(DataType.SHORT, 100, 100).assign(1);
-        val arrayB = Nd4j.create(DataType.SHORT, 100, 100).assign(1);
+        var arrayA = Nd4j.create(DataType.SHORT, 100, 100).assign(1);
+        var arrayB = Nd4j.create(DataType.SHORT, 100, 100).assign(1);
         assertEquals(arrayA, arrayB);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReduce3_Small_2(Nd4jBackend backend) {
-        val arrayA = Nd4j.create(DataType.BYTE, 100, 100).assign(1);
-        val arrayB = Nd4j.create(DataType.BYTE, 100, 100).assign(1);
+        var arrayA = Nd4j.create(DataType.BYTE, 100, 100).assign(1);
+        var arrayB = Nd4j.create(DataType.BYTE, 100, 100).assign(1);
         assertEquals(arrayA, arrayB);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void reproduceWorkspaceCrash_4(){
-        val conf = WorkspaceConfiguration.builder().build();
+        var conf = WorkspaceConfiguration.builder().build();
 
-        val ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, "WS");
-        val dtypes = new DataType[]{DataType.LONG, DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
-        for (val dX : dtypes) {
-            for (val dZ: dtypes) {
-                try(val ws2 = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS")) {
-                    val array = Nd4j.create(dX, 100, 100).assign(1);
+        var ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, "WS");
+        var dtypes = new DataType[]{DataType.LONG, DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT, DataType.SHORT, DataType.BYTE, DataType.UBYTE, DataType.BOOL};
+        for (var dX : dtypes) {
+            for (var dZ: dtypes) {
+                try(var ws2 = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS")) {
+                    var array = Nd4j.create(dX, 100, 100).assign(1);
 
 //                    log.info("Trying to cast {} to {}", dX, dZ);
-                    val casted = array.castTo(dZ);
+                    var casted = array.castTo(dZ);
 
-                    val exp = Nd4j.create(dZ, 100, 100).assign(1);
+                    var exp = Nd4j.create(dZ, 100, 100).assign(1);
                     assertEquals(exp, casted);
                 }
             }
@@ -465,9 +465,9 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void reproduceWorkspaceCrash_5(){
-        val conf = WorkspaceConfiguration.builder().build();
+        var conf = WorkspaceConfiguration.builder().build();
 
-        val ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, "WS");
+        var ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(conf, "WS");
 
         INDArray arr = Nd4j.create(new double[]{1, 0, 0, 0, 1, 0, 0, 0, 0, 0}, new long[]{1, 10});
 
@@ -475,7 +475,7 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
         assertEquals(DataType.DOUBLE, arr.dataType());
 
         for( int i=0; i<100; i++ ) {
-            try(val ws2 = ws.notifyScopeEntered()) {
+            try(var ws2 = ws.notifyScopeEntered()) {
                 INDArray crash = arr.castTo(DataType.BOOL).castTo(DataType.DOUBLE);
                 crash.dup();
             }
@@ -535,7 +535,7 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
 
 
         for( int i=0; i<10; i++ ){
-            try(val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, "ws")){
+            try(var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, "ws")){
 //                System.out.println("STARTING: " + i);
 
                 INDArray objectPresentMask = Nd4j.create(DataType.BOOL, 1,4,4);
@@ -576,7 +576,7 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
         INDArray padding = Nd4j.createFromArray(0, 0, 0, 0).reshape(2,2);
 
         INDArray expOut = Nd4j.create(DataType.DOUBLE, miniBatch, 1, 1, 1);
-        val op = DynamicCustomOp.builder("space_to_batch_nd")
+        var op = DynamicCustomOp.builder("space_to_batch_nd")
                 .addInputs(input, blocks, padding)
                 .addOutputs(expOut).build();
         Nd4j.getExecutioner().execAndReturn(op);
@@ -623,12 +623,12 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
         INDArray labels = Nd4j.create(DataType.DOUBLE, 1,7,5,7);
 
         for( int i=0; i<10; i++ ){
-            try(val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, "ws")){
+            try(var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, "ws")){
 //                System.out.println("STARTING: " + i);
 
-                val nhw = new long[]{1, 5, 7};
+                var nhw = new long[]{1, 5, 7};
 
-                val size1 = labels.size(1);
+                var size1 = labels.size(1);
                 INDArray classLabels = labels.get(all(), interval(4,size1), all(), all());   //Shape: [minibatch, nClasses, H, W]
                 INDArray maskObjectPresent = classLabels.sum(Nd4j.createUninitialized(DataType.DOUBLE, nhw, 'c'), 1).castTo(DataType.BOOL); //Shape: [minibatch, H, W]
 
@@ -638,7 +638,7 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
                 Nd4j.getExecutioner().commit();
 
                 INDArray labelCenterXY = labelTLXY.add(labelBRXY);
-                val m = labelCenterXY.muli(0.5);  //In terms of grid units
+                var m = labelCenterXY.muli(0.5);  //In terms of grid units
                 INDArray labelsCenterXYInGridBox = labelCenterXY.dup(labelCenterXY.ordering());         //[mb, 2, H, W]
                 Nd4j.getExecutioner().commit();
 //                System.out.println("DONE: " + i);
@@ -650,7 +650,7 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMatchCondition(){
         INDArray x = Nd4j.valueArrayOf(new long[]{10,10}, 2.0, DataType.DOUBLE);
-        val op = new MatchCondition(x, Conditions.equals(2));
+        var op = new MatchCondition(x, Conditions.equals(2));
         INDArray z = Nd4j.getExecutioner().exec(op);
         int count = z.getInt(0);
         assertEquals(100, count);
@@ -659,8 +659,8 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcastMul_bool(Nd4jBackend backend) {
-        val mask = Nd4j.create(DataType.BOOL, 1, 3, 4, 4);
-        val object = Nd4j.create(DataType.BOOL, 1, 4, 4);
+        var mask = Nd4j.create(DataType.BOOL, 1, 3, 4, 4);
+        var object = Nd4j.create(DataType.BOOL, 1, 4, 4);
 
         Broadcast.mul(mask, object, mask, 0, 2, 3);
         Nd4j.getExecutioner().commit();
@@ -671,7 +671,7 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
     public void testReshape(){
         INDArray c = Nd4j.linspace(1,6,6, DataType.DOUBLE).reshape('c', 2,3);
         INDArray f = c.dup('f');
-        val fr = f.reshape('f', 3, 2).dup('f');
+        var fr = f.reshape('f', 3, 2).dup('f');
 
 //        log.info("FO: {}", f.data().asFloat());
 //        log.info("FR: {}", fr.data().asFloat());

@@ -22,7 +22,7 @@ package org.nd4j.parameterserver.distributed.v2.transport.impl;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.common.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -49,12 +49,12 @@ public class DelayedDummyTransport extends DummyTransport {
 
     @Override
     public void sendMessage(@NonNull VoidMessage message, @NonNull String id) {
-        val bos = new ByteArrayOutputStream();
+        var bos = new ByteArrayOutputStream();
         synchronized (this) {
             SerializationUtils.serialize(message, bos);
         }
 
-        val bis = new ByteArrayInputStream(bos.toByteArray());
+        var bis = new ByteArrayInputStream(bos.toByteArray());
         final VoidMessage msg = SerializationUtils.deserialize(bis);
 
         if (msg.getOriginatorId() == null)
@@ -67,7 +67,7 @@ public class DelayedDummyTransport extends DummyTransport {
             public void run() {
                 try {
                     // imitate some bad network here, latency of 0.05ms - 0.2ms
-                    val sleepTime = RandomUtils.nextInt(50, 200) * 1000;
+                    var sleepTime = RandomUtils.nextInt(50, 200) * 1000;
                     LockSupport.parkNanos(sleepTime);
 
                     DelayedDummyTransport.super.sendMessage(msg, id);

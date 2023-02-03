@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.env.impl;
 
-import lombok.val;
+
 import org.nd4j.linalg.api.memory.enums.DebugMode;
 import org.nd4j.linalg.env.EnvironmentalAction;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,7 +33,7 @@ public class WorkspacesBypassAction implements EnvironmentalAction {
 
     @Override
     public void process(String value) {
-        val v = Boolean.valueOf(value).booleanValue();
+        var v = Boolean.valueOf(value).booleanValue();
 
         if (v)
             Nd4j.getWorkspaceManager().setDebugMode(DebugMode.BYPASS_EVERYTHING);

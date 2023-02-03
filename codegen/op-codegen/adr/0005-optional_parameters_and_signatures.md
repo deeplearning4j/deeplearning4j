@@ -40,15 +40,15 @@ NDArray programming mode, the default signatures also include a variant that inc
  
 ```kotlin
 Op("batchNorm") {
-    val input    = Input(NUMERIC, "input") { description = "Input variable" }
-    val mean     = Input(NUMERIC, "mean") { description = "Mean value. For 1d axis, this should match input.size(axis)" }
-    val variance = Input(NUMERIC, "variance") { description = "Variance value. For 1d axis, this should match input.size(axis)" }
-    val gamma    = Input(NUMERIC, "gamma") { description = "Gamma value. For 1d axis, this should match input.size(axis)" }
-    val beta     = Input(NUMERIC, "beta") { description = "Beta value. For 1d axis, this should match input.size(axis)" }
+    var input    = Input(NUMERIC, "input") { description = "Input variable" }
+    var mean     = Input(NUMERIC, "mean") { description = "Mean value. For 1d axis, this should match input.size(axis)" }
+    var variance = Input(NUMERIC, "variance") { description = "Variance value. For 1d axis, this should match input.size(axis)" }
+    var gamma    = Input(NUMERIC, "gamma") { description = "Gamma value. For 1d axis, this should match input.size(axis)" }
+    var beta     = Input(NUMERIC, "beta") { description = "Beta value. For 1d axis, this should match input.size(axis)" }
 
-    val applyGamma = Arg(BOOL, "applyGamma") { description = ""; defaultValue = true}
-    val applyBeta  = Arg(BOOL, "applyBeta") { description = ""; defaultValue = true}
-    val axis       = Arg(INT, "axis"){
+    var applyGamma = Arg(BOOL, "applyGamma") { description = ""; defaultValue = true}
+    var applyBeta  = Arg(BOOL, "applyBeta") { description = ""; defaultValue = true}
+    var axis       = Arg(INT, "axis"){
         count = AtLeast(1) 
         description = """
         For 2d CNN activations: 1 for NCHW format activations, or 3 for NHWC format activations.
@@ -57,7 +57,7 @@ Op("batchNorm") {
         """.trimIndent()
     }
 
-    val out = Output(INT, "output"){ description = "Output variable for batch normalization" }
+    var out = Output(INT, "output"){ description = "Output variable for batch normalization" }
 
     Doc(Language.ANY, DocScope.ALL){
         """
@@ -76,12 +76,12 @@ Op("batchNorm") {
 ### Random Uniform initialization with support for (dataType, shape) and (out) invocation
 ```kotlin
 Op("uniform") {
-    val out = Output(NUMERIC, "output") { description = "new random %INPUT_TYPE%, where values are randomly sampled according to a uniform distribution" }    
+    var out = Output(NUMERIC, "output") { description = "new random %INPUT_TYPE%, where values are randomly sampled according to a uniform distribution" }    
     
-    val min = Arg(FLOATING_POINT, "min") { description = "Minimum value" }
-    val max = Arg(FLOATING_POINT, "max") { description = "Maximum value." }
-    val dataType = Arg(DATA_TYPE, "dataType") { description = "Data Type of the output array"; defaultValue = out.dataType() }
-    val shape = Arg(INT, "shape") { count = AtLeast(1); description = "Shape of the new random %INPUT_TYPE%, as a 1D array"; defaultValue = out.dataType() }
+    var min = Arg(FLOATING_POINT, "min") { description = "Minimum value" }
+    var max = Arg(FLOATING_POINT, "max") { description = "Maximum value." }
+    var dataType = Arg(DATA_TYPE, "dataType") { description = "Data Type of the output array"; defaultValue = out.dataType() }
+    var shape = Arg(INT, "shape") { count = AtLeast(1); description = "Shape of the new random %INPUT_TYPE%, as a 1D array"; defaultValue = out.dataType() }
 
     Doc(Language.ANY, DocScope.ALL) {
         """

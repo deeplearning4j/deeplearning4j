@@ -21,7 +21,7 @@
 package org.deeplearning4j.spark.impl.graph.scoring;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -67,11 +67,11 @@ public class ScoreExamplesWithKeyFunction<K> implements PairFlatMapFunction<Iter
 
         ComputationGraph network = new ComputationGraph(ComputationGraphConfiguration.fromJson(jsonConfig.getValue()));
         network.init();
-        INDArray val = params.value().dup();
-        if (val.length() != network.numParams(false))
+        INDArray paramsVal = params.value().dup();
+        if (paramsVal.length() != network.numParams(false))
             throw new IllegalStateException(
                             "Network did not have same number of parameters as the broadcast set parameters");
-        network.setParams(val);
+        network.setParams(paramsVal);
 
         List<Tuple2<K, Double>> ret = new ArrayList<>();
 
@@ -85,7 +85,7 @@ public class ScoreExamplesWithKeyFunction<K> implements PairFlatMapFunction<Iter
             while (iterator.hasNext() && nExamples < batchSize) {
                 Tuple2<K, MultiDataSet> t2 = iterator.next();
                 MultiDataSet ds = t2._2();
-                val n = ds.getFeatures(0).size(0);
+                var n = ds.getFeatures(0).size(0);
                 if (n != 1)
                     throw new IllegalStateException("Cannot score examples with one key per data set if "
                                     + "data set contains more than 1 example (numExamples: " + n + ")");

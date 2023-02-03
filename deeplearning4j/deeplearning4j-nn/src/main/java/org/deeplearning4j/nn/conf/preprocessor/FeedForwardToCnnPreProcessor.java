@@ -120,7 +120,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
         switch (inputType.getType()) {
             case FF:
                 InputType.InputTypeFeedForward c = (InputType.InputTypeFeedForward) inputType;
-                val expSize = inputHeight * inputWidth * numChannels;
+                var expSize = inputHeight * inputWidth * numChannels;
                 if (c.getSize() != expSize) {
                     throw new IllegalStateException("Invalid input: expected FeedForward input of size " + expSize
                                     + " = (d=" + numChannels + " * w=" + inputWidth + " * h=" + inputHeight + "), got "

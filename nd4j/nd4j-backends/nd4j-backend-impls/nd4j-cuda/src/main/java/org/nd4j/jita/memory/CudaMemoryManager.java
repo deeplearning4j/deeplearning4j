@@ -21,7 +21,7 @@
 package org.nd4j.jita.memory;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
@@ -59,12 +59,12 @@ public class CudaMemoryManager extends BasicMemoryManager {
      */
     @Override
     public Pointer allocate(long bytes, MemoryKind kind, boolean initialize) {
-        val allocator = AtomicAllocator.getInstance();
+        var allocator = AtomicAllocator.getInstance();
 
         //log.info("Allocating {} bytes in {} memory...", bytes, kind);
 
         if (kind == MemoryKind.HOST) {
-            val ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocHost(bytes, 0);
+            var ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocHost(bytes, 0);
 
             if (ptr == null)
                 throw new RuntimeException("Failed to allocate " + bytes + " bytes from HOST memory");
@@ -74,12 +74,12 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
             return ptr;//allocator.getMemoryHandler().alloc(AllocationStatus.HOST, null, null, initialize).getHostPointer();
         } else if (kind == MemoryKind.DEVICE) {
-            val ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, 0, 0);
+            var ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, 0, 0);
             log.trace("Allocating {} bytes for device_{}", bytes, Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
-            val ec = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode();
+            var ec = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode();
             if (ec != 0) {
-                val em = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage();
+                var em = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage();
                 throw new RuntimeException(em + "; Bytes: [" + bytes + "]; Error code [" + ec + "]; DEVICE [" + Nd4j.getAffinityManager().getDeviceForCurrentThread() + "]");
             }
 
@@ -87,7 +87,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
                 throw new RuntimeException("Failed to allocate " + bytes + " bytes from DEVICE [" + Nd4j.getAffinityManager().getDeviceForCurrentThread() + "] memory");
 
             if (initialize) {
-                val context = AtomicAllocator.getInstance().getDeviceContext();
+                var context = AtomicAllocator.getInstance().getDeviceContext();
 
                 int i = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, bytes, 0, context.getSpecialStream());
                 if (i == 0)
@@ -161,7 +161,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
     }
 
     protected void allocateHostPointers(DataBuffer... dataBuffers) {
-        for (val v:dataBuffers) {
+        for (var v:dataBuffers) {
             if (v != null && v instanceof BaseCudaDataBuffer) {
                 ((BaseCudaDataBuffer) v).lazyAllocateHostPointer();
             }
@@ -176,7 +176,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
      */
     @Override
     public void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer) {
-        val context = AtomicAllocator.getInstance().getDeviceContext();
+        var context = AtomicAllocator.getInstance().getDeviceContext();
 
 
         if (dstBuffer instanceof CompressedDataBuffer && !(srcBuffer instanceof CompressedDataBuffer)) {
@@ -198,7 +198,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
             } // else {
               // copying host -> host
-            val src = AtomicAllocator.getInstance().getHostPointer(srcBuffer);
+            var src = AtomicAllocator.getInstance().getHostPointer(srcBuffer);
 
             Pointer.memcpy(dstBuffer.addressPointer(), src, size);
             // }

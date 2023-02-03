@@ -201,14 +201,14 @@ public class CreateView extends DynamicCustomOp  {
     }
 
     /**
-     * Create an interval representing {@link SDIndex#interval(Long, Long)}
+     * Create an intervar representing {@link SDIndex#interval(Long, Long)}
      *
      * @param sameDiff the samediff instance to use
      * @param name the name of the variable
      * @param start the start of the interval
      * @param end the end of the interval
      * @param stride the stride
-     * @param inclusive whether the interval is inclusive or not 0 for false 1 for true
+     * @param inclusive whether the intervar is inclusive or not 0 for false 1 for true
      * @return
      */
     public static SDVariable createInterval(SameDiff sameDiff,String name,long start,long end,long stride,long inclusive) {
@@ -218,14 +218,14 @@ public class CreateView extends DynamicCustomOp  {
 
 
     /**
-     * Create an interval representing {@link SDIndex#interval(Long, Long)}
+     * Create an intervar representing {@link SDIndex#interval(Long, Long)}
      *
      * @param sameDiff the samediff instance to use
      * @param name the name of the variable
      * @param start the start of the interval
      * @param end the end of the interval
      * @param stride the stride
-     * @param inclusive whether the interval is inclusive or not 0 for false 1 for true
+     * @param inclusive whether the intervar is inclusive or not 0 for false 1 for true
      * @return
      */
     public static SDVariable createInterval(SameDiff sameDiff,String name,SDVariable start,SDVariable end,SDVariable stride,SDVariable inclusive) {
@@ -285,7 +285,7 @@ public class CreateView extends DynamicCustomOp  {
         } else if(idx == ALL_TYPE) {
             return NDArrayIndex.all();
         } else {
-            throw new IllegalArgumentException("Invalid type. Must be 1 of: " + POINT_TYPE + " (point type) " + INTERVAL_TYPE + " (interval type)" + NEW_AXIS + " (new axis) " + ALL_TYPE + " (all) ");
+            throw new IllegalArgumentException("Invalid type. Must be 1 of: " + POINT_TYPE + " (point type) " + INTERVAL_TYPE + " (intervar type)" + NEW_AXIS + " (new axis) " + ALL_TYPE + " (all) ");
         }
     }
 

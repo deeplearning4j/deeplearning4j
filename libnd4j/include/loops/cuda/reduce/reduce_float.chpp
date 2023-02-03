@@ -236,7 +236,7 @@ SD_HOST void ReduceFloatFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStrea
         if(shape::isEmpty(hZShapeInfo))
             return;
 
-        const auto startingVal = std::is_same<OpType, simdOps::Mean<X,Z>>::value ? sd::DataTypeUtils::nanOrZero<Z>() : static_cast<Z>(OpType::startingValue(reinterpret_cast<const X*>(x)));
+        const auto startingvar = std::is_same<OpType, simdOps::Mean<X,Z>>::value ? sd::DataTypeUtils::nanOrZero<Z>() : static_cast<Z>(OpType::startingValue(reinterpret_cast<const X*>(x)));
         auto res = cudaMemcpyAsync(sd::LaunchContext::defaultContext()->getScalarPointer(), &startingVal, sizeof(Z), cudaMemcpyHostToDevice, *stream);
         if (res != 0)
             throw sd::cuda_exception::build("ReduceFloatFunction<X,Z>::intermediateXD: failed to copy temporary scalar", res);
@@ -274,7 +274,7 @@ SD_HOST void ReduceFloatFunction<X,Z>::intermediateScalar(dim3 launchDims, cudaS
         if (shape::isEmpty(hZShapeInfo))
             return;
 
-        const auto startingVal = std::is_same<OpType, simdOps::Mean<X,Z>>::value ? sd::DataTypeUtils::nanOrZero<Z>() : static_cast<Z>(OpType::startingValue(reinterpret_cast<const X*>(x)));
+        const auto startingvar = std::is_same<OpType, simdOps::Mean<X,Z>>::value ? sd::DataTypeUtils::nanOrZero<Z>() : static_cast<Z>(OpType::startingValue(reinterpret_cast<const X*>(x)));
 
         auto res = cudaMemcpyAsync(z, &startingVal, sizeof(Z), cudaMemcpyHostToDevice, *stream);
         if (res != 0)

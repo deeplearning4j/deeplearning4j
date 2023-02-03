@@ -567,7 +567,7 @@ public class VocabularyHolder implements Serializable {
         /**
          *  Activation threshold defines, how ofter scavenger will be executed, to throw away low-frequency keywords.
          *  Good values to start mostly depends on your workstation. Something like 1000000 looks pretty nice to start with.
-         *  Too low values can lead to undesired removal of words from vocab.
+         *  Too low values can lead to undesired removar of words from vocab.
          *
          *  Please note: this is incompatible with SPECIAL mechanics.
          *

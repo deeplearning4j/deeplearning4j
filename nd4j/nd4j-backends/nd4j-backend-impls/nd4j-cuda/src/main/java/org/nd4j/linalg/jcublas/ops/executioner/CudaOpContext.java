@@ -21,7 +21,7 @@
 package org.nd4j.linalg.jcublas.ops.executioner;
 
 import lombok.NonNull;
-import lombok.val;
+
 import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
@@ -89,7 +89,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     public void setDArguments(DataType... arguments) {
         if (arguments.length > 0) {
             super.setDArguments(arguments);
-            val args = new int[arguments.length];
+            var args = new int[arguments.length];
             for (int e = 0; e < arguments.length; e++)
                 args[e] = arguments[e].toInt();
 
@@ -110,7 +110,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public void setInputArray(int index, @NonNull INDArray array) {
-        //val ctx = AtomicAllocator.getInstance().getFlowController().prepareAction(null, array);
+        //var ctx = AtomicAllocator.getInstance().getFlowController().prepareAction(null, array);
         nativeOps.setGraphContextInputBuffer(context, index, array.isEmpty() ? null : ((BaseCudaDataBuffer) array.data()).getOpaqueDataBuffer(), array.shapeInfoDataBuffer().addressPointer(), AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer()));
 
         super.setInputArray(index, array);
@@ -118,7 +118,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public void setOutputArray(int index, @NonNull INDArray array) {
-        //val ctx = AtomicAllocator.getInstance().getFlowController().prepareAction(array, null);
+        //var ctx = AtomicAllocator.getInstance().getFlowController().prepareAction(array, null);
         nativeOps.setGraphContextOutputBuffer(context, index, array.isEmpty() ? null : ((BaseCudaDataBuffer) array.data()).getOpaqueDataBuffer(), array.shapeInfoDataBuffer().addressPointer(), AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer()));
 
         super.setOutputArray(index, array);

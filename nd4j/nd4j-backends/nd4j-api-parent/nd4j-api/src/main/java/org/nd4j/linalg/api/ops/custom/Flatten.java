@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.ops.custom;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -41,7 +41,7 @@ public class Flatten extends DynamicCustomOp {
     public Flatten(char order, INDArray... inputs) {
         this.order = order;
 
-        for (val in:inputs)
+        for (var in:inputs)
             inputArguments.add(in);
 
         iArguments.add(Long.valueOf((int) this.order));

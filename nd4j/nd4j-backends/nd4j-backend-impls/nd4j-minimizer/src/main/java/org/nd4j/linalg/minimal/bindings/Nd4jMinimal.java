@@ -127,10 +127,10 @@ public class Nd4jMinimal extends org.nd4j.presets.minimal.Nd4jMinimalHelper {
     @Index(function = "at") public native @Const NDArray get(@Cast("size_t") long i);
     public native ConstNDArrayVector put(@Cast("size_t") long i, NDArray value);
 
-    public native @ByVal Iterator insert(@ByVal Iterator pos, @Const NDArray value);
-    public native @ByVal Iterator erase(@ByVal Iterator pos);
-    public native @ByVal Iterator begin();
-    public native @ByVal Iterator end();
+    public native @Byvar Iterator insert(@Byvar Iterator pos, @Const NDArray value);
+    public native @Byvar Iterator erase(@Byvar Iterator pos);
+    public native @Byvar Iterator begin();
+    public native @Byvar Iterator end();
     @NoOffset @Name("iterator") public static class Iterator extends Pointer {
         public Iterator(Pointer p) { super(p); }
         public Iterator() { }
@@ -195,10 +195,10 @@ public class Nd4jMinimal extends org.nd4j.presets.minimal.Nd4jMinimalHelper {
     @Index(function = "at") public native NDArray get(@Cast("size_t") long i);
     public native NDArrayVector put(@Cast("size_t") long i, NDArray value);
 
-    public native @ByVal Iterator insert(@ByVal Iterator pos, NDArray value);
-    public native @ByVal Iterator erase(@ByVal Iterator pos);
-    public native @ByVal Iterator begin();
-    public native @ByVal Iterator end();
+    public native @Byvar Iterator insert(@Byvar Iterator pos, NDArray value);
+    public native @Byvar Iterator erase(@Byvar Iterator pos);
+    public native @Byvar Iterator begin();
+    public native @Byvar Iterator end();
     @NoOffset @Name("iterator") public static class Iterator extends Pointer {
         public Iterator(Pointer p) { super(p); }
         public Iterator() { }
@@ -3450,7 +3450,7 @@ public native @Cast("char*") String buildInfo();
   public native @Cast("bool") boolean isInterval();
 }
 
-@Namespace("sd") public static class NDIndexInterval extends NDIndex {
+@Namespace("sd") public static class NDIndexIntervar extends NDIndex {
     static { Loader.load(); }
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
     public NDIndexInterval(Pointer p) { super(p); }
@@ -3725,7 +3725,7 @@ public static final int
 // #include <memory>
 // #include <legacy/NativeOpExecutioner.h>
 
-@Namespace("sd") public native @ByVal NDArray mmul(@Const @ByRef NDArray arg0, @Const @ByRef NDArray arg1);
+@Namespace("sd") public native @Byvar NDArray mmul(@Const @ByRef NDArray arg0, @Const @ByRef NDArray arg1);
 
 @Namespace("sd") @NoOffset public static class NDArray extends Pointer {
     static { Loader.load(); }
@@ -3928,13 +3928,13 @@ public static final int
    * This method returns new array with the same shape & data type
    * @return
    */
-  public native @ByVal NDArray like();
+  public native @Byvar NDArray like();
 
   /**
    * This method returns new uninitialized array with the same shape & data type
    * @return
    */
-  public native @ByVal NDArray ulike();
+  public native @Byvar NDArray ulike();
 
   /**
    *  this constructor creates new NDArray with shape matching "other" array,
@@ -4042,9 +4042,9 @@ public static final int
    *  axis - axis along which to repeat elements
    *  repeats - number of repetitions
    */
-  public native @ByVal NDArray repeat(int axis, @StdVector IntPointer repeats);
-  public native @ByVal NDArray repeat(int axis, @StdVector IntBuffer repeats);
-  public native @ByVal NDArray repeat(int axis, @StdVector int[] repeats);
+  public native @Byvar NDArray repeat(int axis, @StdVector IntPointer repeats);
+  public native @Byvar NDArray repeat(int axis, @StdVector IntBuffer repeats);
+  public native @Byvar NDArray repeat(int axis, @StdVector int[] repeats);
 
   /**
    * This method fills this array with zeros
@@ -4057,7 +4057,7 @@ public static final int
    * @param array
    * @return
    */
-  public native @ByVal NDArray quantize(@Const @ByRef NDArray array);
+  public native @Byvar NDArray quantize(@Const @ByRef NDArray array);
 
   /**
    *  fill target array by repeating current array
@@ -4078,7 +4078,7 @@ public static final int
   /**
    *  cast array elements to given dtype
    */
-  public native @ByVal NDArray cast(@Cast("sd::DataType") int dtype);
+  public native @Byvar NDArray cast(@Cast("sd::DataType") int dtype);
 
   public native void cast(@ByRef NDArray target, @Cast("sd::DataType") int dtype);
 
@@ -4160,12 +4160,12 @@ public static final int
   /**
    *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
    */
-  public native @ByVal NDArray permute(@StdVector IntPointer dimensions);
-  public native @ByVal NDArray permute(@StdVector IntBuffer dimensions);
-  public native @ByVal NDArray permute(@StdVector int[] dimensions);
-  public native @ByVal NDArray permute(@Const IntPointer dimensions, int rank);
-  public native @ByVal NDArray permute(@Const IntBuffer dimensions, int rank);
-  public native @ByVal NDArray permute(@Const int[] dimensions, int rank);
+  public native @Byvar NDArray permute(@StdVector IntPointer dimensions);
+  public native @Byvar NDArray permute(@StdVector IntBuffer dimensions);
+  public native @Byvar NDArray permute(@StdVector int[] dimensions);
+  public native @Byvar NDArray permute(@Const IntPointer dimensions, int rank);
+  public native @Byvar NDArray permute(@Const IntBuffer dimensions, int rank);
+  public native @Byvar NDArray permute(@Const int[] dimensions, int rank);
   
   
   
@@ -4176,12 +4176,12 @@ public static final int
   public native void permute(@StdVector IntPointer dimensions, @ByRef NDArray target);
   public native void permute(@StdVector IntBuffer dimensions, @ByRef NDArray target);
   public native void permute(@StdVector int[] dimensions, @ByRef NDArray target);
-  public native @ByVal NDArray permute(@Cast("sd::LongType*") @StdVector LongPointer dimensions);
-  public native @ByVal NDArray permute(@Cast("sd::LongType*") @StdVector LongBuffer dimensions);
-  public native @ByVal NDArray permute(@Cast("sd::LongType*") @StdVector long[] dimensions);
-  public native @ByVal NDArray permute(@Cast("const sd::LongType*") LongPointer dimensions, int rank);
-  public native @ByVal NDArray permute(@Cast("const sd::LongType*") LongBuffer dimensions, int rank);
-  public native @ByVal NDArray permute(@Cast("const sd::LongType*") long[] dimensions, int rank);
+  public native @Byvar NDArray permute(@Cast("sd::LongType*") @StdVector LongPointer dimensions);
+  public native @Byvar NDArray permute(@Cast("sd::LongType*") @StdVector LongBuffer dimensions);
+  public native @Byvar NDArray permute(@Cast("sd::LongType*") @StdVector long[] dimensions);
+  public native @Byvar NDArray permute(@Cast("const sd::LongType*") LongPointer dimensions, int rank);
+  public native @Byvar NDArray permute(@Cast("const sd::LongType*") LongBuffer dimensions, int rank);
+  public native @Byvar NDArray permute(@Cast("const sd::LongType*") long[] dimensions, int rank);
   
   
   
@@ -4258,27 +4258,27 @@ public static final int
   /**
    *  returns new copy of this array, optionally in different order
    */
-  public native @ByVal NDArray dup(byte newOrder/*='a'*/);
-  public native @ByVal NDArray dup();
+  public native @Byvar NDArray dup(byte newOrder/*='a'*/);
+  public native @Byvar NDArray dup();
 
 
 
   /**
    *  returns sum of all elements of array
    */
-  public native @ByVal NDArray sumNumber();
+  public native @Byvar NDArray sumNumber();
 
 
   /**
    *  returns prod of all elements of array
    */
-  public native @ByVal NDArray prodNumber();
+  public native @Byvar NDArray prodNumber();
 
 
   /**
    *  returns mean number of array
    */
-  public native @ByVal NDArray meanNumber();
+  public native @Byvar NDArray meanNumber();
 
 // #ifndef __JAVACPP_HACK__
 
@@ -4287,7 +4287,7 @@ public static final int
   /**
    *   apply transpose operation to the copy of this array, that is this array remains unaffected
    */
-  public native @ByVal NDArray transpose();
+  public native @Byvar NDArray transpose();
   
 
   /**
@@ -4411,12 +4411,12 @@ public static final int
    *
    * if permute have been applied before or there are weird strides, then new buffer is allocated for new array
    */
-  public native @ByVal NDArray reshape(byte order, @Cast("sd::LongType*") @StdVector LongPointer shape, @Cast("const bool") boolean copyToNewBuff/*=true*/);
-  public native @ByVal NDArray reshape(byte order, @Cast("sd::LongType*") @StdVector LongPointer shape);
-  public native @ByVal NDArray reshape(byte order, @Cast("sd::LongType*") @StdVector LongBuffer shape, @Cast("const bool") boolean copyToNewBuff/*=true*/);
-  public native @ByVal NDArray reshape(byte order, @Cast("sd::LongType*") @StdVector LongBuffer shape);
-  public native @ByVal NDArray reshape(byte order, @Cast("sd::LongType*") @StdVector long[] shape, @Cast("const bool") boolean copyToNewBuff/*=true*/);
-  public native @ByVal NDArray reshape(byte order, @Cast("sd::LongType*") @StdVector long[] shape);
+  public native @Byvar NDArray reshape(byte order, @Cast("sd::LongType*") @StdVector LongPointer shape, @Cast("const bool") boolean copyToNewBuff/*=true*/);
+  public native @Byvar NDArray reshape(byte order, @Cast("sd::LongType*") @StdVector LongPointer shape);
+  public native @Byvar NDArray reshape(byte order, @Cast("sd::LongType*") @StdVector LongBuffer shape, @Cast("const bool") boolean copyToNewBuff/*=true*/);
+  public native @Byvar NDArray reshape(byte order, @Cast("sd::LongType*") @StdVector LongBuffer shape);
+  public native @Byvar NDArray reshape(byte order, @Cast("sd::LongType*") @StdVector long[] shape, @Cast("const bool") boolean copyToNewBuff/*=true*/);
+  public native @Byvar NDArray reshape(byte order, @Cast("sd::LongType*") @StdVector long[] shape);
   
 
   /**
@@ -4437,9 +4437,9 @@ public static final int
    *  returns new array which is created by repeating of this array the number of times given by reps
    *  repeats - contains numbers of repetitions
    */
-  public native @ByVal NDArray tile(@Cast("sd::LongType*") @StdVector LongPointer repeats);
-  public native @ByVal NDArray tile(@Cast("sd::LongType*") @StdVector LongBuffer repeats);
-  public native @ByVal NDArray tile(@Cast("sd::LongType*") @StdVector long[] repeats);
+  public native @Byvar NDArray tile(@Cast("sd::LongType*") @StdVector LongPointer repeats);
+  public native @Byvar NDArray tile(@Cast("sd::LongType*") @StdVector LongBuffer repeats);
+  public native @Byvar NDArray tile(@Cast("sd::LongType*") @StdVector long[] repeats);
 
   /**
    *  change an array by repeating it the number of times given by reps (in-place operation)
@@ -4475,15 +4475,15 @@ public static final int
    * numbers which correspond to stride between dimStart and dimEnd, so structure of idx is like
    * {dim0Start,dim0End,dim0Stride,    dim1Start,dim1End,dim1Stride, ....}
    */
-  public native @ByVal @Name("operator ()") NDArray apply(@Cast("sd::LongType*") @StdVector LongPointer idx, @Cast("const bool") boolean keepUnitiesInShape/*=false*/,
+  public native @Byvar @Name("operator ()") NDArray apply(@Cast("sd::LongType*") @StdVector LongPointer idx, @Cast("const bool") boolean keepUnitiesInShape/*=false*/,
                        @Cast("const bool") boolean isStrided/*=false*/);
-  public native @ByVal @Name("operator ()") NDArray apply(@Cast("sd::LongType*") @StdVector LongPointer idx);
-  public native @ByVal @Name("operator ()") NDArray apply(@Cast("sd::LongType*") @StdVector LongBuffer idx, @Cast("const bool") boolean keepUnitiesInShape/*=false*/,
+  public native @Byvar @Name("operator ()") NDArray apply(@Cast("sd::LongType*") @StdVector LongPointer idx);
+  public native @Byvar @Name("operator ()") NDArray apply(@Cast("sd::LongType*") @StdVector LongBuffer idx, @Cast("const bool") boolean keepUnitiesInShape/*=false*/,
                        @Cast("const bool") boolean isStrided/*=false*/);
-  public native @ByVal @Name("operator ()") NDArray apply(@Cast("sd::LongType*") @StdVector LongBuffer idx);
-  public native @ByVal @Name("operator ()") NDArray apply(@Cast("sd::LongType*") @StdVector long[] idx, @Cast("const bool") boolean keepUnitiesInShape/*=false*/,
+  public native @Byvar @Name("operator ()") NDArray apply(@Cast("sd::LongType*") @StdVector LongBuffer idx);
+  public native @Byvar @Name("operator ()") NDArray apply(@Cast("sd::LongType*") @StdVector long[] idx, @Cast("const bool") boolean keepUnitiesInShape/*=false*/,
                        @Cast("const bool") boolean isStrided/*=false*/);
-  public native @ByVal @Name("operator ()") NDArray apply(@Cast("sd::LongType*") @StdVector long[] idx);
+  public native @Byvar @Name("operator ()") NDArray apply(@Cast("sd::LongType*") @StdVector long[] idx);
 
   /**
    *  evaluates subarray with buffer pointing at this->_buffer and offset defined by given sequential index subArrIdx
@@ -4493,15 +4493,15 @@ public static final int
    * zeros (means whole array) will be returned. keepUnitiesInShape - if false then eliminate unities from resulting
    * array shape, for example {1,a,1,b} -> {a,b}
    */
-  public native @ByVal @Name("operator ()") NDArray apply(@Cast("const sd::LongType") long subArrIdx, @StdVector IntPointer dimsToExclude,
+  public native @Byvar @Name("operator ()") NDArray apply(@Cast("const sd::LongType") long subArrIdx, @StdVector IntPointer dimsToExclude,
                        @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-  public native @ByVal @Name("operator ()") NDArray apply(@Cast("const sd::LongType") long subArrIdx, @StdVector IntPointer dimsToExclude);
-  public native @ByVal @Name("operator ()") NDArray apply(@Cast("const sd::LongType") long subArrIdx, @StdVector IntBuffer dimsToExclude,
+  public native @Byvar @Name("operator ()") NDArray apply(@Cast("const sd::LongType") long subArrIdx, @StdVector IntPointer dimsToExclude);
+  public native @Byvar @Name("operator ()") NDArray apply(@Cast("const sd::LongType") long subArrIdx, @StdVector IntBuffer dimsToExclude,
                        @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-  public native @ByVal @Name("operator ()") NDArray apply(@Cast("const sd::LongType") long subArrIdx, @StdVector IntBuffer dimsToExclude);
-  public native @ByVal @Name("operator ()") NDArray apply(@Cast("const sd::LongType") long subArrIdx, @StdVector int[] dimsToExclude,
+  public native @Byvar @Name("operator ()") NDArray apply(@Cast("const sd::LongType") long subArrIdx, @StdVector IntBuffer dimsToExclude);
+  public native @Byvar @Name("operator ()") NDArray apply(@Cast("const sd::LongType") long subArrIdx, @StdVector int[] dimsToExclude,
                        @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-  public native @ByVal @Name("operator ()") NDArray apply(@Cast("const sd::LongType") long subArrIdx, @StdVector int[] dimsToExclude);
+  public native @Byvar @Name("operator ()") NDArray apply(@Cast("const sd::LongType") long subArrIdx, @StdVector int[] dimsToExclude);
 
   /**
    * processes whole set of sub-arrays
@@ -4541,7 +4541,7 @@ public static final int
   /**
    *  negative operator, it changes sign of all array elements on opposite
    */
-  public native @ByVal @Name("operator -") NDArray subtract();
+  public native @Byvar @Name("operator -") NDArray subtract();
   
 
   /**
@@ -4594,7 +4594,7 @@ public static final int
    *  return vector with buffer which points on corresponding diagonal elements of array
    *  type - means of vector to be returned: column ('c') or row ('r')
    */
-  public native @ByVal NDArray diagonal(byte type);
+  public native @Byvar NDArray diagonal(byte type);
 
   /**
    * fill target matrix with given value in one or two directions from main diagonal:
@@ -4617,16 +4617,16 @@ public static final int
    *  target - optional argument, if target != nullptr the resulting array will be placed in target, in opposite case
    * tile operation is done in place
    */
-  public native @ByVal NDArray tileToShape(@Cast("const sd::LongType*") LongPointer shapeInfo);
-  public native @ByVal NDArray tileToShape(@Cast("const sd::LongType*") LongBuffer shapeInfo);
-  public native @ByVal NDArray tileToShape(@Cast("const sd::LongType*") long[] shapeInfo);
+  public native @Byvar NDArray tileToShape(@Cast("const sd::LongType*") LongPointer shapeInfo);
+  public native @Byvar NDArray tileToShape(@Cast("const sd::LongType*") LongBuffer shapeInfo);
+  public native @Byvar NDArray tileToShape(@Cast("const sd::LongType*") long[] shapeInfo);
   public native void tileToShape(@Cast("sd::LongType*") @StdVector LongPointer shape, @ByRef NDArray target);
   public native void tileToShape(@Cast("sd::LongType*") @StdVector LongBuffer shape, @ByRef NDArray target);
   public native void tileToShape(@Cast("sd::LongType*") @StdVector long[] shape, @ByRef NDArray target);
 // #ifndef __JAVACPP_HACK__
 // #endif
 
-  public native @ByVal NDArray asT(@Cast("sd::DataType") int dtype);
+  public native @Byvar NDArray asT(@Cast("sd::DataType") int dtype);
 
   public native void linspace(double start);
 
@@ -4637,15 +4637,15 @@ public static final int
    */
   public native double getTrace();
 
-  public native @ByVal ResultSet multipleTensorsAlongDimension(@StdVector IntPointer indices, @StdVector IntPointer dimensions);
-  public native @ByVal ResultSet multipleTensorsAlongDimension(@StdVector IntBuffer indices, @StdVector IntBuffer dimensions);
-  public native @ByVal ResultSet multipleTensorsAlongDimension(@StdVector int[] indices, @StdVector int[] dimensions);
+  public native @Byvar ResultSet multipleTensorsAlongDimension(@StdVector IntPointer indices, @StdVector IntPointer dimensions);
+  public native @Byvar ResultSet multipleTensorsAlongDimension(@StdVector IntBuffer indices, @StdVector IntBuffer dimensions);
+  public native @Byvar ResultSet multipleTensorsAlongDimension(@StdVector int[] indices, @StdVector int[] dimensions);
 
-  public native @ByVal ResultSet allTensorsAlongDimension(@StdVector IntPointer dimensions);
-  public native @ByVal ResultSet allTensorsAlongDimension(@StdVector IntBuffer dimensions);
-  public native @ByVal ResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
+  public native @Byvar ResultSet allTensorsAlongDimension(@StdVector IntPointer dimensions);
+  public native @Byvar ResultSet allTensorsAlongDimension(@StdVector IntBuffer dimensions);
+  public native @Byvar ResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
 
-  public native @ByVal ResultSet allExamples();
+  public native @Byvar ResultSet allExamples();
 
   /**
    *  set _shapeInfo
@@ -4784,7 +4784,7 @@ public static final int
    *  returns array-scalar containing element of this array with given index
    *  i - element index in array
    */
-  public native @ByVal NDArray e(@Cast("const sd::LongType") long i);
+  public native @Byvar NDArray e(@Cast("const sd::LongType") long i);
 
   /**
    *  assigns given scalar to array element by given index, regards array buffer as linear
@@ -5886,7 +5886,7 @@ public static final int
    * @param type
    * @return
    */
-  public native @Cast("sd::Status") int attachOpToScope(int scopeId, @Cast("sd::LongType") long opNum, int type, @ByVal ArgumentsList inputs);
+  public native @Cast("sd::Status") int attachOpToScope(int scopeId, @Cast("sd::LongType") long opNum, int type, @Byvar ArgumentsList inputs);
 
   /**
    * This method adds return statement to specified scope
@@ -5898,7 +5898,7 @@ public static final int
    * @param args
    * @return
    */
-  public native @Cast("sd::Status") int defineReturn(int scopeId, int nodeId, @ByVal ArgumentsList args);
+  public native @Cast("sd::Status") int defineReturn(int scopeId, int nodeId, @Byvar ArgumentsList args);
 
   /**
    * This method returns current variable space of this state holder
@@ -9007,8 +9007,8 @@ public static final int
 
   public native int getNumBArgs();
 
-  public native @ByVal OpArgsHolder createArgsHolderForBP(@Const @ByRef NDArrayVector inGradArrs, @Cast("const bool") boolean isInPlace/*=false*/);
-  public native @ByVal OpArgsHolder createArgsHolderForBP(@Const @ByRef NDArrayVector inGradArrs);
+  public native @Byvar OpArgsHolder createArgsHolderForBP(@Const @ByRef NDArrayVector inGradArrs, @Cast("const bool") boolean isInPlace/*=false*/);
+  public native @Byvar OpArgsHolder createArgsHolderForBP(@Const @ByRef NDArrayVector inGradArrs);
 }
 
   // namespace sd
@@ -13651,30 +13651,30 @@ public static final int
                        @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/,
                        @Cast("sd::DataType*") @StdVector int[] dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
 
-  public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs);
+  public native @Byvar ResultSet evaluate(@Const @ByRef NDArrayVector inputs);
 
-  public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs,
+  public native @Byvar ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs,
                            @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/,
                            @Cast("sd::DataType*") @StdVector IntPointer dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
-  public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs,
+  public native @Byvar ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs,
                            @Cast("sd::LongType*") @StdVector LongPointer iArgs);
-  public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs,
+  public native @Byvar ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs,
                            @Cast("sd::LongType*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/,
                            @Cast("sd::DataType*") @StdVector IntBuffer dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
-  public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs,
+  public native @Byvar ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs,
                            @Cast("sd::LongType*") @StdVector LongBuffer iArgs);
-  public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs,
+  public native @Byvar ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs,
                            @Cast("sd::LongType*") @StdVector long[] iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/,
                            @Cast("sd::DataType*") @StdVector int[] dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
-  public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs,
+  public native @Byvar ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs,
                            @Cast("sd::LongType*") @StdVector long[] iArgs);
-  public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs,
+  public native @Byvar ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs,
                            @Cast("sd::LongType*") @StdVector LongPointer iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/,
                            @Cast("sd::DataType*") @StdVector IntPointer dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
-  public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs,
+  public native @Byvar ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs,
                            @Cast("sd::LongType*") @StdVector LongBuffer iArgs, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/,
                            @Cast("sd::DataType*") @StdVector IntBuffer dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
-  public native @ByVal ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs,
+  public native @Byvar ResultSet evaluate(@Const @ByRef NDArrayVector inputs, @StdVector double[] tArgs,
                            @Cast("sd::LongType*") @StdVector long[] iArgs, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/,
                            @Cast("sd::DataType*") @StdVector int[] dArgs/*=std::vector<sd::DataType>()*/, @Cast("bool") boolean isInplace/*=false*/);
 
@@ -13727,8 +13727,8 @@ public static final int
                        @Const @ByRef NDArrayVector outputs, @StdVector double[] tArgs,
                        @Cast("sd::LongType*") @StdVector long[] iArgs, @Cast("bool*") @StdVector boolean[] bArgs);
 
-  public native @ByVal ResultSet execute(@Const @ByRef OpArgsHolder holder, @Cast("bool") boolean isInplace/*=false*/);
-  public native @ByVal ResultSet execute(@Const @ByRef OpArgsHolder holder);
+  public native @Byvar ResultSet execute(@Const @ByRef OpArgsHolder holder, @Cast("bool") boolean isInplace/*=false*/);
+  public native @Byvar ResultSet execute(@Const @ByRef OpArgsHolder holder);
 
   // There methods provide various validation options
   public native @Cast("sd::Status") int validateNonEmptyInput(@ByRef Context block);
@@ -13801,11 +13801,11 @@ public static final int
 
 
   public native @Cast("sd::Status") int execute(Context block);
-  public native @ByVal ResultSet execute(NDArrayList list, @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs,
+  public native @Byvar ResultSet execute(NDArrayList list, @ByRef NDArrayVector inputs, @StdVector DoublePointer tArgs,
                       @StdVector IntPointer iArgs);
-  public native @ByVal ResultSet execute(NDArrayList list, @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs,
+  public native @Byvar ResultSet execute(NDArrayList list, @ByRef NDArrayVector inputs, @StdVector DoubleBuffer tArgs,
                       @StdVector IntBuffer iArgs);
-  public native @ByVal ResultSet execute(NDArrayList list, @ByRef NDArrayVector inputs, @StdVector double[] tArgs,
+  public native @Byvar ResultSet execute(NDArrayList list, @ByRef NDArrayVector inputs, @StdVector double[] tArgs,
                       @StdVector int[] iArgs);
 
   public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
@@ -23277,8 +23277,8 @@ public static final int
  * lin_space - op porting from TF (https://www.tensorflow.org/api_docs/python/tf/lin_space)
  *
  * optional input params:
- *    0 - startVal - NDArray scalar (float point)
- *    1 - finishVal - NDArray scalar (float point)
+ *    0 - startvar - NDArray scalar (float point)
+ *    1 - finishvar - NDArray scalar (float point)
  *    2 - numOfElements - NDArray scalar (integer)
  * Optional:
  * T args
@@ -24242,7 +24242,7 @@ public static final int
  *    2 - 0D Tensor - max value
  *
  * int params (optional):
- *    0 - num_bits (allowed interval [2, 16], default 8)
+ *    0 - num_bits (allowed intervar [2, 16], default 8)
  *    1 - narrow_range (default False)
  *
  * output:
@@ -24278,7 +24278,7 @@ public static final int
  *    2 - 1D Tensor - max value (length equals to min)
  *
  * int params (optional):
- *    0 - num_bits (allowed interval [2, 16], default 8)
+ *    0 - num_bits (allowed intervar [2, 16], default 8)
  *    1 - narrow_range (default False)
  *
  * output:
@@ -24871,8 +24871,8 @@ public static final int
  *
  * input:
  *    0 - shape of output (1D int tensor)
- *    1 - min val (0D of output type) - optional (0 as default)
- *    2 - max val (0D of output type) - optional (inf as default)
+ *    1 - min var (0D of output type) - optional (0 as default)
+ *    2 - max var (0D of output type) - optional (inf as default)
  *
  * output:
  *    0 - uniformly distributed values of given type (between min and max)
@@ -27815,18 +27815,18 @@ public static final int SHAPE_DESC_INCORRECT_RANK = 4;     // rank > 32 or shape
 
   public native @Cast("sd::LongType*") LongPointer toShapeInfo();
 
-  public native @ByVal ShapeDescriptor emptyDescriptor(@Cast("const sd::DataType") int type);
-  public native @ByVal ShapeDescriptor scalarDescriptor(@Cast("const sd::DataType") int type);
-  public native @ByVal ShapeDescriptor vectorDescriptor(@Cast("const sd::LongType") long length, @Cast("const sd::DataType") int type);
+  public native @Byvar ShapeDescriptor emptyDescriptor(@Cast("const sd::DataType") int type);
+  public native @Byvar ShapeDescriptor scalarDescriptor(@Cast("const sd::DataType") int type);
+  public native @Byvar ShapeDescriptor vectorDescriptor(@Cast("const sd::LongType") long length, @Cast("const sd::DataType") int type);
 
   // create Descriptor with padded buffer.
-  public native @ByVal ShapeDescriptor paddedBufferDescriptor(@Cast("const sd::DataType") int type, byte order,
+  public native @Byvar ShapeDescriptor paddedBufferDescriptor(@Cast("const sd::DataType") int type, byte order,
                                                   @Cast("sd::LongType*") @StdVector LongPointer shape,
                                                   @Cast("sd::LongType*") @StdVector LongPointer paddings);
-  public native @ByVal ShapeDescriptor paddedBufferDescriptor(@Cast("const sd::DataType") int type, byte order,
+  public native @Byvar ShapeDescriptor paddedBufferDescriptor(@Cast("const sd::DataType") int type, byte order,
                                                   @Cast("sd::LongType*") @StdVector LongBuffer shape,
                                                   @Cast("sd::LongType*") @StdVector LongBuffer paddings);
-  public native @ByVal ShapeDescriptor paddedBufferDescriptor(@Cast("const sd::DataType") int type, byte order,
+  public native @Byvar ShapeDescriptor paddedBufferDescriptor(@Cast("const sd::DataType") int type, byte order,
                                                   @Cast("sd::LongType*") @StdVector long[] shape,
                                                   @Cast("sd::LongType*") @StdVector long[] paddings);
 }

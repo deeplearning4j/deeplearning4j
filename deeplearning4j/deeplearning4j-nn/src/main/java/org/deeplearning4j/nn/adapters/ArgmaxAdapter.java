@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.adapters;
 
-import lombok.val;
+
 import org.nd4j.adapters.OutputAdapter;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -38,12 +38,12 @@ public class ArgmaxAdapter implements OutputAdapter<int[]> {
     @Override
     public int[] apply(INDArray... outputs) {
         Preconditions.checkArgument(outputs.length == 1, "Argmax adapter can have only 1 output");
-        val array = outputs[0];
+        var array = outputs[0];
         Preconditions.checkArgument(array.rank() < 3, "Argmax adapter requires 2D or 1D output");
-        val result = array.rank() == 2 ? new int[(int) array.size(0)] : new int[1];
+        var result = array.rank() == 2 ? new int[(int) array.size(0)] : new int[1];
 
         if (array.rank() == 2) {
-            val t = Nd4j.argMax(array, 1);
+            var t = Nd4j.argMax(array, 1);
             for (int e = 0; e < t.length(); e++)
                 result[e] = (int) t.getDouble(e);
         } else

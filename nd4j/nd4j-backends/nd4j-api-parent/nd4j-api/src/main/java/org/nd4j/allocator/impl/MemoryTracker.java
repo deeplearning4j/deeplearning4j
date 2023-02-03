@@ -22,7 +22,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -46,7 +46,7 @@ public class MemoryTracker {
 
             totalPerDevice.add(i, new AtomicLong(NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceTotalMemory(i)));
 
-            val f = new AtomicLong(NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(i));
+            var f = new AtomicLong(NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(i));
 
             freePerDevice.add(i, f);
         }
@@ -143,9 +143,9 @@ public class MemoryTracker {
      * @return
      */
     public long getApproximateFreeMemory(int deviceId) {
-        val externalAllocations = getTotalMemory(deviceId) - getFreeMemory(deviceId);
-        val active = getActiveMemory(deviceId);
-        val free = getTotalMemory(deviceId) - (active + externalAllocations);
+        var externalAllocations = getTotalMemory(deviceId) - getFreeMemory(deviceId);
+        var active = getActiveMemory(deviceId);
+        var free = getTotalMemory(deviceId) - (active + externalAllocations);
         return free;
     }
 
@@ -156,7 +156,7 @@ public class MemoryTracker {
      */
     public long getPreciseFreeMemory(int deviceId) {
         // we refresh free memory on device
-        val extFree = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(deviceId);
+        var extFree = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(deviceId);
         return extFree;
     }
 

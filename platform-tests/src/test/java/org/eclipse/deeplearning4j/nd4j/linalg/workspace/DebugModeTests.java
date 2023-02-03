@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -83,17 +83,17 @@ public class DebugModeTests extends BaseNd4jTestWithBackends {
     public void testSpillMode_1(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDebugMode(DebugMode.SPILL_EVERYTHING);
 
-        val basicConfig = WorkspaceConfiguration.builder()
+        var basicConfig = WorkspaceConfiguration.builder()
                 .initialSize(10 * 1024 * 1024).maxSize(10 * 1024 * 1024).overallocationLimit(0.1)
                 .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.FIRST_LOOP)
                 .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.EXTERNAL).build();
 
-        try (val ws = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "R_119_1993")) {
+        try (var ws = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "R_119_1993")) {
             assertEquals(10 * 1024 * 1024L, ws.getCurrentSize());
             assertEquals(0, ws.getDeviceOffset());
             assertEquals(0, ws.getPrimaryOffset());
 
-            val array = Nd4j.create(DataType.DOUBLE, 10, 10).assign(1.0f);
+            var array = Nd4j.create(DataType.DOUBLE, 10, 10).assign(1.0f);
             assertTrue(array.isAttached());
 
             // nothing should get into workspace
@@ -112,17 +112,17 @@ public class DebugModeTests extends BaseNd4jTestWithBackends {
     public void testSpillMode_2(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDebugMode(DebugMode.SPILL_EVERYTHING);
 
-        val basicConfig = WorkspaceConfiguration.builder()
+        var basicConfig = WorkspaceConfiguration.builder()
                 .initialSize(0).maxSize(10 * 1024 * 1024).overallocationLimit(0.1)
                 .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.FIRST_LOOP)
                 .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.EXTERNAL).build();
 
-        try (val ws = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "R_119_1992")) {
+        try (var ws = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "R_119_1992")) {
             assertEquals(0L, ws.getCurrentSize());
             assertEquals(0, ws.getDeviceOffset());
             assertEquals(0, ws.getPrimaryOffset());
 
-            val array = Nd4j.create(DataType.DOUBLE, 10, 10).assign(1.0f);
+            var array = Nd4j.create(DataType.DOUBLE, 10, 10).assign(1.0f);
 
             assertTrue(array.isAttached());
 
@@ -136,7 +136,7 @@ public class DebugModeTests extends BaseNd4jTestWithBackends {
                             MemoryKind.HOST : MemoryKind.DEVICE), ws.getSpilledSize());
         }
 
-        try (val ws = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "R_119_1992")) {
+        try (var ws = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "R_119_1992")) {
             assertEquals(0L, ws.getCurrentSize());
             assertEquals(0, ws.getDeviceOffset());
             assertEquals(0, ws.getPrimaryOffset());
@@ -149,14 +149,14 @@ public class DebugModeTests extends BaseNd4jTestWithBackends {
     public void testBypassMode_1(Nd4jBackend backend) {
         Nd4j.getWorkspaceManager().setDebugMode(DebugMode.BYPASS_EVERYTHING);
 
-        val basicConfig = WorkspaceConfiguration.builder()
+        var basicConfig = WorkspaceConfiguration.builder()
                 .initialSize(0).maxSize(10 * 1024 * 1024).overallocationLimit(0.1)
                 .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.FIRST_LOOP)
                 .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.EXTERNAL).build();
 
-        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "R_119_1994")) {
+        try (var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "R_119_1994")) {
 
-            val array = Nd4j.create(10, 10).assign(1.0f);
+            var array = Nd4j.create(10, 10).assign(1.0f);
             assertFalse(array.isAttached());
         }
     }

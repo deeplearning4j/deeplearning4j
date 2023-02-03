@@ -20,7 +20,7 @@
 
 package org.nd4j.compression.impl;
 
-import lombok.val;
+
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -92,7 +92,7 @@ public class NoOp extends AbstractCompressor {
 
         BytePointer ptr = new BytePointer(length * elementSize);
 
-        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+        var perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
         // this Pointer.memcpy is used intentionally. This method operates on host memory ALWAYS
         Pointer.memcpy(ptr, srcPointer, length * elementSize);

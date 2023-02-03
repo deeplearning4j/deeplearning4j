@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.shape;
 
-import lombok.val;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -212,7 +212,7 @@ public class ShapeTestsC extends BaseNd4jTestWithBackends {
         INDArray assertion = Nd4j.create(new double[] {3, 4});
         INDArray vectorDimensionTest = arr.vectorAlongDimension(1, 2);
         assertEquals(assertion, vectorDimensionTest);
-        val vectorsAlongDimension1 = arr.vectorsAlongDimension(1);
+        var vectorsAlongDimension1 = arr.vectorsAlongDimension(1);
         assertEquals(8, vectorsAlongDimension1);
         INDArray zeroOne = arr.vectorAlongDimension(0, 1);
         assertEquals(zeroOne, Nd4j.create(new double[] {1, 3, 5}));
@@ -419,7 +419,7 @@ public class ShapeTestsC extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPutScalar(Nd4jBackend backend) {
         //Check that the various putScalar methods have the same result...
-        val shapes = new int[][] {{3, 4}, {1, 4}, {3, 1}, {3, 4, 5}, {1, 4, 5}, {3, 1, 5}, {3, 4, 1}, {1, 1, 5},
+        var shapes = new int[][] {{3, 4}, {1, 4}, {3, 1}, {3, 4, 5}, {1, 4, 5}, {3, 1, 5}, {3, 4, 1}, {1, 1, 5},
                 {3, 4, 5, 6}, {1, 4, 5, 6}, {3, 1, 5, 6}, {3, 4, 1, 6}, {3, 4, 5, 1}, {1, 1, 5, 6},
                 {3, 1, 1, 6}, {3, 1, 1, 1}};
 
@@ -433,7 +433,7 @@ public class ShapeTestsC extends BaseNd4jTestWithBackends {
 
             int i = 0;
             while (iter.hasNext()) {
-                val currIdx = iter.next();
+                var currIdx = iter.next();
                 firstC.putScalar(currIdx, i);
                 firstF.putScalar(currIdx, i);
 
@@ -465,12 +465,12 @@ public class ShapeTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReshapeToTrueScalar_1(Nd4jBackend backend) {
-        val orig = Nd4j.create(new float[]{1.0f}, new int[]{1, 1});
-        val exp = Nd4j.scalar(1.0f);
+        var orig = Nd4j.create(new float[]{1.0f}, new int[]{1, 1});
+        var exp = Nd4j.scalar(1.0f);
 
         assertArrayEquals(new long[]{1, 1}, orig.shape());
 
-        val reshaped = orig.reshape();
+        var reshaped = orig.reshape();
 
         assertArrayEquals(exp.shapeInfoDataBuffer().asLong(), reshaped.shapeInfoDataBuffer().asLong());
         assertEquals(exp, reshaped);
@@ -479,12 +479,12 @@ public class ShapeTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReshapeToTrueScalar_2(Nd4jBackend backend) {
-        val orig = Nd4j.create(new float[]{1.0f}, new int[]{1});
-        val exp = Nd4j.scalar(1.0f);
+        var orig = Nd4j.create(new float[]{1.0f}, new int[]{1});
+        var exp = Nd4j.scalar(1.0f);
 
         assertArrayEquals(new long[]{1}, orig.shape());
 
-        val reshaped = orig.reshape();
+        var reshaped = orig.reshape();
 
         assertArrayEquals(exp.shapeInfoDataBuffer().asLong(), reshaped.shapeInfoDataBuffer().asLong());
         assertEquals(exp, reshaped);
@@ -493,12 +493,12 @@ public class ShapeTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReshapeToTrueScalar_3(Nd4jBackend backend) {
-        val orig = Nd4j.create(new float[]{1.0f}, new int[]{1, 1});
-        val exp = Nd4j.createFromArray(new float[]{1.0f});
+        var orig = Nd4j.create(new float[]{1.0f}, new int[]{1, 1});
+        var exp = Nd4j.createFromArray(new float[]{1.0f});
 
         assertArrayEquals(new long[]{1, 1}, orig.shape());
 
-        val reshaped = orig.reshape(1);
+        var reshaped = orig.reshape(1);
 
         assertArrayEquals(exp.shapeInfoDataBuffer().asLong(), reshaped.shapeInfoDataBuffer().asLong());
         assertEquals(exp, reshaped);
@@ -507,12 +507,12 @@ public class ShapeTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReshapeToTrueScalar_4(Nd4jBackend backend) {
-        val orig = Nd4j.create(new float[]{1.0f}, new int[]{1, 1});
-        val exp = Nd4j.scalar(1.0f);
+        var orig = Nd4j.create(new float[]{1.0f}, new int[]{1, 1});
+        var exp = Nd4j.scalar(1.0f);
 
         assertArrayEquals(new long[]{1, 1}, orig.shape());
 
-        val reshaped = orig.reshape(new int[0]);
+        var reshaped = orig.reshape(new int[0]);
 
         assertArrayEquals(exp.shapeInfoDataBuffer().asLong(), reshaped.shapeInfoDataBuffer().asLong());
         assertEquals(exp, reshaped);
@@ -521,9 +521,9 @@ public class ShapeTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testViewAfterReshape(Nd4jBackend backend) {
-        val x = Nd4j.rand(3,4);
-        val x2 = x.ravel();
-        val x3 = x.reshape(6,2);
+        var x = Nd4j.rand(3,4);
+        var x2 = x.ravel();
+        var x3 = x.reshape(6,2);
 
         assertFalse(x.isView());
         assertTrue(x2.isView());

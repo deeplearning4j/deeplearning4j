@@ -22,7 +22,7 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import lombok.val;
+
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.common.base.Preconditions;
@@ -471,7 +471,7 @@ public class NDArray extends BaseNDArray {
 
         INDArray ret = Nd4j.createArrayFromShapeBuffer(rb, this.shapeInfoDataBuffer());
 
-        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+        var perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
         Pointer.memcpy(ret.data().addressPointer(), this.data().addressPointer(), this.data().length() * this.data().getElementSize());
 
@@ -497,18 +497,18 @@ public class NDArray extends BaseNDArray {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             DataOutputStream dos = new DataOutputStream(bos);
 
-            val numWords = this.length();
-            val ub = (Utf8Buffer) buffer;
+            var numWords = this.length();
+            var ub = (Utf8Buffer) buffer;
             // writing length first
-            val t = length();
-            val ptr = (BytePointer) ub.pointer();
+            var t = length();
+            var ptr = (BytePointer) ub.pointer();
 
             // now write all strings as bytes
             for (int i = 0; i < ub.length(); i++) {
                 dos.writeByte(ptr.get(i));
             }
 
-            val bytes = bos.toByteArray();
+            var bytes = bos.toByteArray();
             return FlatArray.createBufferVector(builder, bytes);
         } catch (IOException e) {
             throw new RuntimeException(e);

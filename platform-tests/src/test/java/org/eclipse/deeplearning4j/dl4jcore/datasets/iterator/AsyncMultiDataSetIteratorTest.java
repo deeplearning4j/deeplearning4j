@@ -20,7 +20,7 @@
 package org.eclipse.deeplearning4j.dl4jcore.datasets.iterator;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.eclipse.deeplearning4j.dl4jcore.datasets.iterator.tools.VariableMultiTimeseriesGenerator;
@@ -77,8 +77,8 @@ import org.junit.jupiter.api.DisplayName;
         System.out.println("-------------- HASH 2 ----------------");
         testData.reset();
         testData.hasNext();     //***** Remove this (or move to after async creation), and we get expected results *****
-        val adsi = new AsyncMultiDataSetIterator(testData, 4, true);    //OR remove this (keeping hasNext) and we get expected results
-        //val adsi = new AsyncShieldMultiDataSetIterator(testData);
+        var adsi = new AsyncMultiDataSetIterator(testData, 4, true);    //OR remove this (keeping hasNext) and we get expected results
+        //var adsi = new AsyncShieldMultiDataSetIterator(testData);
         while(adsi.hasNext()){
             System.out.println(Arrays.hashCode(adsi.next().getFeatures(0).data().asFloat()));
         }
@@ -101,10 +101,10 @@ class AsyncMultiDataSetIteratorTest extends BaseDL4JTest {
         int timeStepsMin = 10;
         int timeStepsMax = isIntegrationTests() ? 500 : 100;
         int valuesPerTimestep = isIntegrationTests() ? 128 : 16;
-        val iterator = new VariableMultiTimeseriesGenerator(1192, numBatches, batchSize, valuesPerTimestep, timeStepsMin, timeStepsMax, 10);
+        var iterator = new VariableMultiTimeseriesGenerator(1192, numBatches, batchSize, valuesPerTimestep, timeStepsMin, timeStepsMax, 10);
         iterator.reset();
         iterator.hasNext();
-        val amdsi = new AsyncMultiDataSetIterator(iterator, 2, true);
+        var amdsi = new AsyncMultiDataSetIterator(iterator, 2, true);
         for (int e = 0; e < 10; e++) {
             int cnt = 0;
             while (amdsi.hasNext()) {
@@ -129,11 +129,11 @@ class AsyncMultiDataSetIteratorTest extends BaseDL4JTest {
         int timeStepsMin = 10;
         int timeStepsMax = isIntegrationTests() ? 500 : 100;
         int valuesPerTimestep = isIntegrationTests() ? 128 : 16;
-        val iterator = new VariableMultiTimeseriesGenerator(1192, numBatches, batchSize, valuesPerTimestep, timeStepsMin, timeStepsMax, 10);
+        var iterator = new VariableMultiTimeseriesGenerator(1192, numBatches, batchSize, valuesPerTimestep, timeStepsMin, timeStepsMax, 10);
         for (int e = 0; e < 10; e++) {
             iterator.reset();
             iterator.hasNext();
-            val amdsi = new AsyncMultiDataSetIterator(iterator, 2, true);
+            var amdsi = new AsyncMultiDataSetIterator(iterator, 2, true);
             int cnt = 0;
             while (amdsi.hasNext()) {
                 MultiDataSet mds = amdsi.next();
@@ -192,8 +192,8 @@ class AsyncMultiDataSetIteratorTest extends BaseDL4JTest {
         System.out.println("-------------- HASH 2 ----------------");
         testData.reset();
         testData.hasNext();     //***** Remove this (or move to after async creation), and we get expected results *****
-        val adsi = new AsyncMultiDataSetIterator(testData, 4, true);    //OR remove this (keeping hasNext) and we get expected results
-        //val adsi = new AsyncShieldMultiDataSetIterator(testData);
+        var adsi = new AsyncMultiDataSetIterator(testData, 4, true);    //OR remove this (keeping hasNext) and we get expected results
+        //var adsi = new AsyncShieldMultiDataSetIterator(testData);
         while(adsi.hasNext()){
             System.out.println(Arrays.hashCode(adsi.next().getFeatures(0).data().asFloat()));
         }

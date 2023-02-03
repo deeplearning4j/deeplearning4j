@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.shape;
 
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,10 +45,10 @@ public class LongShapeTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLongBuffer_1(Nd4jBackend backend) {
-        val exp = new long[]{2, 5, 3, 3, 1, 0, 1, 99};
-        val buffer = Nd4j.getDataBufferFactory().createLong(exp);
+        var exp = new long[]{2, 5, 3, 3, 1, 0, 1, 99};
+        var buffer = Nd4j.getDataBufferFactory().createLong(exp);
 
-        val java = buffer.asLong();
+        var java = buffer.asLong();
 
         assertArrayEquals(exp, java);
     }
@@ -57,12 +57,12 @@ public class LongShapeTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLongShape_1(Nd4jBackend backend) {
-        val exp = new long[]{2, 5, 3, 3, 1, 16384, 1, 99};
+        var exp = new long[]{2, 5, 3, 3, 1, 16384, 1, 99};
 
-        val array = Nd4j.createUninitialized(DataType.DOUBLE, 5, 3);
-        val buffer = array.shapeInfoDataBuffer();
+        var array = Nd4j.createUninitialized(DataType.DOUBLE, 5, 3);
+        var buffer = array.shapeInfoDataBuffer();
 
-        val java = buffer.asLong();
+        var java = buffer.asLong();
 
         assertArrayEquals(exp, java);
         assertEquals(8, buffer.getElementSize());

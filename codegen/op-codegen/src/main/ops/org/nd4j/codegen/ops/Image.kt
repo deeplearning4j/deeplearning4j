@@ -29,7 +29,7 @@ import org.nd4j.codegen.api.Exactly
 
 
 fun SDImage() =  Namespace("Image"){
-    val namespaceJavaPackage = "org.nd4j.linalg.api.ops.custom"
+    var namespaceJavaPackage = "org.nd4j.linalg.api.ops.custom"
     Op("CropAndResize") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.image"
         javaOpClass = "CropAndResize"

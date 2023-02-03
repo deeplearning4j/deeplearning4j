@@ -20,7 +20,7 @@
 
 package org.nd4j.evaluation;
 
-import lombok.val;
+
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
@@ -157,7 +157,7 @@ public class EvaluationUtils {
 
 
     public static INDArray reshapeTimeSeriesTo2d(INDArray labels) {
-        val labelsShape = labels.shape();
+        var labelsShape = labels.shape();
         INDArray labels2d;
         if (labelsShape[0] == 1) {
             labels2d = labels.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1

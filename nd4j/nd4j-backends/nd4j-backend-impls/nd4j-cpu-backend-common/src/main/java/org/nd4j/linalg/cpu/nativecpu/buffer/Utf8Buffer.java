@@ -23,7 +23,7 @@ package org.nd4j.linalg.cpu.nativecpu.buffer;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.val;
+
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
@@ -92,7 +92,7 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
     public Utf8Buffer(byte[] data, long numWords) {
         super(data.length, false);
 
-        val bp = (BytePointer) pointer;
+        var bp = (BytePointer) pointer;
         bp.put(data);
         this.numWords = numWords;
     }
@@ -142,23 +142,23 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
         super(Utf8Buffer.stringBufferRequiredLength(strings), false);
 
         // at this point we should have fully allocated buffer, time to fill length
-        val headerLength = (strings.size() + 1) * 8;
-        val headerPointer = new LongPointer(getPointer());
-        val dataPointer = new BytePointer(getPointer());
+        var headerLength = (strings.size() + 1) * 8;
+        var headerPointer = new LongPointer(getPointer());
+        var dataPointer = new BytePointer(getPointer());
         this.pointer.retainReference();
         numWords = strings.size();
 
         long cnt = 0;
         long currentLength = 0;
-        for (val s: strings) {
+        for (var s: strings) {
             headerPointer.put(cnt++, currentLength);
-            val length = s.length();
-            val chars = s.toCharArray();
+            var length = s.length();
+            var chars = s.toCharArray();
 
             // putting down chars
             for (int e = 0; e < length; e++) {
-                val b = (byte) chars[e];
-                val idx = headerLength + currentLength + e;
+                var b = (byte) chars[e];
+                var idx = headerLength + currentLength + e;
                 dataPointer.put(idx, b);
             }
 
@@ -176,22 +176,22 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
         if (index > numWords)
             throw new IllegalArgumentException("Requested index [" + index + "] is above actual number of words stored: [" + numWords + "]");
 
-        val headerPointer = new LongPointer(getPointer());
-        val dataPointer = (BytePointer) (getPointer());
+        var headerPointer = new LongPointer(getPointer());
+        var dataPointer = (BytePointer) (getPointer());
 
-        val start = headerPointer.get(index);
-        val end = headerPointer.get(index + 1);
+        var start = headerPointer.get(index);
+        var end = headerPointer.get(index + 1);
 
         if (end - start > Integer.MAX_VALUE)
             throw new IllegalStateException("Array is too long for Java");
 
-        val dataLength = (int) (end - start);
-        val bytes = new byte[dataLength];
+        var dataLength = (int) (end - start);
+        var bytes = new byte[dataLength];
 
-        val headerLength = (numWords + 1) * 8;
+        var headerLength = (numWords + 1) * 8;
 
         for (int e = 0; e < dataLength; e++) {
-            val idx = headerLength + start + e;
+            var idx = headerLength + start + e;
             bytes[e] = dataPointer.get(idx);
         }
 
@@ -226,7 +226,7 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
         // header size first
         long size = (strings.size() + 1) * 8;
 
-        for (val s:strings)
+        for (var s:strings)
             size += s.length();
 
         return size;

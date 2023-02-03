@@ -675,7 +675,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 Layer firstLayer = confs.get(0).getLayer();
                 if (firstLayer instanceof BaseRecurrentLayer) {
                     BaseRecurrentLayer brl = (BaseRecurrentLayer) firstLayer;
-                    val nIn = brl.getNIn();
+                    var nIn = brl.getNIn();
                     if (nIn > 0) {
                         inputType = InputType.recurrent(nIn, brl.getRnnDataFormat());
                     }
@@ -683,7 +683,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                         || firstLayer instanceof OutputLayer) {
                     //Can't just use "instanceof FeedForwardLayer" here. ConvolutionLayer is also a FeedForwardLayer
                     FeedForwardLayer ffl = (FeedForwardLayer) firstLayer;
-                    val nIn = ffl.getNIn();
+                    var nIn = ffl.getNIn();
                     if (nIn > 0) {
                         inputType = InputType.feedForward(nIn);
                     }

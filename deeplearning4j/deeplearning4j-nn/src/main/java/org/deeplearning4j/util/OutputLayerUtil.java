@@ -167,7 +167,7 @@ public class OutputLayerUtil {
      * This method won't catch all possible invalid cases, but should catch some common problems.
      *
      * @param outputLayer          Output layer
-     * @param classifierEval       Class for the classifier evaluation
+     * @param classifierEvar       Class for the classifier evaluation
      */
     public static void validateOutputLayerForClassifierEvaluation(Layer outputLayer, Class<? extends IEvaluation> classifierEval){
         if(outputLayer instanceof Yolo2OutputLayer){

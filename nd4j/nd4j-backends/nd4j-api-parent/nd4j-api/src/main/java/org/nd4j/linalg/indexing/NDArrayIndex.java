@@ -21,7 +21,7 @@
 package org.nd4j.linalg.indexing;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -259,7 +259,7 @@ public abstract class NDArrayIndex implements INDArrayIndex {
         }
 
         if (numSpecified > 0) {
-            val shape = Shape.shapeOf(shapeInfo);
+            var shape = Shape.shapeOf(shapeInfo);
             INDArrayIndex[] ret = new INDArrayIndex[intendedIndexes.length];
             for (int i = 0; i < intendedIndexes.length; i++) {
                 if (intendedIndexes[i] instanceof SpecifiedIndex)
@@ -287,7 +287,7 @@ public abstract class NDArrayIndex implements INDArrayIndex {
          * for a scalar just return the array
          */
         int rank = Shape.rank(shapeInfo);
-        val shape = Shape.shapeOf(shapeInfo);
+        var shape = Shape.shapeOf(shapeInfo);
         if (intendedIndexes.length >= rank || Shape.isVector(shapeInfo) && intendedIndexes.length == 1) {
             if(Shape.rank(shapeInfo) == 1){
                 //1D edge case, with 1 index
@@ -519,7 +519,7 @@ public abstract class NDArrayIndex implements INDArrayIndex {
     }
 
     /**
-     * Generates an interval from begin (inclusive) to end (exclusive)
+     * Generates an intervar from begin (inclusive) to end (exclusive)
      *
      * @param begin the begin
      * @param stride  the stride at which to increment
@@ -545,7 +545,7 @@ public abstract class NDArrayIndex implements INDArrayIndex {
     }
 
     /**
-     * Generates an interval from begin (inclusive) to end (exclusive)
+     * Generates an intervar from begin (inclusive) to end (exclusive)
      *
      * @param begin the begin
      * @param stride  the stride at which to increment
@@ -562,7 +562,7 @@ public abstract class NDArrayIndex implements INDArrayIndex {
     }
 
     /**
-     * Generates an interval from begin (inclusive) to end (exclusive)
+     * Generates an intervar from begin (inclusive) to end (exclusive)
      *
      * @param begin     the begin
      * @param stride the stride at which to increment
@@ -596,7 +596,7 @@ public abstract class NDArrayIndex implements INDArrayIndex {
 
 
     /**
-     * Generates an interval from begin (inclusive) to end (exclusive)
+     * Generates an intervar from begin (inclusive) to end (exclusive)
      *
      * @param begin the begin
      * @param end   the end index
@@ -611,7 +611,7 @@ public abstract class NDArrayIndex implements INDArrayIndex {
     }
 
     /**
-     * Generates an interval from begin (inclusive) to end (exclusive)
+     * Generates an intervar from begin (inclusive) to end (exclusive)
      *
      * @param begin     the begin
      * @param end       the end index

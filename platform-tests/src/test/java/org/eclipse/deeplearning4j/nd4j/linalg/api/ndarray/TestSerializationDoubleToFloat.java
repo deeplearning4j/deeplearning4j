@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.api.ndarray;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -64,7 +64,7 @@ public class TestSerializationDoubleToFloat extends BaseNd4jTestWithBackends {
         //WRITE OUT A DOUBLE ARRAY
         //Hack before setting datatype - fix already in r119_various branch
         Nd4j.create(1);
-        val initialType = Nd4j.dataType();
+        var initialType = Nd4j.dataType();
 
         Nd4j.setDataType(DataType.DOUBLE);
         INDArray arr = Nd4j.linspace(1, length, length).reshape('c', 2, 2);

@@ -22,7 +22,7 @@ package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -93,7 +93,7 @@ public class L2NormalizeVertex extends GraphVertex {
         //norm2 value (inference working mem): 1 per example during forward pass
 
         //Training working mem: 2 per example + 2x input size + 1 per example (in addition to epsilons)
-        val trainModePerEx = 3 + 2 * inputTypes[0].arrayElementsPerExample();
+        var trainModePerEx = 3 + 2 * inputTypes[0].arrayElementsPerExample();
 
         return new LayerMemoryReport.Builder(null, L2NormalizeVertex.class, inputTypes[0], outputType)
                         .standardMemory(0, 0) //No params

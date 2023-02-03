@@ -36,18 +36,18 @@ class TestOnnxProcessLoader {
 
     @Test
     fun testLoader() {
-        val onnxOpMappingRegistry = OpMappingRegistry<Onnx.GraphProto, Onnx.NodeProto,
+        var onnxOpMappingRegistry = OpMappingRegistry<Onnx.GraphProto, Onnx.NodeProto,
                 Onnx.NodeProto, Onnx.TensorProto,
                 Onnx.TensorProto.DataType, Onnx.AttributeProto, Onnx.AttributeProto>(
             "onnx", OpDescriptorLoaderHolder.nd4jOpDescriptor)
 
-        val loader = OnnxMappingProcessLoader(onnxOpMappingRegistry)
+        var loader = OnnxMappingProcessLoader(onnxOpMappingRegistry)
         println(loader)
         registry().inputFrameworkOpNames().forEach { name ->
             if(registry().hasMappingOpProcess(name)) {
-                val process = registry().lookupOpMappingProcess(name)
-                val serialized = process.serialize()
-                val created = loader.createProcess(serialized)
+                var process = registry().lookupOpMappingProcess(name)
+                var serialized = process.serialize()
+                var created = loader.createProcess(serialized)
                 assertEquals(
                     process,
                     created,
@@ -62,7 +62,7 @@ class TestOnnxProcessLoader {
     @Test
     fun saveTest() {
         registry().saveProcessesAndRuleSet()
-        val loader = OnnxMappingProcessLoader(registry())
+        var loader = OnnxMappingProcessLoader(registry())
         registry().loadFromFile("onnx-processes.pbtxt",loader)
 
     }

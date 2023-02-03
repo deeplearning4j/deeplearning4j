@@ -126,7 +126,7 @@ following, you can also use all of Kotlin when defining Ops. However, doing thin
 understandable way is better than coming up with a clever way, so prefer to use the DSL as described if unsure.
 
 ```kotlin
-val mathNs = Namespace("math") {
+var mathNs = Namespace("math") {
     Op("add") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic"
 
@@ -212,8 +212,8 @@ Or an op with some more constraints:
 ```kotlin
 Op("and") {
     javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
-    val x = Input(INT, "x") { description = "First input array" }
-    val y = Input(INT, "y") { description = "Second input array" }
+    var x = Input(INT, "x") { description = "First input array" }
+    var y = Input(INT, "y") { description = "Second input array" }
     Constraint("Must be same types"){ sameType(x, y) }
     Constraint("Must have broadcastable shapes"){ broadcastableShapes(x, y) }
 
@@ -280,7 +280,7 @@ parameters of the mixin, you can pass the same additional configuration as you w
 ## Mixin
 Available in global context.
 
-    val mixin = Mixin("name"){ /* op properties in op context */ }
+    var mixin = Mixin("name"){ /* op properties in op context */ }
     // within an op context:
     useMixin(mixin)
     useMixin(mixin, ...options...)
@@ -366,7 +366,7 @@ input from the op.
 ## Config
 Only available within a namespace context
 
-    val nameConfig = Config("Name"){
+    var nameConfig = Config("Name"){
         /* input, arg, constraint, doc properties */
     }
 
@@ -377,7 +377,7 @@ which will be passed to an op as a parameter.
 
 Similar to an op itself, it supports `Input`, `Arg`, `Constraint` and `Doc` definitions. 
 
-in order to use the config within an op you either use `useConfig(cfg)` or `val configRef = useConfig(cfg)`. The second
+in order to use the config within an op you either use `useConfig(cfg)` or `var configRef = useConfig(cfg)`. The second
 form allows you to reference the config.
 
 Referencing the config allows to you reference its inputs and args by name: `configRef.input("name")` and 
@@ -394,7 +394,7 @@ See also [ADR 0007 "Configuration Objects"](adr/0007-configuration_objects.md).
 Available within an op, mixin and a config context
 
     Input(FLOATING_POINT, "b"){ /* input properties in input context */ }
-    val a = Input(INT, "a"){ /* input properties in input context */ }
+    var a = Input(INT, "a"){ /* input properties in input context */ }
     
 Inputs represent tensors. They are what the op will work on.
 
@@ -416,7 +416,7 @@ that the count is meant to be `Exactly(1)`.
 Available within an op, mixin and config context
 
     Arg(FLOATING_POINT, "b"){ /* Arg properties in arg context */ }
-    val a = Arg(INT, "a"){ /* Arg properties in arg context */ }
+    var a = Arg(INT, "a"){ /* Arg properties in arg context */ }
     
 Args represent arguments. They modify how the op works on its inputs.
 
@@ -527,7 +527,7 @@ a part of the documentation. They will be enforced within the C++ backend, so th
 There is a system in place to define even complex constraints for inputs and arguments.
 
 In a constraint definition, you can reference inputs and arguments directly, if they are previously assigned to
-a variable using `val name = Input(...)`. Inside the Constraint block, you can use the following operations:
+a variable using `var name = Input(...)`. Inside the Constraint block, you can use the following operations:
 
 * `eq`: Compare equality (applicable to numbers and booleans), e.g. `x eq 7`, `x eq true`
 * `neq`: Compare inequality (applicable to numbers and booleans), e.g. `x neq 3`, `x neq true`
@@ -553,8 +553,8 @@ Inputs also get some additional methods on them to define useful constraints:
 Some examples of constraints, and what they evaluate to. The example code contains a little bit of context.
 
 ```kotlin
-val x = Input(INT, "x") { description = "First input array" }
-val y = Input(INT, "y") { description = "Second input array" }
+var x = Input(INT, "x") { description = "First input array" }
+var y = Input(INT, "y") { description = "Second input array" }
 Constraint("foo bar"){
    x.sizeAt(7) eq 7 and y.isScalar()
 }

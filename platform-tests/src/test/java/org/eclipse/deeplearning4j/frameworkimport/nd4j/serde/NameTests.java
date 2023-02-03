@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.frameworkimport.nd4j.serde;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -38,10 +38,10 @@ public class NameTests  extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNameExtraction_1(Nd4jBackend backend) {
-        val str = "Name";
-        val exp = "Name";
+        var str = "Name";
+        var exp = "Name";
 
-        val pair = SameDiff.parseVariable(str);
+        var pair = SameDiff.parseVariable(str);
         assertEquals(exp, pair.getFirst());
         assertEquals(0, pair.getSecond().intValue());
     }
@@ -50,10 +50,10 @@ public class NameTests  extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNameExtraction_2(Nd4jBackend backend) {
-        val str = "Name_2";
-        val exp = "Name_2";
+        var str = "Name_2";
+        var exp = "Name_2";
 
-        val pair = SameDiff.parseVariable(str);
+        var pair = SameDiff.parseVariable(str);
         assertEquals(exp, pair.getFirst());
         assertEquals(0, pair.getSecond().intValue());
     }
@@ -61,10 +61,10 @@ public class NameTests  extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNameExtraction_3(Nd4jBackend backend) {
-        val str = "Name_1:2";
-        val exp = "Name_1";
+        var str = "Name_1:2";
+        var exp = "Name_1";
 
-        val pair = SameDiff.parseVariable(str);
+        var pair = SameDiff.parseVariable(str);
         assertEquals(exp, pair.getFirst());
         assertEquals(2, pair.getSecond().intValue());
     }
@@ -72,10 +72,10 @@ public class NameTests  extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNameExtraction_4(Nd4jBackend backend) {
-        val str = "Name_1:1:2";
-        val exp = "Name_1:1";
+        var str = "Name_1:1:2";
+        var exp = "Name_1:1";
 
-        val pair = SameDiff.parseVariable(str);
+        var pair = SameDiff.parseVariable(str);
         assertEquals(exp, pair.getFirst());
         assertEquals(2, pair.getSecond().intValue());
     }

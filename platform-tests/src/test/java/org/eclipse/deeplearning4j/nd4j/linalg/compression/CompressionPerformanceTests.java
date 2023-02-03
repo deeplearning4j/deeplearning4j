@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.compression;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -51,8 +51,8 @@ public class CompressionPerformanceTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void groundTruthTests_Threshold_1(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(119);
-        val params = Nd4j.rand(new long[]{1, 50000000}, -1.0, 1.0, Nd4j.getRandom());
-        val original = params.dup(params.ordering());
+        var params = Nd4j.rand(new long[]{1, 50000000}, -1.0, 1.0, Nd4j.getRandom());
+        var original = params.dup(params.ordering());
 
         int iterations = 1000;
 
@@ -61,26 +61,26 @@ public class CompressionPerformanceTests extends BaseNd4jTestWithBackends {
         long timeD = 0;
         int s = 0;
         for (int e = 0; e < iterations; e++) {
-            val timeES = System.currentTimeMillis();
-            val encoded = Nd4j.getExecutioner().thresholdEncode(params, 0.99);
-            val timeEE = System.currentTimeMillis();
+            var timeES = System.currentTimeMillis();
+            var encoded = Nd4j.getExecutioner().thresholdEncode(params, 0.99);
+            var timeEE = System.currentTimeMillis();
 
 
             params.assign(original);
             timeE += (timeEE - timeES);
 
 
-            val bs = new ByteArrayOutputStream();
-            val timeSS = System.currentTimeMillis();
+            var bs = new ByteArrayOutputStream();
+            var timeSS = System.currentTimeMillis();
             SerializationUtils.serialize(encoded, bs);
-            val timeSE = System.currentTimeMillis();
+            var timeSE = System.currentTimeMillis();
 
             timeS += (timeSE - timeSS);
 
-            val ba = bs.toByteArray();
-            val timeDS = System.currentTimeMillis();
-            val deserialized = SerializationUtils.deserialize(ba);
-            val timeDE = System.currentTimeMillis();
+            var ba = bs.toByteArray();
+            var timeDS = System.currentTimeMillis();
+            var deserialized = SerializationUtils.deserialize(ba);
+            var timeDE = System.currentTimeMillis();
             timeD += (timeDE - timeDS);
 
             s = bs.size();
@@ -94,8 +94,8 @@ public class CompressionPerformanceTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void groundTruthTests_Bitmap_1(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(119);
-        val params = Nd4j.rand(new long[]{1, 25000000}, -1.0, 1.0, Nd4j.getRandom());
-        val original = params.dup(params.ordering());
+        var params = Nd4j.rand(new long[]{1, 25000000}, -1.0, 1.0, Nd4j.getRandom());
+        var original = params.dup(params.ordering());
 
         int iterations = 1000;
 
@@ -105,9 +105,9 @@ public class CompressionPerformanceTests extends BaseNd4jTestWithBackends {
 
         long time = 0;
         for (int e = 0; e < iterations; e++) {
-            val timeES = System.currentTimeMillis();
+            var timeES = System.currentTimeMillis();
             Nd4j.getExecutioner().bitmapEncode(params, ret,0.99);
-            val timeEE = System.currentTimeMillis();
+            var timeEE = System.currentTimeMillis();
 
 
             params.assign(original);

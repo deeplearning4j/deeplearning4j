@@ -94,8 +94,8 @@ template <typename T>
 static void adjustWeights_(sd::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength,
                            int maxLength) {
   //        for (int e = 0; e < input->lengthOf(); e++) {
-  //            int val = input->e<int>(e);
-  //            if (val < maxLength) {
+  //            int var = input->e<int>(e);
+  //            if (var < maxLength) {
   //                if (weights != nullptr)
   //                    output->p(val, output->e<T>(val) + weights->e<T>(e));
   //                else

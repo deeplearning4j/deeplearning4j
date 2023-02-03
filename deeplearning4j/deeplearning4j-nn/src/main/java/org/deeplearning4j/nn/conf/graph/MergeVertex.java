@@ -23,7 +23,7 @@ package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
 import lombok.Setter;
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -104,10 +104,10 @@ public class MergeVertex extends GraphVertex {
             // CNN3D inputs: check that the channels, width and height match:
             InputType.InputTypeConvolutional3D firstConv = (InputType.InputTypeConvolutional3D) first;
 
-            val fd = firstConv.getDepth();
-            val fw = firstConv.getWidth();
-            val fh = firstConv.getHeight();
-            val fc = firstConv.getChannels();
+            var fd = firstConv.getDepth();
+            var fw = firstConv.getWidth();
+            var fh = firstConv.getHeight();
+            var fc = firstConv.getChannels();
 
             long depthSum = fc;
             InputType.InputTypeConvolutional3D otherConv = null;
@@ -118,10 +118,10 @@ public class MergeVertex extends GraphVertex {
                 }
 
                 otherConv = (InputType.InputTypeConvolutional3D) vertexInputs[i];
-                val od = otherConv.getDepth();
-                val ow = otherConv.getWidth();
-                val oh = otherConv.getHeight();
-                val oc = otherConv.getChannels();
+                var od = otherConv.getDepth();
+                var ow = otherConv.getWidth();
+                var oh = otherConv.getHeight();
+                var oc = otherConv.getChannels();
                 depthSum += oc;
             }
 
@@ -186,7 +186,7 @@ public class MergeVertex extends GraphVertex {
                 if (type == InputType.Type.FF) {
                     return InputType.feedForward(size);
                 } else {
-                    val tsLength = ((InputType.InputTypeRecurrent) vertexInputs[0]).getTimeSeriesLength();
+                    var tsLength = ((InputType.InputTypeRecurrent) vertexInputs[0]).getTimeSeriesLength();
                     return InputType.recurrent(size, tsLength, format);
                 }
             } else {
@@ -208,9 +208,9 @@ public class MergeVertex extends GraphVertex {
             InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional) first;
             CNN2DFormat format = firstConv.getFormat();
 
-            val fd = firstConv.getChannels();
-            val fw = firstConv.getWidth();
-            val fh = firstConv.getHeight();
+            var fd = firstConv.getChannels();
+            var fw = firstConv.getWidth();
+            var fh = firstConv.getHeight();
 
             long depthSum = fd;
 
@@ -224,9 +224,9 @@ public class MergeVertex extends GraphVertex {
 
                 InputType.InputTypeConvolutional otherConv = (InputType.InputTypeConvolutional) vertexInputs[i];
 
-                val od = otherConv.getChannels();
-                val ow = otherConv.getWidth();
-                val oh = otherConv.getHeight();
+                var od = otherConv.getChannels();
+                var ow = otherConv.getWidth();
+                var oh = otherConv.getHeight();
                 depthSum += od;
             }
 

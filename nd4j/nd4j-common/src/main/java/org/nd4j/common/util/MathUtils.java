@@ -60,7 +60,7 @@ public class MathUtils {
 
     /**
      * Normalize a value
-     * (val - min) / (max - min)
+     * (var - min) / (max - min)
      *
      * @param val value to normalize
      * @param max max value
@@ -69,7 +69,7 @@ public class MathUtils {
      */
     public static double normalize(double val, double min, double max) {
         if (max < min)
-            throw new IllegalArgumentException("Max must be greather than min");
+            throw new IllegalArgumentException("Max must be greater than min");
 
         return (val - min) / (max - min);
     }

@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.env.impl;
 
-import lombok.val;
+
 import org.nd4j.common.config.ND4JEnvironmentVars;
 import org.nd4j.linalg.env.EnvironmentalAction;
 
@@ -32,9 +32,9 @@ public class OmpNumThreadsAction implements EnvironmentalAction {
 
     @Override
     public void process(String value) {
-        val v = Integer.valueOf(value).intValue();
+        var v = Integer.valueOf(value).intValue();
 
-        val skipper = System.getenv(ND4JEnvironmentVars.ND4J_SKIP_BLAS_THREADS);
+        var skipper = System.getenv(ND4JEnvironmentVars.ND4J_SKIP_BLAS_THREADS);
         if (skipper == null) {
             // we infer num threads only if skipper undefined
             // Nd4j.setNumThreads(v);

@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -199,16 +199,16 @@ public class StridedSlice extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val inputBegin = nodeDef.getInput(1);
-        val inputEnd = nodeDef.getInput(2);
-        val inputStrides = nodeDef.getInput(3);
+        var inputBegin = nodeDef.getInput(1);
+        var inputEnd = nodeDef.getInput(2);
+        var inputStrides = nodeDef.getInput(3);
 
         // bit masks for this slice
-        val bm = nodeDef.getAttrOrThrow("begin_mask");
-        val xm = nodeDef.getAttrOrThrow("ellipsis_mask");
-        val em = nodeDef.getAttrOrThrow("end_mask");
-        val nm = nodeDef.getAttrOrThrow("new_axis_mask");
-        val sm = nodeDef.getAttrOrThrow("shrink_axis_mask");
+        var bm = nodeDef.getAttrOrThrow("begin_mask");
+        var xm = nodeDef.getAttrOrThrow("ellipsis_mask");
+        var em = nodeDef.getAttrOrThrow("end_mask");
+        var nm = nodeDef.getAttrOrThrow("new_axis_mask");
+        var sm = nodeDef.getAttrOrThrow("shrink_axis_mask");
 
         beginMask = (int)bm.getI();
         ellipsisMask = (int) xm.getI();
@@ -230,18 +230,18 @@ public class StridedSlice extends DynamicCustomOp {
         Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
         Map<String,PropertyMapping> map = new HashMap<>();
 
-        val beginMapping = PropertyMapping.builder()
+        var beginMapping = PropertyMapping.builder()
                 .tfInputPosition(1)
                 .propertyNames(new String[]{"begin"})
                 .build();
 
-        val end = PropertyMapping.builder()
+        var end = PropertyMapping.builder()
                 .tfInputPosition(2)
                 .propertyNames(new String[]{"end"})
                 .build();
 
 
-        val strides = PropertyMapping.builder()
+        var strides = PropertyMapping.builder()
                 .tfInputPosition(3)
                 .propertyNames(new String[]{"strides"})
                 .build();
@@ -249,32 +249,32 @@ public class StridedSlice extends DynamicCustomOp {
 
 
 
-        val beginMask = PropertyMapping.builder()
+        var beginMask = PropertyMapping.builder()
                 .tfAttrName("begin_mask")
                 .propertyNames(new String[]{"beginMask"})
                 .build();
 
 
-        val ellipsisMask = PropertyMapping.builder()
+        var ellipsisMask = PropertyMapping.builder()
                 .tfAttrName("ellipsis_mask")
                 .propertyNames(new String[]{"ellipsisMask"})
                 .build();
 
 
 
-        val endMask = PropertyMapping.builder()
+        var endMask = PropertyMapping.builder()
                 .tfAttrName("end_mask")
                 .propertyNames(new String[]{"endMask"})
                 .build();
 
 
 
-        val newAxisMask = PropertyMapping.builder()
+        var newAxisMask = PropertyMapping.builder()
                 .tfAttrName("new_axis_mask")
                 .propertyNames(new String[]{"newAxisMask"})
                 .build();
 
-        val shrinkAxisMask = PropertyMapping.builder()
+        var shrinkAxisMask = PropertyMapping.builder()
                 .tfAttrName("shrink_axis_mask")
                 .propertyNames(new String[]{"shrinkAxisMask"})
                 .build();

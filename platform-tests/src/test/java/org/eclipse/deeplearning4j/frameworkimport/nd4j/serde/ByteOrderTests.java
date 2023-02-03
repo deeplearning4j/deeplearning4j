@@ -22,7 +22,7 @@ package org.eclipse.deeplearning4j.frameworkimport.nd4j.serde;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -55,11 +55,11 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testByteArrayOrder1(Nd4jBackend backend) {
-        val ndarray = Nd4j.create(DataType.FLOAT, 2).assign(1);
+        var ndarray = Nd4j.create(DataType.FLOAT, 2).assign(1);
 
         assertEquals(DataType.FLOAT, ndarray.data().dataType());
 
-        val array = ndarray.data().asBytes();
+        var array = ndarray.data().asBytes();
 
         assertEquals(8, array.length);
     }
@@ -68,15 +68,15 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testByteArrayOrder2(Nd4jBackend backend) {
-        val original = Nd4j.linspace(1, 25, 25, DataType.FLOAT).reshape(5, 5);
-        val bufferBuilder = new FlatBufferBuilder(0);
+        var original = Nd4j.linspace(1, 25, 25, DataType.FLOAT).reshape(5, 5);
+        var bufferBuilder = new FlatBufferBuilder(0);
 
         int array = original.toFlatArray(bufferBuilder);
         bufferBuilder.finish(array);
 
-        val flatArray = FlatArray.getRootAsFlatArray(bufferBuilder.dataBuffer());
+        var flatArray = FlatArray.getRootAsFlatArray(bufferBuilder.dataBuffer());
 
-        val restored = Nd4j.createFromFlatArray(flatArray);
+        var restored = Nd4j.createFromFlatArray(flatArray);
 
         assertEquals(original, restored);
     }
@@ -85,15 +85,15 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testByteArrayOrder3(Nd4jBackend backend) {
-        val original = Nd4j.linspace(1, 25, 25, DataType.FLOAT).reshape('f', 5, 5);
-        val bufferBuilder = new FlatBufferBuilder(0);
+        var original = Nd4j.linspace(1, 25, 25, DataType.FLOAT).reshape('f', 5, 5);
+        var bufferBuilder = new FlatBufferBuilder(0);
 
         int array = original.toFlatArray(bufferBuilder);
         bufferBuilder.finish(array);
 
-        val flatArray = FlatArray.getRootAsFlatArray(bufferBuilder.dataBuffer());
+        var flatArray = FlatArray.getRootAsFlatArray(bufferBuilder.dataBuffer());
 
-        val restored = Nd4j.createFromFlatArray(flatArray);
+        var restored = Nd4j.createFromFlatArray(flatArray);
 
         assertEquals(original, restored);
     }
@@ -102,10 +102,10 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShapeStridesOf1(Nd4jBackend backend) {
-        val buffer = new int[]{2, 5, 5, 5, 1, 0, 1, 99};
+        var buffer = new int[]{2, 5, 5, 5, 1, 0, 1, 99};
 
-        val shape = Shape.shapeOf(buffer);
-        val strides = Shape.stridesOf(buffer);
+        var shape = Shape.shapeOf(buffer);
+        var strides = Shape.stridesOf(buffer);
 
         assertArrayEquals(new int[]{5, 5}, shape);
         assertArrayEquals(new int[]{5, 1}, strides);
@@ -115,10 +115,10 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShapeStridesOf2(Nd4jBackend backend) {
-        val buffer = new int[]{3, 5, 5, 5, 25, 5, 1, 0, 1, 99};
+        var buffer = new int[]{3, 5, 5, 5, 25, 5, 1, 0, 1, 99};
 
-        val shape = Shape.shapeOf(buffer);
-        val strides = Shape.stridesOf(buffer);
+        var shape = Shape.shapeOf(buffer);
+        var strides = Shape.stridesOf(buffer);
 
         assertArrayEquals(new int[]{5, 5, 5}, shape);
         assertArrayEquals(new int[]{25, 5, 1}, strides);
@@ -128,17 +128,17 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarEncoding(Nd4jBackend backend) {
-        val scalar = Nd4j.scalar(2.0f);
+        var scalar = Nd4j.scalar(2.0f);
 
         FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(0);
-        val fb = scalar.toFlatArray(bufferBuilder);
+        var fb = scalar.toFlatArray(bufferBuilder);
         bufferBuilder.finish(fb);
-        val db = bufferBuilder.dataBuffer();
+        var db = bufferBuilder.dataBuffer();
 
-        val flat = FlatArray.getRootAsFlatArray(db);
+        var flat = FlatArray.getRootAsFlatArray(db);
 
 
-        val restored = Nd4j.createFromFlatArray(flat);
+        var restored = Nd4j.createFromFlatArray(flat);
 
         assertEquals(scalar, restored);
     }
@@ -148,16 +148,16 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVectorEncoding_1(Nd4jBackend backend) {
-        val scalar = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5});
+        var scalar = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5});
 
         FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(0);
-        val fb = scalar.toFlatArray(bufferBuilder);
+        var fb = scalar.toFlatArray(bufferBuilder);
         bufferBuilder.finish(fb);
-        val db = bufferBuilder.dataBuffer();
+        var db = bufferBuilder.dataBuffer();
 
-        val flat = FlatArray.getRootAsFlatArray(db);
+        var flat = FlatArray.getRootAsFlatArray(db);
 
-        val restored = Nd4j.createFromFlatArray(flat);
+        var restored = Nd4j.createFromFlatArray(flat);
 
         assertEquals(scalar, restored);
     }
@@ -166,16 +166,16 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVectorEncoding_2(Nd4jBackend backend) {
-        val scalar = Nd4j.createFromArray(new double[]{1, 2, 3, 4, 5});
+        var scalar = Nd4j.createFromArray(new double[]{1, 2, 3, 4, 5});
 
         FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(0);
-        val fb = scalar.toFlatArray(bufferBuilder);
+        var fb = scalar.toFlatArray(bufferBuilder);
         bufferBuilder.finish(fb);
-        val db = bufferBuilder.dataBuffer();
+        var db = bufferBuilder.dataBuffer();
 
-        val flat = FlatArray.getRootAsFlatArray(db);
+        var flat = FlatArray.getRootAsFlatArray(db);
 
-        val restored = Nd4j.createFromFlatArray(flat);
+        var restored = Nd4j.createFromFlatArray(flat);
 
         assertEquals(scalar, restored);
     }
@@ -183,18 +183,18 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStringEncoding_1(Nd4jBackend backend) {
-        val strings = Arrays.asList("alpha", "beta", "gamma");
-        val vector = Nd4j.create(strings, 3);
+        var strings = Arrays.asList("alpha", "beta", "gamma");
+        var vector = Nd4j.create(strings, 3);
 
-        val bufferBuilder = new FlatBufferBuilder(0);
+        var bufferBuilder = new FlatBufferBuilder(0);
 
-        val fb = vector.toFlatArray(bufferBuilder);
+        var fb = vector.toFlatArray(bufferBuilder);
         bufferBuilder.finish(fb);
-        val db = bufferBuilder.dataBuffer();
+        var db = bufferBuilder.dataBuffer();
 
-        val flat = FlatArray.getRootAsFlatArray(db);
+        var flat = FlatArray.getRootAsFlatArray(db);
 
-        val restored = Nd4j.createFromFlatArray(flat);
+        var restored = Nd4j.createFromFlatArray(flat);
 
         assertEquals(vector, restored);
     }

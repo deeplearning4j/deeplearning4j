@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.shape;
 
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -51,8 +51,8 @@ public class ShapeBufferTests extends BaseNd4jTestWithBackends {
     public void testRank(Nd4jBackend backend) {
         long[] shape = {2, 4};
         long[] stride = {1, 2};
-        val shapeInfoBuffer = Shape.createShapeInformation(shape, stride, 1, 'c', DataType.DOUBLE, false);
-        val buff = shapeInfoBuffer.asNioLong();
+        var shapeInfoBuffer = Shape.createShapeInformation(shape, stride, 1, 'c', DataType.DOUBLE, false);
+        var buff = shapeInfoBuffer.asNioLong();
         assertEquals(2, Shape.rank(buff));
     }
 
@@ -60,7 +60,7 @@ public class ShapeBufferTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArrCreationShape(Nd4jBackend backend) {
-        val arr = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
+        var arr = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         for (int i = 0; i < 2; i++)
             assertEquals(2, arr.size(i));
         int[] stride = ArrayUtil.calcStrides(new int[] {2, 2});
@@ -74,11 +74,11 @@ public class ShapeBufferTests extends BaseNd4jTestWithBackends {
     public void testShape(Nd4jBackend backend) {
         long[] shape = {2, 4};
         long[] stride = {1, 2};
-        val shapeInfoBuffer = Shape.createShapeInformation(shape, stride, 1, 'c', DataType.DOUBLE, false);
-        val buff = shapeInfoBuffer.asNioLong();
-        val shapeView = Shape.shapeOf(buff);
+        var shapeInfoBuffer = Shape.createShapeInformation(shape, stride, 1, 'c', DataType.DOUBLE, false);
+        var buff = shapeInfoBuffer.asNioLong();
+        var shapeView = Shape.shapeOf(buff);
         assertTrue(Shape.contentEquals(shape, shapeView));
-        val strideView = Shape.stride(buff);
+        var strideView = Shape.stride(buff);
         assertTrue(Shape.contentEquals(stride, strideView));
         assertEquals('c', Shape.order(buff));
         assertEquals(1, Shape.elementWiseStride(buff));
@@ -92,7 +92,7 @@ public class ShapeBufferTests extends BaseNd4jTestWithBackends {
     public void testBuff(Nd4jBackend backend) {
         long[] shape = {1, 2};
         long[] stride = {1, 2};
-        val buff = Shape.createShapeInformation(shape, stride, 1, 'c', DataType.DOUBLE, false).asNioLong();
+        var buff = Shape.createShapeInformation(shape, stride, 1, 'c', DataType.DOUBLE, false).asNioLong();
         assertTrue(Shape.isVector(buff));
     }
 

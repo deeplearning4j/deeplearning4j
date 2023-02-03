@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.shape;
 
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -91,20 +91,20 @@ public class StaticShapeTests extends BaseNd4jTestWithBackends {
         lists.add(NDArrayCreationUtil.getAll5dTestArraysWithShape(12345, new int[]{3, 4, 5, 6, 7}, DataType.DOUBLE));
         lists.add(NDArrayCreationUtil.getAll6dTestArraysWithShape(12345, new int[]{3, 4, 5, 6, 7, 8}, DataType.DOUBLE));
 
-        val shapes = new long[][] {{3, 4}, {1, 4}, {3, 1}, {3, 4, 5}, {3, 4, 5, 6}, {3, 1, 5, 1}, {3, 4, 5, 6, 7}, {3, 4, 5, 6, 7, 8}};
+        var shapes = new long[][] {{3, 4}, {1, 4}, {3, 1}, {3, 4, 5}, {3, 4, 5, 6}, {3, 1, 5, 1}, {3, 4, 5, 6, 7}, {3, 4, 5, 6, 7, 8}};
 
         for (int i = 0; i < shapes.length; i++) {
             List<Pair<INDArray, String>> list = lists.get(i);
-            val shape = shapes[i];
+            var shape = shapes[i];
 
             for (Pair<INDArray, String> p : list) {
                 INDArray arr = p.getFirst();
 
                 assertArrayEquals(shape, arr.shape());
 
-                val thisStride = arr.stride();
+                var thisStride = arr.stride();
 
-                val ib = arr.shapeInfo();
+                var ib = arr.shapeInfo();
                 DataBuffer db = arr.shapeInfoDataBuffer();
 
                 //Check shape calculation
@@ -128,7 +128,7 @@ public class StaticShapeTests extends BaseNd4jTestWithBackends {
                 //Check offset calculation:
                 NdIndexIterator iter = new NdIndexIterator(shape);
                 while (iter.hasNext()) {
-                    val next = iter.next();
+                    var next = iter.next();
                     long offset1 = Shape.getOffset(ib, next);
 
                     assertEquals(offset1, Shape.getOffset(db, next));

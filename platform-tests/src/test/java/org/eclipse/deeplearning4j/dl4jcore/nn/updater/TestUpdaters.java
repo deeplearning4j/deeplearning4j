@@ -127,7 +127,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
             for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
                 key = entry.getKey();
-                val = entry.getValue();
+                var = entry.getValue();
                 INDArray msgTmp = msg.get(key);
                 INDArray msdxTmp = msdx.get(key);
 
@@ -189,7 +189,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
         int count = 0;
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
-            val = entry.getValue();
+            var = entry.getValue();
             gradExpected = Transforms.sqrt(val.mul(val).add(epsilon)).rdiv(lr).mul(val);
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
             count++;
@@ -239,7 +239,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
         int count = 0;
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
-            val = entry.getValue();
+            var = entry.getValue();
             m = Nd4j.zeros(val.shape());
             v = Nd4j.zeros(val.shape());
 
@@ -302,7 +302,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
         int count = 0;
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
-            val = entry.getValue();
+            var = entry.getValue();
             m = Nd4j.zeros(val.shape());
             v = Nd4j.zeros(val.shape());
 
@@ -392,7 +392,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
         int count = 0;
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
-            val = entry.getValue();
+            var = entry.getValue();
             m = Nd4j.zeros(val.shape());
             v = Nd4j.zeros(val.shape());
 
@@ -442,7 +442,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
         int count = 0;
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
-            INDArray val = entry.getValue();
+            INDArray var = entry.getValue();
             INDArray v = Nd4j.create(val.shape());
             INDArray vPrev = v.dup();
             v = v.mul(mu).subi(val.mul(lr));
@@ -492,7 +492,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
             key = entry.getKey();
-            val = entry.getValue();
+            var = entry.getValue();
             INDArray lastGTmp = lastG.get(key);
 
             if (lastGTmp == null)
@@ -532,7 +532,7 @@ public class TestUpdaters extends BaseDL4JTest {
         updater.update(layer, gradient, -1, 0, 1, LayerWorkspaceMgr.noWorkspaces());
 
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
-            val = entry.getValue();
+            var = entry.getValue();
             gradExpected = val.mul(lr);
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
         }
@@ -774,7 +774,7 @@ public class TestUpdaters extends BaseDL4JTest {
         updater.update(layer, gradient, -1, 0, 1, LayerWorkspaceMgr.noWorkspaces());
 
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
-            val = entry.getValue();
+            var = entry.getValue();
             gradExpected = val.mul(lr);
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
         }

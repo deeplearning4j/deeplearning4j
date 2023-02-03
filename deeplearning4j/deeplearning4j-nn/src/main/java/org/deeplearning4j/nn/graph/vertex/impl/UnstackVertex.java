@@ -68,7 +68,7 @@ public class UnstackVertex extends BaseGraphVertex {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
-        // once we know the inputs, save the shape and interval size for doBackward
+        // once we know the inputs, save the shape and intervar size for doBackward
         this.forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
 
         this.step = inputs[0].size(0) / stackSize;

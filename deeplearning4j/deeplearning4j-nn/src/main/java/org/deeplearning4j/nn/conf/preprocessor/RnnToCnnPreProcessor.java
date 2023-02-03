@@ -74,7 +74,7 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
         if (rnnDataFormat == RNNFormat.NWC){
             input = input.permute(0, 2, 1);
         }
-        val shape = input.shape();
+        var shape = input.shape();
         INDArray in2d;
         if (shape[0] == 1) {
             //Edge case: miniBatchSize = 1
@@ -97,7 +97,7 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
         //Output: 3d epsilons (RNN)
         if (output.ordering() != 'c' || !Shape.hasDefaultStridesForShape(output))
             output = output.dup('c');
-        val shape = output.shape();
+        var shape = output.shape();
         //First: reshape 4d to 2d
         INDArray twod = output.reshape('c', output.size(0), ArrayUtil.prod(output.shape()) / output.size(0));
         //Second: reshape 2d to 3d

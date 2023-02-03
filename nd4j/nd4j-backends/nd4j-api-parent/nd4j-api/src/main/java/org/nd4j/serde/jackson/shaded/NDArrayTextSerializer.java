@@ -22,7 +22,7 @@ package org.nd4j.serde.jackson.shaded;
 
 
 
-import lombok.val;
+
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.shade.jackson.core.JsonGenerator;
@@ -78,7 +78,7 @@ public class NDArrayTextSerializer extends JsonSerializer<INDArray> {
                     jg.writeNumber(v);
                 break;
             case UTF8:
-                val n = arr.length();
+                var n = arr.length();
                 for( int j=0; j<n; j++ ) {
                     String s = arr.getString(j);
                     jg.writeString(s);

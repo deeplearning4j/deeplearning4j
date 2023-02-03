@@ -26,8 +26,8 @@ import org.nd4j.codegen.api.generator.ConstraintCodeGenerator
 class JavaConstraintCodeGenerator: ConstraintCodeGenerator {
     override fun generateExpression(expression: Expression): String = when(expression) {
         is BooleanExpression -> {
-            val left = generateReference(expression.left)
-            val right = generateReference(expression.right)
+            var left = generateReference(expression.left)
+            var right = generateReference(expression.right)
             when(expression.op){
                 BooleanOperation.EQ -> "$left == $right"
                 BooleanOperation.NEQ -> "$left != $right"

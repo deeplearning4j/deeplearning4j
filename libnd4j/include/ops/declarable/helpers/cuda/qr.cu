@@ -99,7 +99,7 @@ static bool diagonalIsPositive(NDArray* matrix, sd::LongType k) {
   sd::LongType pos[] = {k, k};
   auto shift = shape::getOffset(matrix->shapeInfo(), pos);
   cudaMemcpy(&hVal, matrix->specialBuffer(), sizeof(T), cudaMemcpyDeviceToHost);
-  return hVal > T(0.f);
+  return hvar > T(0.f);
 }
 
 template <typename T>

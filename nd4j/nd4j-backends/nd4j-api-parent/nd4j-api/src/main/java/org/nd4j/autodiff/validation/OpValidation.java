@@ -30,7 +30,7 @@ import org.nd4j.linalg.api.ops.impl.reduce.HashCode;
 import org.nd4j.shade.guava.collect.ImmutableSet;
 import org.nd4j.shade.guava.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -396,8 +396,8 @@ public class OpValidation {
         }
 
         for (int i = 0; i < outShapes.size(); i++) {
-            val act = outShapes.get(i);
-            val exp = testCase.expShapes().get(i);
+            var act = outShapes.get(i);
+            var exp = testCase.expShapes().get(i);
             if(!Objects.equals(exp.dataType(), act.dataType())) {
                 return "Shape function check failed for output " + i + ": expected shape " + exp + ", actual shape " + act;
             }

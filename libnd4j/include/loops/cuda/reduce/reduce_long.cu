@@ -232,7 +232,7 @@ SD_HOST void ReduceLongFunction<X, Z>::intermediateXD(dim3 launchDims, cudaStrea
   if (shape::isEmpty(hXShapeInfo)) {
     if (shape::isEmpty(hZShapeInfo)) return;
 
-    const auto startingVal = static_cast<Z>(OpType::startingValue(reinterpret_cast<const X *>(x)));
+    const auto startingvar = static_cast<Z>(OpType::startingValue(reinterpret_cast<const X *>(x)));
 
     auto res = cudaMemcpyAsync(sd::LaunchContext::defaultContext()->getScalarPointer(), &startingVal, sizeof(Z),
                                cudaMemcpyHostToDevice, *stream);
@@ -270,7 +270,7 @@ SD_HOST void ReduceLongFunction<X, Z>::intermediateScalar(dim3 launchDims, cudaS
   if (shape::isEmpty(hXShapeInfo)) {
     if (shape::isEmpty(hZShapeInfo)) return;
 
-    const auto startingVal = static_cast<Z>(OpType::startingValue(reinterpret_cast<const X *>(x)));
+    const auto startingvar = static_cast<Z>(OpType::startingValue(reinterpret_cast<const X *>(x)));
 
     auto res = cudaMemcpyAsync(z, &startingVal, sizeof(Z), cudaMemcpyHostToDevice, *stream);
     if (res != 0)

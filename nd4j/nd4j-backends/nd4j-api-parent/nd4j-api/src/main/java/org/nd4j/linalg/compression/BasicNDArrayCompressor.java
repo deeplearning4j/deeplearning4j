@@ -22,7 +22,7 @@ package org.nd4j.linalg.compression;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -252,8 +252,8 @@ public class BasicNDArrayCompressor {
         if (array.data().dataType() != DataType.COMPRESSED)
             return;
 
-        val comp = (CompressedDataBuffer) array.data();
-        val descriptor = comp.getCompressionDescriptor();
+        var comp = (CompressedDataBuffer) array.data();
+        var descriptor = comp.getCompressionDescriptor();
 
 
         if (!codecs.containsKey(descriptor.getCompressionAlgorithm()))

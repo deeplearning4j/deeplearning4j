@@ -25,7 +25,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -148,30 +148,30 @@ public class DeConv2D extends DynamicCustomOp {
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
         Map<String, PropertyMapping> map = new HashMap<>();
-        val strideMapping = PropertyMapping.builder()
+        var strideMapping = PropertyMapping.builder()
                 .tfAttrName("strides")
                 .onnxAttrName("strides")
                 .build();
 
-        val kernelMapping = PropertyMapping.builder()
+        var kernelMapping = PropertyMapping.builder()
                 .propertyNames(new String[]{"kH", "kW"})
                 .tfInputPosition(1)
                 .onnxAttrName("kernel_shape")
                 .build();
 
-        val dilationMapping = PropertyMapping.builder()
+        var dilationMapping = PropertyMapping.builder()
                 .onnxAttrName("dilations")
                 .propertyNames(new String[]{"dW", "dH"})
                 .tfAttrName("rates")
                 .build();
 
-        val sameMode = PropertyMapping.builder()
+        var sameMode = PropertyMapping.builder()
                 .onnxAttrName("auto_pad")
                 .propertyNames(new String[]{"isSameMode"})
                 .tfAttrName("padding")
                 .build();
 
-        val paddingWidthHeight = PropertyMapping.builder()
+        var paddingWidthHeight = PropertyMapping.builder()
                 .onnxAttrName("padding")
                 .propertyNames(new String[]{"pH", "pW"})
                 .build();
@@ -193,24 +193,24 @@ public class DeConv2D extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val aStrides = nodeDef.getAttrOrThrow("strides");
-        val tfStrides = aStrides.getList().getIList();
+        var aStrides = nodeDef.getAttrOrThrow("strides");
+        var tfStrides = aStrides.getList().getIList();
         long sH = 1;
         long sW = 1;
         long kH = 1;
         long kW = 1;
 
-        val aPadding = nodeDef.getAttrOrDefault("padding", null);
+        var aPadding = nodeDef.getAttrOrDefault("padding", null);
 
-        val paddingMode = aPadding.getS().toStringUtf8();
+        var paddingMode = aPadding.getS().toStringUtf8();
 
-        val args = args();
+        var args = args();
         INDArray arr = sameDiff.getVariable(args[1].name()).getArr();
         if (arr == null) {
             arr = TFGraphMapper.getNDArrayFromTensor(nodeDef);
             // TODO: arguable. it might be easier to permute weights once
             //arr = (arr.permute(3, 2, 0, 1).dup('c'));
-            val varForOp = initWith.getVariable(args[1].name());
+            var varForOp = initWith.getVariable(args[1].name());
             if (arr != null)
                 initWith.associateArrayWithVariable(arr, varForOp);
 
@@ -219,7 +219,7 @@ public class DeConv2D extends DynamicCustomOp {
 
         String dataFormat = "nhwc";
         if (nodeDef.containsAttr("data_format")) {
-            val attr = nodeDef.getAttrOrThrow("data_format");
+            var attr = nodeDef.getAttrOrThrow("data_format");
             dataFormat = attr.getS().toStringUtf8().toLowerCase();
         }
 
@@ -256,17 +256,17 @@ public class DeConv2D extends DynamicCustomOp {
 
     @Override
     public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
-        val autoPad = !attributesForNode.containsKey("auto_pad") ? "VALID" : attributesForNode.get("auto_pad").getS().toStringUtf8();
-        val dilations = attributesForNode.get("dilations");
-        val dilationY = dilations == null ? 1 : dilations.getIntsList().get(0).intValue();
-        val dilationX = dilations == null ? 1 : dilations.getIntsList().get(1).intValue();
-        val group = attributesForNode.get("group");
+        var autoPad = !attributesForNode.containsKey("auto_pad") ? "VALID" : attributesForNode.get("auto_pad").getS().toStringUtf8();
+        var dilations = attributesForNode.get("dilations");
+        var dilationY = dilations == null ? 1 : dilations.getIntsList().get(0).intValue();
+        var dilationX = dilations == null ? 1 : dilations.getIntsList().get(1).intValue();
+        var group = attributesForNode.get("group");
 
-        val kernelShape = attributesForNode.get("kernel_shape");
+        var kernelShape = attributesForNode.get("kernel_shape");
         int kH = kernelShape.getIntsList().get(0).intValue();
         int kW = kernelShape.getIntsList().size() < 2 ? kH : kernelShape.getIntsList().get(1).intValue();
 
-        val vertexId = args()[0];
+        var vertexId = args()[0];
 
         INDArray arr = vertexId.getArr();
         arr = (arr.permute(3, 2, 0, 1).dup('c'));
@@ -274,9 +274,9 @@ public class DeConv2D extends DynamicCustomOp {
 
         String dataFormat = "nhwc";
 
-        val strides = attributesForNode.get("strides");
-        val sH = strides.getIntsList().get(0);
-        val sW = strides.getIntsList().size() < 2 ? sH : strides.getIntsList().get(1);
+        var strides = attributesForNode.get("strides");
+        var sH = strides.getIntsList().get(0);
+        var sW = strides.getIntsList().size() < 2 ? sH : strides.getIntsList().get(1);
         boolean isSameMode = autoPad
                 .equalsIgnoreCase("SAME");
 

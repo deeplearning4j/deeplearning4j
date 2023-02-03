@@ -21,7 +21,7 @@
 package org.datavec.image.loader;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacv.Frame;
@@ -102,18 +102,18 @@ public class TestNativeImageLoader {
 
     @Test
     public void testDataTypes_1() throws Exception {
-        val dtypes = new DataType[]{DataType.FLOAT, DataType.HALF, DataType.SHORT, DataType.INT};
+        var dtypes = new DataType[]{DataType.FLOAT, DataType.HALF, DataType.SHORT, DataType.INT};
 
-        val dt = Nd4j.dataType();
+        var dt = Nd4j.dataType();
 
-        for (val dtype: dtypes) {
+        for (var dtype: dtypes) {
             Nd4j.setDataType(dtype);
             int w3 = 123, h3 = 77, ch3 = 3;
-            val loader = new NativeImageLoader(h3, w3, ch3);
+            var loader = new NativeImageLoader(h3, w3, ch3);
             File f3 = new ClassPathResource("datavec-data-image/testimages/class0/2.jpg").getFile();
             ImageWritable iw3 = loader.asWritable(f3);
 
-            val array = loader.asMatrix(iw3);
+            var array = loader.asMatrix(iw3);
 
             assertEquals(dtype, array.dataType());
         }
@@ -123,16 +123,16 @@ public class TestNativeImageLoader {
 
     @Test
     public void testDataTypes_2() throws Exception {
-        val dtypes = new DataType[]{DataType.FLOAT, DataType.HALF, DataType.SHORT, DataType.INT};
+        var dtypes = new DataType[]{DataType.FLOAT, DataType.HALF, DataType.SHORT, DataType.INT};
 
-        val dt = Nd4j.dataType();
+        var dt = Nd4j.dataType();
 
-        for (val dtype: dtypes) {
+        for (var dtype: dtypes) {
             Nd4j.setDataType(dtype);
             int w3 = 123, h3 = 77, ch3 = 3;
-            val loader = new NativeImageLoader(h3, w3, 1);
+            var loader = new NativeImageLoader(h3, w3, 1);
             File f3 = new ClassPathResource("datavec-data-image/testimages/class0/2.jpg").getFile();
-            val array = loader.asMatrix(f3);
+            var array = loader.asMatrix(f3);
 
             assertEquals(dtype, array.dataType());
         }

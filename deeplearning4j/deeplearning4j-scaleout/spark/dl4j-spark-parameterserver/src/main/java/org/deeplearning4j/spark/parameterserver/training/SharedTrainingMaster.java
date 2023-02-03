@@ -23,7 +23,7 @@ package org.deeplearning4j.spark.parameterserver.training;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
@@ -442,7 +442,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         // set current box as controller, if field is unset - switch to next step
         if (voidConfiguration.getControllerAddress() == null) {
             try {
-                val e = System.getenv("SPARK_PUBLIC_DNS");
+                var e = System.getenv("SPARK_PUBLIC_DNS");
                 log.info("Trying {SPARK_PUBLIC_DNS}: [{}]", e);
                 if (e != null) {
                     String sparkIp = InetAddress.getByName(e).getHostAddress();
@@ -455,7 +455,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         // next step - is to get ip address that matches specific network mask
         if (voidConfiguration.getControllerAddress() == null && voidConfiguration.getNetworkMask() != null) {
             NetworkOrganizer organizer = new NetworkOrganizer(voidConfiguration.getNetworkMask());
-            val s = organizer.getMatchingAddress();
+            var s = organizer.getMatchingAddress();
             log.info("Trying auto-detected address: [{}]", s);
 
             voidConfiguration.setControllerAddress(s);
@@ -497,14 +497,14 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                 }
             }
 
-            val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP
+            var transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP
                     ? new AeronUdpTransport(voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastControllerPort(), voidConfiguration)
                     : null;
 
             if (transport == null)
                 throw new DL4JInvalidConfigException("No Transport implementation was defined for this training session!");
 
-            val params = network != null ? network.getNetwork().params() : graph.getNetwork().params();
+            var params = network != null ? network.getNetwork().params() : graph.getNetwork().params();
 
             updatesConsumer = UpdatesConsumer.builder()
                     .params(params)

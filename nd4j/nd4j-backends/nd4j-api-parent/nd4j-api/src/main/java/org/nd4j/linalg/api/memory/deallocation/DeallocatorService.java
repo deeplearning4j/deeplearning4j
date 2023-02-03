@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.memory.deallocation;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.memory.Deallocatable;
@@ -91,9 +91,9 @@ public class DeallocatorService {
         if(noPointerGc) {
             log.trace("Deallocation turned off. Reference " + deallocatable.getUniqueId() + " will need to be de allocated manually.");
         } else {
-            val desiredDevice = deallocatable.targetDevice();
-            val map = deviceMap.get(desiredDevice);
-            val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, map.size())));
+            var desiredDevice = deallocatable.targetDevice();
+            var map = deviceMap.get(desiredDevice);
+            var reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, map.size())));
             referenceMap.put(deallocatable.getUniqueId(), reference);
 
         }
@@ -122,9 +122,9 @@ public class DeallocatorService {
             while (canRun) {
                 // if periodicGc is enabled, only first thread will call for it
                 if (Nd4j.getMemoryManager().isPeriodicGcActive() && threadIdx == 0 && Nd4j.getMemoryManager().getAutoGcWindow() > 0) {
-                    val reference = (DeallocatableReference) queue.poll();
+                    var reference = (DeallocatableReference) queue.poll();
                     if (reference == null || (reference != null && reference.get() != null &&  !reference.get().shouldDeAllocate())) {
-                        val timeout = Nd4j.getMemoryManager().getAutoGcWindow();
+                        var timeout = Nd4j.getMemoryManager().getAutoGcWindow();
                         try {
                             Thread.sleep(Nd4j.getMemoryManager().getAutoGcWindow());
                             Nd4j.getMemoryManager().invokeGc();
@@ -139,7 +139,7 @@ public class DeallocatorService {
                     }
                 } else {
                     try {
-                        val reference = (DeallocatableReference) queue.remove();
+                        var reference = (DeallocatableReference) queue.remove();
                         if (reference == null)
                             continue;
 

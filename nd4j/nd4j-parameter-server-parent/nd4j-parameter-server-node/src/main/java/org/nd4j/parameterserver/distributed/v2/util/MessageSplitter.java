@@ -21,7 +21,7 @@
 package org.nd4j.parameterserver.distributed.v2.util;
 
 import lombok.NonNull;
-import lombok.val;
+
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.util.ND4JFileUtils;
@@ -71,28 +71,28 @@ public class MessageSplitter {
         if (maxBytes <= 0)
             throw new ND4JIllegalStateException("MaxBytes must be > 0");
 
-        val tempFile = ND4JFileUtils.createTempFile("messageSplitter","temp");
-        val result = new ArrayList<VoidChunk>();
+        var tempFile = ND4JFileUtils.createTempFile("messageSplitter","temp");
+        var result = new ArrayList<VoidChunk>();
 
-        try (val fos = new FileOutputStream(tempFile); val bos = new BufferedOutputStream(fos)) {
+        try (var fos = new FileOutputStream(tempFile); var bos = new BufferedOutputStream(fos)) {
             // serializing original message to disc
             SerializationUtils.serialize(message, fos);
 
-            val length = tempFile.length();
+            var length = tempFile.length();
             int numChunks = (int) (length /  maxBytes + (length % maxBytes > 0 ? 1 : 0));
-            try (val fis = new FileInputStream(tempFile); val bis = new BufferedInputStream(fis)) {
+            try (var fis = new FileInputStream(tempFile); var bis = new BufferedInputStream(fis)) {
                 // now we'll be reading serialized message into
-                val bytes = new byte[maxBytes];
+                var bytes = new byte[maxBytes];
                 int cnt = 0;
                 int id = 0;
 
                 while (cnt < length) {
-                    val c = bis.read(bytes);
+                    var c = bis.read(bytes);
 
-                    val tmp = Arrays.copyOf(bytes, c);
+                    var tmp = Arrays.copyOf(bytes, c);
 
                     // FIXME: we don't really want UUID used here, it's just a placeholder for now
-                    val msg = VoidChunk.builder()
+                    var msg = VoidChunk.builder()
                             .messageId(java.util.UUID.randomUUID().toString())
                             .originalId(message.getMessageId())
                             .chunkId(id++)
@@ -160,8 +160,8 @@ public class MessageSplitter {
      * @return
      */
     public <T extends VoidMessage> Optional<T> merge(@NonNull VoidChunk chunk, long memoryLimit) {
-        val originalId= chunk.getOriginalId();
-        val checker = new AtomicBoolean(false);
+        var originalId= chunk.getOriginalId();
+        var checker = new AtomicBoolean(false);
         ChunksTracker tracker = null;
 
         if (memoryUse.get() + chunk.getTotalSize() < memoryLimit) {

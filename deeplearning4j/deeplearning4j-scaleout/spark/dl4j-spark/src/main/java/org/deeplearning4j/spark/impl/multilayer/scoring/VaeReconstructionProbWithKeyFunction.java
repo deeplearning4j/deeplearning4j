@@ -49,11 +49,11 @@ public class VaeReconstructionProbWithKeyFunction<K> extends BaseVaeReconstructi
         MultiLayerNetwork network =
                         new MultiLayerNetwork(MultiLayerConfiguration.fromJson((String) jsonConfig.getValue()));
         network.init();
-        INDArray val = params.value().dup();
-        if (val.length() != network.numParams(false))
+        INDArray paramsVal = params.value().dup();
+        if (paramsVal.length() != network.numParams(false))
             throw new IllegalStateException(
                             "Network did not have same number of parameters as the broadcast set parameters");
-        network.setParameters(val);
+        network.setParameters(paramsVal);
 
         Layer l = network.getLayer(0);
         if (!(l instanceof VariationalAutoencoder)) {

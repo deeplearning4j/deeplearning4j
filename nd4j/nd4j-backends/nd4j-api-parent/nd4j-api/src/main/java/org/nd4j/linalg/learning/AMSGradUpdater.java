@@ -22,7 +22,7 @@ package org.nd4j.linalg.learning;
 
 import lombok.Data;
 import lombok.NonNull;
-import lombok.val;
+
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.updaters.AmsGradUpdater;
 import org.nd4j.linalg.api.shape.Shape;
@@ -73,7 +73,7 @@ public class AMSGradUpdater implements GradientUpdater<AMSGrad> {
 
         if (initialize)
             viewArray.assign(0);
-        val n = viewArray.length() / 3;
+        var n = viewArray.length() / 3;
         this.m = viewArray.get(NDArrayIndex.interval(0, n));
         this.v = viewArray.get(NDArrayIndex.interval(n, 2 * n));
         this.vHat = viewArray.get(NDArrayIndex.interval(2 * n, 3 * n));

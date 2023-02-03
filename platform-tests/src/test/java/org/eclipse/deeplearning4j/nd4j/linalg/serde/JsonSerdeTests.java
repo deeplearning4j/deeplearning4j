@@ -23,7 +23,7 @@ package org.eclipse.deeplearning4j.nd4j.linalg.serde;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -68,7 +68,7 @@ public class JsonSerdeTests extends BaseNd4jTestWithBackends {
                 Nd4j.getRandom().setSeed(12345);
                 INDArray in = Nd4j.rand(DataType.DOUBLE, 3, 4).muli(20).subi(10);
 
-                val om = new ObjectMapper();
+                var om = new ObjectMapper();
 
                 for (DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.LONG, DataType.INT, DataType.SHORT,
                         DataType.BYTE, DataType.UBYTE, DataType.BOOL, DataType.UTF8}) {

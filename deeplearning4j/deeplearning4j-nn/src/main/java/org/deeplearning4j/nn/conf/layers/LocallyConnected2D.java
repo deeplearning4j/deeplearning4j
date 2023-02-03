@@ -146,10 +146,10 @@ public class LocallyConnected2D extends SameDiffLayer {
     @Override
     public void defineParameters(SDLayerParams params) {
         params.clear();
-        val weightsShape = new long[] {outputSize[0] * outputSize[1], featureDim, nOut};
+        var weightsShape = new long[] {outputSize[0] * outputSize[1], featureDim, nOut};
         params.addWeightParam(ConvolutionParamInitializer.WEIGHT_KEY, weightsShape);
         if (hasBias) {
-            val biasShape = new long[] {nOut};
+            var biasShape = new long[] {nOut};
             params.addBiasParam(ConvolutionParamInitializer.BIAS_KEY, biasShape);
         }
     }

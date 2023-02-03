@@ -45,7 +45,7 @@ static void SD_KERNEL histogramKernel(void *xBuffer, const sd::LongType *xShapeI
   }
   __syncthreads();
 
-  X binSize = X((*max_val - *min_val) / numBins);
+  X binSize = X((*max_var - *min_val) / numBins);
 
   // nullify bins
   for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
@@ -130,8 +130,8 @@ void histogramHelper(sd::LaunchContext *context, NDArray &input, NDArray &output
   sd::LongType numBins = output.lengthOf();
   NDArray::registerSpecialUse({&output}, {&input});
 
-  auto min_val = input.reduceNumber(reduce::SameOps::Min);
-  auto max_val = input.reduceNumber(reduce::SameOps::Max);
+  auto min_var = input.reduceNumber(reduce::SameOps::Min);
+  auto max_var = input.reduceNumber(reduce::SameOps::Max);
   BUILD_DOUBLE_SELECTOR(
       input.dataType(), output.dataType(), histogram_,
       (context, input.specialBuffer(), input.shapeInfo(), input.specialShapeInfo(), output.specialBuffer(),

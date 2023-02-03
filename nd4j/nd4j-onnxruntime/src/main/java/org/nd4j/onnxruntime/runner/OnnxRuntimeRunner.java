@@ -130,7 +130,7 @@ public class OnnxRuntimeRunner implements Closeable  {
             else if(arr.size() == 0) {
                     throw new IllegalArgumentException("Onnx Runtime does not support empty sequences! Found at input name " + inputName.getString());
             } else if(arr.size() > 1 || typeForInput == ONNXType.ONNX_TYPE_SEQUENCE) {
-                ValueVector inputTensor = getSequence(arr, memoryInfo);
+                var inputTensor = getSequence(arr, memoryInfo);
                 inputVal.position(i).put(Value.CreateSequence(inputTensor));
             }
 

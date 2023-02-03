@@ -45,7 +45,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import org.junit.jupiter.api.DisplayName;
 
-@DisplayName("Regression Eval Test")
+@DisplayName("Regression Evar Test")
 @NativeTag
 @Tag(TagNames.EVAL_METRICS)
 @Tag(TagNames.JACKSON_SERDE)
@@ -54,7 +54,7 @@ import org.junit.jupiter.api.DisplayName;
 class RegressionEvalTest extends BaseDL4JTest {
 
     @Test
-    @DisplayName("Test Regression Eval Methods")
+    @DisplayName("Test Regression Evar Methods")
     void testRegressionEvalMethods() {
         // Basic sanity check
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.ZERO).list().layer(0, new OutputLayer.Builder().activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(5).build()).build();
@@ -80,7 +80,7 @@ class RegressionEvalTest extends BaseDL4JTest {
     }
 
     @Test
-    @DisplayName("Test Regression Eval Per Output Masking")
+    @DisplayName("Test Regression Evar Per Output Masking")
     void testRegressionEvalPerOutputMasking() {
         INDArray l = Nd4j.create(new double[][] { { 1, 2, 3 }, { 10, 20, 30 }, { -5, -10, -20 } });
         INDArray predictions = Nd4j.zeros(l.shape());
@@ -98,7 +98,7 @@ class RegressionEvalTest extends BaseDL4JTest {
     }
 
     @Test
-    @DisplayName("Test Regression Eval Time Series Split")
+    @DisplayName("Test Regression Evar Time Series Split")
     void testRegressionEvalTimeSeriesSplit() {
         INDArray out1 = Nd4j.rand(new int[] { 3, 5, 20 });
         INDArray outSub1 = out1.get(all(), all(), interval(0, 10));

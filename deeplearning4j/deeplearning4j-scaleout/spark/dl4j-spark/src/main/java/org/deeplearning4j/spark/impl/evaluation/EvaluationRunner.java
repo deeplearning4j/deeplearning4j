@@ -53,7 +53,7 @@ public class EvaluationRunner {
     }
 
     private final AtomicInteger workerCount = new AtomicInteger(0);
-    private Queue<Eval> queue = new ConcurrentLinkedQueue<>();
+    private Queue<Evar> queue = new ConcurrentLinkedQueue<>();
     //parameters map for device local parameters for a given broadcast
     //Note: byte[] doesn't override Object.equals hence this is effectively an *identity* weak hash map, which is what we want here
     //i.e., DeviceLocal<INDArray> can be GC'd once the Broadcast<byte[]> is no longer referenced anywhere
@@ -137,7 +137,7 @@ public class EvaluationRunner {
                             m = net;
                         }
 
-                        //Perform eval on this thread's data
+                        //Perform evar on this thread's data
                         try {
                             doEval(m, evals, ds, mds, evalBatchSize);
                         } catch (Throwable t) {
@@ -146,9 +146,9 @@ public class EvaluationRunner {
                             f.getSemaphore().release(1);
                         }
 
-                        //Perform eval on other thread's data
+                        //Perform evar on other thread's data
                         while (!queue.isEmpty()) {
-                            Eval e = queue.poll();  //Use poll not remove to avoid race condition on last element
+                            Evar e = queue.poll();  //Use poll not remove to avoid race condition on last element
                             if (e == null)
                                 continue;
                             try {
@@ -172,7 +172,7 @@ public class EvaluationRunner {
         //At this point: not a worker thread (otherwise, would have returned already)
         log.debug("Submitting evaluation from thread {} for processing in evaluation thread", Thread.currentThread().getId());
         EvaluationFuture f = new EvaluationFuture();
-        queue.add(new Eval(ds, mds, evals, f));
+        queue.add(new Evar(ds, mds, evals, f));
         return f;
     }
 
@@ -198,7 +198,7 @@ public class EvaluationRunner {
 
     @AllArgsConstructor
     @Data
-    private static class Eval {
+    private static class Evar {
         private Iterator<DataSet> ds;
         private Iterator<MultiDataSet> mds;
         private IEvaluation[] evaluations;

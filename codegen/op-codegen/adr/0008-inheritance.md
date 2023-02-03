@@ -41,12 +41,12 @@ If there is a naming conflict between mixins or between mixin and op definition,
 ### Example
 ```kotlin
 
-val indexAccum = Mixin("indexAccum"){
+var indexAccum = Mixin("indexAccum"){
     legacy = true
     javaPackage = "org.nd4j.linalg.api.ops.impl.indexaccum"
-    val input = Input(NUMERIC, "in") { description = "Input variable" }
-    val keepDims = Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as length 1). False: remove the reduction dimensions"; defaultValue = false }
-    val dims = Arg(INT, "dimensions"){ count = AtLeast(1); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+    var input = Input(NUMERIC, "in") { description = "Input variable" }
+    var keepDims = Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as length 1). False: remove the reduction dimensions"; defaultValue = false }
+    var dims = Arg(INT, "dimensions"){ count = AtLeast(1); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
     Output(NUMERIC, "output"){ description = "Reduced array of rank (input rank - num dimensions)" }
 
     Signature(input, dims)
@@ -56,7 +56,7 @@ val indexAccum = Mixin("indexAccum"){
 
 Namespace("math"){
     Op("firstIndex") {
-        val idxAccum = useMixin(indexAccum, keepSignatures=false)
+        var idxAccum = useMixin(indexAccum, keepSignatures=false)
         var c = Arg(CONDITION, "condition") { description = "Condition to check on input variable" }
         Signature(idxAccum.input("in"), c, idxAccum.arg("dimensions"))
         Signature(idxAccum.input("in"), c, idxAccum.arg("keepDims"), idxAccum.arg("dimensions"))

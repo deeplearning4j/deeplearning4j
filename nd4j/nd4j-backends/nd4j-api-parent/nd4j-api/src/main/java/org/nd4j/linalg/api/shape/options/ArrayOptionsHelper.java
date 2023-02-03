@@ -21,7 +21,7 @@
 package org.nd4j.linalg.api.shape.options;
 
 import lombok.NonNull;
-import lombok.val;
+
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -48,7 +48,7 @@ public class ArrayOptionsHelper {
     public static final long HAS_PADDED_BUFFER = (1<<25);
 
     public static boolean hasBitSet(long[] shapeInfo, long bit) {
-        val opt = Shape.options(shapeInfo);
+        var opt = Shape.options(shapeInfo);
 
         return hasBitSet(opt, bit);
     }
@@ -67,7 +67,7 @@ public class ArrayOptionsHelper {
     }
 
     public static ArrayType arrayType(long[] shapeInfo) {
-        val opt = Shape.options(shapeInfo);
+        var opt = Shape.options(shapeInfo);
 
         if (hasBitSet(opt, ATYPE_SPARSE_BIT))
             return ArrayType.SPARSE;
@@ -107,7 +107,7 @@ public class ArrayOptionsHelper {
     }
 
     public static DataType dataType(long[] shapeInfo) {
-        val opt = Shape.options(shapeInfo);
+        var opt = Shape.options(shapeInfo);
         return dataType(opt);
     }
 

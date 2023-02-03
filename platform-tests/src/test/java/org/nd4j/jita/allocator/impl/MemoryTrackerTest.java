@@ -19,7 +19,7 @@
 package org.nd4j.jita.allocator.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.allocator.impl.MemoryTracker;
@@ -35,17 +35,17 @@ public class MemoryTrackerTest extends BaseND4JTest {
 
     @Test
     public void testAllocatedDelta() {
-        val precBefore = MemoryTracker.getInstance().getPreciseFreeMemory(0);
-        val approxBefore = MemoryTracker.getInstance().getApproximateFreeMemory(0);
-        val deltaBefore = precBefore - approxBefore;
+        var precBefore = MemoryTracker.getInstance().getPreciseFreeMemory(0);
+        var approxBefore = MemoryTracker.getInstance().getApproximateFreeMemory(0);
+        var deltaBefore = precBefore - approxBefore;
 
         for (int i = 0; i < 100; i++) {
-            val buffer = Nd4j.createBuffer(DataType.FLOAT, 100000, false);
+            var buffer = Nd4j.createBuffer(DataType.FLOAT, 100000, false);
         }
 
-        val precAfter = MemoryTracker.getInstance().getPreciseFreeMemory(0);
-        val approxAfter = MemoryTracker.getInstance().getApproximateFreeMemory(0);
-        val deltaAfter =  precAfter - approxAfter;
+        var precAfter = MemoryTracker.getInstance().getPreciseFreeMemory(0);
+        var approxAfter = MemoryTracker.getInstance().getApproximateFreeMemory(0);
+        var deltaAfter =  precAfter - approxAfter;
 
         log.info("Initial delta: {}; Allocation delta: {}", deltaBefore, deltaAfter);
         log.info("BEFORE: Precise: {}; Approx: {};", precBefore, approxBefore);

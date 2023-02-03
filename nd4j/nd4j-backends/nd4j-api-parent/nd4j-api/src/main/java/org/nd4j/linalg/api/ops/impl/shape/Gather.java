@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -121,7 +121,7 @@ public class Gather extends DynamicCustomOp {
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
         Map<String, PropertyMapping> map = new HashMap<>();
-        val broadcast = PropertyMapping.builder()
+        var broadcast = PropertyMapping.builder()
                 .onnxAttrName("indices")
                 .tfInputPosition(1)
                 .propertyNames(new String[]{"indices"}).build();
@@ -132,12 +132,12 @@ public class Gather extends DynamicCustomOp {
         ret.put(onnxName(), map);
 
         Map<String, PropertyMapping> map2 = new HashMap<>();
-        val broadcast2 = PropertyMapping.builder()
+        var broadcast2 = PropertyMapping.builder()
                 .tfInputPosition(1)
                 .propertyNames(new String[]{"indices"}).build();
         map2.put("indices", broadcast2);
 
-        val axis2 = PropertyMapping.builder()
+        var axis2 = PropertyMapping.builder()
                 .tfInputPosition(2)
                 .propertyNames(new String[]{"axis"}).build();
         map2.put("axis", axis2);

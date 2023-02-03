@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -94,11 +94,11 @@ public class ReverseSequence extends DynamicCustomOp {
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
         Map<String, PropertyMapping> attrs = new LinkedHashMap<>();
-        val seqDim = PropertyMapping.builder()
+        var seqDim = PropertyMapping.builder()
                 .propertyNames(new String[]{"seqDim"})
                 .tfAttrName("seq_dim")
                 .build();
-        val batchDim = PropertyMapping.builder()
+        var batchDim = PropertyMapping.builder()
                 .propertyNames(new String[]{"batchDim"})
                 .tfAttrName("batch_dim")
                 .build();

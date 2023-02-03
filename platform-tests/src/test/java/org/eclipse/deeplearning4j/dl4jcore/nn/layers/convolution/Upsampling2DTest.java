@@ -19,7 +19,7 @@
  */
 package org.eclipse.deeplearning4j.dl4jcore.nn.layers.convolution;
 
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
@@ -97,7 +97,7 @@ class Upsampling2DTest extends BaseDL4JTest {
         assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
         INDArray input2 = getData();
         layer.activate(input2, false, LayerWorkspaceMgr.noWorkspaces());
-        val depth = input2.size(1);
+        var depth = input2.size(1);
         epsilon = Nd4j.ones(5, depth, outputHeight, outputWidth);
         Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(input.shape().length, out.getSecond().shape().length);

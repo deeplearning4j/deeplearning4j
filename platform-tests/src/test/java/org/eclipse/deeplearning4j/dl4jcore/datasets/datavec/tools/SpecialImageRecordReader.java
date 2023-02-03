@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.dl4jcore.datasets.datavec.tools;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.datavec.api.util.ndarray.RecordConverter;
@@ -116,7 +116,7 @@ public class SpecialImageRecordReader extends ImageRecordReader {
 
     protected void fillNDArray(INDArray view, double value) {
         Pointer pointer = view.data().pointer();
-        val shape = view.shape();
+        var shape = view.shape();
         //        log.info("Shape: {}", Arrays.toString(shape));
 
         for (int c = 0; c < shape[0]; c++) {

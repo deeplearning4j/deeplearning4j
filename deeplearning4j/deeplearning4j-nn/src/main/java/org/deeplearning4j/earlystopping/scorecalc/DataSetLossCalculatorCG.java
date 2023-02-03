@@ -21,7 +21,7 @@
 package org.deeplearning4j.earlystopping.scorecalc;
 
 import lombok.NoArgsConstructor;
-import lombok.val;
+
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -70,7 +70,7 @@ public class DataSetLossCalculatorCG implements ScoreCalculator<ComputationGraph
 
             while (dataSetIterator.hasNext()) {
                 DataSet dataSet = dataSetIterator.next();
-                val nEx = dataSet.getFeatures().size(0);
+                var nEx = dataSet.getFeatures().size(0);
                 lossSum += network.score(dataSet) * nEx;
                 exCount += nEx;
             }
@@ -79,7 +79,7 @@ public class DataSetLossCalculatorCG implements ScoreCalculator<ComputationGraph
 
             while (multiDataSetIterator.hasNext()) {
                 MultiDataSet dataSet = multiDataSetIterator.next();
-                val nEx = dataSet.getFeatures(0).size(0);
+                var nEx = dataSet.getFeatures(0).size(0);
                 lossSum += network.score(dataSet) * nEx;
                 exCount += nEx;
             }

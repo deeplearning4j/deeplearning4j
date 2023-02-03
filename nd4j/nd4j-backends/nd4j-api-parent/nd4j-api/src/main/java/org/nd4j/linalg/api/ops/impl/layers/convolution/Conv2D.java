@@ -25,7 +25,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -234,7 +234,7 @@ public class Conv2D extends DynamicCustomOp {
     public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
         Map<String, Map<String, AttributeAdapter>> ret = new HashMap<>();
         Map<String, AttributeAdapter> tfMappings = new LinkedHashMap<>();
-        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
+        var fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
 
         //TF uses [kH, kW, inC, outC] always for weights
         tfMappings.put("kH", new NDArrayShapeAdapter(0));
@@ -264,46 +264,46 @@ public class Conv2D extends DynamicCustomOp {
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
         Map<String, PropertyMapping> map = new HashMap<>();
-        val strideMapping = PropertyMapping.builder()
+        var strideMapping = PropertyMapping.builder()
                 .tfAttrName("strides")
                 .onnxAttrName("strides")
                 .propertyNames(new String[]{"sW", "sH"})
                 .build();
 
 
-        val kernelMappingH = PropertyMapping.builder()
+        var kernelMappingH = PropertyMapping.builder()
                 .propertyNames(new String[]{"kH"})
                 .tfInputPosition(1)
                 .shapePosition(0)
                 .onnxAttrName("kernel_shape")
                 .build();
 
-        val kernelMappingW = PropertyMapping.builder()
+        var kernelMappingW = PropertyMapping.builder()
                 .propertyNames(new String[]{"kW"})
                 .tfInputPosition(1)
                 .shapePosition(1)
                 .onnxAttrName("kernel_shape")
                 .build();
 
-        val dilationMapping = PropertyMapping.builder()
+        var dilationMapping = PropertyMapping.builder()
                 .onnxAttrName("dilations")
                 .propertyNames(new String[]{"dW", "dH"})
                 .tfAttrName("dilations")
                 .build();
 
-        val dataFormat = PropertyMapping.builder()
+        var dataFormat = PropertyMapping.builder()
                 .onnxAttrName("data_format")
                 .tfAttrName("data_format")
                 .propertyNames(new String[]{"dataFormat"})
                 .build();
 
-        val sameMode = PropertyMapping.builder()
+        var sameMode = PropertyMapping.builder()
                 .onnxAttrName("auto_pad")
                 .propertyNames(new String[]{"isSameMode"})
                 .tfAttrName("padding")
                 .build();
 
-        val paddingWidthHeight = PropertyMapping.builder()
+        var paddingWidthHeight = PropertyMapping.builder()
                 .onnxAttrName("padding")
                 .propertyNames(new String[]{"pH", "pW"})
                 .build();

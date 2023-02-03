@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.shape.indexing;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Disabled;
 
 import org.junit.jupiter.api.Tag;
@@ -81,7 +81,7 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
         for (int i = iStart; i < iEnd; i++) {
             for (int j = jStart; j < jEnd; j++) {
 
-                double val = arr.getDouble(slice, i, j);
+                double var = arr.getDouble(slice, i, j);
                 int[] sub = new int[] {i - iStart, j - jStart};
 
                 subArr_A.putScalar(sub, val);
@@ -233,7 +233,7 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
         INDArray ndarray = Nd4j.create(new float[][] {{1f, 2f}, {3f, 4f}});
         INDArray subarray = ndarray.get(NDArrayIndex.point(0), NDArrayIndex.all());
         assertTrue(subarray.isRowVector());
-        val shape = subarray.shape();
+        var shape = subarray.shape();
         assertArrayEquals(new long[]{2}, shape);
     }
 

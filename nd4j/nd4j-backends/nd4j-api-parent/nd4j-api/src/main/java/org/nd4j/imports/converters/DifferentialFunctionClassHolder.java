@@ -22,7 +22,7 @@ package org.nd4j.imports.converters;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.onnx.OnnxDescriptorParser;
@@ -160,7 +160,7 @@ public class DifferentialFunctionClassHolder {
                 //this is mainly used in import
                 Map<String, Field> fieldNames = new LinkedHashMap<>();
                 Class<? extends DifferentialFunction> current = df.getClass();
-                val fields = new ArrayList<Field>();
+                var fields = new ArrayList<Field>();
                 boolean isFirst = true;
 
                 while (current.getSuperclass() != null && !classesToIgnore.contains(current.getSuperclass())) {
@@ -192,9 +192,9 @@ public class DifferentialFunctionClassHolder {
                         if(configField == null)
                             continue;
 
-                        val configFieldClass = configField.getType();
+                        var configFieldClass = configField.getType();
 
-                        for (val field : configFieldClass.getDeclaredFields()) {
+                        for (var field : configFieldClass.getDeclaredFields()) {
                             if (!Modifier.isStatic(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName()) &&
                                     (!classFieldsToIgnore.containsKey(current) || !classFieldsToIgnore.get(current).contains(field.getName()))) {
                                 fields.add(field);
@@ -245,8 +245,8 @@ public class DifferentialFunctionClassHolder {
         }
 
 
-        val map = new HashMap<>(Nd4j.getExecutioner().getCustomOperations());
-        val set = map.keySet();
+        var map = new HashMap<>(Nd4j.getExecutioner().getCustomOperations());
+        var set = map.keySet();
         set.removeAll(nodeConverters.keySet());
         missingOps.addAll(set);
         Collections.sort(missingOps);

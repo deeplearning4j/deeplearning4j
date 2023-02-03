@@ -25,7 +25,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -110,10 +110,10 @@ public class LocalResponseNormalization extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
 
-        val aAlpha = nodeDef.getAttrOrThrow("alpha");
-        val aBeta = nodeDef.getAttrOrThrow("beta");
-        val aBias = nodeDef.getAttrOrThrow("bias");
-        val aDepth = nodeDef.getAttrOrThrow("depth_radius");
+        var aAlpha = nodeDef.getAttrOrThrow("alpha");
+        var aBeta = nodeDef.getAttrOrThrow("beta");
+        var aBias = nodeDef.getAttrOrThrow("bias");
+        var aDepth = nodeDef.getAttrOrThrow("depth_radius");
 
         double alpha = aAlpha.getF();
         double beta = aBeta.getF();
@@ -132,15 +132,15 @@ public class LocalResponseNormalization extends DynamicCustomOp {
 
     @Override
     public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
-        val aAlpha = attributesForNode.get("alpha");
-        val aBeta = attributesForNode.get("beta");
-        val aBias = attributesForNode.get("bias");
-        val aDepth = attributesForNode.get("size");
+        var aAlpha = attributesForNode.get("alpha");
+        var aBeta = attributesForNode.get("beta");
+        var aBias = attributesForNode.get("bias");
+        var aDepth = attributesForNode.get("size");
 
-        val alpha = aAlpha.getF();
-        val beta = aBeta.getF();
-        val bias = aBias.getF();
-        val depth = aDepth.getF();
+        var alpha = aAlpha.getF();
+        var beta = aBeta.getF();
+        var bias = aBias.getF();
+        var depth = aDepth.getF();
 
         LocalResponseNormalizationConfig localResponseNormalizationConfig = LocalResponseNormalizationConfig.builder()
                 .alpha(alpha)
@@ -156,25 +156,25 @@ public class LocalResponseNormalization extends DynamicCustomOp {
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
-        val depthMapping = PropertyMapping.builder()
+        var depthMapping = PropertyMapping.builder()
                 .tfAttrName("depth_radius")
                 .propertyNames(new String[]{"depth"})
                 .onnxAttrName("size")
                 .build();
 
-        val alphaMapping = PropertyMapping.builder()
+        var alphaMapping = PropertyMapping.builder()
                 .tfAttrName("alpha")
                 .onnxAttrName("alpha")
                 .propertyNames(new String[]{"alpha"})
                 .build();
 
-        val betaMapping = PropertyMapping.builder()
+        var betaMapping = PropertyMapping.builder()
                 .tfAttrName("beta")
                 .onnxAttrName("beta")
                 .propertyNames(new String[]{"beta"})
                 .build();
 
-        val biasMapping = PropertyMapping.builder()
+        var biasMapping = PropertyMapping.builder()
                 .tfAttrName("bias")
                 .onnxAttrName("bias")
                 .propertyNames(new String[]{"bias"})

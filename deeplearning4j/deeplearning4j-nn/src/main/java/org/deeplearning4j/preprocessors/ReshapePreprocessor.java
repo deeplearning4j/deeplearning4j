@@ -23,7 +23,7 @@ package org.deeplearning4j.preprocessors;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.DataFormat;
 import org.deeplearning4j.nn.conf.RNNFormat;
@@ -88,7 +88,7 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
 
     private static long[] prependMiniBatchSize(long[] shape, long miniBatchSize) {
         int shapeLength = shape.length;
-        val miniBatchShape = new long[shapeLength + 1];
+        var miniBatchShape = new long[shapeLength + 1];
         miniBatchShape[0] = miniBatchSize;
         for (int i = 1; i < miniBatchShape.length; i++) {
             miniBatchShape[i] = shape[i - 1];

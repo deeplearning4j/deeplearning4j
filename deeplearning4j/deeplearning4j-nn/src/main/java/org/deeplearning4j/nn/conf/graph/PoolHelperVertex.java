@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.conf.graph;
 
 
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -128,9 +128,9 @@ public class PoolHelperVertex extends GraphVertex {
             //CNN inputs... also check that the channels, width and heights match:
             InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional) first;
 
-            val fd = firstConv.getChannels();
-            val fw = firstConv.getWidth();
-            val fh = firstConv.getHeight();
+            var fd = firstConv.getChannels();
+            var fw = firstConv.getWidth();
+            var fh = firstConv.getHeight();
 
             long depthSum = fd;
 

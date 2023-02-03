@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
-import lombok.val;
+
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -97,8 +97,8 @@ public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
         if (!hasDefaultStridesForShape(input))
             input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'c');
 
-        val inShape = input.shape();
-        val outShape = new long[]{inShape[0], inShape[1] * inShape[2] * inShape[3] * inShape[4]};
+        var inShape = input.shape();
+        var outShape = new long[]{inShape[0], inShape[1] * inShape[2] * inShape[3] * inShape[4]};
 
         return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input.reshape('c', outShape));
     }
@@ -147,7 +147,7 @@ public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
         }
 
         InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
-        val outSize = c.getChannels() * c.getDepth() * c.getHeight() * c.getWidth();
+        var outSize = c.getChannels() * c.getDepth() * c.getHeight() * c.getWidth();
         return InputType.feedForward(outSize);
     }
 

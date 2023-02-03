@@ -176,8 +176,8 @@ public class PythonExecutioner {
      * @return
      */
     public static <T> PythonVariable<T> getVariable(String name, PythonType<T> type) {
-        PythonObject val = getVariable(name);
-        return new PythonVariable<>(name, type, type.toJava(val));
+        PythonObject ret = getVariable(name);
+        return new PythonVariable<>(name, type, type.toJava(ret));
     }
 
     /**

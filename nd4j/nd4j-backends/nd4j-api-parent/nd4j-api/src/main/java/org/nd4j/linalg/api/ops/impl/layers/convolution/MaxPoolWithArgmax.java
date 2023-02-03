@@ -24,7 +24,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -145,11 +145,11 @@ public class MaxPoolWithArgmax extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val aStrides = nodeDef.getAttrOrThrow("strides");
-        val tfStrides = aStrides.getList().getIList();
+        var aStrides = nodeDef.getAttrOrThrow("strides");
+        var tfStrides = aStrides.getList().getIList();
 
-        val aKernels = nodeDef.getAttrOrThrow("ksize");
-        val tfKernels = aKernels.getList().getIList();
+        var aKernels = nodeDef.getAttrOrThrow("ksize");
+        var tfKernels = aKernels.getList().getIList();
 
         int sH = 0;
         int sW = 0;
@@ -160,16 +160,16 @@ public class MaxPoolWithArgmax extends DynamicCustomOp {
         int kH = 0;
         int kW = 0;
 
-        val aPadding = nodeDef.getAttrOrThrow("padding");
-        val padding = aPadding.getList().getIList();
+        var aPadding = nodeDef.getAttrOrThrow("padding");
+        var padding = aPadding.getList().getIList();
 
-        val paddingMode = aPadding.getS().toStringUtf8().replaceAll("\"", "");
+        var paddingMode = aPadding.getS().toStringUtf8().replaceAll("\"", "");
 
         boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
 
         String data_format = "nhwc";
         if (nodeDef.containsAttr("data_format")) {
-            val attr = nodeDef.getAttrOrThrow("data_format");
+            var attr = nodeDef.getAttrOrThrow("data_format");
 
             data_format = attr.getS().toStringUtf8().toLowerCase();
         }
@@ -219,25 +219,25 @@ public class MaxPoolWithArgmax extends DynamicCustomOp {
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
         Map<String, PropertyMapping> map = new HashMap<>();
-        val strideMapping = PropertyMapping.builder()
+        var strideMapping = PropertyMapping.builder()
                 .tfAttrName("strides")
                 .onnxAttrName("strides")
                 .propertyNames(new String[]{"sW", "sH"})
                 .build();
 
-        val paddingMapping = PropertyMapping.builder()
+        var paddingMapping = PropertyMapping.builder()
                 .onnxAttrName("padding")
                 .tfAttrName("padding")
                 .propertyNames(new String[]{"pH", "pW"})
                 .build();
 
-        val kernelMapping = PropertyMapping.builder()
+        var kernelMapping = PropertyMapping.builder()
                 .propertyNames(new String[]{"kH", "kW"})
                 .tfInputPosition(1)
                 .onnxAttrName("ksize")
                 .build();
 
-        val dilationMapping = PropertyMapping.builder()
+        var dilationMapping = PropertyMapping.builder()
                 .onnxAttrName("dilations")
                 .propertyNames(new String[]{"dW", "dH"})
                 .tfAttrName("rates")
@@ -245,7 +245,7 @@ public class MaxPoolWithArgmax extends DynamicCustomOp {
 
 
         //data_format
-        val dataFormatMapping = PropertyMapping.builder()
+        var dataFormatMapping = PropertyMapping.builder()
                 .propertyNames(new String[]{"isNHWC"})
                 .tfAttrName("data_format")
                 .build();

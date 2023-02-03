@@ -19,7 +19,7 @@
  */
 package org.eclipse.deeplearning4j.nd4j.linalg.learning;
 
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -77,9 +77,9 @@ public class UpdaterValidation extends BaseNd4jTestWithBackends {
         for( int i=0; i<3; i++ ) {
             INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
             INDArray g2 = g1.dup();
-            val g3 = g1.dup();
-            val msgu = msg.dup();
-            val msdxu = msdx.dup();
+            var g3 = g1.dup();
+            var msgu = msg.dup();
+            var msdxu = msdx.dup();
 
             UpdaterJavaCode.applyAdaDeltaUpdater(g1, msg, msdx, rho, epsilon);
 
@@ -114,8 +114,8 @@ public class UpdaterValidation extends BaseNd4jTestWithBackends {
         for( int i=0; i<3; i++ ) {
             INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
             INDArray g2 = g1.dup();
-            val g3 = g1.dup();
-            val su = s.dup();
+            var g3 = g1.dup();
+            var su = s.dup();
 
             UpdaterJavaCode.applyAdaGradUpdater(g1, s, lr, epsilon);
 
@@ -155,9 +155,9 @@ public class UpdaterValidation extends BaseNd4jTestWithBackends {
         for( int i=0; i<3; i++ ) {
             INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
             INDArray g2 = g1.dup();
-            val g3 = g1.dup();
-            val mu = m.dup();
-            val vu = v.dup();
+            var g3 = g1.dup();
+            var mu = m.dup();
+            var vu = v.dup();
 
             UpdaterJavaCode.applyAdamUpdater(g1, m, v, lr, beta1, beta2, eps, i);
 
@@ -197,9 +197,9 @@ public class UpdaterValidation extends BaseNd4jTestWithBackends {
         for( int i=0; i<3; i++ ) {
             INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
             INDArray g2 = g1.dup();
-            val g3 = g1.dup();
-            val mu = m.dup();
-            val vu = v.dup();
+            var g3 = g1.dup();
+            var mu = m.dup();
+            var vu = v.dup();
 
             UpdaterJavaCode.applyAdaMaxUpdater(g1, m, v, lr, beta1, beta2, eps, i);
 
@@ -242,10 +242,10 @@ public class UpdaterValidation extends BaseNd4jTestWithBackends {
         for( int i=0; i<3; i++ ) {
             INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
             INDArray g2 = g1.dup();
-            val g3 = g1.dup();
-            val mu = m.dup();
-            val vu = v.dup();
-            val hu = vH.dup();
+            var g3 = g1.dup();
+            var mu = m.dup();
+            var vu = v.dup();
+            var hu = vH.dup();
 
             UpdaterJavaCode.applyAmsGradUpdater(g1, m, v, vH, lr, beta1, beta2, eps, i);
 
@@ -288,9 +288,9 @@ public class UpdaterValidation extends BaseNd4jTestWithBackends {
         for( int i=0; i<3; i++ ) {
             INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
             INDArray g2 = g1.dup();
-            val g3 = g1.dup();
-            val vu = v.dup();
-            val mu = m.dup();
+            var g3 = g1.dup();
+            var vu = v.dup();
+            var mu = m.dup();
 
             UpdaterJavaCode.applyNadamUpdater(g1, m, v, lr, beta1, beta2, eps, i);
 
@@ -326,8 +326,8 @@ public class UpdaterValidation extends BaseNd4jTestWithBackends {
         for( int i=0; i<3; i++ ) {
             INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
             INDArray g2 = g1.dup();
-            val g3 = g1.dup();
-            val vu = v.dup();
+            var g3 = g1.dup();
+            var vu = v.dup();
 
             UpdaterJavaCode.applyNesterovsUpdater(g1, v, lr, momentum);
             u.applyUpdater(g2, i, 0);
@@ -360,8 +360,8 @@ public class UpdaterValidation extends BaseNd4jTestWithBackends {
         for( int i=0; i<3; i++ ) {
             INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
             INDArray g2 = g1.dup();
-            val g3 = g1.dup();
-            val gu = g.dup();
+            var g3 = g1.dup();
+            var gu = g.dup();
 
             UpdaterJavaCode.applyRmsProp(g1, g, lr, decay, eps);
             u.applyUpdater(g2, i, 0);
@@ -386,7 +386,7 @@ public class UpdaterValidation extends BaseNd4jTestWithBackends {
         for( int i=0; i<3; i++ ) {
             INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
             INDArray g2 = g1.dup();
-            val g3 = g1.dup();
+            var g3 = g1.dup();
 
             UpdaterJavaCode.applySgd(g1, lr);
             Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.SgdUpdater(g3, lr));

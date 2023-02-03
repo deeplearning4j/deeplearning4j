@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.serde;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -51,19 +51,19 @@ public class LargeSerDeTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLargeArraySerDe_1(Nd4jBackend backend) throws Exception {
-        val arrayA = Nd4j.rand(new long[] {1, 135079944});
-        //val arrayA = Nd4j.rand(new long[] {1, 13507});
+        var arrayA = Nd4j.rand(new long[] {1, 135079944});
+        //var arrayA = Nd4j.rand(new long[] {1, 13507});
 
-        val tmpFile = File.createTempFile("sdsds", "sdsd");
+        var tmpFile = File.createTempFile("sdsds", "sdsd");
         tmpFile.deleteOnExit();
 
-        try (val fos = new FileOutputStream(tmpFile); val bos = new BufferedOutputStream(fos); val dos = new DataOutputStream(bos)) {
+        try (var fos = new FileOutputStream(tmpFile); var bos = new BufferedOutputStream(fos); var dos = new DataOutputStream(bos)) {
             Nd4j.write(arrayA, dos);
         }
 
 
-        try (val fis = new FileInputStream(tmpFile); val bis = new BufferedInputStream(fis); val dis = new DataInputStream(bis)) {
-            val arrayB = Nd4j.read(dis);
+        try (var fis = new FileInputStream(tmpFile); var bis = new BufferedInputStream(fis); var dis = new DataInputStream(bis)) {
+            var arrayB = Nd4j.read(dis);
 
             assertArrayEquals(arrayA.shape(), arrayB.shape());
             assertEquals(arrayA.length(), arrayB.length());
@@ -78,26 +78,26 @@ public class LargeSerDeTests extends BaseNd4jTestWithBackends {
         INDArray arrayA = Nd4j.createUninitialized(100000, 12500);
         log.info("Shape: {}; Length: {}", arrayA.shape(), arrayA.length());
 
-        val tmpFile = File.createTempFile("sdsds", "sdsd");
+        var tmpFile = File.createTempFile("sdsds", "sdsd");
         tmpFile.deleteOnExit();
 
         log.info("Starting serialization...");
-        val sS = System.currentTimeMillis();
-        try (val fos = new FileOutputStream(tmpFile); val bos = new BufferedOutputStream(fos); val dos = new DataOutputStream(bos)) {
+        var sS = System.currentTimeMillis();
+        try (var fos = new FileOutputStream(tmpFile); var bos = new BufferedOutputStream(fos); var dos = new DataOutputStream(bos)) {
             Nd4j.write(arrayA, dos);
             arrayA = null;
             System.gc();
         }
         System.gc();
 
-        val sE = System.currentTimeMillis();
+        var sE = System.currentTimeMillis();
 
         log.info("Starting deserialization...");
-        val dS = System.currentTimeMillis();
-        try (val fis = new FileInputStream(tmpFile); val bis = new BufferedInputStream(fis); val dis = new DataInputStream(bis)) {
+        var dS = System.currentTimeMillis();
+        try (var fis = new FileInputStream(tmpFile); var bis = new BufferedInputStream(fis); var dis = new DataInputStream(bis)) {
             arrayA = Nd4j.read(dis);
         }
-        val dE = System.currentTimeMillis();
+        var dE = System.currentTimeMillis();
 
         log.info("Timings: {Ser : {} ms; De: {} ms;}", sE - sS, dE - dS);
     }

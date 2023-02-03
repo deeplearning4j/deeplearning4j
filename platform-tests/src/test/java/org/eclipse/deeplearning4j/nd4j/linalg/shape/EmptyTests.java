@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.shape;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -51,7 +51,7 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmpyArray_1(Nd4jBackend backend) {
-        val array = Nd4j.empty();
+        var array = Nd4j.empty();
 
         assertNotNull(array);
         assertTrue(array.isEmpty());
@@ -72,7 +72,7 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyDtype_1(Nd4jBackend backend) {
-        val array = Nd4j.empty(DataType.INT);
+        var array = Nd4j.empty(DataType.INT);
 
         assertTrue(array.isEmpty());
         assertEquals(DataType.INT, array.dataType());
@@ -81,7 +81,7 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyDtype_2(Nd4jBackend backend) {
-        val array = Nd4j.empty(DataType.LONG);
+        var array = Nd4j.empty(DataType.LONG);
 
         assertTrue(array.isEmpty());
         assertEquals(DataType.LONG, array.dataType());
@@ -90,20 +90,20 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcat_1(Nd4jBackend backend) {
-        val row1 = Nd4j.create(new double[]{1, 1, 1, 1}, new long[]{1, 4});
-        val row2 = Nd4j.create(new double[]{2, 2, 2, 2}, new long[]{1, 4});
-        val row3 = Nd4j.create(new double[]{3, 3, 3, 3}, new long[]{1, 4});
+        var row1 = Nd4j.create(new double[]{1, 1, 1, 1}, new long[]{1, 4});
+        var row2 = Nd4j.create(new double[]{2, 2, 2, 2}, new long[]{1, 4});
+        var row3 = Nd4j.create(new double[]{3, 3, 3, 3}, new long[]{1, 4});
 
-        val exp = Nd4j.create(new double[]{1, 1, 1, 1,    2, 2, 2, 2,   3, 3, 3, 3}, new int[]{3, 4});
+        var exp = Nd4j.create(new double[]{1, 1, 1, 1,    2, 2, 2, 2,   3, 3, 3, 3}, new int[]{3, 4});
 
-        val op = DynamicCustomOp.builder("concat")
+        var op = DynamicCustomOp.builder("concat")
                 .addInputs(row1, row2, row3)
                 .addIntegerArguments(0)
                 .build();
 
         Nd4j.getExecutioner().exec(op);
 
-        val z = op.getOutputArgument(0);
+        var z = op.getOutputArgument(0);
 
         assertEquals(exp, z);
     }
@@ -164,7 +164,7 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyWithShape_1(Nd4jBackend backend) {
-        val array = Nd4j.create(DataType.FLOAT, 2, 0, 3);
+        var array = Nd4j.create(DataType.FLOAT, 2, 0, 3);
 
         assertNotNull(array);
         assertEquals(DataType.FLOAT, array.dataType());
@@ -177,7 +177,7 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyWithShape_2(Nd4jBackend backend){
-        val array = Nd4j.create(DataType.FLOAT, 0);
+        var array = Nd4j.create(DataType.FLOAT, 0);
 
         assertNotNull(array);
         assertEquals(DataType.FLOAT, array.dataType());
@@ -193,7 +193,7 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
 
     public void testEmptyWithShape_3(Nd4jBackend backend) {
         assertThrows(IllegalArgumentException.class,() -> {
-            val array = Nd4j.create(DataType.FLOAT, 2, 0, 3);
+            var array = Nd4j.create(DataType.FLOAT, 2, 0, 3);
             array.tensorAlongDimension(0, 2);
         });
 
@@ -203,7 +203,7 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
 
     public void testEmptyWithShape_4(Nd4jBackend backend){
-        val array = Nd4j.create(DataType.FLOAT, 0, 3);
+        var array = Nd4j.create(DataType.FLOAT, 0, 3);
 
         assertNotNull(array);
         assertEquals(DataType.FLOAT, array.dataType());
@@ -223,10 +223,10 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyReduction_1(Nd4jBackend backend) {
-        val x = Nd4j.create(DataType.FLOAT, 2, 0, 3);
-        val e = Nd4j.create(DataType.FLOAT, 2, 1, 3).assign(0);
+        var x = Nd4j.create(DataType.FLOAT, 2, 0, 3);
+        var e = Nd4j.create(DataType.FLOAT, 2, 1, 3).assign(0);
 
-        val reduced = x.sum(true, 1);
+        var reduced = x.sum(true, 1);
 
         assertArrayEquals(e.shape(), reduced.shape());
         assertEquals(e, reduced);
@@ -235,10 +235,10 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyReduction_2(Nd4jBackend backend) {
-        val x = Nd4j.create(DataType.FLOAT, 2, 0, 3);
-        val e = Nd4j.create(DataType.FLOAT, 2, 3).assign(0);
+        var x = Nd4j.create(DataType.FLOAT, 2, 0, 3);
+        var e = Nd4j.create(DataType.FLOAT, 2, 3).assign(0);
 
-        val reduced = x.sum(false, 1);
+        var reduced = x.sum(false, 1);
 
         assertArrayEquals(e.shape(), reduced.shape());
         assertEquals(e, reduced);
@@ -249,10 +249,10 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
 
     public void testEmptyReduction_3(Nd4jBackend backend) {
-        val x = Nd4j.create(DataType.FLOAT, 2, 0);
-        val e = Nd4j.create(DataType.FLOAT, 0);
+        var x = Nd4j.create(DataType.FLOAT, 2, 0);
+        var e = Nd4j.create(DataType.FLOAT, 0);
 
-        val reduced = x.argMax(0);
+        var reduced = x.argMax(0);
 
         assertArrayEquals(e.shape(), reduced.shape());
         assertEquals(e, reduced);
@@ -262,10 +262,10 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyReduction_4(Nd4jBackend backend) {
         assertThrows(ND4JIllegalStateException.class,() -> {
-            val x = Nd4j.create(DataType.FLOAT, 2, 0);
-            val e = Nd4j.create(DataType.FLOAT, 0);
+            var x = Nd4j.create(DataType.FLOAT, 2, 0);
+            var e = Nd4j.create(DataType.FLOAT, 0);
 
-            val reduced = x.argMax(1);
+            var reduced = x.argMax(1);
 
             assertArrayEquals(e.shape(), reduced.shape());
             assertEquals(e, reduced);
@@ -325,8 +325,8 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyWhere(Nd4jBackend backend) {
-        val mask = Nd4j.createFromArray(false,     false,     false,     false,     false);
-        val result = Nd4j.where(mask, null, null);
+        var mask = Nd4j.createFromArray(false,     false,     false,     false,     false);
+        var result = Nd4j.where(mask, null, null);
 
         assertTrue(result[0].isEmpty());
         assertNotNull(result[0].shapeInfoDataBuffer().asLong());
@@ -336,7 +336,7 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAllEmptyReduce(Nd4jBackend backend){
         INDArray x = Nd4j.createFromArray(true, true, true);
-        val all = new All(x);
+        var all = new All(x);
         all.setEmptyReduce(true);   //For TF compatibility - empty array for axis (which means no-op - and NOT all array reduction)
         INDArray out = Nd4j.exec(all);
         assertEquals(x, out);
@@ -345,9 +345,9 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyNoop(Nd4jBackend backend) {
-        val output = Nd4j.empty(DataType.LONG);
+        var output = Nd4j.empty(DataType.LONG);
 
-        val op = DynamicCustomOp.builder("noop")
+        var op = DynamicCustomOp.builder("noop")
                 .addOutputs(output)
                 .build();
 
@@ -357,7 +357,7 @@ public class EmptyTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyConstructor_1(Nd4jBackend backend) {
-        val x = Nd4j.create(new double[0]);
+        var x = Nd4j.create(new double[0]);
         assertTrue(x.isEmpty());
     }
 

@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.models.embeddings.inmemory;
 
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
@@ -142,7 +142,7 @@ public class InMemoryLookupTableTest extends BaseDL4JTest {
         AbstractCache<VocabWord> cacheTarget = new AbstractCache.Builder<VocabWord>().build();
 
 
-        val dir = testDir.toFile();
+        var dir = testDir.toFile();
         new ClassPathResource("/paravec/labeled/").copyDirectory(dir);
 
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()

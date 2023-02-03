@@ -94,8 +94,8 @@ SD_KERNEL static void pooling3dCuda(const void* vx, const sd::LongType* xShapeIn
       for (coords[2] = dstart; coords[2] < dend; coords[2] += dD) {
         for (coords[3] = hstart; coords[3] < hend; coords[3] += dH) {
           for (coords[4] = wstart; coords[4] < wend; coords[4] += dW) {
-            T val = x[shape::getOffset(xShapeInfo, coords)];
-            if (val > max) max = val;
+            T var = x[shape::getOffset(xShapeInfo, coords)];
+            if (var > max) max = val;
           }
         }
       }

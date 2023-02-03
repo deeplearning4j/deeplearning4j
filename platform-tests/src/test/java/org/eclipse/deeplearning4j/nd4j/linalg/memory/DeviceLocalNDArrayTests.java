@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.memory;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -51,14 +51,14 @@ public class DeviceLocalNDArrayTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDeviceLocalStringArray(Nd4jBackend backend){
-        val arr = Nd4j.create(Arrays.asList("first", "second"), 2);
+        var arr = Nd4j.create(Arrays.asList("first", "second"), 2);
         assertEquals(DataType.UTF8, arr.dataType());
         assertArrayEquals(new long[]{2}, arr.shape());
 
-        val dl = new DeviceLocalNDArray(arr);
+        var dl = new DeviceLocalNDArray(arr);
 
         for (int e = 0; e < Nd4j.getAffinityManager().getNumberOfDevices(); e++) {
-            val arr2 = dl.get(e);
+            var arr2 = dl.get(e);
             assertEquals(arr, arr2);
         }
     }
@@ -80,15 +80,15 @@ public class DeviceLocalNDArrayTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDeviceLocalUpdate_1(Nd4jBackend backend) throws Exception {
-        val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        var numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         if (numDevices < 2)
             return;
 
-        val array = Nd4j.createFromArray(1.f, 2.f, 3.f, 4.f);
+        var array = Nd4j.createFromArray(1.f, 2.f, 3.f, 4.f);
 
-        val deviceLocal = new DeviceLocalNDArray(array);
+        var deviceLocal = new DeviceLocalNDArray(array);
         for (int e = 0; e < numDevices; e++) {
-            val t = new Thread(new Runnable() {
+            var t = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     deviceLocal.get().add(1.f);
@@ -100,13 +100,13 @@ public class DeviceLocalNDArrayTests extends BaseNd4jTestWithBackends {
             t.join();
         }
 
-        val counter = new AtomicInteger(0);
+        var counter = new AtomicInteger(0);
 
-        val update = Nd4j.createFromArray(5.f, 5.f, 5.f, 5.f);
+        var update = Nd4j.createFromArray(5.f, 5.f, 5.f, 5.f);
         deviceLocal.update(update);
 
         for (int e = 0; e < numDevices; e++) {
-            val t = new Thread(new Runnable() {
+            var t = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     assertEquals(5.f, deviceLocal.get().meanNumber().floatValue(), 1e-5f);
@@ -125,17 +125,17 @@ public class DeviceLocalNDArrayTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDelayedDeviceLocalUpdate_1(Nd4jBackend backend) throws Exception {
-        val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        var numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         if (numDevices < 2)
             return;
 
-        val array = Nd4j.createFromArray(5.f, 5.f, 5.f, 5.f);
+        var array = Nd4j.createFromArray(5.f, 5.f, 5.f, 5.f);
 
-        val deviceLocal = new DeviceLocalNDArray(array, true);
-        val counter = new AtomicInteger(0);
+        var deviceLocal = new DeviceLocalNDArray(array, true);
+        var counter = new AtomicInteger(0);
 
         for (int e = 0; e < numDevices; e++) {
-            val t = new Thread(new Runnable() {
+            var t = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     assertEquals(5.f, deviceLocal.get().meanNumber().floatValue(), 1e-5f);
@@ -153,19 +153,19 @@ public class DeviceLocalNDArrayTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDelayedDeviceLocalUpdate_2(Nd4jBackend backend) throws Exception {
-        val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        var numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         if (numDevices < 2)
             return;
 
-        val array = Nd4j.createFromArray(5.f, 5.f, 5.f, 5.f);
+        var array = Nd4j.createFromArray(5.f, 5.f, 5.f, 5.f);
 
-        val deviceLocal = new DeviceLocalNDArray(array, true);
-        val counter = new AtomicInteger(0);
+        var deviceLocal = new DeviceLocalNDArray(array, true);
+        var counter = new AtomicInteger(0);
 
         deviceLocal.update(Nd4j.createFromArray(4.f, 4.f, 4.f, 4.f));
 
         for (int e = 0; e < numDevices; e++) {
-            val t = new Thread(new Runnable() {
+            var t = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     assertEquals(4.f, deviceLocal.get().meanNumber().floatValue(), 1e-5f);

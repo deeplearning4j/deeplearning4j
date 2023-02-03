@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.shape.indexing;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -206,9 +206,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test1dSubarray_1(Nd4jBackend backend) {
-        val data = Nd4j.linspace(DataType.FLOAT,0, 10, 1);
-        val exp = Nd4j.createFromArray(new float[]{3.f, 4.f});
-        val dataAtIndex = data.get(NDArrayIndex.interval(3, 5));
+        var data = Nd4j.linspace(DataType.FLOAT,0, 10, 1);
+        var exp = Nd4j.createFromArray(new float[]{3.f, 4.f});
+        var dataAtIndex = data.get(NDArrayIndex.interval(3, 5));
 
         assertEquals(exp, dataAtIndex);
     }
@@ -216,9 +216,9 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test1dSubarray_2(Nd4jBackend backend) {
-        val data = Nd4j.linspace(DataType.FLOAT,1, 10, 1);
-        val exp = Nd4j.createFromArray(new float[]{4.f, 6.f});
-        val dataAtIndex = data.get(Nd4j.createFromArray(new int[]{3, 5}));
+        var data = Nd4j.linspace(DataType.FLOAT,1, 10, 1);
+        var exp = Nd4j.createFromArray(new float[]{4.f, 6.f});
+        var dataAtIndex = data.get(Nd4j.createFromArray(new int[]{3, 5}));
 
         assertEquals(exp, dataAtIndex);
     }
@@ -253,7 +253,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
         for (int i = iStart; i < iEnd; i++) {
             for (int j = jStart; j < jEnd; j++) {
 
-                double val = arr.getDouble(slice, i, j);
+                double var = arr.getDouble(slice, i, j);
                 int[] sub = new int[] {i - iStart, j - jStart};
 
                 subArr_A.putScalar(sub, val);

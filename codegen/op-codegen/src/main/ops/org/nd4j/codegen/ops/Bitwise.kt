@@ -27,7 +27,7 @@ import org.nd4j.codegen.dsl.*
 
 
 fun Bitwise() = Namespace("Bitwise"){
-    val namespaceJavaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+    var namespaceJavaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
 
     Op("leftShift") {
         javaPackage = namespaceJavaPackage
@@ -101,8 +101,8 @@ fun Bitwise() = Namespace("Bitwise"){
         javaPackage = namespaceJavaPackage
         javaOpClass = "BitsHammingDistance"
 
-        val x = Input(INT, "x") { description = "First input array." }
-        val y = Input(INT, "y") { description = "Second input array." }
+        var x = Input(INT, "x") { description = "First input array." }
+        var y = Input(INT, "y") { description = "Second input array." }
         Constraint("Must be same types"){ sameType(x, y) }
 
         Output(INT, "output"){ description = "bitwise Hamming distance" }
@@ -119,8 +119,8 @@ fun Bitwise() = Namespace("Bitwise"){
         javaPackage = namespaceJavaPackage
         javaOpClass = "BitwiseAnd"
 
-        val x = Input(INT, "x") { description = "First input array" }
-        val y = Input(INT, "y") { description = "Second input array" }
+        var x = Input(INT, "x") { description = "First input array" }
+        var y = Input(INT, "y") { description = "Second input array" }
         Constraint("Must be same types"){ sameType(x, y) }
         BackendConstraint("Must have broadcastable shapes"){ broadcastableShapes(x, y) }
 
@@ -137,8 +137,8 @@ fun Bitwise() = Namespace("Bitwise"){
         javaPackage = namespaceJavaPackage
         javaOpClass = "BitwiseOr"
 
-        val x = Input(INT, "x") { description = "First input array" }
-        val y = Input(INT, "y") { description = "First input array" }
+        var x = Input(INT, "x") { description = "First input array" }
+        var y = Input(INT, "y") { description = "First input array" }
         Constraint("Must be same types"){ sameType(x, y) }
         BackendConstraint("Must have broadcastable shapes"){ broadcastableShapes(x, y) }
 
@@ -155,8 +155,8 @@ fun Bitwise() = Namespace("Bitwise"){
         javaPackage = namespaceJavaPackage
         javaOpClass = "BitwiseXor"
 
-        val x = Input(INT, "x") { description = "First input array" }
-        val y = Input(INT, "y") { description = "First input array" }
+        var x = Input(INT, "x") { description = "First input array" }
+        var y = Input(INT, "y") { description = "First input array" }
         Constraint("Must be same types"){ sameType(x, y) }
         BackendConstraint("Must have broadcastable shapes"){ broadcastableShapes(x, y) }
 

@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.api.iterator;
 
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,8 +45,8 @@ public class NDIndexIteratorTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIterate(Nd4jBackend backend) {
-        val shapeIter = new NdIndexIterator(2, 2);
-        val possibleSolutions = new long[][] {{0, 0}, {0, 1}, {1, 0}, {1, 1},};
+        var shapeIter = new NdIndexIterator(2, 2);
+        var possibleSolutions = new long[][] {{0, 0}, {0, 1}, {1, 0}, {1, 1},};
 
         for (int i = 0; i < 4; i++) {
             assertArrayEquals(possibleSolutions[i], shapeIter.next());

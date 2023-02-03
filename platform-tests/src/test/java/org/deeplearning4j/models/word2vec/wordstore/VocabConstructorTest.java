@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.models.word2vec.wordstore;
 
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
@@ -318,7 +318,7 @@ public class VocabConstructorTest extends BaseDL4JTest {
         int sourceSize = cacheSource.numWords();
         log.info("Source Vocab size: " + sourceSize);
 
-        val dir = testDir.toFile();
+        var dir = testDir.toFile();
         new ClassPathResource("/paravec/labeled/").copyDirectory(dir);
 
 
@@ -351,7 +351,7 @@ public class VocabConstructorTest extends BaseDL4JTest {
 
     @Test
     public void testTransfer_1() {
-        val vocab = new AbstractCache<VocabWord>();
+        var vocab = new AbstractCache<VocabWord>();
 
         vocab.addToken(new VocabWord(1.0,"alpha"));
         vocab.addWordToIndex(0, "alpha");
@@ -362,11 +362,11 @@ public class VocabConstructorTest extends BaseDL4JTest {
         vocab.addToken(new VocabWord(3.0,"gamma"));
         vocab.addWordToIndex(10, "gamma");
 
-        val constructor = new VocabConstructor.Builder<VocabWord>()
+        var constructor = new VocabConstructor.Builder<VocabWord>()
                 .build();
 
 
-        val result = constructor.transferVocabulary(vocab, true);
+        var result = constructor.transferVocabulary(vocab, true);
 
         assertEquals(3, result.numWords());
 
@@ -377,7 +377,7 @@ public class VocabConstructorTest extends BaseDL4JTest {
 
     @Test
     public void testTransfer_2() {
-        val vocab = new AbstractCache<VocabWord>();
+        var vocab = new AbstractCache<VocabWord>();
 
         vocab.addToken(new VocabWord(1.0,"alpha"));
         vocab.addWordToIndex(0, "alpha");
@@ -388,11 +388,11 @@ public class VocabConstructorTest extends BaseDL4JTest {
         vocab.addToken(new VocabWord(3.0,"gamma"));
         vocab.addWordToIndex(10, "gamma");
 
-        val constructor = new VocabConstructor.Builder<VocabWord>()
+        var constructor = new VocabConstructor.Builder<VocabWord>()
                 .build();
 
 
-        val result = constructor.transferVocabulary(vocab, false);
+        var result = constructor.transferVocabulary(vocab, false);
 
         assertEquals(3, result.numWords());
 
@@ -403,7 +403,7 @@ public class VocabConstructorTest extends BaseDL4JTest {
 
     @Test
     public void testTransfer_3() {
-        val vocab = new AbstractCache<VocabWord>();
+        var vocab = new AbstractCache<VocabWord>();
 
         vocab.addToken(new VocabWord(1.0,"alpha"));
         vocab.addWordToIndex(0, "alpha");
@@ -414,7 +414,7 @@ public class VocabConstructorTest extends BaseDL4JTest {
         vocab.addToken(new VocabWord(3.0,"gamma"));
         vocab.addWordToIndex(10, "gamma");
 
-        val vocabIntersect = new AbstractCache<VocabWord>();
+        var vocabIntersect = new AbstractCache<VocabWord>();
 
         vocabIntersect.addToken(new VocabWord(4.0,"alpha"));
         vocabIntersect.addWordToIndex(0, "alpha");
@@ -423,10 +423,10 @@ public class VocabConstructorTest extends BaseDL4JTest {
         vocab.addWordToIndex(15, "delta");
 
 
-        val constructor = new VocabConstructor.Builder<VocabWord>().setTargetVocabCache(vocab).setLockFactor(false)
+        var constructor = new VocabConstructor.Builder<VocabWord>().setTargetVocabCache(vocab).setLockFactor(false)
                 .build();
 
-        val result = constructor.transferVocabulary(vocabIntersect, true);
+        var result = constructor.transferVocabulary(vocabIntersect, true);
 
         assertEquals(4, result.numWords());
 

@@ -22,7 +22,7 @@ package org.nd4j.evaluation.classification;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.val;
+
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.IMetric;
@@ -177,7 +177,7 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
                 } else {
                     int nonMaskedCount = m.sumNumber().intValue();
                     rowsToPull = new int[nonMaskedCount];
-                    val maskSize = m.size(0);
+                    var maskSize = m.size(0);
                     int used = 0;
                     for (int j = 0; j < maskSize; j++) {
                         if (m.getDouble(j) != 0.0) {
@@ -224,7 +224,7 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
 
     private void assertIndex(int outputNum) {
         if (underlying == null) {
-            throw new UnsupportedOperationException("ROCBinary does not have any stats: eval must be called first");
+            throw new UnsupportedOperationException("ROCBinary does not have any stats: evar must be called first");
         }
         if (outputNum < 0 || outputNum >= underlying.length) {
             throw new IllegalArgumentException("Invalid input: output number must be between 0 and " + (outputNum - 1));

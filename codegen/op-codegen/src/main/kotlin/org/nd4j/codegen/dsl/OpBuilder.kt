@@ -27,7 +27,7 @@ import org.nd4j.codegen.ops.SDBaseOps
 import java.lang.IllegalStateException
 
 fun Namespace(name: String, block: NamespaceOps.() -> Unit): NamespaceOps {
-    val ns = NamespaceOps(name)
+    var ns = NamespaceOps(name)
     ns.block()
 
     ns.checkInvariants()
@@ -41,7 +41,7 @@ fun Mixin(name: String, block: Mixin.() -> Unit): Mixin {
 }
 
 fun NamespaceOps.Alias(ns:NamespaceOps, opName:String):Op {
-        val op:Op? = ns.op(opName)
+        var op:Op? = ns.op(opName)
         op?.let {
             this.parentNamespaceOps[ns.name]?.add(op)
             this.ops.add(op)
@@ -51,7 +51,7 @@ fun NamespaceOps.Alias(ns:NamespaceOps, opName:String):Op {
 }
 
 fun NamespaceOps.Op(name: String, block: Op.() -> Unit): Op {
-    val op = Op(name)
+    var op = Op(name)
     op.libnd4jOpName = name
 
     op.block()
@@ -87,7 +87,7 @@ fun NamespaceOps.Op(name: String,
 
 
 fun OpLike.Input(dataType: DataType, name: String, block: (Input.() -> Unit)? = null): Input {
-    val input = Input(name, dataType)
+    var input = Input(name, dataType)
     if (block != null) input.block()
 
     if (!dataType.isTensorDataType()) {
@@ -101,7 +101,7 @@ fun OpLike.Input(dataType: DataType, name: String, block: (Input.() -> Unit)? = 
 }
 
 fun OpLike.Arg(dataType: DataType, name: String, block: (Arg.() -> Unit)? = null): Arg {
-    val input = Arg(name, dataType)
+    var input = Arg(name, dataType)
     if (block != null) input.block()
 
     this.addArgument(input)
@@ -112,7 +112,7 @@ fun OpLike.Arg(dataType: DataType, name: String, block: (Arg.() -> Unit)? = null
 }
 
 fun OpLike.Output(dataType: DataType, name: String, block: (Output.() -> Unit)? = null): Output {
-    val output = Output(name, dataType, false)
+    var output = Output(name, dataType, false)
     if (block != null) output.block()
 
     if (!dataType.isTensorDataType()) {
@@ -124,7 +124,7 @@ fun OpLike.Output(dataType: DataType, name: String, block: (Output.() -> Unit)? 
 }
 
 fun OpLike.Doc(language: Language, scope: DocScope, block: DocSection.() -> String): DocSection {
-    val doc = DocSection().apply {
+    var doc = DocSection().apply {
         this.language = language
         this.scope = scope
         text = this.block()
@@ -134,11 +134,11 @@ fun OpLike.Doc(language: Language, scope: DocScope, block: DocSection.() -> Stri
 }
 
 fun OpLike.AllParamSignature(withOutput: Boolean = false) {
-    val allParameters = allParameters()
+    var allParameters = allParameters()
 
     this.addSignature(Signature(allParameters))
     if (withOutput) {
-        val withOutputParams = mutableListOf<Parameter>().also {
+        var withOutputParams = mutableListOf<Parameter>().also {
             it.addAll(this.outputs())
             it.addAll(allParameters)
         }
@@ -147,13 +147,13 @@ fun OpLike.AllParamSignature(withOutput: Boolean = false) {
 }
 
 fun OpLike.AllDefaultsSignature(withOutput: Boolean = false) {
-    val allParameters = allParameters()
+    var allParameters = allParameters()
 
     if (allParameters.find { it.hasDefaultValue() } != null) {
-        val params = allParameters.filterNot { it.hasDefaultValue() }
+        var params = allParameters.filterNot { it.hasDefaultValue() }
         this.addSignature(Signature(params))
         if (withOutput) {
-            val withOutputParams = mutableListOf<Parameter>().also {
+            var withOutputParams = mutableListOf<Parameter>().also {
                 it.addAll(this.outputs())
                 it.addAll(allParameters)
             }
@@ -166,12 +166,12 @@ fun OpLike.Signature(vararg params: Parameter, block: (Signature.() -> String)? 
     if (params.toSet().size < params.size) {
         throw IllegalArgumentException("A parameter may not be used twice in a signature!")
     }
-    val paramsAndOutputs = allParameters() + outputs()
+    var paramsAndOutputs = allParameters() + outputs()
     if (!paramsAndOutputs.containsAll(params.toList())) {
         throw IllegalArgumentException("You can only use parameters in a signature that are actually defined in $this! Did you forget to useMixin(...) a mixin?")
     }
 
-    val signature = Signature(params.toList())
+    var signature = Signature(params.toList())
     if (block != null) {
         signature.block()
     }
@@ -180,15 +180,15 @@ fun OpLike.Signature(vararg params: Parameter, block: (Signature.() -> String)? 
 }
 
 fun OpLike.Constraint(desc: String, block: ConstraintBuilder.() -> Expression): Constraint {
-    val check = ConstraintBuilder().block()
-    val constraint = Constraint(desc, check)
+    var check = ConstraintBuilder().block()
+    var constraint = Constraint(desc, check)
     this.addConstraint(constraint)
     return constraint
 }
 
 fun OpLike.BackendConstraint(desc: String, block: ConstraintBuilder.() -> Expression): Constraint {
-    val check = ConstraintBuilder().block()
-    val constraint = BackendConstraint(desc, check)
+    var check = ConstraintBuilder().block()
+    var constraint = BackendConstraint(desc, check)
     this.addConstraint(constraint)
     return constraint
 }
@@ -234,7 +234,7 @@ class ConstraintBuilder {
 }
 
 fun NamespaceOps.Config(name: String, block: (Config.() -> Unit)): Config {
-    val config = Config(name)
+    var config = Config(name)
     config.block()
     this.addConfig(config)
     Registry.registerConfig(config)
@@ -242,7 +242,7 @@ fun NamespaceOps.Config(name: String, block: (Config.() -> Unit)): Config {
 }
 
 fun Config.Input(dataType: DataType, name: String, block: (Input.() -> Unit)? = null): Input {
-    val input = Input(name, dataType)
+    var input = Input(name, dataType)
     if (block != null) input.block()
 
     if (!dataType.isTensorDataType()) {
@@ -254,7 +254,7 @@ fun Config.Input(dataType: DataType, name: String, block: (Input.() -> Unit)? = 
 }
 
 fun Config.Arg(dataType: DataType, name: String, block: (Arg.() -> Unit)? = null): Arg {
-    val input = Arg(name, dataType)
+    var input = Arg(name, dataType)
     if (block != null) input.block()
 
     this.addArgument(input)
@@ -266,21 +266,21 @@ fun Config.Arg(dataType: DataType, name: String, block: (Arg.() -> Unit)? = null
 }
 
 fun Config.Constraint(desc: String, block: ConstraintBuilder.() -> Expression): Constraint {
-    val check = ConstraintBuilder().block()
-    val constraint = Constraint(desc, check)
+    var check = ConstraintBuilder().block()
+    var constraint = Constraint(desc, check)
     this.addConstraint(constraint)
     return constraint
 }
 
 fun Config.BackendConstraint(desc: String, block: ConstraintBuilder.() -> Expression): Constraint {
-    val check = ConstraintBuilder().block()
-    val constraint = BackendConstraint(desc, check)
+    var check = ConstraintBuilder().block()
+    var constraint = BackendConstraint(desc, check)
     this.addConstraint(constraint)
     return constraint
 }
 
 fun Config.Doc(language: Language, scope: DocScope, block: DocSection.() -> String): DocSection {
-    val doc = DocSection().apply {
+    var doc = DocSection().apply {
         this.language = language
         this.scope = scope
         text = this.block()

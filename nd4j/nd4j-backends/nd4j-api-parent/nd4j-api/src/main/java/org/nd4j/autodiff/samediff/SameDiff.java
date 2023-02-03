@@ -25,7 +25,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.collections4.trie.PatriciaTrie;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -643,7 +643,7 @@ public class SameDiff extends SDBaseOps {
             reverseMap.put(v.getName(), count++);
         }
 
-        val newFunctions = new LinkedHashMap<String, DifferentialFunction>();
+        var newFunctions = new LinkedHashMap<String, DifferentialFunction>();
         for (SameDiffOp op : ops.values()) {
             DifferentialFunction function = op.getOp();
 
@@ -656,7 +656,7 @@ public class SameDiff extends SDBaseOps {
                 sameDiff.putOpForId(function.getOwnName(), function);
             newFunctions.put(function.getOwnName(), clone);
 
-            val argsForFunction = function.args();
+            var argsForFunction = function.args();
             for(SDVariable arg : argsForFunction) {
                 if(!sameDiff.variables.containsKey(arg.name())) {
                     SDVariable clone2 = arg.clone(this);
@@ -669,7 +669,7 @@ public class SameDiff extends SDBaseOps {
                 }
             }
 
-            val outputsForFunction = function.outputVariables();
+            var outputsForFunction = function.outputVariables();
             for(SDVariable arg : outputsForFunction) {
                 if(!sameDiff.variables.containsKey(arg.name())) {
                     SDVariable clone2 = arg.clone(this);
@@ -702,11 +702,11 @@ public class SameDiff extends SDBaseOps {
                 }
             }
 
-            for (val arg : clone.args()) {
+            for (var arg : clone.args()) {
                 arg.setSameDiff(sameDiff);
             }
 
-            for (val output : clone.outputVariables()) {
+            for (var output : clone.outputVariables()) {
                 output.setSameDiff(sameDiff);
             }
 
@@ -810,12 +810,12 @@ public class SameDiff extends SDBaseOps {
      * @return the output variables for the given function
      */
     public SDVariable[] getOutputVariablesForOp(DifferentialFunction function) {
-        val inputs = getOutputsForOp(function);
+        var inputs = getOutputsForOp(function);
         if (inputs == null) {
             throw new ND4JIllegalStateException("No inputs found for function " + function);
         }
 
-        val vars = new SDVariable[inputs.length];
+        var vars = new SDVariable[inputs.length];
         for (int i = 0; i < inputs.length; i++) {
             vars[i] = getVariable(inputs[i]);
         }
@@ -831,13 +831,13 @@ public class SameDiff extends SDBaseOps {
      * @return the input variables for the given function
      */
     public SDVariable[] getInputVariablesForOp(DifferentialFunction function) {
-        val inputs = getInputsForOp(function);
+        var inputs = getInputsForOp(function);
         if (inputs == null) {
             log.warn("No inputs found for function " + function);
             return new SDVariable[0];
         }
 
-        val vars = new SDVariable[inputs.length];
+        var vars = new SDVariable[inputs.length];
         for (int i = 0; i < inputs.length; i++) {
             vars[i] = getVariable(inputs[i]);
             if (vars[i] == null) {
@@ -921,7 +921,7 @@ public class SameDiff extends SDBaseOps {
     /**
      * Note this is a special getter for the eager holder.
      * Eager mode is meant to mainly be used in only very special cases right now.
-     * Normal array retrieval should be done by {@link #getArrForVarName}
+     * Normal array retrievar should be done by {@link #getArrForVarName}
      * @param varName
      * @return
      */
@@ -1575,11 +1575,6 @@ public class SameDiff extends SDBaseOps {
     }
 
 
-    public SDVariable[] doUdf(UserDefinedCustomOp userDefinedCustomOp) {
-        userDefinedCustomOp.configureWithSameDiff(this);
-        userDefinedCustomOp.setSameDiff(this);
-        return userDefinedCustomOp.outputVariables();
-    }
 
 
     /**
@@ -4181,7 +4176,7 @@ public class SameDiff extends SDBaseOps {
      * @param function the function to remove the argument from
      */
     public void removeArgFromOp(String varName, DifferentialFunction function) {
-        val args = function.args();
+        var args = function.args();
 
         for (int i = 0; i < args.length; i++) {
             if (args[i].name().equals(varName)) {
@@ -4191,7 +4186,7 @@ public class SameDiff extends SDBaseOps {
                  * the reverse and forward arguments.
                  */
                 List<String> reverseArgs = ops.get(function.getOwnName()).getInputsToOp();
-                val newArgs = new ArrayList<String>(args.length - 1);
+                var newArgs = new ArrayList<String>(args.length - 1);
                 for (int arg = 0; arg < args.length; arg++) {
                     if (!reverseArgs.get(arg).equals(varName)) {
                         newArgs.add(reverseArgs.get(arg));
@@ -4560,7 +4555,7 @@ public class SameDiff extends SDBaseOps {
             CustomOp customOp = (CustomOp) function;
             int numOutputs = function.getNumOutputs(); //Use this in preference - if set. Descriptor might specify 2, but it can sometimes be 2+
             if (numOutputs <= 0) {
-                val descriptor = customOp.getDescriptor();
+                var descriptor = customOp.getDescriptor();
                 if (descriptor != null) {
                     numOutputs = descriptor.getNumOutputs();
                 }
@@ -4969,11 +4964,11 @@ public class SameDiff extends SDBaseOps {
                 if(func instanceof BaseCompatOp) {
                     controlflowOps.add(op);
                 }
-                val args = func.args();
-                for (val arg : args)
+                var args = func.args();
+                for (var arg : args)
                     arg.setSameDiff(sameDiff);
-                val outputs = func.outputVariables();
-                for (val output : outputs)
+                var outputs = func.outputVariables();
+                for (var output : outputs)
                     output.setSameDiff(sameDiff);
                 func.setSameDiff(sameDiff);
             }
@@ -5536,7 +5531,7 @@ public class SameDiff extends SDBaseOps {
             return varToUpdate;
         }
 
-        val oldVarName = varToUpdate.name();
+        var oldVarName = varToUpdate.name();
         varToUpdate.setVarName(newVarName);
         renameVariable(opToRename,oldVarName, newVarName);
         return varToUpdate;
@@ -5666,12 +5661,12 @@ public class SameDiff extends SDBaseOps {
         if (!varName.contains(":")) {
             return Pair.pairOf(varName, 0);
         } else {
-            val split = varName.split(":");
-            val index = Integer.valueOf(split[split.length - 1]);
+            var split = varName.split(":");
+            var index = Integer.valueOf(split[split.length - 1]);
             if (split.length == 2)
                 return Pair.pairOf(split[0], index);
             else {
-                val builder = new StringBuilder();
+                var builder = new StringBuilder();
                 for (int e = 0; e < split.length - 1; e++) {
                     builder.append(split[e]);
 
@@ -5706,18 +5701,18 @@ public class SameDiff extends SDBaseOps {
      */
     public ByteBuffer asFlatBuffers(long graphId, @NonNull ExecutorConfiguration configuration, boolean includeUpdaterState) {
         Nd4j.getExecutioner().commit();
-        val bufferBuilder = new FlatBufferBuilder(1024);
-        val idCounter = new AtomicInteger(0);
+        var bufferBuilder = new FlatBufferBuilder(1024);
+        var idCounter = new AtomicInteger(0);
 
-        val flatVariables = new ArrayList<Integer>();
-        val flatOffsets = new ArrayList<Integer>();
-        val flatNodes = new ArrayList<Integer>();
+        var flatVariables = new ArrayList<Integer>();
+        var flatOffsets = new ArrayList<Integer>();
+        var flatNodes = new ArrayList<Integer>();
 
         // first of all we build VariableSpace dump
-        val variableList = new ArrayList<>(variables());
-        val reverseMap = new LinkedHashMap<String, Integer>();
-        val forwardMap = new LinkedHashMap<String, Integer>();
-        val framesMap = new LinkedHashMap<String, Integer>();
+        var variableList = new ArrayList<>(variables());
+        var reverseMap = new LinkedHashMap<String, Integer>();
+        var forwardMap = new LinkedHashMap<String, Integer>();
+        var framesMap = new LinkedHashMap<String, Integer>();
 
 
 
@@ -5745,7 +5740,7 @@ public class SameDiff extends SDBaseOps {
 
 
         int idx = 0;
-        val idxForOps = new IdentityHashMap<DifferentialFunction, Integer>();
+        var idxForOps = new IdentityHashMap<DifferentialFunction, Integer>();
         List<SDVariable> allVars = variables();
         for (SDVariable variable : allVars) {
             INDArray arr = variable.getVariableType() == VariableType.ARRAY ? null : variable.getArr();
@@ -5792,7 +5787,7 @@ public class SameDiff extends SDBaseOps {
             }
 
             if (variable.getVariableType() == VariableType.PLACEHOLDER) {
-                val shp = variable.getShape();
+                var shp = variable.getShape();
                 if(shp != null) {
                     //Some models may have no shape defined, not ever a placeholder type shape
                     shape = FlatVariable.createShapeVector(bufferBuilder, shp);
@@ -5958,7 +5953,7 @@ public class SameDiff extends SDBaseOps {
      * @return a ByteBuffer holding the exported FlatBuffers representation of the graph
      */
     public ByteBuffer asFlatBuffers(boolean includeUpdaterState) {
-        val configuration = ExecutorConfiguration.builder()
+        var configuration = ExecutorConfiguration.builder()
                 .outputMode(OutputMode.VARIABLE_SPACE)
                 .executionMode(org.nd4j.autodiff.execution.conf.ExecutionMode.SEQUENTIAL)
                 .profilingMode(OpExecutioner.ProfilingMode.DISABLED)
@@ -6079,12 +6074,12 @@ public class SameDiff extends SDBaseOps {
      * with profiling disabled and gather timings enabled.
      */
     public void asFlatFile(@NonNull File file, boolean withUpdaterState) throws IOException {
-        val fb = asFlatBuffers(withUpdaterState);
-        val offset = fb.position();
+        var fb = asFlatBuffers(withUpdaterState);
+        var offset = fb.position();
 
-        val array = fb.array();
+        var array = fb.array();
 
-        try (val fos = new FileOutputStream(file); val bos = new BufferedOutputStream(fos); val dos = new DataOutputStream(bos)) {
+        try (var fos = new FileOutputStream(file); var bos = new BufferedOutputStream(fos); var dos = new DataOutputStream(bos)) {
             dos.write(array, offset, array.length - offset);
         }
     }
@@ -6096,12 +6091,12 @@ public class SameDiff extends SDBaseOps {
      * @param includeUpdaterState If true: include the updater state (state for updaters such as Adam, Nesterov, AdaGrad etc)
      */
     public void asFlatFile(@NonNull File file, @NonNull ExecutorConfiguration configuration, boolean includeUpdaterState) throws IOException {
-        val fb = asFlatBuffers(configuration, includeUpdaterState);
-        val offset = fb.position();
+        var fb = asFlatBuffers(configuration, includeUpdaterState);
+        var offset = fb.position();
 
-        val array = fb.array();
+        var array = fb.array();
 
-        try (val fos = new FileOutputStream(file); val bos = new BufferedOutputStream(fos); val dos = new DataOutputStream(bos)) {
+        try (var fos = new FileOutputStream(file); var bos = new BufferedOutputStream(fos); var dos = new DataOutputStream(bos)) {
             dos.write(array, offset, array.length - offset);
         }
     }
@@ -6459,10 +6454,10 @@ public class SameDiff extends SDBaseOps {
      * @see #summary()
      */
     public String asFlatPrint() {
-        val sb = new StringBuilder();
-        val fb = asFlatBuffers(false);
+        var sb = new StringBuilder();
+        var fb = asFlatBuffers(false);
 
-        val graph = FlatGraph.getRootAsFlatGraph(fb);
+        var graph = FlatGraph.getRootAsFlatGraph(fb);
 
         sb.append("\nExternal variables:\n\n");
         for (int e = 0; e < graph.variablesLength(); e++) {
@@ -6505,7 +6500,7 @@ public class SameDiff extends SDBaseOps {
 
         }
 
-        val map = Nd4j.getExecutioner().getCustomOperations();
+        var map = Nd4j.getExecutioner().getCustomOperations();
 
 
         sb.append("\nOps sequence:\n\n");
@@ -6519,10 +6514,10 @@ public class SameDiff extends SDBaseOps {
             if (FlatBuffersMapper.getTypeFromByte(node.opType()) != Op.Type.CUSTOM)
                 sb.append(": ").append(node.opNum());
             else {
-                val keys = map.keySet();
+                var keys = map.keySet();
                 String opName = null;
-                for (val k : keys) {
-                    val d = map.get(k);
+                for (var k : keys) {
+                    var d = map.get(k);
                     if (d.getHash() == node.opNum())
                         opName = k;
                 }

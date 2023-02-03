@@ -19,7 +19,7 @@
  */
 package org.eclipse.deeplearning4j.dl4jcore.nn.layers.convolution;
 
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -201,7 +201,7 @@ class ConvolutionLayerTest extends BaseDL4JTest {
     void testCNNBiasInit() {
         ConvolutionLayer cnn = new ConvolutionLayer.Builder().nIn(1).nOut(3).biasInit(1).build();
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(cnn).build();
-        val numParams = conf.getLayer().initializer().numParams(conf);
+        var numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         assertEquals(layer.getParam("b").length(), layer.getParam("b").size(0));
@@ -249,7 +249,7 @@ class ConvolutionLayerTest extends BaseDL4JTest {
     private static Layer getCNNConfig(int nIn, int nOut, int[] kernelSize, int[] stride, int[] padding) {
         ConvolutionLayer layer = new ConvolutionLayer.Builder(kernelSize, stride, padding).nIn(nIn).nOut(nOut).activation(Activation.SIGMOID).build();
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(layer).build();
-        val numParams = conf.getLayer().initializer().numParams(conf);
+        var numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         return conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
     }
@@ -312,7 +312,7 @@ class ConvolutionLayerTest extends BaseDL4JTest {
         model2.fit(mnistIter);
         mnistIter.reset();
         DataSet test = mnistIter.next();
-        Evaluation eval = new Evaluation();
+        Evaluation evar = new Evaluation();
         INDArray output = model.output(test.getFeatures());
         eval.eval(test.getLabels(), output);
         double f1Score = eval.f1();
@@ -335,7 +335,7 @@ class ConvolutionLayerTest extends BaseDL4JTest {
         model2.fit(mnistIter);
         mnistIter.reset();
         DataSet test = mnistIter.next();
-        Evaluation eval = new Evaluation();
+        Evaluation evar = new Evaluation();
         INDArray output = model.output(test.getFeatures());
         eval.eval(test.getLabels(), output);
         double f1Score = eval.f1();

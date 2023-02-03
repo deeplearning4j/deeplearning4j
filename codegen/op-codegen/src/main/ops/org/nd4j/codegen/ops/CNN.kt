@@ -28,14 +28,14 @@ import org.nd4j.codegen.api.DataType.*
 import org.nd4j.codegen.api.Exactly
 
 fun SDCNN() =  Namespace("CNN"){
-    val namespaceJavaPackage = "org.nd4j.linalg.api.ops.impl.layers.convolution"
+    var namespaceJavaPackage = "org.nd4j.linalg.api.ops.impl.layers.convolution"
 
-    val dataFormat = Mixin("dataFormat"){
+    var dataFormat = Mixin("dataFormat"){
         Arg(ENUM, "dataFormat") { possibleValues = listOf("NCHW", "NHWC"); description = "Data format: \"NCHW\" or \"NHWC\"" }
     }
 
 
-    val conv1DConfig = Config("Conv1DConfig"){
+    var conv1DConfig = Config("Conv1DConfig"){
         Arg(LONG, "k"){ description = "Kernel"; defaultValue=-1L}
         Arg(LONG, "s"){ description = "stride"; defaultValue=1}
         Arg(LONG, "p"){ description = "padding"; defaultValue=0}
@@ -45,7 +45,7 @@ fun SDCNN() =  Namespace("CNN"){
         javaClassOverride = "org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig"
     }
 
-    val conv2DConfig = Config("Conv2DConfig"){
+    var conv2DConfig = Config("Conv2DConfig"){
         Arg(LONG, "kH"){ description = "Kernel height"; defaultValue=-1L}
         Arg(LONG, "kW"){ description = "Kernel width"; defaultValue=-1L}
         Arg(LONG, "sH"){ description = "Stride along height dimension"; defaultValue=1};
@@ -59,7 +59,7 @@ fun SDCNN() =  Namespace("CNN"){
         javaClassOverride = "org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig"
     }
 
-    val conv3DConfig = Config("Conv3DConfig"){
+    var conv3DConfig = Config("Conv3DConfig"){
         Arg(LONG, "kD"){ description = "Kernel depth"; defaultValue=-1}
         Arg(LONG, "kW"){ description = "Kernel width"; defaultValue=-1}
         Arg(LONG, "kH"){ description = "Kernel height"; defaultValue=-1};
@@ -79,7 +79,7 @@ fun SDCNN() =  Namespace("CNN"){
     }
 
 
-    val deconv2DConfig = Config("DeConv2DConfig"){
+    var deconv2DConfig = Config("DeConv2DConfig"){
         Arg(LONG, "kH"){ description = "Kernel height"; defaultValue=-1L}
         Arg(LONG, "kW"){ description = "Kernel width"; defaultValue=-1L}
         Arg(LONG, "sH"){ description = "Stride along height dimension"; defaultValue=1L};
@@ -94,7 +94,7 @@ fun SDCNN() =  Namespace("CNN"){
     }
 
 
-    val deconv3DConfig = Config("DeConv3DConfig"){
+    var deconv3DConfig = Config("DeConv3DConfig"){
         Arg(LONG, "kD"){ description = "Kernel depth"; defaultValue=-1L}
         Arg(LONG, "kW"){ description = "Kernel width"; defaultValue=-1L}
         Arg(LONG, "kH"){ description = "Kernel height"; defaultValue=-1L};
@@ -115,7 +115,7 @@ fun SDCNN() =  Namespace("CNN"){
 
 
 
-    val pooling2DConfig = Config("Pooling2DConfig"){
+    var pooling2DConfig = Config("Pooling2DConfig"){
         Arg(LONG, "kH"){ description = "Kernel height"; defaultValue=-1}
         Arg(LONG, "kW"){ description = "Kernel width"; defaultValue=-1}
         Arg(LONG, "sH"){ description = "Stride along height dimension"; defaultValue=1};
@@ -129,7 +129,7 @@ fun SDCNN() =  Namespace("CNN"){
         javaClassOverride = "org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig"
     }
 
-    val pooling3DConfig = Config("Pooling3DConfig"){
+    var pooling3DConfig = Config("Pooling3DConfig"){
         Arg(LONG, "kD"){ description = "Kernel depth"; defaultValue=-1}
         Arg(LONG, "kW"){ description = "Kernel width"; defaultValue=-1}
         Arg(LONG, "kH"){ description = "Kernel height"; defaultValue=-1};
@@ -148,7 +148,7 @@ fun SDCNN() =  Namespace("CNN"){
     }
 
 
-    val LocalResponseNormalizationConfig = Config("LocalResponseNormalizationConfig"){
+    var LocalResponseNormalizationConfig = Config("LocalResponseNormalizationConfig"){
         Arg(NUMERIC, "alpha"){ description = "alpha"; defaultValue=1}
         Arg(NUMERIC, "beta"){ description = "beta"; defaultValue=0.5}
         Arg(NUMERIC, "bias"){ description = "bias"; defaultValue=1}

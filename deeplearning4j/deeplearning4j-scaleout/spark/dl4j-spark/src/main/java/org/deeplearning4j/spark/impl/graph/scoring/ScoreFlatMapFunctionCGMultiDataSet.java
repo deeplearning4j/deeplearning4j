@@ -63,11 +63,11 @@ public class ScoreFlatMapFunctionCGMultiDataSet implements FlatMapFunction<Itera
 
         ComputationGraph network = new ComputationGraph(ComputationGraphConfiguration.fromJson(json));
         network.init();
-        INDArray val = params.value().dup(); //.value() is shared by all executors on single machine -> OK, as params are not changed in score function
-        if (val.length() != network.numParams(false))
+        INDArray paramsVal = params.value().dup(); //.value() is shared by all executors on single machine -> OK, as params are not changed in score function
+        if (paramsVal.length() != network.numParams(false))
             throw new IllegalStateException(
                             "Network did not have same number of parameters as the broadcast set parameters");
-        network.setParams(val);
+        network.setParams(paramsVal);
 
         List<Tuple2<Long, Double>> out = new ArrayList<>();
         while (iter.hasNext()) {

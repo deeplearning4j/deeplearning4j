@@ -28,7 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * And indexing representing
- * an interval. An interval over a given dimension
+ * an interval. An intervar over a given dimension
  * will create a view similar to a {@link PointIndex}
  * starting from a position and ending at one.
  *

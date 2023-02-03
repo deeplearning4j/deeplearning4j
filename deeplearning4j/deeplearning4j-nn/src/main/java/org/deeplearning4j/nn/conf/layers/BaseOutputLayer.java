@@ -55,8 +55,8 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
         //Basically a dense layer...
         InputType outputType = getOutputType(-1, inputType);
 
-        val numParams = initializer().numParams(this);
-        val updaterStateSize = (int) getIUpdater().stateSize(numParams);
+        var numParams = initializer().numParams(this);
+        var updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         int trainSizeFixed = 0;
         int trainSizeVariable = 0;

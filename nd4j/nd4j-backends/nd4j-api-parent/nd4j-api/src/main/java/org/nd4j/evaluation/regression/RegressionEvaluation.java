@@ -22,7 +22,7 @@ package org.nd4j.evaluation.regression;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.val;
+
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.IMetric;
@@ -267,7 +267,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         sumSquaredPredicted.addi(predictions.mul(predictions).sum(0).castTo(labelsSumPerColumn.dataType()));
 
 
-        val nRows = labels.size(0);
+        var nRows = labels.size(0);
 
         INDArray newExampleCountPerColumn;
         if (maskArray == null) {

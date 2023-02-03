@@ -22,7 +22,7 @@ package org.deeplearning4j.spark.impl.multilayer.scoring;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
@@ -57,18 +57,18 @@ public class ScoreFlatMapFunction implements FlatMapFunction<Iterator<DataSet>, 
 
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
         network.init();
-        INDArray val = params.value().dup(); //.value() object will be shared by all executors on each machine -> OK, as params are not modified by score function
-        if (val.length() != network.numParams(false))
+        INDArray paramsVal = params.value().dup(); //.value() object will be shared by all executors on each machine -> OK, as params are not modified by score function
+        if (paramsVal.length() != network.numParams(false))
             throw new IllegalStateException(
                             "Network did not have same number of parameters as the broadcast set parameters");
-        network.setParameters(val);
+        network.setParameters(paramsVal);
 
         List<Tuple2<Integer, Double>> out = new ArrayList<>();
         while (iter.hasNext()) {
             DataSet ds = iter.next();
             double score = network.score(ds, false);
 
-            val numExamples = (int) ds.getFeatures().size(0);
+            var numExamples = (int) ds.getFeatures().size(0);
             out.add(new Tuple2<>(numExamples, score * numExamples));
         }
 

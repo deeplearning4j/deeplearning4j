@@ -68,9 +68,9 @@ T SD_DEVICE gammaLess(T const* U, sd::LongType index, sd::LongType maxLength, T 
     //            math::atomics::sd_atomicAdd(index, 1LL);
 
     if (rawX <= d) {
-      auto testVal = (math::p_pow(rawX, alpha - 1.f) * math::p_exp(-T(0.5f) * rawX)) /
+      auto testvar = (math::p_pow(rawX, alpha - 1.f) * math::p_exp(-T(0.5f) * rawX)) /
                      (powerAlpha * math::p_pow(T(1.f) - math::p_exp(-T(0.5f) * rawX), alpha - T(1.f)));
-      if (testVal < v) continue;
+      if (testvar < v) continue;
       break;
     } else {
       if (v <= math::p_pow(d / rawX, T(1.f) - alpha)) break;
@@ -307,10 +307,10 @@ static SD_KERNEL void fillUniformKernel(graph::RandomGenerator* devRng, T from, 
 template <typename T>
 static void fillRandomUniform_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* min, NDArray* max,
                                NDArray* output) {
-  T minVal = T(0);
-  T maxVal = DataTypeUtils::infOrMax<T>();
-  if (min) minVal = min->t<T>(0);
-  if (max) maxVal = max->t<T>(0);
+  T minvar = T(0);
+  T maxvar = DataTypeUtils::infOrMax<T>();
+  if (min) minvar = min->t<T>(0);
+  if (max) maxvar = max->t<T>(0);
 
   if (output->isR())
     RandomLauncher::fillUniform(context, rng, output, minVal, maxVal);
@@ -404,8 +404,8 @@ SD_HOST static void fillMultiNomialCudaLauncher(const int blocksPerGrid, const i
                                                 const sd::LongType* zShapeInfo, const sd::LongType batchValue,
                                                 const sd::LongType numOfSamples, const sd::LongType numOfClassX,
                                                 const sd::LongType dimA) {
-  const X minVal = DataTypeUtils::min<X>();
-  const X maxVal = 1.0;
+  const X minvar = DataTypeUtils::min<X>();
+  const X maxvar = 1.0;
 
   fillMultiNomialCuda_<X, Z><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(
       devRng, vx, xShapeInfo, vz, zShapeInfo, batchValue, numOfSamples, numOfClassX, dimA, minVal, maxVal);

@@ -21,7 +21,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -53,7 +53,7 @@ public class BatchToSpace extends DynamicCustomOp {
         this.blocks = blocks;
         this.crops = crops;
 
-        for (val b : blocks)
+        for (var b : blocks)
             addIArgument(b);
     }
 
@@ -63,7 +63,7 @@ public class BatchToSpace extends DynamicCustomOp {
         this.blocks = blocks;
         this.crops = crops;
 
-        for (val b : blocks)
+        for (var b : blocks)
             addIArgument(b);
     }
 

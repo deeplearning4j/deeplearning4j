@@ -64,7 +64,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.DisplayName;
 
-@DisplayName("Eval Test")
+@DisplayName("Evar Test")
 @NativeTag
 @Tag(TagNames.EVAL_METRICS)
 @Tag(TagNames.JACKSON_SERDE)
@@ -98,13 +98,13 @@ class EvalTest extends BaseDL4JTest {
         model.fit(train);
         // Get predictions from test feature
         INDArray testPredictedLabel = model.output(testFeature);
-        // Eval with class number
+        // Evar with class number
         // // Specify class num here
-        org.nd4j.evaluation.classification.Evaluation eval = new org.nd4j.evaluation.classification.Evaluation(3);
+        org.nd4j.evaluation.classification.Evaluation evar = new org.nd4j.evaluation.classification.Evaluation(3);
         eval.eval(testLabel, testPredictedLabel);
         double eval1F1 = eval.f1();
         double eval1Acc = eval.accuracy();
-        // Eval without class number
+        // Evar without class number
         // // No class num
         org.nd4j.evaluation.classification.Evaluation eval2 = new org.nd4j.evaluation.classification.Evaluation();
         eval2.eval(testLabel, testPredictedLabel);
@@ -249,7 +249,7 @@ class EvalTest extends BaseDL4JTest {
     }
 
     @Test
-    @DisplayName("Test Eval Splitting")
+    @DisplayName("Test Evar Splitting")
     void testEvalSplitting() {
         // Test for "tbptt-like" functionality
         for (WorkspaceMode ws : WorkspaceMode.values()) {
@@ -293,7 +293,7 @@ class EvalTest extends BaseDL4JTest {
     }
 
     @Test
-    @DisplayName("Test Eval Splitting Comp Graph")
+    @DisplayName("Test Evar Splitting Comp Graph")
     void testEvalSplittingCompGraph() {
         // Test for "tbptt-like" functionality
         for (WorkspaceMode ws : WorkspaceMode.values()) {
@@ -325,9 +325,9 @@ class EvalTest extends BaseDL4JTest {
                 }
                 List<DataSet> l = Arrays.asList(new DataSet(in1, out1), new DataSet(in2, out2));
                 DataSetIterator iter = new ExistingDataSetIterator(l);
-                // System.out.println("Eval net 1");
+                // System.out.println("Evar net 1");
                 org.nd4j.evaluation.IEvaluation[] e1 = net1.doEvaluation(iter, new org.nd4j.evaluation.classification.Evaluation(), new org.nd4j.evaluation.classification.ROCMultiClass(), new org.nd4j.evaluation.regression.RegressionEvaluation());
-                // System.out.println("Eval net 2");
+                // System.out.println("Evar net 2");
                 org.nd4j.evaluation.IEvaluation[] e2 = net2.doEvaluation(iter, new org.nd4j.evaluation.classification.Evaluation(), new org.nd4j.evaluation.classification.ROCMultiClass(), new org.nd4j.evaluation.regression.RegressionEvaluation());
                 assertEquals(e1[0], e2[0]);
                 assertEquals(e1[1], e2[1]);
@@ -337,7 +337,7 @@ class EvalTest extends BaseDL4JTest {
     }
 
     @Test
-    @DisplayName("Test Eval Splitting 2")
+    @DisplayName("Test Evar Splitting 2")
     void testEvalSplitting2() {
         List<List<Writable>> seqFeatures = new ArrayList<>();
         List<Writable> step = Arrays.<Writable>asList(new FloatWritable(0), new FloatWritable(0), new FloatWritable(0));
@@ -373,7 +373,7 @@ class EvalTest extends BaseDL4JTest {
     }
 
     @Test
-    @DisplayName("Test Multi Output Eval Simple")
+    @DisplayName("Test Multi Output Evar Simple")
     void testMultiOutputEvalSimple() {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).graphBuilder().addInputs("in").addLayer("out1", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX).build(), "in").addLayer("out2", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX).build(), "in").setOutputs("out1", "out2").build();
@@ -396,7 +396,7 @@ class EvalTest extends BaseDL4JTest {
     }
 
     @Test
-    @DisplayName("Test Multi Output Eval CG")
+    @DisplayName("Test Multi Output Evar CG")
     void testMultiOutputEvalCG() {
         // Simple sanity check on evaluation
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in").layer("0", new EmbeddingSequenceLayer.Builder().nIn(10).nOut(10).build(), "in").layer("1", new LSTM.Builder().nIn(10).nOut(10).build(), "0").layer("2", new LSTM.Builder().nIn(10).nOut(10).build(), "0").layer("out1", new RnnOutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build(), "1").layer("out2", new RnnOutputLayer.Builder().nIn(10).nOut(20).activation(Activation.SOFTMAX).build(), "2").setOutputs("out1", "out2").build();

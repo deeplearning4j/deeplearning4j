@@ -22,7 +22,7 @@ package org.deeplearning4j.nn.conf.graph;
 
 
 import lombok.Getter;
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -39,7 +39,7 @@ public class UnstackVertex extends GraphVertex {
 
     /**
      * @param from The first column index of the stacked inputs.
-     * @param stackSize The total number of stacked inputs. An interval is automatically
+     * @param stackSize The total number of stacked inputs. An intervar is automatically
      *                  calculated according to the size of the first dimension.
      */
     public UnstackVertex(@JsonProperty("from") int from, @JsonProperty("stackSize") int stackSize) {
@@ -145,9 +145,9 @@ public class UnstackVertex extends GraphVertex {
             //CNN inputs... also check that the channels, width and heights match:
             InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional) first;
 
-            val fd = firstConv.getChannels();
-            val fw = firstConv.getWidth();
-            val fh = firstConv.getHeight();
+            var fd = firstConv.getChannels();
+            var fw = firstConv.getWidth();
+            var fh = firstConv.getHeight();
 
             long depthSum = fd;
 
@@ -161,9 +161,9 @@ public class UnstackVertex extends GraphVertex {
 
                 InputType.InputTypeConvolutional otherConv = (InputType.InputTypeConvolutional) vertexInputs[i];
 
-                val od = otherConv.getChannels();
-                val ow = otherConv.getWidth();
-                val oh = otherConv.getHeight();
+                var od = otherConv.getChannels();
+                var ow = otherConv.getWidth();
+                var oh = otherConv.getHeight();
 
                 if (fw != ow || fh != oh) {
                     throw new InvalidInputTypeException(

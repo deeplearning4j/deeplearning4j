@@ -24,7 +24,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -105,7 +105,7 @@ public class BatchNorm extends DynamicCustomOp {
         if(jaxis != null) {
             //If null: op defaults to last dimension
             axis.clear();
-            for (val v:jaxis) {
+            for (var v:jaxis) {
                 axis.add(v);
             }
             addIArgument(jaxis);

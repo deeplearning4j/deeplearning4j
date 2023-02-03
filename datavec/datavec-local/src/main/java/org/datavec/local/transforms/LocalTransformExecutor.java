@@ -23,7 +23,7 @@ package org.datavec.local.transforms;
 import com.codepoetics.protonpack.Indexed;
 import com.codepoetics.protonpack.StreamUtils;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.FieldVector;
@@ -434,14 +434,9 @@ public class LocalTransformExecutor {
                 //initial op
                 Map<String, IAggregableReduceOp<List<Writable>, List<Writable>>> resultPerKey = new HashMap<>();
 
-                val groupedByKey = FunctionalUtils.groupByKey(pair);
-                val aggregated = StreamUtils.aggregate(groupedByKey.entrySet()
-                        .stream(), new BiPredicate<Map.Entry<String, List<List<Writable>>>, Map.Entry<String, List<List<Writable>>>>() {
-                    @Override
-                    public boolean test(Map.Entry<String, List<List<Writable>>> stringListEntry, Map.Entry<String, List<List<Writable>>> stringListEntry2) {
-                        return stringListEntry.getKey().equals(stringListEntry2.getKey());
-                    }
-                }).collect(Collectors.toList());
+                var groupedByKey = FunctionalUtils.groupByKey(pair);
+                var aggregated = StreamUtils.aggregate(groupedByKey.entrySet()
+                        .stream(), (stringListEntry, stringListEntry2) -> stringListEntry.getKey().equals(stringListEntry2.getKey())).collect(Collectors.toList());
 
 
                 aggregated.stream().forEach((List<Map.Entry<String, List<List<Writable>>>> input) -> {

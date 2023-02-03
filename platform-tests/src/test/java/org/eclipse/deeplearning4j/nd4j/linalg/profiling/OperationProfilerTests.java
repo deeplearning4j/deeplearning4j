@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.profiling;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -438,24 +438,24 @@ public class OperationProfilerTests extends BaseNd4jTestWithBackends {
 
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
 
-            val nanosC = System.nanoTime();
+            var nanosC = System.nanoTime();
             for (int e = 0; e < iterations; e++) {
                 x.addi(y);
             }
-            val nanosD = System.nanoTime();
+            var nanosD = System.nanoTime();
 
-            val avgB = (nanosD - nanosC) / iterations;
+            var avgB = (nanosD - nanosC) / iterations;
 
 
             Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
 
-            val nanosA = System.nanoTime();
+            var nanosA = System.nanoTime();
             for (int e = 0; e < iterations; e++) {
                 x.addi(y);
             }
-            val nanosB = System.nanoTime();
+            var nanosB = System.nanoTime();
 
-            val avgA = (nanosB - nanosA) / iterations;
+            var avgA = (nanosB - nanosA) / iterations;
 
 
 //            log.info("A: {}; B: {}", avgA, avgB);
@@ -468,7 +468,7 @@ public class OperationProfilerTests extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().nativeStatistics(true).build());
 
         INDArray array = Nd4j.ones(10);
-        val stats = OpProfiler.getInstance().getStatistics();
+        var stats = OpProfiler.getInstance().getStatistics();
 
         assertEquals(10, stats.getCountPositive());
         assertEquals(0, stats.getCountNegative());

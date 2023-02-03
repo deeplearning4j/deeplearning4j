@@ -19,7 +19,6 @@
  */
 package org.nd4j.ir;
 
-import lombok.val;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.common.io.ClassPathResource;
@@ -82,16 +81,16 @@ public class OpDescriptorHolder {
      * @throws IOException
      */
     public static OpNamespace.OpDescriptorList nd4jOpList() throws IOException  {
-        val fileName = System.getProperty(nd4jFileSpecifierProperty, nd4jFileNameTextDefault);
-        val nd4jOpDescriptorResourceStream = new ClassPathResource(fileName, ND4JClassLoading.getNd4jClassloader()).getInputStream();
-        val resourceString = IOUtils.toString(nd4jOpDescriptorResourceStream, Charset.defaultCharset());
-        val descriptorListBuilder = OpNamespace.OpDescriptorList.newBuilder();
+        var fileName = System.getProperty(nd4jFileSpecifierProperty, nd4jFileNameTextDefault);
+        var nd4jOpDescriptorResourceStream = new ClassPathResource(fileName, ND4JClassLoading.getNd4jClassloader()).getInputStream();
+        var resourceString = IOUtils.toString(nd4jOpDescriptorResourceStream, Charset.defaultCharset());
+        var descriptorListBuilder = OpNamespace.OpDescriptorList.newBuilder();
         TextFormat.merge(resourceString,descriptorListBuilder);
-        val ret = descriptorListBuilder.build();
-        val mutableList = new ArrayList<>(ret.getOpListList());
+        var ret = descriptorListBuilder.build();
+        var mutableList = new ArrayList<>(ret.getOpListList());
         Collections.sort(mutableList, Comparator.comparing(OpNamespace.OpDescriptor::getName));
 
-        val newResultBuilder = OpNamespace.OpDescriptorList.newBuilder();
+        var newResultBuilder = OpNamespace.OpDescriptorList.newBuilder();
         newResultBuilder.addAllOpList(mutableList);
         return newResultBuilder.build();
     }

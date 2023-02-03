@@ -21,7 +21,7 @@
 package org.nd4j.jita.concurrency;
 
 import lombok.NonNull;
-import lombok.val;
+
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
@@ -108,8 +108,8 @@ public class CudaAffinityManager extends BasicAffinityManager {
                 if (devPtr.get() >= CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size())
                     devPtr.set(0);
 
-                val t = Thread.currentThread();
-                val n = t.getId() == threadId ? t.getName() : "N/A";
+                var t = Thread.currentThread();
+                var n = t.getId() == threadId ? t.getName() : "N/A";
 
                 logger.debug("Mapping thread [{} - {}] to device [{}], out of [{}] devices...", threadId, n, device, CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size());
             }
@@ -193,13 +193,13 @@ public class CudaAffinityManager extends BasicAffinityManager {
         if (array.isView())
             throw new UnsupportedOperationException("It's impossible to replicate View");
 
-        val shape = array.shape();
-        val stride = array.stride();
-        val elementWiseStride = array.elementWiseStride();
-        val ordering = array.ordering();
-        val length = array.length();
-        val dtype = array.dataType();
-        val empty = array.isEmpty();
+        var shape = array.shape();
+        var stride = array.stride();
+        var elementWiseStride = array.elementWiseStride();
+        var ordering = array.ordering();
+        var length = array.length();
+        var dtype = array.dataType();
+        var empty = array.isEmpty();
 
         // we use this call to get device memory updated
         AtomicAllocator.getInstance().getPointer(array, AtomicAllocator.getInstance().getDeviceContext());
@@ -314,7 +314,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
         // let's make sure host pointer actually exists
         ((BaseCudaDataBuffer) array.data()).lazyAllocateHostPointer();
 
-        val point = AtomicAllocator.getInstance().getAllocationPoint(array);
+        var point = AtomicAllocator.getInstance().getAllocationPoint(array);
         switch (location) {
             case HOST: {
                     AtomicAllocator.getInstance().synchronizeHostData(array);
@@ -337,7 +337,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
         if (array.isEmpty())
             return Location.EVERYWHERE;
 
-        val point = AtomicAllocator.getInstance().getAllocationPoint(array);
+        var point = AtomicAllocator.getInstance().getAllocationPoint(array);
 
         if (point.isActualOnDeviceSide() && point.isActualOnHostSide()) {
             return Location.EVERYWHERE;

@@ -29,7 +29,7 @@ import io.aeron.logbuffer.Header;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
@@ -351,7 +351,7 @@ public abstract class BaseTransport implements Transport {
                  * only because we want code to be obvious for people
                  */
                 final AtomicBoolean localRunner = new AtomicBoolean(false);
-                val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                var deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
                 if (nodeRole == NodeRole.NONE) {
                     throw new ND4JIllegalStateException("No role is set for current node!");

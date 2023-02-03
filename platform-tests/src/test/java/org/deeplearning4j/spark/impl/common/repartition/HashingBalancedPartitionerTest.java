@@ -98,7 +98,7 @@ public class HashingBalancedPartitionerTest extends BaseSparkTest {
         List<Tuple2<Tuple2<Long, Integer>, String>> testList = indexedRDD.collect();
 
         int[][] colorCountsByPartition = new int[3][2];
-        for (final Tuple2<Tuple2<Long, Integer>, String> val : testList) {
+        for (final Tuple2<Tuple2<Long, Integer>, String> var : testList) {
 //            System.out.println(val);
             Integer partition = hbp.getPartition(val._1());
 //            System.out.println(partition);
@@ -176,7 +176,7 @@ public class HashingBalancedPartitionerTest extends BaseSparkTest {
         List<Tuple2<Tuple2<Long, Integer>, String>> testList = indexedRDD.collect();
 
         int[][] colorCountsByPartition = new int[numPartitions][2];
-        for (final Tuple2<Tuple2<Long, Integer>, String> val : testList) {
+        for (final Tuple2<Tuple2<Long, Integer>, String> var : testList) {
             Integer partition = hbp.getPartition(val._1());
 
             if (val._2().equals("red"))

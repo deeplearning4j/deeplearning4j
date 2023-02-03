@@ -22,7 +22,7 @@ package org.nd4j.linalg.factory;
 
 
 import lombok.NonNull;
-import lombok.val;
+
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.blas.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -1330,8 +1330,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(float[] data, char order) {
-        val shape = new long[] {data.length};
-        val stride = Nd4j.getStrides(shape, order);
+        var shape = new long[] {data.length};
+        var stride = Nd4j.getStrides(shape, order);
         return create(data, shape, stride, order, DataType.FLOAT);
     }
 

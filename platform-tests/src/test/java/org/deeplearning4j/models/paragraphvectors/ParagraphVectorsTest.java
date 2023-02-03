@@ -24,7 +24,7 @@ package org.deeplearning4j.models.paragraphvectors;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.BaseDL4JTest;
@@ -624,7 +624,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
     public void testParagraphVectorsReducedLabels1(@TempDir Path testDir) throws Exception {
-        val tempDir = testDir.toFile();
+        var tempDir = testDir.toFile();
         ClassPathResource resource = new ClassPathResource("/labeled");
         resource.copyDirectory(tempDir);
 
@@ -708,8 +708,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
     public void testIterator(@TempDir Path testDir) throws IOException {
-        val folder_labeled = new File(testDir.toFile(),"labeled");
-        val folder_unlabeled = new File(testDir.toFile(),"unlabeled");
+        var folder_labeled = new File(testDir.toFile(),"labeled");
+        var folder_unlabeled = new File(testDir.toFile(),"unlabeled");
         assertTrue(folder_labeled.mkdirs());
         assertTrue(folder_unlabeled.mkdirs());
         new ClassPathResource("/paravec/labeled/").copyDirectory(folder_labeled);
@@ -765,7 +765,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         // we build w2v from multiple sources, to cover everything
         File resource_sentences = Resources.asFile("/big/raw_sentences.txt");
 
-        val folder_mixed = testDir.toFile();
+        var folder_mixed = testDir.toFile();
         ClassPathResource resource_mixed = new ClassPathResource("paravec/");
         resource_mixed.copyDirectory(folder_mixed);
 
@@ -791,8 +791,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
         // At this moment we have ready w2v model. It's time to use it for ParagraphVectors
 
-        val folder_labeled = new File(testDir.toFile(),"labeled");
-        val folder_unlabeled = new File(testDir.toFile(),"unlabeled");
+        var folder_labeled = new File(testDir.toFile(),"labeled");
+        var folder_unlabeled = new File(testDir.toFile(),"unlabeled");
         new ClassPathResource("/paravec/labeled/").copyDirectory(folder_labeled);
         new ClassPathResource("/paravec/unlabeled/").copyDirectory(folder_unlabeled);
 
@@ -1073,7 +1073,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         ParagraphVectors paragraphVectors = new ParagraphVectors.Builder().build();
         AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
-        val words = new VocabWord[3];
+        var words = new VocabWord[3];
         words[0] = new VocabWord(1.0, "word");
         words[1] = new VocabWord(2.0, "test");
         words[2] = new VocabWord(3.0, "tester");
@@ -1100,8 +1100,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         assertEquals(cache.totalNumberOfDocs(), ((ParagraphVectors) unserialized).getVocab().totalNumberOfDocs());
 
         for (int i = 0; i < words.length; ++i) {
-            val cached = cache.wordAtIndex(i);
-            val restored = ((ParagraphVectors) unserialized).getVocab().wordAtIndex(i);
+            var cached = cache.wordAtIndex(i);
+            var restored = ((ParagraphVectors) unserialized).getVocab().wordAtIndex(i);
             assertNotNull(cached);
             assertEquals(cached, restored);
         }
@@ -1122,7 +1122,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
         LabelsSource source = new LabelsSource("DOC_");
 
-        val builder = new ParagraphVectors.Builder();
+        var builder = new ParagraphVectors.Builder();
         ParagraphVectors vec = builder.minWordFrequency(1).iterations(5).seed(119).epochs(1)
                 .layerSize(150).learningRate(0.025).labelsSource(source).windowSize(5)
                 .sequenceLearningAlgorithm(new DM<VocabWord>()).iterate(iter).trainWordVectors(true)

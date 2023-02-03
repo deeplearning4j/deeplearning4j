@@ -88,8 +88,8 @@ SD_KERNEL static void dilation2dCuda(const void* vx, const sd::LongType* xShapeI
       xzCoords[2] = ow * sW - pW + yCoords[1] * dW;
       if (xzCoords[2] < 0 || xzCoords[2] >= iW) continue;
 
-      const X val = x[shape::getOffset(xShapeInfo, xzCoords)] + y[shape::getOffset(yShapeInfo, yCoords)];
-      if (val > max) max = val;
+      const X var = x[shape::getOffset(xShapeInfo, xzCoords)] + y[shape::getOffset(yShapeInfo, yCoords)];
+      if (var > max) max = val;
     }
   }
 

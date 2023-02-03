@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -259,7 +259,7 @@ public class TestTransformOpValidation extends BaseOpValidation {
 
         INDArray expOut = Nd4j.create(DataType.DOUBLE, 1, 3);
 
-        val op = new Cross(a, b, expOut);
+        var op = new Cross(a, b, expOut);
         Nd4j.getExecutioner().exec(op);
 
         SameDiff sd = SameDiff.create();
@@ -601,7 +601,7 @@ public class TestTransformOpValidation extends BaseOpValidation {
                 //.addIntegerArguments(-99,3,3) //Also fails
                 .build();
 
-        val list = Nd4j.getExecutioner().calculateOutputShape(dco);
+        var list = Nd4j.getExecutioner().calculateOutputShape(dco);
         assertEquals(1, list.size());   //Fails here - empty list
         assertArrayEquals(new long[]{3, 3}, list.get(0).getShape());
     }
@@ -1431,7 +1431,7 @@ public class TestTransformOpValidation extends BaseOpValidation {
                 .addInputs(arr1, arr2)
                 .build();
 
-        val outShapes = Nd4j.getExecutioner().calculateOutputShape(op);
+        var outShapes = Nd4j.getExecutioner().calculateOutputShape(op);
         assertEquals(1, outShapes.size());
 
         assertArrayEquals(new long[]{3, 2, 4}, outShapes.get(0).getShape(),Arrays.toString(outShapes.get(0).getShape()));

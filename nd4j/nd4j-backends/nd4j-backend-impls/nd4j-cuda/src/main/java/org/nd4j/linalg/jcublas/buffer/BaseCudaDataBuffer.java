@@ -22,7 +22,7 @@ package org.nd4j.linalg.jcublas.buffer;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.val;
+
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.common.base.Preconditions;
@@ -136,9 +136,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         Nd4j.getDeallocatorService().pickObject(this);
 
         // now we're getting context and copying our stuff to device
-        val context = AtomicAllocator.getInstance().getDeviceContext();
+        var context = AtomicAllocator.getInstance().getDeviceContext();
 
-        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+        var perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(allocationPoint.getDevicePointer(), pointer, length * getElementSize(), CudaConstants.cudaMemcpyHostToDevice, context.getSpecialStream());
 
@@ -287,8 +287,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
 
         // copy data to device
-        val stream = AtomicAllocator.getInstance().getDeviceContext().getSpecialStream();
-        val ptr = ptrDataBuffer.specialBuffer();
+        var stream = AtomicAllocator.getInstance().getDeviceContext().getSpecialStream();
+        var ptr = ptrDataBuffer.specialBuffer();
 
         if (offset > 0)
             temp = new PagedPointer(temp.address() + offset * getElementSize());
@@ -305,20 +305,20 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             return;
 
         if (allocationPoint.getHostPointer() == null) {
-            val location = allocationPoint.getAllocationStatus();
+            var location = allocationPoint.getAllocationStatus();
             if (parentWorkspace == null) {
                 // let cpp allocate primary buffer
                 NativeOpsHolder.getInstance().getDeviceNativeOps().dbAllocatePrimaryBuffer(ptrDataBuffer);
             } else {
                 //log.info("ws alloc step");
-                val ptr = parentWorkspace.alloc(this.length * this.elementSize, MemoryKind.HOST, this.dataType(), false);
+                var ptr = parentWorkspace.alloc(this.length * this.elementSize, MemoryKind.HOST, this.dataType(), false);
                 ptrDataBuffer.setPrimaryBuffer(ptr, this.length);
             }
             this.allocationPoint.setAllocationStatus(location);
             this.allocationPoint.tickDeviceWrite();
         }
 
-        val hostPointer = allocationPoint.getHostPointer();
+        var hostPointer = allocationPoint.getHostPointer();
 
         assert hostPointer != null;
 
@@ -394,8 +394,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, length * type.width());
 
         if (initialize) {
-            val ctx = AtomicAllocator.getInstance().getDeviceContext();
-            val devicePtr = allocationPoint.getDevicePointer();
+            var ctx = AtomicAllocator.getInstance().getDeviceContext();
+            var devicePtr = allocationPoint.getDevicePointer();
             NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(devicePtr, 0, length * elementSize, 0, ctx.getSpecialStream());
             ctx.getSpecialStream().synchronize();
         }
@@ -422,23 +422,23 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.originalOffset = 0;
 
         if (workspace.getWorkspaceConfiguration().getPolicyMirroring() == MirroringPolicy.FULL) {
-            val devicePtr = workspace.alloc(length * elementSize, MemoryKind.DEVICE, type, initialize);
+            var devicePtr = workspace.alloc(length * elementSize, MemoryKind.DEVICE, type, initialize);
 
             // allocate from workspace, and pass it  to native DataBuffer
             ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(this.length, type, null, devicePtr);
 
             if (initialize) {
-                val ctx = AtomicAllocator.getInstance().getDeviceContext();
+                var ctx = AtomicAllocator.getInstance().getDeviceContext();
                 NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(devicePtr, 0, length * elementSize, 0, ctx.getSpecialStream());
                 ctx.getSpecialStream().synchronize();
             }
         }  else {
             // we can register this pointer as device, because it's pinned memory
-            val devicePtr = workspace.alloc(length * elementSize, MemoryKind.HOST, type, initialize);
+            var devicePtr = workspace.alloc(length * elementSize, MemoryKind.HOST, type, initialize);
             ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(this.length, type, null, devicePtr);
 
             if (initialize) {
-                val ctx = AtomicAllocator.getInstance().getDeviceContext();
+                var ctx = AtomicAllocator.getInstance().getDeviceContext();
                 NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(devicePtr, 0, length * elementSize, 0, ctx.getSpecialStream());
                 ctx.getSpecialStream().synchronize();
             }
@@ -501,7 +501,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         // we're creating view of the native DataBuffer
         ptrDataBuffer = ((BaseCudaDataBuffer) underlyingBuffer).ptrDataBuffer.createView(length * underlyingBuffer.getElementSize(), offset * underlyingBuffer.getElementSize());
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, length);
-        val hostPointer = allocationPoint.getHostPointer();
+        var hostPointer = allocationPoint.getHostPointer();
 
         Nd4j.getDeallocatorService().pickObject(this);
 
@@ -636,10 +636,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
 
     public void copyDataFromSrc(Pointer pointer,long length, long srcOffset,long dstOffset) {
-         val srcPtr = new CudaPointer(pointer.address() + (srcOffset * elementSize));
+         var srcPtr = new CudaPointer(pointer.address() + (srcOffset * elementSize));
         // now we're getting context and copying our stuff to device
-        val context = AtomicAllocator.getInstance().getDeviceContext();
-        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+        var context = AtomicAllocator.getInstance().getDeviceContext();
+        var perfD = PerformanceTracker.getInstance().helperStartTransaction();
         ptrDataBuffer.setPrimaryBuffer(pointer,length);
         NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(allocationPoint.getDevicePointer(), srcPtr, length * getElementSize(), CudaConstants.cudaMemcpyHostToDevice, context.getSpecialStream());
 
@@ -667,12 +667,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         switch (dataType()) {
             case BOOL: {
-                val pointer = new BytePointer(ArrayUtil.toBytes(data));
+                var pointer = new BytePointer(ArrayUtil.toBytes(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
             }
             break;
             case BYTE: {
-                val pointer = new BytePointer(ArrayUtil.toBytes(data));
+                var pointer = new BytePointer(ArrayUtil.toBytes(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
@@ -684,37 +684,37 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
             break;
             case SHORT: {
-                val pointer = new ShortPointer(ArrayUtil.toShorts(data));
+                var pointer = new ShortPointer(ArrayUtil.toShorts(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
             case INT: {
-                val pointer = new IntPointer(data);
+                var pointer = new IntPointer(data);
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
             case LONG: {
-                val pointer = new LongPointer(LongUtils.toLongs(data));
+                var pointer = new LongPointer(LongUtils.toLongs(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
             case HALF: {
-                val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
+                var pointer = new ShortPointer(ArrayUtil.toHalfs(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
             case FLOAT: {
-                val pointer = new FloatPointer(ArrayUtil.toFloats(data));
+                var pointer = new FloatPointer(ArrayUtil.toFloats(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
             case DOUBLE: {
-                val pointer = new DoublePointer(ArrayUtil.toDouble(data));
+                var pointer = new DoublePointer(ArrayUtil.toDouble(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
@@ -734,14 +734,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         switch (dataType()) {
             case BOOL: {
-                val pointer = new BytePointer(ArrayUtil.toBytes(data));
+                var pointer = new BytePointer(ArrayUtil.toBytes(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
 
             }
             break;
             case BYTE: {
-                val pointer = new BytePointer(ArrayUtil.toBytes(data));
+                var pointer = new BytePointer(ArrayUtil.toBytes(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
 
@@ -757,7 +757,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             case UINT16:
                 data = ArrayUtil.cutBelowZero(data);
             case SHORT: {
-                val pointer = new ShortPointer(ArrayUtil.toShorts(data));
+                var pointer = new ShortPointer(ArrayUtil.toShorts(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
 
@@ -766,7 +766,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             case UINT32:
                 data = ArrayUtil.cutBelowZero(data);
             case INT: {
-                val pointer = new IntPointer(ArrayUtil.toInts(data));
+                var pointer = new IntPointer(ArrayUtil.toInts(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
 
@@ -775,21 +775,21 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             case UINT64:
                 data = ArrayUtil.cutBelowZero(data);
             case LONG: {
-                val pointer = new LongPointer(data);
+                var pointer = new LongPointer(data);
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
 
             }
             break;
             case BFLOAT16: {
-                val pointer = new ShortPointer(ArrayUtil.toBfloats(data));
+                var pointer = new ShortPointer(ArrayUtil.toBfloats(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
 
             }
             break;
             case HALF: {
-                val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
+                var pointer = new ShortPointer(ArrayUtil.toHalfs(data));
                 // we're keeping pointer reference for JVM
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
@@ -797,14 +797,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
             break;
             case FLOAT: {
-                val pointer = new FloatPointer(ArrayUtil.toFloats(data));
+                var pointer = new FloatPointer(ArrayUtil.toFloats(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
 
             }
             break;
             case DOUBLE: {
-                val pointer = new DoublePointer(ArrayUtil.toDouble(data));
+                var pointer = new DoublePointer(ArrayUtil.toDouble(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
 
@@ -830,13 +830,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public void set(float[] data, long length, long srcOffset, long dstOffset) {
         switch (dataType()) {
             case BOOL: {
-                val pointer = new BytePointer(ArrayUtil.toBytes(data));
+                var pointer = new BytePointer(ArrayUtil.toBytes(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
             case BYTE: {
-                val pointer = new BytePointer(ArrayUtil.toBytes(data));
+                var pointer = new BytePointer(ArrayUtil.toBytes(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
@@ -848,31 +848,31 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
             break;
             case SHORT: {
-                val pointer = new ShortPointer(ArrayUtil.toShorts(data));
+                var pointer = new ShortPointer(ArrayUtil.toShorts(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
             case INT: {
-                val pointer = new IntPointer(ArrayUtil.toInts(data));
+                var pointer = new IntPointer(ArrayUtil.toInts(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
             case LONG: {
-                val pointer = new LongPointer(ArrayUtil.toLongArray(data));
+                var pointer = new LongPointer(ArrayUtil.toLongArray(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
             case HALF: {
-                val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
+                var pointer = new ShortPointer(ArrayUtil.toHalfs(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
             case FLOAT: {
-                val pointer = new FloatPointer(data);
+                var pointer = new FloatPointer(data);
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
@@ -903,13 +903,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public void set(double[] data, long length, long srcOffset, long dstOffset) {
         switch (dataType()) {
             case BOOL:  {
-                val pointer = new BytePointer(ArrayUtil.toBytes(data));
+                var pointer = new BytePointer(ArrayUtil.toBytes(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
             case BYTE: {
-                val pointer = new BytePointer(ArrayUtil.toBytes(data));
+                var pointer = new BytePointer(ArrayUtil.toBytes(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
@@ -921,37 +921,37 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
             break;
             case SHORT: {
-                val pointer = new ShortPointer(ArrayUtil.toShorts(data));
+                var pointer = new ShortPointer(ArrayUtil.toShorts(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
             case INT: {
-                val pointer = new IntPointer(ArrayUtil.toInts(data));
+                var pointer = new IntPointer(ArrayUtil.toInts(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
             case LONG: {
-                val pointer = new LongPointer(ArrayUtil.toLongs(data));
+                var pointer = new LongPointer(ArrayUtil.toLongs(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
             case HALF: {
-                val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
+                var pointer = new ShortPointer(ArrayUtil.toHalfs(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
             case FLOAT: {
-                val pointer = new FloatPointer(ArrayUtil.toFloats(data));
+                var pointer = new FloatPointer(ArrayUtil.toFloats(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
             case DOUBLE: {
-                val pointer = new DoublePointer(data);
+                var pointer = new DoublePointer(data);
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
@@ -1292,7 +1292,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     //@Override
     public void read(DataInputStream s) {
         try {
-            val savedMode = AllocationMode.valueOf(s.readUTF());
+            var savedMode = AllocationMode.valueOf(s.readUTF());
             allocationMode = AllocationMode.MIXED_DATA_TYPES;
 
             long locLength = 0;
@@ -1305,7 +1305,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             boolean reallocate = locLength != length || indexer == null;
             length = locLength;
 
-            val t = DataType.valueOf(s.readUTF());
+            var t = DataType.valueOf(s.readUTF());
             //                  log.info("Restoring buffer ["+t+"] of length ["+ length+"]");
             if (globalType == null && Nd4j.dataType() != null) {
                 globalType = Nd4j.dataType();
@@ -1495,13 +1495,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public void actualizePointerAndIndexer() {
-        val cptr = ptrDataBuffer.primaryBuffer();
+        var cptr = ptrDataBuffer.primaryBuffer();
 
         // skip update if pointers are equal
         if (cptr != null && pointer != null && cptr.address() == pointer.address())
             return;
 
-        val t = dataType();
+        var t = dataType();
         if (t == DataType.BOOL) {
             pointer = new PagedPointer(cptr, length).asBoolPointer();
             setIndexer(BooleanIndexer.create((BooleanPointer) pointer));
@@ -1550,14 +1550,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public DataBuffer reallocate(long length) {
-        val oldHostPointer = this.ptrDataBuffer.primaryBuffer();
-        val oldDevicePointer = this.ptrDataBuffer.specialBuffer();
+        var oldHostPointer = this.ptrDataBuffer.primaryBuffer();
+        var oldDevicePointer = this.ptrDataBuffer.specialBuffer();
 
         if (isAttached()) {
-            val capacity = length * getElementSize();
+            var capacity = length * getElementSize();
 
             if (oldDevicePointer != null && oldDevicePointer.address() != 0) {
-                val nPtr = getParentWorkspace().alloc(capacity, MemoryKind.DEVICE, dataType(), false);
+                var nPtr = getParentWorkspace().alloc(capacity, MemoryKind.DEVICE, dataType(), false);
                 NativeOpsHolder.getInstance().getDeviceNativeOps().memcpySync(nPtr, oldDevicePointer, length * getElementSize(), 3, null);
                 this.ptrDataBuffer.setPrimaryBuffer(nPtr, length);
 
@@ -1565,7 +1565,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
 
             if (oldHostPointer != null && oldHostPointer.address() != 0) {
-                val nPtr = getParentWorkspace().alloc(capacity, MemoryKind.HOST, dataType(), false);
+                var nPtr = getParentWorkspace().alloc(capacity, MemoryKind.HOST, dataType(), false);
                 Pointer.memcpy(nPtr, oldHostPointer, this.length() * getElementSize());
                 this.ptrDataBuffer.setPrimaryBuffer(nPtr, length);
 
@@ -1623,7 +1623,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             workspaceGenerationId = getParentWorkspace().getGenerationId();
         } else {
             this.ptrDataBuffer.expand(length);
-            val nPtr = new PagedPointer(this.ptrDataBuffer.primaryBuffer(), length);
+            var nPtr = new PagedPointer(this.ptrDataBuffer.primaryBuffer(), length);
 
             switch (dataType()) {
                 case BOOL:
@@ -1697,30 +1697,30 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     /*
-    protected short fromFloat( float fval ) {
-        int fbits = Float.floatToIntBits( fval );
+    protected short fromFloat( float fvar ) {
+        int fbits = Float.floatToIntBits( fvar );
         int sign = fbits >>> 16 & 0x8000;          // sign only
-        int val = ( fbits & 0x7fffffff ) + 0x1000; // rounded value
+        int var = ( fbits & 0x7fffffff ) + 0x1000; // rounded value
 
-        if( val >= 0x47800000 )               // might be or become NaN/Inf
+        if( var >= 0x47800000 )               // might be or become NaN/Inf
         {                                     // avoid Inf due to rounding
             if( ( fbits & 0x7fffffff ) >= 0x47800000 )
             {                                 // is or must become NaN/Inf
-                if( val < 0x7f800000 )        // was value but too large
+                if( var < 0x7f800000 )        // was value but too large
                     return (short) (sign | 0x7c00);     // make it +/-Inf
                 return (short) (sign | 0x7c00 |        // remains +/-Inf or NaN
                         ( fbits & 0x007fffff ) >>> 13); // keep NaN (and Inf) bits
             }
             return (short) (sign | 0x7bff);             // unrounded not quite Inf
         }
-        if( val >= 0x38800000 )               // remains normalized value
-            return (short) (sign | val - 0x38000000 >>> 13); // exp - 127 + 15
-        if( val < 0x33000000 )                // too small for subnormal
+        if( var >= 0x38800000 )               // remains normalized value
+            return (short) (sign | var - 0x38000000 >>> 13); // exp - 127 + 15
+        if( var < 0x33000000 )                // too small for subnormal
             return (short) sign;                      // becomes +/-0
-        val = ( fbits & 0x7fffffff ) >>> 23;  // tmp exp for subnormal calc
+        var = ( fbits & 0x7fffffff ) >>> 23;  // tmp exp for subnormal calc
         return (short) (sign | ( ( fbits & 0x7fffff | 0x800000 ) // add subnormal bit
-                + ( 0x800000 >>> val - 102 )     // round depending on cut off
-                >>> 126 - val ));   // div by 2^(1-(exp-127+15)) and >> 13 | exp=0
+                + ( 0x800000 >>> var - 102 )     // round depending on cut off
+                >>> 126 - var ));   // div by 2^(1-(exp-127+15)) and >> 13 | exp=0
     }
     */
 

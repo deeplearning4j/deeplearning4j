@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.ops.performance;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.performance.primitives.AveragingTransactionsHolder;
 import org.nd4j.linalg.factory.Nd4j;
@@ -41,7 +41,7 @@ public class PerformanceTracker {
 
     private PerformanceTracker() {
         // we put in initial holders, one per device
-        val nd = Nd4j.getAffinityManager().getNumberOfDevices();
+        var nd = Nd4j.getAffinityManager().getNumberOfDevices();
         for (int e = 0; e < nd; e++) {
             bandwidth.put(e, new AveragingTransactionsHolder());
             operations.put(e, new AveragingTransactionsHolder());
@@ -78,7 +78,7 @@ public class PerformanceTracker {
      */
     public long addMemoryTransaction(int deviceId, long timeSpentNanos, long numberOfBytes, @NonNull MemcpyDirection direction) {
         // we calculate bytes per microsecond now
-        val bw = (long) (numberOfBytes / (timeSpentNanos / (double) 1000.0));
+        var bw = (long) (numberOfBytes / (timeSpentNanos / (double) 1000.0));
 
         // we skip too small values
         if (bw > 0)
@@ -88,7 +88,7 @@ public class PerformanceTracker {
     }
 
     public void clear() {
-        for (val k: bandwidth.keySet())
+        for (var k: bandwidth.keySet())
             bandwidth.get(k).clear();
     }
 
@@ -110,14 +110,14 @@ public class PerformanceTracker {
     }
 
     public Map<Integer, Map<MemcpyDirection, Long>> getCurrentBandwidth() {
-        val result = new HashMap<Integer, Map<MemcpyDirection, Long>>();
-        val keys = bandwidth.keySet();
-        for (val d: keys) {
+        var result = new HashMap<Integer, Map<MemcpyDirection, Long>>();
+        var keys = bandwidth.keySet();
+        for (var d: keys) {
 
             result.put(d, new HashMap<>());
 
             // get average for each MemcpyDirection and store it
-            for (val m: MemcpyDirection.values())
+            for (var m: MemcpyDirection.values())
                 result.get(d).put(m, bandwidth.get(d).getAverageValue(m));
 
         }

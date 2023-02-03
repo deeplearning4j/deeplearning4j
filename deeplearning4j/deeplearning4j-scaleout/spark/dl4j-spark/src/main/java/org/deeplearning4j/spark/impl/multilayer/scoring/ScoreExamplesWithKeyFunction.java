@@ -65,11 +65,11 @@ public class ScoreExamplesWithKeyFunction<K> implements PairFlatMapFunction<Iter
 
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(jsonConfig.getValue()));
         network.init();
-        INDArray val = params.value().dup();
-        if (val.length() != network.numParams(false))
+        INDArray paramsVal = params.value().dup();
+        if (paramsVal.length() != network.numParams(false))
             throw new IllegalStateException(
                             "Network did not have same number of parameters as the broadcast set parameters");
-        network.setParameters(val);
+        network.setParameters(paramsVal);
 
         List<Tuple2<K, Double>> ret = new ArrayList<>();
 

@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.nativ;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -60,14 +60,14 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
         if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
             return;
 
-        val A = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3);
-        val B = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3);
+        var A = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3);
+        var B = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3);
 
-        val exp = A.mmul(B);
+        var exp = A.mmul(B);
 
-        val res = Nd4j.create(DataType.DOUBLE, new long[] {3, 3}, 'c');
+        var res = Nd4j.create(DataType.DOUBLE, new long[] {3, 3}, 'c');
 
-        val matmul = DynamicCustomOp.builder("matmul")
+        var matmul = DynamicCustomOp.builder("matmul")
                 .addInputs(A, B)
                 .addOutputs(res)
                 .build();
@@ -87,14 +87,14 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
         if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
             return;
 
-        val A = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3).dup('f');
-        val B = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3).dup('f');
+        var A = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3).dup('f');
+        var B = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3).dup('f');
 
-        val exp = A.mmul(B);
+        var exp = A.mmul(B);
 
-        val res = Nd4j.create(DataType.DOUBLE, new long[] {3, 3}, 'c');
+        var res = Nd4j.create(DataType.DOUBLE, new long[] {3, 3}, 'c');
 
-        val matmul = DynamicCustomOp.builder("matmul")
+        var matmul = DynamicCustomOp.builder("matmul")
                 .addInputs(A, B)
                 .addOutputs(res)
                 .build();
@@ -114,14 +114,14 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
         if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
             return;
 
-        val A = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3).dup('f');
-        val B = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3);
+        var A = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3).dup('f');
+        var B = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3);
 
-        val exp = A.mmul(B);
+        var exp = A.mmul(B);
 
-        val res = Nd4j.create(DataType.DOUBLE, new long[] {3, 3}, 'c');
+        var res = Nd4j.create(DataType.DOUBLE, new long[] {3, 3}, 'c');
 
-        val matmul = DynamicCustomOp.builder("matmul")
+        var matmul = DynamicCustomOp.builder("matmul")
                 .addInputs(A, B)
                 .addOutputs(res)
                 .build();
@@ -141,14 +141,14 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
         if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
             return;
 
-        val A = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 4, 3);
-        val B = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 3, 4);
+        var A = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 4, 3);
+        var B = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 3, 4);
 
-        val exp = A.mmul(B);
+        var exp = A.mmul(B);
 
-        val res = Nd4j.create(DataType.DOUBLE, new long[] {4, 4}, 'c');
+        var res = Nd4j.create(DataType.DOUBLE, new long[] {4, 4}, 'c');
 
-        val matmul = DynamicCustomOp.builder("matmul")
+        var matmul = DynamicCustomOp.builder("matmul")
                 .addInputs(A, B)
                 .addOutputs(res)
                 .build();
@@ -168,14 +168,14 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
         if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
             return;
 
-        val A = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 4, 3).dup('f');
-        val B = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 3, 4);
+        var A = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 4, 3).dup('f');
+        var B = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 3, 4);
 
-        val exp = A.mmul(B);
+        var exp = A.mmul(B);
 
-        val res = Nd4j.create(DataType.DOUBLE, new long[] {4, 4}, 'c');
+        var res = Nd4j.create(DataType.DOUBLE, new long[] {4, 4}, 'c');
 
-        val matmul = DynamicCustomOp.builder("matmul")
+        var matmul = DynamicCustomOp.builder("matmul")
                 .addInputs(A, B)
                 .addOutputs(res)
                 .build();
@@ -194,14 +194,14 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
         if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
             return;
 
-        val A = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 4, 3).dup('f');
-        val B = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 3, 4).dup('f');
+        var A = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 4, 3).dup('f');
+        var B = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 3, 4).dup('f');
 
-        val exp = A.mmul(B);
+        var exp = A.mmul(B);
 
-        val res = Nd4j.createUninitialized(DataType.DOUBLE, new long[] {4, 4}, 'c');
+        var res = Nd4j.createUninitialized(DataType.DOUBLE, new long[] {4, 4}, 'c');
 
-        val matmul = DynamicCustomOp.builder("matmul")
+        var matmul = DynamicCustomOp.builder("matmul")
                 .addInputs(A, B)
                 .addOutputs(res)
                 .build();
@@ -221,14 +221,14 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
         if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
             return;
 
-        val A = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 4, 3);
-        val B = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 3, 4).dup('f');
+        var A = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 4, 3);
+        var B = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape('c', 3, 4).dup('f');
 
-        val exp = A.mmul(B);
+        var exp = A.mmul(B);
 
-        val res = Nd4j.createUninitialized(DataType.DOUBLE, new long[] {4, 4}, 'c');
+        var res = Nd4j.createUninitialized(DataType.DOUBLE, new long[] {4, 4}, 'c');
 
-        val matmul = DynamicCustomOp.builder("matmul")
+        var matmul = DynamicCustomOp.builder("matmul")
                 .addInputs(A, B)
                 .addOutputs(res)
                 .build();
@@ -250,12 +250,12 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
         if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
             return;
 
-        val A = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3);
-        val B = Nd4j.linspace(1, 3, 3, DataType.DOUBLE).reshape('c', 3, 1);
+        var A = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3);
+        var B = Nd4j.linspace(1, 3, 3, DataType.DOUBLE).reshape('c', 3, 1);
 
-        val res = Nd4j.create(DataType.DOUBLE, new long[] {3, 1}, 'c');
+        var res = Nd4j.create(DataType.DOUBLE, new long[] {3, 1}, 'c');
 
-        val matmul = DynamicCustomOp.builder("matmul")
+        var matmul = DynamicCustomOp.builder("matmul")
                 .addInputs(A, B)
                 .addOutputs(res)
                 .build();
@@ -263,7 +263,7 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().exec(matmul);
 
 
-        val exp = A.mmul(B);
+        var exp = A.mmul(B);
 //        log.info("exp: {}", exp);
 
         // ?
@@ -279,12 +279,12 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
         if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
             return;
 
-        val A = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3).dup('f');
-        val B = Nd4j.linspace(1, 3, 3, DataType.DOUBLE).reshape('c', 3, 1).dup('f');
+        var A = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape('c', 3, 3).dup('f');
+        var B = Nd4j.linspace(1, 3, 3, DataType.DOUBLE).reshape('c', 3, 1).dup('f');
 
-        val res = Nd4j.createUninitialized(DataType.DOUBLE, new long[] {3, 1}, 'f');
+        var res = Nd4j.createUninitialized(DataType.DOUBLE, new long[] {3, 1}, 'f');
 
-        val matmul = DynamicCustomOp.builder("matmul")
+        var matmul = DynamicCustomOp.builder("matmul")
                 .addInputs(A, B)
                 .addOutputs(res)
                 .build();
@@ -292,7 +292,7 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().exec(matmul);
 
 
-        val exp = A.mmul(B);
+        var exp = A.mmul(B);
 //        log.info("exp mean: {}", exp.meanNumber());
 
         // ?
@@ -308,14 +308,14 @@ public class NativeBlasTests extends BaseNd4jTestWithBackends {
         if (Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
             return;
 
-        val A = Nd4j.linspace(1, 20, 20, DataType.FLOAT).reshape('c', 4, 5);
-        val B = Nd4j.linspace(1, 5, 5, DataType.FLOAT).reshape('c', 5, 1);
+        var A = Nd4j.linspace(1, 20, 20, DataType.FLOAT).reshape('c', 4, 5);
+        var B = Nd4j.linspace(1, 5, 5, DataType.FLOAT).reshape('c', 5, 1);
 
-        val exp = A.mmul(B);
+        var exp = A.mmul(B);
 
-        val res = Nd4j.createUninitialized(DataType.FLOAT, new long[] {4, 1}, 'c');
+        var res = Nd4j.createUninitialized(DataType.FLOAT, new long[] {4, 1}, 'c');
 
-        val matmul = DynamicCustomOp.builder("matmul")
+        var matmul = DynamicCustomOp.builder("matmul")
                 .addInputs(A, B)
                 .addOutputs(res)
                 .build();

@@ -33,7 +33,7 @@ class OpInvariantTest {
 
     @Test
     fun opMustBeDocumented() {
-        val thrown = assertThrows<java.lang.IllegalStateException> {
+        var thrown = assertThrows<java.lang.IllegalStateException> {
             Namespace("math") {
                 Op("foo") {}
             }
@@ -44,7 +44,7 @@ class OpInvariantTest {
 
     @Test
     fun opMustBeDocumentedAndNotEmpty() {
-        val thrown = assertThrows<java.lang.IllegalStateException> {
+        var thrown = assertThrows<java.lang.IllegalStateException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "" }
@@ -65,12 +65,12 @@ class OpInvariantTest {
 
     @Test
     fun opSignatureMustCoverAllParameters() {
-        val thrown = assertThrows<java.lang.IllegalStateException> {
+        var thrown = assertThrows<java.lang.IllegalStateException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                    val x = Input(DataType.NUMERIC, "x")
-                    val y = Input(DataType.NUMERIC, "y")
+                    var x = Input(DataType.NUMERIC, "x")
+                    var y = Input(DataType.NUMERIC, "y")
 
                     Signature(x)
                 }
@@ -81,12 +81,12 @@ class OpInvariantTest {
 
     @Test
     fun opSignatureMustCoverAllParameters2() {
-        val thrown = assertThrows<java.lang.IllegalStateException> {
+        var thrown = assertThrows<java.lang.IllegalStateException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                    val x = Input(DataType.NUMERIC, "x")
-                    val y = Arg(DataType.NUMERIC, "y")
+                    var x = Input(DataType.NUMERIC, "x")
+                    var y = Arg(DataType.NUMERIC, "y")
 
                     Signature(x)
                 }
@@ -101,8 +101,8 @@ class OpInvariantTest {
         Namespace("math") {
             Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val x = Input(DataType.NUMERIC, "x")
-                val y = Arg(DataType.NUMERIC, "y") {
+                var x = Input(DataType.NUMERIC, "x")
+                var y = Arg(DataType.NUMERIC, "y") {
                     defaultValue = 7
                 }
 
@@ -113,12 +113,12 @@ class OpInvariantTest {
 
     @Test
     fun opSignatureMustTakeEachParameterOnlyOnce() {
-        val thrown = assertThrows<java.lang.IllegalArgumentException> {
+        var thrown = assertThrows<java.lang.IllegalArgumentException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                    val x = Input(DataType.NUMERIC, "x")
-                    val y = Arg(DataType.NUMERIC, "y")
+                    var x = Input(DataType.NUMERIC, "x")
+                    var y = Arg(DataType.NUMERIC, "y")
 
                     Signature(x, x, x)
                 }
@@ -133,11 +133,11 @@ class OpInvariantTest {
         Namespace("math") {
             Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val x = Input(DataType.NUMERIC, "x")
-                val y = Arg(DataType.NUMERIC, "y") {
+                var x = Input(DataType.NUMERIC, "x")
+                var y = Arg(DataType.NUMERIC, "y") {
                     defaultValue = 7
                 }
-                val out = Output(DataType.NUMERIC, "out")
+                var out = Output(DataType.NUMERIC, "out")
 
                 Signature(out, x)
             }
@@ -146,15 +146,15 @@ class OpInvariantTest {
 
     @Test
     fun opSignatureMustAllowOutputsOnlyOnce() {
-        val thrown = assertThrows<java.lang.IllegalArgumentException> {
+        var thrown = assertThrows<java.lang.IllegalArgumentException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                    val x = Input(DataType.NUMERIC, "x")
-                    val y = Arg(DataType.NUMERIC, "y") {
+                    var x = Input(DataType.NUMERIC, "x")
+                    var y = Arg(DataType.NUMERIC, "y") {
                         defaultValue = 7
                     }
-                    val out = Output(DataType.NUMERIC, "out")
+                    var out = Output(DataType.NUMERIC, "out")
 
                     Signature(out, x, out)
                 }
@@ -166,13 +166,13 @@ class OpInvariantTest {
 
     @Test
     fun opSignatureDefaultValueMustHaveCorrectShape() {
-        val thrown = assertThrows<java.lang.IllegalArgumentException> {
+        var thrown = assertThrows<java.lang.IllegalArgumentException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                    val out = Output(DataType.NUMERIC, "out")
-                    val x = Input(DataType.NUMERIC, "x")
-                    val y = Arg(DataType.INT, "y") {
+                    var out = Output(DataType.NUMERIC, "out")
+                    var x = Input(DataType.NUMERIC, "x")
+                    var y = Arg(DataType.INT, "y") {
                         defaultValue = x.shape()
                     }
 
@@ -189,9 +189,9 @@ class OpInvariantTest {
         Namespace("math") {
             Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val out = Output(DataType.NUMERIC, "out")
-                val x = Input(DataType.NUMERIC, "x")
-                val y = Arg(DataType.INT, "y") {
+                var out = Output(DataType.NUMERIC, "out")
+                var x = Input(DataType.NUMERIC, "x")
+                var y = Arg(DataType.INT, "y") {
                     defaultValue = 2
                 }
 
@@ -202,13 +202,13 @@ class OpInvariantTest {
 
     @Test
     fun opSignatureDefaultValueMustHaveCorrectDataType() {
-        val thrown = assertThrows<java.lang.IllegalArgumentException> {
+        var thrown = assertThrows<java.lang.IllegalArgumentException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                    val out = Output(DataType.NUMERIC, "out")
-                    val x = Input(DataType.NUMERIC, "x")
-                    val y = Arg(DataType.INT, "y") {
+                    var out = Output(DataType.NUMERIC, "out")
+                    var x = Input(DataType.NUMERIC, "x")
+                    var y = Arg(DataType.INT, "y") {
                         defaultValue = 1.7
                     }
 
@@ -223,14 +223,14 @@ class OpInvariantTest {
 
     @Test
     fun opSignatureDefaultInputReference() {
-        val thrown = assertThrows<java.lang.IllegalStateException> {
+        var thrown = assertThrows<java.lang.IllegalStateException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                    val out = Output(DataType.NUMERIC, "out")
-                    val x = Input(DataType.NUMERIC, "x")
-                    val z = Input(DataType.NUMERIC, "z")
-                    val y = Arg(DataType.INT, "y") {
+                    var out = Output(DataType.NUMERIC, "out")
+                    var x = Input(DataType.NUMERIC, "x")
+                    var z = Input(DataType.NUMERIC, "z")
+                    var y = Arg(DataType.INT, "y") {
                         count = AtLeast(1)
                         defaultValue = z.shape()
                     }
@@ -245,13 +245,13 @@ class OpInvariantTest {
 
     @Test
     fun opSignatureDefaultOutputReference() {
-        val thrown = assertThrows<java.lang.IllegalStateException> {
+        var thrown = assertThrows<java.lang.IllegalStateException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                    val out = Output(DataType.NUMERIC, "out")
-                    val x = Input(DataType.NUMERIC, "x")
-                    val y = Arg(DataType.INT, "y") {
+                    var out = Output(DataType.NUMERIC, "out")
+                    var x = Input(DataType.NUMERIC, "x")
+                    var y = Arg(DataType.INT, "y") {
                         count = AtLeast(1)
                         defaultValue = out.shape()
                     }
@@ -269,9 +269,9 @@ class OpInvariantTest {
         Namespace("math") {
             Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val out = Output(DataType.NUMERIC, "out")
-                val x = Input(DataType.NUMERIC, "x")
-                val y = Arg(DataType.INT, "y") {
+                var out = Output(DataType.NUMERIC, "out")
+                var x = Input(DataType.NUMERIC, "x")
+                var y = Arg(DataType.INT, "y") {
                     count = AtLeast(1)
                     defaultValue = out.shape()
                 }
@@ -283,16 +283,16 @@ class OpInvariantTest {
 
     @Test
     fun opSignatureDefaultReferenceChain() {
-        val thrown = assertThrows<java.lang.IllegalStateException> {
+        var thrown = assertThrows<java.lang.IllegalStateException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                    val out = Output(DataType.NUMERIC, "out")
-                    val x = Input(DataType.NUMERIC, "x")
-                    val z = Input(DataType.NUMERIC, "z")
-                    val u = Input(DataType.NUMERIC, "u") { defaultValue = z }
-                    val v = Input(DataType.NUMERIC, "v") { defaultValue = u }
-                    val y = Arg(DataType.INT, "y") {
+                    var out = Output(DataType.NUMERIC, "out")
+                    var x = Input(DataType.NUMERIC, "x")
+                    var z = Input(DataType.NUMERIC, "z")
+                    var u = Input(DataType.NUMERIC, "u") { defaultValue = z }
+                    var v = Input(DataType.NUMERIC, "v") { defaultValue = u }
+                    var y = Arg(DataType.INT, "y") {
                         count = AtLeast(1)
                         defaultValue = v.shape()
                     }
@@ -310,12 +310,12 @@ class OpInvariantTest {
         Namespace("math") {
             Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val out = Output(DataType.NUMERIC, "out")
-                val x = Input(DataType.NUMERIC, "x")
-                val z = Input(DataType.NUMERIC, "z") { defaultValue = x }
-                val u = Input(DataType.NUMERIC, "u") { defaultValue = z }
-                val v = Input(DataType.NUMERIC, "v") { defaultValue = u }
-                val y = Arg(DataType.INT, "y") {
+                var out = Output(DataType.NUMERIC, "out")
+                var x = Input(DataType.NUMERIC, "x")
+                var z = Input(DataType.NUMERIC, "z") { defaultValue = x }
+                var u = Input(DataType.NUMERIC, "u") { defaultValue = z }
+                var v = Input(DataType.NUMERIC, "v") { defaultValue = u }
+                var y = Arg(DataType.INT, "y") {
                     count = AtLeast(1)
                     defaultValue = v.shape()
                 }
@@ -330,12 +330,12 @@ class OpInvariantTest {
         Namespace("math") {
             Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val out = Output(DataType.NUMERIC, "out")
-                val x = Input(DataType.NUMERIC, "x")
-                val z = Input(DataType.NUMERIC, "z") { defaultValue = x }
-                val u = Input(DataType.NUMERIC, "u") { defaultValue = z }
-                val v = Input(DataType.NUMERIC, "v") { defaultValue = u }
-                val y = Arg(DataType.INT, "y") {
+                var out = Output(DataType.NUMERIC, "out")
+                var x = Input(DataType.NUMERIC, "x")
+                var z = Input(DataType.NUMERIC, "z") { defaultValue = x }
+                var u = Input(DataType.NUMERIC, "u") { defaultValue = z }
+                var v = Input(DataType.NUMERIC, "v") { defaultValue = u }
+                var y = Arg(DataType.INT, "y") {
                     count = AtLeast(1)
                     defaultValue = v.shape()
                 }
@@ -351,9 +351,9 @@ class OpInvariantTest {
         Namespace("math") {
             Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val out = Output(DataType.NUMERIC, "out")
-                val x = Input(DataType.NUMERIC, "x")
-                val y = Arg(DataType.INT, "y") {
+                var out = Output(DataType.NUMERIC, "out")
+                var x = Input(DataType.NUMERIC, "x")
+                var y = Arg(DataType.INT, "y") {
                     count = AtLeast(1)
                     defaultValue = null
                 }
@@ -368,8 +368,8 @@ class OpInvariantTest {
         Namespace("math") {
             Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val out = Output(DataType.NUMERIC, "out")
-                val x = Input(DataType.NUMERIC, "x") { defaultValue = null }
+                var out = Output(DataType.NUMERIC, "out")
+                var x = Input(DataType.NUMERIC, "x") { defaultValue = null }
 
                 AllDefaultsSignature()
             }
@@ -381,12 +381,12 @@ class OpInvariantTest {
         Namespace("math") {
             Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val out = Output(DataType.NUMERIC, "out")
-                val x = Input(DataType.NUMERIC, "x")
-                val z = Input(DataType.NUMERIC, "z") { defaultValue = x }
-                val u = Input(DataType.NUMERIC, "u") { defaultValue = z }
-                val v = Input(DataType.NUMERIC, "v") { defaultValue = u }
-                val y = Arg(DataType.INT, "y") {
+                var out = Output(DataType.NUMERIC, "out")
+                var x = Input(DataType.NUMERIC, "x")
+                var z = Input(DataType.NUMERIC, "z") { defaultValue = x }
+                var u = Input(DataType.NUMERIC, "u") { defaultValue = z }
+                var v = Input(DataType.NUMERIC, "v") { defaultValue = u }
+                var y = Arg(DataType.INT, "y") {
                     count = AtLeast(1)
                     defaultValue = v.shape()
                 }
@@ -401,11 +401,11 @@ class OpInvariantTest {
         Namespace("math") {
             Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val out = Output(DataType.NUMERIC, "out")
-                val x = Input(DataType.NUMERIC, "x")
-                val y = Arg(DataType.INT, "y") { count = AtLeast(0); defaultValue = intArrayOf() }
-                val z = Arg(DataType.FLOATING_POINT, "z") { count = Range(2, 5); defaultValue = doubleArrayOf(1.0, 2.0, 3.0) }
-                val a = Arg(DataType.BOOL, "a") { count = AtLeast(1); defaultValue = booleanArrayOf(true) }
+                var out = Output(DataType.NUMERIC, "out")
+                var x = Input(DataType.NUMERIC, "x")
+                var y = Arg(DataType.INT, "y") { count = AtLeast(0); defaultValue = intArrayOf() }
+                var z = Arg(DataType.FLOATING_POINT, "z") { count = Range(2, 5); defaultValue = doubleArrayOf(1.0, 2.0, 3.0) }
+                var a = Arg(DataType.BOOL, "a") { count = AtLeast(1); defaultValue = booleanArrayOf(true) }
 
                 AllDefaultsSignature()
             }
@@ -414,7 +414,7 @@ class OpInvariantTest {
 
     @Test
     fun opSignatureSupportsArrayDefaultsAtLeast() {
-        val thrown = assertThrows<java.lang.IllegalArgumentException> {
+        var thrown = assertThrows<java.lang.IllegalArgumentException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
@@ -431,7 +431,7 @@ class OpInvariantTest {
 
     @Test
     fun opSignatureSupportsArrayDefaultsAtMost() {
-        val thrown = assertThrows<java.lang.IllegalArgumentException> {
+        var thrown = assertThrows<java.lang.IllegalArgumentException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
@@ -448,7 +448,7 @@ class OpInvariantTest {
 
     @Test
     fun opSignatureSupportsArrayDefaultsRange() {
-        val thrown = assertThrows<java.lang.IllegalArgumentException> {
+        var thrown = assertThrows<java.lang.IllegalArgumentException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
@@ -464,7 +464,7 @@ class OpInvariantTest {
 
     @Test
     fun opSignatureSupportsArrayDefaultsExactly() {
-        val thrown = assertThrows<java.lang.IllegalArgumentException> {
+        var thrown = assertThrows<java.lang.IllegalArgumentException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
@@ -482,11 +482,11 @@ class OpInvariantTest {
     @Test
     fun opSignatureHasExpectedNumberOfSignatures() {
         Namespace("math") {
-            val op = Op("foo") {
+            var op = Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val out = Output(DataType.NUMERIC, "out")
-                val x = Input(DataType.NUMERIC, "x")
-                val y = Arg(DataType.INT, "y") { count = AtLeast(0); defaultValue = intArrayOf() }
+                var out = Output(DataType.NUMERIC, "out")
+                var x = Input(DataType.NUMERIC, "x")
+                var y = Arg(DataType.INT, "y") { count = AtLeast(0); defaultValue = intArrayOf() }
 
                 AllParamSignature()
                 AllDefaultsSignature()
@@ -499,11 +499,11 @@ class OpInvariantTest {
     @Test
     fun opSignatureHasExpectedNumberOfSignaturesWithOutput() {
         Namespace("math") {
-            val op = Op("foo") {
+            var op = Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val out = Output(DataType.NUMERIC, "out")
-                val x = Input(DataType.NUMERIC, "x")
-                val y = Arg(DataType.INT, "y") { count = AtLeast(0); defaultValue = intArrayOf() }
+                var out = Output(DataType.NUMERIC, "out")
+                var x = Input(DataType.NUMERIC, "x")
+                var y = Arg(DataType.INT, "y") { count = AtLeast(0); defaultValue = intArrayOf() }
 
                 AllParamSignature(true)
                 AllDefaultsSignature(true)
@@ -516,11 +516,11 @@ class OpInvariantTest {
     @Test
     fun opSignatureHasExpectedNumberOfSignaturesNoDefaults() {
         Namespace("math") {
-            val op = Op("foo") {
+            var op = Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val out = Output(DataType.NUMERIC, "out")
-                val x = Input(DataType.NUMERIC, "x")
-                val y = Arg(DataType.INT, "y") { count = AtLeast(0); }
+                var out = Output(DataType.NUMERIC, "out")
+                var x = Input(DataType.NUMERIC, "x")
+                var y = Arg(DataType.INT, "y") { count = AtLeast(0); }
 
                 AllParamSignature()
                 AllDefaultsSignature()
@@ -533,11 +533,11 @@ class OpInvariantTest {
     @Test
     fun opSignatureHasExpectedNumberOfSignaturesWithOutputNoDefaults() {
         Namespace("math") {
-            val op = Op("foo") {
+            var op = Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val out = Output(DataType.NUMERIC, "out")
-                val x = Input(DataType.NUMERIC, "x")
-                val y = Arg(DataType.INT, "y") { count = AtLeast(0); }
+                var out = Output(DataType.NUMERIC, "out")
+                var x = Input(DataType.NUMERIC, "x")
+                var y = Arg(DataType.INT, "y") { count = AtLeast(0); }
 
                 AllParamSignature(true)
                 AllDefaultsSignature(true)
@@ -552,9 +552,9 @@ class OpInvariantTest {
         Namespace("math") {
             Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val out = Output(DataType.NUMERIC, "out")
-                val x = Input(DataType.NUMERIC, "x")
-                val y = Arg(DataType.ENUM, "y") { possibleValues = listOf("FOO", "BAR", "BAZ"); description = "Enums require some docs" }
+                var out = Output(DataType.NUMERIC, "out")
+                var x = Input(DataType.NUMERIC, "x")
+                var y = Arg(DataType.ENUM, "y") { possibleValues = listOf("FOO", "BAR", "BAZ"); description = "Enums require some docs" }
 
             }
         }
@@ -565,9 +565,9 @@ class OpInvariantTest {
         Namespace("math") {
             Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val out = Output(DataType.NUMERIC, "out")
-                val x = Input(DataType.NUMERIC, "x")
-                val y = Arg(DataType.ENUM, "y") {
+                var out = Output(DataType.NUMERIC, "out")
+                var x = Input(DataType.NUMERIC, "x")
+                var y = Arg(DataType.ENUM, "y") {
                     possibleValues = listOf("FOO", "BAR", "BAZ")
                     defaultValue = "BAZ"
                     description = "Enums require some docs"
@@ -580,13 +580,13 @@ class OpInvariantTest {
 
     @Test
     fun argEnumBadDefaultValue() {
-        val thrown = assertThrows<java.lang.IllegalArgumentException> {
+        var thrown = assertThrows<java.lang.IllegalArgumentException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                    val out = Output(DataType.NUMERIC, "out")
-                    val x = Input(DataType.NUMERIC, "x")
-                    val y = Arg(DataType.ENUM, "y") {
+                    var out = Output(DataType.NUMERIC, "out")
+                    var x = Input(DataType.NUMERIC, "x")
+                    var y = Arg(DataType.ENUM, "y") {
                         possibleValues = listOf("FOO", "BAR", "BAZ")
                         defaultValue = "SPAM"
                     }
@@ -601,13 +601,13 @@ class OpInvariantTest {
 
     @Test
     fun argEnumEmptyPossibleValues() {
-        val thrown = assertThrows<java.lang.IllegalArgumentException> {
+        var thrown = assertThrows<java.lang.IllegalArgumentException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                    val out = Output(DataType.NUMERIC, "out")
-                    val x = Input(DataType.NUMERIC, "x")
-                    val y = Arg(DataType.ENUM, "y") {
+                    var out = Output(DataType.NUMERIC, "out")
+                    var x = Input(DataType.NUMERIC, "x")
+                    var y = Arg(DataType.ENUM, "y") {
                         possibleValues = listOf()
                     }
 
@@ -620,13 +620,13 @@ class OpInvariantTest {
 
     @Test
     fun argEnumBadType() {
-        val thrown = assertThrows<java.lang.IllegalArgumentException> {
+        var thrown = assertThrows<java.lang.IllegalArgumentException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                    val out = Output(DataType.NUMERIC, "out")
-                    val x = Input(DataType.NUMERIC, "x")
-                    val y = Arg(DataType.NUMERIC, "y") {
+                    var out = Output(DataType.NUMERIC, "out")
+                    var x = Input(DataType.NUMERIC, "x")
+                    var y = Arg(DataType.NUMERIC, "y") {
                         possibleValues = listOf("FOO", "BAR", "BAZ")
                         defaultValue = "SPAM"
                     }
@@ -641,13 +641,13 @@ class OpInvariantTest {
 
     @Test
     fun argEnumBadCount() {
-        val thrown = assertThrows<java.lang.IllegalArgumentException> {
+        var thrown = assertThrows<java.lang.IllegalArgumentException> {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                    val out = Output(DataType.NUMERIC, "out")
-                    val x = Input(DataType.NUMERIC, "x")
-                    val y = Arg(DataType.ENUM, "y") {
+                    var out = Output(DataType.NUMERIC, "out")
+                    var x = Input(DataType.NUMERIC, "x")
+                    var y = Arg(DataType.ENUM, "y") {
                         count = AtLeast(1)
                         possibleValues = listOf("FOO", "BAR", "BAZ")
                     }
@@ -665,9 +665,9 @@ class OpInvariantTest {
         Namespace("math") {
             Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val out = Output(DataType.NUMERIC, "out")
-                val x = Input(DataType.NUMERIC, "x")
-                val y = Arg(DataType.ENUM, "y") {
+                var out = Output(DataType.NUMERIC, "out")
+                var x = Input(DataType.NUMERIC, "x")
+                var y = Arg(DataType.ENUM, "y") {
                     count = Exactly(1)
                     possibleValues = listOf("FOO", "BAR", "BAZ")
                     description = "Enums require some docs"
@@ -680,8 +680,8 @@ class OpInvariantTest {
 
     @Test
     fun onlyValidParametersAreUsedInSignaturesBadCase() {
-        val thrown = assertThrows<IllegalArgumentException> {
-            val mixin = Mixin("Bar") {
+        var thrown = assertThrows<IllegalArgumentException> {
+            var mixin = Mixin("Bar") {
                 Input(DataType.NUMERIC, "a")
                 Arg(DataType.BOOL, "b")
             }
@@ -689,8 +689,8 @@ class OpInvariantTest {
             Namespace("math") {
                 Op("foo") {
                     Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                    val out = Output(DataType.NUMERIC, "out")
-                    val x = Input(DataType.NUMERIC, "x")
+                    var out = Output(DataType.NUMERIC, "out")
+                    var x = Input(DataType.NUMERIC, "x")
 
                     Signature(out, x, mixin.input("a"), mixin.arg("b"))
                 }
@@ -701,7 +701,7 @@ class OpInvariantTest {
 
     @Test
     fun onlyValidParametersAreUsedInSignaturesGoodCase() {
-        val mixin = Mixin("Bar") {
+        var mixin = Mixin("Bar") {
             Input(DataType.NUMERIC, "a")
             Arg(DataType.BOOL, "b")
         }
@@ -709,8 +709,8 @@ class OpInvariantTest {
         Namespace("math") {
             Op("foo", mixin) {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
-                val out = Output(DataType.NUMERIC, "out")
-                val x = Input(DataType.NUMERIC, "x")
+                var out = Output(DataType.NUMERIC, "out")
+                var x = Input(DataType.NUMERIC, "x")
 
                 Signature(out, x, mixin.input("a"), mixin.arg("b"))
             }
@@ -719,13 +719,13 @@ class OpInvariantTest {
 
     @Test
     fun lastMixinDefinitionWins(){
-        val mixin = Mixin("Bar") {
+        var mixin = Mixin("Bar") {
             Input(DataType.NUMERIC, "a")
             Arg(DataType.BOOL, "b")
         }
 
         Namespace("math") {
-            val op = Op("foo", mixin) {
+            var op = Op("foo", mixin) {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
                 Output(DataType.NUMERIC, "out")
                 Input(DataType.NUMERIC, "a") { count=Exactly(1)}
@@ -738,13 +738,13 @@ class OpInvariantTest {
 
     @Test
     fun lastMixinDefinitionWins2(){
-        val mixin = Mixin("Bar") {
+        var mixin = Mixin("Bar") {
             Input(DataType.NUMERIC, "a")
             Arg(DataType.BOOL, "b")
         }
 
         Namespace("math") {
-            val op = Op("foo") {
+            var op = Op("foo") {
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
                 Output(DataType.NUMERIC, "out")
                 Input(DataType.NUMERIC, "a")
@@ -758,13 +758,13 @@ class OpInvariantTest {
 
     @Test
     fun mixinDoesOnlyOverwritePropertiesIfSetNoneSetCase(){
-        val mixin = Mixin("Bar") {
+        var mixin = Mixin("Bar") {
             Input(DataType.NUMERIC, "a")
             Arg(DataType.BOOL, "b")
         }
 
         Namespace("math") {
-            val op = Op("foo") {
+            var op = Op("foo") {
                 javaPackage = "fooPackage"
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
                 Output(DataType.NUMERIC, "out")
@@ -779,14 +779,14 @@ class OpInvariantTest {
 
     @Test
     fun mixinDoesOnlyOverwritePropertiesIfSetSetCase(){
-        val mixin = Mixin("Bar") {
+        var mixin = Mixin("Bar") {
             javaPackage = "MixinPackage"
             Input(DataType.NUMERIC, "a")
             Arg(DataType.BOOL, "b")
         }
 
         Namespace("math") {
-            val op = Op("foo") {
+            var op = Op("foo") {
                 javaPackage = "fooPackage"
                 Doc(Language.ANY, DocScope.ALL) { "Some Documentation" }
                 Output(DataType.NUMERIC, "out")
@@ -801,12 +801,12 @@ class OpInvariantTest {
 
     @Test
     fun mixinDoesOnlyOverwritePropertiesIfSetNoneSetCaseOnMixins(){
-        val mixin = Mixin("Bar") {
+        var mixin = Mixin("Bar") {
             Input(DataType.NUMERIC, "a")
             Arg(DataType.BOOL, "b")
         }
 
-        val op = Mixin("foo") {
+        var op = Mixin("foo") {
             javaPackage = "fooPackage"
             useMixin(mixin)
         }
@@ -817,13 +817,13 @@ class OpInvariantTest {
 
     @Test
     fun mixinDoesOnlyOverwritePropertiesIfSetSetCaseOnMixins(){
-        val mixin = Mixin("Bar") {
+        var mixin = Mixin("Bar") {
             javaPackage = "MixinPackage"
             Input(DataType.NUMERIC, "a")
             Arg(DataType.BOOL, "b")
         }
 
-        val op = Mixin("foo") {
+        var op = Mixin("foo") {
             javaPackage = "fooPackage"
             useMixin(mixin)
         }

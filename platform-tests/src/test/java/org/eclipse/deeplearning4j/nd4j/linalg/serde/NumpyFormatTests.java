@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.serde;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.io.FileUtils;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
@@ -65,7 +65,7 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToNpyFormat(Nd4jBackend backend) throws Exception {
-        val dir = testDir.resolve("new-dir-" + UUID.randomUUID()).toFile();
+        var dir = testDir.resolve("new-dir-" + UUID.randomUUID()).toFile();
         assertTrue(dir.mkdirs());
         new ClassPathResource("numpy_arrays/").copyDirectory(dir);
 
@@ -106,7 +106,7 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToNpyFormatScalars(Nd4jBackend backend) throws Exception {
-        val dir = testDir.resolve("new-path0" + UUID.randomUUID()).toFile();
+        var dir = testDir.resolve("new-path0" + UUID.randomUUID()).toFile();
         dir.mkdirs();
         new ClassPathResource("numpy_arrays/scalar/").copyDirectory(dir);
 
@@ -210,7 +210,7 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNpzReading(Nd4jBackend backend) throws Exception {
 
-        val dir = testDir.resolve("new-folder-npz").toFile();
+        var dir = testDir.resolve("new-folder-npz").toFile();
         dir.mkdirs();
         new ClassPathResource("numpy_arrays/npz/").copyDirectory(dir);
 
@@ -270,7 +270,7 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNpy(Nd4jBackend backend) throws Exception {
         for(boolean empty : new boolean[]{false, true}) {
-            val dir = testDir.resolve("new-dir-1-" + UUID.randomUUID().toString()).toFile();
+            var dir = testDir.resolve("new-dir-1-" + UUID.randomUUID().toString()).toFile();
             assertTrue(dir.mkdirs());
             if(!empty) {
                 new ClassPathResource("numpy_arrays/npy/3,4/").copyDirectory(dir);
@@ -312,7 +312,7 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFromNumpyScalar(Nd4jBackend backend) throws Exception {
-        val out = Nd4j.createFromNpyFile(new ClassPathResource("numpy_oneoff/scalar.npy").getFile());
+        var out = Nd4j.createFromNpyFile(new ClassPathResource("numpy_oneoff/scalar.npy").getFile());
         assertEquals(Nd4j.scalar(DataType.INT, 1), out);
     }
 
@@ -370,7 +370,7 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAbsentNumpyFile_1(Nd4jBackend backend) throws Exception {
         assertThrows(IllegalArgumentException.class,() -> {
-            val f = new File("pew-pew-zomg.some_extension_that_wont_exist");
+            var f = new File("pew-pew-zomg.some_extension_that_wont_exist");
             INDArray act1 = Nd4j.createFromNpyFile(f);
         });
 
@@ -381,7 +381,7 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
     @Disabled
     public void testAbsentNumpyFile_2(Nd4jBackend backend) throws Exception {
         assertThrows(IllegalArgumentException.class,() -> {
-            val f = new File("c:/develop/batch-x-1.npy");
+            var f = new File("c:/develop/batch-x-1.npy");
             INDArray act1 = Nd4j.createFromNpyFile(f);
             log.info("Array shape: {}; sum: {};", act1.shape(), act1.sumNumber().doubleValue());
         });

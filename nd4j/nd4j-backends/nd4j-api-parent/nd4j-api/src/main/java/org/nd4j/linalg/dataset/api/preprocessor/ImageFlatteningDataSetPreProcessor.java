@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.dataset.api.preprocessor;
 
-import lombok.val;
+
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -38,8 +38,8 @@ public class ImageFlatteningDataSetPreProcessor implements DataSetPreProcessor {
         if (input.ordering() != 'c' || !Shape.strideDescendingCAscendingF(input))
             input = input.dup('c');
 
-        val inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
-        val outShape = new long[] {inShape[0], inShape[1] * inShape[2] * inShape[3]};
+        var inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
+        var outShape = new long[] {inShape[0], inShape[1] * inShape[2] * inShape[3]};
 
         INDArray reshaped = input.reshape('c', outShape);
         toPreProcess.setFeatures(reshaped);

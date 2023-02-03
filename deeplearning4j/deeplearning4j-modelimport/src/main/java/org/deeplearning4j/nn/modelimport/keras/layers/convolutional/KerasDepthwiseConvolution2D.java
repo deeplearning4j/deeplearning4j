@@ -23,7 +23,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils;
@@ -126,7 +126,7 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
         IWeightInit depthWiseInit = KerasInitilizationUtils.getWeightInitFromConfig(layerConfig,
                 conf.getLAYER_FIELD_DEPTH_WISE_INIT(), enforceTrainingConfig, conf, kerasMajorVersion);
 
-        val nIn = getNInFromConfig(previousLayers);
+        var nIn = getNInFromConfig(previousLayers);
 
         int depthMultiplier = getDepthMultiplier(layerConfig, conf);
 

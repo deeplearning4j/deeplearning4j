@@ -21,7 +21,7 @@
 package org.nd4j.linalg.api.ops.impl.reduce;
 
 import lombok.EqualsAndHashCode;
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -287,8 +287,8 @@ public class Mmul extends DynamicCustomOp {
 
     @Override
     public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
-        val isTransposeA = !attributesForNode.containsKey("transA") ? false : attributesForNode.get("transA").getI() > 0;
-        val isTransposeB = !attributesForNode.containsKey("transB") ? false : attributesForNode.get("transB").getI() > 0;
+        var isTransposeA = !attributesForNode.containsKey("transA") ? false : attributesForNode.get("transA").getI() > 0;
+        var isTransposeB = !attributesForNode.containsKey("transB") ? false : attributesForNode.get("transB").getI() > 0;
         MMulTranspose mMulTranspose = MMulTranspose.builder()
                 .transposeA(isTransposeA).transposeB(isTransposeB)
                 .build();
@@ -310,13 +310,13 @@ public class Mmul extends DynamicCustomOp {
         Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
         Map<String,PropertyMapping> map = new HashMap<>();
 
-        val transposeA = PropertyMapping.builder()
+        var transposeA = PropertyMapping.builder()
                 .onnxAttrName("transA")
                 .tfAttrName("transpose_a")
                 .propertyNames(new String[]{"transposeA"})
                 .build();
 
-        val transposeB = PropertyMapping.builder()
+        var transposeB = PropertyMapping.builder()
                 .onnxAttrName("transB")
                 .tfAttrName("transpose_b")
                 .propertyNames(new String[]{"transposeB"})

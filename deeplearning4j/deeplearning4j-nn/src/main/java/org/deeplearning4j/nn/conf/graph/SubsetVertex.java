@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -101,7 +101,7 @@ public class SubsetVertex extends GraphVertex {
                 return InputType.recurrent(to - from + 1);
             case CNN:
                 InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) vertexInputs[0];
-                val depth = conv.getChannels();
+                var depth = conv.getChannels();
                 if (to >= depth) {
                     throw new InvalidInputTypeException("Invalid range: Cannot select channels subset [" + from + "," + to
                                     + "] inclusive from CNN activations with " + " [channels,width,height] = [" + depth

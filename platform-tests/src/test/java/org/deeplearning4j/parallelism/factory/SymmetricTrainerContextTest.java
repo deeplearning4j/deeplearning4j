@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.parallelism.factory;
 
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -95,7 +95,7 @@ public class SymmetricTrainerContextTest extends BaseDL4JTest {
                 // optinal parameter, set to false ONLY if your system has support P2P memory access across PCIe (hint: AWS do not support P2P)
                 .build();
 
-        val trainer = new SymmetricTrainer(model, "alpha", 3, WorkspaceMode.NONE, wrapper, true);
+        var trainer = new SymmetricTrainer(model, "alpha", 3, WorkspaceMode.NONE, wrapper, true);
 
         assertEquals("alpha_thread_3", trainer.getUuid());
     }

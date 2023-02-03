@@ -1,6 +1,6 @@
 package org.nd4j.linalg.jcublas;
 
-import lombok.val;
+
 import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
@@ -18,7 +18,7 @@ public class CudaStatisticsProvider implements INDArrayStatisticsProvider {
 
     @Override
     public INDArrayStatistics inspectArray(INDArray arr) {
-        val debugInfo = new Nd4jCuda.DebugInfo();
+        var debugInfo = new Nd4jCuda.DebugInfo();
 
         loop.inspectArray(null, arr.data().addressPointer(), (LongPointer) arr.shapeInfoDataBuffer().addressPointer(), null, null, debugInfo);
 

@@ -20,7 +20,7 @@
 
 package org.nd4j.jita.constant;
 
-import lombok.val;
+
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
@@ -131,10 +131,10 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(dataBuffer);
 
         long requiredMemoryBytes = point.getNumberOfBytes();
-        val originalBytes = requiredMemoryBytes;
+        var originalBytes = requiredMemoryBytes;
         requiredMemoryBytes += 8 - (requiredMemoryBytes % 8);
 
-        val div = requiredMemoryBytes / 4;
+        var div = requiredMemoryBytes / 4;
         if (div % 2 != 0)
             requiredMemoryBytes += 4;
 
@@ -144,7 +144,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, deviceId, requiredMemoryBytes);
 
         long currentOffset = constantOffsets.get(deviceId).get();
-        val context = AtomicAllocator.getInstance().getDeviceContext();
+        var context = AtomicAllocator.getInstance().getDeviceContext();
         if (currentOffset + requiredMemoryBytes >= MAX_CONSTANT_LENGTH || requiredMemoryBytes > MAX_BUFFER_LENGTH) {
             if (point.getAllocationStatus() == AllocationStatus.HOST
                             && CudaEnvironment.getInstance().getConfiguration().getMemoryModel() == Configuration.MemoryModel.DELAYED) {
@@ -152,7 +152,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
                 throw new UnsupportedOperationException("Pew-pew");
             }
 
-            val profD = PerformanceTracker.getInstance().helperStartTransaction();
+            var profD = PerformanceTracker.getInstance().helperStartTransaction();
 
             if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getDevicePointer(), point.getHostPointer(), originalBytes, 1, context.getSpecialStream()) == 0) {
                 throw new ND4JIllegalStateException("memcpyAsync failed");
@@ -181,7 +181,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
                 throw new UnsupportedOperationException("Pew-pew");
             }
 
-            val profD = PerformanceTracker.getInstance().helperStartTransaction();
+            var profD = PerformanceTracker.getInstance().helperStartTransaction();
 
             if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getDevicePointer(), point.getHostPointer(), originalBytes, 1, context.getSpecialStream()) == 0) {
                 throw new ND4JIllegalStateException("memcpyAsync failed");

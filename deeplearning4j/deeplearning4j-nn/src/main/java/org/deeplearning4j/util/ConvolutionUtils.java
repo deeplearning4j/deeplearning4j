@@ -22,7 +22,7 @@ package org.deeplearning4j.util;
 
 
 import lombok.NonNull;
-import lombok.val;
+
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
@@ -658,7 +658,7 @@ public class ConvolutionUtils {
         if (in.rank() != 4)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 4, got rank " + in.rank()
                     + " with shape " + Arrays.toString(in.shape()));
-        val shape = in.shape();
+        var shape = in.shape();
 
         if(format == CNN2DFormat.NCHW){
             //Reshape: from [n,c,h,w] to [n*h*w,c]
@@ -773,7 +773,7 @@ public class ConvolutionUtils {
 
             //Use workaround for: https://github.com/deeplearning4j/nd4j/issues/2066
 
-            val s = output.shape();
+            var s = output.shape();
             INDArray bMask = workspaceMgr.create(type, mask.dataType(), new long[]{s[0], 1, s[2], s[3]}, 'c');
             Nd4j.getExecutioner().exec(new BroadcastCopyOp(bMask, mask, bMask, 0, 1));
 
@@ -783,7 +783,7 @@ public class ConvolutionUtils {
         } else {
             //Input in [n,h,w,c] which is reshaped to [n*h*w,c], mask is [n,1]
             //So: We'll broadcast to [n,h,w,1] then reshape to [n*h*w,1] required for the current DL4J loss functions...
-            val s = output.shape();
+            var s = output.shape();
             INDArray bMask = workspaceMgr.create(type, mask.dataType(), new long[]{s[0], s[2], s[3], 1}, 'c');
             Nd4j.getExecutioner().exec(new BroadcastCopyOp(bMask, mask, bMask, 0, 3));
 

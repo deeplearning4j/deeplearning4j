@@ -148,11 +148,11 @@ public class PythonTypes {
         @Override
         public Long toJava(PythonObject pythonObject) {
             PythonGIL.assertThreadSafe();
-            long val = PyLong_AsLong(pythonObject.getNativePythonObject());
-            if (val == -1 && PyErr_Occurred() != null) {
+            long ret = PyLong_AsLong(pythonObject.getNativePythonObject());
+            if (ret == -1 && PyErr_Occurred() != null) {
                 throw new PythonException("Could not convert value to int: " + pythonObject.toString());
             }
-            return val;
+            return ret;
         }
 
         @Override
@@ -179,11 +179,11 @@ public class PythonTypes {
         @Override
         public Double toJava(PythonObject pythonObject) {
             PythonGIL.assertThreadSafe();
-            double val = PyFloat_AsDouble(pythonObject.getNativePythonObject());
-            if (val == -1 && PyErr_Occurred() != null) {
+            double ret = PyFloat_AsDouble(pythonObject.getNativePythonObject());
+            if (ret == -1 && PyErr_Occurred() != null) {
                 throw new PythonException("Could not convert value to float: " + pythonObject.toString());
             }
-            return val;
+            return ret;
         }
 
         @Override

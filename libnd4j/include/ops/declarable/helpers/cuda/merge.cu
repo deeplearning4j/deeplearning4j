@@ -44,17 +44,17 @@ static SD_KERNEL void mergeMaxIndexCudaLauncher(void** inArrs, void** inShapes, 
   const auto step = gridDim.x * blockDim.x;
 
   for (sd::LongType e = tid; e < length; e += step) {
-    T mVal = -DataTypeUtils::max<T>();
+    T mvar = -DataTypeUtils::max<T>();
     Z mIdx(0);
 
     for (int i = 0; i < numArrays; i++) {
       auto x = reinterpret_cast<T*>(inArrs[i]);
       auto xShape = reinterpret_cast<sd::LongType*>(inShapes[i]);
-      auto val = x[shape::getIndexOffset(e, xShape)];
+      auto var = x[shape::getIndexOffset(e, xShape)];
       ;
-      if (mVal < val) {
+      if (mvar < val) {
         mIdx = static_cast<Z>(i);
-        mVal = val;
+        mvar = val;
       }
     }
 
@@ -107,14 +107,14 @@ static SD_KERNEL void mergeMaxCudaLauncher(void** inArrs, void** inShapes, const
   const auto step = gridDim.x * blockDim.x;
 
   for (sd::LongType e = tid; e < length; e += step) {
-    T mVal = -DataTypeUtils::max<T>();
+    T mvar = -DataTypeUtils::max<T>();
 
     for (int i = 0; i < numArrays; i++) {
       auto x = reinterpret_cast<const T*>(inArrs[i]);
       auto xShape = reinterpret_cast<const sd::LongType*>(inShapes[i]);
-      auto val = x[shape::getIndexOffset(e, xShape)];
+      auto var = x[shape::getIndexOffset(e, xShape)];
       ;
-      if (mVal < val) mVal = val;
+      if (mvar < val) mvar = val;
     }
 
     output[shape::getIndexOffset(e, outputShape)] = mVal;
@@ -169,7 +169,7 @@ static SD_KERNEL void mergeMaxBpCudaLauncher(void** inArrs, void** inShapes, con
   int coords[SD_MAX_RANK];
 
   for (sd::LongType e = tid; e < length; e += step) {
-    T mVal = -DataTypeUtils::max<T>();
+    T mvar = -DataTypeUtils::max<T>();
     int nMaxIndex = 0;
     auto xOffset = e, zOffset = e, gradOffset = e;
 
@@ -186,9 +186,9 @@ static SD_KERNEL void mergeMaxBpCudaLauncher(void** inArrs, void** inShapes, con
         xOffset = shape::getOffset(xShape, coords);
       }
 
-      auto val = x[xOffset];
-      if (mVal < val) {
-        mVal = val;
+      auto var = x[xOffset];
+      if (mvar < val) {
+        mvar = val;
         nMaxIndex = i;
       }
     }

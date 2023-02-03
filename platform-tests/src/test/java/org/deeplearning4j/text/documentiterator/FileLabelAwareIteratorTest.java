@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.text.documentiterator;
 
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -47,16 +47,16 @@ public class FileLabelAwareIteratorTest extends BaseDL4JTest {
 
     @Test
     public void testExtractLabelFromPath1(@TempDir Path testDir) throws Exception {
-        val dir = testDir.resolve("new-folder").toFile();
+        var dir = testDir.resolve("new-folder").toFile();
         dir.mkdirs();
-        val resource = new ClassPathResource("/labeled/");
+        var resource = new ClassPathResource("/labeled/");
         resource.copyDirectory(dir);
 
-        val iterator = new FileLabelAwareIterator.Builder().addSourceFolder(dir).build();
+        var iterator = new FileLabelAwareIterator.Builder().addSourceFolder(dir).build();
 
         int cnt = 0;
         while (iterator.hasNextDocument()) {
-            val document = iterator.nextDocument();
+            var document = iterator.nextDocument();
             assertNotEquals(null, document);
             assertNotEquals(null, document.getContent());
             assertNotEquals(null, document.getLabel());
@@ -78,12 +78,12 @@ public class FileLabelAwareIteratorTest extends BaseDL4JTest {
     public void testExtractLabelFromPath2(@TempDir Path testDir) throws Exception {
         testDir = testDir.resolve("new-folder");
         testDir.toFile().mkdirs();
-        val dir0 = new File(testDir.toFile(),"dir-0");
-        val dir1 = new File(testDir.toFile(),"dir-1");
+        var dir0 = new File(testDir.toFile(),"dir-0");
+        var dir1 = new File(testDir.toFile(),"dir-1");
         dir0.mkdirs();
         dir1.mkdirs();
-        val resource = new ClassPathResource("/labeled/");
-        val resource2 = new ClassPathResource("/rootdir/");
+        var resource = new ClassPathResource("/labeled/");
+        var resource2 = new ClassPathResource("/rootdir/");
         resource.copyDirectory(dir0);
         resource2.copyDirectory(dir1);
 

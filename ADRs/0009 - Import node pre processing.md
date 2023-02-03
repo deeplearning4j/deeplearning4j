@@ -23,7 +23,7 @@ An end user can specify a pre processor via a combination of 2 interfaces:
 for processing. This will automatically be discoverable via annotation scanning
 similar to other frameworks. This annotation looks as follows:
 ```kotlin
-annotation class NodePreProcessor(val nodeTypes: Array<String>, val frameworkName: String)
+annotation class NodePreProcessor(var nodeTypes: Array<String>, var frameworkName: String)
 
 ```
 The information include the nodeTypes which are the operation types to scan for when doing upgrades on a graph.

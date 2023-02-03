@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl.rnn;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -123,10 +123,10 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
      */
     private static INDArray revertTimeSeries(INDArray input, INDArray mask, LayerWorkspaceMgr workspaceMgr, ArrayType type) {
         // Get number of samples
-        val n = input.size(0);
+        var n = input.size(0);
 
         // Get maximal length of a time series
-        val m = input.size(2);
+        var m = input.size(2);
 
         // Create empty output
         INDArray out = workspaceMgr.create(type, input.dataType(), input.shape(), 'f');

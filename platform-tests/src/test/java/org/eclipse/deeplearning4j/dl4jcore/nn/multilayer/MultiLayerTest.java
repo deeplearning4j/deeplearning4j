@@ -169,7 +169,7 @@ public class MultiLayerTest extends BaseDL4JTest {
             network.fit(trainTest.getTrain());
         }
         DataSet test = trainTest.getTest();
-        Evaluation eval = new Evaluation();
+        Evaluation evar = new Evaluation();
         INDArray output = network.output(test.getFeatures());
         eval.eval(test.getLabels(), output);
         log.info("Score " + eval.stats());

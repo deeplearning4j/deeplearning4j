@@ -224,8 +224,8 @@ fun Math() =  Namespace("Math") {
 
     Op("clipByNorm") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.clip"
-        val x = Input(NUMERIC, "x") { description = "Input variable" }
-        val clipValue = Arg(NUMERIC, "clipValue") { description = "Clipping value (maximum l2 norm)" }
+        var x = Input(NUMERIC, "x") { description = "Input variable" }
+        var clipValue = Arg(NUMERIC, "clipValue") { description = "Clipping value (maximum l2 norm)" }
         Arg(INT, "dimensions"){ count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed"}  //; defaultValue = intArrayOf(0) }   //TODO
         Output(NUMERIC, "output"){ description = "Output variable" }
 

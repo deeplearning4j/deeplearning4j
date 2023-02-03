@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.params;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -57,9 +57,9 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
 
         org.deeplearning4j.nn.conf.layers.BasePretrainNetwork layerConf =
                 (org.deeplearning4j.nn.conf.layers.BasePretrainNetwork) conf.getLayer();
-        val nIn = layerConf.getNIn();
-        val nOut = layerConf.getNOut();
-        val nWeightParams = nIn * nOut;
+        var nIn = layerConf.getNIn();
+        var nOut = layerConf.getNOut();
+        var nWeightParams = nIn * nOut;
 
         INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
         INDArray visibleBiasView = paramsViewReshape.get(
@@ -88,9 +88,9 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
 
-        val nIn = layerConf.getNIn();
-        val nOut = layerConf.getNOut();
-        val nWeightParams = nIn * nOut;
+        var nIn = layerConf.getNIn();
+        var nOut = layerConf.getNOut();
+        var nWeightParams = nIn * nOut;
         INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
         INDArray vBiasView = gradientViewReshape.get(
                 NDArrayIndex.interval(nWeightParams + nOut, nWeightParams + nOut + nIn));

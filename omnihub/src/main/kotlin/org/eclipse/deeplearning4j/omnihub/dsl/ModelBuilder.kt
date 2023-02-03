@@ -25,7 +25,7 @@ import org.eclipse.deeplearning4j.omnihub.api.ModelType
 import org.eclipse.deeplearning4j.omnihub.api.NamespaceModels
 
 fun FrameworkNamespace(name: String, block: NamespaceModels.() -> Unit): NamespaceModels {
-    val ret = NamespaceModels(name)
+    var ret = NamespaceModels(name)
     ret.block()
     return ret
 }
@@ -62,7 +62,7 @@ fun NamespaceModels.Model(name: String,
                           framework: FrameworkNamespace,
                           modelType: ModelType = ModelType.COMP_GRAPH,
                           block: (Model.() -> Unit)? = null): Model {
-    val model = org.eclipse.deeplearning4j.omnihub.api.Model(url,name,pretrained,documentation,framework,modelType)
+    var model = org.eclipse.deeplearning4j.omnihub.api.Model(url,name,pretrained,documentation,framework,modelType)
     if(block != null)
         model.block()
     this.models.add(model)

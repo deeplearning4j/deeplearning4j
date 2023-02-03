@@ -24,7 +24,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -255,7 +255,7 @@ public class Conv3D extends DynamicCustomOp {
     public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
         Map<String, Map<String, AttributeAdapter>> ret = new LinkedHashMap<>();
         Map<String, AttributeAdapter> tfAdapters = new LinkedHashMap<>();
-        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
+        var fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
 
         //TF uses [kD, kH, kW, iC, oC] for weights
         tfAdapters.put("kD", new NDArrayShapeAdapter(0));
@@ -298,53 +298,53 @@ public class Conv3D extends DynamicCustomOp {
         Map<String, PropertyMapping> map = new HashMap<>();
 
 
-        val kernelMapping = PropertyMapping.builder()
+        var kernelMapping = PropertyMapping.builder()
                 .propertyNames(new String[]{"kD", "kW", "kH"})
                 .tfInputPosition(1)
                 .onnxAttrName("kernel_shape")
                 .build();
 
-        val strideMapping = PropertyMapping.builder()
+        var strideMapping = PropertyMapping.builder()
                 .tfAttrName("strides")
                 .onnxAttrName("strides")
                 .propertyNames(new String[]{"sD", "sW", "sH"})
                 .build();
 
-        val dilationMapping = PropertyMapping.builder()
+        var dilationMapping = PropertyMapping.builder()
                 .onnxAttrName("dilations")
                 .propertyNames(new String[]{"dD", "dH", "dW"})
                 .tfAttrName("rates")
                 .build();
 
-        val sameMode = PropertyMapping.builder()
+        var sameMode = PropertyMapping.builder()
                 .onnxAttrName("auto_pad")
                 .propertyNames(new String[]{"isSameMode"})
                 .tfAttrName("padding")
                 .build();
 
-        val paddingWidthHeight = PropertyMapping.builder()
+        var paddingWidthHeight = PropertyMapping.builder()
                 .onnxAttrName("padding")
                 .propertyNames(new String[]{"pD", "pW", "pH"})
                 .build();
 
-        val dataFormat = PropertyMapping.builder()
+        var dataFormat = PropertyMapping.builder()
                 .onnxAttrName("data_format")
                 .tfAttrName("data_format")
                 .propertyNames(new String[]{"dataFormat"})
                 .build();
 
 
-        val outputPadding = PropertyMapping.builder()
+        var outputPadding = PropertyMapping.builder()
                 .propertyNames(new String[]{"aD", "aH", "aW"})
                 .build();
 
 
-        val biasUsed = PropertyMapping.builder()
+        var biasUsed = PropertyMapping.builder()
                 .propertyNames(new String[]{"biasUsed"})
                 .build();
 
 
-        for (val propertyMapping : new PropertyMapping[]{
+        for (var propertyMapping : new PropertyMapping[]{
                 kernelMapping,
                 strideMapping,
                 dilationMapping,
@@ -352,7 +352,7 @@ public class Conv3D extends DynamicCustomOp {
                 paddingWidthHeight,
                 dataFormat,
                 outputPadding, biasUsed}) {
-            for (val keys : propertyMapping.getPropertyNames())
+            for (var keys : propertyMapping.getPropertyNames())
                 map.put(keys, propertyMapping);
         }
 

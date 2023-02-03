@@ -21,7 +21,7 @@
 package org.nd4j.serde.binary;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -319,7 +319,7 @@ public class BinarySerde {
             ((Buffer) buffer).position(0);
             int rank = byteBuffer.getInt();
 
-            val result = new long[Shape.shapeInfoLength(rank)];
+            var result = new long[Shape.shapeInfoLength(rank)];
 
             // filling DataBuffer with shape info
             result[0] = rank;

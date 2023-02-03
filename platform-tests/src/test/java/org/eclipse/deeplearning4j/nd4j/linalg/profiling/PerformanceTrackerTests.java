@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.profiling;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -104,10 +104,10 @@ public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPerformanceTracker_3(Nd4jBackend backend) {
-        val perf = PerformanceTracker.getInstance();
+        var perf = PerformanceTracker.getInstance();
 
         // 10000 nanoseconds spent for 5000 bytes. result should be around 500 bytes per microsecond
-        val res = perf.addMemoryTransaction(0, 10000, 5000);
+        var res = perf.addMemoryTransaction(0, 10000, 5000);
         assertEquals(500, res);
     }
 
@@ -121,10 +121,10 @@ public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
         float[] fa = new float[100000000];
         INDArray array = Nd4j.create(fa, new int[]{10000, 10000});
 
-        val map = PerformanceTracker.getInstance().getCurrentBandwidth();
+        var map = PerformanceTracker.getInstance().getCurrentBandwidth();
 
         // getting H2H bandwidth
-        val bw = map.get(0).get(MemcpyDirection.HOST_TO_HOST);
+        var bw = map.get(0).get(MemcpyDirection.HOST_TO_HOST);
         log.info("H2H bandwidth: {}", map);
 
         assertTrue(bw > 0);
@@ -137,13 +137,13 @@ public class PerformanceTrackerTests extends BaseNd4jTestWithBackends {
         if (!Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
             return;
 
-        val fa = new float[100000000];
-        val array = Nd4j.create(fa, new int[]{10000, 10000});
+        var fa = new float[100000000];
+        var array = Nd4j.create(fa, new int[]{10000, 10000});
 
-        val map = PerformanceTracker.getInstance().getCurrentBandwidth();
+        var map = PerformanceTracker.getInstance().getCurrentBandwidth();
 
         // getting H2D bandwidth for device 0
-        val bw = map.get(0).get(MemcpyDirection.HOST_TO_DEVICE);
+        var bw = map.get(0).get(MemcpyDirection.HOST_TO_DEVICE);
         log.info("H2D bandwidth: {}", map);
 
         assertTrue(bw > 0);

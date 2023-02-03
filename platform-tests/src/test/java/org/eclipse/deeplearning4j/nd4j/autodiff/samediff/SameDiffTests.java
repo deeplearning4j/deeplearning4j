@@ -34,7 +34,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.collection.CollectionRecordReader;
 import org.datavec.api.writable.IntWritable;
@@ -317,12 +317,12 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariableNaming_1(Nd4jBackend backend) {
-        val sd = SameDiff.create();
+        var sd = SameDiff.create();
 
-        val input = sd.var("inp", new long[]{2, 3});
+        var input = sd.var("inp", new long[]{2, 3});
 
-        val nodeA = sd.math().square(input);
-        val nodeB = sd.math().square(nodeA);
+        var nodeA = sd.math().square(input);
+        var nodeB = sd.math().square(nodeA);
 
         sd.associateArrayWithVariable(Nd4j.create(new double[]{1, 2, 3, 4, 5, 6}, new long[]{2, 3}).castTo(input.dataType()), input);
 
@@ -336,7 +336,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAddArgsAndOutput(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
-        val varOne = sameDiff.var("one", Nd4j.ones(2));
+        var varOne = sameDiff.var("one", Nd4j.ones(2));
     }
 
     @ParameterizedTest
@@ -473,7 +473,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable x = sameDiff.var("x", arr);
         SDVariable sigmoid = sameDiff.nn().sigmoid("s", x);
         INDArray assertion = Transforms.sigmoid(arr);
-        INDArray eval = sameDiff.output(Collections.singletonMap("x", arr), Collections.singletonList("s")).get("s");
+        INDArray evar = sameDiff.output(Collections.singletonMap("x", arr), Collections.singletonList("s")).get("s");
         assertEquals(assertion, eval);
     }
 
@@ -483,7 +483,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SameDiff sameDiff = SameDiff.create();
         SDVariable var = sameDiff.var("one", Nd4j.scalar(1.0));
         SDVariable variable2 = sameDiff.var("two", Nd4j.scalar(1.0));
-        val sum = var.add(variable2);
+        var sum = var.add(variable2);
         INDArray out = sum.eval();
         assertArrayEquals(new long[0], out.shape());
     }
@@ -540,7 +540,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable x = sameDiff.var("x", arr);
         SDVariable s = x.mul("s", x);
         INDArray assertion = arr.mul(arr);
-        INDArray eval = sameDiff.output(Collections.singletonMap("x", arr), Collections.singletonList("s")).get("s");
+        INDArray evar = sameDiff.output(Collections.singletonMap("x", arr), Collections.singletonList("s")).get("s");
         assertEquals(assertion, eval);
     }
 
@@ -558,7 +558,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         Map<String, INDArray> vars = new HashMap<>();
         vars.put("x", arr);
         vars.put("y", yArr);
-        INDArray eval = sameDiff.output(vars, Collections.singletonList(sigmoid.name())).get(sigmoid.name());
+        INDArray evar = sameDiff.output(vars, Collections.singletonList(sigmoid.name())).get(sigmoid.name());
         assertEquals(assertion, eval);
     }
 
@@ -715,7 +715,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNegativeOneShape(Nd4jBackend backend) {
-        val sd = SameDiff.create();
+        var sd = SameDiff.create();
         SDVariable var = sd.placeHolder("test", DataType.FLOAT, -1, 3);
         assertTrue(var.isPlaceHolder());
     }
@@ -737,8 +737,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
             } else {
                 inShape = new long[]{minibatch, nIn};
             }
-            val wShape = new long[]{nIn, nOut};
-            val bShape = new long[]{1, nOut};
+            var wShape = new long[]{nIn, nOut};
+            var bShape = new long[]{1, nOut};
 
             SameDiff sd = SameDiff.create();
             SDVariable layerInput = sd.var("in", inShape);
@@ -922,9 +922,9 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable in1 = sd.var("in", new long[]{3, 2});
         SDVariable in2 = sd.var("in2", new long[]{3, 3});
 
-        val m = in1.add(1.0);
-        val f = m.add(2.0);
-        val s = in2.add(5.0);
+        var m = in1.add(1.0);
+        var f = m.add(2.0);
+        var s = in2.add(5.0);
 
         Map<String,INDArray> map = sd.outputAll(null);
 //        log.info("Result M: {}", map.get(m.name()));
@@ -970,12 +970,12 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTransposeWithVector(Nd4jBackend backend) {
-        val sd = SameDiff.create();
-        val matrix = Nd4j.linspace(1, 12, 12).reshape(4, 3);
-        val vector = Nd4j.linspace(1, 4, 4).reshape(4, 1);
-        val input1 = sd.var("input", matrix);
-        val input2 = sd.var("input2", vector);
-        val output = sd.mmul("output", input1, input2, true, false, false);
+        var sd = SameDiff.create();
+        var matrix = Nd4j.linspace(1, 12, 12).reshape(4, 3);
+        var vector = Nd4j.linspace(1, 4, 4).reshape(4, 1);
+        var input1 = sd.var("input", matrix);
+        var input2 = sd.var("input2", vector);
+        var output = sd.mmul("output", input1, input2, true, false, false);
         INDArray out = output.eval();
         assertArrayEquals(new long[]{3, 1}, out.shape());
     }
@@ -1416,7 +1416,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         INDArray outArr = out.eval();
         //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
-        val outShape = outArr.shape();
+        var outShape = outArr.shape();
         assertArrayEquals(new long[]{mb, depthWise * nIn, 27, 27}, outShape);
     }
 
@@ -1710,7 +1710,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         INDArray expOut = Nd4j.exec(new ManhattanDistance(a, b, 0));
 
-        val expShape = new long[]{4, 5};
+        var expShape = new long[]{4, 5};
 
         assertArrayEquals(expShape, expOut.shape());
     }
@@ -1891,7 +1891,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExpandDims2d(Nd4jBackend backend) {
-        val origShape = new long[]{3, 4};
+        var origShape = new long[]{3, 4};
 
         for (int i = 0; i < 3; i++) {
             for (Pair<INDArray, String> p : NDArrayCreationUtil
@@ -1929,11 +1929,11 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSqueezeDims(Nd4jBackend backend) {
-        val origShape = new long[]{3, 4, 5};
+        var origShape = new long[]{3, 4, 5};
 
         for (int i = 0; i < 3; i++) {
 
-            val shape = origShape.clone();
+            var shape = origShape.clone();
             shape[i] = 1;
 
             for (Pair<INDArray, String> p : NDArrayCreationUtil
@@ -1972,7 +1972,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExpandSqueezeChain(Nd4jBackend backend) {
 
-        val origShape = new long[]{3, 4};
+        var origShape = new long[]{3, 4};
 
         for (int i = 0; i < 3; i++) {
             for (Pair<INDArray, String> p : NDArrayCreationUtil
@@ -1997,11 +1997,11 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSqueezeExpandChain(Nd4jBackend backend) {
 
-        val origShape = new long[]{3, 4, 5};
+        var origShape = new long[]{3, 4, 5};
 
         for (int i = 0; i < 3; i++) {
 
-            val shape = origShape.clone();
+            var shape = origShape.clone();
             shape[i] = 1;
 
             for (Pair<INDArray, String> p : NDArrayCreationUtil
@@ -2047,7 +2047,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     public void testArgMax(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
-        for (val dim : new int[][]{{0}, {1}, {Integer.MAX_VALUE}, {0, 1}, {}}) {
+        for (var dim : new int[][]{{0}, {1}, {Integer.MAX_VALUE}, {0, 1}, {}}) {
             INDArray inArr = Nd4j.rand(3, 4);
             SameDiff sd = SameDiff.create();
 
@@ -2068,7 +2068,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         Nd4j.getRandom().setSeed(12345);
 
-        for (val dim : new int[][]{{0}, {1}, {Integer.MAX_VALUE}, {0, 1}, {}}) {
+        for (var dim : new int[][]{{0}, {1}, {Integer.MAX_VALUE}, {0, 1}, {}}) {
             INDArray inArr = Nd4j.rand(3, 4);
             SameDiff sd = SameDiff.create();
 
@@ -2270,7 +2270,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, out);
 
         //Shape function:
-        val shapes = Nd4j.getExecutioner().calculateOutputShape(op);
+        var shapes = Nd4j.getExecutioner().calculateOutputShape(op);
         long[] expShape = new long[]{3, 10};
 
         assertEquals(1, shapes.size());
@@ -2424,7 +2424,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
         SDVariable newOne = sd.constant(Nd4j.linspace(1,4,4).reshape(2,2));
         SDVariable view = sd.createView(newOne,CreateView.createPoint(sd,1));
-        INDArray eval = view.eval();
+        INDArray evar = view.eval();
         assertEquals(input.getRow(1),eval);
         SDVariable putResult = view.put(sd.constant(1),sd.constant(Nd4j.ones(2)),sd.constant(0));
         System.out.println(putResult.eval());
@@ -2494,8 +2494,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable putInTo = sd.zerosLike(x);
         SDVariable putIndices = sd.range(sd.constant(0),sd.sizeAt(x,0),sd.constant(1),DataType.INT64);
         SDVariable put = putInTo.put(putIndices, x, putIndices);
-        INDArray xEval = x.eval();
-        INDArray putEval = put.eval();
+        INDArray xEvar = x.eval();
+        INDArray putEvar = put.eval();
         assertEquals(xEval,putEval);
 
     }
@@ -2513,7 +2513,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable putInTo = sd.zerosLike(x);
         SDVariable putIndices = sd.range(sd.constant(0),sd.constant(5),sd.constant(1),DataType.INT64);
         SDVariable put = putInTo.put(putIndices, x, putIndices);
-        INDArray eval = put.eval();
+        INDArray evar = put.eval();
         assertEquals(arr,eval);
 
     }
@@ -2529,7 +2529,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable x = sd.var(arr);
 
         SDVariable view = sd.createView(x, new SDVariable[]{CreateView.createAll(sd)});
-        INDArray eval = view.eval();
+        INDArray evar = view.eval();
         assertEquals(arr,eval);
 
     }
@@ -2544,7 +2544,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable x = sd.var(arr);
 
         SDVariable view = sd.createView(x, new SDVariable[]{CreateView.createInterval(sd,0,1,1,1)});
-        INDArray eval = view.eval();
+        INDArray evar = view.eval();
         assertEquals(arr.get(NDArrayIndex.interval(0,1,true)),eval);
 
     }
@@ -2559,7 +2559,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable x = sd.var(arr);
 
         SDVariable view = sd.createView(x, new SDVariable[]{CreateView.createNewAxis(sd)});
-        INDArray eval = view.eval();
+        INDArray evar = view.eval();
         assertEquals(arr.get(NDArrayIndex.newAxis()),eval);
 
     }
@@ -2575,7 +2575,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable x = sd.var(arr);
 
         SDVariable view = sd.createView(x, new SDVariable[]{CreateView.createPoint(sd,1)});
-        INDArray eval = view.eval();
+        INDArray evar = view.eval();
         assertEquals(arr.get(NDArrayIndex.point(1)),eval);
 
     }
@@ -3166,7 +3166,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable[] outputSlices = new SDVariable[(int) timeSteps];
         SDVariable prev = null;
         for (int i = 0; i < timeSteps; i++) {
-            final val x_i = sdInput.get(SDIndex.all(), SDIndex.all(), SDIndex.point(i));
+            final var x_i = sdInput.get(SDIndex.all(), SDIndex.all(), SDIndex.point(i));
 
             outputSlices[i] = x_i;
             if (prev != null) {
@@ -3211,11 +3211,11 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         SDVariable[] outputSlices = new SDVariable[(int) timeSteps];
         final SDVariable[] inputSlices = sd.unstack(new String[]{"X_0", "X_1"}, sdInput, 2, 2);
 
-        final val x_0 = inputSlices[0];
+        final var x_0 = inputSlices[0];
         outputSlices[0] = x_0;
         outputSlices[0] = sd.expandDims("X_0-e", outputSlices[0], 2);
 
-        final val x_1 = inputSlices[1];
+        final var x_1 = inputSlices[1];
         outputSlices[1] = x_1;
         outputSlices[1] = outputSlices[1].add(sd.squeeze("X_0-s", outputSlices[0], 2));
         outputSlices[1] = sd.expandDims("X_1-e", outputSlices[1], 2);
@@ -3238,8 +3238,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         final SDVariable sdInput = sd.var("input", input);
 
         final SDVariable[] inputSlices = sd.unstack(new String[]{"X_0", "X_1"}, sdInput, 2, 2);
-        final val temp = inputSlices[0].add(inputSlices[1]).div(inputSlices[1]).mul(inputSlices[0]);
-        final val out = temp.add(temp).add(inputSlices[1]);
+        final var temp = inputSlices[0].add(inputSlices[1]).div(inputSlices[1]).mul(inputSlices[0]);
+        final var out = temp.add(temp).add(inputSlices[1]);
         out.norm2("out");
 
         String err = OpValidation.validate(new TestCase(sd)
@@ -3351,7 +3351,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         INDArray outEvaled = out.eval();
         INDArray gradOutput = sd.grad("a").eval();
-        INDArray bOutputEval = sd.grad("b").eval();
+        INDArray bOutputEvar = sd.grad("b").eval();
         String err = OpValidation.validate(new TestCase(sd)
                 .testFlatBufferSerialization(TestCase.TestSerialization.BOTH)
                 .gradientCheck(true));
@@ -3793,7 +3793,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         sd.constant(42); // added statement
         SDVariable b = sd.constant(Nd4j.createFromArray(false, false).reshape(1, 2));
         SDVariable result = sd.math().or(a, b);
-        INDArray eval = result.eval();
+        INDArray evar = result.eval();
         INDArray assertion = Nd4j.createFromArray(new boolean[][]{
                 {true,false},
                 {false,true}
@@ -4008,12 +4008,12 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMod_1(Nd4jBackend backend) {
-        val sd = SameDiff.create();
-        val initial = sd.constant("initial", Nd4j.createFromArray(5.f, 6.f, 7.f));
-        val four = sd.constant("four", 4.0f);
-        val mod = initial.mod("mod",  four);
+        var sd = SameDiff.create();
+        var initial = sd.constant("initial", Nd4j.createFromArray(5.f, 6.f, 7.f));
+        var four = sd.constant("four", 4.0f);
+        var mod = initial.mod("mod",  four);
 
-        val e = Nd4j.createFromArray(1.f, 2.f, 3.f);
+        var e = Nd4j.createFromArray(1.f, 2.f, 3.f);
 
         assertEquals(e, mod.eval());
     }

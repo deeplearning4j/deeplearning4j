@@ -21,7 +21,7 @@
 package org.nd4j.linalg.jcublas.blas;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
@@ -77,7 +77,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        val ctx = allocator.getDeviceContext();
+        var ctx = allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -93,7 +93,7 @@ public class JcublasLapack extends BaseLapack {
             CublasPointer xAPointer = new CublasPointer(a, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
-            val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+            var worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
             worksizeBuffer.lazyAllocateHostPointer();
 
             int stat = cusolverDnSgetrf_bufferSize(solverDn, M, N, (FloatPointer) xAPointer.getDevicePointer(), M,
@@ -144,7 +144,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        val ctx = allocator.getDeviceContext();
+        var ctx = allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -157,10 +157,10 @@ public class JcublasLapack extends BaseLapack {
                 throw new BlasException("solverSetStream failed");
 
             // transfer the INDArray into GPU memory
-            val xAPointer = new CublasPointer(a, ctx);
+            var xAPointer = new CublasPointer(a, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
-            val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+            var worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
             worksizeBuffer.lazyAllocateHostPointer();
 
             int stat = cusolverDnDgetrf_bufferSize(solverDn, M, N, (DoublePointer) xAPointer.getDevicePointer(), M,
@@ -173,7 +173,7 @@ public class JcublasLapack extends BaseLapack {
             int worksize = worksizeBuffer.getInt(0);
 
             // Now allocate memory for the workspace, the permutation matrix and a return code
-            val workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+            var workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
 
             // Do the actual LU decomp
             stat = cusolverDnDgetrf(solverDn, M, N, (DoublePointer) xAPointer.getDevicePointer(), M,
@@ -216,7 +216,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        val ctx = allocator.getDeviceContext();
+        var ctx = allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -233,7 +233,7 @@ public class JcublasLapack extends BaseLapack {
             CublasPointer xTauPointer = new CublasPointer(tau, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
-            val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+            var worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
             worksizeBuffer.lazyAllocateHostPointer();
 
             int stat = cusolverDnSgeqrf_bufferSize(solverDn, M, N,
@@ -332,7 +332,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        val ctx = (CudaContext) allocator.getDeviceContext();
+        var ctx = (CudaContext) allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -349,7 +349,7 @@ public class JcublasLapack extends BaseLapack {
             CublasPointer xTauPointer = new CublasPointer(tau, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
-            val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+            var worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
             worksizeBuffer.lazyAllocateHostPointer();
 
             int stat = cusolverDnDgeqrf_bufferSize(solverDn, M, N,
@@ -443,7 +443,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        val ctx = (CudaContext) allocator.getDeviceContext();
+        var ctx = (CudaContext) allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -459,7 +459,7 @@ public class JcublasLapack extends BaseLapack {
             CublasPointer xAPointer = new CublasPointer(a, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
-            val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+            var worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
             worksizeBuffer.lazyAllocateHostPointer();
 
             int stat = cusolverDnSpotrf_bufferSize(solverDn, uplo, N,
@@ -529,7 +529,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        val ctx = allocator.getDeviceContext();
+        var ctx = allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -545,7 +545,7 @@ public class JcublasLapack extends BaseLapack {
             CublasPointer xAPointer = new CublasPointer(a, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
-            val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+            var worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
             worksizeBuffer.lazyAllocateHostPointer();
 
             int stat = cusolverDnDpotrf_bufferSize(solverDn, uplo, N,
@@ -662,7 +662,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        val ctx = (CudaContext) allocator.getDeviceContext();
+        var ctx = (CudaContext) allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -678,7 +678,7 @@ public class JcublasLapack extends BaseLapack {
             CublasPointer xAPointer = new CublasPointer(a, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
-            val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+            var worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
             worksizeBuffer.lazyAllocateHostPointer();
 
             int stat = cusolverDnSgesvd_bufferSize(solverDn, M, N, (IntPointer) worksizeBuffer.addressPointer() // we intentionally use host pointer here
@@ -772,7 +772,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        val ctx = allocator.getDeviceContext();
+        var ctx = allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -788,7 +788,7 @@ public class JcublasLapack extends BaseLapack {
             CublasPointer xAPointer = new CublasPointer(a, ctx);
 
             // this output - indicates how much memory we'll need for the real operation
-            val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+            var worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
             worksizeBuffer.lazyAllocateHostPointer();
 
             int stat = cusolverDnSgesvd_bufferSize(solverDn, M, N, (IntPointer) worksizeBuffer.addressPointer() // we intentionally use host pointer here
@@ -861,7 +861,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        val ctx = (CudaContext) allocator.getDeviceContext();
+        var ctx = (CudaContext) allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -876,7 +876,7 @@ public class JcublasLapack extends BaseLapack {
                 CublasPointer xRPointer = new CublasPointer(R, ctx);
 
                 // this output - indicates how much memory we'll need for the real operation
-                val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+                var worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
                 worksizeBuffer.lazyAllocateHostPointer();
 
                 status = cusolverDnSsyevd_bufferSize(
@@ -889,7 +889,7 @@ public class JcublasLapack extends BaseLapack {
                     int worksize = worksizeBuffer.getInt(0);
 
                     // allocate memory for the workspace, the non-converging row buffer and a return code
-                    val workspace = new Workspace(worksize * 4);    //4 = float width
+                    var workspace = new Workspace(worksize * 4);    //4 = float width
 
                     INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
                             Nd4j.getShapeInfoProvider().createShapeInformation(new long[]{1, 1}, A.dataType()));
@@ -939,7 +939,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        val ctx = allocator.getDeviceContext();
+        var ctx = allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -954,7 +954,7 @@ public class JcublasLapack extends BaseLapack {
                 CublasPointer xRPointer = new CublasPointer(R, ctx);
 
                 // this output - indicates how much memory we'll need for the real operation
-                val worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
+                var worksizeBuffer = (BaseCudaDataBuffer) Nd4j.getDataBufferFactory().createInt(1);
                 worksizeBuffer.lazyAllocateHostPointer();
 
                 status = cusolverDnDsyevd_bufferSize(

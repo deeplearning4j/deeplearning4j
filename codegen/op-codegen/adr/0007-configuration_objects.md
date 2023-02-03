@@ -40,7 +40,7 @@ holder will be created, and the parameters of the config will be treated as if t
 This example shows a very simple case in order to highlight how this feature would be used. 
 ```kotlin
 fun RNN() = Namespace("RNN"){
-    val sruWeights = Config("SRUWeights"){
+    var sruWeights = Config("SRUWeights"){
         Input(FLOATING_POINT, "weights"){ description = "Weights, with shape [inSize, 3*inSize]" }
         Input(FLOATING_POINT, "bias"){ description = "Biases, with shape [2*inSize]" }
     }
@@ -56,10 +56,10 @@ fun RNN() = Namespace("RNN"){
     }
     
     Op("SRUCell"){
-        val x = Input(FLOATING_POINT, "x"){ description = "..." }
-        val cLast = Input(FLOATING_POINT, "cLast"){ description = "..." }
+        var x = Input(FLOATING_POINT, "x"){ description = "..." }
+        var cLast = Input(FLOATING_POINT, "cLast"){ description = "..." }
         
-        val conf = useConfig(sruWeights)
+        var conf = useConfig(sruWeights)
     
         Output(FLOATING_POINT, "out"){ description = "..." }
     

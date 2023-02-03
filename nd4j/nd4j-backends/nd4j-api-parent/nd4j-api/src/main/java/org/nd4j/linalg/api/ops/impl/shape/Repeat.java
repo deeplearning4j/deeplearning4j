@@ -21,7 +21,7 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.NoArgsConstructor;
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -90,7 +90,7 @@ public class Repeat extends DynamicCustomOp {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
         Map<String, PropertyMapping> map = new HashMap<>();
 
-        val axisMapping = PropertyMapping.builder()
+        var axisMapping = PropertyMapping.builder()
                 .onnxAttrName("axis")
                 .tfInputPosition(-1)
                 .propertyNames(new String[]{"axis"})

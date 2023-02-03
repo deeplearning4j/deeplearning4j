@@ -22,7 +22,7 @@ package org.eclipse.deeplearning4j.nd4j.linalg.blas;
 
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -216,26 +216,26 @@ public class BlasTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void test_Fp16_Mmuli_2(Nd4jBackend backend){
-        val a = Nd4j.create(DataType.HALF, 32, 768);
-        val b = Nd4j.create(DataType.HALF, 768);
+        var a = Nd4j.create(DataType.HALF, 32, 768);
+        var b = Nd4j.create(DataType.HALF, 768);
 
-        val c = a.mmul(b);
+        var c = a.mmul(b);
     }
 
     @Disabled
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testHalfPrecision(Nd4jBackend backend) {
-        val a = Nd4j.create(DataType.HALF, 64, 768);
-        val b = Nd4j.create(DataType.HALF, 768, 1024);
-        val c = Nd4j.create(DataType.HALF, new long[]{64, 1024}, 'f');
+        var a = Nd4j.create(DataType.HALF, 64, 768);
+        var b = Nd4j.create(DataType.HALF, 768, 1024);
+        var c = Nd4j.create(DataType.HALF, new long[]{64, 1024}, 'f');
 
-        val durations = new ArrayList<Long>();
-        val iterations = 100;
+        var durations = new ArrayList<Long>();
+        var iterations = 100;
         for (int e = 0; e < iterations; e++) {
-            val timeStart = System.currentTimeMillis();
+            var timeStart = System.currentTimeMillis();
             a.mmuli(b, c);
-            val timeEnd = System.currentTimeMillis();
+            var timeEnd = System.currentTimeMillis();
             durations.add(timeEnd - timeStart);
         }
 

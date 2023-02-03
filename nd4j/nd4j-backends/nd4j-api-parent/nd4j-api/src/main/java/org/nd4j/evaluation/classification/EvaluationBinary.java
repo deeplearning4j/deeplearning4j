@@ -559,7 +559,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     private void assertIndex(int outputNum) {
         if (countTruePositive == null) {
             throw new UnsupportedOperationException(
-                            "EvaluationBinary does not have any stats: eval must be called first");
+                            "EvaluationBinary does not have any stats: evar must be called first");
         }
         if (outputNum < 0 || outputNum >= countTruePositive.length) {
             throw new IllegalArgumentException("Invalid input: output number must be between 0 and " + (outputNum - 1)

@@ -387,7 +387,7 @@ SD_KERNEL static void execCudaEncodeBitmapKernel(void *vdx, sd::LongType N, int 
 
   for (sd::LongType i = tid; i < loopLimit; i += blockDim.x * gridDim.x) {
     // all threads in block reading stuff
-    T val = i < N ? dx[i] : off;
+    T var = i < N ? dx[i] : off;
     T abs = sd::math::sd_abs<T>(val);
 
     int byteId = i / 16 + 4;
@@ -399,13 +399,13 @@ SD_KERNEL static void execCudaEncodeBitmapKernel(void *vdx, sd::LongType N, int 
     if (abs >= static_cast<T>(threshold) && i < N) {
       shmem[threadIdx.x] = 1 << (bitId);
       atomicAdd(&counter, 1);
-      if (val < static_cast<T>(0.0f)) {
+      if (var < static_cast<T>(0.0f)) {
         shmem[threadIdx.x] |= 1 << (bitId + 16);
         vals[threadIdx.x] += static_cast<T>(threshold);
       } else {
         vals[threadIdx.x] -= static_cast<T>(threshold);
       }
-    } else if (abs >= static_cast<T>(threshold) / static_cast<T>(2.0f) && val < static_cast<T>(0.0f) && i < N) {
+    } else if (abs >= static_cast<T>(threshold) / static_cast<T>(2.0f) && var < static_cast<T>(0.0f) && i < N) {
       atomicAdd(&counter, 1);
       shmem[threadIdx.x] = 1 << (bitId + 16);
 

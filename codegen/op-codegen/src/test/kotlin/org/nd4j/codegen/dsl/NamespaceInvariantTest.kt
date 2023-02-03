@@ -28,7 +28,7 @@ import org.nd4j.codegen.api.DataType
 class NamespaceInvariantTest {
     @Test
     fun checkForUnusedConfigs(){
-        val thrown = assertThrows<IllegalStateException> {
+        var thrown = assertThrows<IllegalStateException> {
             Namespace("RNN"){
                 Config("SRUWeights"){
                     Input(DataType.FLOATING_POINT, "weights"){ description = "Weights, with shape [inSize, 3*inSize]" }

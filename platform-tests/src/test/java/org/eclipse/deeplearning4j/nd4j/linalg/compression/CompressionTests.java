@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.compression;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -510,8 +510,8 @@ public class CompressionTests extends BaseNd4jTestWithBackends {
 
         Nd4j.getExecutioner().bitmapDecode(enc, initial);
 
-        val f0 = exp_1.toFloatVector();
-        val f1 = initial.toFloatVector();
+        var f0 = exp_1.toFloatVector();
+        var f1 = initial.toFloatVector();
 
         assertArrayEquals(f0, f1, 1e-5f);
 

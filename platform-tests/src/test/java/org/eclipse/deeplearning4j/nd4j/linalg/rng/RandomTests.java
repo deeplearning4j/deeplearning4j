@@ -128,8 +128,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().exec(distribution2, random2);
 
         for (int e = 0; e < z1.length(); e++) {
-            double val = z1.getDouble(e);
-            assertTrue(val >= 1.0 && val <= 2.0);
+            double var = z1.getDouble(e);
+            assertTrue(var >= 1.0 && var <= 2.0);
         }
 
         assertEquals(z1, z2);
@@ -157,8 +157,8 @@ public class RandomTests extends BaseNd4jTestWithBackends {
         log.info("States cpu: {}/{}", random1.rootState(), random1.nodeState());
 
         for (int e = 0; e < z1.length(); e++) {
-            double val = z1.getDouble(e);
-            assertTrue(val >= 1.0 && val <= 2.0);
+            double var = z1.getDouble(e);
+            assertTrue(var >= 1.0 && var <= 2.0);
         }
 
         assertEquals(z1, z2);

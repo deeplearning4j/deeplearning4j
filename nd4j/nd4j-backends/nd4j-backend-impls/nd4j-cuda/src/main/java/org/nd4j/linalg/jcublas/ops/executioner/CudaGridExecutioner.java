@@ -23,7 +23,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.val;
+
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
@@ -169,9 +169,9 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     }
 
     protected boolean compareDevicePointers(INDArray array, Op op) {
-        val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext();
+        var context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext();
 
-        val pointer = AtomicAllocator.getInstance().getPointer(array, context);
+        var pointer = AtomicAllocator.getInstance().getPointer(array, context);
 
         long opZ = AtomicAllocator.getInstance().getPointer(op.z(), context).address();
         long opX = AtomicAllocator.getInstance().getPointer(op.x(), context).address();
@@ -198,7 +198,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
 
     protected boolean compareHostPointers(INDArray array, Op op) {
-        val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext();
+        var context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext();
 
         Pointer pointer = AtomicAllocator.getInstance().getPointer(array, context);
 
@@ -511,7 +511,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
-        val context = allocator.getDeviceContext();
+        var context = allocator.getDeviceContext();
 
         pointers.setX(allocator.getPointer(op.x(), context));
         pointers.setXShapeInfo(allocator.getPointer(op.x().shapeInfoDataBuffer(), context));
@@ -649,8 +649,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         INDArray ret = null;
         if (op.z() == null || op.z() == op.x()) {
             if (op.isComplexAccumulation()) {
-                val xT = op.x().tensorsAlongDimension(dimension);
-                val yT = op.y().tensorsAlongDimension(dimension);
+                var xT = op.x().tensorsAlongDimension(dimension);
+                var yT = op.y().tensorsAlongDimension(dimension);
 
                 ret = Nd4j.create(xT, yT);
             } else {
@@ -936,7 +936,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     public void flushQueueBlocking() {
         flushQueue();
 
-        val context = AtomicAllocator.getInstance().getDeviceContext();
+        var context = AtomicAllocator.getInstance().getDeviceContext();
 
         context.syncSpecialStream();
         context.syncOldStream();

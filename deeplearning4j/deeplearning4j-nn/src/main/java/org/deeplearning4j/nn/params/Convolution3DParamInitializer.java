@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.params;
 
 
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -55,8 +55,8 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
                 (Convolution3D) l;
 
         int[] kernel = layerConf.getKernelSize();
-        val nIn = layerConf.getNIn();
-        val nOut = layerConf.getNOut();
+        var nIn = layerConf.getNIn();
+        var nOut = layerConf.getNOut();
         return nIn * nOut * kernel[0] * kernel[1] * kernel[2] + (layerConf.hasBias() ? nOut : 0);
     }
 
@@ -69,7 +69,7 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
         Convolution3D layerConf = (Convolution3D) conf.getLayer();
-        val nOut = layerConf.getNOut();
+        var nOut = layerConf.getNOut();
 
         INDArray paramViewReshape = paramsView.reshape(paramsView.length());
         if (layer.hasBias()) {
@@ -94,8 +94,8 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
         Convolution3D layerConf = (Convolution3D) conf.getLayer();
 
         int[] kernel = layerConf.getKernelSize();
-        val nIn = layerConf.getNIn();
-        val nOut = layerConf.getNOut();
+        var nIn = layerConf.getNIn();
+        var nOut = layerConf.getNOut();
         INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
         Map<String, INDArray> out = new LinkedHashMap<>();
         if (layerConf.hasBias()) {
@@ -127,14 +127,14 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
             int[] kernel = layerConf.getKernelSize();
             int[] stride = layerConf.getStride();
 
-            val inputDepth = layerConf.getNIn();
-            val outputDepth = layerConf.getNOut();
+            var inputDepth = layerConf.getNIn();
+            var outputDepth = layerConf.getNOut();
 
             double fanIn = inputDepth * kernel[0] * kernel[1] * kernel[2];
             double fanOut = outputDepth * kernel[0] * kernel[1] * kernel[2] /
                     ((double) stride[0] * stride[1] * stride[2]);
 
-            val weightsShape = new long[]{outputDepth, inputDepth, kernel[0], kernel[1], kernel[2]};
+            var weightsShape = new long[]{outputDepth, inputDepth, kernel[0], kernel[1], kernel[2]};
 
             return layerConf.getWeightInitFn().init(fanIn, fanOut, weightsShape, 'c',
                     weightView);

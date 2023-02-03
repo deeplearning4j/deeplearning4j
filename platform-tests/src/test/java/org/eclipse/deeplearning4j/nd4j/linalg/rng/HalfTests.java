@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.rng;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -66,9 +66,9 @@ public class HalfTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRandomNorman_1(Nd4jBackend backend) {
-        val array = Nd4j.randn(new long[]{20, 30});
+        var array = Nd4j.randn(new long[]{20, 30});
 
-        val sum = Transforms.abs(array).sumNumber().doubleValue();
+        var sum = Transforms.abs(array).sumNumber().doubleValue();
 
         assertTrue(sum > 0.0);
     }

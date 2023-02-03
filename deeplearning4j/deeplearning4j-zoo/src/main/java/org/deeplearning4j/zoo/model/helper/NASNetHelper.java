@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.zoo.model.helper;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
@@ -65,8 +65,8 @@ public class NASNetHelper {
             inputToMatch = input;
         }
         Map<String, InputType> layerActivationTypes = graphBuilder.getLayerActivationTypes();
-        val shapeToMatch = layerActivationTypes.get(inputToMatch).getShape();
-        val inputShape = layerActivationTypes.get(input).getShape();
+        var shapeToMatch = layerActivationTypes.get(inputToMatch).getShape();
+        var inputShape = layerActivationTypes.get(input).getShape();
 
         if(shapeToMatch[1] != inputShape[1]) {
             graphBuilder

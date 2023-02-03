@@ -23,7 +23,7 @@ package org.nd4j.linalg.api.memory;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.linalg.api.memory.enums.AllocationKind;
 
 import java.util.HashMap;
@@ -36,7 +36,7 @@ public class DeviceAllocationsTracker {
     private Map<AllocationKind, AtomicLong> bytesMap = new HashMap<>();
 
     public DeviceAllocationsTracker() {
-        for (val e:AllocationKind.values()) {
+        for (var e:AllocationKind.values()) {
             bytesMap.put(e, new AtomicLong(0));
         }
     }

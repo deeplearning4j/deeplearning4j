@@ -314,7 +314,7 @@ static SD_KERNEL void fillUpPermutation(void *output, const sd::LongType *shape,
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
   for (auto i = start; i < rowNum; i += step) {
-    int val = source[i] - 1;
+    int var = source[i] - 1;
     sd::LongType posF[] = {i, val};
     auto pos = shape::getOffset(shape, posF);
     permutation[pos] = F(1.f);

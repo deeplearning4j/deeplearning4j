@@ -23,7 +23,7 @@ package org.nd4j.linalg.util;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -60,12 +60,12 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
     @Nullable
     @Override
     public synchronized INDArray get() {
-        val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-        val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
-        val sourceId = updatesMap.get(deviceId).get();
+        var deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        var numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        var sourceId = updatesMap.get(deviceId).get();
         if (sourceId >= 0 && sourceId != deviceId) {
             // if updates map contains some deviceId - we should take updated array from there
-            val newArray = Nd4j.create(delayedArray.dataType(), delayedArray.shape(), delayedArray.stride(), delayedArray.ordering());
+            var newArray = Nd4j.create(delayedArray.dataType(), delayedArray.shape(), delayedArray.stride(), delayedArray.ordering());
             Nd4j.getMemoryManager().memcpy(newArray.data(), delayedArray.data());
             backingMap.put(deviceId, newArray);
 
@@ -102,13 +102,13 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
 
         Nd4j.getExecutioner().commit();
 
-        val config = OpProfiler.getInstance().getConfig();
-        val locality = config.isCheckLocality();
+        var config = OpProfiler.getInstance().getConfig();
+        var locality = config.isCheckLocality();
 
         if (locality)
             config.setCheckLocality(false);
-        val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
-        val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        var numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        var deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
         if (!delayedMode) {
             // in immediate mode we put data in
@@ -147,18 +147,18 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
     public synchronized void update(@NonNull INDArray array) {
         Preconditions.checkArgument(!array.isView() || array.elementWiseStride() != 1, "View can't be used in DeviceLocalNDArray");
 
-        val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
-        val device = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-        val currentArray = backingMap.get(device);
+        var numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        var device = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        var currentArray = backingMap.get(device);
         boolean wasDelayed = false;
 
         if (Arrays.equals(currentArray.shapeInfoJava(), array.shapeInfoJava())) {
             // if arrays are the same - we'll just issue memcpy
             for (int k = 0; k < numDevices; k++) {
-                val lock = locksMap.get(k);
+                var lock = locksMap.get(k);
                 try {
                     lock.writeLock().lock();
-                    val v = backingMap.get(k);
+                    var v = backingMap.get(k);
                     if (v == null) {
                         if (!wasDelayed) {
                             delayedArray = array.dup(array.ordering()).detach();

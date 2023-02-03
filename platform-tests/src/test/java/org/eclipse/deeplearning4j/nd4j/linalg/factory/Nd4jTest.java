@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.factory;
 
-import lombok.val;
+
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.jupiter.api.Disabled;
@@ -190,15 +190,15 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
             final String recreation = testMatrixPair.getSecond();
             final INDArray testMatrix = testMatrixPair.getFirst();
             final char ordering = testMatrix.ordering();
-            val shape = testMatrix.shape();
+            var shape = testMatrix.shape();
             final int rank = testMatrix.rank();
             for (int i = -rank; i <= rank; i++) {
                 final INDArray expanded = Nd4j.expandDims(testMatrix, i);
 
                 final String message = "Expanding in Dimension " + i + "; Shape before expanding: " + Arrays.toString(shape) + " "+ordering+" Order; Shape after expanding: " + Arrays.toString(expanded.shape()) +  " "+expanded.ordering()+"; Input Created via: " + recreation;
 
-                val tmR = testMatrix.ravel();
-                val expR = expanded.ravel();
+                var tmR = testMatrix.ravel();
+                var expR = expanded.ravel();
                 assertEquals( 1, expanded.size(i),message);
                 assertEquals(tmR, expR,message);
                 assertEquals( ordering,  expanded.ordering(),message);
@@ -221,7 +221,7 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
             final String recreation = testMatrixPair.getSecond();
             final INDArray testMatrix = testMatrixPair.getFirst();
             final char ordering = testMatrix.ordering();
-            val shape = testMatrix.shape();
+            var shape = testMatrix.shape();
             final INDArray squeezed = Nd4j.squeeze(testMatrix, 1);
             final long[] expShape = ArrayUtil.removeIndex(shape, 1);
             final String message = "Squeezing in dimension 1; Shape before squeezing: " + Arrays.toString(shape) + " " + ordering + " Order; Shape after expanding: " + Arrays.toString(squeezed.shape()) +  " "+squeezed.ordering()+"; Input Created via: " + recreation;

@@ -27,19 +27,19 @@ import org.nd4j.codegen.api.doc.DocScope
 import org.nd4j.codegen.dsl.*
 
 fun Random() = Namespace("Random") {
-    val random = Mixin("random"){
+    var random = Mixin("random"){
         Arg(DATA_TYPE, "datatype"){ description = "Data type of the output variable"}
         Arg(LONG, "shape") { count = AtLeast(0); description = "Shape of the new random %INPUT_TYPE%, as a 1D array" }
         Output(NUMERIC, "output") { description = "Tensor with the given shape where values are randomly sampled according to a %OP_NAME% distribution" }
     }
 
-    val legacyRandom = Mixin("legacyRandom"){
+    var legacyRandom = Mixin("legacyRandom"){
         useMixin(random)
         javaPackage = "org.nd4j.linalg.api.ops.random.impl"
         legacy = true
     }
 
-    val normalRandom = Mixin("normalRandom"){
+    var normalRandom = Mixin("normalRandom"){
         Arg(FLOATING_POINT, "mean") { description = "Mean value for the random array" }
         Arg(FLOATING_POINT, "stddev") { description = "Standard deviation for the random array" }
         useMixin(legacyRandom)
@@ -78,7 +78,7 @@ fun Random() = Namespace("Random") {
         javaPackage = "org.nd4j.linalg.api.ops.random.custom"
         javaOpClass = "RandomExponential"
 
-        val lambda = Arg(FLOATING_POINT, "lambda") { description = "lambda parameter" }
+        var lambda = Arg(FLOATING_POINT, "lambda") { description = "lambda parameter" }
         Constraint("Must be positive") { lambda gt 0 }
         useMixin(random)
 

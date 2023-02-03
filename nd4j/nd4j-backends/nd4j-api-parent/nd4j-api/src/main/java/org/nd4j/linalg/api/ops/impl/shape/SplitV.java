@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
@@ -71,13 +71,13 @@ public class SplitV extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val splitDim = TFGraphMapper.getArrayFrom(TFGraphMapper.getNodeWithNameFromGraph(graph,nodeDef.getInput(0)),graph);
+        var splitDim = TFGraphMapper.getArrayFrom(TFGraphMapper.getNodeWithNameFromGraph(graph,nodeDef.getInput(0)),graph);
         if(splitDim != null) {
             this.splitDim = splitDim.getInt(0);
             addIArgument(splitDim.getInt(0));
         }
 
-        val numSplits = (int) attributesForNode.get("num_split").getI();
+        var numSplits = (int) attributesForNode.get("num_split").getI();
         this.numSplit = numSplits;
         //addIArgument(numSplits);  //libnd4j op doesn't used/need it for execution
     }
@@ -95,12 +95,12 @@ public class SplitV extends DynamicCustomOp {
         Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
         Map<String,PropertyMapping> map = new HashMap<>();
 
-        val splitDim = PropertyMapping.builder()
+        var splitDim = PropertyMapping.builder()
                 .tfInputPosition(-1)
                 .propertyNames(new String[]{"splitDim"})
                 .build();
 
-        val numSplit = PropertyMapping.builder()
+        var numSplit = PropertyMapping.builder()
                 .tfAttrName("num_split")
                 .propertyNames(new String[]{"numSplit"})
                 .build();

@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.layers.samediff;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.TrainingConfig;
@@ -267,7 +267,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
             LinkedHashMap<String, SDVariable> maskVars = new LinkedHashMap<>();
             int i=0;
             for(String s : config.getVertexParams().getInputs()){
-                val inputShape = inputs[i++].shape().clone();
+                var inputShape = inputs[i++].shape().clone();
                 INDArray maskTemp = createMask(dataType, inputShape);
                 inputShape[0] = -1;
                 SDVariable inputVar = sameDiff.placeHolder(s, dataType, inputShape);
@@ -281,7 +281,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
             Map<String, long[]> paramShapes = config.getVertexParams().getParamShapes();
             Map<String, SDVariable> params = new LinkedHashMap<>();
             for (String s : paramShapes.keySet()) {
-                val ps = paramShapes.get(s);
+                var ps = paramShapes.get(s);
                 SDVariable v = sameDiff.var(s, dataType, ps);
                 params.put(s, v);
             }

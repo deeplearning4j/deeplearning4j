@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.layers;
 
 
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -154,7 +154,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         List<String> parameterList = conf.variables();
         long paramLength = 0;
         for (String s : parameterList) {
-            val len = getParam(s).length();
+            var len = getParam(s).length();
             paramLength += len;
         }
 

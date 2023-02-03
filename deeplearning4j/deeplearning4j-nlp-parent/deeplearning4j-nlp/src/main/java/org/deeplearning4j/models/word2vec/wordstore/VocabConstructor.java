@@ -22,7 +22,7 @@ package org.deeplearning4j.models.word2vec.wordstore;
 
 import lombok.Data;
 import lombok.NonNull;
-import lombok.val;
+
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
@@ -170,9 +170,9 @@ public class VocabConstructor<T extends SequenceElement> {
 
 
     public VocabCache<T> transferVocabulary(@NonNull VocabCache<T> vocabCache, boolean buildHuffman) {
-        val result = cache != null ? cache : new AbstractCache.Builder<T>().build();
+        var result = cache != null ? cache : new AbstractCache.Builder<T>().build();
 
-        for (val v: vocabCache.tokens()) {
+        for (var v: vocabCache.tokens()) {
                 result.addToken(v);
                 // optionally transferring indices
                 if (v.getIndex() >= 0)
@@ -182,7 +182,7 @@ public class VocabConstructor<T extends SequenceElement> {
         }
 
         if (buildHuffman) {
-            val huffman = new Huffman(result.vocabWords());
+            var huffman = new Huffman(result.vocabWords());
             huffman.build();
             huffman.applyIndexes(result);
         }
@@ -396,17 +396,17 @@ public class VocabConstructor<T extends SequenceElement> {
 
             if (limit > 0) {
                 // we want to sort labels before truncating them, so we'll keep most important words
-                val words = new ArrayList<T>(cache.vocabWords());
+                var words = new ArrayList<T>(cache.vocabWords());
                 Collections.sort(words);
 
                 // now rolling through them
-                for (val element : words) {
+                for (var element : words) {
                     if (element.getIndex() > limit && !element.isSpecial() && !element.isLabel())
                         cache.removeElement(element.getLabel());
                 }
             }
             // and now we're building Huffman tree
-            val huffman = new Huffman(cache.vocabWords());
+            var huffman = new Huffman(cache.vocabWords());
             huffman.build();
             huffman.applyIndexes(cache);
         }

@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.params;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
@@ -109,7 +109,7 @@ public class PReLUParamInitializer implements ParamInitializer {
 
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
-        val length = numParams(conf);
+        var length = numParams(conf);
         if (paramsView.length() != length)
             throw new IllegalStateException(
                     "Expected params view of length " + length + ", got length " + paramsView.length());
@@ -126,7 +126,7 @@ public class PReLUParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
 
-        val length = numParams(conf);
+        var length = numParams(conf);
         INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
         INDArray weightGradientView = gradientViewReshape.get(NDArrayIndex.interval(0, length))
                 .reshape('f', weightShape);

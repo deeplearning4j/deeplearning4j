@@ -163,7 +163,7 @@ public abstract class DifferentialFunction {
         Map<String,Object> ret = new LinkedHashMap<>();
         Preconditions.checkNotNull(fields, "DifferentialFunctionClassHolder returned null fields for %s - op has not been added to ImportClassMapping?", getClass());
 
-        for(val entry : fields.entrySet()) {
+        for(var entry : fields.entrySet()) {
             try {
                 ret.put(entry.getKey(),fields.get(entry.getKey()).get(this));
             } catch (IllegalAccessException e) {
@@ -384,8 +384,8 @@ public abstract class DifferentialFunction {
 
 
     private Object ensureProperType(Field targetType,Object value) {
-        val firstClass = targetType.getType();
-        val valueType = value.getClass();
+        var firstClass = targetType.getType();
+        var valueType = value.getClass();
 
         if(!firstClass.equals(valueType)) {
             if(firstClass.isEnum()){
@@ -679,7 +679,7 @@ public abstract class DifferentialFunction {
             throw new IllegalStateException("Error executing diff operation: doDiff returned null for op: " + this.opName());
         }
 
-        val outputVars = args();
+        var outputVars = args();
         boolean copied = false;
         for(int i = 0; i < vals.size(); i++) {
             SDVariable var = outputVars[i];
@@ -790,7 +790,7 @@ public abstract class DifferentialFunction {
      * @return
      */
     public SDVariable larg() {
-        val args = args();
+        var args = args();
         if(args == null || args.length == 0)
             throw new ND4JIllegalStateException("No arguments found.");
         return args()[0];
@@ -804,7 +804,7 @@ public abstract class DifferentialFunction {
      * @return
      */
     public SDVariable rarg() {
-        val args = args();
+        var args = args();
         if(args == null || args.length != 2)
             throw new ND4JIllegalStateException("In order to use this function, the number of arguments for this function must be 2.");
         return args[1];

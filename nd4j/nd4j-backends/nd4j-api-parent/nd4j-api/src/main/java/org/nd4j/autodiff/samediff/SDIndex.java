@@ -42,7 +42,7 @@ public class SDIndex {
      * 2. point: get only elements at the particular point in this dimension
      * 3. interval: get only elements from a begin point to an end point in the interval
      * 4. point input: dynamic version of point
-     * 5. interval input: dynamic version of interval
+     * 5. intervar input: dynamic version of interval
      */
     public enum IndexType {
         ALL,

@@ -21,7 +21,7 @@
 package org.nd4j.linalg.api.memory;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.common.primitives.CounterMap;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -198,13 +198,13 @@ public class AllocationsTracker {
 
 
     public void markAllocated(AllocationKind kind, Integer deviceId, long bytes) {
-        val tracker = trackerForDevice(deviceId);
+        var tracker = trackerForDevice(deviceId);
 
         tracker.updateState(kind, bytes);
     }
 
     public void markReleased(AllocationKind kind, Integer deviceId, long bytes) {
-        val tracker = trackerForDevice(deviceId);
+        var tracker = trackerForDevice(deviceId);
 
         tracker.updateState(kind, -bytes);
     }
@@ -214,7 +214,7 @@ public class AllocationsTracker {
     }
 
     public long bytesOnDevice(AllocationKind kind, Integer deviceId) {
-        val tracker = trackerForDevice(deviceId);
+        var tracker = trackerForDevice(deviceId);
         return tracker.getState(kind);
     }
 }

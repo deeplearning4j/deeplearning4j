@@ -29,7 +29,7 @@ import org.nd4j.codegen.api.Range
 
 
 fun Linalg() =  Namespace("Linalg") {
-    //val namespaceJavaPackage = "org.nd4j.linalg"
+    //var namespaceJavaPackage = "org.nd4j.linalg"
 
     Op("Cholesky") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms"

@@ -24,7 +24,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -170,7 +169,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.sArguments = new ArrayList<>();
 
         if(iArguments != null) {
-            for (val a : iArguments)
+            for (var a : iArguments)
                 this.iArguments.add(a.longValue());
         }
         bArguments = new ArrayList<>();
@@ -254,7 +253,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public SDVariable[] outputVariables(String baseName) {
         if (this.outputVariables == null) {
-            val outputNames = sameDiff.getOutputsForOp(this);
+            var outputNames = sameDiff.getOutputsForOp(this);
             //no need to dynamically create if already exists
             if (outputNames != null) {
                 outputVariables = new SDVariable[outputNames.length];
@@ -265,7 +264,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 return outputVariables;
             }
 
-            val newVars = sameDiff.generateOutputVariableForOp(this, baseName, false); //Also adds outgoing
+            var newVars = sameDiff.generateOutputVariableForOp(this, baseName, false); //Also adds outgoing
             if (handleInPlaceOutputs(newVars)) return newVars;
 
             outputVariables = newVars;
@@ -280,7 +279,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     private boolean handleInPlaceOutputs(SDVariable[] newVars) {
         if (isInplaceCall()) {
             if (args().length >= 1) {
-                val arr = args()[0].getArr();
+                var arr = args()[0].getArr();
                 if (arr != null) {
                     sameDiff.setArrayForVariable(newVars[0].name(), arr);
                     addOutputArgument(arr);
@@ -412,8 +411,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public long opHash() {
         if (hash == 0) {
-            val map = Nd4j.getExecutioner().getCustomOperations();
-            val desc = map.get(opName());
+            var map = Nd4j.getExecutioner().getCustomOperations();
+            var desc = map.get(opName());
             if (desc == null) {
                 throw new ND4JIllegalStateException("Op name " + opName() + " is missing!");
             }
@@ -477,7 +476,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     private void addIArgument(Integer... arg) {
-        for (val a: arg)
+        for (var a: arg)
             addIArgument(a.longValue());
     }
 
@@ -645,9 +644,9 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
      * @return
      */
     public static DynamicCustomOpsBuilder builder(String opName) {
-        val map = Nd4j.getExecutioner().getCustomOperations();
-        val lcName = map.containsKey(opName) ? opName : opName.toLowerCase();
-        val desc = map.get(lcName);
+        var map = Nd4j.getExecutioner().getCustomOperations();
+        var lcName = map.containsKey(opName) ? opName : opName.toLowerCase();
+        var desc = map.get(lcName);
 
         if (desc == null)
             throw new ND4JIllegalStateException("Unknown operations requested: [" + opName + "]");
@@ -662,7 +661,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
-        val descriptor = getDescriptor();
+        var descriptor = getDescriptor();
         if (outputShapes != null && !outputShapes.isEmpty())
             return outputShapes;
 
@@ -713,13 +712,13 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public CustomOpDescriptor getDescriptor() {
-        val map = Nd4j.getExecutioner().getCustomOperations();
+        var map = Nd4j.getExecutioner().getCustomOperations();
         return map.get(opName());
     }
 
     @Override
     public void assertValidForExecution() {
-        val descriptor = getDescriptor();
+        var descriptor = getDescriptor();
         if (descriptor == null)
             throw new NoOpNameFoundException("No descriptor found for op name " + opName());
 
@@ -765,7 +764,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public boolean[] bArgs() {
-        val result = new boolean[bArguments == null ? 0 : bArguments.size()];
+        var result = new boolean[bArguments == null ? 0 : bArguments.size()];
 
         for (int e = 0; e < result.length; e++)
             result[e] = bArguments.get(e);
@@ -776,7 +775,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public void addBArgument(boolean... arg) {
         if(arg != null) {
-            for (val b : arg)
+            for (var b : arg)
                 bArguments.add(b);
         }
     }
@@ -900,7 +899,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                     throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numInputs + " arguments, but " + inputs.length + " was passed to constructor");
             }
 
-            for (val in : inputs)
+            for (var in : inputs)
                 inputArguments.add(in);
 
             return this;
@@ -925,7 +924,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                     throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numOutputs + " arguments, but " + outputs.length + " was passed to constructor");
             }
 
-            for (val in : outputs)
+            for (var in : outputs)
                 outputArguments.add(in);
 
             return this;
@@ -965,7 +964,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                             + iargs.size() + " was passed to constructor");
             }
 
-            for (val in : iargs)
+            for (var in : iargs)
                 iArguments.add(in.longValue());
 
             return this;
@@ -990,7 +989,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                             + sArgs.size() + " was passed to constructor");
             }
 
-            for (val in : sArgs)
+            for (var in : sArgs)
                 sArguments.add(in);
 
             return this;
@@ -1032,7 +1031,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                     throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numSArguments + " integer arguments, but " + sArgs.length + " was passed to constructor");
             }
 
-            for (val in : sArgs)
+            for (var in : sArgs)
                 sArguments.add(in);
 
             return this;
@@ -1074,7 +1073,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                     throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numIArguments + " integer arguments, but " + iargs.length + " was passed to constructor");
             }
 
-            for (val in : iargs)
+            for (var in : iargs)
                 iArguments.add((long) in);
 
             return this;
@@ -1090,7 +1089,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
          * @return
          */
         public DynamicCustomOpsBuilder addBooleanArguments(boolean... bargs) {
-            for (val in : bargs)
+            for (var in : bargs)
                 bArguments.add(in);
 
             return this;
@@ -1113,7 +1112,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                     throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numTArguments + " integer arguments, but " + targs.length + " was passed to constructor");
             }
 
-            for (val in : targs)
+            for (var in : targs)
                 tArguments.add(in);
 
             return this;
@@ -1149,7 +1148,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             //if (!inplaceCall && outputArguments.size() == 0)
             //    throw new ND4JIllegalStateException("If operation is not-inplace, it must have outputs defined");
 
-            val result = new DynamicCustomOp(opName);
+            var result = new DynamicCustomOp(opName);
             result.inputArguments = inputArguments;
             result.outputArguments = outputArguments;
             result.iArguments = iArguments;

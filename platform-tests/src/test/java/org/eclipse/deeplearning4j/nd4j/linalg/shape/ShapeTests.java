@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.shape;
 
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -274,11 +274,11 @@ public class ShapeTests extends BaseNd4jTestWithBackends {
         testCases.add(new Triple<>(new long[]{1,6}, new long[]{3,4,5,1}, new long[]{3,4,5,6}));
 
         for(Triple<long[], long[], long[]> t : testCases){
-            val x = t.getFirst();
-            val y = t.getSecond();
-            val exp = t.getThird();
+            var x = t.getFirst();
+            var y = t.getSecond();
+            var exp = t.getThird();
 
-            val act = Shape.broadcastOutputShape(x,y);
+            var act = Shape.broadcastOutputShape(x,y);
             assertArrayEquals(exp,act);
         }
     }

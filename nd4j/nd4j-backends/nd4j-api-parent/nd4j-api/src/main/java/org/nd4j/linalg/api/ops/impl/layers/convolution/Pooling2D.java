@@ -29,7 +29,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -109,7 +109,7 @@ public class Pooling2D extends DynamicCustomOp {
     }
 
     private void addArgs() {
-        val t = config.getType();
+        var t = config.getType();
 
         addIArgument(config.getKH());
         addIArgument(config.getKW());
@@ -178,21 +178,21 @@ public class Pooling2D extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val aStrides = nodeDef.getAttrOrThrow("strides");
-        val tfStrides = aStrides.getList().getIList();
-        val sH = tfStrides.get(1);
-        val sW = tfStrides.get(2);
+        var aStrides = nodeDef.getAttrOrThrow("strides");
+        var tfStrides = aStrides.getList().getIList();
+        var sH = tfStrides.get(1);
+        var sW = tfStrides.get(2);
 
-        val aKernels = nodeDef.getAttrOrThrow("ksize");
-        val tfKernels = aKernels.getList().getIList();
+        var aKernels = nodeDef.getAttrOrThrow("ksize");
+        var tfKernels = aKernels.getList().getIList();
 
-        val kH = tfKernels.get(1);
-        val kW = tfKernels.get(2);
+        var kH = tfKernels.get(1);
+        var kW = tfKernels.get(2);
 
-        val aPadding = nodeDef.getAttrOrThrow("padding");
-        val padding = aPadding.getList().getIList();
+        var aPadding = nodeDef.getAttrOrThrow("padding");
+        var padding = aPadding.getList().getIList();
 
-        val paddingMode = aPadding.getS().toStringUtf8().replaceAll("\"","");
+        var paddingMode = aPadding.getS().toStringUtf8().replaceAll("\"","");
 
         boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
 
@@ -218,10 +218,10 @@ public class Pooling2D extends DynamicCustomOp {
 
     @Override
     public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
-        val paddingMode = attributesForNode.get("auto_pad").getS().toStringUtf8();
-        val kernelShape = attributesForNode.get("kernel_shape").getIntsList();
-        val padding = attributesForNode.get("pads").getIntsList();
-        val strides = attributesForNode.get("strides").getIntsList();
+        var paddingMode = attributesForNode.get("auto_pad").getS().toStringUtf8();
+        var kernelShape = attributesForNode.get("kernel_shape").getIntsList();
+        var padding = attributesForNode.get("pads").getIntsList();
+        var strides = attributesForNode.get("strides").getIntsList();
 
         Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
                 .sW(strides.get(0).intValue())

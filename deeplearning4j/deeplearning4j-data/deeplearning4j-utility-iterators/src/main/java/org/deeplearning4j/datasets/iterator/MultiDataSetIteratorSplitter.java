@@ -22,7 +22,7 @@ package org.deeplearning4j.datasets.iterator;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -110,7 +110,7 @@ public class MultiDataSetIteratorSplitter {
     public MultiDataSetIteratorSplitter(@NonNull MultiDataSetIterator baseIterator, int[] splits) {
 
         int totalBatches = 0;
-        for (val v:splits)
+        for (var v:splits)
             totalBatches += v;
 
         if (totalBatches < 0)
@@ -195,7 +195,7 @@ public class MultiDataSetIteratorSplitter {
                         throw new UnsupportedOperationException("Reset isn't supported by underlying iterator");
                 }
 
-                val state = backedIterator.hasNext();
+                var state = backedIterator.hasNext();
                 if (state && counter.get() < numTrain)
                     return true;
                 else
@@ -205,7 +205,7 @@ public class MultiDataSetIteratorSplitter {
             @Override
             public MultiDataSet next() {
                 counter.incrementAndGet();
-                val p = backedIterator.next();
+                var p = backedIterator.next();
 
                 if (counter.get() == 1 && firstTrain == null) {
                     // first epoch ever, we'll save first dataset and will use it to check for equality later
@@ -214,7 +214,7 @@ public class MultiDataSetIteratorSplitter {
                 } else if (counter.get() == 1) {
                     // epoch > 1, comparing first dataset to previously stored dataset. they should be equal
                     int cnt = 0;
-                    for (val c: p.getFeatures())
+                    for (var c: p.getFeatures())
                         if (!c.equalsWithEps(firstTrain.getFeatures()[cnt++], 1e-5))
                             throw new ND4JIllegalStateException("First examples do not match. Randomization was used?");
                 }
@@ -270,7 +270,7 @@ public class MultiDataSetIteratorSplitter {
 
             @Override
             public boolean hasNext() {
-                val state = backedIterator.hasNext();
+                var state = backedIterator.hasNext();
                 if (state && counter.get() < numTrain + numTest)
                     return true;
                 else

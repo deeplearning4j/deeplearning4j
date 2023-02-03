@@ -23,7 +23,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -97,14 +97,14 @@ public class Reshape extends DynamicCustomOp {
             this.shape = new long[]{};
             return;
         } else if(nodeDef.getInputCount() == 1){
-            val shape = nodeDef.getAttrOrThrow("Tshape");
+            var shape = nodeDef.getAttrOrThrow("Tshape");
             if (!shape.hasShape()) {
-                val shapeRet = new long[2];
+                var shapeRet = new long[2];
                 shapeRet[0] = 1;
                 shapeRet[1] = shape.getValueCase().getNumber();
                 this.shape = shapeRet;
             } else {
-                val shapeVals = shape.getShape().getDimList();
+                var shapeVals = shape.getShape().getDimList();
                 if (shapeVals.size() > 1) {
                     this.shape = new long[shapeVals.size()];
                     for (int i = 0; i < shapeVals.size(); i++) {
@@ -137,7 +137,7 @@ public class Reshape extends DynamicCustomOp {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
         Map<String, PropertyMapping> map = new HashMap<>();
 
-        val shapeMapping = PropertyMapping.builder()
+        var shapeMapping = PropertyMapping.builder()
                 .onnxAttrName("shape")
                 .tfInputPosition(-1)
                 .propertyNames(new String[]{"shape"})

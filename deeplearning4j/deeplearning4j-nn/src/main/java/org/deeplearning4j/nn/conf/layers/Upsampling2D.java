@@ -81,9 +81,9 @@ public class Upsampling2D extends BaseUpsamplingLayer {
                             + "\"): Expected CNN input, got " + inputType);
         }
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
-        val inHeight = i.getHeight();
-        val inWidth = i.getWidth();
-        val inDepth = i.getChannels();
+        var inHeight = i.getHeight();
+        var inWidth = i.getWidth();
+        var inDepth = i.getChannels();
 
         return InputType.convolutional(size[0] * inHeight, size[1] * inWidth, inDepth, i.getFormat());
     }
@@ -103,7 +103,7 @@ public class Upsampling2D extends BaseUpsamplingLayer {
         InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
 
         // During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
-        val im2colSizePerEx =
+        var im2colSizePerEx =
                         c.getChannels() * outputType.getHeight() * outputType.getWidth() * size[0] * size[1];
 
         // Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass

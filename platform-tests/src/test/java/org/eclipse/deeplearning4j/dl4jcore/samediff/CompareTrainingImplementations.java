@@ -82,11 +82,11 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
         for (String u : new String[]{"sgd", "adam", "nesterov", "adamax", "amsgrad"}) {
             for(int i = 0; i < l1.length; i++ ) {
                 Nd4j.getRandom().setSeed(12345);
-                double l1Val = l1[i];
-                double l2Val = l2[i];
-                double wdVal = wd[i];
+                double l1var = l1[i];
+                double l2var = l2[i];
+                double wdvar = wd[i];
 
-                String testName = u + ", l1=" + l1Val + ", l2=" + l2Val + ", wd=" + wdVal;
+                String testName = u + ", l1=" + l1var + ", l2=" + l2var + ", wd=" + wdVal;
 
                 log.info("Starting: {}", testName);
                 SameDiff sd = SameDiff.create();
@@ -137,13 +137,13 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                 }
 
                 List<Regularization> r = new ArrayList<>();
-                if(l2Val > 0){
+                if(l2var > 0){
                     r.add(new L2Regularization(l2Val));
                 }
-                if(l1Val > 0){
+                if(l1var > 0){
                     r.add(new L1Regularization(l1Val));
                 }
-                if(wdVal > 0){
+                if(wdvar > 0){
                     r.add(new WeightDecay(wdVal, true));
                 }
                 TrainingConfig conf = new TrainingConfig.Builder()
@@ -211,7 +211,7 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
 
                 //Note that the SameDiff gradients don't include the L1/L2 terms at present just from execBackwards()... these are added in fitting only
                 //We can check correctness though with training param checks later
-                if(l1Val == 0 && l2Val == 0 && wdVal == 0) {
+                if(l1var == 0 && l2var == 0 && wdvar == 0) {
                     //we reshape here because the only difference here should be whether it's 2d or not (1 x n)
                     assertEquals(grads.get("1_b"), gm.get(b1.name()).reshape(grads.get("1_b").shape()), testName);
                     assertEquals(grads.get("1_W"), gm.get(w1.name()), testName);

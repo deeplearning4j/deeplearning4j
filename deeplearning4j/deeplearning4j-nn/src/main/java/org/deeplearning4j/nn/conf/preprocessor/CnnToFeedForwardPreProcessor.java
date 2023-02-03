@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
-import lombok.val;
+
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -113,8 +113,8 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
 
         //Note that to match Tensorflow/Keras, we do a simple "c order reshape" for both NCHW and NHWC
 
-        val inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
-        val outShape = new long[]{inShape[0], inShape[1] * inShape[2] * inShape[3]};
+        var inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
+        var outShape = new long[]{inShape[0], inShape[1] * inShape[2] * inShape[3]};
 
         return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input.reshape('c', outShape));    //Should be zero copy reshape
     }
@@ -160,7 +160,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         }
 
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        val outSize = c.getChannels() * c.getHeight() * c.getWidth();
+        var outSize = c.getChannels() * c.getHeight() * c.getWidth();
         //h=2,w=1,c=5 pre processor: 0,0,NCHW (broken)
         //h=2,w=2,c=3, cnn=2,2,3, NCHW
         return InputType.feedForward(outSize);

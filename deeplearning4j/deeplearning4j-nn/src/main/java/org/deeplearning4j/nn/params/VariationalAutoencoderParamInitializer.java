@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.params;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
@@ -74,8 +74,8 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
     public long numParams(NeuralNetConfiguration conf) {
         VariationalAutoencoder layer = (VariationalAutoencoder) conf.getLayer();
 
-        val nIn = layer.getNIn();
-        val nOut = layer.getNOut();
+        var nIn = layer.getNIn();
+        var nOut = layer.getNOut();
         int[] encoderLayerSizes = layer.getEncoderLayerSizes();
         int[] decoderLayerSizes = layer.getDecoderLayerSizes();
 
@@ -108,8 +108,8 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         //Between last decoder layer and parameters for p(x|z):
         if (nIn > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
-        val nDistributionParams = layer.getOutputDistribution().distributionInputSize((int) nIn);
-        val lastDecLayerSize = decoderLayerSizes[decoderLayerSizes.length - 1];
+        var nDistributionParams = layer.getOutputDistribution().distributionInputSize((int) nIn);
+        var lastDecLayerSize = decoderLayerSizes[decoderLayerSizes.length - 1];
         paramCount += (lastDecLayerSize + 1) * nDistributionParams;
 
         return paramCount;
@@ -195,8 +195,8 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         Map<String, INDArray> ret = new LinkedHashMap<>();
         VariationalAutoencoder layer = (VariationalAutoencoder) conf.getLayer();
 
-        val nIn = layer.getNIn();
-        val nOut = layer.getNOut();
+        var nIn = layer.getNIn();
+        var nOut = layer.getNOut();
         int[] encoderLayerSizes = layer.getEncoderLayerSizes();
         int[] decoderLayerSizes = layer.getDecoderLayerSizes();
 
@@ -213,7 +213,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
 
             INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
 
-            val weightParamCount = encoderLayerNIn * encoderLayerSizes[i];
+            var weightParamCount = encoderLayerNIn * encoderLayerSizes[i];
             INDArray weightView = paramsViewReshape.get(
                             NDArrayIndex.interval(soFar, soFar + weightParamCount));
             soFar += weightParamCount;
@@ -236,7 +236,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
 
         INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
         //Last encoder layer -> p(z|x)
-        val nWeightsPzx = encoderLayerSizes[encoderLayerSizes.length - 1] * nOut;
+        var nWeightsPzx = encoderLayerSizes[encoderLayerSizes.length - 1] * nOut;
         INDArray pzxWeightsMean =
                 paramsViewReshape.get(NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
         soFar += nWeightsPzx;
@@ -276,7 +276,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
             } else {
                 decoderLayerNIn = decoderLayerSizes[i - 1];
             }
-            val weightParamCount = decoderLayerNIn * decoderLayerSizes[i];
+            var weightParamCount = decoderLayerNIn * decoderLayerSizes[i];
             INDArray weightView = paramsViewReshape.get(
                             NDArrayIndex.interval(soFar, soFar + weightParamCount));
             soFar += weightParamCount;
@@ -324,8 +324,8 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         Map<String, INDArray> ret = new LinkedHashMap<>();
         VariationalAutoencoder layer = (VariationalAutoencoder) conf.getLayer();
 
-        val nIn = layer.getNIn();
-        val nOut = layer.getNOut();
+        var nIn = layer.getNIn();
+        var nOut = layer.getNOut();
         int[] encoderLayerSizes = layer.getEncoderLayerSizes();
         int[] decoderLayerSizes = layer.getDecoderLayerSizes();
 
@@ -340,7 +340,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
 
             INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
 
-            val weightParamCount = encoderLayerNIn * encoderLayerSizes[i];
+            var weightParamCount = encoderLayerNIn * encoderLayerSizes[i];
             INDArray weightGradView = gradientViewReshape.get(
                             NDArrayIndex.interval(soFar, soFar + weightParamCount));
             soFar += weightParamCount;
@@ -357,7 +357,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
 
         INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
         //Last encoder layer -> p(z|x)
-        val nWeightsPzx = encoderLayerSizes[encoderLayerSizes.length - 1] * nOut;
+        var nWeightsPzx = encoderLayerSizes[encoderLayerSizes.length - 1] * nOut;
         INDArray pzxWeightsMean =
                 gradientViewReshape.get( NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
         soFar += nWeightsPzx;

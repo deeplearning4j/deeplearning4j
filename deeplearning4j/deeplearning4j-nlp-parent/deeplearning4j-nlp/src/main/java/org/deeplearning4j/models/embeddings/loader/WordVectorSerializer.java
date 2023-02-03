@@ -262,24 +262,24 @@ public class WordVectorSerializer {
      */
     public static <T extends SequenceElement> void writeWordVectors(WeightLookupTable<T> lookupTable,
                                                                     OutputStream stream) throws IOException {
-        val vocabCache = lookupTable.getVocabCache();
+        var vocabCache = lookupTable.getVocabCache();
 
         try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(stream, StandardCharsets.UTF_8))) {
             // saving header as "NUM_WORDS VECTOR_SIZE NUM_DOCS"
-            val str = vocabCache.numWords() + " " + lookupTable.layerSize() + " " + vocabCache.totalNumberOfDocs();
+            var str = vocabCache.numWords() + " " + lookupTable.layerSize() + " " + vocabCache.totalNumberOfDocs();
             log.debug("Saving header: {}", str);
             writer.println(str);
 
             // saving vocab content
-            val num = vocabCache.numWords();
+            var num = vocabCache.numWords();
             for (int x = 0; x < num; x++) {
                 T element = vocabCache.elementAtIndex(x);
 
-                val builder = new StringBuilder();
+                var builder = new StringBuilder();
 
-                val l = element.getLabel();
+                var l = element.getLabel();
                 builder.append(ReadHelper.encodeB64(l)).append(" ");
-                val vec = lookupTable.vector(element.getLabel());
+                var vec = lookupTable.vector(element.getLabel());
                 for (int i = 0; i < vec.length(); i++) {
                     builder.append(vec.getDouble(i));
                     if (i < vec.length() - 1)
@@ -366,12 +366,12 @@ public class WordVectorSerializer {
      */
     public static <T extends SequenceElement> void writeLookupTableBinary(InMemoryLookupTable<T> lookupTable,
                                                                           OutputStream stream) throws IOException {
-        val vocabCache = lookupTable.getVocabCache();
+        var vocabCache = lookupTable.getVocabCache();
 
         DataOutputStream writer = new DataOutputStream(stream);
 
         // saving header as "NUM_WORDS VECTOR_SIZE NUM_DOCS"
-        val str = vocabCache.numWords() + " " + lookupTable.layerSize() + " " + vocabCache.totalNumberOfDocs();
+        var str = vocabCache.numWords() + " " + lookupTable.layerSize() + " " + vocabCache.totalNumberOfDocs();
 
         writer.writeInt(vocabCache.numWords());
         writer.writeInt(lookupTable.layerSize());
@@ -380,10 +380,10 @@ public class WordVectorSerializer {
 
 
         // saving vocab content
-        val num = vocabCache.numWords();
+        var num = vocabCache.numWords();
         for (int x = 0; x < num; x++) {
             T element = vocabCache.elementAtIndex(x);
-            val l = element.getLabel();
+            var l = element.getLabel();
             writer.writeUTF(l);
             writer.writeBoolean(element.isLabel());
             writer.writeInt(element.getCodeLength());
@@ -2472,8 +2472,8 @@ public class WordVectorSerializer {
      * @throws IOException
      */
     public static VocabCache<VocabWord> readVocabCache(@NonNull InputStream stream) throws IOException {
-        val vocabCache = new AbstractCache.Builder<VocabWord>().build();
-        val factory = new VocabWordFactory();
+        var vocabCache = new AbstractCache.Builder<VocabWord>().build();
+        var factory = new VocabWordFactory();
         boolean firstLine = true;
         long totalWordOcc = -1L;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
@@ -2482,7 +2482,7 @@ public class WordVectorSerializer {
                 // try to treat first line as header with 3 digits
                 if (firstLine) {
                     firstLine = false;
-                    val split = line.split("\\ ");
+                    var split = line.split("\\ ");
 
                     if (split.length != 3)
                         continue;
@@ -2496,7 +2496,7 @@ public class WordVectorSerializer {
                     }
                 }
 
-                val word = factory.deserialize(line);
+                var word = factory.deserialize(line);
 
                 vocabCache.addToken(word);
                 vocabCache.addWordToIndex(word.getIndex(), word.getLabel());

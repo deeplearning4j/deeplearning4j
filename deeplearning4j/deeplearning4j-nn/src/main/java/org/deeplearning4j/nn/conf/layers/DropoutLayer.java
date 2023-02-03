@@ -113,7 +113,7 @@ public class DropoutLayer extends FeedForwardLayer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        val actElementsPerEx = inputType.arrayElementsPerExample();
+        var actElementsPerEx = inputType.arrayElementsPerExample();
         //During inference: not applied. During  backprop: dup the input, in case it's used elsewhere
         //But: this will be counted in the activations
         //(technically inference memory is over-estimated as a result)

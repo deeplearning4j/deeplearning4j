@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -86,8 +86,8 @@ public class SequenceMask extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val targetNode = TFGraphMapper.getNodeWithNameFromGraph(graph, nodeDef.getInput(1));
-        val maxlen = TFGraphMapper.getNDArrayFromTensor(targetNode);
+        var targetNode = TFGraphMapper.getNodeWithNameFromGraph(graph, nodeDef.getInput(1));
+        var maxlen = TFGraphMapper.getNDArrayFromTensor(targetNode);
         if (maxlen == null){
             // No 2nd input
             this.is_static_maxlen = true;
@@ -103,7 +103,7 @@ public class SequenceMask extends DynamicCustomOp {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
         Map<String, PropertyMapping> attrs = new LinkedHashMap<>();
         if (is_static_maxlen) {
-            val maxLen = PropertyMapping.builder()
+            var maxLen = PropertyMapping.builder()
                     .propertyNames(new String[]{"maxLen"})
                     .tfAttrName("maxlen")
                     .build();

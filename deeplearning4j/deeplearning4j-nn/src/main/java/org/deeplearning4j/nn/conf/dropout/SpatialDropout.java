@@ -22,7 +22,7 @@ package org.deeplearning4j.nn.conf.dropout;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.val;
+
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.common.base.Preconditions;
@@ -85,8 +85,8 @@ public class SpatialDropout implements IDropout {
             currP = p;
         }
 
-        val minibatch = inputActivations.size(0);
-        val dim1 = inputActivations.size(1);
+        var minibatch = inputActivations.size(0);
+        var dim1 = inputActivations.size(1);
         mask = workspaceMgr.createUninitialized(ArrayType.INPUT, output.dataType(), minibatch, dim1).assign(1.0);
         Nd4j.getExecutioner().exec(new DropOutInverted(mask, currP));
 

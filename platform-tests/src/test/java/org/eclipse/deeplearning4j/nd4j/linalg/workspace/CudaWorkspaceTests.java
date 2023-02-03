@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -53,13 +53,13 @@ public class CudaWorkspaceTests extends BaseNd4jTestWithBackends {
         if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.CUDA)
             return;
 
-        val workspaceConfig = WorkspaceConfiguration.builder()
+        var workspaceConfig = WorkspaceConfiguration.builder()
                 .policyMirroring(MirroringPolicy.HOST_ONLY) // Commenting this out makes it so that assert is not triggered (for at least 40 secs or so...)
                 .build();
         int cnt = 0;
 
         for (int  e = 0; e < 10; e++) {
-            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfig, "test")) {
+            try (var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfig, "test")) {
                 final INDArray zeros = Nd4j.zeros(4, 'f');
                 //final INDArray zeros = Nd4j.create(4, 'f'); // Also fails, but maybe less of an issue as javadoc does not say that one can expect returned array to be all zeros.
                 assertEquals( 0d, zeros.sumNumber().doubleValue(), 1e-10,"Got non-zero array " + zeros + " after " + cnt + " iterations !");

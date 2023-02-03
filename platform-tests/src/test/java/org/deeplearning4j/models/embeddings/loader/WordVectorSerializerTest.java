@@ -21,7 +21,7 @@
 package org.deeplearning4j.models.embeddings.loader;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -65,7 +65,7 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
     public void setUp() throws Exception {
         cache = new AbstractCache.Builder<VocabWord>().build();
 
-        val words = new VocabWord[3];
+        var words = new VocabWord[3];
         words[0] = new VocabWord(1.0, "word");
         words[1] = new VocabWord(2.0, "test");
         words[2] = new VocabWord(3.0, "tester");
@@ -116,8 +116,8 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
         assertEquals(cache.numWords(), deser.vocab().numWords());
 
         for (int i = 0; i < cache.words().size(); ++i) {
-            val cached = cache.wordAtIndex(i);
-            val restored = deser.vocab().wordAtIndex(i);
+            var cached = cache.wordAtIndex(i);
+            var restored = deser.vocab().wordAtIndex(i);
             assertNotNull(cached);
             assertEquals(cached, restored);
         }
@@ -195,8 +195,8 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
         assertEquals(cache.numWords(), deser.vocab().numWords());
 
         for (int i = 0; i < cache.words().size(); ++i) {
-            val cached = cache.wordAtIndex(i);
-            val restored = deser.vocab().wordAtIndex(i);
+            var cached = cache.wordAtIndex(i);
+            var restored = deser.vocab().wordAtIndex(i);
             assertNotNull(cached);
             assertEquals(cached, restored);
         }
@@ -244,8 +244,8 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
         assertEquals(cache.numWords(), deser.vocab().numWords());
 
         for (int i = 0; i < cache.words().size(); ++i) {
-            val cached = cache.wordAtIndex(i);
-            val restored = deser.vocab().wordAtIndex(i);
+            var cached = cache.wordAtIndex(i);
+            var restored = deser.vocab().wordAtIndex(i);
             assertNotNull(cached);
             assertEquals(cached, restored);
         }
@@ -285,8 +285,8 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
         assertEquals(cache.numWords(), ((InMemoryLookupTable<VocabWord>)deser).getVocab().numWords());
 
         for (int i = 0; i < cache.words().size(); ++i) {
-            val cached = cache.wordAtIndex(i);
-            val restored = ((InMemoryLookupTable<VocabWord>)deser).getVocab().wordAtIndex(i);
+            var cached = cache.wordAtIndex(i);
+            var restored = ((InMemoryLookupTable<VocabWord>)deser).getVocab().wordAtIndex(i);
             assertNotNull(cached);
             assertEquals(cached, restored);
         }

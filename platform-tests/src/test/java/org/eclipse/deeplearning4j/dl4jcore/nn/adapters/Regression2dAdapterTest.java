@@ -19,7 +19,7 @@
  */
 package org.eclipse.deeplearning4j.dl4jcore.nn.adapters;
 
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.adapters.Regression2dAdapter;
 import org.junit.jupiter.api.Tag;
@@ -41,18 +41,18 @@ class Regression2dAdapterTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Regression Adapter _ 2 D _ 1")
     void testRegressionAdapter_2D_1() throws Exception {
-        val in = new double[][] { { 1, 2, 3 }, { 4, 5, 6 } };
-        val adapter = new Regression2dAdapter();
-        val result = adapter.apply(Nd4j.create(in));
+        var in = new double[][] { { 1, 2, 3 }, { 4, 5, 6 } };
+        var adapter = new Regression2dAdapter();
+        var result = adapter.apply(Nd4j.create(in));
         assertArrayEquals(ArrayUtil.flatten(in), ArrayUtil.flatten(result), 1e-5);
     }
 
     @Test
     @DisplayName("Test Regression Adapter _ 2 D _ 2")
     void testRegressionAdapter_2D_2() throws Exception {
-        val in = new double[] { 1, 2, 3 };
-        val adapter = new Regression2dAdapter();
-        val result = adapter.apply(Nd4j.create(in));
+        var in = new double[] { 1, 2, 3 };
+        var adapter = new Regression2dAdapter();
+        var result = adapter.apply(Nd4j.create(in));
         assertArrayEquals(in, ArrayUtil.flatten(result), 1e-5);
     }
 }

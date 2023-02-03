@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
@@ -985,12 +985,12 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
     public void testWorkspaceGc_1() throws Exception {
 
         for (int e = 0; e < 10; e++) {
-            val f = e;
-            val t = new Thread(() -> {
-                val wsConf = WorkspaceConfiguration.builder()
+            var f = e;
+            var t = new Thread(() -> {
+                var wsConf = WorkspaceConfiguration.builder()
                         .initialSize(1000000).build();
-                try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf, "SomeRandomName999" + f)) {
-                    val array = Nd4j.create(2, 2);
+                try (var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf, "SomeRandomName999" + f)) {
+                    var array = Nd4j.create(2, 2);
                 }
                 //Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
             });

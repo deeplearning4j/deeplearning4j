@@ -132,17 +132,17 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
 
     @Override
     public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
-        val baseQueries = paramTable.get(WEIGHT_QUERIES);
-        val batchSize = layerInput.shape().get(SDIndex.point(0));
-        val tileAxis = sameDiff.scatterUpdate(sameDiff.onesLike(layerInput.shape()), sameDiff.constant(0), batchSize);
+        var baseQueries = paramTable.get(WEIGHT_QUERIES);
+        var batchSize = layerInput.shape().get(SDIndex.point(0));
+        var tileAxis = sameDiff.scatterUpdate(sameDiff.onesLike(layerInput.shape()), sameDiff.constant(0), batchSize);
 
-        val queries = sameDiff.tile(baseQueries, tileAxis);
+        var queries = sameDiff.tile(baseQueries, tileAxis);
 
         if(projectInput){
-            val Wq = paramTable.get(WEIGHT_KEY_QUERY_PROJECTION);
-            val Wk = paramTable.get(WEIGHT_KEY_KEY_PROJECTION);
-            val Wv = paramTable.get(WEIGHT_KEY_VALUE_PROJECTION);
-            val Wo = paramTable.get(WEIGHT_KEY_OUT_PROJECTION);
+            var Wq = paramTable.get(WEIGHT_KEY_QUERY_PROJECTION);
+            var Wk = paramTable.get(WEIGHT_KEY_KEY_PROJECTION);
+            var Wv = paramTable.get(WEIGHT_KEY_VALUE_PROJECTION);
+            var Wo = paramTable.get(WEIGHT_KEY_OUT_PROJECTION);
 
             return sameDiff.nn.multiHeadDotProductAttention(getLayerName(), queries, layerInput, layerInput, Wq, Wk, Wv, Wo, mask, true);
         }else{

@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.params;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -52,13 +52,13 @@ public class DeconvolutionParamInitializer extends ConvolutionParamInitializer {
             int[] kernel = layerConf.getKernelSize();
             int[] stride = layerConf.getStride();
 
-            val inputDepth = layerConf.getNIn();
-            val outputDepth = layerConf.getNOut();
+            var inputDepth = layerConf.getNIn();
+            var outputDepth = layerConf.getNOut();
 
             double fanIn = inputDepth * kernel[0] * kernel[1];
             double fanOut = outputDepth * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
 
-            val weightsShape = new long[] {inputDepth, outputDepth, kernel[0], kernel[1]};
+            var weightsShape = new long[] {inputDepth, outputDepth, kernel[0], kernel[1]};
 
             INDArray weights = layerConf.getWeightInitFn().init(
                     fanIn, fanOut, weightsShape, 'c', weightView);
@@ -82,8 +82,8 @@ public class DeconvolutionParamInitializer extends ConvolutionParamInitializer {
                 (org.deeplearning4j.nn.conf.layers.Deconvolution2D) conf.getLayer();
 
         int[] kernel = layerConf.getKernelSize();
-        val nIn = layerConf.getNIn();
-        val nOut = layerConf.getNOut();
+        var nIn = layerConf.getNIn();
+        var nOut = layerConf.getNOut();
 
         INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
         Map<String, INDArray> out = new LinkedHashMap<>();

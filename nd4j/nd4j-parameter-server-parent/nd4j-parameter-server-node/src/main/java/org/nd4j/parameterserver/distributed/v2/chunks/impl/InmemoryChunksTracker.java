@@ -23,7 +23,7 @@ package org.nd4j.parameterserver.distributed.v2.chunks.impl;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.util.SerializationUtils;
@@ -76,7 +76,7 @@ public class InmemoryChunksTracker<T extends VoidMessage> implements ChunksTrack
 
     @Override
     public boolean isComplete() {
-        for (val b:map.values())
+        for (var b:map.values())
             if (!b.get())
                 return false;
 
@@ -85,12 +85,12 @@ public class InmemoryChunksTracker<T extends VoidMessage> implements ChunksTrack
 
     @Override
     public synchronized boolean append(@NonNull VoidChunk chunk) {
-        val b = map.get(chunk.getChunkId());
+        var b = map.get(chunk.getChunkId());
 
         if (b.get())
             return isComplete();
 
-        val offset = chunk.getChunkId() * chunk.getSplitSize();
+        var offset = chunk.getChunkId() * chunk.getSplitSize();
 
         int cnt = 0;
         for (int e = offset; e < offset + chunk.getPayload().length; e++)
@@ -107,7 +107,7 @@ public class InmemoryChunksTracker<T extends VoidMessage> implements ChunksTrack
         if (!isComplete())
             throw new ND4JIllegalStateException("Message isn't ready for concatenation");
 
-        try (val bais = new ByteArrayInputStream(buffer)) {
+        try (var bais = new ByteArrayInputStream(buffer)) {
             return SerializationUtils.deserialize(bais);
         } catch (Exception e) {
             log.error("Exception: {}",e);

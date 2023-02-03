@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.convolution;
 
-import lombok.val;
+
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -1660,7 +1660,7 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
 
 
                 String msg = "inOrder=" + inputOrder + ", outOrder=" + outputOrder;
-                val vr = actDl4j.get(point(0), point(0), all(), all());
+                var vr = actDl4j.get(point(0), point(0), all(), all());
                 assertEquals(expDl4j, vr,msg);
                 assertEquals(expEnabled, actEnabled.get(point(0), point(0), all(), all()),msg);
             }

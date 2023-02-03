@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.params;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -56,7 +56,7 @@ public class SameDiffParamInitializer implements ParamInitializer {
         AbstractSameDiffLayer sd = (AbstractSameDiffLayer)layer;
         Map<String,long[]> m = sd.getLayerParams().getParamShapes();
         int n = 0;
-        for(val arr : m.values()){
+        for(var arr : m.values()){
             n += ArrayUtil.prod(arr);
         }
         return n;
@@ -126,8 +126,8 @@ public class SameDiffParamInitializer implements ParamInitializer {
         Map<String,INDArray> out = new LinkedHashMap<>();
         int soFar = 0;
         for(String s : params){
-            val sh = paramShapes.get(s);
-            val length = ArrayUtil.prodLong(sh);
+            var sh = paramShapes.get(s);
+            var length = ArrayUtil.prodLong(sh);
             if(length <= 0){
                 throw new IllegalStateException("Invalid array state for parameter \"" + s + "\" in layer " + layerName
                         + " of type " + clazz.getSimpleName() + ": parameter length (" + length

@@ -34,7 +34,7 @@ import java.lang.Boolean.FALSE
 
 fun SDBaseOps() =  Namespace("BaseOps"){
 
-    val keepDimsDoc = Mixin("keepDims"){
+    var keepDimsDoc = Mixin("keepDims"){
         Doc(Language.ANY, DocScope.ALL){
             """
                 Note that if keepDims = true, the output variable has the same rank as the input variable,
@@ -47,7 +47,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
     }
 
-    val booleanReturnDoc = Mixin("booleanReturnDoc"){
+    var booleanReturnDoc = Mixin("booleanReturnDoc"){
         Doc(Language.ANY, DocScope.ALL) {
             """
                 Return boolean array with values true where satisfied, or false otherwise.
@@ -55,7 +55,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
     }
 
-    val scatterOp = Mixin("scatterOp "){
+    var scatterOp = Mixin("scatterOp "){
         javaPackage = "org.nd4j.linalg.api.ops.impl.scatter"
         Input(NUMERIC, "ref") { description = "Initial/source variable" }
         Input(NUMERIC, "indices") { description = "Indices array" }
@@ -63,7 +63,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Output(NUMERIC, "output") { description = "The updated variable" }
     }
 
-    val scatterDoc = Mixin("scatterDoc "){
+    var scatterDoc = Mixin("scatterDoc "){
         Doc(Language.ANY, DocScope.ALL) {
             """
                 If indices is rank 0 (a scalar), then out[index, ...] = out[index, ...] + op(updates[...])
@@ -74,14 +74,14 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
     }
 
-    val segmentOp = Mixin("segmentOp"){
+    var segmentOp = Mixin("segmentOp"){
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom.segment"
         Input(NDARRAY, "data") { description = "Data to perform segment max on" }
         Input(NUMERIC, "segmentIds") { description = "Variable for the segment IDs" }
         Output(NUMERIC, "output"){ description = "Segment output" }
     }
 
-    val segmentDoc = Mixin("segmentDoc") {
+    var segmentDoc = Mixin("segmentDoc") {
         Doc(Language.ANY, DocScope.ALL) {
             """
                 If data =     [3, 6, 1, 4, 9, 2, 8]
@@ -94,7 +94,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
     }
 
-    val unsortedSegmentOp = Mixin("unsortedSegmentOp") {
+    var unsortedSegmentOp = Mixin("unsortedSegmentOp") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.segment"
         Input(NUMERIC, "data") { description = "Data (variable) to perform unsorted segment max on" }
         Input(NUMERIC, "segmentIds") { description = "Variable for the segment IDs" }
@@ -102,7 +102,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Output(NUMERIC, "output") { description = "Unsorted segment output" }
     }
 
-    val unsortedSegmentOpInput = Mixin("unsortedSegmentOp") {
+    var unsortedSegmentOpInput = Mixin("unsortedSegmentOp") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.segment"
         Input(NUMERIC, "data") { description = "Data (variable) to perform unsorted segment max on" }
         Input(NUMERIC, "segmentIds") { description = "Variable for the segment IDs" }
@@ -150,7 +150,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         javaOpClass = "Concat"
         argsFirst = true
         Arg(INT, "dimension"){ description = "Dimension to concatenate on" }
-        val inputs = Input(NUMERIC, "inputs") {count = AtLeast(1); description = "Input variables" }
+        var inputs = Input(NUMERIC, "inputs") {count = AtLeast(1); description = "Input variables" }
         Output(NUMERIC, "output"){ description = "" }
         Constraint("Input arrays must all be the same datatype"){ sameType(inputs) } //TODO: Fix, generates error in java,
         Doc(Language.ANY, DocScope.ALL){
@@ -1272,7 +1272,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     Op("flatten") {
         javaPackage = "org.nd4j.linalg.api.ops.custom"
         javaOpClass = "Flatten"
-        val inputs = Input(NDARRAY, "inputs") {count = AtLeast(1); description = "Input variables" }
+        var inputs = Input(NDARRAY, "inputs") {count = AtLeast(1); description = "Input variables" }
         Arg(STRING, "order") { description = "ordering for the variable"; defaultValue = "\"c\"" }
         Output(NUMERIC, "output"){ description = "Output variable" }
         Doc(Language.ANY, DocScope.ALL){

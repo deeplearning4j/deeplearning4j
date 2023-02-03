@@ -62,11 +62,11 @@ public class ScoreExamplesFunction implements DoubleFlatMapFunction<Iterator<Dat
 
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(jsonConfig.getValue()));
         network.init();
-        INDArray val = params.value().dup();
-        if (val.length() != network.numParams(false))
+        INDArray paramsVal = params.value().dup();
+        if (paramsVal.length() != network.numParams(false))
             throw new IllegalStateException(
                             "Network did not have same number of parameters as the broadcast set parameters");
-        network.setParameters(val);
+        network.setParameters(paramsVal);
 
         List<Double> ret = new ArrayList<>();
 

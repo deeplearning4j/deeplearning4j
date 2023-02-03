@@ -104,7 +104,7 @@ public class Upsampling3D extends BaseUpsamplingLayer {
                         (InputType.InputTypeConvolutional3D) getOutputType(-1, inputType);
 
         // During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
-        val im2colSizePerEx = c.getChannels() & outputType.getDepth() * outputType.getHeight() * outputType.getWidth()
+        var im2colSizePerEx = c.getChannels() & outputType.getDepth() * outputType.getHeight() * outputType.getWidth()
                         * size[0] * size[1] * size[2];
 
         // Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass

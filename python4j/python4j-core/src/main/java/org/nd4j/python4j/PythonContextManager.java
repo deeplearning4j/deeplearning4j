@@ -135,10 +135,10 @@ public class PythonContextManager {
                 String keyStr = key.toString();
                 if (!((keyStr.startsWith("__") && keyStr.endsWith("__")) || keyStr.startsWith("__collapsed_"))) {
                     String collapsedKey = getCollapsedVarNameForContext(keyStr, contextName);
-                    PythonObject val = pop.call(key);
+                    PythonObject obj = pop.call(key);
 
                     PythonObject pyNewKey = new PythonObject(collapsedKey);
-                    globals.set(pyNewKey, val);
+                    globals.set(pyNewKey, obj);
                 }
             }
         } catch (Exception pe) {
@@ -164,9 +164,9 @@ public class PythonContextManager {
                     String keyStr = key.toString();
                     if (keyStr.startsWith(prefix)) {
                         String expandedKey = expandCollapsedVarName(keyStr, contextName);
-                        PythonObject val = pop.call(key);
+                        PythonObject obj = pop.call(key);
                         PythonObject newKey = new PythonObject(expandedKey);
-                        globals.set(newKey, val);
+                        globals.set(newKey, obj);
                     }
                 }
             }

@@ -21,7 +21,7 @@
 package org.nd4j.parameterserver.distributed.v2.messages.history;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
@@ -39,9 +39,9 @@ public class HashHistoryHolderTest extends BaseND4JTest {
 
     @Test
     public void testBasicStuff_1() {
-        val history = new HashHistoryHolder<String>(1024);
+        var history = new HashHistoryHolder<String>(1024);
 
-        val first = java.util.UUID.randomUUID().toString();
+        var first = java.util.UUID.randomUUID().toString();
 
         // we assume that message is unknown
         assertFalse(history.storeIfUnknownMessageId(first));
@@ -60,14 +60,14 @@ public class HashHistoryHolderTest extends BaseND4JTest {
 
     @Test
     public void testBasicStuff_2() {
-        val history = new HashHistoryHolder<String>(2048);
+        var history = new HashHistoryHolder<String>(2048);
 
-        val iterations = 1000000;
-        val timeStart = System.nanoTime();
+        var iterations = 1000000;
+        var timeStart = System.nanoTime();
         for (int e = 0; e < iterations; e++) {
             assertFalse(history.storeIfUnknownMessageId(String.valueOf(e)));
         }
-        val timeStop= System.nanoTime();
+        var timeStop= System.nanoTime();
 
         log.info("Average time per iteration: [{} us]", (timeStop - timeStart) / iterations);
     }

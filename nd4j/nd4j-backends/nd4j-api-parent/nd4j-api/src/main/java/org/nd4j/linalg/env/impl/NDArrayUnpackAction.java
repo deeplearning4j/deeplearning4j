@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.env.impl;
 
-import lombok.val;
+
 import org.nd4j.linalg.env.EnvironmentalAction;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -32,7 +32,7 @@ public class NDArrayUnpackAction implements EnvironmentalAction {
 
     @Override
     public void process(String value) {
-        val v = Boolean.valueOf(value).booleanValue();
+        var v = Boolean.valueOf(value).booleanValue();
 
 
         // FIXME: get rid of direct variable access eventually!!1

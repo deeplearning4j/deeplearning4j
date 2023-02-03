@@ -112,7 +112,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         Preconditions.checkState(labels.rank() == 4, "Expected labels array to be rank 4 with shape [minibatch, 4+numClasses, H, W]. Got labels array with shape %ndShape", labels);
         Preconditions.checkState(labels.size(1) > 0, "Invalid labels array: labels.size(1) must be > 4. labels array should be rank 4 with shape [minibatch, 4+numClasses, H, W]. Got labels array with shape %ndShape", labels);
 
-        val size1 = labels.size(1);
+        var size1 = labels.size(1);
         INDArray classLabels = labels.get(all(), interval(4,size1), all(), all());   //Shape: [minibatch, nClasses, H, W]
         INDArray maskObjectPresent = classLabels.sum(Nd4j.createUninitialized(input.dataType(), nhw, 'c'), 1);//.castTo(DataType.BOOL); //Shape: [minibatch, H, W]
         INDArray maskObjectPresentBool = maskObjectPresent.castTo(DataType.BOOL);
@@ -650,7 +650,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Input format: [minibatch, 5B+C, H, W], with order [x,y,w,h,c]
         //Therefore: probabilities for class I is at depths 5B + classNumber
 
-        val bbs = layerConf().getBoundingBoxes().size(0);
+        var bbs = layerConf().getBoundingBoxes().size(0);
         INDArray conf = networkOutput.get(point(example), point(5*bbs + classNumber), all(), all());
         return conf;
     }

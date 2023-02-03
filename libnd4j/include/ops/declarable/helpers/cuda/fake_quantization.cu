@@ -63,14 +63,14 @@ void fakeQuantWithMinMaxVars_(NDArray* input, NDArray* min, NDArray* max, int nu
   nudge(min->t<T>(0), max->t<T>(0), lowIntBound, upperIntBound, &scale, &nudgedMin, &nudgedMax);
 
   auto wiseMinMaxAndSoOn = LAMBDA_T(x, nudgedMin, nudgedMax, scale) {
-    T val = x;
+    T var = x;
     if (x < nudgedMin) {
-      val = nudgedMin;
+      var = nudgedMin;
     } else if (x > nudgedMax) {
-      val = nudgedMax;
+      var = nudgedMax;
     } else
-      val = x;
-    return (math::sd_floor<T, T>((val - nudgedMin) / scale + T(0.5)) * scale + nudgedMin);
+      var = x;
+    return (math::sd_floor<T, T>((var - nudgedMin) / scale + T(0.5)) * scale + nudgedMin);
   };
 
   input->applyLambda(wiseMinMaxAndSoOn, *output);
@@ -91,14 +91,14 @@ static SD_KERNEL void fakeQuantWithMinMaxKernel(const T* input, const sd::LongTy
     nudge(min[i], max[i], lowIntBound, upperIntBound, &scale, &nudgedMin, &nudgedMax);
     // loop over blocks to quantization between nudged min and max
     for (auto b = threadIdx.x; b < block; b += blockDim.x) {
-      T val = input[shape::getIndexOffset(b * channels + i, inputShape)];
-      if (val < nudgedMin) {
-        val = nudgedMin;
-      } else if (val > nudgedMax) {
-        val = nudgedMax;
+      T var = input[shape::getIndexOffset(b * channels + i, inputShape)];
+      if (var < nudgedMin) {
+        var = nudgedMin;
+      } else if (var > nudgedMax) {
+        var = nudgedMax;
       }
       output[shape::getIndexOffset(b * channels + i, outputShape)] =
-          (math::sd_floor<T, T>((val - nudgedMin) / scale + T(0.5f)) * scale + nudgedMin);
+          (math::sd_floor<T, T>((var - nudgedMin) / scale + T(0.5f)) * scale + nudgedMin);
     };
   }
 }

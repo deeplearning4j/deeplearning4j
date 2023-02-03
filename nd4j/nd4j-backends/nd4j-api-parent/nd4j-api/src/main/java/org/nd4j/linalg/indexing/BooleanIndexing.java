@@ -21,7 +21,7 @@
 package org.nd4j.linalg.indexing;
 
 import lombok.NonNull;
-import lombok.val;
+
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex;
@@ -54,9 +54,9 @@ public class BooleanIndexing {
      */
     public static boolean and(final INDArray n, final Condition cond) {
         if (cond instanceof BaseCondition) {
-            long val = (long) Nd4j.getExecutioner().exec(new MatchCondition(n, cond)).getDouble(0);
+            long var = (long) Nd4j.getExecutioner().exec(new MatchCondition(n, cond)).getDouble(0);
 
-            if (val == n.length())
+            if (var == n.length())
                 return true;
             else
                 return false;
@@ -131,9 +131,9 @@ public class BooleanIndexing {
      */
     public static boolean or(final INDArray n, final Condition cond) {
         if (cond instanceof BaseCondition) {
-            long val = (long) Nd4j.getExecutioner().exec(new MatchCondition(n, cond)).getDouble(0);
+            long var = (long) Nd4j.getExecutioner().exec(new MatchCondition(n, cond)).getDouble(0);
 
-            if (val > 0)
+            if (var > 0)
                 return true;
             else
                 return false;
@@ -194,8 +194,8 @@ public class BooleanIndexing {
      * ffor the given conditions
      */
     public static INDArray chooseFrom(@NonNull  INDArray[] input,@NonNull  Condition condition) {
-        val choose = new Choose(input,condition);
-        val outputs = Nd4j.exec(choose);
+        var choose = new Choose(input,condition);
+        var outputs = Nd4j.exec(choose);
         int secondOutput = outputs[1].getInt(0);
         if(secondOutput < 1) {
             return null;

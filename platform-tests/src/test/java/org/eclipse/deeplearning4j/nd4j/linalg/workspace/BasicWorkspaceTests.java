@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -188,7 +188,7 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLeverageTo2(Nd4jBackend backend) {
-        val exp = Nd4j.scalar(15.0);
+        var exp = Nd4j.scalar(15.0);
         try (Nd4jWorkspace wsOne =
                      (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopOverTimeConfig, "EXT")) {
             INDArray array1 = Nd4j.create(new double[] {1f, 2f, 3f, 4f, 5f});
@@ -1263,13 +1263,13 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
             return;
 
         // circular workspace mode
-        val configuration = WorkspaceConfiguration.builder().initialSize(10 * 1024 * 1024)
+        var configuration = WorkspaceConfiguration.builder().initialSize(10 * 1024 * 1024)
                 .policyReset(ResetPolicy.ENDOFBUFFER_REACHED).policyAllocation(AllocationPolicy.STRICT)
                 .policySpill(SpillPolicy.FAIL).policyLearning(LearningPolicy.NONE).build();
 
 
-        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "circular_ws")) {
-            val array = Nd4j.create(DataType.FLOAT, 10, 10);
+        try (var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "circular_ws")) {
+            var array = Nd4j.create(DataType.FLOAT, 10, 10);
 
             // we expect that this array has no data/buffer on HOST side
             assertEquals(AffinityManager.Location.DEVICE, Nd4j.getAffinityManager().getActiveLocation(array));

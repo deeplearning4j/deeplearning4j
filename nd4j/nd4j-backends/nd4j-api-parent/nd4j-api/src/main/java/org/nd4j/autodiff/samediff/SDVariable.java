@@ -584,7 +584,7 @@ public class SDVariable implements Serializable {
      * @return Output variable
      */
     public SDVariable add(String varName, double scalar) {
-        val function = sameDiff.math.add(this,scalar);
+        var function = sameDiff.math.add(this,scalar);
         return sameDiff.updateVariableNameAndReference(function,varName);
     }
 
@@ -605,7 +605,7 @@ public class SDVariable implements Serializable {
      * @return Output (result) SDVariable
      */
     public SDVariable add(String name, SDVariable x) {
-        val result = sameDiff.math.add(this, x);
+        var result = sameDiff.math.add(this, x);
         return sameDiff.updateVariableNameAndReference(result, name);
     }
 
@@ -641,7 +641,7 @@ public class SDVariable implements Serializable {
      * @return Output variable
      */
     public SDVariable sub(String varName, double scalar) {
-        val result = sameDiff.math.sub(this, scalar);
+        var result = sameDiff.math.sub(this, scalar);
         return sameDiff.updateVariableNameAndReference(result, varName);
     }
 
@@ -662,7 +662,7 @@ public class SDVariable implements Serializable {
      * @return Output (result) SDVariable
      */
     public SDVariable sub(String name, SDVariable x) {
-        val result = sameDiff.math.sub(this,x);
+        var result = sameDiff.math.sub(this,x);
         return sameDiff.updateVariableNameAndReference(result,name);
     }
 
@@ -698,7 +698,7 @@ public class SDVariable implements Serializable {
      * @return Output variable
      */
     public SDVariable div(String varName, double scalar) {
-        val function = sameDiff.math.div(this,scalar);
+        var function = sameDiff.math.div(this,scalar);
         return sameDiff.updateVariableNameAndReference(function,varName);
     }
 
@@ -719,7 +719,7 @@ public class SDVariable implements Serializable {
      * @return Output (result) SDVariable
      */
     public SDVariable div(String name, SDVariable x) {
-        val result = sameDiff.math.div(this, x);
+        var result = sameDiff.math.div(this, x);
         return sameDiff.updateVariableNameAndReference(result, name);
     }
 
@@ -733,7 +733,7 @@ public class SDVariable implements Serializable {
      * @return Output (result) SDVariable
      */
     public SDVariable fdiv(String name, SDVariable x) {
-        val result = sameDiff.math.floorDiv(this, x);
+        var result = sameDiff.math.floorDiv(this, x);
         return sameDiff.updateVariableNameAndReference(result, name);
     }
 
@@ -747,7 +747,7 @@ public class SDVariable implements Serializable {
      * @return Output (result) SDVariable
      */
     public SDVariable mod(String name, SDVariable x) {
-        val result = sameDiff.math.mod(this, x);
+        var result = sameDiff.math.mod(this, x);
         return sameDiff.updateVariableNameAndReference(result, name);
     }
 
@@ -767,7 +767,7 @@ public class SDVariable implements Serializable {
      * @return Output variable
      */
     public SDVariable mul(String varName, double scalar) {
-        val function = sameDiff.math.mul(this, scalar);
+        var function = sameDiff.math.mul(this, scalar);
         return sameDiff.updateVariableNameAndReference(function,varName);
     }
 
@@ -789,7 +789,7 @@ public class SDVariable implements Serializable {
      * @return Output (result) SDVariable
      */
     public SDVariable mul(String name, SDVariable x) {
-        val result = sameDiff.math.mul(this, x);
+        var result = sameDiff.math.mul(this, x);
         return sameDiff.updateVariableNameAndReference(result,name);
     }
 
@@ -845,7 +845,7 @@ public class SDVariable implements Serializable {
      * @return Output variable
      */
     public SDVariable rsub(String varName, double scalar) {
-        val function = sameDiff.math.rsub(this,scalar);
+        var function = sameDiff.math.rsub(this,scalar);
         return sameDiff.updateVariableNameAndReference(function,varName);
     }
 
@@ -866,7 +866,7 @@ public class SDVariable implements Serializable {
      * @return Output (result) SDVariable
      */
     public SDVariable rsub(String name, SDVariable x) {
-        val result = sameDiff.math.rsub(this,x);
+        var result = sameDiff.math.rsub(this,x);
         return sameDiff.updateVariableNameAndReference(result,name);
     }
 
@@ -886,7 +886,7 @@ public class SDVariable implements Serializable {
      * @return Output variable
      */
     public SDVariable rdiv(String varName, double scalar) {
-        val function = sameDiff.math.rdiv(this, scalar);
+        var function = sameDiff.math.rdiv(this, scalar);
         return sameDiff.updateVariableNameAndReference(function, varName);
     }
 
@@ -907,7 +907,7 @@ public class SDVariable implements Serializable {
      * @return Output (result) SDVariable
      */
     public SDVariable rdiv(String name, SDVariable x) {
-        val result = sameDiff.math.rdiv(this,x);
+        var result = sameDiff.math.rdiv(this,x);
         return sameDiff.updateVariableNameAndReference(result,name);
 
     }
@@ -925,7 +925,7 @@ public class SDVariable implements Serializable {
      * @return squared difference between variables
      */
     public SDVariable squaredDifference(String name, SDVariable x) {
-        val result = sameDiff.math().squaredDifference(this, x);
+        var result = sameDiff.math().squaredDifference(this, x);
         return sameDiff.updateVariableNameAndReference(result, name);
     }
 

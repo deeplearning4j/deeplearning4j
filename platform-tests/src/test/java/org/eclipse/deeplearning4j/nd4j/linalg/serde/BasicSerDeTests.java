@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.serde;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -87,14 +87,14 @@ public class BasicSerDeTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testHalfSerde_1(Nd4jBackend backend) throws Exception {
-        val array = Nd4j.create(DataType.HALF, 3, 4);
+        var array = Nd4j.create(DataType.HALF, 3, 4);
         array.assign(1.0f);
 
-        val bos = new ByteArrayOutputStream();
+        var bos = new ByteArrayOutputStream();
 
         Nd4j.write(bos, array);
 
-        val restored = Nd4j.read(new ByteArrayInputStream(bos.toByteArray()));
+        var restored = Nd4j.read(new ByteArrayInputStream(bos.toByteArray()));
 
         assertEquals(array, restored);
     }

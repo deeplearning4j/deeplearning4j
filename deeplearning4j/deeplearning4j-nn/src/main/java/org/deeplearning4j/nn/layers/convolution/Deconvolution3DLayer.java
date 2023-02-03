@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
-import lombok.val;
+
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -166,7 +166,7 @@ public class Deconvolution3DLayer extends BaseLayer<Deconvolution3D> {
         long outD = outSize[2];
 
 
-        val miniBatch = input.size(0);
+        var miniBatch = input.size(0);
         long[] outShape = df == Convolution3D.DataFormat.NCDHW ? new long[]{miniBatch, layerConf().getNOut(), outH, outW, outD} : new long[]{miniBatch, outH, outW, outD, layerConf().getNOut()};
         INDArray output = workspaceMgr.create(ArrayType.ACTIVATIONS, input.dataType(), outShape, 'c');
 

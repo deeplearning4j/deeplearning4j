@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.params;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
@@ -99,7 +99,7 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
         // TODO setup for RNN
         BatchNormalization layer = (BatchNormalization) conf.getLayer();
-        val nOut = layer.getNOut();
+        var nOut = layer.getNOut();
 
         long meanOffset = 0;
         INDArray paramViewReshape = paramView.reshape(paramView.length());
@@ -147,7 +147,7 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
         BatchNormalization layer = (BatchNormalization) conf.getLayer();
-        val nOut = layer.getNOut();
+        var nOut = layer.getNOut();
 
         INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
         Map<String, INDArray> out = new LinkedHashMap<>();

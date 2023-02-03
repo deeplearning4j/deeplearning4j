@@ -23,7 +23,7 @@ package org.eclipse.deeplearning4j.nd4j.autodiff.opvalidation;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.math3.linear.LUDecomposition;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
@@ -275,7 +275,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testExpandDimsGradient(Nd4jBackend backend) {
-        val origShape = new long[]{3, 4};
+        var origShape = new long[]{3, 4};
 
         List<String> failed = new ArrayList<>();
 
@@ -332,13 +332,13 @@ public class TestShapeOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSqueezeGradient(Nd4jBackend backend,TestInfo testInfo) {
-        val origShape = new long[]{3, 4, 5};
+        var origShape = new long[]{3, 4, 5};
 
         List<String> failed = new ArrayList<>();
 
         for (int i = 0; i < 3; i++) {
 
-            val shape = origShape.clone();
+            var shape = origShape.clone();
             shape[i] = 1;
 
             for (Pair<INDArray, String> p : NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, shape, DataType.DOUBLE)) {
@@ -1021,7 +1021,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShape(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
-        val shape = new long[]{2, 3};
+        var shape = new long[]{2, 3};
         SDVariable x = sameDiff.var("x", shape);
         SDVariable result = sameDiff.shape(x).castTo(DataType.DOUBLE);
         SDVariable loss = sameDiff.standardDeviation(result, true);
@@ -1037,7 +1037,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSize(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
-        val shape = new long[]{2, 3};
+        var shape = new long[]{2, 3};
         SDVariable x = sameDiff.var("x", DataType.FLOAT, shape);
         SDVariable result = sameDiff.size(x);
 
@@ -1133,7 +1133,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
             INDArray arr = Nd4j.rand(new long[]{1, 1, 1});
 
-            val shapes = Nd4j.getExecutioner().calculateOutputShape(
+            var shapes = Nd4j.getExecutioner().calculateOutputShape(
                     new Unstack(arr, null, i));
 
             assertEquals(1, shapes.size());
@@ -1864,14 +1864,14 @@ public class TestShapeOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSizeAt_1(Nd4jBackend backend) {
-        val array = Nd4j.create(10, 20, 30);
-        val exp = Nd4j.scalar(DataType.LONG, 20);
+        var array = Nd4j.create(10, 20, 30);
+        var exp = Nd4j.scalar(DataType.LONG, 20);
 
-        val op = new SizeAt(array, 1);
+        var op = new SizeAt(array, 1);
 
         Nd4j.getExecutioner().exec(op);
 
-        val output = op.outputArguments().get(0);
+        var output = op.outputArguments().get(0);
 
         assertEquals(exp, output);
     }
@@ -2189,7 +2189,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
         List<LongShapeDescriptor> l = op.calculateOutputShape();
         assertEquals(4, l.size());
         for( int i=0; i<4; i++ ){
-            val desc = l.get(i);
+            var desc = l.get(i);
             assertArrayEquals(new long[]{0, 1}, desc.getShape());
             assertTrue(desc.isEmpty());
             op.addOutputArgument(Nd4j.empty(DataType.FLOAT).reshape(desc.getShape()));

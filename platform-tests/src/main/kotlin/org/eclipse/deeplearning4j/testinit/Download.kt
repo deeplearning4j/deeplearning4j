@@ -26,15 +26,15 @@ import java.net.URI
 import java.nio.charset.Charset
 
 
-val modelBaseUrl = "https://media.githubusercontent.com/media/onnx/models/master"
-val modelDirectory = File(File(System.getProperty("user.home")),".nd4jtests/onnx-pretrained/")
+var modelBaseUrl = "https://media.githubusercontent.com/media/onnx/models/master"
+var modelDirectory = File(File(System.getProperty("user.home")),".nd4jtests/onnx-pretrained/")
 
 
 fun pullModel(modelPath: String) {
-    val modelUrl = URI.create("$modelBaseUrl/$modelPath").toURL()
+    var modelUrl = URI.create("$modelBaseUrl/$modelPath").toURL()
     println("Download model $modelPath from $modelUrl")
-    val fileName = modelPath.split("/").last()
-    val modelFileArchive =  File(modelDirectory,fileName)
+    var fileName = modelPath.split("/").last()
+    var modelFileArchive =  File(modelDirectory,fileName)
     if(modelFileArchive.exists()) {
         println("Skipping archive ${modelFileArchive.absolutePath}")
         return
@@ -47,8 +47,8 @@ fun pullModel(modelPath: String) {
 
 
 fun main(args: Array<String>) {
-    val modelPathList = File(args[0])
-    val readLines = Files.readLines(modelPathList, Charset.defaultCharset())
+    var modelPathList = File(args[0])
+    var readLines = Files.readLines(modelPathList, Charset.defaultCharset())
     readLines.forEach { line ->
         pullModel(line)
     }

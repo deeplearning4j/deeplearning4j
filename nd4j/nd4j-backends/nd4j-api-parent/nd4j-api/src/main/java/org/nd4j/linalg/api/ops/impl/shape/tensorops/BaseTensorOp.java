@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -49,12 +49,12 @@ public abstract class BaseTensorOp extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val inputOne = nodeDef.getInput(1);
-        val varFor = initWith.getVariable(inputOne);
-        val nodeWithIndex = TFGraphMapper.getNodeWithNameFromGraph(graph,inputOne);
-        val var = TFGraphMapper.getArrayFrom(nodeWithIndex,graph);
+        var inputOne = nodeDef.getInput(1);
+        var varFor = initWith.getVariable(inputOne);
+        var nodeWithIndex = TFGraphMapper.getNodeWithNameFromGraph(graph,inputOne);
+        var var = TFGraphMapper.getArrayFrom(nodeWithIndex,graph);
         if(var != null) {
-            val idx = var.getInt(0);
+            var idx = var.getInt(0);
             addIArgument(idx);
         }
     }

@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -121,7 +121,7 @@ public class LoneTest extends BaseNd4jTestWithBackends {
             assertEquals(i + 1,rowVector.getColumn(i).getInt(0));
             assertEquals(i + 1,rowVector.get(NDArrayIndex.point(0), NDArrayIndex.interval(i, j)).getInt(0));
             assertEquals(i + 1,colVector.get(NDArrayIndex.interval(i, j), NDArrayIndex.point(0)).getInt(0));
-//            System.out.println("Making sure index interval will not crash with begin/end vals...");
+//            System.out.println("Making sure index intervar will not crash with begin/end vals...");
             jj = colVector.get(NDArrayIndex.interval(i, i + 1));
             jj = colVector.get(NDArrayIndex.interval(i, i + 1));
         }
@@ -198,11 +198,11 @@ public class LoneTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRPF(Nd4jBackend backend) {
-        val array = Nd4j.createFromArray(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12).reshape(2, 2, 3);
+        var array = Nd4j.createFromArray(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12).reshape(2, 2, 3);
 
         log.info("--------");
 
-        val tad = array.tensorAlongDimension(1, 1, 2);
+        var tad = array.tensorAlongDimension(1, 1, 2);
         Nd4j.exec(new PrintVariable(tad, false));
         log.info("TAD native shapeInfo: {}", tad.shapeInfoDataBuffer().asLong());
         log.info("TAD Java shapeInfo: {}", tad.shapeInfoJava());
@@ -212,27 +212,27 @@ public class LoneTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcat3D_Vstack_C(Nd4jBackend backend) {
-        val shape = new long[]{1, 1000, 20};
+        var shape = new long[]{1, 1000, 20};
 
         List<INDArray> cArrays = new ArrayList<>();
         List<INDArray> fArrays = new ArrayList<>();
 
         for (int e = 0; e < 32; e++) {
-            val arr = Nd4j.create(DataType.FLOAT, shape, 'c').assign(e);
+            var arr = Nd4j.create(DataType.FLOAT, shape, 'c').assign(e);
             cArrays.add(arr);
             //            fArrays.add(cOrder.dup('f'));
         }
 
         Nd4j.getExecutioner().commit();
 
-        val time1 = System.currentTimeMillis();
-        val res = Nd4j.vstack(cArrays);
-        val time2 = System.currentTimeMillis();
+        var time1 = System.currentTimeMillis();
+        var res = Nd4j.vstack(cArrays);
+        var time2 = System.currentTimeMillis();
 
 //        log.info("Time spent: {} ms", time2 - time1);
 
         for (int e = 0; e < 32; e++) {
-            val tad = res.tensorAlongDimension(e, 1, 2);
+            var tad = res.tensorAlongDimension(e, 1, 2);
 
             assertEquals((double) e, tad.meanNumber().doubleValue(), 1e-5,"Failed for TAD [" + e + "]");
             assertEquals((double) e, tad.getDouble(0), 1e-5);

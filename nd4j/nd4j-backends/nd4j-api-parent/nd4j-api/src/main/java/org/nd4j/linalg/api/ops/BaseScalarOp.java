@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.ops;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.util.SameDiffUtils;
@@ -120,7 +120,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
         INDArray x = oc != null ? oc.getInputArray(0) : x();
 
-        val ret = new ArrayList<LongShapeDescriptor>(1);
+        var ret = new ArrayList<LongShapeDescriptor>(1);
 
         long[] s;
         if(x != null){
@@ -129,8 +129,8 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
             s = arg().getShape();
         }
 
-        val aT = arg().dataType();
-        val sT = scalarValue.dataType();
+        var aT = arg().dataType();
+        var sT = scalarValue.dataType();
 
         ret.add(LongShapeDescriptor.fromShape(s, Shape.pickPairwiseDataType(aT, sT)));
         return ret;

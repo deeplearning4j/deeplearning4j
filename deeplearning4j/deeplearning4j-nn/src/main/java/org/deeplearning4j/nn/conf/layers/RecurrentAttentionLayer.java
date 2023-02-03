@@ -164,9 +164,9 @@ public class RecurrentAttentionLayer extends SameDiffLayer {
 
     @Override
     public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
-        final val W = paramTable.get(WEIGHT_KEY);
-        final val R = paramTable.get(RECURRENT_WEIGHT_KEY);
-        final val b = paramTable.get(BIAS_KEY);
+        final var W = paramTable.get(WEIGHT_KEY);
+        final var R = paramTable.get(RECURRENT_WEIGHT_KEY);
+        final var b = paramTable.get(BIAS_KEY);
 
         long[] shape = layerInput.getShape();
         Preconditions.checkState(shape != null, "Null shape for input placeholder");
@@ -175,7 +175,7 @@ public class RecurrentAttentionLayer extends SameDiffLayer {
         SDVariable[] outputSlices = new SDVariable[timeSteps];
         SDVariable prev = null;
         for (int i = 0; i < timeSteps; i++) {
-            final val x_i = inputSlices[i];
+            final var x_i = inputSlices[i];
             outputSlices[i] = x_i.mmul(W);
             if(hasBias){
                 outputSlices[i] = outputSlices[i].add(b);
@@ -184,10 +184,10 @@ public class RecurrentAttentionLayer extends SameDiffLayer {
             if(prev != null){
                 SDVariable attn;
                 if(projectInput){
-                    val Wq = paramTable.get(WEIGHT_KEY_QUERY_PROJECTION);
-                    val Wk = paramTable.get(WEIGHT_KEY_KEY_PROJECTION);
-                    val Wv = paramTable.get(WEIGHT_KEY_VALUE_PROJECTION);
-                    val Wo = paramTable.get(WEIGHT_KEY_OUT_PROJECTION);
+                    var Wq = paramTable.get(WEIGHT_KEY_QUERY_PROJECTION);
+                    var Wk = paramTable.get(WEIGHT_KEY_KEY_PROJECTION);
+                    var Wv = paramTable.get(WEIGHT_KEY_VALUE_PROJECTION);
+                    var Wo = paramTable.get(WEIGHT_KEY_OUT_PROJECTION);
 
                     attn = sameDiff.nn.multiHeadDotProductAttention(getLayerName()+"_attention_"+i, prev, layerInput, layerInput, Wq, Wk, Wv, Wo, mask, true);
                 }else{

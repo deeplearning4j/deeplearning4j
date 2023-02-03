@@ -50,11 +50,11 @@ public class Nd4jTestSuite  {
      */
     public static List<String> backendsToRun() {
         List<String> ret = new ArrayList<>();
-        String val = System.getProperty(BACKENDS_TO_LOAD, "");
-        if (val.isEmpty())
+        String property = System.getProperty(BACKENDS_TO_LOAD, "");
+        if (property.isEmpty())
             return ret;
 
-        String[] clazzes = val.split(",");
+        String[] clazzes = property.split(",");
 
         for (String s : clazzes)
             ret.add(s);

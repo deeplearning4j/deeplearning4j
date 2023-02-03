@@ -21,7 +21,7 @@
 package org.nd4j.parameterserver.distributed.v2.transport.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
@@ -47,10 +47,10 @@ public class DummyTransportTest extends BaseND4JTest {
 
     @Test
     public void testBasicConnection_1() throws Exception {
-        val counter = new AtomicInteger(0);
-        val connector = new DummyTransport.Connector();
-        val transportA = new DummyTransport("alpha", connector);
-        val transportB = new DummyTransport("beta", connector);
+        var counter = new AtomicInteger(0);
+        var connector = new DummyTransport.Connector();
+        var transportA = new DummyTransport("alpha", connector);
+        var transportB = new DummyTransport("beta", connector);
 
         connector.register(transportA, transportB);
         transportB.addInterceptor(HandshakeRequest.class, message -> {
@@ -66,10 +66,10 @@ public class DummyTransportTest extends BaseND4JTest {
 
     @Test
     public void testHandshake_1() throws Exception {
-        val counter = new AtomicInteger(0);
-        val connector = new DummyTransport.Connector();
-        val transportA = new DummyTransport("alpha", connector);
-        val transportB = new DummyTransport("beta", connector);
+        var counter = new AtomicInteger(0);
+        var connector = new DummyTransport.Connector();
+        var transportA = new DummyTransport("alpha", connector);
+        var transportB = new DummyTransport("beta", connector);
 
         connector.register(transportA, transportB);
         transportB.addInterceptor(HandshakeResponse.class, (HandshakeResponse message) -> {
@@ -89,12 +89,12 @@ public class DummyTransportTest extends BaseND4JTest {
 
     @Test
     public void testMeshPropagation_1() throws Exception {
-        val counter = new AtomicInteger(0);
-        val connector = new DummyTransport.Connector();
-        val transportA = new DummyTransport("alpha", connector);
-        val transportB = new DummyTransport("beta", connector);
-        val transportG = new DummyTransport("gamma", connector);
-        val transportD = new DummyTransport("delta", connector);
+        var counter = new AtomicInteger(0);
+        var connector = new DummyTransport.Connector();
+        var transportA = new DummyTransport("alpha", connector);
+        var transportB = new DummyTransport("beta", connector);
+        var transportG = new DummyTransport("gamma", connector);
+        var transportD = new DummyTransport("delta", connector);
 
         connector.register(transportA, transportB, transportG, transportD);
 
@@ -103,10 +103,10 @@ public class DummyTransportTest extends BaseND4JTest {
         transportG.sendMessage(new HandshakeRequest(), "alpha");
         transportD.sendMessage(new HandshakeRequest(), "alpha");
 
-        val meshA = transportA.getMesh();
-        val meshB = transportB.getMesh();
-        val meshG = transportG.getMesh();
-        val meshD = transportD.getMesh();
+        var meshA = transportA.getMesh();
+        var meshB = transportB.getMesh();
+        var meshG = transportG.getMesh();
+        var meshD = transportD.getMesh();
 
         // versions should be equal
         assertEquals(meshA.getVersion(), meshB.getVersion());
@@ -123,18 +123,18 @@ public class DummyTransportTest extends BaseND4JTest {
         assertTrue(meshA.isKnownNode("gamma"));
         assertTrue(meshA.isKnownNode("delta"));
 
-        val node = meshB.getNodeById("alpha");
+        var node = meshB.getNodeById("alpha");
         assertTrue(node.isRootNode());
     }
 
     @Test
     public void testUpdatesPropagation_1() throws Exception {
-        val counter = new AtomicInteger(0);
-        val connector = new DummyTransport.Connector();
-        val transportA = new DummyTransport("alpha", connector);
-        val transportB = new DummyTransport("beta", connector);
-        val transportG = new DummyTransport("gamma", connector);
-        val transportD = new DummyTransport("delta", connector);
+        var counter = new AtomicInteger(0);
+        var connector = new DummyTransport.Connector();
+        var transportA = new DummyTransport("alpha", connector);
+        var transportB = new DummyTransport("beta", connector);
+        var transportG = new DummyTransport("gamma", connector);
+        var transportD = new DummyTransport("delta", connector);
 
         connector.register(transportA, transportB, transportG, transportD);
 
@@ -143,10 +143,10 @@ public class DummyTransportTest extends BaseND4JTest {
         transportD.sendMessage(new HandshakeRequest(), "alpha");
 
 
-        val f = new MessageCallable<GradientsUpdateMessage>() {
+        var f = new MessageCallable<GradientsUpdateMessage>() {
             @Override
             public void apply(GradientsUpdateMessage message) {
-                val update = message.getPayload();
+                var update = message.getPayload();
                 counter.addAndGet(update.sumNumber().intValue());
             }
         };
@@ -156,9 +156,9 @@ public class DummyTransportTest extends BaseND4JTest {
         transportG.addPrecursor(GradientsUpdateMessage.class, f);
         transportD.addPrecursor(GradientsUpdateMessage.class, f);
 
-        val array = Nd4j.ones(10, 10);
+        var array = Nd4j.ones(10, 10);
 
-        val msg = new GradientsUpdateMessage("message", array);
+        var msg = new GradientsUpdateMessage("message", array);
         msg.setOriginatorId("beta");
         transportB.propagateMessage(msg, PropagationMode.BOTH_WAYS);
 
@@ -168,15 +168,15 @@ public class DummyTransportTest extends BaseND4JTest {
 
     @Test
     public void testReconnectAfterFailure_1() throws Exception {
-        val counter = new AtomicInteger(0);
-        val connector = new DummyTransport.Connector();
-        val transportA = new DummyTransport("alpha", connector);
-        val transportB = new DummyTransport("beta", connector);
-        val transportG = new DummyTransport("gamma", connector);
-        val transportD = new DummyTransport("delta", connector);
-        val transportE = new DummyTransport("epsilon", connector);
-        val transportZ = new DummyTransport("zeta", connector);
-        val transportT = new DummyTransport("theta", connector);
+        var counter = new AtomicInteger(0);
+        var connector = new DummyTransport.Connector();
+        var transportA = new DummyTransport("alpha", connector);
+        var transportB = new DummyTransport("beta", connector);
+        var transportG = new DummyTransport("gamma", connector);
+        var transportD = new DummyTransport("delta", connector);
+        var transportE = new DummyTransport("epsilon", connector);
+        var transportZ = new DummyTransport("zeta", connector);
+        var transportT = new DummyTransport("theta", connector);
 
         connector.register(transportA, transportB, transportG, transportD, transportE, transportZ, transportT);
 
@@ -187,17 +187,17 @@ public class DummyTransportTest extends BaseND4JTest {
         transportZ.sendMessage(new HandshakeRequest(), "alpha");
         transportT.sendMessage(new HandshakeRequest(), "alpha");
 
-        val originalMeshA = transportA.getMesh();
-        val originalMeshZ = transportZ.getMesh();
+        var originalMeshA = transportA.getMesh();
+        var originalMeshZ = transportZ.getMesh();
 
         assertEquals(originalMeshA, originalMeshZ);
 
-        val version = originalMeshA.getVersion();
-        val upstream = originalMeshZ.getUpstreamForNode("zeta");
+        var version = originalMeshA.getVersion();
+        var upstream = originalMeshZ.getUpstreamForNode("zeta");
 
 
-        val restarted = new AtomicBoolean(false);
-        val f = new MessageCallable<HandshakeResponse>() {
+        var restarted = new AtomicBoolean(false);
+        var f = new MessageCallable<HandshakeResponse>() {
             @Override
             public void apply(HandshakeResponse message) {
                 assertTrue(message.isRestart());
@@ -209,8 +209,8 @@ public class DummyTransportTest extends BaseND4JTest {
         // this message basically says that Z is restarting
         transportZ.sendMessage(new HandshakeRequest(), "alpha");
 
-        val newMesh = transportZ.getMesh();
-        val newUpstream = newMesh.getUpstreamForNode("zeta");
+        var newMesh = transportZ.getMesh();
+        var newUpstream = newMesh.getUpstreamForNode("zeta");
 
         assertNotEquals(version, newMesh.getVersion());
         assertTrue(restarted.get());

@@ -35,16 +35,16 @@ class TestTensorflowProcessLoader {
 
     @Test
     fun testLoader() {
-        val tensorflowOpMappingRegistry = OpMappingRegistry<GraphDef, NodeDef, OpDef, TensorProto, DataType, OpDef.AttrDef, AttrValue>(
+        var tensorflowOpMappingRegistry = OpMappingRegistry<GraphDef, NodeDef, OpDef, TensorProto, DataType, OpDef.AttrDef, AttrValue>(
            "tensorflow", OpDescriptorLoaderHolder.nd4jOpDescriptor)
 
-        val loader = TensorflowMappingProcessLoader(tensorflowOpMappingRegistry)
+        var loader = TensorflowMappingProcessLoader(tensorflowOpMappingRegistry)
         println(loader)
         registry().inputFrameworkOpNames().forEach { name ->
             if(registry().hasMappingOpProcess(name)) {
-                val process = registry().lookupOpMappingProcess(name)
-                val serialized = process.serialize()
-                val created = loader.createProcess(serialized)
+                var process = registry().lookupOpMappingProcess(name)
+                var serialized = process.serialize()
+                var created = loader.createProcess(serialized)
                 assertEquals(process,created,"Op name $name failed with process tensor rules ${process.tensorMappingRules()} and created tensor rules ${created.tensorMappingRules()} with attributes ${process.attributeMappingRules()} and created attribute rules ${created.attributeMappingRules()}")
             }
 

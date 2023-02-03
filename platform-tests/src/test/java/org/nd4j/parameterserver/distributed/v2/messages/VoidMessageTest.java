@@ -21,7 +21,7 @@
 package org.nd4j.parameterserver.distributed.v2.messages;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
@@ -39,10 +39,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class VoidMessageTest extends BaseND4JTest {
     @Test
     public void testHandshakeSerialization_1() throws Exception {
-        val req = new HandshakeRequest();
+        var req = new HandshakeRequest();
         req.setOriginatorId("1234");
 
-        val bytes = SerializationUtils.toByteArray(req);
+        var bytes = SerializationUtils.toByteArray(req);
 
         VoidMessage res = SerializationUtils.deserialize(bytes);
 
@@ -51,10 +51,10 @@ public class VoidMessageTest extends BaseND4JTest {
 
     @Test
     public void testHandshakeSerialization_2() throws Exception {
-        val req = new HandshakeRequest();
+        var req = new HandshakeRequest();
         req.setOriginatorId("1234");
 
-        val bytes = SerializationUtils.toByteArray(req);
+        var bytes = SerializationUtils.toByteArray(req);
 
         VoidMessage res = VoidMessage.fromBytes(bytes);
 

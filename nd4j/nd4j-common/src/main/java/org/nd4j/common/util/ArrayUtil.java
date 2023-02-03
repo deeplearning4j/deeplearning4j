@@ -22,7 +22,7 @@ package org.nd4j.common.util;
 
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
-import lombok.val;
+
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.common.base.Preconditions;
 
@@ -190,7 +190,7 @@ public class ArrayUtil {
     public static long[] nTimes(long n, long toReplicate) {
         if (n > Integer.MAX_VALUE)
             throw new RuntimeException("Index overflow in nTimes");
-        val ret = new long[(int) n];
+        var ret = new long[(int) n];
         Arrays.fill(ret, toReplicate);
         return ret;
     }
@@ -314,7 +314,7 @@ public class ArrayUtil {
     }
 
     public static long[] toLongs(byte[] data) {
-        val ret = new long[data.length];
+        var ret = new long[data.length];
         for (int i = 0; i < ret.length; i++) {
             ret[i] = data[i];
         }
@@ -322,7 +322,7 @@ public class ArrayUtil {
     }
 
     public static long[] toLongs(boolean[] data) {
-        val ret = new long[data.length];
+        var ret = new long[data.length];
         for (int i = 0; i < ret.length; i++) {
             ret[i] = data[i] ? 1 : 0;
         }
@@ -330,7 +330,7 @@ public class ArrayUtil {
     }
 
     public static long[] toLongs(short[] data) {
-        val ret = new long[data.length];
+        var ret = new long[data.length];
         for (int i = 0; i < ret.length; i++) {
             ret[i] = data[i];
         }
@@ -338,7 +338,7 @@ public class ArrayUtil {
     }
 
     public static long[] toLongs(int[] data) {
-        val ret = new long[data.length];
+        var ret = new long[data.length];
         for (int i = 0; i < ret.length; i++) {
             ret[i] = data[i];
         }
@@ -346,7 +346,7 @@ public class ArrayUtil {
     }
 
     public static long[] toLongs(float[] data) {
-        val ret = new long[data.length];
+        var ret = new long[data.length];
         for (int i = 0; i < ret.length; i++) {
             ret[i] = (long) data[i];
         }
@@ -354,7 +354,7 @@ public class ArrayUtil {
     }
 
     public static long[] toLongs(double[] data) {
-        val ret = new long[data.length];
+        var ret = new long[data.length];
         for (int i = 0; i < ret.length; i++) {
             ret[i] = (long) data[i];
         }
@@ -410,7 +410,7 @@ public class ArrayUtil {
     }
 
     public static byte[] toBytes(int[] array) {
-        val retVal = new byte[array.length];
+        var retVal = new byte[array.length];
         for (int i = 0; i < array.length; i++) {
             retVal[i] = (byte) array[i];
         }
@@ -418,7 +418,7 @@ public class ArrayUtil {
     }
 
     public static byte[] toBytes(float[] array) {
-        val retVal = new byte[array.length];
+        var retVal = new byte[array.length];
         for (int i = 0; i < array.length; i++) {
             retVal[i] = (byte) array[i];
         }
@@ -426,7 +426,7 @@ public class ArrayUtil {
     }
 
     public static byte[] toBytes(double[] array) {
-        val retVal = new byte[array.length];
+        var retVal = new byte[array.length];
         for (int i = 0; i < array.length; i++) {
             retVal[i] = (byte) array[i];
         }
@@ -434,7 +434,7 @@ public class ArrayUtil {
     }
 
     public static byte[] toBytes(long[] array) {
-        val retVal = new byte[array.length];
+        var retVal = new byte[array.length];
         for (int i = 0; i < array.length; i++) {
             retVal[i] = (byte) array[i];
         }
@@ -1153,28 +1153,28 @@ public class ArrayUtil {
     }
 
     public static short[] toShorts(long[] ints) {
-        val ret = new short[ints.length];
+        var ret = new short[ints.length];
         for (int i = 0; i < ints.length; i++)
             ret[i] = (short) ints[i];
         return ret;
     }
 
     public static short[] toShorts(int[] ints) {
-        val ret = new short[ints.length];
+        var ret = new short[ints.length];
         for (int i = 0; i < ints.length; i++)
             ret[i] = (short) ints[i];
         return ret;
     }
 
     public static short[] toShorts(float[] ints) {
-        val ret = new short[ints.length];
+        var ret = new short[ints.length];
         for (int i = 0; i < ints.length; i++)
             ret[i] = (short) ints[i];
         return ret;
     }
 
     public static short[] toShorts(double[] ints) {
-        val ret = new short[ints.length];
+        var ret = new short[ints.length];
         for (int i = 0; i < ints.length; i++)
             ret[i] = (short) ints[i];
         return ret;
@@ -1202,28 +1202,28 @@ public class ArrayUtil {
     }
 
     public static int[] cutBelowZero(int[] data) {
-        val ret = new int[data.length];
+        var ret = new int[data.length];
         for (int i = 0; i < data.length; i++)
             ret[i] = data[i] < 0 ? 0 : data[i];
         return ret;
     }
 
     public static long[] cutBelowZero(long[] data) {
-        val ret = new long[data.length];
+        var ret = new long[data.length];
         for (int i = 0; i < data.length; i++)
             ret[i] = data[i] < 0 ? 0 : data[i];
         return ret;
     }
 
     public static short[] cutBelowZero(short[] data) {
-        val ret = new short[data.length];
+        var ret = new short[data.length];
         for (int i = 0; i < data.length; i++)
             ret[i] = data[i] < 0 ? 0 : data[i];
         return ret;
     }
 
     public static byte[] cutBelowZero(byte[] data) {
-        val ret = new byte[data.length];
+        var ret = new byte[data.length];
         for (int i = 0; i < data.length; i++)
             ret[i] = data[i] < 0 ? 0 : data[i];
         return ret;
@@ -1455,7 +1455,7 @@ public class ArrayUtil {
 
 
     public static long[] permute(long[] shape, int[] dimensions) {
-        val ret = new long[shape.length];
+        var ret = new long[shape.length];
         for (int i = 0; i < shape.length; i++) {
             ret[i] = shape[dimensions[i]];
         }
@@ -1525,8 +1525,8 @@ public class ArrayUtil {
      * Generate an array from 0 to length
      * and generate take a subset
      * @param length the length to generate to
-     * @param from the begin of the interval to take
-     * @param to the end of the interval to take
+     * @param from the begin of the intervar to take
+     * @param to the end of the intervar to take
      * @return the generated array
      */
     public static int[] copyOfRangeFrom(int length, int from, int to) {
@@ -1588,7 +1588,7 @@ public class ArrayUtil {
     }
 
     public static long[] toLongArray(float[] array) {
-        val ret = new long[array.length];
+        var ret = new long[array.length];
         for (int i = 0; i < array.length; i++) {
             ret[i] = (long) array[i];
         }
@@ -2194,7 +2194,7 @@ public class ArrayUtil {
     public static short[] flatten(short[][][] arr) {
         if(arr.length == 0 || arr[0].length == 0 || arr[0][0].length == 0)
             return new short[0];
-        val ret = new short[arr.length * arr[0].length * arr[0][0].length];
+        var ret = new short[arr.length * arr[0].length * arr[0][0].length];
 
         int count = 0;
         for (int i = 0; i < arr.length; i++) {
@@ -2209,7 +2209,7 @@ public class ArrayUtil {
     public static byte[] flatten(byte[][][] arr) {
         if(arr.length == 0 || arr[0].length == 0 || arr[0][0].length == 0)
             return new byte[0];
-        val ret = new byte[arr.length * arr[0].length * arr[0][0].length];
+        var ret = new byte[arr.length * arr[0].length * arr[0][0].length];
 
         int count = 0;
         for (int i = 0; i < arr.length; i++) {
@@ -2222,7 +2222,7 @@ public class ArrayUtil {
     }
 
     public static long[] flatten(long[][][][] arr) {
-        val ret = new long[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
+        var ret = new long[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
 
         int count = 0;
         for (int i = 0; i < arr.length; i++) {
@@ -2238,7 +2238,7 @@ public class ArrayUtil {
     }
 
     public static short[] flatten(short[][][][] arr) {
-        val ret = new short[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
+        var ret = new short[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
 
         int count = 0;
         for (int i = 0; i < arr.length; i++) {
@@ -2254,7 +2254,7 @@ public class ArrayUtil {
     }
 
     public static byte[] flatten(byte[][][][] arr) {
-        val ret = new byte[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
+        var ret = new byte[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
 
         int count = 0;
         for (int i = 0; i < arr.length; i++) {
@@ -2270,7 +2270,7 @@ public class ArrayUtil {
     }
 
     public static boolean[] flatten(boolean[][][][] arr) {
-        val ret = new boolean[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
+        var ret = new boolean[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
 
         int count = 0;
         for (int i = 0; i < arr.length; i++) {
@@ -2349,7 +2349,7 @@ public class ArrayUtil {
     public static short[] flatten(short[][] arr) {
         if(arr.length == 0 || arr[0].length == 0 )
             return new short[0];
-        val ret = new short[arr.length * arr[0].length];
+        var ret = new short[arr.length * arr[0].length];
         int count = 0;
         for (int i = 0; i < arr.length; i++) {
             System.arraycopy(arr[i], 0, ret, count, arr[i].length);
@@ -2361,7 +2361,7 @@ public class ArrayUtil {
     public static byte[] flatten(byte[][] arr) {
         if(arr.length == 0 || arr[0].length == 0 )
             return new byte[0];
-        val ret = new byte[arr.length * arr[0].length];
+        var ret = new byte[arr.length * arr[0].length];
         int count = 0;
         for (int i = 0; i < arr.length; i++) {
             System.arraycopy(arr[i], 0, ret, count, arr[i].length);
@@ -3028,7 +3028,7 @@ public class ArrayUtil {
         if (length > Integer.MAX_VALUE) {
             throw new RuntimeException("Integer overflow");
         }
-        val result = new long[(int) length];
+        var result = new long[(int) length];
 
         List<Integer> indexes = new ArrayList<>();
         List<Integer> odds = new ArrayList<>();
@@ -3187,7 +3187,7 @@ public class ArrayUtil {
     }
 
     public static long[] toPrimitives(Long[] array) {
-        val res = new long[array.length];
+        var res = new long[array.length];
         for (int e = 0; e < array.length; e++)
             res[e] = array[e];
 
@@ -3195,7 +3195,7 @@ public class ArrayUtil {
     }
 
     public static int[] toPrimitives(Integer[] array) {
-        val res = new int[array.length];
+        var res = new int[array.length];
         for (int e = 0; e < array.length; e++)
             res[e] = array[e];
 
@@ -3203,7 +3203,7 @@ public class ArrayUtil {
     }
 
     public static short[] toPrimitives(Short[] array) {
-        val res = new short[array.length];
+        var res = new short[array.length];
         for (int e = 0; e < array.length; e++)
             res[e] = array[e];
 
@@ -3211,7 +3211,7 @@ public class ArrayUtil {
     }
 
     public static byte[] toPrimitives(Byte[] array) {
-        val res = new byte[array.length];
+        var res = new byte[array.length];
         for (int e = 0; e < array.length; e++)
             res[e] = array[e];
 
@@ -3219,7 +3219,7 @@ public class ArrayUtil {
     }
 
     public static float[] toPrimitives(Float[] array) {
-        val res = new float[array.length];
+        var res = new float[array.length];
         for (int e = 0; e < array.length; e++)
             res[e] = array[e];
 
@@ -3227,7 +3227,7 @@ public class ArrayUtil {
     }
 
     public static double[] toPrimitives(Double[] array) {
-        val res = new double[array.length];
+        var res = new double[array.length];
         for (int e = 0; e < array.length; e++)
             res[e] = array[e];
 
@@ -3235,7 +3235,7 @@ public class ArrayUtil {
     }
 
     public static boolean[] toPrimitives(Boolean[] array) {
-        val res = new boolean[array.length];
+        var res = new boolean[array.length];
         for (int e = 0; e < array.length; e++)
             res[e] = array[e];
 
@@ -3244,7 +3244,7 @@ public class ArrayUtil {
 
     public static long[][] toPrimitives(Long[][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new long[array.length][array[0].length];
+        var res = new long[array.length][array[0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 res[i][j] = array[i][j];
@@ -3254,7 +3254,7 @@ public class ArrayUtil {
 
     public static int[][] toPrimitives(Integer[][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new int[array.length][array[0].length];
+        var res = new int[array.length][array[0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 res[i][j] = array[i][j];
@@ -3264,7 +3264,7 @@ public class ArrayUtil {
 
     public static short[][] toPrimitives(Short[][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new short[array.length][array[0].length];
+        var res = new short[array.length][array[0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 res[i][j] = array[i][j];
@@ -3274,7 +3274,7 @@ public class ArrayUtil {
 
     public static byte[][] toPrimitives(Byte[][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new byte[array.length][array[0].length];
+        var res = new byte[array.length][array[0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 res[i][j] = array[i][j];
@@ -3284,7 +3284,7 @@ public class ArrayUtil {
 
     public static double[][] toPrimitives(Double[][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new double[array.length][array[0].length];
+        var res = new double[array.length][array[0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 res[i][j] = array[i][j];
@@ -3294,7 +3294,7 @@ public class ArrayUtil {
 
     public static float[][] toPrimitives(Float[][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new float[array.length][array[0].length];
+        var res = new float[array.length][array[0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 res[i][j] = array[i][j];
@@ -3304,7 +3304,7 @@ public class ArrayUtil {
 
     public static boolean [][] toPrimitives(Boolean[][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new boolean[array.length][array[0].length];
+        var res = new boolean[array.length][array[0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 res[i][j] = array[i][j];
@@ -3314,7 +3314,7 @@ public class ArrayUtil {
 
     public static long[][][] toPrimitives(Long[][][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new long[array.length][array[0].length][array[0][0].length];
+        var res = new long[array.length][array[0].length][array[0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 for (int k = 0; j < array[0][0].length; k++)
@@ -3325,7 +3325,7 @@ public class ArrayUtil {
 
     public static int[][][] toPrimitives(Integer[][][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new int[array.length][array[0].length][array[0][0].length];
+        var res = new int[array.length][array[0].length][array[0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 for (int k = 0; j < array[0][0].length; k++)
@@ -3336,7 +3336,7 @@ public class ArrayUtil {
 
     public static short[][][] toPrimitives(Short[][][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new short[array.length][array[0].length][array[0][0].length];
+        var res = new short[array.length][array[0].length][array[0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 for (int k = 0; j < array[0][0].length; k++)
@@ -3347,7 +3347,7 @@ public class ArrayUtil {
 
     public static byte[][][] toPrimitives(Byte[][][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new byte[array.length][array[0].length][array[0][0].length];
+        var res = new byte[array.length][array[0].length][array[0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 for (int k = 0; j < array[0][0].length; k++)
@@ -3358,7 +3358,7 @@ public class ArrayUtil {
 
     public static double[][][] toPrimitives(Double[][][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new double[array.length][array[0].length][array[0][0].length];
+        var res = new double[array.length][array[0].length][array[0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 for (int k = 0; j < array[0][0].length; k++)
@@ -3369,7 +3369,7 @@ public class ArrayUtil {
 
     public static float[][][] toPrimitives(Float[][][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new float[array.length][array[0].length][array[0][0].length];
+        var res = new float[array.length][array[0].length][array[0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 for (int k = 0; j < array[0][0].length; k++)
@@ -3380,7 +3380,7 @@ public class ArrayUtil {
 
     public static boolean[][][] toPrimitives(Boolean[][][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new boolean[array.length][array[0].length][array[0][0].length];
+        var res = new boolean[array.length][array[0].length][array[0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 for (int k = 0; j < array[0][0].length; k++)
@@ -3391,7 +3391,7 @@ public class ArrayUtil {
 
     public static long[][][][] toPrimitives(Long[][][][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new long[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
+        var res = new long[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 for (int k = 0; j < array[0][0].length; k++)
@@ -3403,7 +3403,7 @@ public class ArrayUtil {
 
     public static int[][][][] toPrimitives(Integer[][][][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new int[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
+        var res = new int[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 for (int k = 0; j < array[0][0].length; k++)
@@ -3415,7 +3415,7 @@ public class ArrayUtil {
 
     public static short[][][][] toPrimitives(Short[][][][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new short[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
+        var res = new short[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 for (int k = 0; j < array[0][0].length; k++)
@@ -3427,7 +3427,7 @@ public class ArrayUtil {
 
     public static byte[][][][] toPrimitives(Byte[][][][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new byte[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
+        var res = new byte[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 for (int k = 0; j < array[0][0].length; k++)
@@ -3439,7 +3439,7 @@ public class ArrayUtil {
 
     public static double[][][][] toPrimitives(Double[][][][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new double[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
+        var res = new double[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 for (int k = 0; j < array[0][0].length; k++)
@@ -3451,7 +3451,7 @@ public class ArrayUtil {
 
     public static float[][][][] toPrimitives(Float[][][][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new float[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
+        var res = new float[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 for (int k = 0; j < array[0][0].length; k++)
@@ -3463,7 +3463,7 @@ public class ArrayUtil {
 
     public static boolean[][][][] toPrimitives(Boolean[][][][] array) {
         ArrayUtil.assertNotRagged(array);
-        val res = new boolean[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
+        var res = new boolean[array.length][array[0].length][array[0][0].length][array[0][0][0].length];
         for (int i = 0; i < array.length; i++)
             for (int j = 0; j < array[0].length; j++)
                 for (int k = 0; j < array[0][0].length; k++)

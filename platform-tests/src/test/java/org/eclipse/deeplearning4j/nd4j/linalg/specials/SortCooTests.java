@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.specials;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.bytedeco.javacpp.LongPointer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,7 +69,7 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
         if (Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
             return;
 
-        val indices = new long[] {
+        var indices = new long[] {
                 1, 0, 0,
                 0, 1, 1,
                 0, 1, 0,
@@ -77,7 +77,7 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
 
         // we don't care about
         double values[] = new double[] {2, 1, 0, 3};
-        val expIndices = new long[] {
+        var expIndices = new long[] {
                 0, 1, 0,
                 0, 1, 1,
                 1, 0, 0,
@@ -86,7 +86,7 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
 
         for (DataType dataType : new DataType[]{DataType.FLOAT, DataType.DOUBLE, DataType.FLOAT16, DataType.INT64, DataType.INT32, DataType.INT16, DataType.INT8}) {
             DataBuffer idx = Nd4j.getDataBufferFactory().createLong(indices);
-            DataBuffer val = Nd4j.createTypedBuffer(values, dataType);
+            DataBuffer var = Nd4j.createTypedBuffer(values, dataType);
             DataBuffer shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(new long[]{2, 2, 2}, val.dataType()).getFirst();
             NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
                     val.addressPointer(), 4, (LongPointer) shapeInfo.addressPointer());
@@ -104,14 +104,14 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
         if (Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
             return;
 
-        val indices = new long[] {
+        var indices = new long[] {
                 0, 0, 0,
                 2, 2, 2,
                 1, 1, 1};
 
         // we don't care about
         double values[] = new double[] {2, 1, 3};
-        val expIndices = new long[] {
+        var expIndices = new long[] {
                 0, 0, 0,
                 1, 1, 1,
                 2, 2, 2};
@@ -120,7 +120,7 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
 
         for (DataType dataType : new DataType[]{DataType.FLOAT, DataType.DOUBLE, DataType.FLOAT16, DataType.INT64, DataType.INT32, DataType.INT16, DataType.INT8}) {
             DataBuffer idx = Nd4j.getDataBufferFactory().createLong(indices);
-            DataBuffer val = Nd4j.createTypedBuffer(values, dataType);
+            DataBuffer var = Nd4j.createTypedBuffer(values, dataType);
             DataBuffer shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(new long[]{2, 2, 2}, val.dataType()).getFirst();
             NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
                     val.addressPointer(), 3, (LongPointer) shapeInfo.addressPointer());
@@ -156,8 +156,8 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
         rng.setSeed(12040483421383L);
         long shape[] = {50,50,50};
         int nnz = 100;
-        val indices = Nd4j.rand(new int[]{nnz, shape.length}, rng).muli(50).ravel().toLongVector();
-        val values = Nd4j.rand(new long[]{nnz}).ravel().toDoubleVector();
+        var indices = Nd4j.rand(new int[]{nnz, shape.length}, rng).muli(50).ravel().toLongVector();
+        var values = Nd4j.rand(new long[]{nnz}).ravel().toDoubleVector();
 
 
         DataBuffer indiceBuffer = Nd4j.getDataBufferFactory().createLong(indices);
@@ -191,7 +191,7 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
         if (Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
             return;
 
-        val indices = new long[] {
+        var indices = new long[] {
                 0,2,7,
                 2,36,35,
                 3,30,17,
@@ -234,7 +234,7 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
                 49,38,39,
         };
 
-        val expIndices = new long[] {
+        var expIndices = new long[] {
                 0, 2, 7,
                 2, 36, 35,
                 3, 30, 17,
@@ -281,7 +281,7 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
                 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
 
         DataBuffer idx = Nd4j.getDataBufferFactory().createLong(indices);
-        DataBuffer val = Nd4j.createBuffer(values);
+        DataBuffer var = Nd4j.createBuffer(values);
         DataBuffer shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(new long[]{3,3,3}, val.dataType()).getFirst();
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),

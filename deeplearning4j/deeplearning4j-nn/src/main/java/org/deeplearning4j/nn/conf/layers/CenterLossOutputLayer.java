@@ -106,10 +106,10 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         //Basically a dense layer, with some extra params...
         InputType outputType = getOutputType(-1, inputType);
 
-        val nParamsW = nIn * nOut;
-        val nParamsB = nOut;
-        val nParamsCenter = nIn * nOut;
-        val numParams = nParamsW + nParamsB + nParamsCenter;
+        var nParamsW = nIn * nOut;
+        var nParamsB = nOut;
+        var nParamsCenter = nIn * nOut;
+        var numParams = nParamsW + nParamsB + nParamsCenter;
 
         int updaterStateSize = (int) (getUpdaterByParam(CenterLossParamInitializer.WEIGHT_KEY).stateSize(nParamsW)
                         + getUpdaterByParam(CenterLossParamInitializer.BIAS_KEY).stateSize(nParamsB)

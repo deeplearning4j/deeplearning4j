@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.params;
 
 
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -46,8 +46,8 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
     public long numParams(NeuralNetConfiguration conf) {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                         (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
-        val nIn = layerConf.getNIn();
-        val nOut = layerConf.getNOut(); // also equal to numClasses
+        var nIn = layerConf.getNIn();
+        var nOut = layerConf.getNOut(); // also equal to numClasses
         return nIn * nOut + nOut + nIn * nOut; //weights + bias + embeddings
     }
 
@@ -58,12 +58,12 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
         org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer layerConf =
                         (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
 
-        val nIn = layerConf.getNIn();
-        val nOut = layerConf.getNOut(); // also equal to numClasses
+        var nIn = layerConf.getNIn();
+        var nOut = layerConf.getNOut(); // also equal to numClasses
 
-        val wEndOffset = nIn * nOut;
-        val bEndOffset = wEndOffset + nOut;
-        val cEndOffset = bEndOffset + nIn * nOut;
+        var wEndOffset = nIn * nOut;
+        var bEndOffset = wEndOffset + nOut;
+        var cEndOffset = bEndOffset + nIn * nOut;
 
         INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
         INDArray weightView = paramsViewReshape.get( NDArrayIndex.interval(0, wEndOffset));
@@ -86,12 +86,12 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
         org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer layerConf =
                         (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
 
-        val nIn = layerConf.getNIn();
-        val nOut = layerConf.getNOut(); // also equal to numClasses
+        var nIn = layerConf.getNIn();
+        var nOut = layerConf.getNOut(); // also equal to numClasses
 
-        val wEndOffset = nIn * nOut;
-        val bEndOffset = wEndOffset + nOut;
-        val cEndOffset = bEndOffset + nIn * nOut; // note: numClasses == nOut
+        var wEndOffset = nIn * nOut;
+        var bEndOffset = wEndOffset + nOut;
+        var cEndOffset = bEndOffset + nIn * nOut; // note: numClasses == nOut
 
         INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
         INDArray weightGradientView = gradientViewReshape.get(NDArrayIndex.interval(0, wEndOffset))

@@ -114,7 +114,7 @@ public class DeviceAllocationsTracker {
 
             //log.info("Memory reduction on device [{}], memory size: [{}], before: [{}], after [{}]", deviceId, memorySize, before, after);
 
-            //            AtomicLong val = allocationTable.get(deviceId, threadId);
+            //            AtomicLong var = allocationTable.get(deviceId, threadId);
 
             //            val.addAndGet(memorySize * -1);
 

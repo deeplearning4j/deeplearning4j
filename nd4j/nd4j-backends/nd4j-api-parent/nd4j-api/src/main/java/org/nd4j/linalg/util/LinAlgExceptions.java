@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.util;
 
-import lombok.val;
+
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
@@ -47,17 +47,17 @@ public class LinAlgExceptions {
      * @param z
      */
     public static void assertSameLength(INDArray x, INDArray z) {
-        val lengthX = x.length();
-        val lengthZ = z.length();
+        var lengthX = x.length();
+        var lengthZ = z.length();
         if (lengthX != lengthZ && lengthX != 1 && lengthZ != 1)
             throw new IllegalStateException("Mis matched lengths: [" + x.length() + "] != [" + z.length() + "] - " +
                     "Array 1 shape: " + Arrays.toString(x.shape()) + ", array 2 shape: " + Arrays.toString(z.shape()));
     }
 
     public static void assertSameLength(INDArray x, INDArray y, INDArray z) {
-        val lengthX = x.length();
-        val lengthY = y.length();
-        val lengthZ = z != null ? z.length() : x.length();
+        var lengthX = x.length();
+        var lengthY = y.length();
+        var lengthZ = z != null ? z.length() : x.length();
 
         if (lengthX != lengthY && lengthX != lengthZ && lengthX != 1 && lengthY != 1 && lengthZ != 1)
             throw new IllegalStateException("Mis matched lengths: [" + lengthX + "] != [" + lengthY + "] != [" + lengthZ + "] - " +

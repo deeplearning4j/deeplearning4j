@@ -31,7 +31,7 @@
             var _this = this,
                 loopCount = 0,
                 value = options.from,
-                interval = setInterval(updateTimer, options.refreshInterval);
+                intervar = setInterval(updateTimer, options.refreshInterval);
 
             function updateTimer() {
                 value += increment;

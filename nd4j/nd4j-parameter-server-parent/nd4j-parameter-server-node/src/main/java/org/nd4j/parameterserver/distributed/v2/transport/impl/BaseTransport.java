@@ -24,7 +24,7 @@ import io.reactivex.Flowable;
 import io.reactivex.functions.Consumer;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Atomic;
@@ -106,7 +106,7 @@ public abstract  class BaseTransport  implements Transport {
     protected final ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors()), new ThreadFactory() {
         @Override
         public Thread newThread(@NonNull final Runnable r) {
-            val t = new Thread(new Runnable() {
+            var t = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     Nd4j.getAffinityManager().unsafeSetDevice(0);
@@ -176,7 +176,7 @@ public abstract  class BaseTransport  implements Transport {
                 public void run() {
                     while (true) {
                         try {
-                            val message = messageQueue.take();
+                            var message = messageQueue.take();
                             if (message != null)
                                 internalProcessMessage(message);
                         } catch (InterruptedException e) {
@@ -191,7 +191,7 @@ public abstract  class BaseTransport  implements Transport {
 
 
         // this flow gets converted to VoidChunks and sent to upstream and downstreams
-        val d = Flowable.fromPublisher(outgoingFlow).subscribe(voidMessage -> {
+        var d = Flowable.fromPublisher(outgoingFlow).subscribe(voidMessage -> {
             if (mesh.get() == null) {
                 log.warn("Mesh wasn't received yet!");
                 return;
@@ -235,14 +235,14 @@ public abstract  class BaseTransport  implements Transport {
     }
 
     protected void propagateArrayMessage(INDArrayMessage message, PropagationMode mode) throws IOException  {
-        val node = mesh.get().getNodeById(id);
+        var node = mesh.get().getNodeById(id);
 
-        val root = mesh.get().getRootNode();
-        val upstream = node.getUpstreamNode();
-        val downstreams = node.getDownstreamNodes();
+        var root = mesh.get().getRootNode();
+        var upstream = node.getUpstreamNode();
+        var downstreams = node.getDownstreamNodes();
 
         // TODO: make chunk size configurable
-        val chunks = splitter.split(message, voidConfiguration.getMaxChunkSize());
+        var chunks = splitter.split(message, voidConfiguration.getMaxChunkSize());
         // send chunks to the upstream
         if (!node.isRootNode() && (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_UP == mode))
             chunks.forEach(c -> sendMessage(c, upstream.getId()));
@@ -256,7 +256,7 @@ public abstract  class BaseTransport  implements Transport {
 
     @Override
     public void propagateMessage(@NonNull VoidMessage voidMessage, PropagationMode mode) throws IOException {
-        val node = mesh.get().getNodeById(id);
+        var node = mesh.get().getNodeById(id);
 
         //if (voidMessage.getOriginatorId() != null && id != null && voidMessage.getOriginatorId().equals(id))
          //   return;
@@ -267,9 +267,9 @@ public abstract  class BaseTransport  implements Transport {
             return;
         }
 
-        val root = mesh.get().getRootNode();
-        val upstream = node.getUpstreamNode();
-        val downstreams = node.getDownstreamNodes();
+        var root = mesh.get().getRootNode();
+        var upstream = node.getUpstreamNode();
+        var downstreams = node.getDownstreamNodes();
 
         // setting on first one
         //if (voidMessage.getOriginatorId() == null)
@@ -302,19 +302,19 @@ public abstract  class BaseTransport  implements Transport {
         if (historyHolder.storeIfUnknownMessageId(voidMessage.getMessageId()))
             return;
 
-        val node = mesh.get().getNodeById(id);
+        var node = mesh.get().getNodeById(id);
 
         if (voidMessage.getOriginatorId() != null && id != null && voidMessage.getOriginatorId().equals(id))
             return;
 
-        val root = mesh.get().getRootNode();
-        val upstream = node.getUpstreamNode();
-        val downstreams = node.getDownstreamNodes();
+        var root = mesh.get().getRootNode();
+        var upstream = node.getUpstreamNode();
+        var downstreams = node.getDownstreamNodes();
 
-        val ownId = id();
-        val upstreamId = node.isRootNode() ? null : upstream.getId();
-        val originatorId = voidMessage.getOriginatorId();
-        val relayId = voidMessage.getRelayId();
+        var ownId = id();
+        var upstreamId = node.isRootNode() ? null : upstream.getId();
+        var originatorId = voidMessage.getOriginatorId();
+        var relayId = voidMessage.getRelayId();
         voidMessage.setRelayId(id());
 
         // we never propagate upstream if we're on root node
@@ -328,7 +328,7 @@ public abstract  class BaseTransport  implements Transport {
 
         // now we're sending message down
         if (PropagationMode.BOTH_WAYS == mode || PropagationMode.ONLY_DOWN == mode) {
-            for (val n:downstreams) {
+            for (var n:downstreams) {
                 if (!isLoopedNode(n, originatorId, relayId)) {
                     sendMessage(voidMessage, n.getId());
                 }
@@ -353,13 +353,13 @@ public abstract  class BaseTransport  implements Transport {
     }
 
     protected void internalProcessMessage(VoidMessage message) {
-        val m = message instanceof INDArrayMessage;
+        var m = message instanceof INDArrayMessage;
         /**
          * TODO: we need better isolation here
          */
         if (message instanceof PingMessage) {
 
-            val msg = new PongMessage();
+            var msg = new PongMessage();
             msg.setRequestId(((PingMessage) message).getRequestId());
             sendMessage(msg, message.getOriginatorId());
             return;
@@ -382,7 +382,7 @@ public abstract  class BaseTransport  implements Transport {
                 }
             } else {
                 // in this case we store message to the map, to be fetched later
-                val reply = (ResponseMessage) message;
+                var reply = (ResponseMessage) message;
                 replies.putIfAbsent(reply.getRequestId(), reply);
             }
         } else if (message instanceof HandshakeRequest) {
@@ -393,7 +393,7 @@ public abstract  class BaseTransport  implements Transport {
             }
 
             // our response
-            val response = HandshakeResponse.builder()
+            var response = HandshakeResponse.builder()
                     .build();
 
             synchronized (mesh) {
@@ -428,14 +428,14 @@ public abstract  class BaseTransport  implements Transport {
                 throw new RuntimeException(e);
             }
         } else if (message instanceof HandshakeResponse) {
-            val response = (HandshakeResponse) message;
-            val newMesh = response.getMesh();
+            var response = (HandshakeResponse) message;
+            var newMesh = response.getMesh();
 
             mesh.cas(null, response.getMesh());
 
             synchronized (mesh) {
-                val v1 = mesh.get().getVersion();
-                val v2 = newMesh.getVersion();
+                var v1 = mesh.get().getVersion();
+                var v2 = newMesh.getVersion();
 
                 //log.info("Starting update A on [{}]; version: [{}/{}]; size: [{}]", this.id(), v1, v2, newMesh.totalNodes());
                 // we update only if new mesh is older that existing one
@@ -456,23 +456,23 @@ public abstract  class BaseTransport  implements Transport {
             handshakeFlag.set(true);
 
             // in any way we're putting this message back to replies
-            val reply = (ResponseMessage) message;
+            var reply = (ResponseMessage) message;
             replies.putIfAbsent(reply.getRequestId(), reply);
 
             // this is default handler for message pairs
         } else if (message instanceof ResponseMessage) {
             // in this case we store message to the map, to be fetched later
-            val reply = (ResponseMessage) message;
+            var reply = (ResponseMessage) message;
             replies.putIfAbsent(reply.getRequestId(), reply);
 
         } else if (message instanceof MeshUpdateMessage) {
-            val newMesh = ((MeshUpdateMessage) message).getMesh();
+            var newMesh = ((MeshUpdateMessage) message).getMesh();
 
             mesh.cas(null, newMesh);
 
             synchronized (mesh) {
-                val v1 = mesh.get().getVersion();
-                val v2 = newMesh.getVersion();
+                var v1 = mesh.get().getVersion();
+                var v2 = newMesh.getVersion();
 
                 //log.info("Starting update B on [{}]; version: [{}/{}]; size: [{}]", this.id(), v1, v2, newMesh.totalNodes());
                 // we update only if new mesh is older that existing one
@@ -485,8 +485,8 @@ public abstract  class BaseTransport  implements Transport {
             onMeshUpdate(newMesh);
         } else {
             if (message instanceof RequestMessage) {
-                val name = message.getClass().getCanonicalName();
-                val consumer = consumers.get(name);
+                var name = message.getClass().getCanonicalName();
+                var consumer = consumers.get(name);
                 if (consumer == null)
                     throw new ND4JIllegalStateException("Not supported RequestMessage received: [" + message.getClass().getCanonicalName() + "]");
             } else
@@ -513,7 +513,7 @@ public abstract  class BaseTransport  implements Transport {
         // Request messages might be sent back to ParameterServer, which will take care of processing
         if (message instanceof RequestMessage) {
             // looks for callback for a given message type
-            val consumer = consumers.get(message.getClass().getCanonicalName());
+            var consumer = consumers.get(message.getClass().getCanonicalName());
             if (consumer != null) {
                 try {
                     consumer.accept(message);
@@ -526,7 +526,7 @@ public abstract  class BaseTransport  implements Transport {
 
     public void propagateMessageDirect(@NonNull BroadcastableMessage message) {
         synchronized (mesh) {
-            val nodes = mesh.get().flatNodes();
+            var nodes = mesh.get().flatNodes();
             nodes.stream().forEach(n -> {
                 if (!n.isRootNode())
                     sendMessage(message, n.getId());
@@ -545,12 +545,12 @@ public abstract  class BaseTransport  implements Transport {
 
     @Override
     public String getRandomDownstreamFrom(@NonNull String id, String exclude) {
-        val nodes = mesh.get().getDownstreamsForNode(id);
+        var nodes = mesh.get().getDownstreamsForNode(id);
         if (nodes.isEmpty())
             return null;
 
         // fetching ids of all the nodes
-        val ids = new ArrayList<String>(nodes.stream().map(node -> {return node.getId();}).collect(Collectors.toList()));
+        var ids = new ArrayList<String>(nodes.stream().map(node -> {return node.getId();}).collect(Collectors.toList()));
         if (exclude != null)
             ids.remove(exclude);
 
@@ -590,13 +590,13 @@ public abstract  class BaseTransport  implements Transport {
         // we send message to the node first
         sendMessage(message, id);
 
-        val sleepMs = TimeUnit.MILLISECONDS.convert(timeWait, timeUnit);
-        val startTime = System.currentTimeMillis();
+        var sleepMs = TimeUnit.MILLISECONDS.convert(timeWait, timeUnit);
+        var startTime = System.currentTimeMillis();
 
         // and then we just block until we get response
         ResponseMessage r = null;
         while ((r = replies.get(message.getRequestId())) == null) {
-            val currTime = System.currentTimeMillis();
+            var currTime = System.currentTimeMillis();
 
             if (currTime - startTime > sleepMs)
                 break;
@@ -669,10 +669,10 @@ public abstract  class BaseTransport  implements Transport {
             try {
                 while (true) {
                     Thread.sleep(delay);
-                    val remapped = new AtomicBoolean(false);
+                    var remapped = new AtomicBoolean(false);
 
-                    val nodes = mesh.get().flatNodes();
-                    for (val n : nodes) {
+                    var nodes = mesh.get().flatNodes();
+                    for (var n : nodes) {
                         // we're skipping own node
                         if (transport.id().equals(n.getId()))
                             continue;

@@ -102,8 +102,8 @@ public class PReLULayer extends BaseLayer {
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         InputType outputType = getOutputType(-1, inputType);
 
-        val numParams = initializer().numParams(this);
-        val updaterStateSize = (int) getIUpdater().stateSize(numParams);
+        var numParams = initializer().numParams(this);
+        var updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         return new LayerMemoryReport.Builder(layerName, PReLULayer.class, inputType, outputType)
                         .standardMemory(numParams, updaterStateSize).workingMemory(0, 0, 0, 0)

@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.frameworkimport.tensorflow;
 
-import lombok.val;
+
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
@@ -55,7 +55,7 @@ public class TestCustomOps extends BaseNd4jTestWithBackends {
                 .addIntegerArguments(0) //constant mode, with no constant specified
                 .build();
 
-        val outShape = Nd4j.getExecutioner().calculateOutputShape(op);
+        var outShape = Nd4j.getExecutioner().calculateOutputShape(op);
         assertEquals(1, outShape.size());
         assertArrayEquals(new long[]{1, 29, 29, 264}, outShape.get(0).getShape());
 

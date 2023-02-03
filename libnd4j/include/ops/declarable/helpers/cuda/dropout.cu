@@ -41,7 +41,7 @@ static SD_KERNEL void dropoutSimpleKernel(void const* inputBuf, sd::LongType con
 
   // trivial idea: loop through all elements, get independent probability for each element to be nullified
   for (sd::LongType e = 0; e < inLen; ++e) {
-    T val = nodeRng->relativeT(e, T(0.f), T(1.f));
+    T var = nodeRng->relativeT(e, T(0.f), T(1.f));
 
     // if probability is ok - we're saving scaled value
     if (double(val) < probVal)
@@ -185,10 +185,10 @@ static SD_KERNEL void alphaDropoutSimpleKernel(void const* inputBuf, sd::LongTyp
   T* output = reinterpret_cast<T*>(outputBuf);
 
   for (auto e = tid; e < inLen; e += step) {
-    T val = nodeRng->relativeT(e, T(0.f), T(1.f));
-    T xVal = input[shape::getIndexOffset(e, inputShape)];
+    T var = nodeRng->relativeT(e, T(0.f), T(1.f));
+    T xvar = input[shape::getIndexOffset(e, inputShape)];
     output[shape::getIndexOffset(e, outputShape)] =
-        (val >= T(probValue) ? T(alpha * beta + alpha1) : T(alpha * (double)xVal + alpha1));
+        (var >= T(probValue) ? T(alpha * beta + alpha1) : T(alpha * (double)xvar + alpha1));
   }
 }
 template <typename T>

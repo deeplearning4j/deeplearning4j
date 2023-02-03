@@ -130,9 +130,9 @@ public class TestRandomProjection extends BaseNd4jTestWithBackends {
         INDArray ratios = projRes.div(result);
 
         for (int i = 0; i < ratios.length(); i++){
-            double val = ratios.getDouble(i);
+            double var = ratios.getDouble(i);
             // this avoids the NaNs we get along the diagonal
-            if (val == val) {
+            if (var == val) {
                 assertTrue(ratios.getDouble(i) < 1.5);
             }
         }

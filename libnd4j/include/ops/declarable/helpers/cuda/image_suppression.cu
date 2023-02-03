@@ -269,14 +269,14 @@ static SD_DEVICE bool checkOverlapBoxes(T* boxes, sd::LongType const* shape, T* 
     if (simple) {
       sd::LongType xPos[] = {selectedIndex, selectedIndices[j - 1]};
       auto xShift = shape::getOffset(shape, xPos, 0);
-      boxVal = boxes[xShift];
+      boxvar = boxes[xShift];
     } else {
-      boxVal = similirityV3(boxes, shape, selectedIndex, selectedIndices[j - 1]);
+      boxvar = similirityV3(boxes, shape, selectedIndex, selectedIndices[j - 1]);
     }
-    if (boxVal > static_cast<T>(overlapThreshold)) nextCandidateScore = static_cast<T>(0.f);
+    if (boxvar > static_cast<T>(overlapThreshold)) nextCandidateScore = static_cast<T>(0.f);
 
     // First decide whether to perform hard suppression
-    if (boxVal >= overlapThreshold) {
+    if (boxvar >= overlapThreshold) {
       shouldHardSuppress = true;
       break;
     }

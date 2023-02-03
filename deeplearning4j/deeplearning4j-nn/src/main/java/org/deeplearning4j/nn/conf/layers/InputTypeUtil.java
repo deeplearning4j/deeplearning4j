@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -46,8 +46,8 @@ public class InputTypeUtil {
                                                      Class<?> layerClass) {
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
 
-        val hIn = i.getHeight();
-        val wIn = i.getWidth();
+        var hIn = i.getHeight();
+        var wIn = i.getWidth();
 
         int padH = (padding == null ? 0 : padding[0]); //May be null for ConvolutionMode.Same
         int padW = (padding == null ? 0 : padding[1]);
@@ -281,7 +281,7 @@ public class InputTypeUtil {
 
         InputType.InputTypeRecurrent i = (InputType.InputTypeRecurrent) inputType;
 
-        val inHeight = (int) i.getTimeSeriesLength();
+        var inHeight = (int) i.getTimeSeriesLength();
         if (dilation != 1) {
             kH = kH + (kH - 1) * (dilation - 1);
         }

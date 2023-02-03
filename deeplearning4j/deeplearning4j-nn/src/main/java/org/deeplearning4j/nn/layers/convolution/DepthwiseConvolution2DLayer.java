@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
-import lombok.val;
+
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -218,7 +218,7 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
         long outH = outSize[0];
         long outW = outSize[1];
 
-        val miniBatch = input.size(0);
+        var miniBatch = input.size(0);
         long[] outShape = nchw ? new long[]{miniBatch, outDepth, outH, outW} : new long[]{miniBatch, outH, outW, outDepth};
         INDArray output = workspaceMgr.create(ArrayType.ACTIVATIONS, depthWiseWeights.dataType(), outShape, 'c');
 

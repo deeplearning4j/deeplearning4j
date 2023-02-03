@@ -23,7 +23,7 @@ package org.nd4j.linalg.api.ops;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -150,8 +150,8 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 for (int i = 0; i < extraArgs.length; i++) {
                     if (extraArgs[i] instanceof Number) {
                         Number arg = (Number) extraArgs[i];
-                        long val = arg.longValue();
-                        extraz[i] = val;
+                        long longValue = arg.longValue();
+                        extraz[i] = longValue;
                     }
                 }
                 extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz, dtype);
@@ -164,8 +164,8 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                     Number arg = (Number) extraArgs[i];
                     if (arg == null)
                         arg = 0.0;
-                    double val = arg.doubleValue();
-                    extraz[i] = val;
+                    double doubleValue = arg.doubleValue();
+                    extraz[i] = doubleValue;
                 }
                 extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz, dtype);
                 return extraArgz;
@@ -182,15 +182,15 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             if (x.data().dataType() == DataType.FLOAT) {
                 retBuff = Nd4j.createBuffer(new float[extraArgs.length]);
                 for (int i = 0; i < extraArgs.length; i++) {
-                    Number val = (Number) extraArgs[i];
-                    retBuff.put(i, val.floatValue());
+                    Number extraArgsVal = (Number) extraArgs[i];
+                    retBuff.put(i, extraArgsVal.floatValue());
                 }
                 return retBuff.asNioFloat();
             } else {
                 retBuff = Nd4j.createBuffer(new double[extraArgs.length]);
                 for (int i = 0; i < extraArgs.length; i++) {
-                    Number val = (Number) extraArgs[i];
-                    retBuff.put(i, val.doubleValue());
+                    Number extraArgsVal = (Number) extraArgs[i];
+                    retBuff.put(i, extraArgsVal.doubleValue());
                 }
                 return retBuff.asNioDouble();
             }
@@ -245,7 +245,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     @Override
     public SDVariable[] outputVariables(String baseName) {
         if(zVertexId == null)  {
-            val outputNames = sameDiff.getOutputsForOp(this);
+            var outputNames = sameDiff.getOutputsForOp(this);
             //no need to dynamically create if already exists
             if(outputNames != null) {
                 zVertexId = sameDiff.getVariable(outputNames[0]).name();
@@ -255,8 +255,8 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             }
 
             if(isInPlace()) {
-                val newVars = sameDiff.generateOutputVariableForOp(this,null,false);
-                val inputArr = x();
+                var newVars = sameDiff.generateOutputVariableForOp(this,null,false);
+                var inputArr = x();
                 //in place op
                 if(inputArr == null) {
                     computeVariables(newVars);

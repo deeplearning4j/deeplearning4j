@@ -20,7 +20,7 @@
 package org.eclipse.deeplearning4j.frameworkimport.keras.e2e;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.eval.ROCMultiClass;
@@ -806,7 +806,7 @@ class KerasModelEndToEndTest extends BaseDL4JTest {
                 if (outputs.rank() == 1) {
                     outputs = outputs.reshape(outputs.length(), 1);
                 }
-                val nOut = (int) outputs.size(-1);
+                var nOut = (int) outputs.size(-1);
                 if (checkAuc)
                     compareMulticlassAUC("predictions", outputs, predictionsKeras, predictionsDl4j, nOut, EPS);
             }

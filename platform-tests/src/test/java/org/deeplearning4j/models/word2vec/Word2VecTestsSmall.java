@@ -21,7 +21,7 @@
 package org.deeplearning4j.models.word2vec;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
@@ -102,13 +102,13 @@ public class Word2VecTestsSmall extends BaseDL4JTest {
     @Test()
     @Timeout(300000)
     public void testUnkSerialization_1() throws Exception {
-        val inputFile = Resources.asFile("big/raw_sentences.txt");
-//        val iter = new BasicLineIterator(inputFile);
+        var inputFile = Resources.asFile("big/raw_sentences.txt");
+//        var iter = new BasicLineIterator(inputFile);
         SentenceIterator iter = ParagraphVectorsTest.getIterator(isIntegrationTests(), inputFile);
-        val t = new DefaultTokenizerFactory();
+        var t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        val vec = new Word2Vec.Builder()
+        var vec = new Word2Vec.Builder()
                 .minWordFrequency(1)
                 .epochs(1)
                 .layerSize(300)
@@ -131,7 +131,7 @@ public class Word2VecTestsSmall extends BaseDL4JTest {
 
         vec.fit();
 
-        val tmpFile = File.createTempFile("temp","temp");
+        var tmpFile = File.createTempFile("temp","temp");
         tmpFile.deleteOnExit();
 
         WordVectorSerializer.writeWord2VecModel(vec, tmpFile); // NullPointerException was thrown here
@@ -139,14 +139,14 @@ public class Word2VecTestsSmall extends BaseDL4JTest {
 
     @Test
     public void testLabelAwareIterator_1() throws Exception {
-        val resource = new ClassPathResource("/labeled");
-        val file = resource.getFile();
+        var resource = new ClassPathResource("/labeled");
+        var file = resource.getFile();
 
-        val iter = (LabelAwareIterator) new FileLabelAwareIterator.Builder().addSourceFolder(file).build();
+        var iter = (LabelAwareIterator) new FileLabelAwareIterator.Builder().addSourceFolder(file).build();
 
-        val t = new DefaultTokenizerFactory();
+        var t = new DefaultTokenizerFactory();
 
-        val w2v = new Word2Vec.Builder()
+        var w2v = new Word2Vec.Builder()
                 .iterate(iter)
                 .tokenizerFactory(t)
                 .build();
@@ -165,10 +165,10 @@ public class Word2VecTestsSmall extends BaseDL4JTest {
     public void testW2VEmbeddingLayerInit() throws Exception {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
 
-        val inputFile = Resources.asFile("big/raw_sentences.txt");
-        val iter = ParagraphVectorsTest.getIterator(isIntegrationTests(), inputFile);
-//        val iter = new BasicLineIterator(inputFile);
-        val t = new DefaultTokenizerFactory();
+        var inputFile = Resources.asFile("big/raw_sentences.txt");
+        var iter = ParagraphVectorsTest.getIterator(isIntegrationTests(), inputFile);
+//        var iter = new BasicLineIterator(inputFile);
+        var t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
         Word2Vec vec = new Word2Vec.Builder()

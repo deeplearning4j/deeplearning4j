@@ -516,11 +516,11 @@ public class LogFileWriter {
             }
 
             int controlDepsIdx = 0;
-            if(e.getValue().getControlDeps() != null ){
+            if(e.getValue().getControlDeps() != null) {
                 List<String> cds = e.getValue().getControlDeps();
-                if(!cds.isEmpty()){
+                if(!cds.isEmpty()) {
                     int[] cdIdxs = new int[cds.size()];
-                    for( int i=0; i<cdIdxs.length; i++ ){
+                    for( int i = 0; i < cdIdxs.length; i++) {
                         cdIdxs[i] = fbb.createString(cds.get(i));
                     }
                     controlDepsIdx = UIVariable.createControlDepsVector(fbb, cdIdxs);

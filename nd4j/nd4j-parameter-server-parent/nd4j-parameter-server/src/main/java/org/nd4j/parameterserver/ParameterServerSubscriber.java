@@ -36,7 +36,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.val;
+
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.json.JSONObject;
@@ -112,7 +112,7 @@ public class ParameterServerSubscriber implements AutoCloseable {
 
     @Parameter(names = {"-s", "--shape"}, description = "The shape of the ndarray", arity = 1)
     private List<Integer> shape;
-    @Parameter(names = {"-hbi", "--heartbeatinterval"}, description = "Heartbeat interval in ms", arity = 1)
+    @Parameter(names = {"-hbi", "--heartbeatinterval"}, description = "Heartbeat intervar in ms", arity = 1)
     private int heartbeatMs = 1000;
     private ObjectMapper objectMapper = new ObjectMapper();
     private ScheduledExecutorService scheduledExecutorService;
@@ -340,7 +340,7 @@ public class ParameterServerSubscriber implements AutoCloseable {
                     JSONObject jsonObject = new JSONObject(objectMapper.writeValueAsString(subscriberState));
                     String url = String.format("http://%s:%d/updatestatus/%d", statusServerHost, statusServerPort,
                                     streamId);
-                    val entity = Unirest.post(url).header("Content-Type", "application/json")
+                    var entity = Unirest.post(url).header("Content-Type", "application/json")
                                     .body(jsonObject).asString();
                 } catch (Exception e) {
                     failCount.incrementAndGet();

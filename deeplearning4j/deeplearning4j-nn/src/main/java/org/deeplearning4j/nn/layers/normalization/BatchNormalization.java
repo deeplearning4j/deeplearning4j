@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.layers.normalization;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -87,8 +87,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
         INDArray nextEpsilon;
-        val shape = getShape(epsilon);
-        val batchSize = epsilon.size(0); // number examples in batch
+        var shape = getShape(epsilon);
+        var batchSize = epsilon.size(0); // number examples in batch
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
 
         CNN2DFormat format = layerConf().getCnn2DFormat();
@@ -108,7 +108,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         INDArray dGlobalVarView = gradientViews.get(BatchNormalizationParamInitializer.GLOBAL_VAR);
         INDArray dGlobalLog10StdView = gradientViews.get(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
         if (layerConf.isLockGammaBeta()) {
-            val tempShape = new long[] {1, shape[chIdx]};
+            var tempShape = new long[] {1, shape[chIdx]};
             dGammaView = Nd4j.createUninitialized(dataType, tempShape, 'c');
             dBetaView = Nd4j.createUninitialized(dataType, tempShape, 'c');
         } else {
@@ -295,7 +295,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             INDArray dLdVar = dxhat.mul(xMu).sum(nonChDims).muli(-0.5).muli(Transforms.pow(std, -3.0, true));
 
             //dL/dmu
-            val effectiveBatchSize = input.size(0) * input.size(hIdx) * input.size(wIdx);
+            var effectiveBatchSize = input.size(0) * input.size(hIdx) * input.size(wIdx);
             INDArray dxmu1 = dxhat.sum(nonChDims).divi(std).negi();
             INDArray dxmu2 = xMu.sum(nonChDims).muli(-2.0 / effectiveBatchSize).muli(dLdVar);
             INDArray dLdmu = dxmu1.addi(dxmu2);
@@ -410,7 +410,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         // TODO add this directly in layer or get the layer prior...
 
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
-        val shape = getShape(x);
+        var shape = getShape(x);
 
         INDArray gamma = null;
         INDArray beta = null;
@@ -419,7 +419,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         if (layerConf.isLockGammaBeta()) {
             if (helper != null && input.rank() == 4) {
                 //TODO: don't create these each iteration, when using cudnn
-                val gammaBetaShape = new long[] {1, layerConf().getNOut()};
+                var gammaBetaShape = new long[] {1, layerConf().getNOut()};
                 gamma = Nd4j.valueArrayOf(gammaBetaShape, layerConf().getGamma(), dataType);
                 beta = Nd4j.valueArrayOf(gammaBetaShape, layerConf().getBeta(), dataType);
             }
@@ -635,8 +635,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             return new long[]{1, x.size(chIdx)};
         }
         if (x.rank() == 3) {
-            val wDim = x.size(1);
-            val hdim = x.size(2);
+            var wDim = x.size(1);
+            var hdim = x.size(2);
             if (x.size(0) > 1 && wDim * hdim == x.length())
                 throw new IllegalArgumentException("Illegal input for batch size " + layerId());
             return new long[] {1, wDim * hdim};

@@ -21,7 +21,7 @@
 package org.nd4j.linalg.api.ops.executioner;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.common.base.Preconditions;
@@ -284,7 +284,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     protected void checkWorkspace(String opName, INDArray array) {
         if (array.isAttached()) {
-            val ws = array.data().getParentWorkspace();
+            var ws = array.data().getParentWorkspace();
 
             if (ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
 
@@ -306,24 +306,24 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
         List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
         int count = 0;
-        for (val input: inArgs) {
+        for (var input: inArgs) {
             checkWorkspace(op.opName(), input);
             count++;
         }
-        for (val output: outArgs)
+        for (var output: outArgs)
             checkWorkspace(op.opName(), output);
     }
 
     protected void checkForWorkspaces(Op op, OpContext oc) {
-        val x = oc != null ? oc.getInputArray(0) : op.x();
+        var x = oc != null ? oc.getInputArray(0) : op.x();
         if (x != null)
             checkWorkspace(op.opName(), x);
 
-        val y = oc != null && oc.getInputArrays().size() > 1 ? oc.getInputArray(1) : op.y();
+        var y = oc != null && oc.getInputArrays().size() > 1 ? oc.getInputArray(1) : op.y();
         if (y != null)
             checkWorkspace(op.opName(), y);
 
-        val z = oc != null ? oc.getOutputArray(0) : op.z();
+        var z = oc != null ? oc.getOutputArray(0) : op.z();
         if (z != null)
             checkWorkspace(op.opName(), z);
     }
@@ -452,7 +452,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         List<INDArray> outArgs = oc != null ? oc.getOutputArrays(): Arrays.asList(op.x(),op.y());
 
 
-        for (val arr: inArgs) {
+        for (var arr: inArgs) {
             if(arr == null)
                 continue;;
 
@@ -461,7 +461,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
 
         }
-        for (val arr: outArgs) {
+        for (var arr: outArgs) {
             if(arr == null)
                 continue;
 
@@ -488,13 +488,13 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
 
 
-        for (val arr: inArgs) {
+        for (var arr: inArgs) {
             if (arr.wasClosed())
                 throw new IllegalStateException("One of Input arguments was closed before call");
 
 
         }
-        for (val arr: outArgs) {
+        for (var arr: outArgs) {
             if (arr.wasClosed())
                 throw new IllegalStateException("One of Output arguments was closed before call");
         }
@@ -630,8 +630,8 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     protected static String firstX(INDArray array, int x) {
-        val builder = new StringBuilder("[");
-        val limit = (int) Math.min(x, array.length());
+        var builder = new StringBuilder("[");
+        var limit = (int) Math.min(x, array.length());
         for (int e = 0; e < limit; e++) {
             builder.append(array.getDouble(e));
 
@@ -722,13 +722,13 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArray thresholdEncode(INDArray input, double threshold, Integer boundary) {
-        val op_shape = new EncodeThreshold(input, (float) threshold, boundary);
-        val shapes = Nd4j.getExecutioner().calculateOutputShape(op_shape);
+        var op_shape = new EncodeThreshold(input, (float) threshold, boundary);
+        var shapes = Nd4j.getExecutioner().calculateOutputShape(op_shape);
 
         if (_length(shapes.get(1).getShape()) < 2)
             return null;
 
-        val result = Nd4j.create(DataType.INT32, shapes.get(1).getShape());
+        var result = Nd4j.create(DataType.INT32, shapes.get(1).getShape());
 
         op_shape.addOutputArgument(input, result);
         Nd4j.exec(op_shape);
@@ -744,7 +744,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public long bitmapEncode(INDArray indArray, INDArray target, double threshold) {
-        val results = Nd4j.exec(new EncodeBitmap(indArray, target, Nd4j.scalar(0), (float) threshold));
+        var results = Nd4j.exec(new EncodeBitmap(indArray, target, Nd4j.scalar(0), (float) threshold));
 
         // return number of elements taht were compressed
         return results[2].getInt(0);
@@ -752,7 +752,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArray bitmapEncode(INDArray indArray, double threshold) {
-        val array = Nd4j.create(DataType.INT32, indArray.length() / 16 + 5);
+        var array = Nd4j.create(DataType.INT32, indArray.length() / 16 + 5);
         bitmapEncode(indArray, array, threshold);
         return array;
     }

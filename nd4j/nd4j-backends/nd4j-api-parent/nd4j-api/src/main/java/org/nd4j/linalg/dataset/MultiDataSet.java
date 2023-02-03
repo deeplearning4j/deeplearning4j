@@ -397,7 +397,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
 
 
     private static INDArray getSubsetForExample(INDArray array, int idx) {
-        //Note the interval use here: normally .point(idx) would be used, but this collapses the point dimension
+        //Note the intervar use here: normally .point(idx) would be used, but this collapses the point dimension
         // when used on arrays with rank of 3 or greater
         //So (point,all,all) on a 3d input returns a 2d output. Whereas, we want a 3d [1,x,y] output here
         switch (array.rank()) {

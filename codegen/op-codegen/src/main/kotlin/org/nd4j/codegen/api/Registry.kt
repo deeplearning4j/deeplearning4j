@@ -21,8 +21,8 @@
 package org.nd4j.codegen.api
 
 object Registry {
-    private val enums: MutableMap<String, Arg> = mutableMapOf()
-    private val configs: MutableMap<String, Config> = mutableMapOf()
+    private var enums: MutableMap<String, Arg> = mutableMapOf()
+    private var configs: MutableMap<String, Config> = mutableMapOf()
 
     fun enums() = enums.values.sortedBy { it.name }
     fun configs() = configs.values.sortedBy { it.name }

@@ -25,7 +25,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bytedeco.javacpp.Pointer;
@@ -663,7 +663,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             //First: Work out total length of params
             long paramLength = 0;
-            val nParamsPerLayer = new long[nLayers];
+            var nParamsPerLayer = new long[nLayers];
             for (int i = 0; i < nLayers; i++) {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
                 conf.getLayer().setDataType(netDtype);
@@ -796,7 +796,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             //First: Work out total length of params
             long paramLength = 0;
-            val nParamsPerLayer = new long[nLayers];
+            var nParamsPerLayer = new long[nLayers];
             for (int i = 0; i < nLayers; i++) {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
                 nParamsPerLayer[i] = conf.getLayer().initializer().numParams(conf);
@@ -2108,7 +2108,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         int fwdLen = layerWiseConfigurations.getTbpttFwdLength();
         update(TaskUtils.buildTask(input, labels));
-        val timeSeriesLength = input.size(2);
+        var timeSeriesLength = input.size(2);
         long nSubsets = timeSeriesLength / fwdLen;
         if (timeSeriesLength % fwdLen != 0)
             nSubsets++; //Example: 100 fwdLen with timeSeriesLength=120 -> want 2 subsets (1 of size 100, 1 of size 20)
@@ -2474,7 +2474,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return T instance produced by OutputAdapter
      */
     public synchronized <T> T output(@NonNull INDArray inputs, INDArray inputMasks, INDArray labelMasks, @NonNull OutputAdapter<T> outputAdapter) {
-        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, WS_OUTPUT_MEM)) {
+        try (var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, WS_OUTPUT_MEM)) {
             if (outputAdapter instanceof ModelAdapter)
                 return ((ModelAdapter<T>) outputAdapter).apply(this, new INDArray[]{inputs}, new INDArray[]{ inputMasks}, new INDArray[]{labelMasks});
             else
@@ -2601,7 +2601,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
     }
 
-    private double scoreHelper(DataSet data, boolean training){
+    private double scoreHelper(DataSet data, boolean training) {
         boolean hasMaskArray = data.hasMaskArrays();
         if (hasMaskArray)
             setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
@@ -3096,16 +3096,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true));
         for (Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
             String key = entry.getKey();
-            INDArray val = entry.getValue();
+            INDArray value = entry.getValue();
             int idx = key.indexOf('_');
             if (idx == -1)
                 throw new IllegalStateException("Invalid param key: not have layer separator: \"" + key + "\"");
             Integer layerId = Integer.parseInt(key.substring(0, idx));
             String paramType = key.substring(idx + 1);
             // Update MLN gradient
-            this.gradient.gradientForVariable().put(key, val);
+            this.gradient.gradientForVariable().put(key, value);
             // Update layer params
-            layers[layerId].update(val, paramType);
+            layers[layerId].update(value, paramType);
         }
         // Update layerwise gradient view
         setBackpropGradientsViewArray(gradient.gradient());
@@ -3500,14 +3500,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
                 //Get subset of features and labels:
-                val fwdLen = layerWiseConfigurations.getTbpttFwdLength();
-                val tsLength = features.size(2);
+                var fwdLen = layerWiseConfigurations.getTbpttFwdLength();
+                var tsLength = features.size(2);
                 long nSubsets = tsLength / fwdLen;
                 if (tsLength % fwdLen != 0)
                     nSubsets++; //Example: 100 fwdLen with timeSeriesLength=120 -> want 2 subsets (1 of size 100, 1 of size 20)
                 for (int i = 0; i < nSubsets; i++) {
-                    val startTimeIdx = i * fwdLen;
-                    val endTimeIdx = Math.min(startTimeIdx + fwdLen, tsLength);
+                    var startTimeIdx = i * fwdLen;
+                    var endTimeIdx = Math.min(startTimeIdx + fwdLen, tsLength);
 
                     if (endTimeIdx > Integer.MAX_VALUE)
                         throw new ND4JArraySizeException();
@@ -4112,7 +4112,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
-        val mln = ModelSerializer.restoreMultiLayerNetwork(ois, true);
+        var mln = ModelSerializer.restoreMultiLayerNetwork(ois, true);
 
         this.defaultConfiguration = mln.defaultConfiguration.clone();
         this.layerWiseConfigurations = mln.layerWiseConfigurations.clone();

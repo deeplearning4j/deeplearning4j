@@ -87,18 +87,18 @@ static SD_KERNEL void usualCudaGemm(const void* vA, const sd::LongType* aShapeIn
     auto aOffset = shape::getOffset(aShapeInfo, aCoords);
     auto bOffset = shape::getOffset(bShapeInfo, bCoords);
 
-    T3 val = A[aOffset] * B[bOffset];  // first iteration
+    T3 var = A[aOffset] * B[bOffset];  // first iteration
 
     for (sd::Unsigned j = 1; j < K; ++j) {  // rest iterations
       aOffset += shape::stride(aShapeInfo)[aKaxis];
       bOffset += shape::stride(bShapeInfo)[bKaxis];
-      val = val + A[aOffset] * B[bOffset];
+      var = var + A[aOffset] * B[bOffset];
     }
 
     auto cOffset = shape::getOffset(cShapeInfo, cCoords);
 
     if (betaPresent)
-      C[cOffset] = alphaZ * val + betaZ * C[cOffset];
+      C[cOffset] = alphaZ * var + betaZ * C[cOffset];
     else
       C[cOffset] = alphaZ * val;
   }
@@ -154,18 +154,18 @@ static SD_KERNEL void usualCudaGemv(const void* vA, const sd::LongType* aShapeIn
     auto aOffset = i * aMstride;
     auto xOffset = 0;
 
-    T3 val = A[aOffset] * X[xOffset];  // first iteration
+    T3 var = A[aOffset] * X[xOffset];  // first iteration
 
     for (sd::Unsigned j = 1; j < N; ++j) {  // rest iterations
       aOffset += aNstride;
       xOffset += incx;
-      val = val + A[aOffset] * X[xOffset];
+      var = var + A[aOffset] * X[xOffset];
     }
 
     auto yOffset = i * incy;
 
     if (betaPresent)
-      Y[yOffset] = alphaZ * val + betaZ * Y[yOffset];
+      Y[yOffset] = alphaZ * var + betaZ * Y[yOffset];
     else
       Y[yOffset] = alphaZ * val;
   }
@@ -585,18 +585,18 @@ static SD_KERNEL void batchedCudaGemm(const void* vA, const sd::LongType* aShape
     auto aOffset = shape::getOffset(aShapeInfo, aCoords);
     auto bOffset = shape::getOffset(bShapeInfo, bCoords);
 
-    T3 val = A[aOffset] * B[bOffset];  // first iteration
+    T3 var = A[aOffset] * B[bOffset];  // first iteration
 
     for (sd::Unsigned j = 1; j < K; ++j) {  // rest iterations
       aOffset += shape::stride(aShapeInfo)[aKaxis];
       bOffset += shape::stride(bShapeInfo)[bKaxis];
-      val = val + A[aOffset] * B[bOffset];
+      var = var + A[aOffset] * B[bOffset];
     }
 
     auto cOffset = shape::getOffset(cShapeInfo, cCoords);
 
     if (betaPresent)
-      C[cOffset] = alphaZ * val + betaZ * C[cOffset];
+      C[cOffset] = alphaZ * var + betaZ * C[cOffset];
     else
       C[cOffset] = alphaZ * val;
   }
@@ -718,12 +718,12 @@ const int lda, const void* vX, const int incx, const double beta, void* vY, cons
 
     __syncthreads();
 
-    T3 val = 0;
+    T3 var = 0;
     if (row < M)
         for (int i = 0; i < N; i++)
-            val = val + A[row * strideArow + i * strideAcol] * X[i * incx];
+            var = var + A[row * strideArow + i * strideAcol] * X[i * incx];
 
-    Y[row * incy] = alphaZ * val + betaZ * Y[row * incy];
+    Y[row * incy] = alphaZ * var + betaZ * Y[row * incy];
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -766,12 +766,12 @@ double alpha, const void* vA, const int lda, const void* vB, const int ldb, cons
 
     __syncthreads();
 
-    T3 val = 0;
+    T3 var = 0;
     if (row < M && col < N)
         for (int i = 0; i < K; i++)
-            val = val + A[row * strideArow + i * strideAcol] * B[i * strideBrow + col * strideBcol];
+            var = var + A[row * strideArow + i * strideAcol] * B[i * strideBrow + col * strideBcol];
 
-    C[row + col * ldc] = alphaZ * val + betaZ * C[row + col * ldc];
+    C[row + col * ldc] = alphaZ * var + betaZ * C[row + col * ldc];
 }
 
 //////////////////////////////////////////////////////////////////////////////

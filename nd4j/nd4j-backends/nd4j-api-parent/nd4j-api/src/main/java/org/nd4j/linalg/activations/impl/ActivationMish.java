@@ -22,7 +22,7 @@ package org.nd4j.linalg.activations.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.val;
+
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Mish;
@@ -47,7 +47,7 @@ public class ActivationMish extends BaseActivationFunction {
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
 
-        val dLdZ = Nd4j.getExecutioner().exec(new MishDerivative(in, in));
+        var dLdZ = Nd4j.getExecutioner().exec(new MishDerivative(in, in));
 
         dLdZ.muli(epsilon);
         return new Pair<>(in, null);

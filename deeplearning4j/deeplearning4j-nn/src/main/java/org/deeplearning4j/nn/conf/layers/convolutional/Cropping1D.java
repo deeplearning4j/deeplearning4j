@@ -93,8 +93,8 @@ public class Cropping1D extends NoParamLayer {
                             + inputType);
         }
         InputType.InputTypeRecurrent cnn1d = (InputType.InputTypeRecurrent) inputType;
-        val length = cnn1d.getTimeSeriesLength();
-        val outLength = length - cropping[0] - cropping[1];
+        var length = cnn1d.getTimeSeriesLength();
+        var outLength = length - cropping[0] - cropping[1];
         return InputType.recurrent(cnn1d.getSize(), outLength);
     }
 

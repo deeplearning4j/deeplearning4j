@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.shape;
 
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -72,7 +72,7 @@ public class NDArrayMathTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLengthPerSlice(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(2, 2, 2, 2);
-        val lengthPerSlice = NDArrayMath.lengthPerSlice(arr);
+        var lengthPerSlice = NDArrayMath.lengthPerSlice(arr);
         assertEquals(8, lengthPerSlice);
     }
 
@@ -113,7 +113,7 @@ public class NDArrayMathTests extends BaseNd4jTestWithBackends {
             assertEquals(test[i], NDArrayMath.sliceOffsetForTensor(i, permuted, new int[] {2, 2}));
         }
 
-        val arrTensorsPerSlice = NDArrayMath.tensorsPerSlice(arr, new int[] {2, 2});
+        var arrTensorsPerSlice = NDArrayMath.tensorsPerSlice(arr, new int[] {2, 2});
         assertEquals(2, arrTensorsPerSlice);
 
         INDArray arr2 = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(3, 2, 2);
@@ -124,7 +124,7 @@ public class NDArrayMathTests extends BaseNd4jTestWithBackends {
 
 
 
-        val tensorsPerSlice = NDArrayMath.tensorsPerSlice(arr2, new int[] {2, 2});
+        var tensorsPerSlice = NDArrayMath.tensorsPerSlice(arr2, new int[] {2, 2});
         assertEquals(1, tensorsPerSlice);
 
 
@@ -143,7 +143,7 @@ public class NDArrayMathTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOddDimensions(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(3, 2, 2);
-        val numMatrices = NDArrayMath.matricesPerSlice(arr);
+        var numMatrices = NDArrayMath.matricesPerSlice(arr);
         assertEquals(1, numMatrices);
     }
 

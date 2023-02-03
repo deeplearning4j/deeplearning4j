@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.ops;
 
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -189,7 +189,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
     @Override
     public boolean validateDataTypes(boolean experimentalMode) {
 
-        val op = opNum();
+        var op = opNum();
 
         if (y() != null && z() != null)
             Preconditions.checkArgument(y().dataType() == z().dataType() || x().dataType() == z().dataType(),

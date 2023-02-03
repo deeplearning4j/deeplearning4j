@@ -23,7 +23,7 @@ package org.nd4j.linalg.compression;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import lombok.val;
+
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
@@ -138,7 +138,7 @@ public class CompressedDataBuffer extends BaseDataBuffer {
     public DataBuffer dup() {
         Pointer nPtr = new BytePointer(compressionDescriptor.getCompressedLength());
 
-        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+        var perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
         Pointer.memcpy(nPtr, pointer, compressionDescriptor.getCompressedLength());
 

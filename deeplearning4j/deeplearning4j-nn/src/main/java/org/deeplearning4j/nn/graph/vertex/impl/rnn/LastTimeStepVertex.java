@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl.rnn;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -88,7 +88,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
             out = workspaceMgr.dup(ArrayType.ACTIVATIONS, out);
             fwdPassTimeSteps = null; //Null -> last time step for all examples
         } else {
-            val outShape = new long[] {inputs[0].size(0), inputs[0].size(1)};
+            var outShape = new long[] {inputs[0].size(0), inputs[0].size(1)};
             out = workspaceMgr.create(ArrayType.ACTIVATIONS, inputs[0].dataType(), outShape);
 
             //Want the index of the last non-zero entry in the mask array.

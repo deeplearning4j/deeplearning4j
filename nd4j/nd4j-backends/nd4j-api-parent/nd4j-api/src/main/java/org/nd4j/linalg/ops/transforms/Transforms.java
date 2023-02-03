@@ -21,7 +21,7 @@
 package org.nd4j.linalg.ops.transforms;
 
 import lombok.NonNull;
-import lombok.val;
+
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -792,7 +792,7 @@ public class Transforms {
      * @return
      */
     public static INDArray lessThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
-        val op = dup ? new LessThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering())) :
+        var op = dup ? new LessThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering())) :
                        new LessThanOrEqual(first, ndArray);
         return Nd4j.getExecutioner().exec(op)[0];
     }
@@ -805,7 +805,7 @@ public class Transforms {
      * @return
      */
     public static INDArray greaterThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
-        val op = dup ? new GreaterThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering())) :
+        var op = dup ? new GreaterThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering())) :
                 new GreaterThanOrEqual(first, ndArray);
         return Nd4j.getExecutioner().exec(op)[0];
 
@@ -1109,7 +1109,7 @@ public class Transforms {
     }
 
     public static INDArray not(INDArray x) {
-        val z = Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering());
+        var z = Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering());
         if (x.isB()) {
             Nd4j.getExecutioner().exec(new BooleanNot(x, z));
         } else {

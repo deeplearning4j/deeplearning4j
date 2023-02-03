@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.shape.concat.padding;
 
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -106,10 +106,10 @@ public class PaddingTestsC extends BaseNd4jTestWithBackends {
         //,1,1,1,1,2,2,0
         int kh = 1, kw = 1, sy = 1, sx = 1, ph = 2, pw = 2;
         INDArray linspaced = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(2, 2, 2, 2);
-        val n = linspaced.size(0);
-        val c = linspaced.size(1);
-        val h = linspaced.size(2);
-        val w = linspaced.size(3);
+        var n = linspaced.size(0);
+        var c = linspaced.size(1);
+        var h = linspaced.size(2);
+        var w = linspaced.size(3);
 
         long outWidth = Convolution.outSize(h, kh, sy, ph, 1, true);
         long outHeight = Convolution.outSize(w, kw, sx, pw, 1, true);

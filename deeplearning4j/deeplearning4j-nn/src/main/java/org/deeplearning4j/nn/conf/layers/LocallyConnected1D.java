@@ -143,10 +143,10 @@ public class LocallyConnected1D extends SameDiffLayer {
     public void defineParameters(SDLayerParams params) {
         Preconditions.checkState(featureDim > 0, "Cannot initialize layer: Feature dimension is set to %s", featureDim);
         params.clear();
-        val weightsShape = new long[] {outputSize, featureDim, nOut};
+        var weightsShape = new long[] {outputSize, featureDim, nOut};
         params.addWeightParam(ConvolutionParamInitializer.WEIGHT_KEY, weightsShape);
         if (hasBias) {
-            val biasShape = new long[] {nOut};
+            var biasShape = new long[] {nOut};
             params.addBiasParam(ConvolutionParamInitializer.BIAS_KEY, biasShape);
         }
     }

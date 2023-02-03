@@ -21,7 +21,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
@@ -78,7 +78,7 @@ public class MirrorPad extends DynamicCustomOp {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
         Map<String, PropertyMapping> map = new HashMap<>();
 
-        val symmetric = PropertyMapping.builder()
+        var symmetric = PropertyMapping.builder()
                 .tfAttrName("mode")
                 .propertyNames(new String[]{"isSymmetric"})
                 .build();

@@ -22,7 +22,7 @@ package org.eclipse.deeplearning4j.nd4j.linalg;
 
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -204,9 +204,9 @@ public class NDArrayTestsFortran extends BaseNd4jTestWithBackends {
         }
 
         for (List<Pair<INDArray, String>> b : broadCastList) {
-            for (Pair<INDArray, String> val : b) {
+            for (Pair<INDArray, String> var : b) {
                 INDArray inputArrBroadcast = val.getFirst();
-                val destShape = NDArrayCreationUtil.broadcastToShape(inputArrBroadcast.shape(), 7);
+                var destShape = NDArrayCreationUtil.broadcastToShape(inputArrBroadcast.shape(), 7);
                 INDArray output = inputArrBroadcast
                         .broadcast(NDArrayCreationUtil.broadcastToShape(inputArrBroadcast.shape(), 7));
                 assertArrayEquals(destShape, output.shape());
@@ -254,9 +254,9 @@ public class NDArrayTestsFortran extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSortDeadlock(Nd4jBackend backend) {
-        val toSort = Nd4j.linspace(DataType.DOUBLE, 1, 32*768, 1).reshape(32, 768);
+        var toSort = Nd4j.linspace(DataType.DOUBLE, 1, 32*768, 1).reshape(32, 768);
 
-        val sorted = Nd4j.sort(toSort.dup(), 1, false);
+        var sorted = Nd4j.sort(toSort.dup(), 1, false);
     }
 
 
@@ -733,8 +733,8 @@ public class NDArrayTestsFortran extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEps(Nd4jBackend backend) {
-        val ones = Nd4j.ones(5);
-        val res = Nd4j.createUninitialized(DataType.BOOL, 5);
+        var ones = Nd4j.ones(5);
+        var res = Nd4j.createUninitialized(DataType.BOOL, 5);
         assertTrue(Nd4j.getExecutioner().exec(new Eps(ones, ones, res)).all());
     }
 
@@ -1083,7 +1083,7 @@ public class NDArrayTestsFortran extends BaseNd4jTestWithBackends {
     public void testRollAxis(Nd4jBackend backend) {
         INDArray toRoll = Nd4j.ones(3, 4, 5, 6);
         assertArrayEquals(new long[] {3, 6, 4, 5}, Nd4j.rollAxis(toRoll, 3, 1).shape());
-        val shape = Nd4j.rollAxis(toRoll, 3).shape();
+        var shape = Nd4j.rollAxis(toRoll, 3).shape();
         assertArrayEquals(new long[] {6, 3, 4, 5}, shape);
     }
 

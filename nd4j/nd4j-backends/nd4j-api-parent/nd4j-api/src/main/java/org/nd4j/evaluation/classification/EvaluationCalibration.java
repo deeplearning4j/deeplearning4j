@@ -22,7 +22,7 @@ package org.nd4j.evaluation.classification;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.val;
+
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.IMetric;
@@ -172,7 +172,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         //Stats for the reliability diagram: one reliability diagram for each class
         // For each bin, we need: (a) the number of positive cases AND total cases, (b) the average probability
 
-        val nClasses = labels2d.size(1);
+        var nClasses = labels2d.size(1);
 
         if (rDiagBinPosCount == null) {
             DataType dt = DataType.DOUBLE;
@@ -373,7 +373,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         double[] fracPositives = countPositiveBins.castTo(DataType.DOUBLE).div(totalCountBins.castTo(DataType.DOUBLE)).data().asDouble();
 
         if (excludeEmptyBins) {
-            val condition = new MatchCondition(totalCountBins, Conditions.equals(0));
+            var condition = new MatchCondition(totalCountBins, Conditions.equals(0));
             int numZeroBins = Nd4j.getExecutioner().exec(condition).getInt(0);
             if (numZeroBins != 0) {
                 double[] mpb = meanPredictionBins;

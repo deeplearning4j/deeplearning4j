@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.dl4jcore.nn.multilayer;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -108,7 +108,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
         int count = gtSum.getInt(0);
         assertEquals(nHiddenUnits, count);
 
-        val nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
+        var nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
         assertTrue(nParams == layer.numParams());
     }
 
@@ -155,7 +155,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
             double count = gtSum.getDouble(0);
             assertEquals(nHiddenUnits[i], (int)count);
 
-            val nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
+            var nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
             assertTrue(nParams == layer.numParams());
         }
     }
@@ -307,7 +307,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
 
                     INDArray inputSubset;
                     if (inLength == 1) { //Workaround to nd4j bug
-                        val sizes = new long[]{input.size(0), input.size(1), 1};
+                        var sizes = new long[]{input.size(0), input.size(1), 1};
                         inputSubset = Nd4j.create(sizes);
                         inputSubset.tensorAlongDimension(0, 1, 0).assign(input.get(NDArrayIndex.all(), NDArrayIndex.all(),
                                 NDArrayIndex.point(startTimeRange)));
@@ -322,7 +322,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
 
                     INDArray expOutSubset;
                     if (inLength == 1) {
-                        val sizes = new long[]{fullOutL3.size(0), fullOutL3.size(1), 1};
+                        var sizes = new long[]{fullOutL3.size(0), fullOutL3.size(1), 1};
                         expOutSubset = Nd4j.create(DataType.FLOAT, sizes);
                         expOutSubset.tensorAlongDimension(0, 1, 0).assign(fullOutL3.get(NDArrayIndex.all(),
                                 NDArrayIndex.all(), NDArrayIndex.point(startTimeRange)));

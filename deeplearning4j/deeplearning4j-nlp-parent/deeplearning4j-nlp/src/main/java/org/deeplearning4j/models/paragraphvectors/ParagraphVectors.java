@@ -28,7 +28,7 @@ import com.google.gson.JsonParser;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import lombok.val;
+
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -575,7 +575,7 @@ public class ParagraphVectors extends Word2Vec {
             distances.incrementCount(s, (float) sim);
         }
 
-        val keys = distances.keySetSorted();
+        var keys = distances.keySetSorted();
         return keys.subList(0, Math.min(limit, keys.size()));
     }
 

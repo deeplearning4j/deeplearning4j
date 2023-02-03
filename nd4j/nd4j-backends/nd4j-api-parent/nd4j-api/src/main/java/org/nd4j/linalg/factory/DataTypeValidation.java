@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.factory;
 
-import lombok.val;
+
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -57,7 +57,7 @@ public class DataTypeValidation {
             return;
         DataType type = indArrays[0].data().dataType();
         for (int i = 1; i < indArrays.length; i++) {
-            val t = indArrays[i].data().dataType();
+            var t = indArrays[i].data().dataType();
             Preconditions.checkState(t == type, "Data types must be same: got %s and %s", type, t);
         }
     }

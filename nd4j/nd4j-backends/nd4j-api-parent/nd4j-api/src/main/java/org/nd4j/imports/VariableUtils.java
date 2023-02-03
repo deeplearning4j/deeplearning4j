@@ -19,7 +19,7 @@
  */
 package org.nd4j.imports;
 
-import lombok.val;
+
 
 public class VariableUtils {
 
@@ -33,7 +33,7 @@ public class VariableUtils {
         if(varName == null)
             return null;
         if (varName.matches(".*:\\d+")) {
-            val idx = varName.lastIndexOf(':');
+            var idx = varName.lastIndexOf(':');
             return varName.substring(0, idx);
         }
         return varName;

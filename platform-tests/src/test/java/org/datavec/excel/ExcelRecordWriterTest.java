@@ -19,7 +19,7 @@
  */
 package org.datavec.excel;
 
-import lombok.val;
+
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.partition.NumberOfRecordsPartitioner;
 import org.datavec.api.transform.schema.Schema;
@@ -53,7 +53,7 @@ class ExcelRecordWriterTest {
     @DisplayName("Test Writer")
     void testWriter() throws Exception {
         ExcelRecordWriter excelRecordWriter = new ExcelRecordWriter();
-        val records = records();
+        var records = records();
         File tmpDir = testDir.toFile();
         File outputFile = new File(tmpDir, "testexcel.xlsx");
         outputFile.deleteOnExit();

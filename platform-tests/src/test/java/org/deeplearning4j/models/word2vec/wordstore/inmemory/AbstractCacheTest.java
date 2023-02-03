@@ -21,7 +21,7 @@
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.sequencevectors.serialization.ExtVocabWord;
 import org.deeplearning4j.models.word2vec.Huffman;
@@ -121,7 +121,7 @@ public class AbstractCacheTest extends BaseDL4JTest {
     public void testSerialization() {
         AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
-        val words = new VocabWord[3];
+        var words = new VocabWord[3];
         words[0] = new VocabWord(1.0, "word");
         words[1] = new VocabWord(2.0, "test");
         words[2] = new VocabWord(3.0, "tester");
@@ -147,8 +147,8 @@ public class AbstractCacheTest extends BaseDL4JTest {
         assertEquals(cache.totalNumberOfDocs(), unserialized.totalNumberOfDocs());
 
         for (int i = 0; i < words.length; ++i) {
-            val cached = cache.wordAtIndex(i);
-            val restored = unserialized.wordAtIndex(i);
+            var cached = cache.wordAtIndex(i);
+            var restored = unserialized.wordAtIndex(i);
             assertNotNull(cached);
             assertEquals(cached, restored);
         }
@@ -181,7 +181,7 @@ public class AbstractCacheTest extends BaseDL4JTest {
         assertEquals(cache.totalWordOccurrences(),unserialized.totalWordOccurrences());
         assertEquals(cache.totalNumberOfDocs(), unserialized.totalNumberOfDocs());
         for (int i = 0; i < 3; ++i) {
-            val t = cache.wordAtIndex(i);
+            var t = cache.wordAtIndex(i);
             assertNotNull(t);
             assertTrue(unserialized.containsWord(t));
             assertEquals(cache.wordAtIndex(i), unserialized.wordAtIndex(i));

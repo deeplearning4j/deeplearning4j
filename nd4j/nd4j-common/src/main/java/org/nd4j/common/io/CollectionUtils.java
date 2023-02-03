@@ -227,11 +227,11 @@ public abstract class CollectionUtils {
             Iterator i$ = collection.iterator();
 
             while (i$.hasNext()) {
-                Object val = i$.next();
-                if (val != null) {
+                Object nextVar = i$.next();
+                if (nextVar != null) {
                     if (candidate == null) {
-                        candidate = val.getClass();
-                    } else if (candidate != val.getClass()) {
+                        candidate = nextVar.getClass();
+                    } else if (candidate != nextVar.getClass()) {
                         return null;
                     }
                 }

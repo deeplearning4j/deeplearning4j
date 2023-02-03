@@ -60,7 +60,7 @@ public class EvalTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEval(Nd4jBackend backend) {
         int classNum = 5;
-        Evaluation eval = new Evaluation (classNum);
+        Evaluation evar = new Evaluation (classNum);
 
         // Testing the edge case when some classes do not have true positive
         INDArray trueOutcome = FeatureUtil.toOutcomeVector(0, 5); //[1,0,0,0,0]
@@ -166,7 +166,7 @@ public class EvalTest extends BaseNd4jTestWithBackends {
         labelsList.add("hobbs");
         labelsList.add("cal");
 
-        Evaluation eval = new Evaluation(labelsList);
+        Evaluation evar = new Evaluation(labelsList);
 
         eval.eval(trueOutcome, predictedOutcome);
         assertEquals(1, eval.classCount(0));
@@ -184,7 +184,7 @@ public class EvalTest extends BaseNd4jTestWithBackends {
         labelsMap.put(0, "hobbs");
         labelsMap.put(1, "cal");
 
-        Evaluation eval = new Evaluation(labelsMap);
+        Evaluation evar = new Evaluation(labelsMap);
 
         eval.eval(trueOutcome, predictedOutcome);
         assertEquals(1, eval.classCount(0));
@@ -287,7 +287,7 @@ public class EvalTest extends BaseNd4jTestWithBackends {
         }
 
         //Explicitly specify the amount of classes
-        Evaluation eval = new Evaluation(numClasses);
+        Evaluation evar = new Evaluation(numClasses);
         eval.eval(labels, predicted);
 
         //For sure we shouldn't arrive at 100% recall unless we guessed everything right for every class
@@ -373,7 +373,7 @@ public class EvalTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSingleClassBinaryClassification(Nd4jBackend backend) {
 
-        Evaluation eval = new Evaluation(1);
+        Evaluation evar = new Evaluation(1);
 
         for (int xe = 0; xe < 3; xe++) {
             INDArray zero = Nd4j.create(1,1);

@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.dl4jcore.nn.graph;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
 import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
@@ -133,7 +133,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
 
                 INDArray expOutSubset;
                 if (inLength == 1) {
-                    val sizes = new long[] {fullOutL3.size(0), fullOutL3.size(1), 1};
+                    var sizes = new long[] {fullOutL3.size(0), fullOutL3.size(1), 1};
                     expOutSubset = Nd4j.create(DataType.FLOAT, sizes);
                     expOutSubset.tensorAlongDimension(0, 1, 0).assign(fullOutL3.get(NDArrayIndex.all(),
                             NDArrayIndex.all(), NDArrayIndex.point(startTimeRange)));
@@ -298,7 +298,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
 
                 INDArray expOutSubset0;
                 if (inLength == 1) {
-                    val sizes = new long[] {fullActOut0.size(0), fullActOut0.size(1), 1};
+                    var sizes = new long[] {fullActOut0.size(0), fullActOut0.size(1), 1};
                     expOutSubset0 = Nd4j.create(DataType.FLOAT, sizes);
                     expOutSubset0.tensorAlongDimension(0, 1, 0).assign(fullActOut0.get(NDArrayIndex.all(),
                             NDArrayIndex.all(), NDArrayIndex.point(startTimeRange)));
@@ -309,7 +309,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
 
                 INDArray expOutSubset1;
                 if (inLength == 1) {
-                    val sizes = new long[] {fullActOut1.size(0), fullActOut1.size(1), 1};
+                    var sizes = new long[] {fullActOut1.size(0), fullActOut1.size(1), 1};
                     expOutSubset1 = Nd4j.create(DataType.FLOAT, sizes);
                     expOutSubset1.tensorAlongDimension(0, 1, 0).assign(fullActOut1.get(NDArrayIndex.all(),
                             NDArrayIndex.all(), NDArrayIndex.point(startTimeRange)));

@@ -21,7 +21,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms.dtype;
 
 import lombok.NonNull;
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
@@ -77,7 +77,7 @@ public class Cast extends BaseDynamicTransformOp {
         Map<String,Map<String,AttributeAdapter>> ret = new LinkedHashMap<>();
         Map<String,AttributeAdapter> tfAdapters = new LinkedHashMap<>();
 
-        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
+        var fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
 
         tfAdapters.put("typeDst", new DataTypeAdapter());
 
@@ -90,13 +90,13 @@ public class Cast extends BaseDynamicTransformOp {
         Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
         Map<String,PropertyMapping> map = new HashMap<>();
 
-        val dstMapping = PropertyMapping.builder()
+        var dstMapping = PropertyMapping.builder()
                 .tfAttrName("DstT")
                 .propertyNames(new String[]{"typeDst"})
                 .build();
 
-        for(val propertyMapping : new PropertyMapping[] {dstMapping}) {
-            for (val keys : propertyMapping.getPropertyNames())
+        for(var propertyMapping : new PropertyMapping[] {dstMapping}) {
+            for (var keys : propertyMapping.getPropertyNames())
                 map.put(keys, propertyMapping);
         }
 

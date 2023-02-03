@@ -152,10 +152,10 @@ public class AttentionVertex extends SameDiffVertex {
 
         SDVariable attention;
         if(projectInput){
-            val Wq = paramTable.get(WEIGHT_KEY_QUERY_PROJECTION);
-            val Wk = paramTable.get(WEIGHT_KEY_KEY_PROJECTION);
-            val Wv = paramTable.get(WEIGHT_KEY_VALUE_PROJECTION);
-            val Wo = paramTable.get(WEIGHT_KEY_OUT_PROJECTION);
+            var Wq = paramTable.get(WEIGHT_KEY_QUERY_PROJECTION);
+            var Wk = paramTable.get(WEIGHT_KEY_KEY_PROJECTION);
+            var Wv = paramTable.get(WEIGHT_KEY_VALUE_PROJECTION);
+            var Wo = paramTable.get(WEIGHT_KEY_OUT_PROJECTION);
 
             attention = sameDiff.nn.multiHeadDotProductAttention(getLayerName(), queries, keys, values, Wq, Wk, Wv, Wo, mask, true);
         }else{

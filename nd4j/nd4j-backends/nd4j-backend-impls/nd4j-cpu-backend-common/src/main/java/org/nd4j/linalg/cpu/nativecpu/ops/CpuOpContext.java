@@ -21,7 +21,7 @@
 package org.nd4j.linalg.cpu.nativecpu.ops;
 
 import lombok.NonNull;
-import lombok.val;
+
 import org.bytedeco.javacpp.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -163,7 +163,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     public void setDArguments(DataType... arguments) {
         if (arguments.length > 0) {
             super.setDArguments(arguments);
-            val args = new int[arguments.length];
+            var args = new int[arguments.length];
             for (int e = 0; e < arguments.length; e++)
                 args[e] = arguments[e].toInt();
 
@@ -324,7 +324,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     @Override
     public void transferTArgs() {
         if (fastpath_t.size() > 0) {
-            val args = new double[fastpath_t.size()];
+            var args = new double[fastpath_t.size()];
             for (int e = 0; e < fastpath_t.size(); e++)
                 args[e] = fastpath_t.get(e);
 
@@ -336,7 +336,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     @Override
     public void transferIArgs() {
         if (fastpath_i.size() > 0) {
-            val args = new long[fastpath_i.size()];
+            var args = new long[fastpath_i.size()];
             for (int e = 0; e < fastpath_i.size(); e++)
                 args[e] = fastpath_i.get(e);
 
@@ -348,7 +348,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     @Override
     public void transferBArgs() {
         if (fastpath_b.size() > 0) {
-            val args = new boolean[fastpath_b.size()];
+            var args = new boolean[fastpath_b.size()];
             for (int e = 0; e < fastpath_b.size(); e++)
                 args[e] = fastpath_b.get(e);
 
@@ -360,7 +360,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     @Override
     public void transferDArgs() {
         if (fastpath_d.size() > 0) {
-            val args = new int[fastpath_d.size()];
+            var args = new int[fastpath_d.size()];
             for (int e = 0; e < fastpath_d.size(); e++)
                 args[e] = fastpath_d.get(e).toInt();
 

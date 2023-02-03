@@ -21,7 +21,7 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.NonNull;
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -102,10 +102,10 @@ public class Unstack extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val attrAxis = nodeDef.getAttrOrThrow("axis");
+        var attrAxis = nodeDef.getAttrOrThrow("axis");
         int axis = (int) attrAxis.getI();
         this.jaxis = axis;
-        val attrNum = nodeDef.getAttrOrDefault("num", null);
+        var attrNum = nodeDef.getAttrOrDefault("num", null);
         if(attrNum != null){
             this.num = (int) attrNum.getI();
         }
@@ -134,7 +134,7 @@ public class Unstack extends DynamicCustomOp {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
         Map<String, PropertyMapping> map = new HashMap<>();
 
-        val axisMapping = PropertyMapping.builder()
+        var axisMapping = PropertyMapping.builder()
                 .onnxAttrName("axis")
                 .tfInputPosition(-1)
                 .propertyNames(new String[]{"axis"})

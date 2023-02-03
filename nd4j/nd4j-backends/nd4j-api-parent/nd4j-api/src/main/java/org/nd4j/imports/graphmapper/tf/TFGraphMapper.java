@@ -22,7 +22,7 @@ package org.nd4j.imports.graphmapper.tf;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -631,7 +631,7 @@ public class TFGraphMapper {
             return null;
         }
 
-        val tfTensor = node.getAttrOrThrow("value").getTensor();
+        var tfTensor = node.getAttrOrThrow("value").getTensor();
         INDArray out = mapTensorProto(tfTensor);
         return out;
     }
@@ -654,7 +654,7 @@ public class TFGraphMapper {
     @Deprecated //To be removed
     public static NodeDef getNodeWithNameFromGraph(GraphDef graph, String name) {
         for (int i = 0; i < graph.getNodeCount(); i++) {
-            val node = graph.getNode(i);
+            var node = graph.getNode(i);
             if (node.getName().equals(name))
                 return node;
         }
@@ -683,10 +683,10 @@ public class TFGraphMapper {
      */
     @Deprecated
     public static void initFunctionFromProperties(String mappedTfName, DifferentialFunction on, Map<String, AttrValue> attributesForNode, NodeDef node, GraphDef graph) {
-        val properties = on.mappingsForFunction();
-        val tfProperties = properties.get(mappedTfName);
-        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(on);
-        val attributeAdapters = on.attributeAdaptersForFunction();
+        var properties = on.mappingsForFunction();
+        var tfProperties = properties.get(mappedTfName);
+        var fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(on);
+        var attributeAdapters = on.attributeAdaptersForFunction();
 
         // if there's no properties announced for this function - just return
         if (tfProperties == null)
@@ -716,13 +716,13 @@ public class TFGraphMapper {
         }
 
         for (Map.Entry<String, PropertyMapping> entry : map.entrySet()) {
-            val tfAttrName = entry.getValue().getTfAttrName();
-            val currentField = fields.get(entry.getKey());
+            var tfAttrName = entry.getValue().getTfAttrName();
+            var currentField = fields.get(entry.getKey());
 
             AttributeAdapter adapter = null;
             if (attributeAdapters != null && !attributeAdapters.isEmpty()) {
-                val mappers = attributeAdapters.get(mappedTfName);
-                val adapterFor = mappers.get(entry.getKey());
+                var mappers = attributeAdapters.get(mappedTfName);
+                var adapterFor = mappers.get(entry.getKey());
                 adapter = adapterFor;
             }
 
@@ -733,7 +733,7 @@ public class TFGraphMapper {
                 }
 
                 if (attributesForNode.containsKey(tfAttrName)) {
-                    val attr = attributesForNode.get(tfAttrName);
+                    var attr = attributesForNode.get(tfAttrName);
                     switch (attr.getValueCase()) {
                         case B:
                             if (adapter != null) {
@@ -745,21 +745,21 @@ public class TFGraphMapper {
                         case FUNC:
                             break;
                         case S:
-                            val setString = attr.getS().toStringUtf8();
+                            var setString = attr.getS().toStringUtf8();
                             if (adapter != null) {
                                 adapter.mapAttributeFor(setString, currentField, on);
                             } else
                                 on.setValueFor(currentField, setString);
                             break;
                         case I:
-                            val setInt = (int) attr.getI();
+                            var setInt = (int) attr.getI();
                             if (adapter != null) {
                                 adapter.mapAttributeFor(setInt, currentField, on);
                             } else
                                 on.setValueFor(currentField, setInt);
                             break;
                         case SHAPE:
-                            val shape = attr.getShape().getDimList();
+                            var shape = attr.getShape().getDimList();
                             int[] dimsToSet = new int[shape.size()];
                             for (int i = 0; i < dimsToSet.length; i++) {
                                 dimsToSet[i] = (int) shape.get(i).getSize();
@@ -775,9 +775,9 @@ public class TFGraphMapper {
                         case PLACEHOLDER:
                             break;
                         case LIST:
-                            val setList = attr.getList();
+                            var setList = attr.getList();
                             if (!setList.getIList().isEmpty()) {
-                                val intList = Ints.toArray(setList.getIList());
+                                var intList = Ints.toArray(setList.getIList());
                                 if (adapter != null) {
                                     adapter.mapAttributeFor(intList, currentField, on);
                                 } else
@@ -785,7 +785,7 @@ public class TFGraphMapper {
                             } else if (!setList.getBList().isEmpty()) {
                                 break;
                             } else if (!setList.getFList().isEmpty()) {
-                                val floats = Floats.toArray((Collection<? extends Number>) setList.getFList());
+                                var floats = Floats.toArray((Collection<? extends Number>) setList.getFList());
                                 if (adapter != null) {
                                     adapter.mapAttributeFor(floats, currentField, on);
                                 } else
@@ -798,7 +798,7 @@ public class TFGraphMapper {
                             }
                             break;
                         case TENSOR:
-                            val tensorToGet = TFGraphMapper.mapTensorProto(attr.getTensor());
+                            var tensorToGet = TFGraphMapper.mapTensorProto(attr.getTensor());
                             if (adapter != null) {
                                 adapter.mapAttributeFor(tensorToGet, currentField, on);
                             } else
@@ -819,7 +819,7 @@ public class TFGraphMapper {
                     position += node.getInputCount();
                 }
 
-                val inputFromNode = TFGraphMapper.getNodeWithNameFromGraph(graph, node.getInput(position));
+                var inputFromNode = TFGraphMapper.getNodeWithNameFromGraph(graph, node.getInput(position));
                 INDArray tensor = inputFromNode != null ? TFGraphMapper.getNDArrayFromTensor(inputFromNode) : null;
                 if (tensor == null) {
                     tensor = on.getSameDiff().getArrForVarName(getNodeName(node.getInput(position)));

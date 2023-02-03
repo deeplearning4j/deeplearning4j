@@ -24,7 +24,7 @@ import org.nd4j.shade.guava.collect.Lists;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -123,8 +123,8 @@ public class Batch<T extends Aggregate> {
      */
     public static <U extends Aggregate> List<Batch<U>> getBatches(List<U> list, int partitionSize) {
         DataType c = null;
-        for (val u:list) {
-            for (val a:u.getArguments()) {
+        for (var u:list) {
+            for (var a:u.getArguments()) {
                 // we'll be comparing to the first array
                 if (c == null && a != null)
                     c = a.dataType();

@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.checkutil;
 
-import lombok.val;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -272,7 +272,7 @@ public class NDArrayCreationUtil {
         String baseMsg = "getAll3dTestArraysWithShape(" + seed + "," + Arrays.toString(shape) + ").get(";
 
 
-        val len = ArrayUtil.prodLong(shape);
+        var len = ArrayUtil.prodLong(shape);
         //Basic 3d in C and F orders:
         Nd4j.getRandom().setSeed(seed);
         INDArray stdC = Nd4j.linspace(1, len, len, dataType).reshape('c', shape);
@@ -304,28 +304,28 @@ public class NDArrayCreationUtil {
         String baseMsg = "get3dSubArraysWithShape(" + seed + "," + Arrays.toString(shape) + ")";
         //Create and return various sub arrays:
         Nd4j.getRandom().setSeed(seed);
-        val newShape1 = Arrays.copyOf(shape, shape.length);
+        var newShape1 = Arrays.copyOf(shape, shape.length);
         newShape1[0] += 5;
         int len = ArrayUtil.prod(newShape1);
         INDArray temp1 = Nd4j.linspace(1, len, len, dataType).reshape(newShape1);
         INDArray subset1 = temp1.get(NDArrayIndex.interval(2, shape[0] + 2), NDArrayIndex.all(), NDArrayIndex.all());
         list.add(new Pair<>(subset1, baseMsg + ".get(0)"));
 
-        val newShape2 = Arrays.copyOf(shape, shape.length);
+        var newShape2 = Arrays.copyOf(shape, shape.length);
         newShape2[1] += 5;
         int len2 = ArrayUtil.prod(newShape2);
         INDArray temp2 = Nd4j.linspace(1, len2, len2, dataType).reshape(newShape2);
         INDArray subset2 = temp2.get(NDArrayIndex.all(), NDArrayIndex.interval(3, shape[1] + 3), NDArrayIndex.all());
         list.add(new Pair<>(subset2, baseMsg + ".get(1)"));
 
-        val newShape3 = Arrays.copyOf(shape, shape.length);
+        var newShape3 = Arrays.copyOf(shape, shape.length);
         newShape3[2] += 5;
         int len3 = ArrayUtil.prod(newShape3);
         INDArray temp3 = Nd4j.linspace(1, len3, len3, dataType).reshape(newShape3);
         INDArray subset3 = temp3.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(4, shape[2] + 4));
         list.add(new Pair<>(subset3, baseMsg + ".get(2)"));
 
-        val newShape4 = Arrays.copyOf(shape, shape.length);
+        var newShape4 = Arrays.copyOf(shape, shape.length);
         newShape4[0] += 5;
         newShape4[1] += 5;
         newShape4[2] += 5;
@@ -351,7 +351,7 @@ public class NDArrayCreationUtil {
 
         Nd4j.getRandom().setSeed(seed);
         //            int[] shape4d1 = {shape[2],shape[1],shape[0],3};
-        val shape4d1 = new long[]{shape[0], shape[1], shape[2], 3};
+        var shape4d1 = new long[]{shape[0], shape[1], shape[2], 3};
         int lenshape4d1 = ArrayUtil.prod(shape4d1);
         INDArray orig1a = Nd4j.linspace(1, lenshape4d1, lenshape4d1, dataType).reshape(shape4d1);
         INDArray tad1a = orig1a.tensorAlongDimension(0, 0, 1, 2);
@@ -854,7 +854,7 @@ public class NDArrayCreationUtil {
 
     public static long[] broadcastToShape(long[] inputShapeWithOnes, long seed) {
         Nd4j.getRandom().setSeed(seed);
-        val shape = new long[inputShapeWithOnes.length];
+        var shape = new long[inputShapeWithOnes.length];
         for (int i = 0; i < shape.length; i++) {
             if (inputShapeWithOnes[i] == 1) {
                 shape[i] = Nd4j.getRandom().nextInt(9) + 1;

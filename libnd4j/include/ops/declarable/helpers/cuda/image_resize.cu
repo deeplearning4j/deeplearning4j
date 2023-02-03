@@ -98,12 +98,12 @@ static SD_KERNEL void resizeImageKernel(T const* input, sd::LongType const* inpu
     for (sd::LongType y = threadIdx.x; y < outHeight; y += blockDim.x) {
       const T* ys_input_lower_ptr = pX + ys_[y].bottomIndex * inRowSize;
       const T* ys_input_upper_ptr = pX + ys_[y].topIndex * inRowSize;
-      double yVal = ys_[y].interpolarValue;
+      double yvar = ys_[y].interpolarValue;
       auto pZ = outputYptr + (batch * outHeight + y) * outRowSize;
       for (sd::LongType x = 0; x < outWidth; x++) {
         auto xsBottom = xs_[x].bottomIndex;
         auto xsTop = xs_[x].topIndex;
-        auto xVal = xs_[x].interpolarValue;
+        auto xvar = xs_[x].interpolarValue;
         // process interpolation for all channels
         for (int c = 0; c < channels; c++) {
           Z topLeft(ys_input_lower_ptr[xsBottom + c]);
@@ -112,7 +112,7 @@ static SD_KERNEL void resizeImageKernel(T const* input, sd::LongType const* inpu
           Z bottomRight(ys_input_upper_ptr[xsTop + c]);
           Z top = topLeft + (topRight - topLeft) * xVal;
           Z bottom = bottomLeft + (bottomRight - bottomLeft) * xVal;
-          Z resVal = Z(top + (bottom - top) * yVal);
+          Z resvar = Z(top + (bottom - top) * yVal);
           pZ[x * channels + c] = resVal;
         }
       }
@@ -1093,7 +1093,7 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, sd::LongType const* i
 //      indices - 2D int tensor with indices of boxes to crop
 //      cropSize - 2D int tensor with crop box sizes
 //      method - (one of 0 - bilinear, 1 - nearest)
-//      extrapolationVal - double value of extrapolation
+//      extrapolationvar - double value of extrapolation
 //      crops - output (4D tensor - [batch, outWidth, outHeight, pixels])
 //
 template <typename T, typename Z, typename I>

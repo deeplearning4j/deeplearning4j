@@ -106,7 +106,7 @@ public class ActivationLayer extends NoParamLayer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        val actElementsPerEx = inputType.arrayElementsPerExample();
+        var actElementsPerEx = inputType.arrayElementsPerExample();
 
         return new LayerMemoryReport.Builder(layerName, ActivationLayer.class, inputType, inputType)
                         .standardMemory(0, 0) //No params

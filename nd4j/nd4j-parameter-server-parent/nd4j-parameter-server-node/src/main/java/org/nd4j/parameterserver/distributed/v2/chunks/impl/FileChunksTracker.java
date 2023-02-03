@@ -23,7 +23,7 @@ package org.nd4j.parameterserver.distributed.v2.chunks.impl;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.util.ND4JFileUtils;
@@ -60,7 +60,7 @@ public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T
 
 
             // fill file with 0s for simplicity
-            try (val fos = new FileOutputStream(holder); val bos = new BufferedOutputStream(fos, 32768)) {
+            try (var fos = new FileOutputStream(holder); var bos = new BufferedOutputStream(fos, 32768)) {
                 for (int e = 0; e < size; e++)
                     bos.write(0);
             }
@@ -80,13 +80,13 @@ public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T
 
     @Override
     public boolean append(@NonNull VoidChunk chunk) {
-        val b = map.get(chunk.getChunkId());
+        var b = map.get(chunk.getChunkId());
 
         if (b.get())
             return isComplete();
 
         // writing out this chunk
-        try (val f = new RandomAccessFile(holder, "rw")) {
+        try (var f = new RandomAccessFile(holder, "rw")) {
             f.seek(chunk.getChunkId() * chunk.getSplitSize());
 
             f.write(chunk.getPayload());
@@ -102,7 +102,7 @@ public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T
 
     @Override
     public boolean isComplete() {
-        for (val b:map.values())
+        for (var b:map.values())
             if (!b.get())
                 return false;
 
@@ -114,7 +114,7 @@ public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T
         if (!isComplete())
             throw new ND4JIllegalStateException("Message isn't ready for concatenation");
 
-        try (val fis = new FileInputStream(holder); val bis = new BufferedInputStream(fis)) {
+        try (var fis = new FileInputStream(holder); var bis = new BufferedInputStream(fis)) {
             return SerializationUtils.deserialize(bis);
         } catch (Exception e) {
             log.error("",e);

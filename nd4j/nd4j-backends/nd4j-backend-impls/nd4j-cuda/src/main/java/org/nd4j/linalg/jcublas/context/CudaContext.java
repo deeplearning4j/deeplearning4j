@@ -99,19 +99,19 @@ public class CudaContext {
 
     public Pointer getCublasStream() {
         // FIXME: can we cache this please
-        val lptr = new PointerPointer(this.getOldStream());
+        var lptr = new PointerPointer(this.getOldStream());
         return lptr.get(0);
     }
 
     public cublasHandle_t getCublasHandle() {
         // FIXME: can we cache this please
-        val lptr = new PointerPointer(cublasHandle);
+        var lptr = new PointerPointer(cublasHandle);
         return new cublasHandle_t(lptr.get(0));
     }
 
     public cusolverDnHandle_t getSolverHandle() {
         // FIXME: can we cache this please
-        val lptr = new PointerPointer(solverHandle);
+        var lptr = new PointerPointer(solverHandle);
         return new cusolverDnHandle_t(lptr.get(0));
     }
 }

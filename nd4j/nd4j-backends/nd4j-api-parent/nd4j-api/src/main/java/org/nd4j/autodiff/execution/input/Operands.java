@@ -111,10 +111,10 @@ public class Operands {
      * @return
      */
     public INDArray[] asArray() {
-        val val = map.values();
-        val res = new INDArray[val.size()];
+        var values = map.values();
+        var res = new INDArray[values.size()];
         int cnt = 0;
-        for (val v: val)
+        for (var v: values)
             res[cnt++] = v;
 
         return res;
@@ -125,8 +125,8 @@ public class Operands {
      * @return
      */
     public Collection<Pair<NodeDescriptor, INDArray>> asCollection() {
-        val c = new HashSet<Pair<NodeDescriptor, INDArray>>();
-        for (val k: map.keySet())
+        var c = new HashSet<Pair<NodeDescriptor, INDArray>>();
+        for (var k: map.keySet())
             c.add(Pair.makePair(k, map.get(k)));
 
         return c;

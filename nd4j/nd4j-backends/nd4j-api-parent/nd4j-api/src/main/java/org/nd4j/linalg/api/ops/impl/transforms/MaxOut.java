@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -123,11 +123,11 @@ public class MaxOut extends BaseTransformOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        val ret = new ArrayList<LongShapeDescriptor>(1);
+        var ret = new ArrayList<LongShapeDescriptor>(1);
         if(arg() == null)
             throw new ND4JIllegalStateException("No arg found for op!");
 
-        val arr = sameDiff.getArrForVarName(arg().name());
+        var arr = sameDiff.getArrForVarName(arg().name());
         if(arr == null)
             return Collections.emptyList();
 

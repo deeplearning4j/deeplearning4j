@@ -8,13 +8,13 @@ import org.eclipse.deeplearning4j.resources.utils.EMnistSet
 class TestDownloadBoostrap {
 
     fun main(args: Array<String>) {
-        val iter = LFWDataSetIterator(1,LFWLoader.NUM_IMAGES)
-        val images = TinyImageNetDataSetIterator(10)
-        val emnist = EmnistDataSetIterator(EMnistSet.COMPLETE,0,true)
-        val mnist = MnistDataSetIterator(1,1)
-        val svhn = SvhnDataFetcher()
-        val uci = UciSequenceDataSetIterator(10)
-        val cifar = Cifar10DataSetIterator(10)
+        var iter = LFWDataSetIterator(1,LFWLoader.NUM_IMAGES)
+        var images = TinyImageNetDataSetIterator(10)
+        var emnist = EmnistDataSetIterator(EMnistSet.COMPLETE,0,true)
+        var mnist = MnistDataSetIterator(1,1)
+        var svhn = SvhnDataFetcher()
+        var uci = UciSequenceDataSetIterator(10)
+        var cifar = Cifar10DataSetIterator(10)
 
 
     }

@@ -23,7 +23,7 @@ package org.nd4j.linalg.jcublas;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.graph.FlatArray;
@@ -428,7 +428,7 @@ public class JCublasNDArray extends BaseNDArray {
             Special case for cuda: if we have not a view, and shapes do match - we
         */
 
-        val res = super.dup();
+        var res = super.dup();
         Nd4j.getExecutioner().commit();
         return res;
     }
@@ -504,7 +504,7 @@ public class JCublasNDArray extends BaseNDArray {
 
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
-        val context = (CudaContext) allocator.getDeviceContext();
+        var context = (CudaContext) allocator.getDeviceContext();
 
         AllocationPoint srcPoint = allocator.getAllocationPoint(this);
         AllocationPoint dstPoint = allocator.getAllocationPoint(ret);
@@ -512,7 +512,7 @@ public class JCublasNDArray extends BaseNDArray {
         int route = 0;
 //        long time1 = System.currentTimeMillis();
         MemcpyDirection direction = MemcpyDirection.HOST_TO_HOST;
-        val prof = PerformanceTracker.getInstance().helperStartTransaction();
+        var prof = PerformanceTracker.getInstance().helperStartTransaction();
 
         if (srcPoint.isActualOnDeviceSide()) {
             route = 1;
@@ -569,15 +569,15 @@ public class JCublasNDArray extends BaseNDArray {
         if (!this.isView()) {
             Nd4j.getExecutioner().commit();
 
-            val buffer = Nd4j.createBuffer(this.length(), false);
+            var buffer = Nd4j.createBuffer(this.length(), false);
 
-            val pointDst = AtomicAllocator.getInstance().getAllocationPoint(buffer);
-            val pointSrc = AtomicAllocator.getInstance().getAllocationPoint(this.data);
+            var pointDst = AtomicAllocator.getInstance().getAllocationPoint(buffer);
+            var pointSrc = AtomicAllocator.getInstance().getAllocationPoint(this.data);
 
-            val context = AtomicAllocator.getInstance().getFlowController().prepareAction(pointDst, pointSrc);
+            var context = AtomicAllocator.getInstance().getFlowController().prepareAction(pointDst, pointSrc);
 
             MemcpyDirection direction = MemcpyDirection.DEVICE_TO_DEVICE;
-            val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+            var perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
             if (pointSrc.isActualOnDeviceSide()) {
                 if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getDevicePointer(), this.length() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream()) == 0)
@@ -623,16 +623,16 @@ public class JCublasNDArray extends BaseNDArray {
         if (!this.isView()) {
             Nd4j.getExecutioner().commit();
 
-            val buffer = Nd4j.createBuffer(this.dataType(), this.length(), false);
+            var buffer = Nd4j.createBuffer(this.dataType(), this.length(), false);
 
-            val pointDst = AtomicAllocator.getInstance().getAllocationPoint(buffer);
-            val pointSrc = AtomicAllocator.getInstance().getAllocationPoint(this.data);
+            var pointDst = AtomicAllocator.getInstance().getAllocationPoint(buffer);
+            var pointSrc = AtomicAllocator.getInstance().getAllocationPoint(this.data);
 
 
-            val context = AtomicAllocator.getInstance().getFlowController().prepareAction(pointDst, pointSrc);
+            var context = AtomicAllocator.getInstance().getFlowController().prepareAction(pointDst, pointSrc);
 
             MemcpyDirection direction = MemcpyDirection.DEVICE_TO_DEVICE;
-            val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+            var perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
             if (pointSrc.isActualOnDeviceSide()) {
                 if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getDevicePointer(), this.length() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream()) == 0)
@@ -671,18 +671,18 @@ public class JCublasNDArray extends BaseNDArray {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             DataOutputStream dos = new DataOutputStream(bos);
 
-            val numWords = this.length();
-            val ub = (CudaUtf8Buffer) buffer;
+            var numWords = this.length();
+            var ub = (CudaUtf8Buffer) buffer;
             // writing length first
-            val t = length();
-            val ptr = (BytePointer) ub.pointer();
+            var t = length();
+            var ptr = (BytePointer) ub.pointer();
 
             // now write all strings as bytes
             for (int i = 0; i < ub.length(); i++) {
                 dos.writeByte(ptr.get(i));
             }
 
-            val bytes = bos.toByteArray();
+            var bytes = bos.toByteArray();
             return FlatArray.createBufferVector(builder, bytes);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -703,8 +703,8 @@ public class JCublasNDArray extends BaseNDArray {
         if (data.dataType() == DataType.HALF)
             return this;
 
-        val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.HALF);
+        var factory = Nd4j.getNDArrayFactory();
+        var buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.HALF);
 
         factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()),
                 DataTypeEx.FLOAT16, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
@@ -720,8 +720,8 @@ public class JCublasNDArray extends BaseNDArray {
         if (data.dataType() == DataType.FLOAT)
             return this;
 
-        val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.FLOAT);
+        var factory = Nd4j.getNDArrayFactory();
+        var buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.FLOAT);
 
         factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataTypeEx.FLOAT, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
 
@@ -735,8 +735,8 @@ public class JCublasNDArray extends BaseNDArray {
         if (data.dataType() == DataType.DOUBLE)
             return this;
 
-        val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.DOUBLE);
+        var factory = Nd4j.getNDArrayFactory();
+        var buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.DOUBLE);
 
         factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataTypeEx.DOUBLE, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
 

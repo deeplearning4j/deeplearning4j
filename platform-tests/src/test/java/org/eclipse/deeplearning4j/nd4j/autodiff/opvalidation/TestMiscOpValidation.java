@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.collection.CollectionRecordReader;
 import org.datavec.api.writable.IntWritable;
@@ -299,7 +299,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
         testCases.add(new Triple<>(new long[]{1, 6}, new long[]{3, 4, 5, 1}, new long[]{3, 4, 5, 6}));
 
 
-        for (val p : testCases) {
+        for (var p : testCases) {
 
             for (int i = 0; i < 7; i++) {
 
@@ -881,7 +881,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
                 .transposeResult(true)
                 .build());
 
-        val outShapes = Nd4j.getExecutioner().calculateOutputShape(m);
+        var outShapes = Nd4j.getExecutioner().calculateOutputShape(m);
         assertArrayEquals(new long[]{4,3}, outShapes.get(0).getShape());
         Nd4j.getExecutioner().exec(m);
 
@@ -895,7 +895,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
                 .transposeResult(true)
                 .build());
 
-        val outShapes2 = Nd4j.getExecutioner().calculateOutputShape(m);
+        var outShapes2 = Nd4j.getExecutioner().calculateOutputShape(m);
         assertArrayEquals(new long[]{2,3}, outShapes2.get(0).getShape());
         Nd4j.getExecutioner().exec(m);
 
@@ -1345,7 +1345,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
 
         INDArray in = Nd4j.create(new long[]{1, 2});
 
-        val shapes = Nd4j.getExecutioner().calculateOutputShape(DynamicCustomOp.builder("shape")
+        var shapes = Nd4j.getExecutioner().calculateOutputShape(DynamicCustomOp.builder("shape")
                 .addInputs(in)
                 .build());
 
@@ -1407,7 +1407,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
 
         CustomOp op = new DiagPart(i, null);
 
-        val outShape = Nd4j.getExecutioner().calculateOutputShape(op);
+        var outShape = Nd4j.getExecutioner().calculateOutputShape(op);
 
         assertEquals(1, outShape.size());
         assertArrayEquals(new long[]{5}, outShape.get(0).getShape());
@@ -1892,7 +1892,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
                 -0.5772157,0.42278433,0.9227843,1.2561177,1.5061177,1.7061176,1.8727844,2.0156415,2.1406415,2.2517526,2.3517525,2.4426618
         }).reshape(3,4);
 
-        val tc = new OpTestCase(new Digamma(in1)).expectedOutput(0, expected);
+        var tc = new OpTestCase(new Digamma(in1)).expectedOutput(0, expected);
 
         String err = OpValidation.validate(tc);
         assertNull(err);
@@ -1971,7 +1971,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
                 0.63212055,0.59399414,0.5768099,0.56652874,0.5595013,0.5542634,0.5501591,0.5463888,0.54329145,0.54048204,0.5378594,0.53233755
         }).reshape(3,4);
 
-        val tc = new OpTestCase(new Igamma(in1, in2)).expectedOutput(0, expected);
+        var tc = new OpTestCase(new Igamma(in1, in2)).expectedOutput(0, expected);
 
         String err = OpValidation.validate(tc);
         assertNull(err);
@@ -1989,7 +1989,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
                 0.36787945,0.40600586,0.42319012,0.43347126,0.4404987,0.44573656,0.4498409,0.45361117,0.45670855,0.459518,0.46214062,0.46766248
         }).reshape(3,4);
 
-        val tc = new OpTestCase(new Igammac(in1, in2)).expectedOutput(0, expected);
+        var tc = new OpTestCase(new Igammac(in1, in2)).expectedOutput(0, expected);
 
         String err = OpValidation.validate(tc);
         assertNull(err);
@@ -2094,7 +2094,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
                 1.644934,-0.4041138,0.1189394,-0.03750069,0.01226151,-0.0041002957,0.001392272,-4.780109E-4,1.6549716E-4,-5.7675967E-5,2.0206635E-5,-7.1101636E-6
         }).reshape(3,4);
 
-        val tc = new OpTestCase(new Polygamma(in1, in2)).expectedOutput(0, expected);
+        var tc = new OpTestCase(new Polygamma(in1, in2)).expectedOutput(0, expected);
 
         String err = OpValidation.validate(tc);
         assertNull(err);
@@ -2119,7 +2119,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
                 1.333333f,  2.0f, 4.0f, 2.0f
         }).reshape(4,1);
 
-        val tc = new OpTestCase(new TriangularSolve(a, b, false, true)).expectedOutput(0, expected);
+        var tc = new OpTestCase(new TriangularSolve(a, b, false, true)).expectedOutput(0, expected);
 
         String err = OpValidation.validate(tc);
         assertNull(err);
@@ -2191,7 +2191,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
 
         int shift = 6;
 
-        val tc = new OpTestCase(new Roll(x,shift)).expectedOutput(0,expected);
+        var tc = new OpTestCase(new Roll(x,shift)).expectedOutput(0,expected);
         String err = OpValidation.validate(tc);
 
         assertNull(err);

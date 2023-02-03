@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.api.buffer;
 
 
-import lombok.val;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -91,9 +91,9 @@ public class IntDataBufferTests extends BaseNd4jTestWithBackends {
         DataBuffer buffer = Nd4j.createBuffer(new int[] {1, 2, 3, 4});
         assertEquals(4, buffer.capacity());
         buffer.reallocate(6);
-        val old = buffer.asInt();
+        var old = buffer.asInt();
         assertEquals(6, buffer.capacity());
-        val newContent = buffer.asInt();
+        var newContent = buffer.asInt();
         assertEquals(6, newContent.length);
         assertArrayEquals(old, Arrays.copyOf(newContent, old.length));
     }
@@ -106,12 +106,12 @@ public class IntDataBufferTests extends BaseNd4jTestWithBackends {
         MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID");
 
         DataBuffer buffer = Nd4j.createBuffer(new int[] {1, 2, 3, 4});
-        val old = buffer.asInt();
+        var old = buffer.asInt();
         assertTrue(buffer.isAttached());
         assertEquals(4, buffer.capacity());
         buffer.reallocate(6);
         assertEquals(6, buffer.capacity());
-        val newContent = buffer.asInt();
+        var newContent = buffer.asInt();
         assertEquals(6, newContent.length);
         assertArrayEquals(old, Arrays.copyOf(newContent, old.length));
         workspace.close();

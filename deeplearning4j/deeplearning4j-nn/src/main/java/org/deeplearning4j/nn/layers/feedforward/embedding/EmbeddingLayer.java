@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.layers.feedforward.embedding;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.common.primitives.Pair;
@@ -94,7 +94,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
                                 + layerId());
         }
 
-        val nIn = layerConf().getNIn();
+        var nIn = layerConf().getNIn();
 
         if (input.length() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();

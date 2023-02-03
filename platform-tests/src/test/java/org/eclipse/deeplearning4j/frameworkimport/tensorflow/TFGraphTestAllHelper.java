@@ -26,7 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.eclipse.deeplearning4j.frameworkimport.tensorflow.listener.OpExecOrderListener;
 import org.eclipse.deeplearning4j.frameworkimport.nd4j.serde.listeners.ExecPrintListener;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -356,7 +356,7 @@ public class TFGraphTestAllHelper {
                         log.info("\n\tFORCING no check on " + varName);
                     } else {
                         //assertArrayEquals("Shape not equal on node " + varName, tfValue.shape(), graph.getVariable(varName).getShape());
-                        INDArray sdVal = sdPredictions.get(varName);
+                        INDArray sdvar = sdPredictions.get(varName);
                         if(maxRelErrorOverride != null){
                             INDArray diff = Transforms.abs(tfValue.sub(sdVal), false);
                             INDArray absErrorMask = diff.gte(minAbsErrorOverride);   //value 1 if x[i] > minAbsError; value 0 otherwise. Used to get rid of 1e-30 vs. 1e-29 type failures
@@ -446,15 +446,15 @@ public class TFGraphTestAllHelper {
                 graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));
             }
 
-            val executioner = new NativeGraphExecutioner();
-            val results = executioner.executeGraph(graph, configuration);
+            var executioner = new NativeGraphExecutioner();
+            var results = executioner.executeGraph(graph, configuration);
 
         } else if (executeWith.equals(ExecuteWith.JUST_PRINT)) {
             for (String input : inputs.keySet()) {
                 graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));
             }
 
-            val string = graph.asFlatPrint();
+            var string = graph.asFlatPrint();
             log.info("Graph structure: \n{}", string);
         }
 
@@ -548,7 +548,7 @@ public class TFGraphTestAllHelper {
         String modelDir = base_dir + "/" + modelName;
 
         // key is variable name, value is data type
-        val dtypes = new HashMap<String, DataType>();
+        var dtypes = new HashMap<String, DataType>();
 
         List<Pair<Resource,Resource>> resources = new ArrayList<>();
         if(recursive) {
@@ -599,15 +599,15 @@ public class TFGraphTestAllHelper {
                             } else if (filename.equals("dtypes")) {
                                 List<String> stringList;
 
-                                try (val is = new BufferedInputStream(new FileInputStream(f))) {
+                                try (var is = new BufferedInputStream(new FileInputStream(f))) {
                                     stringList = IOUtils.readLines(is, StandardCharsets.UTF_8);
 
-                                    for (val s:stringList) {
-                                        val split = s.split("\\ ");
+                                    for (var s:stringList) {
+                                        var split = s.split("\\ ");
 
-                                        val okey = split[0].replaceAll("____", "/");
+                                        var okey = split[0].replaceAll("____", "/");
                                         // adopt / in names
-                                        val key = modelDir + "/" + okey;
+                                        var key = modelDir + "/" + okey;
 
                                         // parse type directly
                                         DataType value = ArrayOptionsHelper.dataType(split[1]);
@@ -621,12 +621,12 @@ public class TFGraphTestAllHelper {
 
                                         // adding zero output duplicate (if it doesn't exist)
                                         if (key.endsWith(".0")) {
-                                            val nkey = key.replaceAll("\\.0$","");
+                                            var nkey = key.replaceAll("\\.0$","");
                                             if (!dtypes.containsKey(nkey)) {
                                                 dtypes.put(nkey, value);
                                             }
                                         } else if (key.endsWith(":0")) {
-                                            val nkey = key.replaceAll(":0$","");
+                                            var nkey = key.replaceAll(":0$","");
                                             if (!dtypes.containsKey(nkey)) {
                                                 dtypes.put(nkey, value);
                                             }

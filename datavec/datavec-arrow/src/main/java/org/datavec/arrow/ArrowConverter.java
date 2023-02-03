@@ -21,7 +21,7 @@
 package org.datavec.arrow;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.*;
@@ -273,7 +273,7 @@ public class ArrowConverter {
      * @param outputStream the output stream to write to
      */
     public static void writeRecordBatchTo(BufferAllocator bufferAllocator ,List<List<Writable>> recordBatch, Schema inputSchema,OutputStream outputStream) {
-        val convertedSchema = toArrowSchema(inputSchema);
+        var convertedSchema = toArrowSchema(inputSchema);
         List<FieldVector> columns  = toArrowColumns(bufferAllocator,inputSchema,recordBatch);
         try (VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema,columns,recordBatch.size());
             ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(columns,convertedSchema.getFields()), newChannel(outputStream))) {
@@ -1123,7 +1123,7 @@ public class ArrowConverter {
     private static ColumnMetaData metaDataFromField(Field field) {
         ArrowType arrowType = field.getFieldType().getType();
         if(arrowType instanceof ArrowType.Int) {
-            val intType = (ArrowType.Int) arrowType;
+            var intType = (ArrowType.Int) arrowType;
             if(intType.getBitWidth() == 32)
                 return new IntegerMetaData(field.getName());
             else {
@@ -1134,7 +1134,7 @@ public class ArrowConverter {
             return new BooleanMetaData(field.getName());
         }
         else if(arrowType  instanceof ArrowType.FloatingPoint) {
-            val floatingPointType = (ArrowType.FloatingPoint) arrowType;
+            var floatingPointType = (ArrowType.FloatingPoint) arrowType;
             if(floatingPointType.getPrecision() == FloatingPointPrecision.DOUBLE)
                 return new DoubleMetaData(field.getName());
             else {

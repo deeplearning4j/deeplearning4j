@@ -24,7 +24,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bytedeco.javacpp.Pointer;
@@ -1723,7 +1723,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return T instance produced by OutputAdapter
      */
     public synchronized <T> T output(@NonNull INDArray[] inputs, INDArray[] inputMasks, INDArray[] labelMasks, @NonNull OutputAdapter<T> outputAdapter) {
-        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, WS_OUTPUT_MEM)) {
+        try (var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, WS_OUTPUT_MEM)) {
             if (outputAdapter instanceof ModelAdapter)
                 return ((ModelAdapter<T>) outputAdapter).apply(this, inputs, inputMasks, labelMasks);
             else
@@ -3279,16 +3279,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true));
         for (Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
             String key = entry.getKey();
-            INDArray val = entry.getValue();
+            INDArray gradVal = entry.getValue();
             int idx = key.lastIndexOf('_');
             if (idx == -1)
                 throw new IllegalStateException("Invalid param key: not have layer separator: \"" + key + "\"");
             String layerName = key.substring(0, idx);
             String paramType = key.split("_")[1];
             // Update graph gradient
-            this.gradient.gradientForVariable().put(key, val);
+            this.gradient.gradientForVariable().put(key, gradVal);
             // Update layer params
-            getLayer(layerName).update(val, paramType);
+            getLayer(layerName).update(gradVal, paramType);
         }
         // Update layerwise gradient view
         setBackpropGradientsViewArray(gradient.gradient());
@@ -3482,8 +3482,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for(String s : current.keySet()){
             INDArray arrCurrent = current.get(s);
             INDArray arrNew = paramTable.get(s);
-            val shapeCurrent = arrCurrent.shape();
-            val shapeNew = arrNew.shape();
+            var shapeCurrent = arrCurrent.shape();
+            var shapeNew = arrNew.shape();
             Preconditions.checkState(Arrays.equals(shapeCurrent, shapeNew), "Cannot set parameters: shape array for " +
                     "parameter \"%s\" does not match existing shape: parameter shape = %s, new param shape = %s", s, shapeCurrent, arrNew);
         }
@@ -4895,7 +4895,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
-        val cg = ModelSerializer.restoreComputationGraph(ois, true);
+        var cg = ModelSerializer.restoreComputationGraph(ois, true);
 
         this.defaultConfiguration = cg.defaultConfiguration.clone();
         this.configuration = cg.configuration.clone();

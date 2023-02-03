@@ -76,9 +76,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
                     parameters.getY());
 
             // TODO: provide optimized GEMV kernel eventually
-            val fA = parameters.getA().castTo(DataType.FLOAT);
-            val fX = parameters.getX().castTo(DataType.FLOAT);
-            val fY = parameters.getY().castTo(DataType.FLOAT);
+            var fA = parameters.getA().castTo(DataType.FLOAT);
+            var fX = parameters.getX().castTo(DataType.FLOAT);
+            var fY = parameters.getY().castTo(DataType.FLOAT);
 
             sgemv(order, parameters.getAOrdering(), parameters.getM(), parameters.getN(), (float) alpha,
                     fA, parameters.getLda(), fX, parameters.getIncx(),

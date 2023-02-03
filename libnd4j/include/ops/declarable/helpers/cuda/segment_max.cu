@@ -52,7 +52,7 @@ static SD_KERNEL void segmentMaxLinearKernel(void* input, sd::LongType const* in
     x = reinterpret_cast<T*>(input);
     z = reinterpret_cast<T*>(output);
     extern __shared__ unsigned char shmem[];
-    val = reinterpret_cast<T*>(shmem);
+    var = reinterpret_cast<T*>(shmem);
     xLen = shape::length(inputShape);
     zLen = shape::length(outputShape);
 

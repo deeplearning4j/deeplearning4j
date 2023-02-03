@@ -21,7 +21,7 @@
 package org.nd4j.nativeblas;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -105,10 +105,10 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         shapeBufferPointer.position(0);
 
 
-        val intPointer = new LongPointer(shapeBufferPointer);
-        val newPointer = new LongPointer(length);
+        var intPointer = new LongPointer(shapeBufferPointer);
+        var newPointer = new LongPointer(length);
 
-        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+        var perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
         Pointer.memcpy(newPointer, intPointer, shapeBufferPointer.limit());
 
@@ -120,8 +120,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                 length,
                 LongIndexer.create(newPointer));
 
-        val jvmShapeInfo = shapeBuffer.asLong();
-        val dtype = ArrayOptionsHelper.dataType(jvmShapeInfo);
+        var jvmShapeInfo = shapeBuffer.asLong();
+        var dtype = ArrayOptionsHelper.dataType(jvmShapeInfo);
 
         //set the location to copy from to the actual data buffer passed the header
         long dataBufferLength = Shape.length(jvmShapeInfo);
@@ -132,8 +132,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
         switch (dtype) {
             case BOOL: {
-                val dPointer = new BooleanPointer(dataBufferLength);
-                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+                var dPointer = new BooleanPointer(dataBufferLength);
+                var perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
                 Pointer.memcpy(dPointer, dataPointer,totalBytesToCopy);
 
@@ -146,8 +146,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             }
             break;
             case UBYTE: {
-                val dPointer = new BytePointer(dataBufferLength);
-                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+                var dPointer = new BytePointer(dataBufferLength);
+                var perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
                 Pointer.memcpy(dPointer, pointer1, totalBytesToCopy);
 
@@ -160,8 +160,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             }
             break;
             case BYTE: {
-                val dPointer = new BytePointer(dataBufferLength);
-                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+                var dPointer = new BytePointer(dataBufferLength);
+                var perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
                 Pointer.memcpy(dPointer, dataPointer, totalBytesToCopy);
 
@@ -175,8 +175,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             break;
             case UINT64:
             case LONG: {
-                val dPointer = new LongPointer(dataBufferLength);
-                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+                var dPointer = new LongPointer(dataBufferLength);
+                var perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
                 Pointer.memcpy(dPointer, dataPointer, totalBytesToCopy);
 
@@ -189,8 +189,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             }
             break;
             case UINT32: {
-                val dPointer = new IntPointer(dataBufferLength);
-                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+                var dPointer = new IntPointer(dataBufferLength);
+                var perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
                 Pointer.memcpy(dPointer, dataPointer,totalBytesToCopy);
 
@@ -203,8 +203,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             }
             break;
             case INT: {
-                val dPointer = new IntPointer(dataBufferLength);
-                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+                var dPointer = new IntPointer(dataBufferLength);
+                var perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
                 Pointer.memcpy(dPointer, dataPointer,totalBytesToCopy);
 
@@ -217,8 +217,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             }
             break;
             case UINT16: {
-                val dPointer = new ShortPointer(dataBufferLength);
-                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+                var dPointer = new ShortPointer(dataBufferLength);
+                var perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
                 Pointer.memcpy(dPointer, dataPointer, totalBytesToCopy);
 
@@ -231,8 +231,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             }
             break;
             case SHORT: {
-                val dPointer = new ShortPointer(dataBufferLength);
-                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+                var dPointer = new ShortPointer(dataBufferLength);
+                var perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
                 Pointer.memcpy(dPointer, dataPointer, totalBytesToCopy);
 
@@ -246,8 +246,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             break;
             case BFLOAT16:
             case HALF: {
-                val dPointer = new ShortPointer(dataBufferLength);
-                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+                var dPointer = new ShortPointer(dataBufferLength);
+                var perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
                 Pointer.memcpy(dPointer, dataPointer, totalBytesToCopy);
 
@@ -260,8 +260,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             }
             break;
             case FLOAT: {
-                val dPointer = new FloatPointer(dataBufferLength);
-                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+                var dPointer = new FloatPointer(dataBufferLength);
+                var perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
                 Pointer.memcpy(dPointer, dataPointer, totalBytesToCopy);
 
@@ -274,8 +274,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             }
             break;
             case DOUBLE: {
-                val dPointer = new DoublePointer(dataBufferLength);
-                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+                var dPointer = new DoublePointer(dataBufferLength);
+                var perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
                 Pointer.memcpy(dPointer, dataPointer, totalBytesToCopy);
 
@@ -302,7 +302,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray createFromNpyHeaderPointer(Pointer pointer) {
-        val dtype = DataType.fromInt(nativeOps.dataTypeFromNpyHeader(pointer));
+        var dtype = DataType.fromInt(nativeOps.dataTypeFromNpyHeader(pointer));
 
         Pointer dataPointer = nativeOps.dataPointForNumpyHeader(pointer);
         int dataBufferElementSize = nativeOps.elementSizeForNpyArrayHeader(pointer);
@@ -314,10 +314,10 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         shapeBufferPointer.position(0);
 
 
-        val intPointer = new LongPointer(shapeBufferPointer);
-        val newPointer = new LongPointer(length);
+        var intPointer = new LongPointer(shapeBufferPointer);
+        var newPointer = new LongPointer(length);
 
-        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+        var perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
         Pointer.memcpy(newPointer, intPointer, shapeBufferPointer.limit());
 
@@ -335,11 +335,11 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         dataPointer.limit(dataLength);
         dataPointer.capacity(dataLength);
 
-        val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+        var perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
         switch (dtype) {
             case BYTE: {
-                val dPointer = new BytePointer(dataNumElements);
+                var dPointer = new BytePointer(dataNumElements);
                 Pointer.memcpy(dPointer, dataPointer, dataNumElements);
 
                 data = Nd4j.createBuffer(dPointer,
@@ -349,7 +349,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             }
             break;
             case SHORT: {
-                val dPointer = new ShortPointer(dataNumElements);
+                var dPointer = new ShortPointer(dataNumElements);
                 Pointer.memcpy(dPointer, dataPointer, dataNumElements);
 
                 data = Nd4j.createBuffer(dPointer,
@@ -359,7 +359,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             }
             break;
             case INT: {
-                val dPointer = new IntPointer(dataNumElements);
+                var dPointer = new IntPointer(dataNumElements);
                 Pointer.memcpy(dPointer, dataPointer, dataNumElements);
 
                 data = Nd4j.createBuffer(dPointer,
@@ -369,7 +369,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             }
             break;
             case LONG: {
-                val dPointer = new LongPointer(dataNumElements);
+                var dPointer = new LongPointer(dataNumElements);
                 Pointer.memcpy(dPointer, dataPointer, dataNumElements);
 
                 data = Nd4j.createBuffer(dPointer,
@@ -379,7 +379,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             }
             break;
             case UBYTE: {
-                val dPointer = new BytePointer(dataNumElements);
+                var dPointer = new BytePointer(dataNumElements);
                 Pointer.memcpy(dPointer, dataPointer,dataNumElements);
 
                 data = Nd4j.createBuffer(dPointer,
@@ -389,7 +389,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             }
             break;
             case UINT16: {
-                val dPointer = new ShortPointer(dataNumElements);
+                var dPointer = new ShortPointer(dataNumElements);
                 Pointer.memcpy(dPointer, dataPointer, dataNumElements);
 
                 data = Nd4j.createBuffer(dPointer,
@@ -399,7 +399,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             }
             break;
             case UINT32: {
-                val dPointer = new IntPointer(dataNumElements);
+                var dPointer = new IntPointer(dataNumElements);
                 Pointer.memcpy(dPointer, dataPointer,dataNumElements);
 
                 data = Nd4j.createBuffer(dPointer,
@@ -409,7 +409,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             }
             break;
             case UINT64: {
-                val dPointer = new LongPointer(dataNumElements);
+                var dPointer = new LongPointer(dataNumElements);
                 Pointer.memcpy(dPointer, dataPointer, dataNumElements);
 
                 data = Nd4j.createBuffer(dPointer,
@@ -419,7 +419,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             }
             break;
             case HALF: {
-                val dPointer = new ShortPointer(dataNumElements);
+                var dPointer = new ShortPointer(dataNumElements);
                 Pointer.memcpy(dPointer, dataPointer,dataNumElements);
 
                 data = Nd4j.createBuffer(dPointer,
@@ -430,7 +430,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             break;
             case FLOAT: {
                 // TODO: we might want to skip copy, and use existing pointer/data here
-                val dPointer = new FloatPointer(dataNumElements);
+                var dPointer = new FloatPointer(dataNumElements);
                 Pointer.memcpy(dPointer, dataPointer, dataNumElements);
 
                 data = Nd4j.createBuffer(dPointer,
@@ -441,7 +441,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
             break;
             case DOUBLE: {
                 // TODO: we might want to skip copy, and use existing pointer/data here
-                val dPointer = new DoublePointer(dataNumElements);
+                var dPointer = new DoublePointer(dataNumElements);
                 Pointer.memcpy(dPointer, dataPointer,dataNumElements);
 
                 data = Nd4j.createBuffer(dPointer,

@@ -1890,7 +1890,7 @@ sd::LongType NDArray::argMax(std::initializer_list<int> dimensions) {
     sd::LongType max = 0;
     auto mv = -DataTypeUtils::max<float>();
     for (sd::LongType e = 0; e < this->lengthOf(); e++) {
-      auto val = this->e<float>(e);
+      auto var = this->e<float>(e);
       if (mv < val) {
         mv = val;
         max = e;

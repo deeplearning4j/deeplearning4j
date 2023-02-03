@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.dl4jcore.nn.conf.preprocessor;
 
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -154,7 +154,7 @@ public class TestPreProcessors extends BaseDL4JTest {
                                             .nOut(layerSize).build())
                             .build();
 
-            val numParams = nnc.getLayer().initializer().numParams(nnc);
+            var numParams = nnc.getLayer().initializer().numParams(nnc);
             INDArray params = Nd4j.create(1, numParams);
             DenseLayer layer = (DenseLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true, params.dataType());
             layer.setInputMiniBatchSize(miniBatchSize);
@@ -239,7 +239,7 @@ public class TestPreProcessors extends BaseDL4JTest {
                                                                                             .nOut(nChannels).build())
                                                             .build();
 
-                            val numParams = nnc.getLayer().initializer().numParams(nnc);
+                            var numParams = nnc.getLayer().initializer().numParams(nnc);
                             INDArray params = Nd4j.create(1, numParams);
                             ConvolutionLayer layer =
                                             (ConvolutionLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true, params.dataType());
@@ -249,7 +249,7 @@ public class TestPreProcessors extends BaseDL4JTest {
                                             inputHeight, inputWidth});
 
                             //Check shape of outputs:
-                            val prod = nChannels * inputHeight * inputWidth;
+                            var prod = nChannels * inputHeight * inputWidth;
                             INDArray activationsRnn = proc.preProcess(activationsCnn, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
                             assertArrayEquals(new long[] {miniBatchSize, prod, timeSeriesLength},
                                     activationsRnn.shape(),msg);
@@ -321,13 +321,13 @@ public class TestPreProcessors extends BaseDL4JTest {
                                                                                             .nOut(nChannels).build())
                                                             .build();
 
-                            val numParams = nnc.getLayer().initializer().numParams(nnc);
+                            var numParams = nnc.getLayer().initializer().numParams(nnc);
                             INDArray params = Nd4j.create(1, numParams);
                             ConvolutionLayer layer =
                                             (ConvolutionLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true, params.dataType());
                             layer.setInputMiniBatchSize(miniBatchSize);
 
-                            val shape_rnn = new long[] {miniBatchSize, nChannels * inputHeight * inputWidth,
+                            var shape_rnn = new long[] {miniBatchSize, nChannels * inputHeight * inputWidth,
                                             timeSeriesLength};
                             INDArray rand = Nd4j.rand(shape_rnn);
                             INDArray activationsRnn_c = Nd4j.create(shape_rnn, 'c');
@@ -339,7 +339,7 @@ public class TestPreProcessors extends BaseDL4JTest {
                             //Check shape of outputs:
                             INDArray activationsCnn_c = proc.preProcess(activationsRnn_c, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
                             INDArray activationsCnn_f = proc.preProcess(activationsRnn_f, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
-                            val shape_cnn = new long[] {miniBatchSize * timeSeriesLength, nChannels, inputHeight,
+                            var shape_cnn = new long[] {miniBatchSize * timeSeriesLength, nChannels, inputHeight,
                                             inputWidth};
                             assertArrayEquals(shape_cnn, activationsCnn_c.shape());
                             assertArrayEquals(shape_cnn, activationsCnn_f.shape());

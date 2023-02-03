@@ -86,7 +86,7 @@ public class DepthwiseConv2DBp extends DynamicCustomOp {
         }
 
         try {
-            val t = config.getValue(property);
+            var t = config.getValue(property);
             return t;
         } catch (Exception e) {
             throw new RuntimeException(e);

@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.ops.performance.primitives;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.linalg.api.memory.MemcpyDirection;
 
 import java.util.ArrayList;
@@ -40,8 +40,8 @@ public class AveragingTransactionsHolder {
 
     protected void init() {
         // filling map withi initial keys
-        for (val v: MemcpyDirection.values()) {
-            val o = v.ordinal();
+        for (var v: MemcpyDirection.values()) {
+            var o = v.ordinal();
             storage.add(o, new ArrayList<Long>());
 
             locks.add(o, new ReentrantReadWriteLock());
@@ -49,8 +49,8 @@ public class AveragingTransactionsHolder {
     }
 
     public void clear() {
-        for (val v: MemcpyDirection.values()) {
-            val o = v.ordinal();
+        for (var v: MemcpyDirection.values()) {
+            var o = v.ordinal();
             try {
                 locks.get(o).writeLock().lock();
 
@@ -63,7 +63,7 @@ public class AveragingTransactionsHolder {
 
 
     public void addValue(@NonNull MemcpyDirection direction, Long value) {
-        val o = direction.ordinal();
+        var o = direction.ordinal();
         try {
             locks.get(o).writeLock().lock();
 
@@ -74,17 +74,17 @@ public class AveragingTransactionsHolder {
     }
 
     public Long getAverageValue(@NonNull MemcpyDirection direction) {
-        val o = direction.ordinal();
+        var o = direction.ordinal();
         try {
             Long r = 0L;
             locks.get(o).readLock().lock();
 
-            val list = storage.get(o);
+            var list = storage.get(o);
 
             if (list.isEmpty())
                 return 0L;
 
-            for (val v : list)
+            for (var v : list)
                 r += v;
 
             return r / list.size();

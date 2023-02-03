@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.env.impl;
 
-import lombok.val;
+
 import org.nd4j.linalg.env.EnvironmentalAction;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -32,7 +32,7 @@ public class FallbackAction implements EnvironmentalAction {
 
     @Override
     public void process(String value) {
-        val v = Boolean.valueOf(value);
+        var v = Boolean.valueOf(value);
 
         Nd4j.enableFallbackMode(v);
     }

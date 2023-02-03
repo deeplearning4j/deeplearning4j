@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
@@ -63,7 +63,7 @@ public class Cropping1DLayer extends AbstractLayer<Cropping1D> {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
-        val inShape = input.shape();
+        var inShape = input.shape();
         INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, dataType, inShape, 'c');
         INDArray epsNextSubset = epsNext.get(all(), all(), interval(cropping[0], epsNext.size(2)-cropping[1]));
         epsNextSubset.assign(epsilon);

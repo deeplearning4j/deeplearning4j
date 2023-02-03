@@ -21,7 +21,7 @@
 package org.nd4j.linalg.api.ops.executioner;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
@@ -123,10 +123,10 @@ public class OpExecutionerUtil {
         List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
         List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
 
-        for (val input: inArgs)
+        for (var input: inArgs)
             checkForInf(input);
 
-        for (val output: outArgs)
+        for (var output: outArgs)
             checkForInf(output);
     }
 
@@ -138,10 +138,10 @@ public class OpExecutionerUtil {
         List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
         List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
 
-        for (val input: inArgs)
+        for (var input: inArgs)
             checkForNaN(input);
 
-        for (val output: outArgs)
+        for (var output: outArgs)
             checkForNaN(output);
     }
 }

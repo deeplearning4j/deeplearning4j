@@ -22,7 +22,7 @@ package org.nd4j.linalg.dataset.api;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.common.primitives.Pair;
@@ -87,7 +87,7 @@ public class DataSetUtil {
         //Same approach as RnnToFeedForwardPreProcessor in DL4J
         //I.e., we're effectively stacking time steps for all examples
 
-        val shape = data.shape();
+        var shape = data.shape();
         INDArray as2d;
         if (shape[0] == 1) {
             as2d = data.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
@@ -343,7 +343,7 @@ public class DataSetUtil {
     }
 
     public static INDArray mergeMasks2d(long[] outShape, INDArray[] arrays, INDArray[] masks) {
-        val numExamplesPerArr = new long[arrays.length];
+        var numExamplesPerArr = new long[arrays.length];
         for (int i = 0; i < numExamplesPerArr.length; i++) {
             numExamplesPerArr[i] = arrays[i].size(0);
         }

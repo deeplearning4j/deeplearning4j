@@ -22,7 +22,7 @@ package org.nd4j.parameterserver.distributed.v2;
 
 import io.reactivex.functions.Consumer;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.*;
 import org.nd4j.common.primitives.AtomicBoolean;
@@ -71,12 +71,12 @@ public class DelayedModelParameterServerTest extends BaseND4JTest {
     @Test()
     @Timeout(20000L)
     public void testBasicInitialization_1() throws Exception {
-        val connector = new DummyTransport.Connector();
-        val rootTransport = new DelayedDummyTransport(rootId, connector);
+        var connector = new DummyTransport.Connector();
+        var rootTransport = new DelayedDummyTransport(rootId, connector);
 
         connector.register(rootTransport);
 
-        val rootServer = new ModelParameterServer(rootTransport, true);
+        var rootServer = new ModelParameterServer(rootTransport, true);
         rootServer.launch();
 
         assertEquals(rootId, rootTransport.getUpstreamId());
@@ -88,16 +88,16 @@ public class DelayedModelParameterServerTest extends BaseND4JTest {
     @Timeout(40000L)
     public void testBasicInitialization_2() throws Exception {
         for (int e = 0; e < 100; e++) {
-            val connector = new DummyTransport.Connector();
-            val rootTransport = new DelayedDummyTransport(rootId, connector);
-            val clientTransportA = new DelayedDummyTransport("123", connector, rootId);
-            val clientTransportB = new DelayedDummyTransport("1234", connector, rootId);
+            var connector = new DummyTransport.Connector();
+            var rootTransport = new DelayedDummyTransport(rootId, connector);
+            var clientTransportA = new DelayedDummyTransport("123", connector, rootId);
+            var clientTransportB = new DelayedDummyTransport("1234", connector, rootId);
 
             connector.register(rootTransport, clientTransportA, clientTransportB);
 
-            val rootServer = new ModelParameterServer(rootTransport, true);
-            val clientServerA = new ModelParameterServer(clientTransportA, false);
-            val clientServerB = new ModelParameterServer(clientTransportB, false);
+            var rootServer = new ModelParameterServer(rootTransport, true);
+            var clientServerA = new ModelParameterServer(clientTransportA, false);
+            var clientServerB = new ModelParameterServer(clientTransportB, false);
             rootServer.launch();
             clientServerA.launch();
             clientServerB.launch();
@@ -105,9 +105,9 @@ public class DelayedModelParameterServerTest extends BaseND4JTest {
             // since clientB starts AFTER clientA, we have to wait till MeshUpdate message is propagated, since ithis message is NOT blocking
             Thread.sleep(25);
 
-            val meshR = rootTransport.getMesh();
-            val meshA = clientTransportA.getMesh();
-            val meshB = clientTransportB.getMesh();
+            var meshR = rootTransport.getMesh();
+            var meshA = clientTransportA.getMesh();
+            var meshB = clientTransportB.getMesh();
 
             assertEquals(3, meshR.totalNodes(),"Root node failed");
             assertEquals(3, meshB.totalNodes(),"B node failed");
@@ -121,28 +121,28 @@ public class DelayedModelParameterServerTest extends BaseND4JTest {
     @Test()
     @Timeout(180000L)
     public void testUpdatesPropagation_1() throws Exception {
-        val conf = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.PLAIN).build();
-        val array = Nd4j.ones(10, 10);
+        var conf = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.PLAIN).build();
+        var array = Nd4j.ones(10, 10);
 
-        val connector = new DummyTransport.Connector();
-        val rootTransport = new DelayedDummyTransport(rootId, connector, rootId, conf);
-        val clientTransportA = new DelayedDummyTransport("412334", connector, rootId, conf);
-        val clientTransportB = new DelayedDummyTransport("123441", connector, rootId, conf);
+        var connector = new DummyTransport.Connector();
+        var rootTransport = new DelayedDummyTransport(rootId, connector, rootId, conf);
+        var clientTransportA = new DelayedDummyTransport("412334", connector, rootId, conf);
+        var clientTransportB = new DelayedDummyTransport("123441", connector, rootId, conf);
 
         connector.register(rootTransport, clientTransportA, clientTransportB);
 
-        val rootServer = new ModelParameterServer(rootTransport, true);
-        val clientServerA = new ModelParameterServer(clientTransportA, false);
-        val clientServerB = new ModelParameterServer(clientTransportB, false);
+        var rootServer = new ModelParameterServer(rootTransport, true);
+        var clientServerA = new ModelParameterServer(clientTransportA, false);
+        var clientServerB = new ModelParameterServer(clientTransportB, false);
         rootServer.launch();
         clientServerA.launch();
         clientServerB.launch();
 
-        val servers = new ArrayList<ModelParameterServer>();
-        val transports = new ArrayList<DelayedDummyTransport>();
+        var servers = new ArrayList<ModelParameterServer>();
+        var transports = new ArrayList<DelayedDummyTransport>();
         for (int e = 0; e < 128; e++) {
-            val clientTransport = new DelayedDummyTransport(String.valueOf(e), connector, rootId, conf);
-            val clientServer = new ModelParameterServer(clientTransport, false);
+            var clientTransport = new DelayedDummyTransport(String.valueOf(e), connector, rootId, conf);
+            var clientServer = new ModelParameterServer(clientTransport, false);
 
             connector.register(clientTransport);
             servers.add(clientServer);
@@ -161,9 +161,9 @@ public class DelayedModelParameterServerTest extends BaseND4JTest {
 
         connector.blockUntilFinished();
 
-        val updatesR = rootServer.getUpdates();
-        val updatesA = clientServerA.getUpdates();
-        val updatesB = clientServerB.getUpdates();
+        var updatesR = rootServer.getUpdates();
+        var updatesA = clientServerA.getUpdates();
+        var updatesB = clientServerB.getUpdates();
 
         assertEquals(1, updatesR.size());
         assertEquals(1, updatesB.size());
@@ -172,7 +172,7 @@ public class DelayedModelParameterServerTest extends BaseND4JTest {
         assertEquals(0, updatesA.size());
 
         for (int e = 0; e < servers.size(); e++) {
-            val s = servers.get(e);
+            var s = servers.get(e);
             assertEquals(1, s.getUpdates().size(),"Failed at node [" + e + "]");
         }
     }
@@ -180,13 +180,13 @@ public class DelayedModelParameterServerTest extends BaseND4JTest {
     @Test()
     @Timeout(180000L)
     public void testModelAndUpdaterParamsUpdate_1() throws Exception {
-        val config = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.PLAIN).build();
-        val connector = new DummyTransport.Connector();
-        val rootTransport = new DelayedDummyTransport(rootId, connector, rootId, config);
+        var config = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.PLAIN).build();
+        var connector = new DummyTransport.Connector();
+        var rootTransport = new DelayedDummyTransport(rootId, connector, rootId, config);
         rootTransport.addRequestConsumer(ModelParametersRequest.class, new Consumer<ModelParametersRequest>() {
             @Override
             public void accept(ModelParametersRequest modelParametersRequest) throws Exception {
-                val msg = new ModelParametersMessage("123", Nd4j.create(10));
+                var msg = new ModelParametersMessage("123", Nd4j.create(10));
                 msg.setRequestId(modelParametersRequest.getRequestId());
                 rootTransport.sendMessage(msg, modelParametersRequest.getOriginatorId());
             }
@@ -195,29 +195,29 @@ public class DelayedModelParameterServerTest extends BaseND4JTest {
         rootTransport.addRequestConsumer(UpdaterParametersRequest.class, new Consumer<UpdaterParametersRequest>() {
             @Override
             public void accept(UpdaterParametersRequest updatersParametersRequest) throws Exception {
-                val msg = new UpdaterParametersMessage("123", Nd4j.create(10));
+                var msg = new UpdaterParametersMessage("123", Nd4j.create(10));
                 msg.setRequestId(updatersParametersRequest.getRequestId());
                 rootTransport.sendMessage(msg, updatersParametersRequest.getOriginatorId());
             }
         });
 
 
-        val updatedModel = new AtomicBoolean(false);
-        val updatedUpdater = new AtomicBoolean(false);
-        val gotGradients = new AtomicBoolean(false);
+        var updatedModel = new AtomicBoolean(false);
+        var updatedUpdater = new AtomicBoolean(false);
+        var gotGradients = new AtomicBoolean(false);
 
         connector.register(rootTransport);
 
-        val counters = new AtomicInteger[128];
-        val servers = new ArrayList<ModelParameterServer>();
-        val transports = new ArrayList<DummyTransport>();
+        var counters = new AtomicInteger[128];
+        var servers = new ArrayList<ModelParameterServer>();
+        var transports = new ArrayList<DummyTransport>();
         for (int e = 0; e < 128; e++) {
-            val clientTransport = new DelayedDummyTransport(java.util.UUID.randomUUID().toString(), connector, rootId, config);
-            val clientServer = new ModelParameterServer(config, clientTransport, false);
+            var clientTransport = new DelayedDummyTransport(java.util.UUID.randomUUID().toString(), connector, rootId, config);
+            var clientServer = new ModelParameterServer(config, clientTransport, false);
 
             counters[e] = new AtomicInteger(0);
 
-            val f = e;
+            var f = e;
 
             clientServer.addUpdatesSubscriber(new AbstractUpdatesHandler() {
                 @Override
@@ -242,20 +242,20 @@ public class DelayedModelParameterServerTest extends BaseND4JTest {
         }
 
         Thread.sleep(100);
-        val rootMesh = rootTransport.getMesh();
+        var rootMesh = rootTransport.getMesh();
 
         // now we're picking one server that'll play bad role
-        val badServer = servers.get(23);
-        val badTransport = transports.get(23);
-        val badId = badTransport.id();
-        val badNode = rootMesh.getNodeById(badId);
+        var badServer = servers.get(23);
+        var badTransport = transports.get(23);
+        var badId = badTransport.id();
+        var badNode = rootMesh.getNodeById(badId);
 
-        val upstreamId = badNode.getUpstreamNode().getId();
+        var upstreamId = badNode.getUpstreamNode().getId();
         log.info("Upstream: [{}]; Number of downstreams: [{}]", upstreamId, badNode.numberOfDownstreams());
 
         connector.dropConnection(badId);
-        val clientTransport = new DummyTransport(badId, connector, rootId);
-        val clientServer = new ModelParameterServer(clientTransport, false);
+        var clientTransport = new DummyTransport(badId, connector, rootId);
+        var clientServer = new ModelParameterServer(clientTransport, false);
 
         clientServer.addUpdaterParamsSubscriber(new AbstractSubscriber<INDArray>() {
             @Override
@@ -294,7 +294,7 @@ public class DelayedModelParameterServerTest extends BaseND4JTest {
         connector.blockUntilFinished();
 
         // getting any server
-        val serv = servers.get(96);
+        var serv = servers.get(96);
         serv.sendUpdate(Nd4j.linspace(1, 10, 100).reshape(10, 10));
 
         connector.blockUntilFinished();
@@ -316,32 +316,32 @@ public class DelayedModelParameterServerTest extends BaseND4JTest {
     public void testMeshConsistency_1() throws Exception {
         Nd4j.create(1);
         final int numMessages = 500;
-        val rootCount = new AtomicInteger(0);
-        val rootSum = new AtomicInteger(0);
-        val counter = new AtomicInteger(0);
-        val sum = new AtomicInteger(0);
-        val config = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.PLAIN).build();
-        val connector = new DummyTransport.Connector();
-        val rootTransport = new DelayedDummyTransport(rootId, connector, rootId, config);
+        var rootCount = new AtomicInteger(0);
+        var rootSum = new AtomicInteger(0);
+        var counter = new AtomicInteger(0);
+        var sum = new AtomicInteger(0);
+        var config = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.PLAIN).build();
+        var connector = new DummyTransport.Connector();
+        var rootTransport = new DelayedDummyTransport(rootId, connector, rootId, config);
 
         rootTransport.addPrecursor(GradientsUpdateMessage.class, new MessageCallable<GradientsUpdateMessage>() {
             @Override
             public void apply(GradientsUpdateMessage message) {
-                val array = message.getPayload();
+                var array = message.getPayload();
                 rootSum.addAndGet(array.meanNumber().intValue());
                 rootCount.incrementAndGet();
             }
         });
         connector.register(rootTransport);
 
-        val counters = new AtomicInteger[16];
-        val servers = new ArrayList<ModelParameterServer>();
-        val transports = new ArrayList<DummyTransport>();
+        var counters = new AtomicInteger[16];
+        var servers = new ArrayList<ModelParameterServer>();
+        var transports = new ArrayList<DummyTransport>();
         for (int e = 0; e < 16; e++) {
-            val clientTransport = new DelayedDummyTransport(java.util.UUID.randomUUID().toString(), connector, rootId, config);
-            val clientServer = new ModelParameterServer(config, clientTransport, false);
+            var clientTransport = new DelayedDummyTransport(java.util.UUID.randomUUID().toString(), connector, rootId, config);
+            var clientServer = new ModelParameterServer(config, clientTransport, false);
 
-            val f = e;
+            var f = e;
             counters[f] = new AtomicInteger(0);
             clientServer.addUpdatesSubscriber(new AbstractUpdatesHandler() {
                 @Override
@@ -366,10 +366,10 @@ public class DelayedModelParameterServerTest extends BaseND4JTest {
         }
 
 
-        val deductions = new int[servers.size()];
+        var deductions = new int[servers.size()];
         for (int e = 0; e < numMessages; e++) {
-            val f = RandomUtils.nextInt(0, servers.size());
-            val server = servers.get(f);
+            var f = RandomUtils.nextInt(0, servers.size());
+            var server = servers.get(f);
 
             // later we'll reduce this number from expected number of updates
             deductions[f]++;
@@ -386,7 +386,7 @@ public class DelayedModelParameterServerTest extends BaseND4JTest {
 
         // now we're checking all nodes, they should get numMessages - messages that were sent through them
         for (int e = 0; e < servers.size(); e++) {
-            val server = servers.get(e);
+            var server = servers.get(e);
             assertEquals(numMessages - deductions[e], counters[e].get(),"Failed at node: [" + e + "]");
         }
     }
@@ -397,32 +397,32 @@ public class DelayedModelParameterServerTest extends BaseND4JTest {
     public void testMeshConsistency_2() throws Exception {
         Nd4j.create(1);
         final int numMessages = 100;
-        val rootCount = new AtomicInteger(0);
-        val rootSum = new AtomicInteger(0);
-        val counter = new AtomicInteger(0);
-        val sum = new AtomicInteger(0);
-        val config = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.MESH).build();
-        val connector = new DummyTransport.Connector();
-        val rootTransport = new DelayedDummyTransport(rootId, connector, rootId, config);
+        var rootCount = new AtomicInteger(0);
+        var rootSum = new AtomicInteger(0);
+        var counter = new AtomicInteger(0);
+        var sum = new AtomicInteger(0);
+        var config = VoidConfiguration.builder().meshBuildMode(MeshBuildMode.MESH).build();
+        var connector = new DummyTransport.Connector();
+        var rootTransport = new DelayedDummyTransport(rootId, connector, rootId, config);
 
         rootTransport.addPrecursor(GradientsUpdateMessage.class, new MessageCallable<GradientsUpdateMessage>() {
             @Override
             public void apply(GradientsUpdateMessage message) {
-                val array = message.getPayload();
+                var array = message.getPayload();
                 rootSum.addAndGet(array.meanNumber().intValue());
                 rootCount.incrementAndGet();
             }
         });
         connector.register(rootTransport);
 
-        val counters = new AtomicInteger[16];
-        val servers = new ArrayList<ModelParameterServer>();
-        val transports = new ArrayList<DummyTransport>();
+        var counters = new AtomicInteger[16];
+        var servers = new ArrayList<ModelParameterServer>();
+        var transports = new ArrayList<DummyTransport>();
         for (int e = 0; e < 16; e++) {
-            val clientTransport = new DelayedDummyTransport(java.util.UUID.randomUUID().toString(), connector, rootId, config);
-            val clientServer = new ModelParameterServer(config, clientTransport, false);
+            var clientTransport = new DelayedDummyTransport(java.util.UUID.randomUUID().toString(), connector, rootId, config);
+            var clientServer = new ModelParameterServer(config, clientTransport, false);
 
-            val f = e;
+            var f = e;
             counters[f] = new AtomicInteger(0);
             clientServer.addUpdatesSubscriber(new AbstractUpdatesHandler() {
                 @Override
@@ -449,10 +449,10 @@ public class DelayedModelParameterServerTest extends BaseND4JTest {
         Thread.sleep(500);
 
 
-        val deductions = new int[servers.size()];
+        var deductions = new int[servers.size()];
         for (int e = 0; e < numMessages; e++) {
-            val f = RandomUtils.nextInt(0, servers.size());
-            val server = servers.get(f);
+            var f = RandomUtils.nextInt(0, servers.size());
+            var server = servers.get(f);
 
             // later we'll reduce this number from expected number of updates
             deductions[f]++;
@@ -472,7 +472,7 @@ public class DelayedModelParameterServerTest extends BaseND4JTest {
 
         // now we're checking all nodes, they should get numMessages - messages that were sent through them
         for (int e = 0; e < servers.size(); e++) {
-            val server = servers.get(e);
+            var server = servers.get(e);
             assertEquals( numMessages - deductions[e], counters[e].get(),"Failed at node: [" + e + "]");
         }
     }

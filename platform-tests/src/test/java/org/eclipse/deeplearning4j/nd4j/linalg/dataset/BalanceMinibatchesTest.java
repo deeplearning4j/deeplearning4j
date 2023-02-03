@@ -110,7 +110,7 @@ public class BalanceMinibatchesTest extends BaseNd4jTestWithBackends {
                 double bCounts = (balancedCounts.containsKey(i) ? balancedCounts.get(i) : 0);
                 assertTrue(   balancedCounts.containsKey(i) && balancedCounts.get(i) >= (double) miniBatchSize
                         / iterator.totalOutcomes(),"key " + i + " totalOutcomes: " + iterator.totalOutcomes() + " balancedCounts : "
-                                + balancedCounts.containsKey(i) + " val : " + bCounts);
+                                + balancedCounts.containsKey(i) + " var : " + bCounts);
             }
         }
 

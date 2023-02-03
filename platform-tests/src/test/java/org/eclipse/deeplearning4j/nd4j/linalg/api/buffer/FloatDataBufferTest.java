@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.api.buffer;
 
-import lombok.val;
+
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
@@ -219,8 +219,8 @@ public class FloatDataBufferTest extends BaseNd4jTestWithBackends {
         assertion.write(dos);
 
         DataBuffer clone = assertion.dup();
-        val stream = new DataInputStream(new ByteArrayInputStream(bos.toByteArray()));
-        val header = BaseDataBuffer.readHeader(stream);
+        var stream = new DataInputStream(new ByteArrayInputStream(bos.toByteArray()));
+        var header = BaseDataBuffer.readHeader(stream);
         assertion.read(stream, header.getLeft(), header.getMiddle(), header.getRight());
         assertArrayEquals(assertion.asFloat(), clone.asFloat(), 0.0001f);
     }

@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -121,17 +121,17 @@ public class Dilation2D extends DynamicCustomOp {
         Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
         Map<String,PropertyMapping> map = new HashMap<>();
 
-        val sameMode = PropertyMapping.builder()
+        var sameMode = PropertyMapping.builder()
                 .tfAttrName("padding")
                 .propertyNames(new String[]{"isSameMode"})
                 .build();
 
-        val ratesMapping = PropertyMapping.builder()
+        var ratesMapping = PropertyMapping.builder()
                 .tfAttrName("rates")
                 .propertyNames(new String[]{"r0", "r1", "r2", "r3"})
                 .build();
 
-        val stridesMapping = PropertyMapping.builder()
+        var stridesMapping = PropertyMapping.builder()
                 .tfAttrName("strides")
                 .propertyNames(new String[]{"s0", "s1", "s2", "s3"})
                 .build();
@@ -168,7 +168,7 @@ public class Dilation2D extends DynamicCustomOp {
     public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
         Map<String, Map<String, AttributeAdapter>> ret = new HashMap<>();
         Map<String,AttributeAdapter> tfMappings = new LinkedHashMap<>();
-        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
+        var fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
 
 
         tfMappings.put("r0", new IntArrayIntIndexAdapter(0));

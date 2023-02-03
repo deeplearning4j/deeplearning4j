@@ -48,11 +48,11 @@ public class CGVaeReconstructionProbWithKeyFunction<K> extends BaseVaeReconstruc
         ComputationGraph network =
                         new ComputationGraph(ComputationGraphConfiguration.fromJson((String) jsonConfig.getValue()));
         network.init();
-        INDArray val = params.value().dup();
-        if (val.length() != network.numParams(false))
+        INDArray paramsVal = params.value().dup();
+        if (paramsVal.length() != network.numParams(false))
             throw new IllegalStateException(
                             "Network did not have same number of parameters as the broadcasted set parameters");
-        network.setParams(val);
+        network.setParams(paramsVal);
 
         Layer l = network.getLayer(0);
         if (!(l instanceof VariationalAutoencoder)) {

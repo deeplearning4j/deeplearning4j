@@ -22,7 +22,7 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.val;
+
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
@@ -223,7 +223,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
         //scoreArray: shape [minibatch*h*w, 1]
         //Reshape it to [minibatch, 1, h, w] then sum over x/y to give [minibatch, 1]
 
-        val newShape = input.shape().clone();
+        var newShape = input.shape().clone();
         newShape[1] = 1;
 
         INDArray scoreArrayTs = ConvolutionUtils.reshape2dTo4d(scoreArray, newShape, format, workspaceMgr, ArrayType.FF_WORKING_MEM);

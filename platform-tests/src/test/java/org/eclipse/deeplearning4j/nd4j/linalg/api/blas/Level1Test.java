@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.api.blas;
 
-import lombok.val;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -67,11 +67,11 @@ public class Level1Test extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAxpy2(Nd4jBackend backend) {
-        val rowX = Nd4j.create(new double[]{1, 2, 3, 4});
-        val rowY = Nd4j.create(new double[]{1, 2, 3, 4});
-        val exp = Nd4j.create(new double[]{3, 6, 9, 12});
+        var rowX = Nd4j.create(new double[]{1, 2, 3, 4});
+        var rowY = Nd4j.create(new double[]{1, 2, 3, 4});
+        var exp = Nd4j.create(new double[]{3, 6, 9, 12});
 
-        val z = Nd4j.getBlasWrapper().axpy(2.0, rowX, rowY);
+        var z = Nd4j.getBlasWrapper().axpy(2.0, rowX, rowY);
         assertEquals(exp, z);
     }
 

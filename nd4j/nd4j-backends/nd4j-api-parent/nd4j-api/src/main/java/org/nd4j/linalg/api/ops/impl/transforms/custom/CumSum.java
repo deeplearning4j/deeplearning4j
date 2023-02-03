@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -105,12 +105,12 @@ public class CumSum extends DynamicCustomOp {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
         Map<String, PropertyMapping> map = new HashMap<>();
 
-        val exclusiveMapper = PropertyMapping.builder()
+        var exclusiveMapper = PropertyMapping.builder()
                 .tfAttrName("exclusive")
                 .propertyNames(new String[]{"exclusive"})
                 .build();
 
-        val reverseMapper = PropertyMapping.builder()
+        var reverseMapper = PropertyMapping.builder()
                 .tfAttrName("reverse")
                 .propertyNames(new String[]{"reverse"})
                 .build();
@@ -132,7 +132,7 @@ public class CumSum extends DynamicCustomOp {
 
     protected void addArgs() {
         addIArgument(exclusive ? 1 : 0, reverse ? 1 : 0);
-        for (val a: jaxis)
+        for (var a: jaxis)
             addIArgument(jaxis);
     }
 

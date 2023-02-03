@@ -40,21 +40,21 @@ import java.net.URI
 import java.nio.file.Path
 import javax.annotation.concurrent.NotThreadSafe
 
-data class InputDataset(val dataSetIndex: Int,val inputPaths: List<String>,val outputPaths: List<String>)
+data class InputDataset(var dataSetIndex: Int,var inputPaths: List<String>,var outputPaths: List<String>)
 @Tag(TagNames.ONNX)
 @NotThreadSafe
 @Disabled("Crashes in multi threaded context. Run manually.")
 class TestPretrainedModels {
 
-    val modelBaseUrl = "https://media.githubusercontent.com/media/onnx/models/master"
-    private val modelDirectory = File(File(System.getProperty("user.home")),"models/")
-    val importer = OnnxFrameworkImporter()
-    val converter = OnnxConverter()
-    val runOnly = emptySet<String>()
-    val dontRunRegexes = setOf("")
+    var modelBaseUrl = "https://media.githubusercontent.com/media/onnx/models/master"
+    private var modelDirectory = File(File(System.getProperty("user.home")),"models/")
+    var importer = OnnxFrameworkImporter()
+    var converter = OnnxConverter()
+    var runOnly = emptySet<String>()
+    var dontRunRegexes = setOf("")
 
 
-    val modelPaths = setOf(//"vision/body_analysis/age_gender/models/age_googlenet.onnx",
+    var modelPaths = setOf(//"vision/body_analysis/age_gender/models/age_googlenet.onnx",
         //"vision/body_analysis/age_gender/models/gender_googlenet.onnx",
         //seems to fail in converter due to bad memory alloc
         //6g of ram
@@ -161,17 +161,17 @@ class TestPretrainedModels {
 
         Nd4j.getExecutioner().enableDebugMode(true)
         Nd4j.getExecutioner().enableVerboseMode(true)
-        val newModel = File(convertedModelDirectory,path.split("/").last())
+        var newModel = File(convertedModelDirectory,path.split("/").last())
         if(!newModel.exists()) {
             println("Model at path $newModel does not exist!")
             return
         }
-        val onnxImporter = OnnxFrameworkImporter()
+        var onnxImporter = OnnxFrameworkImporter()
         var loadedGraph = Onnx.ModelProto.parseFrom(newModel.readBytes())
 
 
         var onnxIRGraph = OnnxIRGraph(loadedGraph.graph,onnxImporter.registry)
-        val toPrint = StringBuilder()
+        var toPrint = StringBuilder()
         loadedGraph.graph.initializerList.forEach {
             toPrint.append(it.name)
             toPrint.append(it.dimsList.toString())
@@ -182,10 +182,10 @@ class TestPretrainedModels {
             println(it)
         }
 
-        val inputList = loadedGraph.graph.inputList.map { input -> input.name }
+        var inputList = loadedGraph.graph.inputList.map { input -> input.name }
 
         var appendAllOutputs = false
-        val outputList = if(appendAllOutputs) {
+        var outputList = if(appendAllOutputs) {
             loadedGraph.graph.nodeList.map { input -> input.name }
         } else {
             loadedGraph.graph.outputList.map { input -> input.name }
@@ -198,23 +198,23 @@ class TestPretrainedModels {
 
 
 
-        val outputListMutable = ArrayList(outputList)
+        var outputListMutable = ArrayList(outputList)
 
         println("Loaded initializers  $toPrint")
         println("Running model from model path $path")
 
-        val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,inputList,outputListMutable)
-        val dynamicVariables =
+        var onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,inputList,outputListMutable)
+        var dynamicVariables =
             importer.suggestDynamicVariables(onnxIRGraph as IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>)
-        val outputs = onnxGraphRunner.run(dynamicVariables)
-        val debugPrint = StringBuilder()
+        var outputs = onnxGraphRunner.run(dynamicVariables)
+        var debugPrint = StringBuilder()
         outputs.forEach { (name, array) ->
             debugPrint.append("$name and shape ${array.shapeInfoToString()}\n")
         }
         println(debugPrint)
-        val imported = onnxImporter.runImport(newModel.absolutePath,dynamicVariables)
+        var imported = onnxImporter.runImport(newModel.absolutePath,dynamicVariables)
         println(imported.summary())
-        val batchOutput = imported.batchOutput()
+        var batchOutput = imported.batchOutput()
         batchOutput.placeholders = dynamicVariables
         batchOutput.outputs = onnxIRGraph.graphOutputs()
         batchOutput.output()
@@ -229,28 +229,28 @@ class TestPretrainedModels {
 
 
     fun modelDatasetsForArchive(modelPath: String): List<InputDataset> {
-        val modelArchive = File(modelDirectory,filenameFromPath(modelPath))
-        val listedFiles = ArchiveUtils.tarGzListFiles(modelArchive).filter { input -> input.contains("test_data_set") }
-        val mapOfInputsDataSets = HashMap<Int,MutableList<String>>()
-        val mapOfOutputDataSets = HashMap<Int,MutableList<String>>()
-        val numDatasets = numTestDataSets(modelPath)
-        val ret = ArrayList<InputDataset>()
+        var modelArchive = File(modelDirectory,filenameFromPath(modelPath))
+        var listedFiles = ArchiveUtils.tarGzListFiles(modelArchive).filter { input -> input.contains("test_data_set") }
+        var mapOfInputsDataSets = HashMap<Int,MutableList<String>>()
+        var mapOfOutputDataSets = HashMap<Int,MutableList<String>>()
+        var numDatasets = numTestDataSets(modelPath)
+        var ret = ArrayList<InputDataset>()
         listedFiles.forEach { name ->
             if(name.contains("/test_data_set")) {
-                val index = name.split("/").filter { input -> input.isNotEmpty() && input.matches("test_data_set.*".toRegex())}
+                var index = name.split("/").filter { input -> input.isNotEmpty() && input.matches("test_data_set.*".toRegex())}
                     .map { input ->
                         Integer.parseInt(input.replace("test_data_set_","")) }.first()
                 if(!mapOfInputsDataSets.containsKey(index)) {
-                    val newList = ArrayList<String>()
+                    var newList = ArrayList<String>()
                     mapOfInputsDataSets[index] = newList
                 }
 
                 if(!mapOfOutputDataSets.containsKey(index)) {
-                    val newList = ArrayList<String>()
+                    var newList = ArrayList<String>()
                     mapOfOutputDataSets[index] = newList
                 }
 
-                val finalName = name.split("/").last()
+                var finalName = name.split("/").last()
                 if(finalName.matches("input_\\d+\\.pb".toRegex())) {
                     mapOfInputsDataSets[index]!!.add(name)
                 }
@@ -263,9 +263,9 @@ class TestPretrainedModels {
         }
 
         for(i in 0 until numDatasets) {
-            val inputs = mapOfInputsDataSets[i]!!
-            val outputs = mapOfOutputDataSets[i]!!
-            val inputDataset = InputDataset(i,inputs,outputs)
+            var inputs = mapOfInputsDataSets[i]!!
+            var outputs = mapOfOutputDataSets[i]!!
+            var inputDataset = InputDataset(i,inputs,outputs)
             ret.add(inputDataset)
         }
 
@@ -275,10 +275,10 @@ class TestPretrainedModels {
 
 
     fun numTestDataSets(modelPath: String): Int {
-        val listOfFiles = ArchiveUtils.tarGzListFiles(File(modelDirectory,filenameFromPath(modelPath)))
+        var listOfFiles = ArchiveUtils.tarGzListFiles(File(modelDirectory,filenameFromPath(modelPath)))
         var currentMax = 0
         listOfFiles.filter { input -> input.contentEquals("test_data_set") }.forEach { name ->
-            val num = Integer.parseInt(name.replace("test_data_set_",""))
+            var num = Integer.parseInt(name.replace("test_data_set_",""))
             currentMax = num.coerceAtLeast(currentMax)
         }
 
@@ -287,10 +287,10 @@ class TestPretrainedModels {
     }
 
     fun pullModel(modelPath: String) {
-        val modelUrl = URI.create("$modelBaseUrl/$modelPath").toURL()
+        var modelUrl = URI.create("$modelBaseUrl/$modelPath").toURL()
         println("Download model $modelPath from $modelUrl")
-        val fileName = modelPath.split("/").last()
-        val modelFileArchive =  File(modelDirectory,fileName)
+        var fileName = modelPath.split("/").last()
+        var modelFileArchive =  File(modelDirectory,fileName)
         if(modelFileArchive.exists()) {
             println("Skipping archive ${modelFileArchive.absolutePath}")
             return

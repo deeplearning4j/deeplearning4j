@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.ops.impl.nlp;
 
 import lombok.Builder;
 import lombok.NonNull;
-import lombok.val;
+
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -82,7 +82,7 @@ public class CbowRound extends DynamicCustomOp {
         setInPlace(true);
         setInplaceCall(true);
 
-        for (val in:inputArguments)
+        for (var in:inputArguments)
             outputArguments.add(in);
     }
 

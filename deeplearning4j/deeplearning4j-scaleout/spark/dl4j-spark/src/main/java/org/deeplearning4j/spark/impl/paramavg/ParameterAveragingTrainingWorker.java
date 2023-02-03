@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.spark.impl.paramavg;
 
-import lombok.val;
+
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.core.storage.Persistable;
 import org.deeplearning4j.core.storage.StatsStorageRouter;
@@ -205,7 +205,7 @@ public class ParameterAveragingTrainingWorker extends BaseTrainingWorker<Paramet
         Nd4j.getExecutioner().commit();
 
         if (isLast) {
-            val result =  getFinalResult(network);
+            var result =  getFinalResult(network);
 
             // releasing Context here
 //            Nd4j.getMemoryManager().releaseCurrentContext();
@@ -250,7 +250,7 @@ public class ParameterAveragingTrainingWorker extends BaseTrainingWorker<Paramet
         Nd4j.getExecutioner().commit();
 
         if (isLast) {
-            val result = getFinalResult(graph);
+            var result = getFinalResult(graph);
 
             // releasing Context here
 //            Nd4j.getMemoryManager().releaseCurrentContext();

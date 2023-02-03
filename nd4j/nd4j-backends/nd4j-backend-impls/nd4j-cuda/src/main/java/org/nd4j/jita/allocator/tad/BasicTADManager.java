@@ -20,7 +20,7 @@
 
 package org.nd4j.jita.allocator.tad;
 
-import lombok.val;
+
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -50,7 +50,7 @@ public class BasicTADManager implements TADManager {
         if (dimension == null)
             dimension = new int[] {Integer.MAX_VALUE};
 
-        val pack = Nd4j.getExecutioner().tadShapeInfoAndOffsets(array, dimension);
+        var pack = Nd4j.getExecutioner().tadShapeInfoAndOffsets(array, dimension);
 
         //   logger.info("TAD shapeInfo after construction: {}", Arrays.toString(TadDescriptor.dataBufferToArray(outputBuffer)));
         // now we need to copy this buffer to either device global memory or device cache

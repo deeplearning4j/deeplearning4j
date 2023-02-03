@@ -126,7 +126,7 @@ public class TestListeners extends BaseSparkTest {
             String widSubstring = wid.substring(0, wid.length() - 1);
             assertEquals(firstWorkerSubstring, widSubstring);
 
-            String counterVal = wid.substring(wid.length() - 1, wid.length());
+            String countervar = wid.substring(wid.length() - 1, wid.length());
             int cv = Integer.parseInt(counterVal);
             assertTrue(0 <= cv && cv < numExecutors());
         }

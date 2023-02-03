@@ -23,7 +23,7 @@ package org.nd4j.parameterserver.distributed;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.common.config.ND4JEnvironmentVars;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -267,7 +267,7 @@ public class VoidParameterServer {
                     processingThreads = new Thread[numThreads];
                     processingRunnables = new Runnable[numThreads];
 
-                    val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                    var deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
                     for (int x = 0; x < numThreads; x++) {
                         processingThreads[x] = new Thread(() -> {

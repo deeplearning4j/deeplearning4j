@@ -21,7 +21,7 @@
 package org.deeplearning4j.spark.parameterserver.pw;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.bytedeco.javacpp.Loader;
 import org.deeplearning4j.core.storage.StatsStorageRouter;
 import org.deeplearning4j.core.storage.listener.RoutingIterationListener;
@@ -250,11 +250,11 @@ public class SharedTrainingWrapper {
                     }
                 }
 
-                val handler = new WiredEncodingHandler(trainingConfiguration.getThresholdAlgorithm(), trainingConfiguration.getResidualPostProcessor(), null, trainingConfiguration.isEncodingDebugMode());
+                var handler = new WiredEncodingHandler(trainingConfiguration.getThresholdAlgorithm(), trainingConfiguration.getResidualPostProcessor(), null, trainingConfiguration.isEncodingDebugMode());
 
                 // TODO: if there will be no code difference - use the same class instead of 2 different classes
-                val modelParamsSupplier = new ModelParamsConsumer();
-                val updateParamsSupplier = new UpdaterParamsConsumer();
+                var modelParamsSupplier = new ModelParamsConsumer();
+                var updateParamsSupplier = new UpdaterParamsConsumer();
 
                 // this accumulator will provide sharing gradients over network, via WiredEncodedHandler. But we create it only once
                 if (accumulator == null) {
@@ -268,7 +268,7 @@ public class SharedTrainingWrapper {
 
                     int queueSize = numWorkers * 2;
 
-                    val bufferSize = trainingConfiguration.getBufferSize() > 0 ? trainingConfiguration.getBufferSize()
+                    var bufferSize = trainingConfiguration.getBufferSize() > 0 ? trainingConfiguration.getBufferSize()
                                     : EncodedGradientsAccumulator.getOptimalBufferSize(model, numWorkers, 2);
 
                     accumulator = new EncodedGradientsAccumulator.Builder(numWorkers).messageHandler(handler)
@@ -309,7 +309,7 @@ public class SharedTrainingWrapper {
                                 voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastControllerPort());
                         // FIXME: implement support for Custom transport implementation
 
-                        val transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP ? new AeronUdpTransport(localIP, voidConfiguration.getPortSupplier().getPort(),
+                        var transport = voidConfiguration.getTransportType() == TransportType.ROUTED_UDP ? new AeronUdpTransport(localIP, voidConfiguration.getPortSupplier().getPort(),
                                 voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastControllerPort(), voidConfiguration) :  null;
 
                         if (transport == null)
@@ -413,7 +413,7 @@ public class SharedTrainingWrapper {
                     accumulator.touch();
 
                     // checking if there were updated params received (i.e. if that's failover routine
-                    val mParams = modelParamsSupplier.get();
+                    var mParams = modelParamsSupplier.get();
                     if (mParams != null) {
                         log.info("Updating model params to the most recent ones...");
                         originalModel.params().assign(mParams);
@@ -516,11 +516,11 @@ public class SharedTrainingWrapper {
 
             //Get threshold algorithm instances from each thread, and average them - they may have state that needs
             // to be averaged and persisted, to avoid starting threshold adaption from scratch
-            val mh = (EncodingHandler) accum.getHandler();
-            val taAveraged = mh.getAverageThresholdAlgorithm();
+            var mh = (EncodingHandler) accum.getHandler();
+            var taAveraged = mh.getAverageThresholdAlgorithm();
 
             // FIXME: fill stats here
-            val result = SharedTrainingResult.builder().aggregationsCount(1).scoreSum(originalModel.score())
+            var result = SharedTrainingResult.builder().aggregationsCount(1).scoreSum(originalModel.score())
                             .updaterStateArray(updaterState).listenerMetaData(new ArrayList<>())
                             .listenerStaticInfo(new ArrayList<>()).listenerUpdates(new ArrayList<>())
                             .minibatchesPerExecutor(Collections.singletonMap(SparkUtils.getSparkExecutorId(), iteratorDataSetCount.get().get()))

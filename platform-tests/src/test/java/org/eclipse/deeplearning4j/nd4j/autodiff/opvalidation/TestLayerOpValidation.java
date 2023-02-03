@@ -25,7 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -421,7 +421,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
         INDArray input = Nd4j.create(inSize);
         AvgPooling2D avgPooling2D = new AvgPooling2D(input, null, conf);
 
-        val outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
+        var outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
 
         assertEquals(1, outSizes.size());
 
@@ -439,7 +439,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
         //Test backprop:
         Pooling2DDerivative avg2dDeriv = new Pooling2DDerivative(input, grad, null, conf);
 
-        val outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
+        var outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
         assertEquals(1, outSizesBP.size());
 
         assertArrayEquals(inSize, outSizesBP.get(0).getShape());
@@ -462,7 +462,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
         INDArray input = Nd4j.create(inSize);
         AvgPooling2D avgPooling2D = new AvgPooling2D(input, null, conf);
 
-        val outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
+        var outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
         assertEquals(1, outSizes.size());
 
         //NO SAME: out = (in - k + 2*p)/s + 1;
@@ -478,7 +478,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
         //Test backprop:
         Pooling2DDerivative avg2dDeriv = new Pooling2DDerivative(input, grad, Nd4j.create(inSize), conf);
 
-        val outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
+        var outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
         assertEquals(1, outSizesBP.size());
         assertArrayEquals(inSize, outSizesBP.get(0).getShape());
 
@@ -629,7 +629,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
 
         INDArray outArr = out.eval();
         //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
-        val outShape = outArr.shape();
+        var outShape = outArr.shape();
         assertArrayEquals(new long[]{mb, depthWise * nIn, 27, 27}, outShape);
     }
 
@@ -674,7 +674,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
 
         INDArray outArr = out.eval();
         //Expected output size: out = (in - k + 2*p)/s + 1 = (8-2+0)/1+1 = 7
-        val outShape = outArr.shape();
+        var outShape = outArr.shape();
         assertArrayEquals(new long[]{mb, nOut, 7, 7}, outShape);
 
         SDVariable loss = out.std(true);
@@ -724,7 +724,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
 
         INDArray outArr = out.eval();
         //Expected output size: out = (in + k + 2*p)/ s - 1 = (8 + 2+0)/1 - 1 = 9
-        val outShape = outArr.shape();
+        var outShape = outArr.shape();
         assertArrayEquals(new long[]{mb, nOut, 9, 9}, outShape);
 
         SDVariable loss = out.std(true);
@@ -772,7 +772,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
 
         INDArray outArr = out.eval();
         //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
-        val outShape = outArr.shape();
+        var outShape = outArr.shape();
         assertArrayEquals(new long[]{mb, nOut, 27, 27}, outShape);
         // sd.execBackwards(); // TODO: test failing here
     }
@@ -836,7 +836,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
         SDVariable out = sd.nn().tanh("out", outPool);
 
         INDArray outArr = out.eval();
-        val outShape = outArr.shape();
+        var outShape = outArr.shape();
         // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
         assertArrayEquals(new long[]{mb, nIn, 7, 7}, outShape);
 
@@ -895,7 +895,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
         SDVariable out = sd.nn().tanh("out", outPool);
 
         INDArray outArr = out.eval();
-        val outShape = outArr.shape();
+        var outShape = outArr.shape();
         // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
         assertArrayEquals(new long[]{mb, nIn, 7, 7}, outShape);
 

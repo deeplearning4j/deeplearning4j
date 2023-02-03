@@ -38,14 +38,14 @@ class OpBuilderTest {
 
     @Test
     fun opBuilderTest() {
-        val outDir = testDir
+        var outDir = testDir
 
-        val mathNs = Namespace("math") {
-            val config = Config("bla"){
-                val a = Input(NUMERIC, "a") { description = "This is A!"}
+        var mathNs = Namespace("math") {
+            var config = Config("bla"){
+                var a = Input(NUMERIC, "a") { description = "This is A!"}
                 Input(NUMERIC, "c") { count = AtLeast(1); description = "This is C!"}
                 Input(NUMERIC, "e") { defaultValue = a}
-                val b = Arg(NUMERIC, "b") { description = "This is B!"}
+                var b = Arg(NUMERIC, "b") { description = "This is B!"}
                 Arg(NUMERIC, "d") { count = AtMost(7); description = "This is D!"}
                 Arg(NUMERIC, "f") { defaultValue = 12}
 
@@ -63,7 +63,7 @@ class OpBuilderTest {
             Op("add") {
                 javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic"
 
-                val x = Input(NUMERIC, "x") { description = "First input to add" }
+                var x = Input(NUMERIC, "x") { description = "First input to add" }
                 Input(NUMERIC,"y") { count = AtLeast(1); description = "Second input to add"; defaultValue = x }
                 Arg(INT,"shape") { count = AtLeast(1); description = "shape"; defaultValue = intArrayOf(1,2,3) }
 
@@ -85,7 +85,7 @@ class OpBuilderTest {
 
             }
 
-            val baseArithmeticOp = Mixin("BaseArithmeticOp") {
+            var baseArithmeticOp = Mixin("BaseArithmeticOp") {
                 javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic"
 
                 Input(NUMERIC,"x") { count = Exactly(1); description = "First operand to %OPNAME%" }
@@ -121,9 +121,9 @@ class OpBuilderTest {
             Op("div"){
                 javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic"
 
-                val x = Input(NUMERIC,"x") { description = "First operand to div" }
-                val y = Input(NUMERIC,"y") { description = "Second operand to div" }
-                val idx = Arg(INT, "idx") { description = "Some kind of Index" }
+                var x = Input(NUMERIC,"x") { description = "First operand to div" }
+                var y = Input(NUMERIC,"y") { description = "Second operand to div" }
+                var idx = Arg(INT, "idx") { description = "Some kind of Index" }
                 Constraint("Compatible Rank"){
                     x.rank() eq idx
                 }
@@ -143,10 +143,10 @@ class OpBuilderTest {
             Op("zfoo"){
                 javaPackage = "bar"
                 javaOpClass = "FooBarOp"
-                val x = Input(NUMERIC,"x") { description = "First operand to %OPNAME% (%INPUT_TYPE%)" }
-                val y = Input(NUMERIC,"y") { description = "Second operand to div" }
-                val z = Arg(ENUM, "fooMode"){ description = "Something or other"; possibleValues = listOf("SOME", "value", "Spam", "eGGs")}
-                val bla = useConfig(config)
+                var x = Input(NUMERIC,"x") { description = "First operand to %OPNAME% (%INPUT_TYPE%)" }
+                var y = Input(NUMERIC,"y") { description = "Second operand to div" }
+                var z = Arg(ENUM, "fooMode"){ description = "Something or other"; possibleValues = listOf("SOME", "value", "Spam", "eGGs")}
+                var bla = useConfig(config)
 
                 Constraint("foo bar"){
                     x.sizeAt(7) eq 7 and y.isScalar()
@@ -160,9 +160,9 @@ class OpBuilderTest {
             }
         }
 
-        val generator = JavaPoetGenerator()
+        var generator = JavaPoetGenerator()
         generator.generateNamespaceNd4j(mathNs, null, outDir, "Nd4jMath")
-        val exp = File(outDir, "org/nd4j/linalg/factory/ops/Nd4jMath.java")
+        var exp = File(outDir, "org/nd4j/linalg/factory/ops/Nd4jMath.java")
         assertTrue(exp.isFile)
 
         println(FileUtils.readFileToString(exp, StandardCharsets.UTF_8))

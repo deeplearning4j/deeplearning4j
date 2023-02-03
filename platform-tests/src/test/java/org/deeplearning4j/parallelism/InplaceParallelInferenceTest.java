@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.parallelism;
 
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -46,7 +46,7 @@ public class InplaceParallelInferenceTest extends BaseDL4JTest {
     public void testUpdateModel() {
         int nIn = 5;
 
-        val conf = new NeuralNetConfiguration.Builder()
+        var conf = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
                 .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).activation(Activation.SOFTMAX).build(), "in")
@@ -54,10 +54,10 @@ public class InplaceParallelInferenceTest extends BaseDL4JTest {
                 .setOutputs("out0", "out1")
                 .build();
 
-        val net = new ComputationGraph(conf);
+        var net = new ComputationGraph(conf);
         net.init();
 
-        val pi = new ParallelInference.Builder(net)
+        var pi = new ParallelInference.Builder(net)
                 .inferenceMode(InferenceMode.INPLACE)
                 .workers(2)
                 .build();
@@ -65,16 +65,16 @@ public class InplaceParallelInferenceTest extends BaseDL4JTest {
 
             assertTrue(pi instanceof InplaceParallelInference);
 
-            val models = pi.getCurrentModelsFromWorkers();
+            var models = pi.getCurrentModelsFromWorkers();
 
             assertTrue(models.length > 0);
 
-            for (val m : models) {
+            for (var m : models) {
                 assertNotNull(m);
                 assertEquals(net.params(), m.params());
             }
 
-            val conf2 = new NeuralNetConfiguration.Builder()
+            var conf2 = new NeuralNetConfiguration.Builder()
                     .graphBuilder()
                     .addInputs("in")
                     .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).activation(Activation.SOFTMAX).build(), "in")
@@ -83,18 +83,18 @@ public class InplaceParallelInferenceTest extends BaseDL4JTest {
                     .setOutputs("out0", "out1", "out2")
                     .build();
 
-            val net2 = new ComputationGraph(conf2);
+            var net2 = new ComputationGraph(conf2);
             net2.init();
 
             assertNotEquals(net.params(), net2.params());
 
             pi.updateModel(net2);
 
-            val models2 = pi.getCurrentModelsFromWorkers();
+            var models2 = pi.getCurrentModelsFromWorkers();
 
             assertTrue(models2.length > 0);
 
-            for (val m : models2) {
+            for (var m : models2) {
                 assertNotNull(m);
                 assertEquals(net2.params(), m.params());
             }
@@ -107,7 +107,7 @@ public class InplaceParallelInferenceTest extends BaseDL4JTest {
     public void testOutput_RoundRobin_1() throws Exception {
         int nIn = 5;
 
-        val conf = new NeuralNetConfiguration.Builder()
+        var conf = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
                 .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).activation(Activation.SOFTMAX).build(), "in")
@@ -115,10 +115,10 @@ public class InplaceParallelInferenceTest extends BaseDL4JTest {
                 .setOutputs("out0", "out1")
                 .build();
 
-        val net = new ComputationGraph(conf);
+        var net = new ComputationGraph(conf);
         net.init();
 
-        val pi = new ParallelInference.Builder(net)
+        var pi = new ParallelInference.Builder(net)
                 .inferenceMode(InferenceMode.INPLACE)
                 .loadBalanceMode(LoadBalanceMode.ROUND_ROBIN)
                 .workers(2)
@@ -126,8 +126,8 @@ public class InplaceParallelInferenceTest extends BaseDL4JTest {
 
         try {
 
-            val result0 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1, 5})}, null)[0];
-            val result1 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1, 5})}, null)[0];
+            var result0 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1, 5})}, null)[0];
+            var result1 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1, 5})}, null)[0];
 
             assertNotNull(result0);
             assertEquals(result0, result1);
@@ -140,7 +140,7 @@ public class InplaceParallelInferenceTest extends BaseDL4JTest {
     public void testOutput_FIFO_1() throws Exception {
         int nIn = 5;
 
-        val conf = new NeuralNetConfiguration.Builder()
+        var conf = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
                 .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).activation(Activation.SOFTMAX).build(), "in")
@@ -148,10 +148,10 @@ public class InplaceParallelInferenceTest extends BaseDL4JTest {
                 .setOutputs("out0", "out1")
                 .build();
 
-        val net = new ComputationGraph(conf);
+        var net = new ComputationGraph(conf);
         net.init();
 
-        val pi = new ParallelInference.Builder(net)
+        var pi = new ParallelInference.Builder(net)
                 .inferenceMode(InferenceMode.INPLACE)
                 .loadBalanceMode(LoadBalanceMode.FIFO)
                 .workers(2)
@@ -159,8 +159,8 @@ public class InplaceParallelInferenceTest extends BaseDL4JTest {
 
         try {
 
-            val result0 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1, 5})}, null)[0];
-            val result1 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1, 5})}, null)[0];
+            var result0 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1, 5})}, null)[0];
+            var result1 = pi.output(new INDArray[]{Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0}, new long[]{1, 5})}, null)[0];
 
             assertNotNull(result0);
             assertEquals(result0, result1);

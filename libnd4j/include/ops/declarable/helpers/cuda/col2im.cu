@@ -73,7 +73,7 @@ static SD_KERNEL void col2imCuda(const void* columns, const sd::LongType* colSha
     const sd::Unsigned colHend = sd::math::sd_min<sd::Unsigned>(imH / sH + 1, oH);
     const sd::Unsigned colWend = sd::math::sd_min<sd::Unsigned>(imW / sW + 1, oW);
 
-    T val = 0;
+    T var = 0;
 
     for (coords[4] = colHstart; coords[4] < colHend; ++coords[4]) {
       coords[2] = imH - coords[4] * sH;
@@ -83,7 +83,7 @@ static SD_KERNEL void col2imCuda(const void* columns, const sd::LongType* colSha
         coords[3] = imW - coords[5] * sW;
         if (coords[3] % dW != 0) continue;
 
-        val += col[bSiCoffset + (coords[2] / dH) * colShapeInfo[9] + (coords[3] / dW) * colShapeInfo[10] +
+        var += col[bSiCoffset + (coords[2] / dH) * colShapeInfo[9] + (coords[3] / dW) * colShapeInfo[10] +
                    coords[4] * colShapeInfo[11] + coords[5] * colShapeInfo[12]];
       }
     }
@@ -132,7 +132,7 @@ SD_KERNEL static void col2imCuda2(const void* columns, void* image, const sd::Lo
   int kWeff = kW + (kW - 1) * (dW - 1);
 
   for (int i = (blockDim.x * blockIdx.x) + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
-    T val = 0;
+    T var = 0;
 
     int w_im = i % iW + pW;
     int h_im = (i / iW) % iH + pH;
@@ -160,7 +160,7 @@ SD_KERNEL static void col2imCuda2(const void* columns, void* image, const sd::Lo
 
           int data_col_index = b * colStride0 + c * colStride1 + kRow * colStride2 + kCol * colStride3 +
                                colH * colStride4 + colW * colStride5;
-          val += col[data_col_index];
+          var += col[data_col_index];
         }
       }
     }

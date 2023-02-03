@@ -79,9 +79,9 @@ public class EmbeddingLayer extends FeedForwardLayer {
         //Basically a dense layer, but no dropout is possible here, and no epsilons
         InputType outputType = getOutputType(-1, inputType);
 
-        val actElementsPerEx = outputType.arrayElementsPerExample();
-        val numParams = initializer().numParams(this);
-        val updaterStateSize = (int) getIUpdater().stateSize(numParams);
+        var actElementsPerEx = outputType.arrayElementsPerExample();
+        var numParams = initializer().numParams(this);
+        var updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         //Embedding layer does not use caching.
         //Inference: no working memory - just activations (pullRows)

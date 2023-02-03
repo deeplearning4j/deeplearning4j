@@ -101,9 +101,9 @@ public class Counter<T> implements Serializable {
     public double setCount(T element, double count) {
         AtomicDouble t = map.get(element);
         if (t != null) {
-            double val = t.getAndSet(count);
+            double tVal = t.getAndSet(count);
             dirty.set(true);
-            return val;
+            return tVal;
         } else {
             map.put(element, new AtomicDouble(count));
             totalCount.addAndGet(count);
@@ -225,8 +225,8 @@ public class Counter<T> implements Serializable {
         Iterator<T> iterator = keySet().iterator();
         while (iterator.hasNext()) {
             T element  = iterator.next();
-            double val = map.get(element).get();
-            if (val < threshold) {
+            double var = map.get(element).get();
+            if (var < threshold) {
                 iterator.remove();
                 dirty.set(true);
             }

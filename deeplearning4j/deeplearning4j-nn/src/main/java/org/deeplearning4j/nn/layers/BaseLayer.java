@@ -392,8 +392,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public long numParams() {
         int ret = 0;
-        for (INDArray val : params.values())
-            ret += val.length();
+        for (INDArray param : params.values())
+            ret += param.length();
         return ret;
     }
 

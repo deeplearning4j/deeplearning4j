@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.slicing;
 
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,7 +49,7 @@ public class SlicingTests extends BaseNd4jTestWithBackends {
         INDArray arr = Nd4j.create(Nd4j.linspace(1, 24, 24, DataType.DOUBLE).data(), new int[] {4, 3, 2});
         for (int i = 0; i < arr.slices(); i++) {
             INDArray slice = arr.slice(i).slice(0);
-            val slices = slice.slices();
+            var slices = slice.slices();
             assertEquals(2, slices);
         }
 

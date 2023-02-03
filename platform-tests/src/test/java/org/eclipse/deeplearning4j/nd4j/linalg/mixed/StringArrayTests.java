@@ -22,7 +22,7 @@ package org.eclipse.deeplearning4j.nd4j.linalg.mixed;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -56,7 +56,7 @@ public class StringArrayTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicStrings_1(Nd4jBackend backend) {
-        val array = Nd4j.scalar("alpha");
+        var array = Nd4j.scalar("alpha");
 
         assertNotNull(array);
         assertEquals(1, array.length());
@@ -72,7 +72,7 @@ public class StringArrayTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicStrings_2(Nd4jBackend backend) {
-        val array = Nd4j.create("alpha","beta", "gamma");
+        var array = Nd4j.create("alpha","beta", "gamma");
 
         assertNotNull(array);
         assertEquals(3, array.length());
@@ -92,9 +92,9 @@ public class StringArrayTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicStrings_3() {
-        val arrayX = Nd4j.create("alpha", "beta", "gamma");
-        val arrayY = Nd4j.create("alpha", "beta", "gamma");
-        val arrayZ = Nd4j.create("Alpha", "bEta", "gamma");
+        var arrayX = Nd4j.create("alpha", "beta", "gamma");
+        var arrayY = Nd4j.create("alpha", "beta", "gamma");
+        var arrayZ = Nd4j.create("Alpha", "bEta", "gamma");
 
         assertEquals(arrayX, arrayX);
         assertEquals(arrayX, arrayY);
@@ -104,15 +104,15 @@ public class StringArrayTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicStrings_4() {
-        val arrayX = Nd4j.create("alpha", "beta", "gamma");
+        var arrayX = Nd4j.create("alpha", "beta", "gamma");
 
-        val fb = new FlatBufferBuilder();
-        val i = arrayX.toFlatArray(fb);
+        var fb = new FlatBufferBuilder();
+        var i = arrayX.toFlatArray(fb);
         fb.finish(i);
-        val db = fb.dataBuffer();
+        var db = fb.dataBuffer();
 
-        val flat = FlatArray.getRootAsFlatArray(db);
-        val restored = Nd4j.createFromFlatArray(flat);
+        var flat = FlatArray.getRootAsFlatArray(db);
+        var restored = Nd4j.createFromFlatArray(flat);
 
         assertEquals(arrayX, restored);
         assertEquals("alpha", restored.getString(0));
@@ -123,15 +123,15 @@ public class StringArrayTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicStrings_4a() {
-        val arrayX = Nd4j.scalar("alpha");
+        var arrayX = Nd4j.scalar("alpha");
 
-        val fb = new FlatBufferBuilder();
-        val i = arrayX.toFlatArray(fb);
+        var fb = new FlatBufferBuilder();
+        var i = arrayX.toFlatArray(fb);
         fb.finish(i);
-        val db = fb.dataBuffer();
+        var db = fb.dataBuffer();
 
-        val flat = FlatArray.getRootAsFlatArray(db);
-        val restored = Nd4j.createFromFlatArray(flat);
+        var flat = FlatArray.getRootAsFlatArray(db);
+        var restored = Nd4j.createFromFlatArray(flat);
 
         assertEquals("alpha", arrayX.getString(0));
 
@@ -142,9 +142,9 @@ public class StringArrayTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBasicStrings_5() {
-        val arrayX = Nd4j.create("alpha", "beta", "gamma");
-        val arrayZ0 = arrayX.dup();
-        val arrayZ1 = arrayX.dup(arrayX.ordering());
+        var arrayX = Nd4j.create("alpha", "beta", "gamma");
+        var arrayZ0 = arrayX.dup();
+        var arrayZ1 = arrayX.dup(arrayX.ordering());
 
         assertEquals(arrayX, arrayZ0);
         assertEquals(arrayX, arrayZ1);

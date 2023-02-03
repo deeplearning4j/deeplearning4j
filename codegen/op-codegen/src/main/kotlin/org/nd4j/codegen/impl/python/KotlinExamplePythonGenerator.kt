@@ -37,8 +37,8 @@ class KotlinExamplePythonGenerator: Generator {
 
     @Throws(IOException::class)
     override fun generateNamespaceNd4j(namespace: NamespaceOps?, config: GeneratorConfig?, directory: File?, className: String?) {
-        val f = File(directory, GenUtil.ensureFirstIsCap(namespace!!.name) + ".py")
-        val content =
+        var f = File(directory, GenUtil.ensureFirstIsCap(namespace!!.name) + ".py")
+        var content =
         """
             |class ${GenUtil.ensureFirstIsCap(namespace.name)}:
             |${namespace.ops.filterNot { it.isAbstract }.joinToString("\n\n") { generateMethod(it).addIndent(4) }}
@@ -64,7 +64,7 @@ class KotlinExamplePythonGenerator: Generator {
         }
         if(op.outputs.size != 1) throw UnsupportedOperationException("Not yet implemented: Python docstring generation for multiple output ops")
 
-        val docStringDelimiter = "\"\"\""
+        var docStringDelimiter = "\"\"\""
         return """
                 |$docStringDelimiter
                 |${op.opName} operation

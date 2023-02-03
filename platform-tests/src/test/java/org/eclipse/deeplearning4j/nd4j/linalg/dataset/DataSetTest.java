@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.dataset;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 
 import org.junit.jupiter.api.Tag;
 
@@ -736,7 +736,7 @@ public class DataSetTest extends BaseNd4jTestWithBackends {
         int imgCols = 2;
 
         int nLabels = 5;
-        val shape = new long[] {nSamples, nChannels, imgRows, imgCols};
+        var shape = new long[] {nSamples, nChannels, imgRows, imgCols};
 
         int entries = nSamples * nChannels * imgRows * imgCols;
         int labels = nSamples * nLabels;
@@ -835,9 +835,9 @@ public class DataSetTest extends BaseNd4jTestWithBackends {
             INDArray lCol = l.getColumn(0);
 //            System.out.println(fCol + "\t" + ds.getExampleMetaData());
             for (int j = 0; j < nExamples; j++) {
-                int fVal = (int) fCol.getDouble(j);
-                int lVal = (int) lCol.getDouble(j);
-                int metaVal = (Integer) ds.getExampleMetaData().get(j);
+                int fvar = (int) fCol.getDouble(j);
+                int lvar = (int) lCol.getDouble(j);
+                int metavar = (Integer) ds.getExampleMetaData().get(j);
 
                 assertEquals(fVal, lVal);
                 assertEquals(fVal, metaVal);

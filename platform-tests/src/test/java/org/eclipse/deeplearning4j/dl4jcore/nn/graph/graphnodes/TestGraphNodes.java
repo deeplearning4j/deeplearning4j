@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.dl4jcore.nn.graph.graphnodes;
 
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -528,7 +528,7 @@ public class TestGraphNodes extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
         GraphVertex reshapeVertex = new ReshapeVertex(null, "", -1, 'c', new int[] {-1, 736}, null, Nd4j.dataType());
 
-        val inputShape = new long[] {1, 1, 1, 736};
+        var inputShape = new long[] {1, 1, 1, 736};
         INDArray input = Nd4j.create(inputShape);
 
         reshapeVertex.setInputs(input);

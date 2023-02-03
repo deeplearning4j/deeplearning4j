@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.jcublas.blas;
 
-import lombok.val;
+
 import org.bytedeco.javacpp.*;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.jita.allocator.Allocator;
@@ -80,7 +80,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         //        CublasPointer xCPointer = new CublasPointer(X, ctx);
         //        CublasPointer yCPointer = new CublasPointer(Y, ctx);
 
-        val dot = new Dot(X, Y);
+        var dot = new Dot(X, Y);
         Nd4j.getExecutioner().exec(dot);
 
         ret = dot.getFinalResult().floatValue();
@@ -95,22 +95,22 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         Nd4j.getExecutioner().push();
 
-        val ctx = allocator.getFlowController().prepareAction(null, X, Y);
+        var ctx = allocator.getFlowController().prepareAction(null, X, Y);
 
         float ret = 1f;
 
-        val xCPointer = new CublasPointer(X, ctx);
-        val yCPointer = new CublasPointer(Y, ctx);
+        var xCPointer = new CublasPointer(X, ctx);
+        var yCPointer = new CublasPointer(Y, ctx);
 
-        val handle = ctx.getCublasHandle();
+        var handle = ctx.getCublasHandle();
 
-        val cctx = new cublasContext(handle);
+        var cctx = new cublasContext(handle);
         synchronized (handle) {
             long result = cublasSetStream_v2(cctx, new CUstream_st(ctx.getCublasStream()));
             if (result != 0)
                 throw new IllegalStateException("cublasSetStream failed");
 
-            val resultPointer = new FloatPointer(0.0f);
+            var resultPointer = new FloatPointer(0.0f);
             result = cublasSdot_v2(cctx, (int) N, (FloatPointer) xCPointer.getDevicePointer(), incX, (FloatPointer) yCPointer.getDevicePointer(), incY, resultPointer);
 
             if (result != 0)
@@ -141,17 +141,17 @@ public class JcublasLevel1 extends BaseLevel1 {
         Nd4j.getExecutioner().push();
 
         double ret;
-        val ctx = allocator.getFlowController().prepareAction(null, X, Y);
+        var ctx = allocator.getFlowController().prepareAction(null, X, Y);
 
-        val xCPointer = new CublasPointer(X, ctx);
-        val yCPointer = new CublasPointer(Y, ctx);
+        var xCPointer = new CublasPointer(X, ctx);
+        var yCPointer = new CublasPointer(Y, ctx);
 
-        val handle = ctx.getCublasHandle();
+        var handle = ctx.getCublasHandle();
         synchronized (handle) {
-            val cctx = new cublasContext(handle);
+            var cctx = new cublasContext(handle);
             cublasSetStream_v2(cctx, new CUstream_st(ctx.getCublasStream()));
 
-            val resultPointer = new DoublePointer(0.0);
+            var resultPointer = new DoublePointer(0.0);
             cublasDdot_v2(cctx, (int) N, (DoublePointer) xCPointer.getDevicePointer(), incX,
                             (DoublePointer) yCPointer.getDevicePointer(), incY, resultPointer);
             ret = resultPointer.get();
@@ -197,7 +197,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected float hasum(long N, INDArray X, int incX) {
 
-        val asum = new ASum(X);
+        var asum = new ASum(X);
         Nd4j.getExecutioner().exec(asum);
 
         float ret = asum.getFinalResult().floatValue();

@@ -250,7 +250,7 @@ SD_DEVICE void Reduce3<X,Z>::transformAll( void const* vx, sd::LongType const* x
     // initialize partials first
     __shared__ Z sPartials[SD_CUDA_BLOCK_SIZE];
 
-    Z startingVal = OpType::startingValue(dx);
+    Z startingvar = OpType::startingValue(dx);
     sPartials[threadIdx.x] = startingVal;
     auto tempX = reinterpret_cast<X*>(sPartials) + blockDim.x;
 
@@ -354,7 +354,7 @@ SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, sd::LongType const* xShap
     auto y = reinterpret_cast<X const*>(vy);
     auto z = reinterpret_cast<Z*>(vz);
 
-    Z startingVal = OpType::startingValue(x);
+    Z startingvar = OpType::startingValue(x);
 
     __shared__ Z extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen : 1];
 

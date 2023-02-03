@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.frameworkimport.keras.weights;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -178,7 +178,7 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
         MultiLayerNetwork model = loadMultiLayerNetwork(tempDir,modelPath, true);
 
         INDArray weights = model.getLayer(0).getParam("W");
-        val weightShape = weights.shape();
+        var weightShape = weights.shape();
         assertEquals(4, weightShape[0]);
         assertEquals(6, weightShape[1]);
 
@@ -191,7 +191,7 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
         MultiLayerNetwork model = loadMultiLayerNetwork(tempDir,modelPath, false);
 
         INDArray depthWeights = model.getLayer(0).getParam("W");
-        val depthWeightShape = depthWeights.shape();
+        var depthWeightShape = depthWeights.shape();
 
         long depthMult = 2;
         long kernel = 3;
@@ -204,7 +204,7 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
         assertEquals(kernel, depthWeightShape[3]);
 
         INDArray weights = model.getLayer(0).getParam("pW");
-        val weightShape = weights.shape();
+        var weightShape = weights.shape();
 
 
         assertEquals(nOut, weightShape[0]);
@@ -227,7 +227,7 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
         MultiLayerNetwork model = loadMultiLayerNetwork(tempDir,modelPath, false);
 
         INDArray weights = model.getLayer(0).getParam("W");
-        val weightShape = weights.shape();
+        var weightShape = weights.shape();
         assertEquals(6, weightShape[0]);
         assertEquals(5, weightShape[1]);
         assertEquals(3, weightShape[2]);
@@ -317,7 +317,7 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
         int mb = 42;
 
         INDArray embeddingWeight = model.getLayer(0).getParam("W");
-        val embeddingWeightShape = embeddingWeight.shape();
+        var embeddingWeightShape = embeddingWeight.shape();
         assertEquals(nIn, embeddingWeightShape[0]);
         assertEquals(outputDim, embeddingWeightShape[1]);
 
@@ -343,7 +343,7 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
         int mb = 42;
 
         INDArray embeddingWeight = model.getLayer(0).getParam("W");
-        val embeddingWeightShape = embeddingWeight.shape();
+        var embeddingWeightShape = embeddingWeight.shape();
         assertEquals(nIn, embeddingWeightShape[0]);
         assertEquals(outputDim, embeddingWeightShape[1]);
 

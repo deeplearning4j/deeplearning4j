@@ -19,7 +19,7 @@
  */
 package org.deeplearning4j.nn.params;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -36,7 +36,7 @@ public class EmbeddingLayerParamInitializer extends DefaultParamInitializer {
 
     protected INDArray createWeightMatrix(long nIn, long nOut, IWeightInit weightInit,
                                           INDArray weightParamView, boolean initializeParameters) {
-        val shape = new long[] {nIn, nOut};
+        var shape = new long[] {nIn, nOut};
 
         if (initializeParameters) {
             INDArray ret = weightInit.init(1, //Fan in - note that fanIn=1 for embedding layer... if we used layer nIn (i.e., vocab size) the init would depend on vocab size (which doesn't make sense)

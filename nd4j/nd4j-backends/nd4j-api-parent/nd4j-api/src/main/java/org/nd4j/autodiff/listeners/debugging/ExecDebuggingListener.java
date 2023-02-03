@@ -20,7 +20,7 @@
 
 package org.nd4j.autodiff.listeners.debugging;
 
-import lombok.val;
+
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.BaseListener;
@@ -102,8 +102,8 @@ public class ExecDebuggingListener extends BaseListener {
                 if(co.tArgs() != null && co.tArgs().length > 0) {
                     sb.append("\n\ttArgs=").append(Arrays.toString(co.tArgs()));
                 }
-                val inputs = co.inputArguments();
-                val outputs = co.outputArguments();
+                var inputs = co.inputArguments();
+                var outputs = co.outputArguments();
                 if(inputs != null ) {
                     for (int i = 0; i < inputs.size(); i++) {
                         sb.append("\n\tInput[").append(i).append("]=").append(inputs.get(i).shapeInfoToString());
@@ -145,8 +145,8 @@ public class ExecDebuggingListener extends BaseListener {
                 if(co.tArgs() != null && co.tArgs().length > 0 ){
                     sb.append("op.addTArgument(").append(Arrays.toString(co.tArgs()).replaceAll("[\\[\\]]", "")).append(");\n");
                 }
-                val inputs = co.inputArguments();
-                val outputs = co.outputArguments();
+                var inputs = co.inputArguments();
+                var outputs = co.outputArguments();
                 if(inputs != null ) {
                     sb.append("INDArray[] inputs = new INDArray[").append(inputs.size()).append("];\n");
                     for (int i = 0; i < inputs.size(); i++) {

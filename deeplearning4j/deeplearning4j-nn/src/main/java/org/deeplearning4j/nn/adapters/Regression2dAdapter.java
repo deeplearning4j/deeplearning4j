@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.adapters;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.adapters.OutputAdapter;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,13 +31,13 @@ public class Regression2dAdapter implements OutputAdapter<double[][]> {
     @Override
     public double[][] apply(INDArray... outputs) {
         Preconditions.checkArgument(outputs.length == 1, "Argmax adapter can have only 1 output");
-        val array = outputs[0];
+        var array = outputs[0];
         Preconditions.checkArgument(array.rank() < 3, "Argmax adapter requires 2D or 1D output");
 
         if (array.rank() == 2 && !array.isVector()) {
             return array.toDoubleMatrix();
         } else {
-            val result = new double[1][(int) array.length()];
+            var result = new double[1][(int) array.length()];
 
             for (int e = 0; e< array.length(); e++)
                 result[0][e] = array.getDouble(e);

@@ -292,12 +292,12 @@ public class Indices {
 
     /**
      * Create an n dimensional index
-     * based on the given interval indices.
+     * based on the given intervar indices.
      * Start and end represent the begin and
      * end of each interval
      * @param start the start indexes
      * @param end the end indexes
-     * @return the interval index relative to the given
+     * @return the intervar index relative to the given
      * start and end indices
      */
     public static INDArrayIndex[] createFromStartAndEnd(INDArray start, INDArray end) {

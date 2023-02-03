@@ -193,7 +193,7 @@ class DataSetIteratorTest extends BaseDL4JTest {
         model.fit(lfw.next());
         DataSet dataTest = lfw.next();
         INDArray output = model.output(dataTest.getFeatures());
-        Evaluation eval = new Evaluation(outputNum);
+        Evaluation evar = new Evaluation(outputNum);
         eval.eval(dataTest.getLabels(), output);
         // System.out.println(eval.stats());
     }
@@ -238,7 +238,7 @@ class DataSetIteratorTest extends BaseDL4JTest {
         model.setListeners(listener);
         model.fit(cifar);
         cifar = new Cifar10DataSetIterator(batchSize);
-        Evaluation eval = new Evaluation(cifar.getLabels());
+        Evaluation evar = new Evaluation(cifar.getLabels());
         while (cifar.hasNext()) {
             DataSet testDS = cifar.next(batchSize);
             INDArray output = model.output(testDS.getFeatures());

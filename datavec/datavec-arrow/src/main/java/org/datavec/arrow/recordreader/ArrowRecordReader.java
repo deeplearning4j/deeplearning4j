@@ -22,7 +22,7 @@ package org.datavec.arrow.recordreader;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.listener.RecordListener;
@@ -116,7 +116,7 @@ public class ArrowRecordReader implements RecordReader {
         try (InputStream inputStream = split.openInputStreamFor(url)) {
             currIdx = 0;
             byte[] arr = org.apache.commons.io.IOUtils.toByteArray(inputStream);
-            val read = readFromBytes(arr);
+            var read = readFromBytes(arr);
             if(this.schema == null) {
                 this.schema = read.getFirst();
             }

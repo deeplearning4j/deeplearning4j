@@ -170,7 +170,7 @@ class Rational implements Cloneable {
     /**
      * Multiply by another fraction.
      *
-     * @param val a second rational number.
+     * @param var a second rational number.
      * @return the product of this with the val.
      */
     public Rational multiply(final Rational val) {
@@ -185,7 +185,7 @@ class Rational implements Cloneable {
     /**
      * Multiply by a BigInteger.
      *
-     * @param val a second number.
+     * @param var a second number.
      * @return the product of this with the value.
      */
     public Rational multiply(final BigInteger val) {
@@ -196,7 +196,7 @@ class Rational implements Cloneable {
     /**
      * Multiply by an integer.
      *
-     * @param val a second number.
+     * @param var a second number.
      * @return the product of this with the value.
      */
     public Rational multiply(final int val) {
@@ -246,7 +246,7 @@ class Rational implements Cloneable {
     /**
      * Divide by another fraction.
      *
-     * @param val A second rational number.
+     * @param var A second rational number.
      * @return The value of this/val
      */
     public Rational divide(final Rational val) {
@@ -261,7 +261,7 @@ class Rational implements Cloneable {
     /**
      * Divide by an integer.
      *
-     * @param val a second number.
+     * @param var a second number.
      * @return the value of this/val
      */
     public Rational divide(BigInteger val) {
@@ -272,7 +272,7 @@ class Rational implements Cloneable {
     /**
      * Divide by an integer.
      *
-     * @param val A second number.
+     * @param var A second number.
      * @return The value of this/val
      */
     public Rational divide(int val) {
@@ -283,7 +283,7 @@ class Rational implements Cloneable {
     /**
      * Add another fraction.
      *
-     * @param val The number to be added
+     * @param var The number to be added
      * @return this+val.
      */
     public Rational add(Rational val) {
@@ -295,7 +295,7 @@ class Rational implements Cloneable {
     /**
      * Add another integer.
      *
-     * @param val The number to be added
+     * @param var The number to be added
      * @return this+val.
      */
     public Rational add(BigInteger val) {
@@ -316,7 +316,7 @@ class Rational implements Cloneable {
      * Subtract another fraction.
      * 7
      *
-     * @param val the number to be subtracted from this
+     * @param var the number to be subtracted from this
      * @return this - val.
      */
     public Rational subtract(Rational val) {
@@ -327,7 +327,7 @@ class Rational implements Cloneable {
     /**
      * Subtract an integer.
      *
-     * @param val the number to be subtracted from this
+     * @param var the number to be subtracted from this
      * @return this - val.
      */
     public Rational subtract(BigInteger val) {
@@ -338,7 +338,7 @@ class Rational implements Cloneable {
     /**
      * Subtract an integer.
      *
-     * @param val the number to be subtracted from this
+     * @param var the number to be subtracted from this
      * @return this - val.
      */
     public Rational subtract(int val) {
@@ -410,7 +410,7 @@ class Rational implements Cloneable {
     /**
      * Compares the value of this with another constant.
      *
-     * @param val the other constant to compare with
+     * @param var the other constant to compare with
      * @return -1, 0 or 1 if this number is numerically less than, equal to,
      * or greater than val.
      */
@@ -427,7 +427,7 @@ class Rational implements Cloneable {
     /**
      * Compares the value of this with another constant.
      *
-     * @param val the other constant to compare with
+     * @param var the other constant to compare with
      * @return -1, 0 or 1 if this number is numerically less than, equal to,
      * or greater than val.
      */
@@ -514,7 +514,7 @@ class Rational implements Cloneable {
     /**
      * Compares the value of this with another constant.
      *
-     * @param val The other constant to compare with
+     * @param var The other constant to compare with
      * @return The arithmetic maximum of this and val.
      */
     public Rational max(final Rational val) {
@@ -529,7 +529,7 @@ class Rational implements Cloneable {
     /**
      * Compares the value of this with another constant.
      *
-     * @param val The other constant to compare with
+     * @param var The other constant to compare with
      * @return The arithmetic minimum of this and val.
      */
     public Rational min(final Rational val) {

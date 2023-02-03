@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.summarystats;
 
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -360,8 +360,8 @@ public class StandardDeviation extends Variance {
         }
         long[] inputShape = (argShape == null || Shape.isPlaceholderShape(argShape) ? x().shape() : argShape);
 
-        val ret = new ArrayList<LongShapeDescriptor>(1);
-        val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims());
+        var ret = new ArrayList<LongShapeDescriptor>(1);
+        var reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims());
         ret.add(LongShapeDescriptor.fromShape(reducedShape, resultType()));
         return ret;
     }

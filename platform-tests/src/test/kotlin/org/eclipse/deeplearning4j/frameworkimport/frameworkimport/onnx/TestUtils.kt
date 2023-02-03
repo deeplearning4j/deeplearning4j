@@ -13,22 +13,22 @@ import org.nd4j.shade.protobuf.ByteString
 import java.nio.charset.Charset
 
 fun runAssertion(graph: Onnx.GraphProto,input: Map<String,INDArray>,outputs: List<String>) {
-    val declarations = OnnxOpDeclarations
-    val onnxOpRegistry = registry()
+    var declarations = OnnxOpDeclarations
+    var onnxOpRegistry = registry()
 
-    val onnxIRGraph = OnnxIRGraph(graph,onnxOpRegistry)
-    val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,input.keys.toList(),outputs)
-    val assertion = onnxGraphRunner.run(input)
-    val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
+    var onnxIRGraph = OnnxIRGraph(graph,onnxOpRegistry)
+    var onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,input.keys.toList(),outputs)
+    var assertion = onnxGraphRunner.run(input)
+    var importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
 
-    val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(input),onnxOpRegistry)
-    val result = importedGraph.output(input,outputs)
+    var importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(input),onnxOpRegistry)
+    var result = importedGraph.output(input,outputs)
     Assertions.assertEquals(assertion, result)
 }
 
 fun createSingleNodeGraph(inputs: Map<String, INDArray>, op: String, attributes: Map<String,Any>, outputs: List<String>, inputNames: List<String>, templateTensor: INDArray = inputs.values.first()): Onnx.GraphProto {
 
-    val op = NodeProto {
+    var op = NodeProto {
         inputNames.forEach { t ->
             Input(t)
         }
@@ -39,10 +39,10 @@ fun createSingleNodeGraph(inputs: Map<String, INDArray>, op: String, attributes:
             Output(it)
         }
         attributes.forEach { (t, u) ->
-            val attr = AttributeProto {
+            var attr = AttributeProto {
                 name = t
             }
-            val toBuilder = attr.toBuilder()
+            var toBuilder = attr.toBuilder()
             when(u) {
                 is Onnx.TensorProto-> {
                     toBuilder.t = u
@@ -72,40 +72,40 @@ fun createSingleNodeGraph(inputs: Map<String, INDArray>, op: String, attributes:
                is java.util.List<*> -> {
                     when(u[0]) {
                         is java.lang.Double -> {
-                            val intsCast = u as List<Double>
+                            var intsCast = u as List<Double>
                             toBuilder.addAllFloats(intsCast.map { input -> input.toFloat() })
                             toBuilder.type = Onnx.AttributeProto.AttributeType.FLOATS
 
                         }
 
                         is java.lang.Float -> {
-                            val intsCast = u as List<Float>
+                            var intsCast = u as List<Float>
                             toBuilder.addAllFloats(intsCast.map { input -> input })
                             toBuilder.type = Onnx.AttributeProto.AttributeType.FLOATS
 
                         }
 
                         is Integer -> {
-                            val intsCast = u as List<Integer>
+                            var intsCast = u as List<Integer>
                             toBuilder.addAllInts(intsCast.map { input -> input.toLong() })
                             toBuilder.type = Onnx.AttributeProto.AttributeType.INTS
 
                         }
 
                         is java.lang.Long -> {
-                            val intsCast = u as List<Long>
+                            var intsCast = u as List<Long>
                             toBuilder.addAllInts(intsCast.map { input -> input })
                             toBuilder.type = Onnx.AttributeProto.AttributeType.INTS
                         }
 
                         is java.lang.String -> {
-                            val stringCast  = u as List<String>
+                            var stringCast  = u as List<String>
                             toBuilder.addAllStrings(stringCast.map { input -> ByteString.copyFrom(input, Charset.defaultCharset()) })
                             toBuilder.type = Onnx.AttributeProto.AttributeType.STRINGS
                         }
 
                         is Onnx.TensorProto -> {
-                            val listTensors = u as List<Onnx.TensorProto>
+                            var listTensors = u as List<Onnx.TensorProto>
                             toBuilder.addAllTensors(listTensors)
                             toBuilder.type = Onnx.AttributeProto.AttributeType.TENSORS
                         }
@@ -120,7 +120,7 @@ fun createSingleNodeGraph(inputs: Map<String, INDArray>, op: String, attributes:
         opType = op
     }
 
-    val graphRet = GraphProto {
+    var graphRet = GraphProto {
         Node(op)
         name = op.opType.toLowerCase()
         inputs.forEach { (t, u) ->

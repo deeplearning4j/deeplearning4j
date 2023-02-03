@@ -19,7 +19,7 @@
  */
 package org.eclipse.deeplearning4j.dl4jcore.nn.layers.recurrent;
 
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.config.DL4JClassLoading;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -62,7 +62,7 @@ class GravesLSTMTest extends BaseDL4JTest {
         int nIn = 13;
         int nHiddenUnits = 17;
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(nHiddenUnits).activation(Activation.TANH).build()).build();
-        val numParams = conf.getLayer().initializer().numParams(conf);
+        var numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         GravesLSTM layer = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         // Data: has shape [miniBatchSize,nIn,timeSeriesLength];
@@ -98,7 +98,7 @@ class GravesLSTMTest extends BaseDL4JTest {
     private static void testGravesBackwardBasicHelper(int nIn, int nOut, int lstmNHiddenUnits, int miniBatchSize, int timeSeriesLength) {
         INDArray inputData = Nd4j.ones(miniBatchSize, nIn, timeSeriesLength);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(lstmNHiddenUnits).dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build()).build();
-        val numParams = conf.getLayer().initializer().numParams(conf);
+        var numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         GravesLSTM lstm = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         lstm.setBackpropGradientsViewArray(Nd4j.create(1, conf.getLayer().initializer().numParams(conf)));
@@ -137,7 +137,7 @@ class GravesLSTMTest extends BaseDL4JTest {
         int miniBatchSize = 4;
         int timeSeriesLength = 7;
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(layerSize).dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build()).build();
-        val numParams = conf.getLayer().initializer().numParams(conf);
+        var numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         GravesLSTM lstm = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         INDArray input = Nd4j.rand(new int[] { miniBatchSize, nIn, timeSeriesLength });

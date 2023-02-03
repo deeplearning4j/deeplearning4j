@@ -26,7 +26,7 @@ import org.nd4j.nativeblas.OpaqueLaunchContext;
 import org.nd4j.shade.guava.collect.HashBasedTable;
 import org.nd4j.shade.guava.collect.Table;
 import lombok.NonNull;
-import lombok.val;
+
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
@@ -324,14 +324,14 @@ public class CudaZeroHandler implements MemoryHandler {
 
         Preconditions.checkArgument(length <= (dstBuffer.length() * Nd4j.sizeOfDataType(dstBuffer.dataType())), "Length requested is bigger than target DataBuffer length");
 
-        val point = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
+        var point = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
         CudaContext tContext = null;
 
         if (dstBuffer.isConstant()) {
             org.bytedeco.javacpp.Pointer dstPointer = new CudaPointer(point.getHostPointer().address() + dstOffset, 0L);
             org.bytedeco.javacpp.Pointer srcPointerJ = new CudaPointer(srcPointer, length);
 
-            val profD = PerformanceTracker.getInstance().helperStartTransaction();
+            var profD = PerformanceTracker.getInstance().helperStartTransaction();
             org.bytedeco.javacpp.Pointer.memcpy(dstPointer, srcPointerJ, length);
             PerformanceTracker.getInstance().helperRegisterTransaction(point.getDeviceId(), profD, point.getNumberOfBytes(), MemcpyDirection.HOST_TO_HOST);
 
@@ -411,7 +411,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
         Pointer dP = new CudaPointer((point.getHostPointer().address()) + dstOffset);
 
-        val profH = PerformanceTracker.getInstance().helperStartTransaction();
+        var profH = PerformanceTracker.getInstance().helperStartTransaction();
 
         if (nativeOps.memcpyAsync(dP, srcPointer, length, CudaConstants.cudaMemcpyHostToHost, context.getOldStream()) == 0)
             throw new ND4JIllegalStateException("memcpyAsync failed");
@@ -421,7 +421,7 @@ public class CudaZeroHandler implements MemoryHandler {
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
             Pointer rDP = new CudaPointer(point.getDevicePointer().address() + dstOffset);
 
-            val profD = PerformanceTracker.getInstance().helperStartTransaction();
+            var profD = PerformanceTracker.getInstance().helperStartTransaction();
 
             if (nativeOps.memcpyAsync(rDP, dP, length, CudaConstants.cudaMemcpyHostToDevice, context.getOldStream()) == 0)
                 throw new ND4JIllegalStateException("memcpyAsync failed");
@@ -468,14 +468,14 @@ public class CudaZeroHandler implements MemoryHandler {
         //log.info("Buffer MemCpy called");
         //log.info("Memcpy buffer: {} bytes ", dstBuffer.length() * dstBuffer.getElementSize());
         CudaContext context = getCudaContext();
-        val dstPoint = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
-        val srcPoint = ((BaseCudaDataBuffer) srcBuffer).getAllocationPoint();
+        var dstPoint = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
+        var srcPoint = ((BaseCudaDataBuffer) srcBuffer).getAllocationPoint();
 
         Pointer dP = null; //new CudaPointer(dstPoint.getPointers().getHostPointer().address());
         Pointer sP = null;
         MemcpyDirection direction = null;
 
-        val profDH = PerformanceTracker.getInstance().helperStartTransaction();
+        var profDH = PerformanceTracker.getInstance().helperStartTransaction();
 
 
 
@@ -537,7 +537,7 @@ public class CudaZeroHandler implements MemoryHandler {
 
 
         // return pointer. length is specified for constructor compatibility purposes. Offset is accounted at C++ side
-        val p = new CudaPointer(dstPoint.getDevicePointer(), buffer.length(), 0);
+        var p = new CudaPointer(dstPoint.getDevicePointer(), buffer.length(), 0);
 
         if (OpProfiler.getInstance().getConfig().isCheckLocality())
              NativeOpsHolder.getInstance().getDeviceNativeOps().tryPointer(context.getOldStream(), p, 1);
@@ -627,11 +627,11 @@ public class CudaZeroHandler implements MemoryHandler {
             return;
         }
 
-        val okDevice = dstPoint.isActualOnDeviceSide();
-        val okHost = dstPoint.isActualOnHostSide();
+        var okDevice = dstPoint.isActualOnDeviceSide();
+        var okHost = dstPoint.isActualOnHostSide();
 
-        val odPtr = dstPoint.getDevicePointer();
-        val ohPtr = dstPoint.getHostPointer();
+        var odPtr = dstPoint.getDevicePointer();
+        var ohPtr = dstPoint.getHostPointer();
 
         // FIXME: cross-thread access, might cause problems
         if (dstPoint.getHostPointer() != null && !dstPoint.isActualOnHostSide())
@@ -649,18 +649,18 @@ public class CudaZeroHandler implements MemoryHandler {
                 // if we're out of workspace, we should mark our buffer as detached, so gc will pick it up eventually
                 // host part is optional
                 if (dstPoint.getHostPointer() != null) {
-                    //val pairH = alloc(AllocationStatus.HOST, dstPoint, dstPoint.getShape(), false);
+                    //var pairH = alloc(AllocationStatus.HOST, dstPoint, dstPoint.getShape(), false);
                     //dstPoint.getPointers().setHostPointer(pairH.getHostPointer());
                 }
 
-                //val pairD = alloc(AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), false);
+                //var pairD = alloc(AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), false);
                 //dstPoint.getPointers().setDevicePointer(pairD.getDevicePointer());
 
                 ////log.info("New host pointer: {}; Old host pointer: {}", dstPoint.getHostPointer().address(), ohPtr.address());
 
                 CudaContext context = getCudaContext();
 
-                val profD = PerformanceTracker.getInstance().helperStartTransaction();
+                var profD = PerformanceTracker.getInstance().helperStartTransaction();
 
                 if (okDevice) {
                     if (nativeOps.memcpyAsync(dstPoint.getDevicePointer(), odPtr, buffer.length() * buffer.getElementSize(), CudaConstants.cudaMemcpyDeviceToDevice, context.getSpecialStream()) == 0)
@@ -708,7 +708,7 @@ public class CudaZeroHandler implements MemoryHandler {
             throw new RuntimeException("Can't relocateObject() for constant buffer");
         } else {
             //                log.info("Free relocateObject: deviceId: {}, pointer: {}", deviceId, dstPoint.getPointers().getDevicePointer().address());
-            val context = getCudaContext();
+            var context = getCudaContext();
             if (dstPoint.getHostPointer() == null) {
                 ((BaseCudaDataBuffer) buffer).lazyAllocateHostPointer();
 
@@ -724,7 +724,7 @@ public class CudaZeroHandler implements MemoryHandler {
             // we replace original device pointer with new one
             //alloc(AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), false);
 
-            val profD = PerformanceTracker.getInstance().helperStartTransaction();
+            var profD = PerformanceTracker.getInstance().helperStartTransaction();
 
             if (nativeOps.memcpyAsync(dstPoint.getDevicePointer(), dstPoint.getHostPointer(),
                             buffer.length() * buffer.getElementSize(), 1, context.getSpecialStream()) == 0)
@@ -999,7 +999,7 @@ public class CudaZeroHandler implements MemoryHandler {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     protected cublasHandle_t getCudaCublasHandle(OpaqueLaunchContext lc) {
-        val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        var deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         try {
             lock.writeLock().lock();
 
@@ -1021,7 +1021,7 @@ public class CudaZeroHandler implements MemoryHandler {
     public CudaContext getCudaContext() {
         var ctx = tlContext.get();
         if (ctx == null) {
-            val lc = nativeOps.defaultLaunchContext();
+            var lc = nativeOps.defaultLaunchContext();
 
             ctx = CudaContext.builder()
                     .bufferScalar(nativeOps.lcScalarPointer(lc))

@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.shape.concat;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -324,14 +324,14 @@ public class ConcatTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testLargeConcat(Nd4jBackend backend) {
-        val list = new ArrayList<INDArray>();
+        var list = new ArrayList<INDArray>();
 
         for (int e = 0; e < 20000; e++)
             list.add(Nd4j.create(DataType.INT, 1, 300).assign(e));
 
-        val timeStart = System.nanoTime();
-        val result = Nd4j.concat(0, list.toArray(new INDArray[list.size()]));
-        val timeEnd = System.nanoTime();
+        var timeStart = System.nanoTime();
+        var result = Nd4j.concat(0, list.toArray(new INDArray[list.size()]));
+        var timeEnd = System.nanoTime();
 
         log.info("Time: {} us", (timeEnd - timeStart) / 1000);
 

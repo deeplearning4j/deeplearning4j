@@ -157,10 +157,10 @@ SD_KERNEL static void sruBICuda(const void* vx, const sd::LongType* xShapeInfo, 
   const auto bFOffset = shape::getOffset(bShapeInfo, coords + 2);
   const auto bROffset = bFOffset + 2 * K * bShapeInfo[2];  // 2*K*b_stride
 
-  const T maskVal = mask ? mask[maskOffst] : static_cast<T>(1);
+  const T maskvar = mask ? mask[maskOffst] : static_cast<T>(1);
   const T bF = b[bFOffset];
   const T bR = b[bROffset];
-  T c0Val = c0[c0Offset];
+  T c0var = c0[c0Offset];
 
   const bool flip = coords[2] >= K;
 
@@ -184,11 +184,11 @@ SD_KERNEL static void sruBICuda(const void* vx, const sd::LongType* xShapeInfo, 
     T ft = (1.f) / (1.f + sd::math::sd_exp<T, T>(-(wi[wiOffset1] + bF)));
     T rt = (1.f) / (1.f + sd::math::sd_exp<T, T>(-(wi[wiOffset2] + bR)));
 
-    c0Val = (c0Val - wi[wiOffset0]) * ft + wi[wiOffset0];
+    c0var = (c0var - wi[wiOffset0]) * ft + wi[wiOffset0];
     ct[ctOffset] = c0Val;
-    T val = sd::math::sd_tanh<T, T>(c0Val);
-    T xVal = x[xOffset];
-    ht[htOffset] = (val * maskVal - xVal) * rt + xVal;
+    T var = sd::math::sd_tanh<T, T>(c0Val);
+    T xvar = x[xOffset];
+    ht[htOffset] = (var * maskvar - xVal) * rt + xVal;
 
     if (flip) {
       xOffset -= xShapeInfo[rank + 1];  // first stride, corresponds to time step
@@ -346,12 +346,12 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const sd::LongType* xShapeInfo
   auto wiOffset1 = wiOffset0 + wiShapeInfo[rank + 3];  // add last stride
   auto wiOffset2 = wiOffset1 + wiShapeInfo[rank + 3];  // add last stride
 
-  const T xVal = x[xOffset];
-  const T maskVal = mask ? mask[maskOffst] : static_cast<T>(1);
-  const T c0Val = c0[c0Offset];
+  const T xvar = x[xOffset];
+  const T maskvar = mask ? mask[maskOffst] : static_cast<T>(1);
+  const T c0var = c0[c0Offset];
   const T bF = b[bFOffset];
   const T bR = b[bROffset];
-  T gradCtVal = gradCt[gradCtOffset];
+  T gradCtvar = gradCt[gradCtOffset];
   T gbF = 0.f;
   T gbR = 0.f;
 
@@ -361,35 +361,35 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const sd::LongType* xShapeInfo
     T ft = (1.f) / (1.f + sd::math::sd_exp<T, T>(-(wi[wiOffset1] + bF)));
     T rt = (1.f) / (1.f + sd::math::sd_exp<T, T>(-(wi[wiOffset2] + bR)));
 
-    T val = sd::math::sd_tanh<T, T>(ct[ctOffset]);
+    T var = sd::math::sd_tanh<T, T>(ct[ctOffset]);
 
     T prevVal;
     if (t < time - 1)
-      prevVal = ct[ctOffset += flip ? ctShapeInfo[rank + 1] : -ctShapeInfo[rank + 1]];
+      prevvar = ct[ctOffset += flip ? ctShapeInfo[rank + 1] : -ctShapeInfo[rank + 1]];
     else
-      prevVal = c0Val;
+      prevvar = c0Val;
 
     // grad wrt input
     gradI[gradIOffset] = gradHt[gradHtOffset] - gradHt[gradHtOffset] * rt;
 
     // grad wrt rt, wiR and bR
-    T grt = gradHt[gradHtOffset] * (val * maskVal - x[xOffset]) * (rt - rt * rt);
+    T grt = gradHt[gradHtOffset] * (var * maskvar - x[xOffset]) * (rt - rt * rt);
     gradWi[gradWiOffset2] = grt;
     gbR += grt;
 
     // grad wrt state
-    T gradC0Val = gradHt[gradHtOffset] * maskVal * (rt - rt * val * val) + gradCtVal;
+    T gradC0var = gradHt[gradHtOffset] * maskvar * (rt - rt * var * val) + gradCtVal;
 
     // grad wrt wi0
-    gradWi[gradWiOffset0] = gradC0Val - gradC0Val * ft;
+    gradWi[gradWiOffset0] = gradC0var - gradC0var * ft;
 
     // grad wrt ft, wi1, and bF
-    T gft = gradC0Val * (prevVal - wi[wiOffset0]) * (ft - ft * ft);
+    T gft = gradC0var * (prevvar - wi[wiOffset0]) * (ft - ft * ft);
     gradWi[gradWiOffset1] = gft;
     gbF += gft;
 
     // grad wrt c_previous
-    gradCtVal = gradC0Val * ft;
+    gradCtvar = gradC0var * ft;
 
     if (flip) {
       xOffset += xShapeInfo[rank + 1];  // first stride, corresponds to time step

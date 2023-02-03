@@ -22,7 +22,7 @@ package org.deeplearning4j.spark.parameterserver.networking.v2;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
@@ -61,7 +61,7 @@ public class WiredEncodingHandler extends EncodingHandler {
         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             long updateId = updatesCounter.getAndIncrement();
 
-            val m = message.dup();
+            var m = message.dup();
             ModelParameterServer.getInstance().sendUpdate(m, iterationNumber, epochNumber);
         }
 

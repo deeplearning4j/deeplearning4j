@@ -164,7 +164,7 @@ SD_KERNEL static void clipByNormBpCuda(const void* vClipNorm, const void* vx, co
                                     : norm[shape::getOffset(normShapeInfo, normCoords)];
 
     if (actualNorm > clipNorm) {
-      const T sumVal = sum[shape::getOffset(sumShapeInfo, normCoords)];
+      const T sumvar = sum[shape::getOffset(sumShapeInfo, normCoords)];
       const auto xOffset = sameOffsets ? zOffset : shape::getOffset(xShapeInfo, zCoords);
 
       z[zOffset] = (clipNorm / actualNorm) * y[yOffset] *
@@ -185,11 +185,11 @@ void clipByNormBp_(sd::LaunchContext* context, const NDArray& input, const NDArr
   if (actualNorms.lengthOf() == 1) {
     const T norm = useAverage ? actualNorms.e<T>(0) / static_cast<T>(input.lengthOf()) : actualNorms.e<T>(0);
 
-    auto clipVal = clipNorm.e<T>(0);
+    auto clipvar = clipNorm.e<T>(0);
 
     if (norm > clipVal) {
       const T sum = input.reduceNumber(reduce::Sum).e<T>(0);  // reduce to scalar
-      const T factor1 = clipVal / norm;
+      const T factor1 = clipvar / norm;
       const T factor2 = static_cast<T>(1.f) / (norm * norm);  // 1 / (norm*norm*norm)
 
       auto lambda = LAMBDA_TT(x, y, sum, factor1, factor2) {

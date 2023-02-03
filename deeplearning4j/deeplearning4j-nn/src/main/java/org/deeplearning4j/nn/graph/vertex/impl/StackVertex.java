@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -67,8 +67,8 @@ public class StackVertex extends BaseGraphVertex {
         // what we want to do is make a stacked output (e.g.: [3 x nExamples, nSize])
         lastInputShapes = null;
         int nStack = inputs.length;
-        val inShape = inputs[0].shape();
-        val outShape = new long[inShape.length];
+        var inShape = inputs[0].shape();
+        var outShape = new long[inShape.length];
 
         // create the new shape
         outShape[0] = nStack * inShape[0];

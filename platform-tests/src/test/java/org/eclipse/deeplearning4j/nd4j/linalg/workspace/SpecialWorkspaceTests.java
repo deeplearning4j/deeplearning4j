@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.parallel.Execution;
@@ -276,27 +276,27 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNoOpExecution_1(Nd4jBackend backend) {
-        val configuration = WorkspaceConfiguration.builder().initialSize(10000000).overallocationLimit(3.0)
+        var configuration = WorkspaceConfiguration.builder().initialSize(10000000).overallocationLimit(3.0)
                 .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
                 .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
 
         int iterations = 10000;
 
-        val array0 = Nd4j.create(new long[]{ 100, 100});
-        val array1 = Nd4j.create(new long[]{ 100, 100});
-        val array2 = Nd4j.create(new long[]{ 100, 100});
-        val array3 = Nd4j.create(new long[]{ 100, 100});
-        val array4 = Nd4j.create(new long[]{ 100, 100});
-        val array5 = Nd4j.create(new long[]{ 100, 100});
-        val array6 = Nd4j.create(new long[]{ 100, 100});
-        val array7 = Nd4j.create(new long[]{ 100, 100});
-        val array8 = Nd4j.create(new long[]{ 100, 100});
-        val array9 = Nd4j.create(new long[]{ 100, 100});
+        var array0 = Nd4j.create(new long[]{ 100, 100});
+        var array1 = Nd4j.create(new long[]{ 100, 100});
+        var array2 = Nd4j.create(new long[]{ 100, 100});
+        var array3 = Nd4j.create(new long[]{ 100, 100});
+        var array4 = Nd4j.create(new long[]{ 100, 100});
+        var array5 = Nd4j.create(new long[]{ 100, 100});
+        var array6 = Nd4j.create(new long[]{ 100, 100});
+        var array7 = Nd4j.create(new long[]{ 100, 100});
+        var array8 = Nd4j.create(new long[]{ 100, 100});
+        var array9 = Nd4j.create(new long[]{ 100, 100});
 
-        val timeStart = System.nanoTime();
+        var timeStart = System.nanoTime();
         for (int e = 0; e < iterations; e++) {
 
-            val op = DynamicCustomOp.builder("noop")
+            var op = DynamicCustomOp.builder("noop")
                     .addInputs(array0, array1, array2, array3, array4, array5, array6, array7, array8, array9)
                     .addOutputs(array0, array1, array2, array3, array4, array5, array6, array7, array8, array9)
                     .addIntegerArguments(5, 10)
@@ -307,7 +307,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
 
             Nd4j.getExecutioner().exec(op);
         }
-        val timeEnd = System.nanoTime();
+        var timeEnd = System.nanoTime();
         log.info("{} ns", ((timeEnd - timeStart) / (double) iterations));
     }
 
@@ -320,8 +320,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
                 .policyLearning(LearningPolicy.NONE)
                 .build();
 
-        val exp = Arrays.asList("outer", null, "outer", "inner", "outer", null);
-        val res = new ArrayList<String>();
+        var exp = Arrays.asList("outer", null, "outer", "inner", "outer", null);
+        var res = new ArrayList<String>();
 
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, "outer")){
             try(MemoryWorkspace ws2 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, "inner")){
@@ -353,22 +353,22 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         if (!Nd4j.getEnvironment().isCPU())
             return;
 
-        val tmpFile = Files.createTempFile("some", "file");
-        val mmap = WorkspaceConfiguration.builder()
+        var tmpFile = Files.createTempFile("some", "file");
+        var mmap = WorkspaceConfiguration.builder()
                 .initialSize(200 * 1024L * 1024L) // 200mbs
                 .tempFilePath(tmpFile.toAbsolutePath().toString())
                 .policyLocation(LocationPolicy.MMAP)
                 .policyLearning(LearningPolicy.NONE)
                 .build();
 
-        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
+        try (var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
             int twoHundredMbsOfFloats = 52_428_800; // 200mbs % 4
-            val addMoreFloats = true;
+            var addMoreFloats = true;
             if (addMoreFloats) {
                 twoHundredMbsOfFloats += 1_000;
             }
 
-            val x = Nd4j.rand(DataType.FLOAT, twoHundredMbsOfFloats);
+            var x = Nd4j.rand(DataType.FLOAT, twoHundredMbsOfFloats);
         }
     }
 
@@ -379,21 +379,21 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
             return;
 
         // getting very long file name
-        val builder = new StringBuilder("long_file_name_");
+        var builder = new StringBuilder("long_file_name_");
         for (int e = 0; e < 100; e++)
             builder.append("9");
 
 
-        val tmpFile = Files.createTempFile("some", builder.toString());
-        val mmap = WorkspaceConfiguration.builder()
+        var tmpFile = Files.createTempFile("some", builder.toString());
+        var mmap = WorkspaceConfiguration.builder()
                 .initialSize(200 * 1024L * 1024L) // 200mbs
                 .tempFilePath(tmpFile.toAbsolutePath().toString())
                 .policyLocation(LocationPolicy.MMAP)
                 .policyLearning(LearningPolicy.NONE)
                 .build();
 
-        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
-            val x = Nd4j.rand(DataType.FLOAT, 1024);
+        try (var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
+            var x = Nd4j.rand(DataType.FLOAT, 1024);
         }
     }
 
@@ -403,16 +403,16 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         if (!Nd4j.getEnvironment().isCPU())
             return;
 
-        val tmpFile = Files.createTempFile("some", "file");
-        val mmap = WorkspaceConfiguration.builder()
+        var tmpFile = Files.createTempFile("some", "file");
+        var mmap = WorkspaceConfiguration.builder()
                 .initialSize(200 * 1024L * 1024L) // 200mbs
                 .tempFilePath(tmpFile.toAbsolutePath().toString())
                 .policyLocation(LocationPolicy.MMAP)
                 .policyLearning(LearningPolicy.NONE)
                 .build();
 
-        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
-            val x = Nd4j.rand(DataType.FLOAT, 1024);
+        try (var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
+            var x = Nd4j.rand(DataType.FLOAT, 1024);
         }
 
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -426,15 +426,15 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
             if (!Nd4j.getEnvironment().isCPU())
                 throw new IllegalArgumentException("Don't try to run on CUDA");
 
-            val tmpFile = Files.createTempFile("some", "file");
-            val mmap = WorkspaceConfiguration.builder()
+            var tmpFile = Files.createTempFile("some", "file");
+            var mmap = WorkspaceConfiguration.builder()
                     .initialSize(200 * 1024L * 1024L) // 200mbs
                     .tempFilePath(tmpFile.toAbsolutePath().toString())
                     .policyLocation(LocationPolicy.MMAP)
                     .build();
 
-            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
-                val x = Nd4j.rand(DataType.FLOAT, 1024);
+            try (var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
+                var x = Nd4j.rand(DataType.FLOAT, 1024);
             }
 
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -447,12 +447,12 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMigrateToWorkspace(){
-        val src = Nd4j.createFromArray (1L,2L);
-        val wsConf = new WorkspaceConfiguration().builder().build();
+        var src = Nd4j.createFromArray (1L,2L);
+        var wsConf = new WorkspaceConfiguration().builder().build();
         Nd4j.getWorkspaceManager().createNewWorkspace(wsConf,"testWS");
-        val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace("testWS");
+        var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace("testWS");
 
-        val migrated = src.migrate();
+        var migrated = src.migrate();
         assertEquals(src.dataType(), migrated.dataType());
         assertEquals(1L, migrated.getLong(0));
 

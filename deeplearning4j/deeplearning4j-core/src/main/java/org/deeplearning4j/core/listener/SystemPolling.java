@@ -113,9 +113,9 @@ public class SystemPolling {
 
 
         /**
-         * The interval in milliseconds in which to poll
+         * The intervar in milliseconds in which to poll
          * the system for diagnostics
-         * @param pollEveryMillis the interval in milliseconds
+         * @param pollEveryMillis the intervar in milliseconds
          * @return
          */
         public Builder pollEveryMillis(long pollEveryMillis) {

@@ -112,23 +112,22 @@ public class NativeGraphExecutioner implements GraphExecutioner {
         INDArray[] results = new INDArray[fr.variablesLength()];
 
         for (int e = 0; e < fr.variablesLength(); e++) {
-            FlatVariable var = fr.variables(e);
-            String varName = var.name();
-//            log.info("Var received: id: [{}:{}/<{}>];", var.id().first(), var.id().second(), var.name());
-            FlatArray ndarray = var.ndarray();
+            FlatVariable flatVar = fr.variables(e);
+            String varName = flatVar.name();
+            FlatArray ndarray = flatVar.ndarray();
 
-            INDArray val = Nd4j.createFromFlatArray(ndarray);
-            results[e] = val;
+            INDArray valArr = Nd4j.createFromFlatArray(ndarray);
+            results[e] = valArr;
 
-            if (var.name() != null && sd.variableMap().containsKey(var.name())) {
+            if (flatVar.name() != null && sd.variableMap().containsKey(flatVar.name())) {
                 if(sd.getVariable(varName).getVariableType() != VariableType.ARRAY){
-                    sd.associateArrayWithVariable(val, sd.variableMap().get(var.name()));
+                    sd.associateArrayWithVariable(valArr, sd.variableMap().get(flatVar.name()));
                 }
             } else {
-                if (sd.variableMap().get(var.name()) != null) {
-                    sd.associateArrayWithVariable(val,sd.getVariable(var.name()));
+                if (sd.variableMap().get(flatVar.name()) != null) {
+                    sd.associateArrayWithVariable(valArr,sd.getVariable(flatVar.name()));
                 } else {
-                    log.warn("Unknown variable received: [{}]", var.name());
+                    log.warn("Unknown variable received: [{}]", flatVar.name());
                 }
             }
         }

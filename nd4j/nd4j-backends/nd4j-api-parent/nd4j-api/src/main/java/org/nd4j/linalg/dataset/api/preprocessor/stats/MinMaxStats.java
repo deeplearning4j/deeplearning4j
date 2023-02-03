@@ -53,7 +53,7 @@ public class MinMaxStats implements NormalizerStats {
         // If any entry in `addedPadding` is not 0, then we had to add something to prevent 0 difference, Add this same
         // value to the upper bounds to actually apply the padding, and log about it
         if (addedPadding.sumNumber().doubleValue() > 0) {
-            log.info("NormalizerMinMaxScaler: max val minus min val found to be zero. Transform will round up to epsilon to avoid nans.");
+            log.info("NormalizerMinMaxScaler: max var minus min var found to be zero. Transform will round up to epsilon to avoid nans.");
             upper.addi(addedPadding);
         }
 

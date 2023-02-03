@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -80,15 +80,15 @@ public class Nd4jTestsF extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSlice_1(Nd4jBackend backend) {
-        val arr = Nd4j.linspace(1,4, 4, DataType.DOUBLE).reshape(2, 2, 1);
-        val exp0 = Nd4j.create(new double[]{1, 3}, new int[] {2, 1});
-        val exp1 = Nd4j.create(new double[]{2, 4}, new int[] {2, 1});
+        var arr = Nd4j.linspace(1,4, 4, DataType.DOUBLE).reshape(2, 2, 1);
+        var exp0 = Nd4j.create(new double[]{1, 3}, new int[] {2, 1});
+        var exp1 = Nd4j.create(new double[]{2, 4}, new int[] {2, 1});
 
-        val slice0 = arr.slice(0).dup('f');
+        var slice0 = arr.slice(0).dup('f');
         assertEquals(exp0, slice0);
         assertEquals(exp0, arr.slice(0));
 
-        val slice1 = arr.slice(1).dup('f');
+        var slice1 = arr.slice(1).dup('f');
         assertEquals(exp1, slice1);
         assertEquals(exp1, arr.slice(1));
     }

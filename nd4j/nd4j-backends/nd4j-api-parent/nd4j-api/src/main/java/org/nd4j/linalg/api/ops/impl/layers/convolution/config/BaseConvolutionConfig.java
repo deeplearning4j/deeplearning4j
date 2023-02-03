@@ -23,7 +23,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution.config;
 import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.lang.reflect.Field;
@@ -72,8 +72,8 @@ public abstract class BaseConvolutionConfig {
     }
 
     private Object ensureProperType(Field targetType, Object value) {
-        val firstClass = targetType.getType();
-        val valueType = value.getClass();
+        var firstClass = targetType.getType();
+        var valueType = value.getClass();
         if (!firstClass.equals(valueType)) {
             if (firstClass.equals(int[].class)) {
                 if (value instanceof Number) {

@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -91,7 +91,7 @@ public class TensorArray extends  BaseTensorOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val idd = nodeDef.getInput(nodeDef.getInputCount() - 1);
+        var idd = nodeDef.getInput(nodeDef.getInputCount() - 1);
         NodeDef iddNode = null;
         for(int i = 0; i < graph.getNodeCount(); i++) {
             if(graph.getNode(i).getName().equals(idd)) {
@@ -99,7 +99,7 @@ public class TensorArray extends  BaseTensorOp {
             }
         }
 
-        val arr = TFGraphMapper.getNDArrayFromTensor(iddNode);
+        var arr = TFGraphMapper.getNDArrayFromTensor(iddNode);
 
         if (arr != null) {
             int idx = arr.getInt(0);
@@ -143,7 +143,7 @@ public class TensorArray extends  BaseTensorOp {
 
     @Override
     public SameDiff getSameDiff() {
-        val sd = this.sameDiff;
+        var sd = this.sameDiff;
         if (sd.getChild() != null) {
             return sd.getChild();
         }
@@ -456,7 +456,7 @@ public class TensorArray extends  BaseTensorOp {
         TensorArray outputVar = sd.tensorArray(inputs[0].dataType());
         SDVariable outTmp = outputVar.getVar();
         for(int i = 0; i < inputs.length; i++) {
-            val write =  outputVar.write(outTmp,i,inputs[i]);
+            var write =  outputVar.write(outTmp,i,inputs[i]);
             if(outTmp != null) {
                 write.addControlDependency(outTmp);
             }

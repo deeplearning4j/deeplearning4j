@@ -23,7 +23,7 @@ package org.nd4j.descriptor.proposal.impl;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedParameterDeclaration;
-import lombok.val;
+
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.common.base.Preconditions;
@@ -490,7 +490,7 @@ public class ArgDescriptorParserUtils {
     }
 
     public static ArgDescriptorProposal aggregateProposals(List<ArgDescriptorProposal> listOfProposals) {
-        val descriptorBuilder = OpNamespace.ArgDescriptor.newBuilder();
+        var descriptorBuilder = OpNamespace.ArgDescriptor.newBuilder();
         Counter<Integer> mostLikelyIndex = new Counter<>();
 
         AtomicDouble aggregatedWeight = new AtomicDouble(0.0);
@@ -594,8 +594,8 @@ public class ArgDescriptorParserUtils {
 
         ret.clear();
         proposalsByType.keySet().stream().forEach(argTypeIndexPair -> {
-            val proposal = proposalsByType.getCounter(argTypeIndexPair).argMax();
-            val name = proposal.getDescriptor().getName();
+            var proposal = proposalsByType.getCounter(argTypeIndexPair).argMax();
+            var name = proposal.getDescriptor().getName();
             List<ArgDescriptorProposal> proposalsForName;
             if(!ret.containsKey(name)) {
                 proposalsForName = new ArrayList<>();
@@ -608,7 +608,7 @@ public class ArgDescriptorParserUtils {
         });
 
         ret.forEach((name,proposals) -> {
-            val proposalsGroupedByType = proposals.stream().collect(Collectors.groupingBy(proposal -> proposal.getDescriptor().getArgType()));
+            var proposalsGroupedByType = proposals.stream().collect(Collectors.groupingBy(proposal -> proposal.getDescriptor().getArgType()));
             List<ArgDescriptorProposal> maxProposalsForEachType = new ArrayList<>();
             proposalsGroupedByType.forEach((type,proposalGroupByType) -> {
                 Counter<ArgDescriptorProposal> proposalsCounter = new Counter<>();
@@ -623,13 +623,13 @@ public class ArgDescriptorParserUtils {
 
 
             //group by index and type
-            val collected = proposals.stream()
+            var collected = proposals.stream()
                     .collect(Collectors.groupingBy(input -> Pair.of(input.getDescriptor().getArgIndex(),input.getDescriptor().getArgType())))
                     .entrySet()
                     .stream().map(input -> Pair.of(input.getKey(),
                             aggregateProposals(input.getValue()).getDescriptor()))
                     .collect(Collectors.toMap(pair -> pair.getKey(),pair -> pair.getValue()));
-            val groupedByType = collected.entrySet().stream().collect(Collectors.groupingBy(input -> input.getKey().getRight()));
+            var groupedByType = collected.entrySet().stream().collect(Collectors.groupingBy(input -> input.getKey().getRight()));
             groupedByType.forEach((argType,list) -> {
                 //count number of elements that aren't -1
                 int numGreaterThanNegativeOne = list.stream().map(input -> input.getKey().getFirst() >= 0 ? 1 : 0)
@@ -640,14 +640,14 @@ public class ArgDescriptorParserUtils {
             });
 
 
-            val arrEntries = collected.entrySet().stream()
+            var arrEntries = collected.entrySet().stream()
                     .filter(pair -> pair.getValue().getIsArray())
                     .collect(Collectors.toList());
             //process arrays separately and aggregate by type
             if(!arrEntries.isEmpty()) {
-                val initialType = arrEntries.get(0).getValue().getArgType();
-                val allSameType = new AtomicBoolean(true);
-                val negativeOnePresent = new AtomicBoolean(false);
+                var initialType = arrEntries.get(0).getValue().getArgType();
+                var allSameType = new AtomicBoolean(true);
+                var negativeOnePresent = new AtomicBoolean(false);
                 arrEntries.forEach(entry -> {
                     allSameType.set(allSameType.get() && entry.getValue().getArgType() == initialType);
                     negativeOnePresent.set(negativeOnePresent.get() || entry.getValue().getArgIndex() == -1);

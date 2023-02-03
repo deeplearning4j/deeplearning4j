@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -155,37 +155,37 @@ public class FlatBuffersMapper {
     /**
      * This method converts enums for DataType
      */
-    public static DataType getDataTypeFromByte(byte val) {
-        if (val == DType.FLOAT) {
+    public static DataType getDataTypeFromByte(byte inputVal) {
+        if (inputVal == DType.FLOAT) {
             return DataType.FLOAT;
-        } else if (val == DType.DOUBLE) {
+        } else if (inputVal == DType.DOUBLE) {
             return DataType.DOUBLE;
-        } else if (val == DType.HALF) {
+        } else if (inputVal == DType.HALF) {
             return DataType.HALF;
-        } else if (val == DType.INT32) {
+        } else if (inputVal == DType.INT32) {
             return DataType.INT;
-        } else if (val == DType.INT64) {
+        } else if (inputVal == DType.INT64) {
             return DataType.LONG;
-        } else if (val == DType.INT8) {
+        } else if (inputVal == DType.INT8) {
             return DataType.BYTE;
-        } else if (val == DType.BOOL) {
+        } else if (inputVal == DType.BOOL) {
             return DataType.BOOL;
-        } else if (val == DType.UINT8) {
+        } else if (inputVal == DType.UINT8) {
             return DataType.UBYTE;
-        } else if (val == DType.INT16) {
+        } else if (inputVal == DType.INT16) {
             return DataType.SHORT;
-        } else if (val == DType.UTF8) {
+        } else if (inputVal == DType.UTF8) {
             return DataType.UTF8;
-        } else if (val == DType.UINT16) {
+        } else if (inputVal == DType.UINT16) {
             return DataType.UINT16;
-        } else if (val == DType.UINT32) {
+        } else if (inputVal == DType.UINT32) {
             return DataType.UINT32;
-        } else if (val == DType.UINT64) {
+        } else if (inputVal == DType.UINT64) {
             return DataType.UINT64;
-        } else if (val == DType.BFLOAT16){
+        } else if (inputVal == DType.BFLOAT16) {
             return DataType.BFLOAT16;
         } else {
-            throw new RuntimeException("Unknown datatype: " + val);
+            throw new RuntimeException("Unknown datatype: " + inputVal);
         }
     }
 
@@ -220,9 +220,9 @@ public class FlatBuffersMapper {
                     throw new IllegalStateException("Unknown LOGIC op with name: " + name);
             }
         } else if (type == Type.CUSTOM) {
-            val name2 = Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase());
+            var name2 = Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase());
             if (name2 == null) {
-                val name3 = Nd4j.getExecutioner().getCustomOperations().get(name);
+                var name3 = Nd4j.getExecutioner().getCustomOperations().get(name);
                 if (name3 == null) {
                     return 0;
                 } else {
@@ -368,8 +368,8 @@ public class FlatBuffersMapper {
     /**
      * This method just converts enums
      */
-    public static ByteOrder getOrderFromByte(byte val) {
-        if (val == org.nd4j.graph.ByteOrder.LE) {
+    public static ByteOrder getOrderFromByte(byte inputVal) {
+        if (inputVal == org.nd4j.graph.ByteOrder.LE) {
             return ByteOrder.LITTLE_ENDIAN;
         } else {
             return ByteOrder.BIG_ENDIAN;
@@ -508,7 +508,7 @@ public class FlatBuffersMapper {
                     || opType == Type.VARIANCE
                     || opType == Type.REDUCE_BOOL || opType == Type.REDUCE_LONG
                     || opType == Type.REDUCE_SAME) {
-                val ba = (BaseReduceOp) op; //Reduce3 ops are also all BaseAccumulations
+                var ba = (BaseReduceOp) op; //Reduce3 ops are also all BaseAccumulations
                 ba.setDimensions(dimensions);
                 ba.setDimensionz(Shape.ndArrayDimFromInt(dimensions));
                 if(extraBools.length > 0)
@@ -794,8 +794,8 @@ public class FlatBuffersMapper {
 
     public static int asFlatNode(@NonNull SameDiff sameDiff, @NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder, List<SDVariable> variables,
                                  Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter, Integer id) {
-        val opName = node.opName();
-        val hash = FlatBuffersMapper.getOpNum(node.opName(), node.opType());
+        var opName = node.opName();
+        var hash = FlatBuffersMapper.getOpNum(node.opName(), node.opType());
         //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
 
         double[] extras;
@@ -817,13 +817,13 @@ public class FlatBuffersMapper {
         int[] extraStringIds = null;
         String[] sArgs = null;
         if (node.opType() == Type.CUSTOM) {
-            val dynamicCustomOp = (DynamicCustomOp) node;
+            var dynamicCustomOp = (DynamicCustomOp) node;
             extraBits = dynamicCustomOp.iArgs();
             boolArgs = dynamicCustomOp.bArgs();
 
             if (dynamicCustomOp.numDArguments() > 0) {
                 dtypeArgs = new byte[dynamicCustomOp.numDArguments()];
-                val d = dynamicCustomOp.dArgs();
+                var d = dynamicCustomOp.dArgs();
                 for (int e = 0; e < dtypeArgs.length; e++) {
                     dtypeArgs[e] = (byte) d[e].toInt();
                 }
@@ -839,7 +839,7 @@ public class FlatBuffersMapper {
 
         } else if (node instanceof Enter) {
             // in case of Enter node we'll be storing unique frame reference
-            val frameName = ((Enter) node).getFrameName();
+            var frameName = ((Enter) node).getFrameName();
             if (!framesMap.containsKey(frameName))
                 framesMap.put(frameName, idCounter.incrementAndGet());
 
@@ -855,20 +855,20 @@ public class FlatBuffersMapper {
             extraBits = new long[]{};
 
         if (node.opType() == Type.REDUCE_BOOL || node.opType() == Type.REDUCE_SAME || node.opType() == Type.REDUCE_FLOAT || node.opType() == Type.REDUCE_LONG) {
-            val op = (ReduceOp) node;
+            var op = (ReduceOp) node;
 
             boolArgs = new boolean[2];
             boolArgs[0] = op.isKeepDims();
             boolArgs[1] = true; // always new format
         } else if (node.opType() == Type.INDEXREDUCE) {
-            val op = (IndexAccumulation) node;
+            var op = (IndexAccumulation) node;
 
             boolArgs = new boolean[2];
             boolArgs[0] = op.isKeepDims();
             boolArgs[1] = true; // always new format
         }
 
-        val inPaired = new ArrayList<Integer>();
+        var inPaired = new ArrayList<Integer>();
 
         int[] outputIds = null;
         SDVariable[] outputVertexId = null;
@@ -1061,7 +1061,7 @@ public class FlatBuffersMapper {
         Map<String,Integer> temp3 = new HashMap<>();
         AtomicInteger temp4 = new AtomicInteger();
 
-        val bufferBuilder = new FlatBufferBuilder(1024);
+        var bufferBuilder = new FlatBufferBuilder(1024);
         int fn = FlatBuffersMapper.asFlatNode(sd, df, bufferBuilder,
                 sd.variables(),
                 nameToIdxMap,

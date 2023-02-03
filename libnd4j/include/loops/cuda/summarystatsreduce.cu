@@ -127,7 +127,7 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void const* vx, sd::LongType 
   // shared memory space for storing intermediate results
   __shared__ SummaryStatsData<X> sPartials[SD_CUDA_BLOCK_SIZE];
 
-  Z startingVal = startingValue(dx);
+  Z startingvar = startingValue(dx);
 
   SummaryStatsData<X> val;
   val.initWithValue(startingVal);
@@ -281,7 +281,7 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void const* vx, sd::LongType 
         tc[16384] = 0;
         SummaryStatsData<X>* pBuffer = (SummaryStatsData<X>*)reductionBuffer;
 
-        Z startingVal = startingValue(dx);
+        Z startingvar = startingValue(dx);
 
         SummaryStatsData<X> val;
         val.initWithValue(startingVal);

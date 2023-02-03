@@ -73,7 +73,7 @@ SD_KERNEL static void confusionFunctorKernel(sd::LongType* labelsBuffer, sd::Lon
    auto label = labelsBuffer[t];     //->e<sd::LongType>(j);
    auto pred = predictionBuffer[t];  //->e<sd::LongType>(j);
    auto tZ = z + tadOffsets[label];
-   T val = (weightsBuffer == nullptr ? (T)1.0f : w[t]);
+   T var = (weightsBuffer == nullptr ? (T)1.0f : w[t]);
 
    auto idx = shape::getIndexOffset(pred, tadShape);
    tZ[idx] = val;

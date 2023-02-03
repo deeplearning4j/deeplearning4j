@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.multithreading;
 
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -53,17 +53,17 @@ public class MultithreadedTests extends BaseNd4jTestWithBackends {
         if (Nd4j.getAffinityManager().getNumberOfDevices() < 2)
             return;
 
-        val exp = Nd4j.create(DataType.INT32, 5, 5).assign(2);
+        var exp = Nd4j.create(DataType.INT32, 5, 5).assign(2);
 
-        val hash = new HashSet<Integer>();
+        var hash = new HashSet<Integer>();
 
         // we're creating bunch of arrays on different devices
-        val list = new ArrayList<INDArray>();
+        var list = new ArrayList<INDArray>();
         for (int e = 0; e < Nd4j.getAffinityManager().getNumberOfDevices(); e++) {
-            val t = e;
-            val thread = new Thread(() -> {
+            var t = e;
+            var thread = new Thread(() -> {
                 for (int f = 0; f < 10; f++) {
-                    val array = Nd4j.create(DataType.INT32, 5, 5).assign(1);
+                    var array = Nd4j.create(DataType.INT32, 5, 5).assign(1);
 
                     // store current deviceId for further validation
                     hash.add(Nd4j.getAffinityManager().getDeviceForCurrentThread());
@@ -86,7 +86,7 @@ public class MultithreadedTests extends BaseNd4jTestWithBackends {
         assertEquals(10 * Nd4j.getAffinityManager().getNumberOfDevices(), list.size());
 
         // now we're going to use arrays on current device, so data will be migrated
-        for (val arr:list) {
+        for (var arr:list) {
             arr.addi(1);
 
             assertEquals(exp, arr);

@@ -22,7 +22,7 @@ package org.nd4j.jita.allocator.impl;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.val;
+
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
@@ -75,7 +75,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Toe: memory chunk is locked for some reason. Possible reasons:
  *              Memory synchronization is ongoing, host->gpu or gpu->host
  *              Memory relocation is ongoing, zero->gpu, or gpu->zero, or gpu->host
- *              Memory removal is ongoing.
+ *              Memory removar is ongoing.
  *
  * So, basically memory being used for internal calculations, not interfered with manual changes (aka putRow etc), are always available without locks
  *
@@ -288,7 +288,7 @@ public class AtomicAllocator implements Allocator {
         if (array.isEmpty() || array.isS())
             return;
 
-        val buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+        var buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
         synchronizeHostData(buffer);
     }
 

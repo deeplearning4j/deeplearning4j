@@ -66,7 +66,7 @@ public class IndexingTestsC extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNegativeBounds(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1,10,10, DataType.DOUBLE).reshape(2,5);
-        INDArrayIndex interval = NDArrayIndex.interval(0,1,-2,arr.size(1));
+        INDArrayIndex intervar = NDArrayIndex.interval(0,1,-2,arr.size(1));
         INDArray get = arr.get(NDArrayIndex.all(),interval);
         INDArray assertion = Nd4j.create(new double[][]{
                 {1,2,3},

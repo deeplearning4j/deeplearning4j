@@ -22,7 +22,7 @@ package org.nd4j.linalg.cache;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -58,7 +58,7 @@ public class TadDescriptor {
      */
     public static long[] dataBufferToArray(DataBuffer buffer) {
         int rank = buffer.getInt(0);
-        val ret = new long[Shape.shapeInfoLength(rank)];
+        var ret = new long[Shape.shapeInfoLength(rank)];
         ret[0] = rank;
         for (int e = 1; e < Shape.shapeInfoLength(rank); e++) {
             ret[e] = buffer.getInt(e);

@@ -24,7 +24,7 @@ package org.nd4j.linalg.api.shape;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
-import lombok.val;
+
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -240,7 +240,7 @@ public class Shape {
     }
 
     public static boolean containsZeros(long[] shapeOnly) {
-        for (val v:shapeOnly)
+        for (var v:shapeOnly)
             if (v == 0)
                 return true;
 
@@ -418,7 +418,7 @@ public class Shape {
         if (isWholeArray(wholeShape, dimensions))
             return new long[] {};
         else if (dimensions.length == 1 && wholeShape.length == 2) {
-            val ret = new long[2];
+            var ret = new long[2];
             if (dimensions[0] == 1) {
                 ret[0] = wholeShape[0];
                 ret[1] = 1;
@@ -436,7 +436,7 @@ public class Shape {
         if (isWholeArray(wholeShape, dimensions))
             return new long[] {};
         else if (dimensions.length == 1 && wholeShape.length == 2) {
-            val ret = new long[2];
+            var ret = new long[2];
             if (dimensions[0] == 1) {
                 ret[0] = wholeShape[0];
                 ret[1] = 1;
@@ -474,7 +474,7 @@ public class Shape {
                 if (isWholeArray(wholeShape, dimensions))
                     return new long[] {};
                 else if (dimensions.length == 1 && wholeShape.length == 2) {
-                    val ret = new long[1];
+                    var ret = new long[1];
                     if (dimensions[0] == 1) {
                         ret[0] = wholeShape[0];
                     } else if (dimensions[0] == 0) {
@@ -489,14 +489,14 @@ public class Shape {
 
         // we'll return full array of 1 as shape
         if (isWholeArray(wholeShape, dimensions)) {
-            val result = new long[wholeShape.length];
+            var result = new long[wholeShape.length];
 
             Arrays.fill(result, 1);
             return result;
         }
 
-        val result = ArrayUtil.toLongArray(Arrays.copyOf(wholeShape, wholeShape.length));
-        for (val dim: dimensions)
+        var result = ArrayUtil.toLongArray(Arrays.copyOf(wholeShape, wholeShape.length));
+        for (var dim: dimensions)
             result[dim] = 1;
 
         return result;
@@ -521,7 +521,7 @@ public class Shape {
                 if (isWholeArray(wholeShape, dimensions))
                     return new long[] {};
                 else if (dimensions.length == 1 && wholeShape.length == 2) {
-                    val ret = new long[1];
+                    var ret = new long[1];
                     if (dimensions[0] == 1) {
                         ret[0] = wholeShape[0];
                     } else if (dimensions[0] == 0) {
@@ -536,14 +536,14 @@ public class Shape {
 
         // we'll return full array of 1 as shape
         if (isWholeArray(wholeShape, dimensions)) {
-            val result = new long[wholeShape.length];
+            var result = new long[wholeShape.length];
 
             Arrays.fill(result, 1);
             return result;
         }
 
-        val result = Arrays.copyOf(wholeShape, wholeShape.length);
-        for (val dim: dimensions)
+        var result = Arrays.copyOf(wholeShape, wholeShape.length);
+        for (var dim: dimensions)
             result[dim] = 1;
 
         return result;
@@ -1374,7 +1374,7 @@ public class Shape {
             return false;
         else {
             long len = Shape.length(shapeInfo);
-            val shape = Shape.shapeOf(shapeInfo);
+            var shape = Shape.shapeOf(shapeInfo);
             return shape.get(0) == len || shape.get(1) == len;
         }
     }
@@ -2547,7 +2547,7 @@ public class Shape {
 
     public static int length(LongBuffer buffer) {
         int ret = 1;
-        val shape = Shape.shapeOf(buffer);
+        var shape = Shape.shapeOf(buffer);
         int rank = Shape.rank(buffer);
         for (int i = 0; i < rank; i++)
             ret *= shape.get(i);
@@ -2561,7 +2561,7 @@ public class Shape {
      */
     public static long length(DataBuffer buffer) {
         long ret = 1;
-        val rr = buffer.asLong();
+        var rr = buffer.asLong();
         DataBuffer shape = Shape.shapeOf(buffer);
         int rank = Shape.rank(buffer);
         for (int i = 0; i < rank; i++)
@@ -2602,14 +2602,14 @@ public class Shape {
      * @return the rank for the shape buffer
      */
     public static int rank(IntBuffer buffer) {
-        val buffer2 = (Buffer) buffer;
-        val ret = (IntBuffer) buffer2.position(0);
+        var buffer2 = (Buffer) buffer;
+        var ret = (IntBuffer) buffer2.position(0);
         return ret.get(0);
     }
 
     public static int rank(LongBuffer buffer) {
-        val buffer2 = (Buffer) buffer;
-        val ret = (LongBuffer) buffer2.position(0);
+        var buffer2 = (Buffer) buffer;
+        var ret = (LongBuffer) buffer2.position(0);
         return (int) ret.get(0);
     }
 
@@ -2692,14 +2692,14 @@ public class Shape {
      * @return          Shape array
      */
     public static long[] shape(IntBuffer buffer) {
-        val ret = new long[rank(buffer)];
+        var ret = new long[rank(buffer)];
         for (int i = 0; i < ret.length; i++)
             ret[i] = buffer.get(1 + i);
         return ret;
     }
 
     public static long[] shape(LongBuffer buffer) {
-        val ret = new long[rank(buffer)];
+        var ret = new long[rank(buffer)];
         for (int i = 0; i < ret.length; i++)
             ret[i] = buffer.get(1 + i);
         return ret;
@@ -2711,7 +2711,7 @@ public class Shape {
      * @return          Shape array
      */
     public static long[] shape(DataBuffer buffer) {
-        val ret = new long[rank(buffer)];
+        var ret = new long[rank(buffer)];
         for (int i = 0; i < ret.length; i++)
             ret[i] = buffer.getInt(1 + i);
         return ret;
@@ -2787,7 +2787,7 @@ public class Shape {
      * @return          Shape array
      */
     public static long[] strideArr(DataBuffer buffer) {
-        val ret = new long[rank(buffer)];
+        var ret = new long[rank(buffer)];
         DataBuffer stride = Shape.stride(buffer);
         for (int i = 0; i < ret.length; i++)
             ret[i] = stride.getInt(i);
@@ -2835,15 +2835,15 @@ public class Shape {
      */
     public static IntBuffer stride(IntBuffer buffer) {
         int rank = rank(buffer);
-        val buffer2 = (Buffer) buffer;
-        val ret = (IntBuffer) buffer2.position(1 + rank);
+        var buffer2 = (Buffer) buffer;
+        var ret = (IntBuffer) buffer2.position(1 + rank);
         return ret.slice();
     }
 
     public static LongBuffer stride(LongBuffer buffer) {
         int rank = rank(buffer);
-        val buffer2 = (Buffer) buffer;
-        val ret = (LongBuffer) buffer2.position(1 + rank);
+        var buffer2 = (Buffer) buffer;
+        var ret = (LongBuffer) buffer2.position(1 + rank);
         return ret.slice();
     }
 
@@ -2903,28 +2903,28 @@ public class Shape {
 
     public static LongBuffer shapeOf(LongBuffer buffer) {
         Buffer buffer2 = (Buffer) buffer;
-        val ret = (LongBuffer) buffer2.position(1);
+        var ret = (LongBuffer) buffer2.position(1);
         return ret.slice();
     }
 
 
     public static int[] shapeOf(int[] buffer) {
-        val rank = buffer[0];
+        var rank = buffer[0];
         return Arrays.copyOfRange(buffer, 1, 1 + rank);
     }
 
     public static long[] shapeOf(long[] buffer) {
-        val rank = (int) buffer[0];
+        var rank = (int) buffer[0];
         return Arrays.copyOfRange(buffer, 1, 1 + rank);
     }
 
     public static int[] stridesOf(int[] buffer) {
-        val rank = buffer[0];
+        var rank = buffer[0];
         return Arrays.copyOfRange(buffer, 1+rank, 1 + (rank * 2));
     }
 
     public static long[] stridesOf(long[] buffer) {
-        val rank = (int) buffer[0];
+        var rank = (int) buffer[0];
         return Arrays.copyOfRange(buffer, 1+rank, 1 + (rank * 2));
     }
 
@@ -2983,9 +2983,9 @@ public class Shape {
      * @return the shape information to string
      */
     public static String shapeToString(IntBuffer buffer) {
-        val shapeBuff = shapeOf(buffer);
+        var shapeBuff = shapeOf(buffer);
         int rank = Shape.rank(buffer);
-        val strideBuff = stride(buffer);
+        var strideBuff = stride(buffer);
         StringBuilder sb = new StringBuilder();
         sb.append("Rank: " + rank + ",");
         sb.append("Offset: " + Shape.offset(buffer) + "\n");
@@ -3011,9 +3011,9 @@ public class Shape {
     public static String shapeToString(LongBuffer buffer) {
         int length = buffer.capacity();
         long options = buffer.get(length -3);
-        val shapeBuff = shapeOf(buffer);
+        var shapeBuff = shapeOf(buffer);
         int rank = Shape.rank(buffer);
-        val strideBuff = stride(buffer);
+        var strideBuff = stride(buffer);
         StringBuilder sb = new StringBuilder();
         sb.append("Rank: ").append(rank).append(",")
                 .append(" DataType: ").append(ArrayOptionsHelper.dataType(options)).append(",")
@@ -3252,7 +3252,7 @@ public class Shape {
     public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType, boolean empty) {
         boolean isEmpty = empty;
         if (!empty)
-            for (val v:shape) {
+            for (var v:shape) {
                 if (v == 0) {
                     isEmpty = true;
                     break;
@@ -3264,7 +3264,7 @@ public class Shape {
 
 
     public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, long extras) {
-        val dtype = ArrayOptionsHelper.dataType(extras);
+        var dtype = ArrayOptionsHelper.dataType(extras);
         //just propagate extra // it is the same value in the backend
         return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dtype, extras);
     }
@@ -3353,7 +3353,7 @@ public class Shape {
 
         Set<Integer> ints = new LinkedHashSet<>();
 
-        for (val v: array)
+        for (var v: array)
             ints.add(v);
 
         return Ints.toArray(ints);
@@ -3376,8 +3376,8 @@ public class Shape {
         int[] tmp = new int[axis.length];
 
         int cnt = 0;
-        for (val v: axis) {
-            val t = v < 0 ? v + rank : v;
+        for (var v: axis) {
+            var t = v < 0 ? v + rank : v;
 
             if ((t >= rank && t != Integer.MAX_VALUE)|| t < 0) {
                 throw new ND4JIllegalStateException("Axis array " + Arrays.toString(axis) + " contains values above array rank (rank=" + rank + ")");
@@ -3450,8 +3450,8 @@ public class Shape {
 
     public static boolean contentEquals(long[] arr, IntBuffer other) {
         for (int i = 0; i < arr.length; i++) {
-            val t = arr[i];
-            val o = other.get(i);
+            var t = arr[i];
+            var o = other.get(i);
             if (t != o) {
                 return false;
             }
@@ -3461,8 +3461,8 @@ public class Shape {
 
     public static boolean contentEquals(long[] arr, LongBuffer other) {
         for (int i = 0; i < arr.length; i++) {
-            val t = arr[i];
-            val o = other.get(i);
+            var t = arr[i];
+            var o = other.get(i);
             if (t != o) {
                 return false;
             }
@@ -3720,8 +3720,8 @@ public class Shape {
         if (typeX == typeY)
             return typeX;
 
-        val rX = isR(typeX);
-        val rY = isR(typeY);
+        var rX = isR(typeX);
+        var rY = isR(typeY);
 
         // if X is float - use it
         if (rX && !rY)

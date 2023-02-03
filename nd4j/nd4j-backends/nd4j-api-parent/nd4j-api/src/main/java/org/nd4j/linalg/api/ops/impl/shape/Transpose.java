@@ -21,7 +21,7 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.nd4j.shade.guava.primitives.Ints;
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -71,7 +71,7 @@ public class Transpose extends DynamicCustomOp {
         Map<String, Map<String, PropertyMapping>> ret = new LinkedHashMap<>();
         Map<String, PropertyMapping> map = new LinkedHashMap<>();
 
-        val mapping = PropertyMapping.builder()
+        var mapping = PropertyMapping.builder()
                 .onnxAttrName("perm")
                 .propertyNames(new String[]{"permuteDims"})
                 .tfInputPosition(1)

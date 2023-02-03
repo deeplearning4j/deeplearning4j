@@ -19,7 +19,7 @@
  */
 package org.eclipse.deeplearning4j.dl4jcore.util;
 
-import lombok.val;
+
 import org.apache.commons.lang3.SerializationUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -307,7 +307,7 @@ class ModelSerializerTest extends BaseDL4JTest {
         DataSet dataSet = trivialDataSet();
         NormalizerStandardize norm = new NormalizerStandardize();
         norm.fit(dataSet);
-        val b = SerializationUtils.serialize(net);
+        var b = SerializationUtils.serialize(net);
         ComputationGraph restored = SerializationUtils.deserialize(b);
         assertEquals(net, restored);
     }
@@ -323,7 +323,7 @@ class ModelSerializerTest extends BaseDL4JTest {
         DataSet dataSet = trivialDataSet();
         NormalizerStandardize norm = new NormalizerStandardize();
         norm.fit(dataSet);
-        val b = SerializationUtils.serialize(net);
+        var b = SerializationUtils.serialize(net);
         MultiLayerNetwork restored = SerializationUtils.deserialize(b);
         assertEquals(net, restored);
     }

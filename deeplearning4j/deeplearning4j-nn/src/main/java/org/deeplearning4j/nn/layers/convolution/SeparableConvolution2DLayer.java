@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
-import lombok.val;
+
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -254,7 +254,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         int outH = outSize[0];
         int outW = outSize[1];
 
-        val miniBatch = input.size(0);
+        var miniBatch = input.size(0);
         long[] outShape = new long[]{miniBatch, outDepth, outH, outW};
         INDArray output = workspaceMgr.create(ArrayType.ACTIVATIONS, depthWiseWeights.dataType(), outShape, 'c');
 

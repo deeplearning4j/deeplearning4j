@@ -32,7 +32,7 @@ template <typename T>
 SD_KERNEL static void im2colCuda(const void *image, void *columns, const sd::LongType *imShapeInfo,
                                  const sd::LongType *colShapeInfo, const int sH, const int sW, const int pH,
                                  const int pW, const int dH, const int dW, const double zeroPadValD) {
-  T zeroPadVal = static_cast<T>(zeroPadValD);  // Value to use when value is padding. Usually 0 but not always
+  T zeroPadvar = static_cast<T>(zeroPadValD);  // Value to use when value is padding. Usually 0 but not always
   const auto im = reinterpret_cast<const T *>(image);
   auto col = reinterpret_cast<T *>(columns);
 

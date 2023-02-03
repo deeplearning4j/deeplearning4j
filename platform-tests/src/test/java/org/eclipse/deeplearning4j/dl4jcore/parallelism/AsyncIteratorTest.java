@@ -43,9 +43,9 @@ class AsyncIteratorTest extends BaseDL4JTest {
         }
         AsyncIterator<Integer> iterator = new AsyncIterator<>(integers.iterator(), 512);
         int cnt = 0;
-        Integer val = null;
+        Integer var = null;
         while (iterator.hasNext()) {
-            val = iterator.next();
+            var = iterator.next();
             assertEquals(cnt, val.intValue());
             cnt++;
         }

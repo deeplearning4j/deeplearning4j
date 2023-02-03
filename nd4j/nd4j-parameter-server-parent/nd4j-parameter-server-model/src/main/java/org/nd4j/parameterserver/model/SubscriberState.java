@@ -52,7 +52,7 @@ public class SubscriberState implements Serializable, Comparable<SubscriberState
      * @return an empty subscriber state
      */
     public static SubscriberState empty() {
-        val map = new ConcurrentHashMap<String, Number>();
+        var map = new ConcurrentHashMap<String, Number>();
         return SubscriberState.builder().serverState("empty").streamId(-1)
                         .parameterUpdaterStatus(map).totalUpdates(-1).isMaster(false).build();
     }

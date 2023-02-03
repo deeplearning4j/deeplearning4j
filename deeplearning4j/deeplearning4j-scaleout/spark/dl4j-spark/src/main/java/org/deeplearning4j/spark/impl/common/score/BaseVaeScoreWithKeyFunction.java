@@ -21,7 +21,7 @@
 package org.deeplearning4j.spark.impl.common.score;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
@@ -79,7 +79,7 @@ public abstract class BaseVaeScoreWithKeyFunction<K> implements PairFlatMapFunct
             while (iterator.hasNext() && nExamples < batchSize) {
                 Tuple2<K, INDArray> t2 = iterator.next();
                 INDArray features = t2._2();
-                val n = features.size(0);
+                var n = features.size(0);
                 if (n != 1)
                     throw new IllegalStateException("Cannot score examples with one key per data set if "
                                     + "data set contains more than 1 example (numExamples: " + n + ")");

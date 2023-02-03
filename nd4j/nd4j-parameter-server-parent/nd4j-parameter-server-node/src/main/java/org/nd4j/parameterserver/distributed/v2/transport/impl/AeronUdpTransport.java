@@ -32,7 +32,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.SleepingIdleStrategy;
 import org.nd4j.aeron.ipc.AeronUtil;
@@ -155,7 +155,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     protected ExecutorService messagesExecutorService = Executors.newFixedThreadPool(SENDER_THREADS + MESSAGE_THREADS + SUBSCRIPTION_THREADS, new ThreadFactory() {
         @Override
         public Thread newThread(@NonNull final Runnable r) {
-            val t = new Thread(new Runnable() {
+            var t = new Thread(new Runnable() {
 
                 @Override
                 public void run() {
@@ -184,7 +184,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             messagesExecutorService.execute(new Runnable() {
                 @Override
                 public void run() {
-                    val idler = new SleepingIdleStrategy(1000);
+                    var idler = new SleepingIdleStrategy(1000);
                     while (true) {
                         idler.idle(ownSubscription.poll(messageHandler, 1024));
                     }
@@ -200,7 +200,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                     while (true) {
                         try {
                             // basically fetching messages from queue one by one, and processing them
-                            val msg = messageQueue.take();
+                            var msg = messageQueue.take();
                             processMessage(msg);
                         } catch (InterruptedException e) {
                             // just terminate loop
@@ -218,7 +218,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                 public void run() {
                     while (true) {
                         try {
-                            val msg = propagationQueue.take();
+                            var msg = propagationQueue.take();
                             redirectedPropagateArrayMessage(msg);
                         } catch (InterruptedException e) {
                             break;
@@ -259,7 +259,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         buffer.getBytes(offset, data);
 
         // deserialize message
-        val message = VoidMessage.fromBytes(data);
+        var message = VoidMessage.fromBytes(data);
 
         // we're checking if this is known connection or not, and add it if not
         if (!remoteConnections.containsKey(message.getOriginatorId()))
@@ -284,7 +284,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             log.info("Trying to disconnect failed node: [{}]", id);
 
             if (remoteConnections.containsKey(id)) {
-                val v = remoteConnections.get(id);
+                var v = remoteConnections.get(id);
                 try {
                     v.getPublication().close();
                 } catch (Exception e) {
@@ -316,7 +316,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
             log.info("Adding UDP connection: [{}]", ipAndPort);
 
-            val v = aeron.addPublication(ipAndPort, voidConfiguration.getStreamId());
+            var v = aeron.addPublication(ipAndPort, voidConfiguration.getStreamId());
 
             int cnt = 0;
             while (!v.isConnected()) {
@@ -329,9 +329,9 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
                 }
             }
 
-            val hash = HashUtil.getLongHash(ipAndPort);
+            var hash = HashUtil.getLongHash(ipAndPort);
 
-            val rc = RemoteConnection.builder()
+            var rc = RemoteConnection.builder()
                     .ip(ipAndPort)
                     .port(0)
                     .longHash(hash)
@@ -385,11 +385,11 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             return false;
 
         synchronized (mesh) {
-            val u = mesh.get().getUpstreamForNode(this.id()).getId();
+            var u = mesh.get().getUpstreamForNode(this.id()).getId();
             if (!remoteConnections.containsKey(u))
                 return false;
 
-            for (val n:mesh.get().getDownstreamsForNode(this.id())) {
+            for (var n:mesh.get().getDownstreamsForNode(this.id())) {
                 if (!remoteConnections.containsKey(n.getId()))
                     return false;
             }
@@ -418,9 +418,9 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
 
         if (message instanceof INDArrayMessage) {
             try {
-                val splits = splitter.split(message, voidConfiguration.getMaxChunkSize());
+                var splits = splitter.split(message, voidConfiguration.getMaxChunkSize());
 
-                for(val m:splits) {
+                for(var m:splits) {
                     sendMessage(m, id);
                 }
             } catch (IOException e) {
@@ -431,7 +431,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         }
 
         // serialize out of locks
-        val b = message.asUnsafeBuffer();
+        var b = message.asUnsafeBuffer();
 
         // blocking until all connections are up
         if (!id.equals(rootId)) {
@@ -440,7 +440,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             }
         }
 
-        val conn = remoteConnections.get(id);
+        var conn = remoteConnections.get(id);
         if (conn == null)
             throw new ND4JIllegalStateException("Unknown target ID specified: [" + id + "]");
 
@@ -507,7 +507,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         ownSubscription.close();
 
         // and all known publications
-        for (val rc: remoteConnections.values())
+        for (var rc: remoteConnections.values())
             rc.getPublication().close();
 
         // shutting down executor
@@ -561,13 +561,13 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
             return;
         }
 
-        val name = message.getClass().getCanonicalName();
-        val callable = interceptors.get(name);
+        var name = message.getClass().getCanonicalName();
+        var callable = interceptors.get(name);
 
         if (callable != null)
             callable.apply(message);
         else {
-            val precursor = precursors.get(name);
+            var precursor = precursors.get(name);
             if (precursor != null)
                 precursor.apply(message);
 

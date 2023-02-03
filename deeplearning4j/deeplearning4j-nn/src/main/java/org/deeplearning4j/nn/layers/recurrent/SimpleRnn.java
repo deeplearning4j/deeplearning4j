@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -86,7 +86,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         if(epsilon.ordering() != 'f' || !Shape.hasDefaultStridesForShape(epsilon))
             epsilon = epsilon.dup('f');
 
-        val nOut = layerConf().getNOut();
+        var nOut = layerConf().getNOut();
 
         INDArray input = this.input.castTo(dataType);   //No-op if correct type
         input = permuteIfNWC(input);
@@ -112,7 +112,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
         IActivation a = layerConf().getActivationFn();
 
-        val tsLength = input.size(2);
+        var tsLength = input.size(2);
 
         INDArray epsOut = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), input.shape(), 'f');
 
@@ -225,9 +225,9 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
         INDArray input = this.input.castTo(dataType);    //No-op if correct type
         input = permuteIfNWC(input);
-        val m = input.size(0);
-        val tsLength = input.size(2);
-        val nOut = layerConf().getNOut();
+        var m = input.size(0);
+        var tsLength = input.size(2);
+        var nOut = layerConf().getNOut();
 
         INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, training, workspaceMgr);
         INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, training, workspaceMgr);

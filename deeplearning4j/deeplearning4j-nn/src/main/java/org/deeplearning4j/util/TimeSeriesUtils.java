@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.util;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.layers.BaseRecurrentLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -119,7 +119,7 @@ public class TimeSeriesUtils {
         if (!timeSeriesMaskAsVector.isVector())
             throw new IllegalArgumentException("Cannot reshape mask: expected vector");
 
-        val timeSeriesLength = timeSeriesMaskAsVector.length() / minibatchSize;
+        var timeSeriesLength = timeSeriesMaskAsVector.length() / minibatchSize;
 
         return timeSeriesMaskAsVector.reshape('f', minibatchSize, timeSeriesLength);
     }
@@ -136,7 +136,7 @@ public class TimeSeriesUtils {
                 "Expected rank 4 mask with shape [mb*seqLength, 1, 1, 1]. Got rank %s mask array with shape %s",
                 timeSeriesMaskAsCnnMask.rank(), timeSeriesMaskAsCnnMask.shape());
 
-        val timeSeriesLength = timeSeriesMaskAsCnnMask.length() / minibatchSize;
+        var timeSeriesLength = timeSeriesMaskAsCnnMask.length() / minibatchSize;
 
         return timeSeriesMaskAsCnnMask.reshape('f', minibatchSize, timeSeriesLength);
     }
@@ -164,7 +164,7 @@ public class TimeSeriesUtils {
     public static INDArray reshape3dTo2d(INDArray in) {
         if (in.rank() != 3)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 3");
-        val shape = in.shape();
+        var shape = in.shape();
         if (shape[0] == 1)
             return in.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
         if (shape[2] == 1)
@@ -176,7 +176,7 @@ public class TimeSeriesUtils {
     public static INDArray reshape3dTo2d(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
         if (in.rank() != 3)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 3");
-        val shape = in.shape();
+        var shape = in.shape();
         INDArray ret;
         if (shape[0] == 1) {
             ret = in.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
@@ -193,7 +193,7 @@ public class TimeSeriesUtils {
         if (in.rank() != 2)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
         //Based on: RnnToFeedForwardPreProcessor
-        val shape = in.shape();
+        var shape = in.shape();
         if (in.ordering() != 'f')
             in = Shape.toOffsetZeroCopy(in, 'f');
         INDArray reshaped = in.reshape('f', miniBatchSize, shape[0] / miniBatchSize, shape[1]);
@@ -205,7 +205,7 @@ public class TimeSeriesUtils {
         if (in.rank() != 2)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
         //Based on: RnnToFeedForwardPreProcessor
-        val shape = in.shape();
+        var shape = in.shape();
         if (in.ordering() != 'f') {
             in = workspaceMgr.dup(arrayType, in, 'f');
         }
@@ -355,7 +355,7 @@ public class TimeSeriesUtils {
             out = pullFrom.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(lastTS));
             fwdPassTimeSteps = null; //Null -> last time step for all examples
         } else {
-            val outShape = new long[] {pullFrom.size(0), pullFrom.size(1)};
+            var outShape = new long[] {pullFrom.size(0), pullFrom.size(1)};
             out = Nd4j.create(outShape);
 
             //Want the index of the last non-zero entry in the mask array
@@ -392,7 +392,7 @@ public class TimeSeriesUtils {
             out = pullFrom.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(lastTS));
             fwdPassTimeSteps = null; //Null -> last time step for all examples
         } else {
-            val outShape = new long[] {pullFrom.size(0), pullFrom.size(1)};
+            var outShape = new long[] {pullFrom.size(0), pullFrom.size(1)};
             out = Nd4j.create(outShape);
 
             //Want the index of the last non-zero entry in the mask array

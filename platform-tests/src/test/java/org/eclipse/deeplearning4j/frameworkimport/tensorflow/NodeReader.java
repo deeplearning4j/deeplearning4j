@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.frameworkimport.tensorflow;
 
 import lombok.NonNull;
-import lombok.val;
+
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.io.ClassPathResource;
@@ -53,17 +53,17 @@ public class NodeReader {
             }
         }
 
-        val shapeLines = Files.readAllLines(shapeFile.toPath());
-        val valuesLines = Files.readAllLines(valuesFile.toPath());
+        var shapeLines = Files.readAllLines(shapeFile.toPath());
+        var valuesLines = Files.readAllLines(valuesFile.toPath());
 
-        val shape = new long[shapeLines.size()];
-        val values = new double[valuesLines.size()];
+        var shape = new long[shapeLines.size()];
+        var values = new double[valuesLines.size()];
         int cnt = 0;
-        for (val v: shapeLines)
+        for (var v: shapeLines)
             shape[cnt++] = Long.valueOf(v);
 
         cnt = 0;
-        for (val v: valuesLines)
+        for (var v: valuesLines)
             values[cnt++] = Double.valueOf(v);
 
         return Nd4j.create(values, shape);

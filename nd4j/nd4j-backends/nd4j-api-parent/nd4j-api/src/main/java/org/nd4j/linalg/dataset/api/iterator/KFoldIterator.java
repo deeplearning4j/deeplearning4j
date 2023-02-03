@@ -64,7 +64,7 @@ public class KFoldIterator implements DataSetIterator {
         this.N = allData.numExamples();
         this.allData = allData;
         
-        // generate index interval boundaries of test folds
+        // generate index intervar boundaries of test folds
         int baseBatchSize = N / k;
         int numIncrementedBatches = N % k;
 

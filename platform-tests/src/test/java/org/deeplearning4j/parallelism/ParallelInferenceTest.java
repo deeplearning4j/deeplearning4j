@@ -22,7 +22,7 @@ package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -310,7 +310,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         DataSet ds = iterator.next();
         log.info("NumColumns: {}", ds.getLabels().columns());
         iterator.reset();
-        Evaluation eval = new Evaluation(ds.getLabels().columns());
+        Evaluation evar = new Evaluation(ds.getLabels().columns());
         int count = 0;
         while (iterator.hasNext() && (count++ < 100)) {
             ds = iterator.next();
@@ -325,7 +325,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         DataSet ds = iterator.next();
         log.info("NumColumns: {}", ds.getLabels().columns());
         iterator.reset();
-        Evaluation eval = new Evaluation(ds.getLabels().columns());
+        Evaluation evar = new Evaluation(ds.getLabels().columns());
         final Queue<DataSet> dataSets = new LinkedBlockingQueue<>();
         final Queue<Pair<INDArray, INDArray>> outputs = new LinkedBlockingQueue<>();
         int cnt = 0;
@@ -722,7 +722,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
     public void testModelUpdate_1() throws Exception {
         int nIn = 5;
 
-        val conf = new NeuralNetConfiguration.Builder()
+        var conf = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
                 .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).activation(Activation.SOFTMAX).build(), "in")
@@ -733,7 +733,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         ComputationGraph net = new ComputationGraph(conf);
         net.init();
 
-        val inf = new ParallelInference.Builder(net)
+        var inf = new ParallelInference.Builder(net)
                 .inferenceMode(InferenceMode.SEQUENTIAL)
                 .batchLimit(5)
                 .queueLimit(64)
@@ -742,7 +742,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
 
         // imitating use of the original model
         for (int e = 0; e < 10; e++) {
-            val output = inf.output(new INDArray[]{Nd4j.createUninitialized(1, 5)});
+            var output = inf.output(new INDArray[]{Nd4j.createUninitialized(1, 5)});
             assertNotNull(output);
             assertNotEquals(0, output.length);
         }
@@ -764,7 +764,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         assertTrue(passed);
 
 
-        val conf2 = new NeuralNetConfiguration.Builder()
+        var conf2 = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in")
                 .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).build(), "in")
@@ -773,16 +773,16 @@ public class ParallelInferenceTest extends BaseDL4JTest {
                 .setOutputs("out0", "out1", "out2")
                 .build();
 
-        val net2 = new ComputationGraph(conf2);
+        var net2 = new ComputationGraph(conf2);
         net2.init();
 
         inf.updateModel(net2);
 
-        val modelsAfter = inf.getCurrentModelsFromWorkers();
+        var modelsAfter = inf.getCurrentModelsFromWorkers();
         assertEquals(4, modelsAfter.length);
 
         cnt0 = 0;
-        for (val m:modelsAfter) {
+        for (var m:modelsAfter) {
             assertNotNull(m,"Failed at model [" + cnt0 + "]");
             assertEquals(net2.params(), m.params(), "Failed at model [" + cnt0++ + "]");
         }
@@ -907,10 +907,10 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         }
 
         int nThreads = 8;
-        val threads = new ArrayList<Thread>(nThreads);
+        var threads = new ArrayList<Thread>(nThreads);
 
         for( int i=0; i<nThreads; i++ ){
-            val t = new Thread(new Runnable() {
+            var t = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     while(!q.isEmpty()) {
@@ -935,7 +935,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         }
 
         // wait for ALL started threads
-        for (val t: threads) {
+        for (var t: threads) {
             if (failedCount.get() > 0)
                 throw new RuntimeException("One of threads failed!");
             t.join();

@@ -28,7 +28,7 @@ import org.nd4j.codegen.dsl.*
 fun SDRNN() = Namespace("RNN") {
 
 
-    val LSTMConfiguration = Config("LSTMConfiguration") {
+    var LSTMConfiguration = Config("LSTMConfiguration") {
 
         Arg(ENUM, "RnnDataFormat") {
             possibleValues = listOf("TNS", "NST", "NTS"); description = " The data format of the input. Input shape depends on data format (in config):<br>\n" +
@@ -46,7 +46,7 @@ fun SDRNN() = Namespace("RNN") {
     }
 
 
-    val LSTMLayerConfig = Config("LSTMLayerConfig") {
+    var LSTMLayerConfig = Config("LSTMLayerConfig") {
 
         Arg(ENUM, "LSTMDataFormat") {
             possibleValues = listOf("TNS", "NST", "NTS", "T2NS");
@@ -136,7 +136,7 @@ fun SDRNN() = Namespace("RNN") {
     }
 
 
-    val GRUWeights = Config("GRUWeights") {
+    var GRUWeights = Config("GRUWeights") {
         Input(NUMERIC, "ruWeight")
         Input(NUMERIC, "cWeight")
         Input(NUMERIC, "ruBias")
@@ -144,13 +144,13 @@ fun SDRNN() = Namespace("RNN") {
         javaClassOverride = "org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.GRUWeights"
     }
 
-    val SRUWeights = Config("SRUWeights") {
+    var SRUWeights = Config("SRUWeights") {
         Input(NUMERIC, "weights")
         Input(NUMERIC, "bias")
         javaClassOverride = "org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.SRUWeights"
     }
 
-    val LSTMWeights = Config("LSTMWeights") {
+    var LSTMWeights = Config("LSTMWeights") {
         Input(NUMERIC, "ruWeight")
         Input(NUMERIC, "inputPeepholeWeights")
         Input(NUMERIC, "forgetPeepholeWeights")
@@ -160,7 +160,7 @@ fun SDRNN() = Namespace("RNN") {
         javaClassOverride = "org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMWeights"
     }
 
-    val LSTMLayerWeights = Config("LSTMLayerWeights") {
+    var LSTMLayerWeights = Config("LSTMLayerWeights") {
         Input(NUMERIC, "inputWeights") {description="input weights Wx:\n" +
                 " 1) shapes `[nIn, 4*nOut]` for FWD,BWD " +
                 " 2) shapes `[2, nIn, 4*nOut]` BIDIR_SUM, BIDIR_CONCAT and BIDIR_EXTRA_DIM"}
@@ -180,7 +180,7 @@ fun SDRNN() = Namespace("RNN") {
     }
 
 
-    val namespaceJavaPackage = "org.nd4j.linalg.api.ops.impl.layers.recurrent"
+    var namespaceJavaPackage = "org.nd4j.linalg.api.ops.impl.layers.recurrent"
     Op("gruCell") {
         javaPackage = namespaceJavaPackage
         javaOpClass = "GRUCell"

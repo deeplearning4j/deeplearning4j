@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -96,7 +96,7 @@ public class Fill extends DynamicCustomOp {
 
     @Override
     public void assertValidForExecution() {
-        val descriptor = getDescriptor();
+        var descriptor = getDescriptor();
         if(descriptor.getNumInputs() > 0 && numInputArguments() >  2 || numInputArguments() < 1)
             throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of inputs is invalid for execution. Specified " + numInputArguments() + " but should be " + descriptor.getNumInputs());
 

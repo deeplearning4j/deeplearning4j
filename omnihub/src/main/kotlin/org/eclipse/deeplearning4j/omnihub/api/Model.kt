@@ -29,12 +29,12 @@ interface ModelLike {
 
 }
 
-data class Model(val modelUrl: String,
-                 val modelName: String,
-                 val pretrained: Boolean,
-                 val documentation: String,
-                 val framework: FrameworkNamespace,
-                 val modelType: ModelType = ModelType.COMP_GRAPH): ModelLike {
+data class Model(var modelUrl: String,
+                 var modelName: String,
+                 var pretrained: Boolean,
+                 var documentation: String,
+                 var framework: FrameworkNamespace,
+                 var modelType: ModelType = ModelType.COMP_GRAPH): ModelLike {
     override fun modelUrl() = modelUrl
     override fun modelName() = modelName
     override fun pretrained() = pretrained

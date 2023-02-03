@@ -288,7 +288,7 @@ public abstract class Nd4jBackend {
          * wrappers for other throwables (for example, {@link
          * PrivilegedActionException}).
          *
-         * @param cause the cause (which is saved for later retrieval by the
+         * @param cause the cause (which is saved for later retrievar by the
          *              {@link #getCause()} method).  (A <tt>null</tt> value is
          *              permitted, and indicates that the cause is nonexistent or
          *              unknown.)

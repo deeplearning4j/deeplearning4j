@@ -92,8 +92,8 @@ SD_KERNEL static void pooling2dBPCuda(const void* vx, const sd::LongType* xShape
       T max = -DataTypeUtils::max<T>();
       for (coords[2] = hstart; coords[2] < hend; coords[2] += dH) {
         for (coords[3] = wstart; coords[3] < wend; coords[3] += dW) {
-          T val = x[shape::getOffset(xShapeInfo, coords)];
-          if (val > max) {
+          T var = x[shape::getOffset(xShapeInfo, coords)];
+          if (var > max) {
             max = val;
             coord2 = coords[2];
             coord3 = coords[3];
@@ -109,14 +109,14 @@ SD_KERNEL static void pooling2dBPCuda(const void* vx, const sd::LongType* xShape
 
     /*** avg ***/
     case 1: {
-      T val = y[yOffset];
+      T var = y[yOffset];
 
       if (extraParam0 == 0)  // Exclude padding
-        val /= sd::math::sd_ceil<double, T>(static_cast<double>(hend - hstart) / static_cast<double>(dH)) *
+        var /= sd::math::sd_ceil<double, T>(static_cast<double>(hend - hstart) / static_cast<double>(dH)) *
                sd::math::sd_ceil<double, T>(static_cast<double>(wend - wstart) /
                                             static_cast<double>(dW));  // Accounts for dilation
       else if (extraParam0 == 1)                                       // Include padding
-        val /= kProd;
+        var /= kProd;
 
       for (coords[2] = hstart; coords[2] < hend; coords[2] += dH)
         for (coords[3] = wstart; coords[3] < wend; coords[3] += dW)
@@ -126,20 +126,20 @@ SD_KERNEL static void pooling2dBPCuda(const void* vx, const sd::LongType* xShape
     /*** pnorm ***/
     case 2: {
       T sum = static_cast<T>(0.);
-      T val = y[yOffset];
+      T var = y[yOffset];
 
       for (coords[2] = hstart; coords[2] < hend; coords[2] += dH)
         for (coords[3] = wstart; coords[3] < wend; coords[3] += dW)
           sum += sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T>(x[shape::getOffset(xShapeInfo, coords)]), extraParam0);
 
-      val *= sd::math::sd_pow<T, T, T>(sum, ((T)1.f - extraParam0) / extraParam0);
+      var *= sd::math::sd_pow<T, T, T>(sum, ((T)1.f - extraParam0) / extraParam0);
 
       for (coords[2] = hstart; coords[2] < hend; coords[2] += dH) {
         for (coords[3] = wstart; coords[3] < wend; coords[3] += dW) {
           const auto xOffset = shape::getOffset(xShapeInfo, coords);
           const auto zOffset = shape::getOffset(zShapeInfo, coords);
           sd::math::atomics::sd_atomicAdd<T>(
-              &z[zOffset], val * sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T>(x[xOffset]), extraParam0 - 1.f) *
+              &z[zOffset], var * sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T>(x[xOffset]), extraParam0 - 1.f) *
                                sd::math::sd_sgn<T, T>(x[xOffset]));
         }
       }

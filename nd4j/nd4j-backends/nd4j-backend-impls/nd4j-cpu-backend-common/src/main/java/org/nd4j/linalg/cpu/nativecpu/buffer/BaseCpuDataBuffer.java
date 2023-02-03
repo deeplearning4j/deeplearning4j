@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.cpu.nativecpu.buffer;
 
-import lombok.val;
+
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
@@ -224,7 +224,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
                 break;
         }
 
-        val ptr = ptrDataBuffer.primaryBuffer();
+        var ptr = ptrDataBuffer.primaryBuffer();
 
         if (offset > 0)
             temp = new PagedPointer(temp.address() + offset * getElementSize());
@@ -393,13 +393,13 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     }
 
     public void actualizePointerAndIndexer() {
-        val cptr = ptrDataBuffer.primaryBuffer();
+        var cptr = ptrDataBuffer.primaryBuffer();
 
         // skip update if pointers are equal
         if (cptr != null && pointer != null && cptr.address() == pointer.address())
             return;
 
-        val t = dataType();
+        var t = dataType();
         if (t == DataType.BOOL) {
             pointer = new PagedPointer(cptr, length).asBoolPointer();
             setIndexer(BooleanIndexer.create((BooleanPointer) pointer));
@@ -456,7 +456,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             return null;
 
         // we're fetching actual pointer right from C++
-        val tempPtr = new PagedPointer(ptrDataBuffer.primaryBuffer());
+        var tempPtr = new PagedPointer(ptrDataBuffer.primaryBuffer());
 
         switch (this.type) {
             case DOUBLE:
@@ -879,11 +879,11 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
      * */
     @Override
     public DataBuffer reallocate(long length) {
-        val oldPointer = ptrDataBuffer.primaryBuffer();
+        var oldPointer = ptrDataBuffer.primaryBuffer();
 
         if (isAttached()) {
-            val capacity = length * getElementSize();
-            val nPtr = getParentWorkspace().alloc(capacity, dataType(), false);
+            var capacity = length * getElementSize();
+            var nPtr = getParentWorkspace().alloc(capacity, dataType(), false);
             this.ptrDataBuffer.setPrimaryBuffer(nPtr, length);
 
             switch (dataType()) {
@@ -937,7 +937,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             workspaceGenerationId = getParentWorkspace().getGenerationId();
         } else {
             this.ptrDataBuffer.expand(length);
-            val nPtr = new PagedPointer(this.ptrDataBuffer.primaryBuffer(), length);
+            var nPtr = new PagedPointer(this.ptrDataBuffer.primaryBuffer(), length);
 
             switch (dataType()) {
                 case BOOL:

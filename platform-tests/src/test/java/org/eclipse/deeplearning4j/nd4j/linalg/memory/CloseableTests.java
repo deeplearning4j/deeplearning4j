@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.memory;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,7 +45,7 @@ public class CloseableTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSimpleRelease_1(Nd4jBackend backend) {
-        val array = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5});
+        var array = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5});
         assertTrue(array.closeable());
 
         array.close();
@@ -57,7 +57,7 @@ public class CloseableTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCyclicRelease_1(Nd4jBackend backend) {
         for (int e = 0; e < 100; e++) {
-            try (val array = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5})) {
+            try (var array = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5})) {
                 array.addi(1.0f);
             }
             System.gc();
@@ -67,10 +67,10 @@ public class CloseableTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testViewRelease_1(Nd4jBackend backend) {
-        val array = Nd4j.create(5, 5);
+        var array = Nd4j.create(5, 5);
         assertTrue(array.closeable());
 
-        val view = array.get(NDArrayIndex.point(1), NDArrayIndex.all());
+        var view = array.get(NDArrayIndex.point(1), NDArrayIndex.all());
 
         assertTrue(array.closeable());
         assertFalse(view.closeable());
@@ -79,10 +79,10 @@ public class CloseableTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAttachedRelease_1(Nd4jBackend backend) {
-        val wsconf = WorkspaceConfiguration.builder().build();
+        var wsconf = WorkspaceConfiguration.builder().build();
 
-        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, "haha72yjhfdfs")) {
-            val array = Nd4j.create(5, 5);
+        try (var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, "haha72yjhfdfs")) {
+            var array = Nd4j.create(5, 5);
             assertFalse(array.closeable());
         }
     }
@@ -91,7 +91,7 @@ public class CloseableTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAccessException_1(Nd4jBackend backend) {
        assertThrows(IllegalStateException.class,() -> {
-           val array = Nd4j.create(5, 5);
+           var array = Nd4j.create(5, 5);
            array.close();
 
            array.data().pointer();
@@ -103,8 +103,8 @@ public class CloseableTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAccessException_2(Nd4jBackend backend) {
       assertThrows(IllegalStateException.class,() -> {
-          val array = Nd4j.create(5, 5);
-          val view = array.getRow(0);
+          var array = Nd4j.create(5, 5);
+          var view = array.getRow(0);
           array.close();
 
           view.data().pointer();

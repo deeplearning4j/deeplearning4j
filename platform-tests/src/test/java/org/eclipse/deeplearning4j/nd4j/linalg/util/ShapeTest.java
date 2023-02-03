@@ -113,8 +113,8 @@ public class ShapeTest extends BaseNd4jTestWithBackends {
         INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         INDArray onesInMiddle = Nd4j.linspace(1, 6, 6).reshape(2, 1, 3);
         for (int i = 0; i < arr.length(); i++) {
-            double val = arr.getDouble(i);
-            double middleVal = onesInMiddle.getDouble(i);
+            double var = arr.getDouble(i);
+            double middlevar = onesInMiddle.getDouble(i);
             assertEquals(val, middleVal, 1e-1);
         }
     }

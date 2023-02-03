@@ -196,8 +196,8 @@ public class VariationalAutoencoder implements Layer {
         INDArray pzxSigmaSquared = Transforms.exp(logStdev2Z, true);
         INDArray pzxSigma = Transforms.sqrt(pzxSigmaSquared, true);
 
-        val minibatch = input.size(0);
-        val size = fwd.pzxMeanPreOut.size(1);
+        var minibatch = input.size(0);
+        var size = fwd.pzxMeanPreOut.size(1);
 
 
         Map<String, INDArray> gradientMap = new HashMap<>();
@@ -979,8 +979,8 @@ public class VariationalAutoencoder implements Layer {
         INDArray pzxSigma = Transforms.exp(logStdev2Z, false);
         Transforms.sqrt(pzxSigma, false);
 
-        val minibatch = input.size(0);
-        val size = fwd.pzxMeanPreOut.size(1);
+        var minibatch = input.size(0);
+        var size = fwd.pzxMeanPreOut.size(1);
 
         INDArray pxzw = getParamWithNoise(VariationalAutoencoderParamInitializer.PXZ_W, false, workspaceMgr);
         INDArray pxzb = getParamWithNoise(VariationalAutoencoderParamInitializer.PXZ_B, false, workspaceMgr);

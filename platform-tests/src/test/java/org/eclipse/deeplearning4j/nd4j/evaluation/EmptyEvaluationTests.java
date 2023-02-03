@@ -77,7 +77,7 @@ public class EmptyEvaluationTests extends BaseNd4jTestWithBackends {
             try {
                 re.scoreForMetric(m);
             } catch (Throwable t){
-                assertTrue(t.getMessage().contains("eval must be called"),t.getMessage());
+                assertTrue(t.getMessage().contains("evar must be called"),t.getMessage());
             }
         }
     }
@@ -93,7 +93,7 @@ public class EmptyEvaluationTests extends BaseNd4jTestWithBackends {
                 eb.scoreForMetric(m, 0);
                 fail("Expected exception");
             } catch (Throwable t) {
-                assertTrue( t.getMessage().contains("eval must be called"),t.getMessage());
+                assertTrue( t.getMessage().contains("evar must be called"),t.getMessage());
             }
         }
     }
@@ -125,7 +125,7 @@ public class EmptyEvaluationTests extends BaseNd4jTestWithBackends {
                 rb.scoreForMetric(m, 0);
                 fail("Expected exception");
             } catch (Throwable t) {
-                assertTrue(t.getMessage().contains("eval must be called"),t.getMessage());
+                assertTrue(t.getMessage().contains("evar must be called"),t.getMessage());
             }
         }
     }

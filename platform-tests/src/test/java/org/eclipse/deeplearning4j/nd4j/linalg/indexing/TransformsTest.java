@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.indexing;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -166,7 +166,7 @@ public class TransformsTest extends BaseNd4jTestWithBackends {
     public void testOr1(Nd4jBackend backend) {
         INDArray x = Nd4j.create(new double[] {0, 0, 1, 0, 0});
         INDArray y = Nd4j.create(new double[] {0, 0, 1, 1, 0});
-        val e = Nd4j.create(new boolean[] {false, false, true, true, false});
+        var e = Nd4j.create(new boolean[] {false, false, true, true, false});
 
         INDArray z = Transforms.or(x, y);
 
@@ -199,20 +199,20 @@ public class TransformsTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSlice_1(Nd4jBackend backend) {
-        val arr = Nd4j.linspace(1,4, 4, DataType.FLOAT).reshape(2, 2, 1);
-        val exp0 = Nd4j.create(new float[]{1, 2}, new int[] {2, 1});
-        val exp1 = Nd4j.create(new float[]{3, 4}, new int[] {2, 1});
+        var arr = Nd4j.linspace(1,4, 4, DataType.FLOAT).reshape(2, 2, 1);
+        var exp0 = Nd4j.create(new float[]{1, 2}, new int[] {2, 1});
+        var exp1 = Nd4j.create(new float[]{3, 4}, new int[] {2, 1});
 
-        val slice0 = arr.slice(0).dup('c');
+        var slice0 = arr.slice(0).dup('c');
         assertEquals(exp0, slice0);
         assertEquals(exp0, arr.slice(0));
 
-        val slice1 = arr.slice(1).dup('c');
+        var slice1 = arr.slice(1).dup('c');
         assertEquals(exp1, slice1);
         assertEquals(exp1, arr.slice(1));
 
-        val tf = arr.slice(1);
-        val slice1_1 = tf.slice(0);
+        var tf = arr.slice(1);
+        var slice1_1 = tf.slice(0);
         assertTrue(slice1_1.isScalar());
         assertEquals(3.0, slice1_1.getDouble(0), 1e-5);
     }

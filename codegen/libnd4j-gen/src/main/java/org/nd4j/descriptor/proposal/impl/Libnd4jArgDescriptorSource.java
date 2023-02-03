@@ -23,7 +23,7 @@ package org.nd4j.descriptor.proposal.impl;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import lombok.val;
+
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.descriptor.OpDeclarationDescriptor;
 import org.nd4j.descriptor.proposal.ArgDescriptorProposal;
@@ -1721,7 +1721,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
         //note sometimes we have individual array entries for names, we need to strip out index indicators like [i]
         String argName = arrSplit[arrSplit.length - 1].replaceAll("\\[.*\\]","");
         if(containsProposalWithDescriptorName(argName,argDescriptorProposals)) {
-            val descriptor = getDescriptorWithName(argName,argDescriptorProposals);
+            var descriptor = getDescriptorWithName(argName,argDescriptorProposals);
             //don't add already encountered indices if one is already greater.
             if(descriptor != null) {
                 return;
@@ -1766,7 +1766,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
         argDescriptorProposals.add(argDescriptorProposal);
 
         //remove duplicate proposals and only take the max index ensuring all parameters are accounted for
-        val groupedByName = argDescriptorProposals.stream().collect(Collectors.groupingBy(proposal -> proposal.getDescriptor().getName()));
+        var groupedByName = argDescriptorProposals.stream().collect(Collectors.groupingBy(proposal -> proposal.getDescriptor().getName()));
         List<ArgDescriptorProposal> toRemove = new ArrayList<>();
         if(!bannedMaxIndexOps.contains(opName))
             for(Map.Entry<String,List<ArgDescriptorProposal>> proposals : groupedByName.entrySet()) {
@@ -1776,7 +1776,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                         if(max == null)
                             max = proposal;
                         else if(max.getDescriptor().getArgIndex() < proposal.getDescriptor().getArgIndex()) {
-                            //slate for removal and set new max
+                            //slate for removar and set new max
                             toRemove.add(max);
                             max = proposal;
                         }

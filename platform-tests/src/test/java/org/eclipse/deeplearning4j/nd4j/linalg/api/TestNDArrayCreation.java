@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.api;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.jupiter.api.Disabled;
@@ -120,14 +120,14 @@ public class TestNDArrayCreation extends BaseNd4jTestWithBackends {
     public void testAllocationLimits(Nd4jBackend backend) throws Exception {
         Nd4j.create(1);
 
-        val origDeviceLimit = Nd4j.getEnvironment().getDeviceLimit(0);
-        val origDeviceCount = Nd4j.getEnvironment().getDeviceCouner(0);
+        var origDeviceLimit = Nd4j.getEnvironment().getDeviceLimit(0);
+        var origDeviceCount = Nd4j.getEnvironment().getDeviceCouner(0);
 
-        val limit = origDeviceCount + 10000;
+        var limit = origDeviceCount + 10000;
 
         Nd4j.getEnvironment().setDeviceLimit(0, limit);
 
-        val array = Nd4j.createUninitialized(DataType.DOUBLE, 1024);
+        var array = Nd4j.createUninitialized(DataType.DOUBLE, 1024);
         assertNotNull(array);
 
         try {

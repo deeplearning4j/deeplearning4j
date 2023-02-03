@@ -24,7 +24,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -128,18 +128,18 @@ public class DeConv3DTF extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
 
-        val aStrides = nodeDef.getAttrOrThrow("strides");
-        val aDilations = nodeDef.getAttrOrDefault("dilations", null);
-        val tfStrides = aStrides.getList().getIList();
-        val tfDilation = aDilations == null ? null : aDilations.getList().getIList();
+        var aStrides = nodeDef.getAttrOrThrow("strides");
+        var aDilations = nodeDef.getAttrOrDefault("dilations", null);
+        var tfStrides = aStrides.getList().getIList();
+        var tfDilation = aDilations == null ? null : aDilations.getList().getIList();
         int sD, sH, sW, dD, dH, dW;
 
-        val aPadding = nodeDef.getAttrOrDefault("padding", null);
+        var aPadding = nodeDef.getAttrOrDefault("padding", null);
         String paddingMode = aPadding.getS().toStringUtf8();
 
         String dataFormat = DeConv3DConfig.NDHWC;
         if (nodeDef.containsAttr("data_format")) {
-            val attr = nodeDef.getAttrOrThrow("data_format");
+            var attr = nodeDef.getAttrOrThrow("data_format");
             dataFormat = attr.getS().toStringUtf8().toLowerCase();
         }
 

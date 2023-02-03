@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.modelimport.keras.preprocessors;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -60,8 +60,8 @@ public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreP
          */
         INDArray permuted = workspaceMgr.dup(ArrayType.ACTIVATIONS, input.permute(0, 2, 3, 1), 'c'); //To: [n, h, w, c]
 
-        val inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
-        val outShape = new long[]{inShape[0], inShape[1] * inShape[2] * inShape[3]};
+        var inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
+        var outShape = new long[]{inShape[0], inShape[1] * inShape[2] * inShape[3]};
 
         return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, permuted.reshape('c', outShape));
     }

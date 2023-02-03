@@ -21,7 +21,7 @@
 package org.nd4j.parameterserver.distributed.v2.transport.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -49,8 +49,8 @@ public class AeronUdpTransportTest extends BaseND4JTest {
     @Disabled
     public void testBasic_Connection_1() throws Exception {
         // we definitely want to shutdown all transports after test, to avoid issues with shmem
-        try(val transportA = new AeronUdpTransport(IP, ROOT_PORT, IP, ROOT_PORT, VoidConfiguration.builder().build());
-            val transportB = new AeronUdpTransport(IP, 40782, IP, ROOT_PORT, VoidConfiguration.builder().build())) {
+        try(var transportA = new AeronUdpTransport(IP, ROOT_PORT, IP, ROOT_PORT, VoidConfiguration.builder().build());
+            var transportB = new AeronUdpTransport(IP, 40782, IP, ROOT_PORT, VoidConfiguration.builder().build())) {
             transportA.launchAsMaster();
 
             Thread.sleep(50);

@@ -70,11 +70,11 @@ SD_DEVICE T continuedFractionCuda(const T a, const T b, const T x) {
     t2 = static_cast<T>(1) + coeffs[i2 + 1] / t2;
     if (math::sd_abs<T>(t2) < min) t2 = min;
     // result
-    val = t2 * t1;
+    var = t2 * t1;
     result *= val;
 
     // condition to stop loop
-    if (math::sd_abs<T>(val - static_cast<T>(1)) <= DataTypeUtils::eps<T>()) return result;
+    if (math::sd_abs<T>(var - static_cast<T>(1)) <= DataTypeUtils::eps<T>()) return result;
   }
 
   return DataTypeUtils::infOrMax<T>();  // no convergence, more iterations is required, return infinity

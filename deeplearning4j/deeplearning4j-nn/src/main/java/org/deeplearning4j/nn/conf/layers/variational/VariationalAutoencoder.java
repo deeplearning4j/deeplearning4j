@@ -105,8 +105,8 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
         InputType outputType = getOutputType(-1, inputType);
 
-        val actElementsPerEx = outputType.arrayElementsPerExample();
-        val numParams = initializer().numParams(this);
+        var actElementsPerEx = outputType.arrayElementsPerExample();
+        var numParams = initializer().numParams(this);
         int updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         int inferenceWorkingMemSizePerEx = 0;

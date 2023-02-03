@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 
-import lombok.val;
+
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -108,8 +108,8 @@ public class KerasReshape extends KerasLayer {
         InputPreProcessor preprocessor = null;
         if (inputType[0] instanceof InputType.InputTypeConvolutional) {
             InputType.InputTypeConvolutional it = (InputType.InputTypeConvolutional) inputType[0];
-            val inputShape = new long[]{it.getChannels(), it.getHeight(), it.getWidth()};
-            val dimOrder = getDimOrder();
+            var inputShape = new long[]{it.getChannels(), it.getHeight(), it.getWidth()};
+            var dimOrder = getDimOrder();
             if (dimOrder == DimOrder.THEANO || dimOrder == DimOrder.NONE && kerasMajorVersion == 1) {
                 if (targetShape.length == 2) { // edge caseKeras
                     targetShape = new long[]{targetShape[1], targetShape[0]};
@@ -123,8 +123,8 @@ public class KerasReshape extends KerasLayer {
 
         } else if (inputType[0] instanceof InputType.InputTypeConvolutional3D) {
             InputType.InputTypeConvolutional3D it = (InputType.InputTypeConvolutional3D) inputType[0];
-            val inputShape = new long[] { it.getDepth(), it.getHeight(), it.getWidth(), it.getChannels() };
-            val dimOrder = getDimOrder();
+            var inputShape = new long[] { it.getDepth(), it.getHeight(), it.getWidth(), it.getChannels() };
+            var dimOrder = getDimOrder();
             if (dimOrder == DimOrder.THEANO || dimOrder == DimOrder.NONE && kerasMajorVersion == 1) {
                 if (targetShape.length == 3) { // Keras edge case
                     targetShape = new long[] { targetShape[1], targetShape[0], targetShape[2] };
@@ -139,11 +139,11 @@ public class KerasReshape extends KerasLayer {
             }
         }  else if (inputType[0] instanceof InputType.InputTypeRecurrent) {
             InputType.InputTypeRecurrent it = (InputType.InputTypeRecurrent) inputType[0];
-            val inputShape = new long[]{it.getSize(), it.getTimeSeriesLength()};
+            var inputShape = new long[]{it.getSize(), it.getTimeSeriesLength()};
             preprocessor = new ReshapePreprocessor(inputShape, this.targetShape, false, null);
         } else if (inputType[0] instanceof InputType.InputTypeFeedForward) {
             InputType.InputTypeFeedForward it = (InputType.InputTypeFeedForward) inputType[0];
-            val inputShape = new long[]{it.getSize()};
+            var inputShape = new long[]{it.getSize()};
             if (targetShape.length == 3) {
                 targetShape = targetShapeForDimOrder(inputShape, targetShape);
             }

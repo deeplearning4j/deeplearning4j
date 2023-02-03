@@ -20,7 +20,7 @@
 package org.eclipse.deeplearning4j.frameworkimport.keras.configurations;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -281,7 +281,7 @@ class Keras2ModelConfigurationTest extends BaseDL4JTest {
     @DisplayName("Test 5982")
     void test5982() throws Exception {
         File jsonFile = Resources.asFile("modelimport/keras/configs/bidirectional_last_timeStep.json");
-        val modelGraphConf = KerasModelImport.importKerasSequentialConfiguration(jsonFile.getAbsolutePath());
+        var modelGraphConf = KerasModelImport.importKerasSequentialConfiguration(jsonFile.getAbsolutePath());
         MultiLayerNetwork model = new MultiLayerNetwork(modelGraphConf);
         INDArray features = Nd4j.create(new double[] { 1, 3, 1, 2, 2, 1, 82, 2, 10, 1, 3, 1, 2, 1, 82, 3, 1, 10, 1, 2, 1, 3, 1, 10, 82, 2, 1, 1, 10, 82, 2, 3, 1, 2, 1, 10, 1, 2, 3, 82, 2, 1, 10, 3, 82, 1, 2, 1, 10, 1 }, new int[] { 1, 1, 50 });
         model.init();

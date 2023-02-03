@@ -84,7 +84,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
         if (input.ordering() != 'c' || !Shape.hasDefaultStridesForShape(input))
             input = input.dup('c');
 
-        val shape = input.shape(); //[timeSeriesLength*miniBatchSize, numChannels, inputHeight, inputWidth]
+        var shape = input.shape(); //[timeSeriesLength*miniBatchSize, numChannels, inputHeight, inputWidth]
 
         //First: reshape 4d to 2d, as per CnnToFeedForwardPreProcessor
         INDArray twod = input.reshape('c', input.size(0), ArrayUtil.prod(input.shape()) / input.size(0));
@@ -104,7 +104,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
         if (rnnDataFormat == RNNFormat.NWC){
             output = output.permute(0, 2, 1);
         }
-        val shape = output.shape();
+        var shape = output.shape();
         INDArray output2d;
         if (shape[0] == 1) {
             //Edge case: miniBatchSize = 1
@@ -138,7 +138,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
         }
 
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        val outSize = c.getChannels() * c.getHeight() * c.getWidth();
+        var outSize = c.getChannels() * c.getHeight() * c.getWidth();
         return InputType.recurrent(outSize, rnnDataFormat);
     }
 

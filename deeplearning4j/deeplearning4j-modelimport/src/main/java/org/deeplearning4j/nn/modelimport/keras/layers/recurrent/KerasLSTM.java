@@ -23,7 +23,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -319,7 +319,7 @@ public class KerasLSTM extends KerasLayer {
                 throw new InvalidKerasConfigurationException(
                         "Keras LSTM layer does not contain parameter " + conf.getKERAS_PARAM_NAME_B());
 
-            val sliceInterval = b.length() / 4;
+            var sliceInterval = b.length() / 4;
             W_i = W.get(NDArrayIndex.all(), NDArrayIndex.interval(0, sliceInterval));
             W_f = W.get(NDArrayIndex.all(), NDArrayIndex.interval(sliceInterval, 2 * sliceInterval));
             W_c = W.get(NDArrayIndex.all(), NDArrayIndex.interval(2 * sliceInterval, 3 * sliceInterval));

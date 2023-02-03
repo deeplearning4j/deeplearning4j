@@ -23,7 +23,7 @@ package org.nd4j.linalg.api.ops;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -250,7 +250,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
         }   //Otherwise: dimensions are dynamically set during execution in InferenceSession
 
         if(attributesForNode.containsKey("keep_dims")) {
-            val keepDims = attributesForNode.get("keep_dims").getB();
+            var keepDims = attributesForNode.get("keep_dims").getB();
             this.keepDims = keepDims;
         }
         defineDimensions(this.dimensions);

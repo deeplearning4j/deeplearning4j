@@ -22,7 +22,7 @@ package org.deeplearning4j.nn.updater;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.val;
+
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Trainable;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;

@@ -62,7 +62,7 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
             int specCols = 5;
             INDArray labels = Nd4j.ones(3);
             INDArray preds = Nd4j.ones(6);
-            RegressionEvaluation eval = new RegressionEvaluation(specCols);
+            RegressionEvaluation evar = new RegressionEvaluation(specCols);
 
             eval.eval(labels, preds);
         });
@@ -76,7 +76,7 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
         int nCols = 5;
         int nTestArrays = 100;
         int valuesPerTestArray = 3;
-        RegressionEvaluation eval = new RegressionEvaluation(nCols);
+        RegressionEvaluation evar = new RegressionEvaluation(nCols);
 
         for (int i = 0; i < nTestArrays; i++) {
             INDArray rand = Nd4j.rand(DataType.DOUBLE,valuesPerTestArray, nCols);
@@ -121,7 +121,7 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
                     INDArray labels = Nd4j.create(labelsD).castTo(lpDtype);
                     INDArray predicted = Nd4j.create(predictedD).castTo(lpDtype);
 
-                    RegressionEvaluation eval = new RegressionEvaluation(3);
+                    RegressionEvaluation evar = new RegressionEvaluation(3);
 
                     for (int xe = 0; xe < 2; xe++) {
                         eval.eval(labels, predicted);
@@ -144,7 +144,7 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
                             assertEquals(first, eval);
                         }
 
-                        eval = new RegressionEvaluation(3);
+                        evar = new RegressionEvaluation(3);
                     }
                 }
             }

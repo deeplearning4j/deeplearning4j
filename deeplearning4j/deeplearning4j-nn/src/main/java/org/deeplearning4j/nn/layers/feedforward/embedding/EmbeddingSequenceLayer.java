@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.layers.feedforward.embedding;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.RNNFormat;
@@ -70,7 +70,7 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
 
         int inputLength = layerConf().getInputLength();
         long numSamples = input.size(0);
-        val nOut = layerConf().getNOut();
+        var nOut = layerConf().getNOut();
 
         if (delta.ordering() != 'c' || delta.isView() || !hasDefaultStridesForShape(delta)){
             delta = delta.dup('c');
@@ -139,9 +139,9 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
                     + " got " + Arrays.toString(input.shape()) + " instead, for layer with id: " + layerId());
         }
 
-        val nIn = layerConf().getNIn();
-        val minibatch = in.rows();
-        val inputLength = layerConf().getInputLength();
+        var nIn = layerConf().getNIn();
+        var minibatch = in.rows();
+        var inputLength = layerConf().getInputLength();
         if (in.ordering() != 'c' || in.isView() || !hasDefaultStridesForShape(in)) {
             in = workspaceMgr.dup(ArrayType.INPUT, in, 'c');
 
@@ -158,7 +158,7 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
 
         INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
 
-        val nOut = layerConf().getNOut();
+        var nOut = layerConf().getNOut();
         INDArray destination = workspaceMgr.createUninitialized(
                 ArrayType.ACTIVATIONS, weights.dataType(), new long[]{minibatch * inputLength, nOut}, 'c');
 
@@ -169,7 +169,7 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
             rows.addiRowVector(bias);
         }
 
-        val shape = new long[]{minibatch, inputLength, nOut};
+        var shape = new long[]{minibatch, inputLength, nOut};
         INDArray ret = rows.reshape('c', shape);
 
         if(layerConf().getOutputFormat() == RNNFormat.NCW) {

@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -84,8 +84,8 @@ public class ATan2 extends BaseDynamicTransformOp {
         SDVariable y = larg();
         SDVariable x = rarg();
 
-        val xGrad = sameDiff.math.neg(y.div(x.pow(2).add(y.pow(2)))).mul(i_v.get(0));
-        val yGrad = x.div(x.pow(2).add(y.pow(2))).mul(i_v.get(0));
+        var xGrad = sameDiff.math.neg(y.div(x.pow(2).add(y.pow(2)))).mul(i_v.get(0));
+        var yGrad = x.div(x.pow(2).add(y.pow(2))).mul(i_v.get(0));
 
         return Arrays.asList(yGrad, xGrad);
     }

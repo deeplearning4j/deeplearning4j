@@ -20,7 +20,7 @@
 
 package org.nd4j.imports.descriptors.properties.adapters;
 
-import lombok.val;
+
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.tensorflow.framework.DataType;
@@ -35,7 +35,7 @@ public class DataTypeAdapter implements AttributeAdapter {
     }
 
     public static org.nd4j.linalg.api.buffer.DataType dtypeConv(DataType dataType) {
-        val x = dataType.getNumber();
+        var x = dataType.getNumber();
 
         return dtypeConv(x);
     };

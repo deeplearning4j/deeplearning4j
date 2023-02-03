@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.dl4jcore.gradientcheck;
 
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
@@ -243,8 +243,8 @@ public class TestGradientCheckTestsMasking extends BaseDL4JTest {
 
         for (INDArray labelMask : labelMasks) {
 
-            val minibatch = labelMask.size(0);
-            val nOut = labelMask.size(1);
+            var minibatch = labelMask.size(0);
+            var nOut = labelMask.size(1);
 
             for (int i = 0; i < lossFunctions.length; i++) {
                 ILossFunction lf = lossFunctions[i];
@@ -337,8 +337,8 @@ public class TestGradientCheckTestsMasking extends BaseDL4JTest {
 
         for (INDArray labelMask : labelMasks) {
 
-            val minibatch = labelMask.size(0);
-            val tsLength = labelMask.size(2);
+            var minibatch = labelMask.size(0);
+            var tsLength = labelMask.size(2);
 
             for (int i = 0; i < lossFunctions.length; i++) {
                 ILossFunction lf = lossFunctions[i];

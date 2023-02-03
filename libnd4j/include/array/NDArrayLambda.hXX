@@ -243,7 +243,7 @@ static SD_KERNEL void lambdaPairwiseKernel(const void *scalarPtr, const void *vx
   auto y = reinterpret_cast<const T *>(scalarPtr);
   auto z = reinterpret_cast<T *>(vz);
 
-  auto yVal = *y;
+  auto yvar = *y;
 
   auto xEws = shape::elementWiseStride(xShapeInfo);
   auto zEws = shape::elementWiseStride(zShapeInfo);

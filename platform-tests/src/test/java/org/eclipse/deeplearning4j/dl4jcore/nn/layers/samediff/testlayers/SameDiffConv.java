@@ -102,10 +102,10 @@ public class SameDiffConv extends SameDiffLayer {
     @Override
     public void defineParameters(SDLayerParams params) {
         params.clear();
-        val weightsShape = new long[]{kernel[0], kernel[1], nIn, nOut}; //[kH, kW, iC, oC] in libnd4j
+        var weightsShape = new long[]{kernel[0], kernel[1], nIn, nOut}; //[kH, kW, iC, oC] in libnd4j
         params.addWeightParam(ConvolutionParamInitializer.WEIGHT_KEY, weightsShape);
         if(hasBias) {
-            val biasShape = new long[]{1, nOut};
+            var biasShape = new long[]{1, nOut};
             params.addBiasParam(ConvolutionParamInitializer.BIAS_KEY, biasShape);
         }
     }

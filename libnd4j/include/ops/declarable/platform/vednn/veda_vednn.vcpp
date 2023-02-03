@@ -519,7 +519,7 @@ uint64_t vedaAdd_A(uint64_t length0, VEDAdeviceptr vIn0, uint64_t length1, VEDAd
   }
 
   if (min_len == 1) {
-    auto val = small[0];
+    auto var = small[0];
     for (uint64_t i = 0L; i < max_len; i++) {
       out[i] = big[i] + val;
     }
@@ -594,7 +594,7 @@ uint64_t vedaMult_A(uint64_t length0, VEDAdeviceptr vIn0, uint64_t length1, VEDA
   }
 
   if (min_len == 1) {
-    auto val = small[0];
+    auto var = small[0];
     for (uint64_t i = 0L; i < max_len; i++) {
       out[i] = big[i] * val;
     }
@@ -819,8 +819,8 @@ uint64_t vedaLeakyRELUF32(uint64_t length, VEDAdeviceptr vIn, VEDAdeviceptr vO, 
   CHECK_FUNC(vedaMemPtr((void **)&in, vIn));
   CHECK_FUNC(vedaMemPtr((void **)&out, vO));
   for (uint64_t i = 0; i < length; i++) {
-    auto val = in[i];
-    out[i] = val < 0.0f ? alpha * val : val;
+    auto var = in[i];
+    out[i] = var < 0.0f ? alpha * var : val;
   }
   RETURN(0);
 }

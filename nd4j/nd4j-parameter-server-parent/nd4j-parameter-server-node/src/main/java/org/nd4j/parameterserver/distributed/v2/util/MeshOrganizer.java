@@ -94,7 +94,7 @@ public class MeshOrganizer implements Serializable {
      * This methods adds new node to the network
      */
     public Node addNode(@NonNull String ip, @NonNull int port) {
-        val node = Node.builder()
+        var node = Node.builder()
                 .id(ip)
                 .port(port)
                 .upstream(null)
@@ -108,7 +108,7 @@ public class MeshOrganizer implements Serializable {
      * @return
      */
     public MeshOrganizer clone() {
-        val b = SerializationUtils.toByteArray(this);
+        var b = SerializationUtils.toByteArray(this);
         return SerializationUtils.fromByteArray(b);
     }
 
@@ -123,7 +123,7 @@ public class MeshOrganizer implements Serializable {
 
         if (buildMode == MeshBuildMode.MESH) {
             // :)
-            val candidate = fillQueue.poll();
+            var candidate = fillQueue.poll();
 
             // adding node to the candidate
             candidate.addDownstreamNode(node);
@@ -162,7 +162,7 @@ public class MeshOrganizer implements Serializable {
         synchronized (node) {
             node.status(NodeStatus.OFFLINE);
 
-            for (val n : node.getDownstreamNodes())
+            for (var n : node.getDownstreamNodes())
                 remapNode(n);
         }
     }
@@ -173,8 +173,8 @@ public class MeshOrganizer implements Serializable {
         if (o == null || getClass() != o.getClass()) return false;
         MeshOrganizer that = (MeshOrganizer) o;
 
-        val bm = buildMode == that.buildMode;
-        val rn = Objects.equals(rootNode, that.rootNode);
+        var bm = buildMode == that.buildMode;
+        var rn = Objects.equals(rootNode, that.rootNode);
 
         return  bm && rn;
     }
@@ -206,7 +206,7 @@ public class MeshOrganizer implements Serializable {
         version++;
         node.setUpstreamNode(this.rootNode);
 
-        for (val n: node.getDownstreamNodes()) {
+        for (var n: node.getDownstreamNodes()) {
             this.rootNode.addDownstreamNode(n);
             node.removeFromDownstreams(n);
         }
@@ -222,7 +222,7 @@ public class MeshOrganizer implements Serializable {
             node.getUpstreamNode().removeFromDownstreams(node);
 
             boolean m = false;
-            for (val n : sortedNodes) {
+            for (var n : sortedNodes) {
                 // we dont want to remap node to itself
                 if (!Objects.equals(n, node) && n.status().equals(NodeStatus.ONLINE)) {
                     n.addDownstreamNode(node);
@@ -259,11 +259,11 @@ public class MeshOrganizer implements Serializable {
         // default deserialization
         ois.defaultReadObject();
 
-        val desc = rootNode.getDescendantNodes();
+        var desc = rootNode.getDescendantNodes();
 
         nodeMap = new HashMap<>();
 
-        for (val d: desc)
+        for (var d: desc)
             nodeMap.put(d.getId(), d);
     }
 
@@ -286,7 +286,7 @@ public class MeshOrganizer implements Serializable {
      * This method returns upstream connection for a given node
      */
     public Node getUpstreamForNode(@NonNull String ip) throws NoSuchElementException {
-        val node = getNodeById(ip);
+        var node = getNodeById(ip);
 
         return node.getUpstreamNode();
     }
@@ -295,7 +295,7 @@ public class MeshOrganizer implements Serializable {
      * This method returns downstream connections for a given node
      */
     public Collection<Node> getDownstreamsForNode(@NonNull String ip) throws NoSuchElementException {
-        val node = getNodeById(ip);
+        var node = getNodeById(ip);
 
         return node.getDownstreamNodes();
     }
@@ -345,7 +345,7 @@ public class MeshOrganizer implements Serializable {
         if (id.equals(rootNode.getId()))
             return rootNode;
 
-        val node = nodeMap.get(id);
+        var node = nodeMap.get(id);
         if (node == null) {
             log.info("Existing nodes: [{}]", this.flatNodes());
             throw new NoSuchElementException(id);
@@ -428,7 +428,7 @@ public class MeshOrganizer implements Serializable {
 
             // we return next node after this node
             boolean b = false;
-            for (val v: downstream) {
+            for (var v: downstream) {
                 if (b)
                     return v;
 
@@ -465,7 +465,7 @@ public class MeshOrganizer implements Serializable {
                     return addDownstreamNode(node);
                 } else {
                     // we should find first not full sub-branch
-                    for (val d: downstream)
+                    for (var d: downstream)
                         if (d.numberOfDescendants() < MeshOrganizer.MAX_DEPTH * MeshOrganizer.MAX_DOWNSTREAMS)
                             return d.pushDownstreamNode(node);
 
@@ -473,9 +473,9 @@ public class MeshOrganizer implements Serializable {
                     return addDownstreamNode(node);
                 }
             } else {
-                val distance = distanceFromRoot();
+                var distance = distanceFromRoot();
 
-                for (val d: downstream)
+                for (var d: downstream)
                     if (d.numberOfDescendants() < MeshOrganizer.MAX_DOWNSTREAMS * (MeshOrganizer.MAX_DEPTH - distance))
                         return d.pushDownstreamNode(node);
 
@@ -506,9 +506,9 @@ public class MeshOrganizer implements Serializable {
          * @return
          */
         public long numberOfDescendants() {
-            val cnt = new AtomicLong(downstream.size());
+            var cnt = new AtomicLong(downstream.size());
 
-            for (val n: downstream)
+            for (var n: downstream)
                 cnt.addAndGet(n.numberOfDescendants());
 
             return cnt.get();
@@ -535,8 +535,8 @@ public class MeshOrganizer implements Serializable {
          * @return
          */
         public Collection<Node> getDescendantNodes() {
-            val result = new ArrayList<Node>(getDownstreamNodes());
-            for (val n:downstream)
+            var result = new ArrayList<Node>(getDownstreamNodes());
+            for (var n:downstream)
                 result.addAll(n.getDescendantNodes());
 
             return result;
@@ -559,8 +559,8 @@ public class MeshOrganizer implements Serializable {
             if (o == null || getClass() != o.getClass()) return false;
             Node node = (Node) o;
 
-            val rn = this.upstream == null ? "root" : this.upstream.getId();
-            val on = node.upstream == null ? "root" : node.upstream.getId();
+            var rn = this.upstream == null ? "root" : this.upstream.getId();
+            var on = node.upstream == null ? "root" : node.upstream.getId();
 
             return rootNode == node.rootNode &&
                     port == node.port &&
@@ -578,18 +578,18 @@ public class MeshOrganizer implements Serializable {
 
         @Override
         public String toString() {
-            val builder = new StringBuilder();
+            var builder = new StringBuilder();
             if (downstream == null || downstream.size() == 0)
                 builder.append("none");
             else {
-                for (val n: downstream) {
+                for (var n: downstream) {
                     builder.append("[").append(n.getId()).append("], ");
                 }
             }
             // downstreams: [" + builder.toString() +"]; ]
             // upstreamId: [" + upstreamId + "];
-            val strId = id == null ? "null" : id;
-            val upstreamId = upstream == null ? "none" : upstream.getId();
+            var strId = id == null ? "null" : id;
+            var upstreamId = upstream == null ? "none" : upstream.getId();
             return "[ Id: ["+ strId +"]; ]";
         }
 
@@ -605,7 +605,7 @@ public class MeshOrganizer implements Serializable {
          * @param node
          */
         public synchronized void removeFromDownstreams(@NonNull Node node) {
-            val r = downstream.remove(node);
+            var r = downstream.remove(node);
 
             if (!r)
                 throw new NoSuchElementException(node.getId());

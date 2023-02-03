@@ -35,7 +35,7 @@ import org.junit.jupiter.api.DisplayName;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DisplayName("Eval Json Test")
+@DisplayName("Evar Json Test")
 @NativeTag
 @Tag(TagNames.EVAL_METRICS)
 @Tag(TagNames.JACKSON_SERDE)

@@ -32,7 +32,7 @@ import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
-import lombok.val;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -376,7 +376,7 @@ public class Nd4j {
      * The prepend method has the same signature and prepends the given array.
      * @param arr the array to append to
      * @param padAmount the pad amount of the array to be returned
-     * @param val the value to append
+     * @param var the value to append
      * @param axis the axis to append to
      * @return the newly created array
      */
@@ -657,7 +657,7 @@ public class Nd4j {
      * @return array of maximum values.
      */
     public static INDArray argMax(INDArray arr, @NonNull int... dimension) {
-        val imax = new ArgMax(new INDArray[]{arr},null,false, dimension);
+        var imax = new ArgMax(new INDArray[]{arr},null,false, dimension);
         return Nd4j.getExecutioner().exec(imax)[0];
     }
 
@@ -665,7 +665,7 @@ public class Nd4j {
      * See {@link #argMax(INDArray, int...)} but return minimum values.
      */
     public static INDArray argMin(INDArray arr, @NonNull int... dimension) {
-        val imin = new ArgMin(new INDArray[]{arr}, null,false,dimension);
+        var imin = new ArgMin(new INDArray[]{arr}, null,false,dimension);
         return Nd4j.getExecutioner().exec(imin)[0];
     }
 
@@ -1682,7 +1682,7 @@ public class Nd4j {
      * @return the created buffer.
      */
     public static DataBuffer createTypedBufferDetached(double[] data, DataType dataType) {
-        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        var buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
     }
@@ -1691,7 +1691,7 @@ public class Nd4j {
      * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(float[] data, DataType dataType) {
-        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        var buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
     }
@@ -1700,7 +1700,7 @@ public class Nd4j {
      * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(int[] data, DataType dataType) {
-        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        var buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
     }
@@ -1709,7 +1709,7 @@ public class Nd4j {
      * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(long[] data, DataType dataType) {
-        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        var buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
     }
@@ -1718,7 +1718,7 @@ public class Nd4j {
      * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(short[] data, DataType dataType) {
-        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        var buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
     }
@@ -1727,7 +1727,7 @@ public class Nd4j {
      * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(byte[] data, DataType dataType) {
-        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        var buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
     }
@@ -1736,7 +1736,7 @@ public class Nd4j {
      * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(boolean[] data, DataType dataType) {
-        val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
+        var buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
     }
@@ -2111,7 +2111,7 @@ public class Nd4j {
 
         INDArray result = Nd4j.createUninitialized(dataType, new long[] {num}, Nd4j.order());
 
-        val op = DynamicCustomOp.builder("lin_space")
+        var op = DynamicCustomOp.builder("lin_space")
                 .addInputs(Nd4j.scalar(lower), Nd4j.scalar(upper), Nd4j.scalar(num))
                 .addOutputs(result)
                 .build();
@@ -2126,7 +2126,7 @@ public class Nd4j {
 
         INDArray result = Nd4j.createUninitialized(dataType, new long[] {num}, Nd4j.order());
 
-        val op = DynamicCustomOp.builder("range")
+        var op = DynamicCustomOp.builder("range")
                 .addInputs(Nd4j.scalar(lower), Nd4j.scalar(upper), Nd4j.scalar(step))
                 .addOutputs(result)
                 .build();
@@ -2613,11 +2613,11 @@ public class Nd4j {
      * @return new INDArray.
      */
     public static INDArray createArrayFromShapeBuffer(DataBuffer data, long[] shapeInfo) {
-        val jvmShapeInfo = shapeInfo;
-        val dataType = ArrayOptionsHelper.dataType(jvmShapeInfo);
-        val shape = Shape.shape(jvmShapeInfo);
-        val strides = Shape.stridesOf(jvmShapeInfo);
-        val order = Shape.order(jvmShapeInfo);
+        var jvmShapeInfo = shapeInfo;
+        var dataType = ArrayOptionsHelper.dataType(jvmShapeInfo);
+        var shape = Shape.shape(jvmShapeInfo);
+        var strides = Shape.stridesOf(jvmShapeInfo);
+        var order = Shape.order(jvmShapeInfo);
         INDArray result = Nd4j.create(data, shape, strides, 0, order, dataType);
         if (data instanceof CompressedDataBuffer)
             result.markAsCompressed(true);
@@ -2633,11 +2633,11 @@ public class Nd4j {
      * @return new INDArray.
      */
     public static INDArray createArrayFromShapeBuffer(DataBuffer data, DataBuffer shapeInfo) {
-        val jvmShapeInfo = shapeInfo.asLong();
-        val dataType = ArrayOptionsHelper.dataType(jvmShapeInfo);
-        val shape = Shape.shape(jvmShapeInfo);
-        val strides = Shape.stridesOf(jvmShapeInfo);
-        val order = Shape.order(jvmShapeInfo);
+        var jvmShapeInfo = shapeInfo.asLong();
+        var dataType = ArrayOptionsHelper.dataType(jvmShapeInfo);
+        var shape = Shape.shape(jvmShapeInfo);
+        var strides = Shape.stridesOf(jvmShapeInfo);
+        var order = Shape.order(jvmShapeInfo);
         INDArray result = Nd4j.create(data, shape, strides, 0, order, dataType);
         if (data instanceof CompressedDataBuffer)
             result.markAsCompressed(true);
@@ -2670,7 +2670,7 @@ public class Nd4j {
      * @return the ndarray
      */
     public static INDArray read(DataInputStream dis) {
-        val headerShape = BaseDataBuffer.readHeader(dis);
+        var headerShape = BaseDataBuffer.readHeader(dis);
 
         //noinspection UnnecessaryUnboxing
         DataBuffer shapeInformation = Nd4j.createBufferDetached(new long[]{headerShape.getMiddle().longValue()}, headerShape.getRight());
@@ -2678,7 +2678,7 @@ public class Nd4j {
         DataType type;
         DataBuffer data = null;
 
-        val headerData = BaseDataBuffer.readHeader(dis);
+        var headerData = BaseDataBuffer.readHeader(dis);
         try {
             // current version contains dtype in extras
             data = CompressedDataBuffer.readUnknown(dis, headerData.getFirst(), headerData.getMiddle(), headerData.getRight());
@@ -3522,7 +3522,7 @@ public class Nd4j {
      * @return the created ndarray.
      */
     public static INDArray create(long[][] data) {
-        val shape = new long[]{data.length, data[0].length};
+        var shape = new long[]{data.length, data[0].length};
         return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.LONG, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
@@ -3532,7 +3532,7 @@ public class Nd4j {
      * @return the created ndarray.
      */
     public static INDArray create(boolean[][] data) {
-        val shape = new long[]{data.length, data[0].length};
+        var shape = new long[]{data.length, data[0].length};
         return INSTANCE.create(ArrayUtil.flatten(data), shape, getStrides(shape), DataType.BOOL, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
@@ -3808,7 +3808,7 @@ public class Nd4j {
     public static INDArray empty(DataType type) {
         if(EMPTY_ARRAYS[type.ordinal()] == null){
             try(MemoryWorkspace ignored = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                val ret = INSTANCE.empty(type);
+                var ret = INSTANCE.empty(type);
                 EMPTY_ARRAYS[type.ordinal()] = ret;
             }
         }
@@ -3866,7 +3866,7 @@ public class Nd4j {
      */
     public static INDArray create(double[] data, int[] shape) {
         commonCheckCreate(data.length, LongUtils.toLongs(shape));
-        val lshape = ArrayUtil.toLongArray(shape);
+        var lshape = ArrayUtil.toLongArray(shape);
         return INSTANCE.create(data, lshape, Nd4j.getStrides(lshape, Nd4j.order()), DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
@@ -4196,7 +4196,7 @@ public class Nd4j {
      */
     public static INDArray create(double[] data, int[] shape, char ordering) {
         commonCheckCreate(data.length, LongUtils.toLongs(shape));
-        val lshape = ArrayUtil.toLongArray(shape);
+        var lshape = ArrayUtil.toLongArray(shape);
         return INSTANCE.create(data, lshape, Nd4j.getStrides(lshape, ordering), ordering, DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
@@ -4970,7 +4970,7 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray scalar(DataType dataType, Number value) {
-        val ws = Nd4j.getMemoryManager().getCurrentWorkspace();
+        var ws = Nd4j.getMemoryManager().getCurrentWorkspace();
 
         switch (dataType) {
             case DOUBLE:
@@ -5232,16 +5232,16 @@ public class Nd4j {
                 OP_EXECUTIONER_INSTANCE.printEnvironmentInformation();
             }
 
-            val actions = ND4JClassLoading.loadService(EnvironmentalAction.class);
-            val mappedActions = new HashMap<String, EnvironmentalAction>();
-            for (val a: actions) {
+            var actions = ND4JClassLoading.loadService(EnvironmentalAction.class);
+            var mappedActions = new HashMap<String, EnvironmentalAction>();
+            for (var a: actions) {
                 if (!mappedActions.containsKey(a.targetVariable()))
                     mappedActions.put(a.targetVariable(), a);
             }
 
-            for (val e: mappedActions.keySet()) {
-                val action = mappedActions.get(e);
-                val value = System.getenv(e);
+            for (var e: mappedActions.keySet()) {
+                var action = mappedActions.get(e);
+                var value = System.getenv(e);
                 if (value != null) {
                     try {
                         action.process(value);
@@ -5547,7 +5547,7 @@ public class Nd4j {
          */
         INDArray result = Nd4j.createUninitialized(m.shape());
 
-        val op = DynamicCustomOp.builder("triu")
+        var op = DynamicCustomOp.builder("triu")
                 .addInputs(m)
                 .addOutputs(result)
                 .addIntegerArguments(k)
@@ -5584,7 +5584,7 @@ public class Nd4j {
      */
     public static INDArray tri(int n,int m,int k) {
         INDArray ret = Nd4j.createUninitialized(n, m);
-        val op = DynamicCustomOp.builder("tri")
+        var op = DynamicCustomOp.builder("tri")
                 .addIntegerArguments(n, m, k)
                 .addOutputs(ret)
                 .build();
@@ -5836,14 +5836,14 @@ public class Nd4j {
      * @return the created {@link INDArray}
      */
     public static INDArray createFromFlatArray(FlatArray array) {
-        val dtype = array.dtype();
-        val order = array.byteOrder();
-        val rank = (int) array.shape(0);
-        val shapeInfo = new long[Shape.shapeInfoLength(rank)];
+        var dtype = array.dtype();
+        var order = array.byteOrder();
+        var rank = (int) array.shape(0);
+        var shapeInfo = new long[Shape.shapeInfoLength(rank)];
         for (int e = 0; e < shapeInfo.length; e++)
             shapeInfo[e] = array.shape(e);
 
-        val shapeOf = Shape.shapeOf(shapeInfo);
+        var shapeOf = Shape.shapeOf(shapeInfo);
         DataType _dtype = FlatBuffersMapper.getDataTypeFromByte(dtype);
         if (Shape.isEmpty(shapeInfo)) {
             if(Shape.rank(shapeInfo) == 0) {
@@ -5856,73 +5856,73 @@ public class Nd4j {
         char ordering = shapeInfo[shapeInfo.length - 1] == 99 ? 'c' : 'f';
 
 
-        val stridesOf = Shape.stridesOf(shapeInfo);
+        var stridesOf = Shape.stridesOf(shapeInfo);
 
 
-        val _order = FlatBuffersMapper.getOrderFromByte(order);
-        val prod = rank > 0 ? ArrayUtil.prod(shapeOf) : 1;
+        var _order = FlatBuffersMapper.getOrderFromByte(order);
+        var prod = rank > 0 ? ArrayUtil.prod(shapeOf) : 1;
 
-        val bb = array.bufferAsByteBuffer();
+        var bb = array.bufferAsByteBuffer();
         switch (_dtype) {
             case DOUBLE: {
-                val doubles = new double[prod];
-                val db = bb.order(_order).asDoubleBuffer();
+                var doubles = new double[prod];
+                var db = bb.order(_order).asDoubleBuffer();
                 for (int e = 0; e < prod; e++)
                     doubles[e] = db.get(e);
 
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.DOUBLE);
             }
             case FLOAT: {
-                val doubles = new float[prod];
-                val fb = bb.order(_order).asFloatBuffer();
+                var doubles = new float[prod];
+                var fb = bb.order(_order).asFloatBuffer();
                 for (int e = 0; e < prod; e++)
                     doubles[e] = fb.get(e);
 
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.FLOAT);
             }
             case HALF: {
-                val doubles = new float[prod];
-                val sb = bb.order(_order).asShortBuffer();
+                var doubles = new float[prod];
+                var sb = bb.order(_order).asShortBuffer();
                 for (int e = 0; e < prod; e++)
                     doubles[e] = HalfIndexer.toFloat((int) sb.get(e));
 
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.HALF);
             }
             case INT: {
-                val doubles = new int[prod];
-                val sb = bb.order(_order).asIntBuffer();
+                var doubles = new int[prod];
+                var sb = bb.order(_order).asIntBuffer();
                 for (int e = 0; e < prod; e++)
                     doubles[e] = sb.get(e);
 
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.INT);
             }
             case LONG: {
-                val doubles = new long[prod];
-                val sb = bb.order(_order).asLongBuffer();
+                var doubles = new long[prod];
+                var sb = bb.order(_order).asLongBuffer();
                 for (int e = 0; e < prod; e++)
                     doubles[e] = sb.get(e);
 
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.LONG);
             }
             case SHORT: {
-                val doubles = new short[prod];
-                val sb = bb.order(_order).asShortBuffer();
+                var doubles = new short[prod];
+                var sb = bb.order(_order).asShortBuffer();
                 for (int e = 0; e < prod; e++)
                     doubles[e] = sb.get(e);
 
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.SHORT);
             }
             case BYTE: {
-                val bytes = new byte[prod];
-                val sb = bb.order(_order).asReadOnlyBuffer();
+                var bytes = new byte[prod];
+                var sb = bb.order(_order).asReadOnlyBuffer();
                 for (int e = 0; e < prod; e++)
                     bytes[e] = sb.get(e + sb.position());
 
                 return Nd4j.create(bytes, shapeOf, stridesOf, ordering, DataType.BYTE);
             }
             case BOOL: {
-                val doubles = new boolean[prod];
-                val sb = bb.order(_order).asReadOnlyBuffer();
+                var doubles = new boolean[prod];
+                var sb = bb.order(_order).asReadOnlyBuffer();
                 for (int e = 0; e < prod; e++)
                     doubles[e] = sb.get(e + sb.position()) == 1;
 
@@ -5930,15 +5930,15 @@ public class Nd4j {
             }
             case UTF8: {
                 try {
-                    val sb = bb.order(_order);
-                    val pos = sb.position();
-                    val arr = new byte[sb.limit() - pos];
+                    var sb = bb.order(_order);
+                    var pos = sb.position();
+                    var arr = new byte[sb.limit() - pos];
 
                     for (int e = 0; e < arr.length; e++) {
                         arr[e] = sb.get(e + pos);
                     }
 
-                    val buffer = DATA_BUFFER_FACTORY_INSTANCE.createUtf8Buffer(arr, prod);
+                    var buffer = DATA_BUFFER_FACTORY_INSTANCE.createUtf8Buffer(arr, prod);
                     return Nd4j.create(buffer, shapeOf);
                 } catch (Exception e) {
                     throw new RuntimeException(e);

@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.ops;
 
-import lombok.val;
+
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -150,15 +150,15 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
         INDArray linspace = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
         Nd4j.getExecutioner().exec(new SetRange(linspace, 0, 1));
         for (int i = 0; i < linspace.length(); i++) {
-            double val = linspace.getDouble(i);
-            assertTrue( val >= 0 && val <= 1,getFailureMessage(backend));
+            double var = linspace.getDouble(i);
+            assertTrue( var >= 0 && var <= 1,getFailureMessage(backend));
         }
 
         INDArray linspace2 = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
         Nd4j.getExecutioner().exec(new SetRange(linspace2, 2, 4));
         for (int i = 0; i < linspace2.length(); i++) {
-            double val = linspace2.getDouble(i);
-            assertTrue( val >= 2 && val <= 4,getFailureMessage(backend));
+            double var = linspace2.getDouble(i);
+            assertTrue( var >= 2 && var <= 4,getFailureMessage(backend));
         }
     }
 
@@ -296,7 +296,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
     public void testIamax2(Nd4jBackend backend) {
         INDArray linspace = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
         assertEquals( 3, Nd4j.getBlasWrapper().iamax(linspace),getFailureMessage(backend));
-        val op = new ArgAmax(new INDArray[]{linspace});
+        var op = new ArgAmax(new INDArray[]{linspace});
 
         int iamax = Nd4j.getExecutioner().exec(op)[0].getInt(0);
         assertEquals(3, iamax);
@@ -321,9 +321,9 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRowSoftmax(Nd4jBackend backend) {
-        val opExecutioner = Nd4j.getExecutioner();
-        val arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1);
-        val softMax = new SoftMax(arr);
+        var opExecutioner = Nd4j.getExecutioner();
+        var arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1);
+        var softMax = new SoftMax(arr);
         opExecutioner.exec((CustomOp) softMax);
         assertEquals(1.0, softMax.outputArguments().get(0).sumNumber().doubleValue(), 1e-1,getFailureMessage(backend));
     }
@@ -542,7 +542,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
                 0.3049033, 0.29277474, 0.29136384, 0.30316526, 0.2807459}, new int[] {150, 3}, 'f');
 
 //        System.out.println("Data:" + input.data().length());
-        val softMax = new SoftMax(input);
+        var softMax = new SoftMax(input);
         Nd4j.getExecutioner().exec((CustomOp) softMax);
         assertEquals(assertion, softMax.outputArguments().get(0));
 
@@ -571,7 +571,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray slice = arr.slice(0);
-        val expected = new double[(int) slice.length()];
+        var expected = new double[(int) slice.length()];
         for (int i = 0; i < slice.length(); i++)
             expected[i] = (float) Math.exp(slice.getDouble(i));
         Exp exp = new Exp(slice);
@@ -584,7 +584,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
     public void testSoftMax(Nd4jBackend backend) {
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1);
-        val softMax = new SoftMax(arr);
+        var softMax = new SoftMax(arr);
         opExecutioner.exec((CustomOp) softMax);
         assertEquals(1.0, softMax.outputArguments().get(0).sumNumber().doubleValue(), 1e-1,getFailureMessage(backend));
     }
@@ -729,7 +729,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
         double stdev = arr.stdNumber(true).doubleValue();
 
 
-        val standardDeviation = new org.apache.commons.math3.stat.descriptive.moment.StandardDeviation(true);
+        var standardDeviation = new org.apache.commons.math3.stat.descriptive.moment.StandardDeviation(true);
         double exp = standardDeviation.evaluate(arr.toDoubleVector());
         assertEquals(exp, stdev, 1e-7f);
 
@@ -741,7 +741,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariance(Nd4jBackend backend) {
-        val f = new double[] {0.9296161, 0.31637555, 0.1839188};
+        var f = new double[] {0.9296161, 0.31637555, 0.1839188};
         INDArray arr = Nd4j.create(f, new int[] {1, 3}, ordering());
         double var = arr.varNumber().doubleValue();
 
@@ -749,7 +749,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
         double var2 = var1.getDouble(0);
         assertEquals(var, var2, 1e-3);
 
-        val variance = new org.apache.commons.math3.stat.descriptive.moment.Variance(true);
+        var variance = new org.apache.commons.math3.stat.descriptive.moment.Variance(true);
         double exp = variance.evaluate(arr.toDoubleVector());
         assertEquals(exp, var, 1e-7f);
     }
@@ -873,11 +873,11 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPile4(Nd4jBackend backend) {
-        val arrayW = Nd4j.create(1, 5);
-        val arrayX = Nd4j.create(1, 5);
-        val arrayY = Nd4j.create(1, 5);
+        var arrayW = Nd4j.create(1, 5);
+        var arrayX = Nd4j.create(1, 5);
+        var arrayY = Nd4j.create(1, 5);
 
-        val arrayZ = Nd4j.pile(arrayW, arrayX, arrayY);
+        var arrayZ = Nd4j.pile(arrayW, arrayX, arrayY);
 
         assertArrayEquals(new long[]{3, 1, 5}, arrayZ.shape());
     }

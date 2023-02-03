@@ -462,7 +462,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 guessIndex = Nd4j.argMax(predictions2d, 1);
             }
             INDArray realOutcomeIndex = Nd4j.argMax(labels2d, 1);
-            val nExamples = guessIndex.length();
+            var nExamples = guessIndex.length();
 
             for (int i = 0; i < nExamples; i++) {
                 int actual = (int) realOutcomeIndex.getDouble(i);
@@ -519,7 +519,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             //Calculate top N accuracy
             //TODO: this could be more efficient
             INDArray realOutcomeIndex = Nd4j.argMax(labels2d, 1);
-            val nExamples = realOutcomeIndex.length();
+            var nExamples = realOutcomeIndex.length();
             for (int i = 0; i < nExamples; i++) {
                 int labelIdx = (int) realOutcomeIndex.getDouble(i);
                 double prob = predictions2d.getDouble(i, labelIdx);
@@ -1716,7 +1716,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * Get a list of prediction errors, on a per-record basis<br>
      * <p>
      * <b>Note</b>: Prediction errors are ONLY available if the "evaluate with metadata"  method is used: {@link #eval(INDArray, INDArray, List)}
-     * Otherwise (if the metadata hasn't been recorded via that previously mentioned eval method), there is no value in
+     * Otherwise (if the metadata hasn't been recorded via that previously mentioned evar method), there is no value in
      * splitting each prediction out into a separate Prediction object - instead, use the confusion matrix to get the counts,
      * via {@link #getConfusionMatrix()}
      *
@@ -1763,7 +1763,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * class.
      * <p>
      * <b>Note</b>: Prediction errors are ONLY available if the "evaluate with metadata"  method is used: {@link #eval(INDArray, INDArray, List)}
-     * Otherwise (if the metadata hasn't been recorded via that previously mentioned eval method), there is no value in
+     * Otherwise (if the metadata hasn't been recorded via that previously mentioned evar method), there is no value in
      * splitting each prediction out into a separate Prediction object - instead, use the confusion matrix to get the counts,
      * via {@link #getConfusionMatrix()}
      *
@@ -1792,7 +1792,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * class.
      * <p>
      * <b>Note</b>: Prediction errors are ONLY available if the "evaluate with metadata"  method is used: {@link #eval(INDArray, INDArray, List)}
-     * Otherwise (if the metadata hasn't been recorded via that previously mentioned eval method), there is no value in
+     * Otherwise (if the metadata hasn't been recorded via that previously mentioned evar method), there is no value in
      * splitting each prediction out into a separate Prediction object - instead, use the confusion matrix to get the counts,
      * via {@link #getConfusionMatrix()}
      *

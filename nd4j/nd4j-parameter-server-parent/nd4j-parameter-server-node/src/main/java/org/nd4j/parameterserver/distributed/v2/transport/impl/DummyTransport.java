@@ -22,7 +22,7 @@ package org.nd4j.parameterserver.distributed.v2.transport.impl;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.messages.RequestMessage;
@@ -118,13 +118,13 @@ public class DummyTransport extends BaseTransport {
 
     @Override
     public void processMessage(@NonNull VoidMessage message) {
-        val name = message.getClass().getCanonicalName();
-        val callable = interceptors.get(name);
+        var name = message.getClass().getCanonicalName();
+        var callable = interceptors.get(name);
 
         if (callable != null)
             callable.apply(message);
         else {
-            val precursor = precursors.get(name);
+            var precursor = precursors.get(name);
             if (precursor != null)
                 precursor.apply(message);
 
@@ -145,23 +145,23 @@ public class DummyTransport extends BaseTransport {
         private ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactory() {
             @Override
             public Thread newThread(@NonNull Runnable r) {
-                val t = Executors.defaultThreadFactory().newThread(r);
+                var t = Executors.defaultThreadFactory().newThread(r);
                 //t.setDaemon(true);
                 return t;
             }
         });
 
         public void register(Transport... transports) {
-            for (val transport:transports)
+            for (var transport:transports)
                 this.transports.putIfAbsent(transport.id(), transport);
         }
 
         public void blockUntilFinished() throws InterruptedException {
-            val timeStart = System.currentTimeMillis();
+            var timeStart = System.currentTimeMillis();
             while (executorService.getActiveCount() > 0 && executorService.getQueue().size() > 0) {
                 Thread.sleep(500);
             }
-            val timeStop = System.currentTimeMillis();
+            var timeStop = System.currentTimeMillis();
 
             if (timeStop - timeStart < 700)
                 Thread.sleep(700);
@@ -172,7 +172,7 @@ public class DummyTransport extends BaseTransport {
             //if (message instanceof GradientsUpdateMessage)
             //    log.info("Trying to send message [{}] from [{}] to [{}]", message.getClass().getSimpleName(), senderId, targetId);
 
-            val target = transports.get(targetId);
+            var target = transports.get(targetId);
             if (target == null)
                 throw new ND4JIllegalStateException("Unknown target specified");
 

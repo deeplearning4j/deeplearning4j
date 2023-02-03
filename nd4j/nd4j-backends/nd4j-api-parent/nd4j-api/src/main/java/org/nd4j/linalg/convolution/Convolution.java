@@ -21,7 +21,7 @@
 package org.nd4j.linalg.convolution;
 
 
-import lombok.val;
+
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
@@ -78,7 +78,7 @@ public class Convolution {
 
         INDArray output = Nd4j.create(col.dataType(), new long[]{col.size(0), col.size(1), kH, kW});
 
-        val cfg = Conv2DConfig.builder()
+        var cfg = Conv2DConfig.builder()
                 .sH(sH)
                 .sW(sW)
                 .dH(1)
@@ -276,7 +276,7 @@ public class Convolution {
      * @param sx         the stride along x
      * @param ph         the padding width
      * @param pw         the padding height
-     * @param pval       the padding value (not used)
+     * @param pvar       the padding value (not used)
      * @param isSameMode whether padding mode is 'same'
      * @return the column formatted image
      */

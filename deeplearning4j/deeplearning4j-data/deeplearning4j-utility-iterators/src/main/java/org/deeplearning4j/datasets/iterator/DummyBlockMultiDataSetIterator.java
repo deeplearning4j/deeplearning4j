@@ -22,7 +22,7 @@ package org.deeplearning4j.datasets.iterator;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.BlockDataSetIterator;
@@ -47,7 +47,7 @@ public class DummyBlockMultiDataSetIterator implements BlockMultiDataSetIterator
 
     @Override
     public MultiDataSet[] next(int maxDatasets) {
-        val list = new ArrayList<MultiDataSet>(maxDatasets);
+        var list = new ArrayList<MultiDataSet>(maxDatasets);
         int cnt = 0;
         while (iterator.hasNext() && cnt < maxDatasets) {
             list.add(iterator.next());

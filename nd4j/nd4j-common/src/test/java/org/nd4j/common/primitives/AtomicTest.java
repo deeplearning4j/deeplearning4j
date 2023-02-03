@@ -20,7 +20,7 @@
 
 package org.nd4j.common.primitives;
 
-import lombok.val;
+
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.primitives.Atomic;
 import org.nd4j.common.util.SerializationUtils;
@@ -34,9 +34,9 @@ public class AtomicTest {
 
     @Test
     public void testEquality_1() {
-        val v0 = new Atomic<Integer>(1327541);
-        val v1 = new Atomic<Integer>(1327541);
-        val v3 = new Atomic<Integer>(1327542);
+        var v0 = new Atomic<Integer>(1327541);
+        var v1 = new Atomic<Integer>(1327541);
+        var v3 = new Atomic<Integer>(1327542);
 
         assertEquals(v0, v1);
         assertNotEquals(v0, v3);
@@ -44,12 +44,12 @@ public class AtomicTest {
 
     @Test
     public void testSerialization_1() throws Exception {
-        val v0 = new Atomic<Integer>(1327541);
+        var v0 = new Atomic<Integer>(1327541);
 
-        try (val baos = new ByteArrayOutputStream()) {
+        try (var baos = new ByteArrayOutputStream()) {
             SerializationUtils.serialize(v0, baos);
 
-            try (val bais = new ByteArrayInputStream(baos.toByteArray())) {
+            try (var bais = new ByteArrayInputStream(baos.toByteArray())) {
                 Atomic<Integer> v1 = SerializationUtils.deserialize(bais);
 
                 assertEquals(v1, v0);
@@ -59,7 +59,7 @@ public class AtomicTest {
 
     @Test
     public void testCas_1() throws Exception {
-        val v0 = new Atomic<String>();
+        var v0 = new Atomic<String>();
 
         v0.cas(null, "alpha");
         assertEquals("alpha", v0.get());
@@ -67,7 +67,7 @@ public class AtomicTest {
 
     @Test
     public void testCas_2() throws Exception {
-        val v0 = new Atomic<String>("beta");
+        var v0 = new Atomic<String>("beta");
 
         v0.cas(null, "alpha");
         assertEquals("beta", v0.get());

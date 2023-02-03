@@ -261,13 +261,13 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
 
     if (xElementWiseStride >= 1 && order == 'c') {
       for (sd::LongType i = tid; i < n; i += (blockDim.x * gridDim.x)) {
-        IndexValue<X> indexVal = {dx[i * xElementWiseStride], i};
+        IndexValue<X> indexvar = {dx[i * xElementWiseStride], i};
         reduction = OpType::update(reduction, indexVal, extraParams);
       }
     } else {
       for (sd::LongType i = tid; i < n; i += blockDim.x * gridDim.x) {
         auto offset = shape::getIndexOffset(i, xShapeInfo);
-        IndexValue<X> indexVal = {dx[offset], i};
+        IndexValue<X> indexvar = {dx[offset], i};
         reduction = OpType::update(reduction, indexVal, extraParams);
       }
     }

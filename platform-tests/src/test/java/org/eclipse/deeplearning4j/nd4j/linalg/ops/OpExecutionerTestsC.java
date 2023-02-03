@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.ops;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -196,15 +196,15 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
         INDArray linspace = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
         Nd4j.getExecutioner().exec(new SetRange(linspace, 0, 1));
         for (int i = 0; i < linspace.length(); i++) {
-            double val = linspace.getDouble(i);
-            assertTrue( val >= 0 && val <= 1,getFailureMessage(backend));
+            double var = linspace.getDouble(i);
+            assertTrue( var >= 0 && var <= 1,getFailureMessage(backend));
         }
 
         INDArray linspace2 = Nd4j.linspace(1, 4, 4, DataType.DOUBLE);
         Nd4j.getExecutioner().exec(new SetRange(linspace2, 2, 4));
         for (int i = 0; i < linspace2.length(); i++) {
-            double val = linspace2.getDouble(i);
-            assertTrue(val >= 2 && val <= 4,getFailureMessage(backend));
+            double var = linspace2.getDouble(i);
+            assertTrue(var >= 2 && var <= 4,getFailureMessage(backend));
         }
     }
 
@@ -339,7 +339,7 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
     public void testRowSoftmax(Nd4jBackend backend) {
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1);
-        val softMax = new SoftMax(arr);
+        var softMax = new SoftMax(arr);
         opExecutioner.exec((CustomOp) softMax);
         assertEquals( 1.0, softMax.outputArguments().get(0).sumNumber().doubleValue(), 1e-1,getFailureMessage(backend));
     }
@@ -435,7 +435,7 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray slice = arr.slice(0);
-        val expected = new double[(int) slice.length()];
+        var expected = new double[(int) slice.length()];
         for (int i = 0; i < slice.length(); i++)
             expected[i] = (float) Math.exp(slice.getDouble(i));
         Exp exp = new Exp(slice);
@@ -448,12 +448,12 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
     public void testSoftMax(Nd4jBackend backend) {
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1);
-        val softMax = new SoftMax(arr);
+        var softMax = new SoftMax(arr);
         opExecutioner.exec(softMax);
         assertEquals( 1.0, softMax.outputArguments().get(0).sumNumber().doubleValue(), 1e-1,getFailureMessage(backend));
 
         INDArray linspace = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
-        val softmax = new SoftMax(linspace.dup());
+        var softmax = new SoftMax(linspace.dup());
         Nd4j.getExecutioner().exec(softmax);
         assertEquals(linspace.rows(), softmax.outputArguments().get(0).sumNumber().doubleValue(), 1e-1);
     }
@@ -463,7 +463,7 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDimensionSoftMax(Nd4jBackend backend) {
         INDArray linspace = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
-        val max = new SoftMax(linspace);
+        var max = new SoftMax(linspace);
         Nd4j.getExecutioner().exec(max);
         linspace.assign(max.outputArguments().get(0));
         assertEquals(linspace.getRow(0).sumNumber().doubleValue(), 1.0, 1e-1,getFailureMessage(backend));
@@ -585,7 +585,7 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
     public void testMean(Nd4jBackend backend) {
         int[] shape = new int[] {1, 2, 2, 2, 2, 2};
         int len = ArrayUtil.prod(shape);
-        INDArray val = Nd4j.linspace(1, len, len, DataType.DOUBLE).reshape('c', shape);
+        INDArray var = Nd4j.linspace(1, len, len, DataType.DOUBLE).reshape('c', shape);
         /**
          * Failure comes from the lack of a jump
          * when doing tad offset in c++
@@ -896,7 +896,7 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
         double[] sumSquares = new double[100];
         NdIndexIterator iter = new NdIndexIterator(fourd.shape());
         while (iter.hasNext()) {
-            val next = iter.next();
+            var next = iter.next();
             double d = fourd.getDouble(next);
 
             sums[(int) next[0]] += d;
@@ -904,7 +904,7 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
         }
 
         double[] manualVariance = new double[100];
-        val N = (fourd.length() / sums.length);
+        var N = (fourd.length() / sums.length);
         for (int i = 0; i < sums.length; i++) {
             manualVariance[i] = (sumSquares[i] - (sums[i] * sums[i]) / N) / N;
         }
@@ -931,7 +931,7 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
 
         INDArray zExp = Nd4j.create(DataType.LONG, 20).assign(5000);
 
-        val histogram = new Histogram(x, z);
+        var histogram = new Histogram(x, z);
 
         Nd4j.getExecutioner().exec(histogram);
 
@@ -952,9 +952,9 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
 
         INDArray zExp = Nd4j.zeros(DataType.LONG, 10).putScalar(0, 3).putScalar(5, 3).putScalar(9, 3);
 
-        val histogram = new Histogram(x, 10);
+        var histogram = new Histogram(x, 10);
 
-        val z = Nd4j.getExecutioner().exec(histogram)[0];
+        var z = Nd4j.getExecutioner().exec(histogram)[0];
 
         assertEquals(xDup, x);
 
@@ -1065,7 +1065,7 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
     public void testMean1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(32, 100, 100).assign(-119f);
         for (int i = 0; i < 32; i++) {
-            val tad = array.tensorAlongDimension(i, 1, 2);
+            var tad = array.tensorAlongDimension(i, 1, 2);
             tad.assign((float) 100 + i);
         }
 
@@ -1127,7 +1127,7 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTear1(Nd4jBackend backend) {
         List<INDArray> arrays = new ArrayList<>();
-        val num = 10;
+        var num = 10;
         for (int i = 0; i < num; i++) {
             arrays.add(Nd4j.create(5, 20).assign(i));
         }

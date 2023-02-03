@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -112,7 +112,7 @@ public class Stack extends DynamicCustomOp {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
         Map<String, PropertyMapping> map = new HashMap<>();
 
-        val axisMapping = PropertyMapping.builder()
+        var axisMapping = PropertyMapping.builder()
                 .onnxAttrName("axis")
                 .tfAttrName("axis")
                 .propertyNames(new String[]{"jaxis"})
@@ -120,7 +120,7 @@ public class Stack extends DynamicCustomOp {
 
         map.put("jaxis", axisMapping);
 
-        for (val name : tensorflowNames())
+        for (var name : tensorflowNames())
             ret.put(name, map);
 
         return ret;

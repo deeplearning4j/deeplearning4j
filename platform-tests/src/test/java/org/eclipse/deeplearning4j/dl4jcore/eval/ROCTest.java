@@ -94,7 +94,7 @@ class ROCTest extends BaseDL4JTest {
     }
 
     @Test
-    @DisplayName("Roc Eval Sanity Check")
+    @DisplayName("Roc Evar Sanity Check")
     void RocEvalSanityCheck() {
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
         Nd4j.getRandom().setSeed(12345);

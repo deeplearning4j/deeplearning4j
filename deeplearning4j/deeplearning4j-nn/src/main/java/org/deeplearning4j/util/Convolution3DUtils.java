@@ -21,7 +21,7 @@
 package org.deeplearning4j.util;
 
 
-import lombok.val;
+
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -63,7 +63,7 @@ public class Convolution3DUtils {
         int[] eKernel = effectiveKernelSize(kernel, dilation);
         boolean atrous = (eKernel == kernel);
 
-        val inShape = new long[]{inD, inH, inW};
+        var inShape = new long[]{inD, inH, inW};
         validateShapes(ArrayUtil.toInts(inputData.shape()), eKernel, strides, padding, convolutionMode, dilation, inShape, atrous);
 
         if (convolutionMode == ConvolutionMode.Same) {

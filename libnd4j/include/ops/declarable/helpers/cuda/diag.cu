@@ -83,7 +83,7 @@ static SD_KERNEL void diagPartFunctorKernel(void* outputBuffer, const sd::LongTy
   sd::LongType i = threadIdx.x * (outputLength + 1);  // pos to diagonal value
   for (int t = tid; t < outputLength && i < inputLength;
        t += step) {  // loop by output, but input matrix may not be square
-    // put diagonal val from input onto output
+    // put diagonal var from input onto output
     z[shape::getIndexOffset(t, outputShape)] = x[shape::getIndexOffset(i, inputShape)];
     i += outputLength + 1;  // shift to next diagonal value
   }

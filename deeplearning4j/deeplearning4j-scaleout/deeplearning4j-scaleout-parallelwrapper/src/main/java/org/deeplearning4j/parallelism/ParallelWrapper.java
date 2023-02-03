@@ -228,31 +228,31 @@ public class ParallelWrapper implements AutoCloseable {
                 iterator = new AsyncMultiDataSetIterator(source, prefetchSize);
         }
 
-        val locker = new AtomicInteger(0);
+        var locker = new AtomicInteger(0);
 
-        val blockWrapper = new DummyBlockMultiDataSetIterator(iterator);
+        var blockWrapper = new DummyBlockMultiDataSetIterator(iterator);
 
         var time1 = System.currentTimeMillis();
         while (blockWrapper.hasAnything() && !stopFit.get()) {
             if (modelParamsSupplier != null) {
-                val params = modelParamsSupplier.get();
+                var params = modelParamsSupplier.get();
                 if (params != null) {
                     if (zoo != null)
-                        for (val z: zoo)
+                        for (var z: zoo)
                             z.updateModelParams(params);
                 }
             }
 
             if (updaterParamsSupplier != null) {
-                val params = updaterParamsSupplier.get();
+                var params = updaterParamsSupplier.get();
                 if (params != null) {
                     if (zoo != null)
-                        for (val z: zoo)
+                        for (var z: zoo)
                             z.updateUpdaterParams(params);
                 }
             }
 
-            val dataSets = blockWrapper.next(workers);
+            var dataSets = blockWrapper.next(workers);
             long time2 = System.currentTimeMillis();
 
             if (dataSets == null)
@@ -516,21 +516,21 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
 
-        val nanos = new ArrayList<Long>();
-        val locker = new AtomicInteger(0);
+        var nanos = new ArrayList<Long>();
+        var locker = new AtomicInteger(0);
         var time1 = System.currentTimeMillis();
         log.info("Starting ParallelWrapper training round...");
         long intcnt = 0;
 
-        val blockWrapper = new DummyBlockDataSetIterator(iterator);
+        var blockWrapper = new DummyBlockDataSetIterator(iterator);
 
         while (blockWrapper.hasAnything() && !stopFit.get()) {
             if (modelParamsSupplier != null) {
-                val params = modelParamsSupplier.get();
+                var params = modelParamsSupplier.get();
                 if (params != null) {
                     if (zoo != null) {
                         log.info("Updating model parameters...");
-                        for (val z:zoo) {
+                        for (var z:zoo) {
                             z.updateModelParams(params);
                         }
                     }
@@ -538,11 +538,11 @@ public class ParallelWrapper implements AutoCloseable {
             }
 
             if (updaterParamsSupplier != null) {
-                val params = updaterParamsSupplier.get();
+                var params = updaterParamsSupplier.get();
                 if (params != null) {
                     if (zoo != null) {
                         log.info("Updating updater parameters...");
-                        for (val z:zoo) {
+                        for (var z:zoo) {
                             z.updateUpdaterParams(params);
                         }
                     }
@@ -550,7 +550,7 @@ public class ParallelWrapper implements AutoCloseable {
             }
 
             intcnt++;
-            val dataSets = blockWrapper.next(workers);
+            var dataSets = blockWrapper.next(workers);
             var time2 = System.currentTimeMillis();
             var lastEtlTime = time2 - time1;
 
@@ -924,10 +924,10 @@ public class ParallelWrapper implements AutoCloseable {
                     this.trainerContext = new SymmetricTrainerContext();
                     if (this.accumulator == null) {
                         log.info("Creating new GradientsAccumulator instance with default threshold of [5e-4]");
-                        val numParams = model.numParams();
+                        var numParams = model.numParams();
 
                         // we're limiting max size of updates for Sparse encoding to the size of bitmap encoded message
-                        val maxUpdate = (int) (numParams / 16 + 5);
+                        var maxUpdate = (int) (numParams / 16 + 5);
 
                         // memory sie in number of bytes
                         long memorySize = encoderMemory == null || encoderMemory < 0

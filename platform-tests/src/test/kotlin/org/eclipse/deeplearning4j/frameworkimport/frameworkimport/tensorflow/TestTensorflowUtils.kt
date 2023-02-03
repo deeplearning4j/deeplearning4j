@@ -31,10 +31,10 @@ import org.tensorflow.framework.*
 import java.nio.charset.Charset
 
 fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput> {
-    val tensorflowOpDef = registry().lookupInputFrameworkOpDef(inputFrameworkOpName)
+    var tensorflowOpDef = registry().lookupInputFrameworkOpDef(inputFrameworkOpName)
     when (nd4jOpName) {
         "check_numerics" -> {
-            val tensor = NodeDef {
+            var tensor = NodeDef {
                 name = "tensor"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -45,7 +45,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("tensor")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -57,18 +57,18 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(tensor)
                 Node(opNode)
             }
 
 
 
-            val xVal = Nd4j.create(floatArrayOf(1.0f,2.0f,3.0f))
+            var xvar = Nd4j.create(floatArrayOf(1.0f,2.0f,3.0f))
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
-            val inputs = mapOf("tensor" to xVal)
+            var inputs = mapOf("tensor" to xVal)
 
 
             return listOf(
@@ -83,7 +83,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "gruCell" -> {
-            val x = NodeDef {
+            var x = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -91,7 +91,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val hPrev = NodeDef {
+            var hPrev = NodeDef {
                 name = "h_prev"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -100,7 +100,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val wRu = NodeDef {
+            var wRu = NodeDef {
                 name = "w_ru"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -108,7 +108,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val wC = NodeDef {
+            var wC = NodeDef {
                 name = "w_c"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -117,7 +117,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val bRu = NodeDef {
+            var bRu = NodeDef {
                 name = "b_ru"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -125,7 +125,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val bc = NodeDef {
+            var bc = NodeDef {
                 name = "b_c"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -136,7 +136,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 Input("h_prev")
                 Input("w_ru")
@@ -151,7 +151,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val r = NodeDef {
+            var r = NodeDef {
                 name = "r"
                 Input("output:0")
                 op = "Identity"
@@ -160,7 +160,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val u = NodeDef {
+            var u = NodeDef {
                 name = "u"
                 Input("output:1")
                 op = "Identity"
@@ -169,7 +169,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val c = NodeDef {
+            var c = NodeDef {
                 name = "c"
                 Input("output:2")
                 op = "Identity"
@@ -178,7 +178,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val h = NodeDef {
+            var h = NodeDef {
                 name = "h"
                 Input("output:3")
                 op = "Identity"
@@ -188,7 +188,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(x)
                 Node(hPrev)
                 Node(wRu)
@@ -205,28 +205,28 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val xVal = Nd4j.linspace(1,20,20).reshape(2,10)
+            var xvar = Nd4j.linspace(1,20,20).reshape(2,10)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val hPrevVal = Nd4j.linspace(1,8,8).reshape(2,4)
-                .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
-
-
-            val wRuVal = Nd4j.linspace(1,112,112).reshape(14,8)
-                .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
-
-            val wcVal = Nd4j.linspace(1,56,56).reshape(14,4)
-                .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
-
-            val bRuVal = Nd4j.linspace(1,8,8).reshape(8)
+            var hPrevvar = Nd4j.linspace(1,8,8).reshape(2,4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
-            val bcVal = Nd4j.linspace(1,4,4).reshape(4)
+            var wRuvar = Nd4j.linspace(1,112,112).reshape(14,8)
+                .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
+
+            var wcvar = Nd4j.linspace(1,56,56).reshape(14,4)
+                .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
+
+            var bRuvar = Nd4j.linspace(1,8,8).reshape(8)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
-            val inputs = mapOf("x" to xVal,"h_prev" to hPrevVal,"w_ru" to wRuVal,"w_c" to wcVal,"b_ru" to bRuVal,"b_c" to bcVal)
+            var bcvar = Nd4j.linspace(1,4,4).reshape(4)
+                .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
+
+
+            var inputs = mapOf("x" to xVal,"h_prev" to hPrevVal,"w_ru" to wRuVal,"w_c" to wcVal,"b_ru" to bRuVal,"b_c" to bcVal)
 
 
             return listOf(
@@ -241,7 +241,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "lstmBlockCell" -> {
-            val x = NodeDef {
+            var x = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -250,7 +250,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val csPrev = NodeDef {
+            var csPrev = NodeDef {
                 name = "cs_prev"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -258,7 +258,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val hPrev = NodeDef {
+            var hPrev = NodeDef {
                 name = "h_prev"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -267,7 +267,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val w = NodeDef {
+            var w = NodeDef {
                 name = "w"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -275,7 +275,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val wci = NodeDef {
+            var wci = NodeDef {
                 name = "wci"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -283,7 +283,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val wcf = NodeDef {
+            var wcf = NodeDef {
                 name = "wcf"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -292,7 +292,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val wco = NodeDef {
+            var wco = NodeDef {
                 name = "wco"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -300,7 +300,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val bias = NodeDef {
+            var bias = NodeDef {
                 name = "b"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -308,7 +308,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 Input("cs_prev")
                 Input("h_prev")
@@ -332,7 +332,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val i = NodeDef {
+            var i = NodeDef {
                 name = "i"
                 Input("output:0")
                 op = "Identity"
@@ -341,7 +341,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val cs = NodeDef {
+            var cs = NodeDef {
                 name = "cs"
                 Input("output:1")
                 op = "Identity"
@@ -350,7 +350,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val f = NodeDef {
+            var f = NodeDef {
                 name = "f"
                 Input("output:2")
                 op = "Identity"
@@ -359,7 +359,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val o = NodeDef {
+            var o = NodeDef {
                 name = "o"
                 Input("output:3")
                 op = "Identity"
@@ -369,7 +369,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val ci = NodeDef {
+            var ci = NodeDef {
                 name = "ci"
                 Input("output:4")
                 op = "Identity"
@@ -378,7 +378,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val h = NodeDef {
+            var h = NodeDef {
                 name = "h"
                 Input("output:5")
                 op = "Identity"
@@ -387,7 +387,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(x)
                 Node(csPrev)
                 Node(hPrev)
@@ -408,36 +408,36 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val xVal = Nd4j.linspace(1,5,5).reshape(1,5)
+            var xvar = Nd4j.linspace(1,5,5).reshape(1,5)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val csPrevVal = Nd4j.linspace(1,3,3).reshape(1,3)
+            var csPrevvar = Nd4j.linspace(1,3,3).reshape(1,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val hPrevVal = Nd4j.linspace(1,3,3).reshape(1,3)
+            var hPrevvar = Nd4j.linspace(1,3,3).reshape(1,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val wVal = Nd4j.linspace(1,96,96).reshape(8,12)
+            var wvar = Nd4j.linspace(1,96,96).reshape(8,12)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val wciVal = Nd4j.linspace(1,3,3).reshape(3)
+            var wcivar = Nd4j.linspace(1,3,3).reshape(3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val wcfVal = Nd4j.linspace(1,3,3).reshape(3)
-                .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
-
-
-            val wcoVal = Nd4j.linspace(1,3,3).reshape(3)
+            var wcfvar = Nd4j.linspace(1,3,3).reshape(3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
-            val bVal = Nd4j.zeros(12)
+            var wcovar = Nd4j.linspace(1,3,3).reshape(3)
+                .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
+
+
+            var bvar = Nd4j.zeros(12)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
 
 
-            val inputs = mapOf("x" to xVal,"cs_prev" to csPrevVal,"h_prev" to hPrevVal,"w" to wVal,"wci" to wciVal,"wcf" to wcfVal,"wco" to wcoVal,"b" to bVal)
+            var inputs = mapOf("x" to xVal,"cs_prev" to csPrevVal,"h_prev" to hPrevVal,"w" to wVal,"wci" to wciVal,"wcf" to wcfVal,"wco" to wcoVal,"b" to bVal)
 
 
             return listOf(
@@ -453,7 +453,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         "lstmBlock" -> {
             if(inputFrameworkOpName == "BlockLSTM") {
-                val seqLenMax = NodeDef {
+                var seqLenMax = NodeDef {
                     name = "seq_len_max"
                     op = "Placeholder"
                     Attribute("dtype",AttrValue {
@@ -461,7 +461,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val x = NodeDef {
+                var x = NodeDef {
                     name = "x"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -470,7 +470,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val csPrev = NodeDef {
+                var csPrev = NodeDef {
                     name = "cs_prev"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -478,7 +478,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val hPrev = NodeDef {
+                var hPrev = NodeDef {
                     name = "h_prev"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -487,7 +487,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val w = NodeDef {
+                var w = NodeDef {
                     name = "w"
                     op = "Placeholder"
                     Attribute("dtype",AttrValue {
@@ -495,7 +495,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val wci = NodeDef {
+                var wci = NodeDef {
                     name = "wci"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -503,7 +503,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val wcf = NodeDef {
+                var wcf = NodeDef {
                     name = "wcf"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -512,7 +512,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val wco = NodeDef {
+                var wco = NodeDef {
                     name = "wco"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -520,7 +520,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val bias = NodeDef {
+                var bias = NodeDef {
                     name = "b"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -528,7 +528,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
                 println("Running test import process for op ${tensorflowOpDef.name}")
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("seq_len_max")
                     Input("x")
                     Input("cs_prev")
@@ -555,7 +555,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val i = NodeDef {
+                var i = NodeDef {
                     name = "i"
                     Input("output:0")
                     op = "Identity"
@@ -564,7 +564,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val cs = NodeDef {
+                var cs = NodeDef {
                     name = "cs"
                     Input("output:1")
                     op = "Identity"
@@ -573,7 +573,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val f = NodeDef {
+                var f = NodeDef {
                     name = "f"
                     Input("output:2")
                     op = "Identity"
@@ -582,7 +582,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val o = NodeDef {
+                var o = NodeDef {
                     name = "o"
                     Input("output:3")
                     op = "Identity"
@@ -592,7 +592,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val ci = NodeDef {
+                var ci = NodeDef {
                     name = "ci"
                     Input("output:4")
                     op = "Identity"
@@ -601,7 +601,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val h = NodeDef {
+                var h = NodeDef {
                     name = "h"
                     Input("output:5")
                     op = "Identity"
@@ -610,7 +610,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(seqLenMax)
                     Node(x)
                     Node(csPrev)
@@ -631,39 +631,39 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val seqLenVal = Nd4j.scalar(5.0)
+                var seqLenvar = Nd4j.scalar(5.0)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
-                val xVal = Nd4j.linspace(1,20,20).reshape(5,1,4)
+                var xvar = Nd4j.linspace(1,20,20).reshape(5,1,4)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val csPrevVal = Nd4j.linspace(1,3,3).reshape(1,3)
+                var csPrevvar = Nd4j.linspace(1,3,3).reshape(1,3)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val hPrevVal = Nd4j.linspace(1,3,3).reshape(1,3)
+                var hPrevvar = Nd4j.linspace(1,3,3).reshape(1,3)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val wVal = Nd4j.linspace(1,84,84).reshape(7,12)
+                var wvar = Nd4j.linspace(1,84,84).reshape(7,12)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val wciVal = Nd4j.linspace(1,3,3).reshape(3)
+                var wcivar = Nd4j.linspace(1,3,3).reshape(3)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val wcfVal = Nd4j.linspace(1,3,3).reshape(3)
-                    .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
-
-
-                val wcoVal = Nd4j.linspace(1,3,3).reshape(3)
+                var wcfvar = Nd4j.linspace(1,3,3).reshape(3)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
-                val bVal = Nd4j.zeros(12)
+                var wcovar = Nd4j.linspace(1,3,3).reshape(3)
+                    .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
+
+
+                var bvar = Nd4j.zeros(12)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
 
 
-                val inputs = mapOf("seq_len_max" to seqLenVal,"x" to xVal,"cs_prev" to csPrevVal,"h_prev" to hPrevVal,"w" to wVal,"wci" to wciVal,"wcf" to wcfVal,"wco" to wcoVal,"b" to bVal)
+                var inputs = mapOf("seq_len_max" to seqLenVal,"x" to xVal,"cs_prev" to csPrevVal,"h_prev" to hPrevVal,"w" to wVal,"wci" to wciVal,"wcf" to wcfVal,"wco" to wcoVal,"b" to bVal)
 
 
                 return listOf(
@@ -676,7 +676,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 )
                 )
             } else { //BlockLSTMV2
-                val seqLenMax = NodeDef {
+                var seqLenMax = NodeDef {
                     name = "seq_len_max"
                     op = "Placeholder"
                     Attribute("dtype",AttrValue {
@@ -684,7 +684,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val x = NodeDef {
+                var x = NodeDef {
                     name = "x"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -693,7 +693,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val csPrev = NodeDef {
+                var csPrev = NodeDef {
                     name = "cs_prev"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -701,7 +701,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val hPrev = NodeDef {
+                var hPrev = NodeDef {
                     name = "h_prev"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -710,7 +710,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val w = NodeDef {
+                var w = NodeDef {
                     name = "w"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -718,7 +718,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val wci = NodeDef {
+                var wci = NodeDef {
                     name = "wci"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -726,7 +726,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val wcf = NodeDef {
+                var wcf = NodeDef {
                     name = "wcf"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -735,7 +735,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val wco = NodeDef {
+                var wco = NodeDef {
                     name = "wco"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -743,7 +743,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val bias = NodeDef {
+                var bias = NodeDef {
                     name = "b"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -751,7 +751,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
                 println("Running test import process for op ${tensorflowOpDef.name}")
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("seq_len_max")
                     Input("x")
                     Input("cs_prev")
@@ -773,7 +773,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val i = NodeDef {
+                var i = NodeDef {
                     name = "i"
                     Input("output:0")
                     op = "Identity"
@@ -782,7 +782,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val cs = NodeDef {
+                var cs = NodeDef {
                     name = "cs"
                     Input("output:1")
                     op = "Identity"
@@ -791,7 +791,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val f = NodeDef {
+                var f = NodeDef {
                     name = "f"
                     Input("output:2")
                     op = "Identity"
@@ -800,7 +800,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val o = NodeDef {
+                var o = NodeDef {
                     name = "o"
                     Input("output:3")
                     op = "Identity"
@@ -810,7 +810,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val ci = NodeDef {
+                var ci = NodeDef {
                     name = "ci"
                     Input("output:4")
                     op = "Identity"
@@ -819,7 +819,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val h = NodeDef {
+                var h = NodeDef {
                     name = "h"
                     Input("output:5")
                     op = "Identity"
@@ -828,7 +828,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(seqLenMax)
                     Node(x)
                     Node(csPrev)
@@ -849,39 +849,39 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val seqLenVal = Nd4j.scalar(5.0)
+                var seqLenvar = Nd4j.scalar(5.0)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
-                val xVal = Nd4j.linspace(1,20,20).reshape(5,1,4)
+                var xvar = Nd4j.linspace(1,20,20).reshape(5,1,4)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val csPrevVal = Nd4j.linspace(1,3,3).reshape(1,3)
+                var csPrevvar = Nd4j.linspace(1,3,3).reshape(1,3)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val hPrevVal = Nd4j.linspace(1,3,3).reshape(1,3)
+                var hPrevvar = Nd4j.linspace(1,3,3).reshape(1,3)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val wVal = Nd4j.linspace(1,84,84).reshape(7,12)
+                var wvar = Nd4j.linspace(1,84,84).reshape(7,12)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val wciVal = Nd4j.linspace(1,3,3).reshape(3)
+                var wcivar = Nd4j.linspace(1,3,3).reshape(3)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val wcfVal = Nd4j.linspace(1,3,3).reshape(3)
-                    .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
-
-
-                val wcoVal = Nd4j.linspace(1,3,3).reshape(3)
+                var wcfvar = Nd4j.linspace(1,3,3).reshape(3)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
-                val bVal = Nd4j.zeros(12)
+                var wcovar = Nd4j.linspace(1,3,3).reshape(3)
+                    .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
+
+
+                var bvar = Nd4j.zeros(12)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
 
 
-                val inputs = mapOf("seq_len_max" to seqLenVal,"x" to xVal,"cs_prev" to csPrevVal,"h_prev" to hPrevVal,"w" to wVal,"wci" to wciVal,"wcf" to wcfVal,"wco" to wcoVal,"b" to bVal)
+                var inputs = mapOf("seq_len_max" to seqLenVal,"x" to xVal,"cs_prev" to csPrevVal,"h_prev" to hPrevVal,"w" to wVal,"wci" to wciVal,"wcf" to wcfVal,"wco" to wcoVal,"b" to bVal)
 
 
                 return listOf(
@@ -899,7 +899,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "adjust_hue","adjust_saturation" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -907,7 +907,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val delta = NodeDef {
+            var delta = NodeDef {
                 name = "delta"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -916,7 +916,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("delta")
                 op = tensorflowOpDef.name
@@ -926,7 +926,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(delta)
                 Node(opNode)
@@ -934,12 +934,12 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val xVal = Nd4j.zeros(3,3,3)
+            var xvar = Nd4j.zeros(3,3,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val deltaVal = Nd4j.scalar(0.5).castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
+            var deltavar = Nd4j.scalar(0.5).castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val inputs = mapOf("input" to xVal,"delta" to deltaVal)
+            var inputs = mapOf("input" to xVal,"delta" to deltaVal)
 
 
             return listOf(
@@ -955,7 +955,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "adjust_contrast_v2" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -963,7 +963,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val delta = NodeDef {
+            var delta = NodeDef {
                 name = "contrast_factor"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -972,7 +972,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("contrast_factor")
                 op = tensorflowOpDef.name
@@ -982,7 +982,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(delta)
                 Node(opNode)
@@ -990,12 +990,12 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val xVal = Nd4j.zeros(3,3,3)
+            var xvar = Nd4j.zeros(3,3,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val deltaVal = Nd4j.scalar(0.5).castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
+            var deltavar = Nd4j.scalar(0.5).castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val inputs = mapOf("input" to xVal,"contrast_factor" to deltaVal)
+            var inputs = mapOf("input" to xVal,"contrast_factor" to deltaVal)
 
 
             return listOf(
@@ -1010,7 +1010,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "rgb_to_hsv" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1021,7 +1021,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -1030,18 +1030,18 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(opNode)
             }
 
 
 
-            val xVal = Nd4j.zeros(3,3,3)
+            var xvar = Nd4j.zeros(3,3,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
-            val inputs = mapOf("input" to xVal)
+            var inputs = mapOf("input" to xVal)
 
 
             return listOf(
@@ -1056,7 +1056,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "reverse_sequence" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1064,7 +1064,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val seqLengths = NodeDef {
+            var seqLengths = NodeDef {
                 name = "seq_lengths"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1073,7 +1073,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("seq_lengths")
                 op = tensorflowOpDef.name
@@ -1092,7 +1092,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(seqLengths)
                 Node(opNode)
@@ -1100,16 +1100,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val xVal = Nd4j.linspace(1,60,60).reshape(3,4,5)
+            var xvar = Nd4j.linspace(1,60,60).reshape(3,4,5)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val yVal = Nd4j.create(floatArrayOf(4f,4f,4f,4f))
+            var yvar = Nd4j.create(floatArrayOf(4f,4f,4f,4f))
                 .reshape(4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
 
-            val inputs = mapOf("input" to xVal,"seq_lengths" to yVal)
+            var inputs = mapOf("input" to xVal,"seq_lengths" to yVal)
 
 
             return listOf(
@@ -1123,7 +1123,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             )
         }
         "resize_nearest_neighbor" -> {
-            val images = NodeDef {
+            var images = NodeDef {
                 name = "images"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1131,7 +1131,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val size = NodeDef {
+            var size = NodeDef {
                 name = "size"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1140,7 +1140,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("images")
                 Input("size")
                 op = tensorflowOpDef.name
@@ -1150,7 +1150,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(images)
                 Node(size)
                 Node(opNode)
@@ -1158,16 +1158,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val xVal = Nd4j.linspace(1,36,36).reshape(1,3,3,4)
+            var xvar = Nd4j.linspace(1,36,36).reshape(1,3,3,4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val yVal = Nd4j.create(floatArrayOf(6f,6f))
+            var yvar = Nd4j.create(floatArrayOf(6f,6f))
                 .reshape(2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
 
-            val inputs = mapOf("images" to xVal,"size" to yVal)
+            var inputs = mapOf("images" to xVal,"size" to yVal)
 
 
             return listOf(
@@ -1181,7 +1181,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             )
         }
         "resize_bilinear" -> {
-            val images = NodeDef {
+            var images = NodeDef {
                 name = "images"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1189,7 +1189,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val size = NodeDef {
+            var size = NodeDef {
                 name = "size"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1198,7 +1198,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("images")
                 Input("size")
                 op = tensorflowOpDef.name
@@ -1208,7 +1208,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(images)
                 Node(size)
                 Node(opNode)
@@ -1216,16 +1216,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val xVal = Nd4j.linspace(1,36,36).reshape(1,3,3,4)
+            var xvar = Nd4j.linspace(1,36,36).reshape(1,3,3,4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val yVal = Nd4j.create(floatArrayOf(6f,6f))
+            var yvar = Nd4j.create(floatArrayOf(6f,6f))
                 .reshape(2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
 
-            val inputs = mapOf("images" to xVal,"size" to yVal)
+            var inputs = mapOf("images" to xVal,"size" to yVal)
 
 
             return listOf(
@@ -1240,7 +1240,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "resize_bicubic" -> {
-            val images = NodeDef {
+            var images = NodeDef {
                 name = "images"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1248,7 +1248,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val size = NodeDef {
+            var size = NodeDef {
                 name = "size"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1257,7 +1257,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("images")
                 Input("size")
                 op = tensorflowOpDef.name
@@ -1267,7 +1267,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(images)
                 Node(size)
                 Node(opNode)
@@ -1275,16 +1275,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val xVal = Nd4j.linspace(1,36,36).reshape(1,3,3,4)
+            var xvar = Nd4j.linspace(1,36,36).reshape(1,3,3,4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val yVal = Nd4j.create(floatArrayOf(6f,6f))
+            var yvar = Nd4j.create(floatArrayOf(6f,6f))
                 .reshape(2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
 
-            val inputs = mapOf("images" to xVal,"size" to yVal)
+            var inputs = mapOf("images" to xVal,"size" to yVal)
 
 
             return listOf(
@@ -1299,7 +1299,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "resize_area" -> {
-            val images = NodeDef {
+            var images = NodeDef {
                 name = "images"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1307,7 +1307,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val size = NodeDef {
+            var size = NodeDef {
                 name = "size"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1316,7 +1316,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("images")
                 Input("size")
                 op = tensorflowOpDef.name
@@ -1326,7 +1326,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(images)
                 Node(size)
                 Node(opNode)
@@ -1334,16 +1334,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val xVal = Nd4j.linspace(1,36,36).reshape(1,3,3,4)
+            var xvar = Nd4j.linspace(1,36,36).reshape(1,3,3,4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val yVal = Nd4j.create(floatArrayOf(6f,6f))
+            var yvar = Nd4j.create(floatArrayOf(6f,6f))
                 .reshape(2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
 
-            val inputs = mapOf("images" to xVal,"size" to yVal)
+            var inputs = mapOf("images" to xVal,"size" to yVal)
 
 
             return listOf(
@@ -1359,9 +1359,9 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "mirror_pad" -> {
-            val mirrorPadRet = ArrayList<GraphInput>()
+            var mirrorPadRet = ArrayList<GraphInput>()
             listOf("REFLECT","SYMMETRIC").forEach { mode ->
-                val input = NodeDef {
+                var input = NodeDef {
                     name = "input"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -1369,7 +1369,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val paddings = NodeDef {
+                var paddings = NodeDef {
                     name = "paddings"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -1378,7 +1378,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
                 println("Running test import process for op ${tensorflowOpDef.name}")
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("input")
                     Input("paddings")
                     op = tensorflowOpDef.name
@@ -1394,7 +1394,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(input)
                     Node(paddings)
                     Node(opNode)
@@ -1402,16 +1402,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val xVal = Nd4j.linspace(1,5,5).reshape(5)
+                var xvar = Nd4j.linspace(1,5,5).reshape(5)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-                val yVal = Nd4j.create(floatArrayOf(1f,1f))
+                var yvar = Nd4j.create(floatArrayOf(1f,1f))
                     .reshape(1,2)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
 
-                val inputs = mapOf("input" to xVal,"paddings" to yVal)
+                var inputs = mapOf("input" to xVal,"paddings" to yVal)
 
 
                 mirrorPadRet.add(
@@ -1429,7 +1429,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "listdiff" -> {
-            val x = NodeDef {
+            var x = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1437,7 +1437,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val y = NodeDef {
+            var y = NodeDef {
                 name = "y"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1446,7 +1446,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 Input("y")
                 op = tensorflowOpDef.name
@@ -1456,7 +1456,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(x)
                 Node(y)
                 Node(opNode)
@@ -1464,16 +1464,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val xVal = Nd4j.linspace(1,4,4).reshape(4)
+            var xvar = Nd4j.linspace(1,4,4).reshape(4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val yVal = Nd4j.create(floatArrayOf(3f,1f))
+            var yvar = Nd4j.create(floatArrayOf(3f,1f))
                 .reshape(2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
 
-            val inputs = mapOf("x" to xVal,"y" to yVal)
+            var inputs = mapOf("x" to xVal,"y" to yVal)
 
 
             return listOf(
@@ -1490,7 +1490,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "histogram_fixed_width" -> {
-            val values = NodeDef {
+            var values = NodeDef {
                 name = "values"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1498,7 +1498,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val valueRange = NodeDef {
+            var valueRange = NodeDef {
                 name = "value_range"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1506,7 +1506,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val nBins = NodeDef {
+            var nBins = NodeDef {
                 name = "nbins"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1517,7 +1517,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("values")
                 Input("value_range")
                 Input("nbins")
@@ -1528,7 +1528,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(values)
                 Node(valueRange)
                 Node(nBins)
@@ -1537,18 +1537,18 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val valuesVal = Nd4j.ones(2,3)
+            var valuesvar = Nd4j.ones(2,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val valueRangeVal = Nd4j.create(floatArrayOf(0f,5f))
+            var valueRangevar = Nd4j.create(floatArrayOf(0f,5f))
                 .reshape(2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val nbinsVal = Nd4j.scalar(5f)
+            var nbinsvar = Nd4j.scalar(5f)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
-            val inputs = mapOf("values" to valuesVal,"value_range" to valueRangeVal,"nbins" to nbinsVal)
+            var inputs = mapOf("values" to valuesVal,"value_range" to valueRangeVal,"nbins" to nbinsVal)
 
 
             return listOf(
@@ -1565,7 +1565,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "extract_image_patches" -> {
-            val images = NodeDef {
+            var images = NodeDef {
                 name = "images"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1575,7 +1575,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             println("Running test import process for op ${tensorflowOpDef.name}")
             // {2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1}
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("images")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -1595,7 +1595,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     s = ByteString.copyFrom("SAME".toByteArray(Charset.defaultCharset()))
                 })
             }
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(images)
                 Node(opNode)
             }
@@ -1605,12 +1605,12 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             //3,2,2,2
 
 
-            val imagesVal = Nd4j.ones(2,4,4,4)
+            var imagesvar = Nd4j.ones(2,4,4,4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
 
 
-            val inputs = mapOf("images" to imagesVal)
+            var inputs = mapOf("images" to imagesVal)
 
 
             return listOf(
@@ -1625,7 +1625,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "crop_and_resize" -> {
-            val images = NodeDef {
+            var images = NodeDef {
                 name = "images"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1633,7 +1633,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val boxes = NodeDef {
+            var boxes = NodeDef {
                 name = "boxes"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1641,7 +1641,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val boxesI = NodeDef {
+            var boxesI = NodeDef {
                 name = "boxesI"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1649,7 +1649,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val cropSize = NodeDef {
+            var cropSize = NodeDef {
                 name = "cropSize"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1659,7 +1659,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("images")
                 Input("boxes")
                 Input("boxesI")
@@ -1672,7 +1672,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(images)
                 Node(boxes)
                 Node(boxesI)
@@ -1682,23 +1682,23 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val imagesVal = Nd4j.create(floatArrayOf(1f,2f,3f,4f))
+            var imagesvar = Nd4j.create(floatArrayOf(1f,2f,3f,4f))
                 .reshape(1,2,2,1)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val boxesVal = Nd4j.create(floatArrayOf(0f,0f,1f,1f))
+            var boxesvar = Nd4j.create(floatArrayOf(0f,0f,1f,1f))
                 .reshape(1,4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val boxesIVal = Nd4j.create(floatArrayOf(0f))
+            var boxesIvar = Nd4j.create(floatArrayOf(0f))
                 .reshape(1)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val cropSizeVal = Nd4j.create(floatArrayOf(1f,1f))
+            var cropSizevar = Nd4j.create(floatArrayOf(1f,1f))
                 .reshape(2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val inputs = mapOf("images" to imagesVal,"boxes" to boxesVal,"boxesI" to boxesIVal,"cropSize" to cropSizeVal)
+            var inputs = mapOf("images" to imagesVal,"boxes" to boxesVal,"boxesI" to boxesIVal,"cropSize" to cropSizeVal)
 
 
             return listOf(
@@ -1714,7 +1714,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "broadcastgradientargs" -> {
-            val s0 = NodeDef {
+            var s0 = NodeDef {
                 name = "s0"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1722,7 +1722,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val s1 = NodeDef {
+            var s1 = NodeDef {
                 name = "s1"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1732,7 +1732,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("s0")
                 Input("s1")
                 op = tensorflowOpDef.name
@@ -1742,7 +1742,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(s0)
                 Node(s1)
                 Node(opNode)
@@ -1750,13 +1750,13 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val s0Val = Nd4j.create(floatArrayOf(2f,2f,2f))
+            var s0var = Nd4j.create(floatArrayOf(2f,2f,2f))
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val s1Val = Nd4j.create(floatArrayOf(2f,1f,2f))
+            var s1var = Nd4j.create(floatArrayOf(2f,1f,2f))
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val inputs = mapOf("s0" to s0Val,"s1" to s1Val)
+            var inputs = mapOf("s0" to s0Val,"s1" to s1Val)
 
 
             return listOf(
@@ -1771,7 +1771,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "broadcast_dynamic_shape" -> {
-            val s0 = NodeDef {
+            var s0 = NodeDef {
                 name = "s0"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1779,7 +1779,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val s1 = NodeDef {
+            var s1 = NodeDef {
                 name = "s1"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1789,7 +1789,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("s0")
                 Input("s1")
                 op = tensorflowOpDef.name
@@ -1799,7 +1799,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(s0)
                 Node(s1)
                 Node(opNode)
@@ -1807,13 +1807,13 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val s0Val = Nd4j.create(floatArrayOf(2f,2f,2f))
+            var s0var = Nd4j.create(floatArrayOf(2f,2f,2f))
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val s1Val = Nd4j.create(floatArrayOf(2f,1f,2f))
+            var s1var = Nd4j.create(floatArrayOf(2f,1f,2f))
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val inputs = mapOf("s0" to s0Val,"s1" to s1Val)
+            var inputs = mapOf("s0" to s0Val,"s1" to s1Val)
 
 
             return listOf(
@@ -1829,7 +1829,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "lrn" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1840,7 +1840,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             println("Running test import process for op ${tensorflowOpDef.name}")
             // {2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1}
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -1860,7 +1860,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     f = 0.5f
                 })
             }
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(opNode)
             }
@@ -1871,11 +1871,11 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             //1, 1,2,2,1, 1,2,2,1
 
-            val inputVal = Nd4j.linspace(1,16,16).reshape(2,2,2,2)
+            var inputvar = Nd4j.linspace(1,16,16).reshape(2,2,2,2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
-            val inputs = mapOf("input" to inputVal)
+            var inputs = mapOf("input" to inputVal)
 
 
             return listOf(
@@ -1891,7 +1891,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "fused_batch_norm" -> {
-            val x = NodeDef {
+            var x = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1899,7 +1899,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val scale = NodeDef {
+            var scale = NodeDef {
                 name = "scale"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1907,7 +1907,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val offset = NodeDef {
+            var offset = NodeDef {
                 name = "offset"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1915,7 +1915,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val mean = NodeDef {
+            var mean = NodeDef {
                 name = "mean"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1923,7 +1923,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val variance = NodeDef {
+            var variance = NodeDef {
                 name = "variance"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -1933,9 +1933,9 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val epsilon = 0.0001f
+            var epsilon = 0.0001f
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 Input("scale")
                 Input("offset")
@@ -1958,7 +1958,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val y = NodeDef {
+            var y = NodeDef {
                 name = "y"
                 Input("output:0")
                 op = "Identity"
@@ -1967,7 +1967,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val batchMean = NodeDef {
+            var batchMean = NodeDef {
                 name = "batch_mean"
                 Input("output:1")
                 op = "Identity"
@@ -1976,7 +1976,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val batchVariance = NodeDef {
+            var batchVariance = NodeDef {
                 name = "batch_variance"
                 Input("output:2")
                 op = "Identity"
@@ -1985,7 +1985,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(x)
                 Node(scale)
                 Node(mean)
@@ -1999,21 +1999,21 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val xVal = Nd4j.ones(2,2,2,2)
+            var xvar = Nd4j.ones(2,2,2,2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val scaleVal = Nd4j.zeros(2).addi(0.5)
+            var scalevar = Nd4j.zeros(2).addi(0.5)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
-            val offsetVal = Nd4j.zeros(2).addi(2).castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
+            var offsetvar = Nd4j.zeros(2).addi(2).castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
             //    xAffected *= (*variance + epsilon).transform(transform::RSqrt) * (*scale) + (*offset);
-            val testResult = Nd4j.ones(8,2).muli(Nd4j.exec(RSqrt(Nd4j.scalar(epsilon)))).muli(scaleVal).addi(offsetVal)
-            val meanVal = Nd4j.zeros(2)
-            val varianceVal = Nd4j.zeros(2)
-            val otherResult = xVal.sub(meanVal).div(varianceVal.add(epsilon)).mul(scaleVal).add(offsetVal)
+            var testResult = Nd4j.ones(8,2).muli(Nd4j.exec(RSqrt(Nd4j.scalar(epsilon)))).muli(scaleVal).addi(offsetVal)
+            var meanvar = Nd4j.zeros(2)
+            var variancevar = Nd4j.zeros(2)
+            var otherResult = xVal.sub(meanVal).div(varianceVal.add(epsilon)).mul(scaleVal).add(offsetVal)
             // (batch - self.moving_mean) / (self.moving_var + epsilon) * gamma + beta.
 
-            val inputs = mapOf("x" to xVal,"scale" to scaleVal,"mean" to meanVal,"offset" to offsetVal,"variance" to varianceVal)
+            var inputs = mapOf("x" to xVal,"scale" to scaleVal,"mean" to meanVal,"offset" to offsetVal,"variance" to varianceVal)
 
             return listOf(
                 GraphInput(
@@ -2037,7 +2037,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             //auto input    = NDArrayFactory::create<TypeParam>('c', {bS, iD, iH, iW, iC});
             //auto weights  = NDArrayFactory::create<TypeParam>('c', {kD, kH, kW, iC, oC});
 //, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW, paddingMode, 1, dataFormat}
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2045,7 +2045,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val filter = NodeDef {
+            var filter = NodeDef {
                 name = "filter"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2057,7 +2057,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             // {2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1}
             //, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW, paddingMode, 1, dataFormat}
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("filter")
                 op = tensorflowOpDef.name
@@ -2075,7 +2075,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     s = ByteString.copyFrom("NDHWC".toByteArray(Charset.defaultCharset()))
                 })
             }
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(filter)
                 Node(opNode)
@@ -2086,13 +2086,13 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             //3,2,2,2
 
 
-            val inputVal = Nd4j.ones(2,3,4,3,4)
+            var inputvar = Nd4j.ones(2,3,4,3,4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val filterVal = Nd4j.ones(2,3,2,4,3)
+            var filtervar = Nd4j.ones(2,3,2,4,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("input" to inputVal,"filter" to filterVal)
+            var inputs = mapOf("input" to inputVal,"filter" to filterVal)
 
 
             return listOf(
@@ -2107,7 +2107,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "avgpool3dnew","maxpool3dnew" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2117,7 +2117,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             println("Running test import process for op ${tensorflowOpDef.name}")
             // {2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1}
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -2139,17 +2139,17 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(opNode)
             }
 
             //2,3,3,43
-            val inputVal = Nd4j.ones(2,3,3,4,3)
+            var inputvar = Nd4j.ones(2,3,3,4,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
-            val inputs = mapOf("input" to inputVal)
+            var inputs = mapOf("input" to inputVal)
 
 
             return listOf(
@@ -2164,7 +2164,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "draw_bounding_boxes" -> {
-            val images = NodeDef {
+            var images = NodeDef {
                 name = "images"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2172,7 +2172,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val boxes = NodeDef {
+            var boxes = NodeDef {
                 name = "boxes"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2180,7 +2180,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val colors = NodeDef {
+            var colors = NodeDef {
                 name = "colors"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2191,7 +2191,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("images")
                 Input("boxes")
                 Input("colors")
@@ -2202,7 +2202,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(images)
                 Node(boxes)
                 Node(colors)
@@ -2211,14 +2211,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val imagesVal = Nd4j.linspace(1,120,120).reshape(2,4,5,3)
+            var imagesvar = Nd4j.linspace(1,120,120).reshape(2,4,5,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val boxesVal = Nd4j.linspace(1,16,16).reshape(2,2,4)
+            var boxesvar = Nd4j.linspace(1,16,16).reshape(2,2,4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
-            val colorVal = Nd4j.create(floatArrayOf(201f, 202f, 203f, 127f, 128f, 129f)).reshape(2,3)
+            var colorvar = Nd4j.create(floatArrayOf(201f, 202f, 203f, 127f, 128f, 129f)).reshape(2,3)
 
-            val inputs = mapOf("images" to imagesVal,"boxes" to boxesVal,"colors" to colorVal)
+            var inputs = mapOf("images" to imagesVal,"boxes" to boxesVal,"colors" to colorVal)
 
             return listOf(
                 GraphInput(
@@ -2234,7 +2234,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "create" -> {
-            val shape = NodeDef {
+            var shape = NodeDef {
                 name = "shape"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2243,7 +2243,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("shape")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -2255,16 +2255,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(shape)
                 Node(opNode)
             }
 
 
 
-            val shapeVal = Nd4j.create(doubleArrayOf(1.0,2.0))
+            var shapevar = Nd4j.create(doubleArrayOf(1.0,2.0))
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
-            val inputs = mapOf("shape" to shapeVal)
+            var inputs = mapOf("shape" to shapeVal)
 
 
             return listOf(
@@ -2281,7 +2281,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "select" -> {
-            val condition = NodeDef {
+            var condition = NodeDef {
                 name = "condition"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2289,7 +2289,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val t = NodeDef {
+            var t = NodeDef {
                 name = "t"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2298,7 +2298,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val e = NodeDef {
+            var e = NodeDef {
                 name = "e"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2307,7 +2307,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("condition")
                 Input("t")
                 Input("e")
@@ -2317,7 +2317,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     type = DataType.DT_DOUBLE
                 })
             }
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(condition)
                 Node(t)
                 Node(e)
@@ -2326,17 +2326,17 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val conditionVal = Nd4j.create(booleanArrayOf(true,false,false))
+            var conditionvar = Nd4j.create(booleanArrayOf(true,false,false))
                 .castTo(org.nd4j.linalg.api.buffer.DataType.BOOL)
 
-            val tVal = Nd4j.linspace(1,9,9).reshape(3,3)
+            var tvar = Nd4j.linspace(1,9,9).reshape(3,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val eVal = Nd4j.create(doubleArrayOf(9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0))
+            var evar = Nd4j.create(doubleArrayOf(9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0))
                 .reshape(3,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("condition" to conditionVal,"t" to tVal,"e" to eVal)
+            var inputs = mapOf("condition" to conditionVal,"t" to tVal,"e" to eVal)
 
 
             return listOf(
@@ -2353,7 +2353,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "compare_and_bitpack" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2361,7 +2361,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val threshold = NodeDef {
+            var threshold = NodeDef {
                 name = "threshold"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2372,7 +2372,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("threshold")
                 op = tensorflowOpDef.name
@@ -2381,7 +2381,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     type = DataType.DT_DOUBLE
                 })
             }
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(threshold)
                 Node(opNode)
@@ -2389,13 +2389,13 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val inputVal = Nd4j.create(floatArrayOf(-12f, -11f, -10f, -9f, -8f, -7f, -6f, -5f, -4f, -3f, -2f, -1f, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f, 11f)).reshape(2,3,4)
+            var inputvar = Nd4j.create(floatArrayOf(-12f, -11f, -10f, -9f, -8f, -7f, -6f, -5f, -4f, -3f, -2f, -1f, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f, 11f)).reshape(2,3,4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val thresholdVal = Nd4j.scalar(2.0)
+            var thresholdvar = Nd4j.scalar(2.0)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("input" to inputVal,"threshold" to thresholdVal)
+            var inputs = mapOf("input" to inputVal,"threshold" to thresholdVal)
 
 
             return listOf(
@@ -2410,7 +2410,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "strided_slice" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2418,7 +2418,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val begin = NodeDef {
+            var begin = NodeDef {
                 name = "begin"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2426,7 +2426,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val end = NodeDef {
+            var end = NodeDef {
                 name = "end"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2434,7 +2434,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val strides = NodeDef {
+            var strides = NodeDef {
                 name = "strides"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2443,7 +2443,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("begin")
                 Input("end")
@@ -2460,7 +2460,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     i = 1
                 })
             }
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(begin)
                 Node(end)
@@ -2470,20 +2470,20 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val inputVal = Nd4j.linspace(1,10,10).reshape(5,2)
+            var inputvar = Nd4j.linspace(1,10,10).reshape(5,2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val beginVal = Nd4j.create(doubleArrayOf(0.0))
+            var beginvar = Nd4j.create(doubleArrayOf(0.0))
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
-            val endVal = Nd4j.create(doubleArrayOf(1.0))
+            var endvar = Nd4j.create(doubleArrayOf(1.0))
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val strideVal = Nd4j.create(doubleArrayOf(1.0))
+            var stridevar = Nd4j.create(doubleArrayOf(1.0))
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val inputs = mapOf("input" to inputVal,"begin" to beginVal, "end" to endVal,"strides" to strideVal)
+            var inputs = mapOf("input" to inputVal,"begin" to beginVal, "end" to endVal,"strides" to strideVal)
 
 
             return listOf(
@@ -2497,7 +2497,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             )
         }
         "bincount" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2505,7 +2505,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val size = NodeDef {
+            var size = NodeDef {
                 name = "size"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2513,7 +2513,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val weights = NodeDef {
+            var weights = NodeDef {
                 name = "weights"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2522,7 +2522,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("size")
                 Input("weights")
@@ -2532,7 +2532,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     type = DataType.DT_DOUBLE
                 })
             }
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(size)
                 Node(weights)
@@ -2541,17 +2541,17 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val inputVal = Nd4j.create(doubleArrayOf(1.0, 2.0, 0.0, 1.0, 2.0, 2.0, 1.0, 2.0))
+            var inputvar = Nd4j.create(doubleArrayOf(1.0, 2.0, 0.0, 1.0, 2.0, 2.0, 1.0, 2.0))
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val sizeVal = Nd4j.create(doubleArrayOf(3.0))
+            var sizevar = Nd4j.create(doubleArrayOf(3.0))
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
-            val weightVal = Nd4j.create(doubleArrayOf(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0))
+            var weightvar = Nd4j.create(doubleArrayOf(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0))
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("input" to inputVal,"size" to sizeVal, "weights" to weightVal)
+            var inputs = mapOf("input" to inputVal,"size" to sizeVal, "weights" to weightVal)
 
 
             return listOf(
@@ -2567,7 +2567,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "broadcast_to" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2575,7 +2575,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val shape = NodeDef {
+            var shape = NodeDef {
                 name = "shape"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2584,7 +2584,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("shape")
                 op = tensorflowOpDef.name
@@ -2596,7 +2596,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     type = DataType.DT_INT64
                 })
             }
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(shape)
                 Node(opNode)
@@ -2604,13 +2604,13 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val inputVal = Nd4j.create(doubleArrayOf(2.0))
+            var inputvar = Nd4j.create(doubleArrayOf(2.0))
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val shapeVal = Nd4j.zeros(2).addi(4)
+            var shapevar = Nd4j.zeros(2).addi(4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
-            val inputs = mapOf("input" to inputVal,"shape" to shapeVal)
+            var inputs = mapOf("input" to inputVal,"shape" to shapeVal)
 
 
             return listOf(
@@ -2626,7 +2626,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "condition" -> {
-            val condition = NodeDef {
+            var condition = NodeDef {
                 name = "condition"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2634,7 +2634,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val t = NodeDef {
+            var t = NodeDef {
                 name = "t"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2642,7 +2642,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val e = NodeDef {
+            var e = NodeDef {
                 name = "e"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2651,7 +2651,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("condition")
                 Input("t")
                 Input("e")
@@ -2661,7 +2661,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     type = DataType.DT_DOUBLE
                 })
             }
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(condition)
                 Node(t)
                 Node(e)
@@ -2670,16 +2670,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val conditionVal = Nd4j.create(booleanArrayOf(true,true,false,false)).reshape(2,2)
+            var conditionvar = Nd4j.create(booleanArrayOf(true,true,false,false)).reshape(2,2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.BOOL)
 
-            val tVal = Nd4j.linspace(1,4,4).reshape(2,2)
+            var tvar = Nd4j.linspace(1,4,4).reshape(2,2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val eVal = Nd4j.linspace(1,4,4).reshape(2,2)
+            var evar = Nd4j.linspace(1,4,4).reshape(2,2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("condition" to conditionVal,"t" to tVal,"e" to eVal)
+            var inputs = mapOf("condition" to conditionVal,"t" to tVal,"e" to eVal)
 
 
             return listOf(
@@ -2694,7 +2694,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "biasadd" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2702,7 +2702,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val bias = NodeDef {
+            var bias = NodeDef {
                 name = "bias"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2711,7 +2711,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("bias")
                 op = tensorflowOpDef.name
@@ -2720,7 +2720,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     type = DataType.DT_DOUBLE
                 })
             }
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(bias)
                 Node(opNode)
@@ -2728,13 +2728,13 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val inputVal = Nd4j.linspace(1,2 * 3 * 3 * 2,2 * 3 * 3 * 2).reshape(2,3,3,2)
+            var inputvar = Nd4j.linspace(1,2 * 3 * 3 * 2,2 * 3 * 3 * 2).reshape(2,3,3,2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val biasVal = Nd4j.linspace(1,2,2).reshape(2)
+            var biasvar = Nd4j.linspace(1,2,2).reshape(2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("input" to inputVal,"bias" to biasVal)
+            var inputs = mapOf("input" to inputVal,"bias" to biasVal)
 
 
             return listOf(
@@ -2748,7 +2748,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             )
         }
         "dilation2d" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2756,7 +2756,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val filter = NodeDef {
+            var filter = NodeDef {
                 name = "filter"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2766,7 +2766,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             println("Running test import process for op ${tensorflowOpDef.name}")
             // {2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1}
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("filter")
                 op = tensorflowOpDef.name
@@ -2784,7 +2784,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     s = ByteString.copyFrom("SAME".toByteArray(Charset.defaultCharset()))
                 })
             }
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(filter)
                 Node(opNode)
@@ -2796,13 +2796,13 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             //1, 1,2,2,1, 1,2,2,1
 
-            val inputVal = Nd4j.linspace(1,2 * 6 * 6 * 3,2 * 6 * 6 * 3).reshape(2,6,6,3)
+            var inputvar = Nd4j.linspace(1,2 * 6 * 6 * 3,2 * 6 * 6 * 3).reshape(2,6,6,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val filterVal = Nd4j.linspace(1,3 * 2 * 3,3 * 2 * 3).reshape(3,2,3)
+            var filtervar = Nd4j.linspace(1,3 * 2 * 3,3 * 2 * 3).reshape(3,2,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("input" to inputVal,"filter" to filterVal)
+            var inputs = mapOf("input" to inputVal,"filter" to filterVal)
 
 
             return listOf(
@@ -2818,7 +2818,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "depthwise_conv2d" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2826,7 +2826,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val filter = NodeDef {
+            var filter = NodeDef {
                 name = "filter"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2836,7 +2836,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             println("Running test import process for op ${tensorflowOpDef.name}")
             // {2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1}
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("filter")
                 op = tensorflowOpDef.name
@@ -2854,7 +2854,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     s = ByteString.copyFrom("NHWC".toByteArray(Charset.defaultCharset()))
                 })
             }
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(filter)
                 Node(opNode)
@@ -2865,13 +2865,13 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             //3,2,2,2
 
 
-            val inputVal = Nd4j.ones(2,4,3,2)
+            var inputvar = Nd4j.ones(2,4,3,2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val filterVal = Nd4j.ones(3,2,2,2)
+            var filtervar = Nd4j.ones(3,2,2,2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("input" to inputVal,"filter" to filterVal)
+            var inputs = mapOf("input" to inputVal,"filter" to filterVal)
 
 
             return listOf(
@@ -2887,7 +2887,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "conv2d" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2895,7 +2895,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val filter = NodeDef {
+            var filter = NodeDef {
                 name = "filter"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -2905,7 +2905,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             println("Running test import process for op ${tensorflowOpDef.name}")
             // {2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1}
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("filter")
                 op = tensorflowOpDef.name
@@ -2923,7 +2923,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     s = ByteString.copyFrom("NHWC".toByteArray(Charset.defaultCharset()))
                 })
             }
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(filter)
                 Node(opNode)
@@ -2934,13 +2934,13 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             //3,2,2,2
 
 
-            val inputVal = Nd4j.ones(1,4,1,1)
+            var inputvar = Nd4j.ones(1,4,1,1)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val filterVal = Nd4j.ones(1,1,1,4)
+            var filtervar = Nd4j.ones(1,1,1,4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("input" to inputVal,"filter" to filterVal)
+            var inputs = mapOf("input" to inputVal,"filter" to filterVal)
 
 
             return listOf(
@@ -2957,7 +2957,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         "avgpool2d","maxpool2d" -> {
             if(tensorflowOpDef.name == "AvgPool" || tensorflowOpDef.name == "MaxPool") {
-                val input = NodeDef {
+                var input = NodeDef {
                     name = "input"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -2967,7 +2967,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
                 println("Running test import process for op ${tensorflowOpDef.name}")
                 // {2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1}
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("input")
                     op = tensorflowOpDef.name
                     name = "output"
@@ -2989,16 +2989,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(input)
                     Node(opNode)
                 }
 
-                val inputVal = Nd4j.ones(2,4,4,2)
+                var inputvar = Nd4j.ones(2,4,4,2)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
 
-                val inputs = mapOf("input" to inputVal)
+                var inputs = mapOf("input" to inputVal)
 
 
                 return listOf(
@@ -3011,7 +3011,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 )
                 )
             } else { //MaxPoolV2
-                val input = NodeDef {
+                var input = NodeDef {
                     name = "input"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -3019,7 +3019,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val ksize = NodeDef {
+                var ksize = NodeDef {
                     name = "ksize"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -3027,7 +3027,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val stride = NodeDef {
+                var stride = NodeDef {
                     name = "stride"
                     op = "Placeholder"
                     Attribute("dtype",AttrValue {
@@ -3038,7 +3038,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
                 println("Running test import process for op ${tensorflowOpDef.name}")
                 // {2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1}
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("input")
                     Input("ksize")
                     Input("stride")
@@ -3057,20 +3057,20 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(input)
                     Node(ksize)
                     Node(stride)
                     Node(opNode)
                 }
 
-                val inputVal = Nd4j.ones(2,4,4,2)
+                var inputvar = Nd4j.ones(2,4,4,2)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
-                val ksizeVal = Nd4j.create(floatArrayOf(1.0f,2.0f,2.0f,1.0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
-                val strideVal = Nd4j.create(floatArrayOf(1.0f,2.0f,2.0f,1.0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+                var ksizevar = Nd4j.create(floatArrayOf(1.0f,2.0f,2.0f,1.0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+                var stridevar = Nd4j.create(floatArrayOf(1.0f,2.0f,2.0f,1.0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
-                val inputs = mapOf("input" to inputVal,"ksize" to ksizeVal,"stride" to strideVal)
+                var inputs = mapOf("input" to inputVal,"ksize" to ksizeVal,"stride" to strideVal)
 
 
                 return listOf(
@@ -3088,7 +3088,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "space_to_batch" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3096,7 +3096,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val paddings = NodeDef {
+            var paddings = NodeDef {
                 name = "paddings"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3106,7 +3106,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("paddings")
                 op = tensorflowOpDef.name
@@ -3123,19 +3123,19 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(paddings)
                 Node(opNode)
             }
 
-            val inputVal = Nd4j.linspace(1,12,12).reshape(1,2,2,3)
+            var inputvar = Nd4j.linspace(1,12,12).reshape(1,2,2,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val paddingsVal = Nd4j.zeros(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+            var paddingsvar = Nd4j.zeros(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-            val inputs = mapOf("input" to inputVal,"paddings" to paddingsVal)
+            var inputs = mapOf("input" to inputVal,"paddings" to paddingsVal)
 
 
             return listOf(
@@ -3151,7 +3151,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "batch_to_space_nd" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3159,7 +3159,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val blockShape = NodeDef {
+            var blockShape = NodeDef {
                 name = "block_shape"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3172,7 +3172,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val crops = NodeDef {
+            var crops = NodeDef {
                 name = "crops"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3182,7 +3182,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("block_shape")
                 Input("crops")
@@ -3201,23 +3201,23 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(blockShape)
                 Node(crops)
                 Node(opNode)
             }
 
-            val tVal = Nd4j.linspace(1,24,24).reshape(8,1,1,1,3)
+            var tvar = Nd4j.linspace(1,24,24).reshape(8,1,1,1,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val blockShapeVal = Nd4j.zeros(3).addi(2).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+            var blockShapevar = Nd4j.zeros(3).addi(2).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
-            val cropsVal = Nd4j.zeros(3,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+            var cropsvar = Nd4j.zeros(3,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
-            val inputs = mapOf("input" to tVal,"block_shape" to blockShapeVal,"crops" to cropsVal)
+            var inputs = mapOf("input" to tVal,"block_shape" to blockShapeVal,"crops" to cropsVal)
 
 
             return listOf(
@@ -3232,7 +3232,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "space_to_batch_nd" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3240,7 +3240,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val blockShape = NodeDef {
+            var blockShape = NodeDef {
                 name = "block_shape"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3253,7 +3253,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val paddings = NodeDef {
+            var paddings = NodeDef {
                 name = "paddings"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3263,7 +3263,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("block_shape")
                 Input("paddings")
@@ -3282,23 +3282,23 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(blockShape)
                 Node(paddings)
                 Node(opNode)
             }
 
-            val tVal = Nd4j.linspace(1,48,48).reshape(2,2,4,3,1)
+            var tvar = Nd4j.linspace(1,48,48).reshape(2,2,4,3,1)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val blockShapeVal = Nd4j.create(floatArrayOf(2.0f,2.0f,3f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+            var blockShapevar = Nd4j.create(floatArrayOf(2.0f,2.0f,3f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
-            val paddingsVal = Nd4j.create(floatArrayOf(0f,0f,0f,2f,2f,1f)).reshape(3,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+            var paddingsvar = Nd4j.create(floatArrayOf(0f,0f,0f,2f,2f,1f)).reshape(3,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
-            val inputs = mapOf("input" to tVal,"block_shape" to blockShapeVal,"paddings" to paddingsVal)
+            var inputs = mapOf("input" to tVal,"block_shape" to blockShapeVal,"paddings" to paddingsVal)
 
 
             return listOf(
@@ -3314,7 +3314,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "batch_to_space" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3322,7 +3322,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val crops = NodeDef {
+            var crops = NodeDef {
                 name = "crops"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3332,7 +3332,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("crops")
                 op = tensorflowOpDef.name
@@ -3349,19 +3349,19 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(crops)
                 Node(opNode)
             }
 
-            val tVal = Nd4j.linspace(1,12,12).reshape(4,1,1,3)
+            var tvar = Nd4j.linspace(1,12,12).reshape(4,1,1,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val cropsVal = Nd4j.zeros(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+            var cropsvar = Nd4j.zeros(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-            val inputs = mapOf("input" to tVal,"crops" to cropsVal)
+            var inputs = mapOf("input" to tVal,"crops" to cropsVal)
 
 
             return listOf(
@@ -3377,7 +3377,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "slice" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3385,7 +3385,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val begin = NodeDef {
+            var begin = NodeDef {
                 name = "begin"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3393,7 +3393,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val size = NodeDef {
+            var size = NodeDef {
                 name = "size"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3402,7 +3402,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("begin")
                 Input("size")
@@ -3417,21 +3417,21 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(begin)
                 Node(size)
                 Node(opNode)
             }
 
-            val tVal = Nd4j.linspace(1,12,12).reshape(3,4)
+            var tvar = Nd4j.linspace(1,12,12).reshape(3,4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val beginVal = Nd4j.create(doubleArrayOf(0.0,1.0)).reshape(2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
-            val sizeVal = Nd4j.create(doubleArrayOf(0.0,1.0)).reshape(2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+            var beginvar = Nd4j.create(doubleArrayOf(0.0,1.0)).reshape(2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+            var sizevar = Nd4j.create(doubleArrayOf(0.0,1.0)).reshape(2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-            val inputs = mapOf("input" to tVal,"begin" to beginVal,"size" to sizeVal)
+            var inputs = mapOf("input" to tVal,"begin" to beginVal,"size" to sizeVal)
 
 
             return listOf(
@@ -3447,7 +3447,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "ClipByValue" -> {
-            val t = NodeDef {
+            var t = NodeDef {
                 name = "t"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3455,7 +3455,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val clipValueMin = NodeDef {
+            var clipValueMin = NodeDef {
                 name = "clip_value_min"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3463,7 +3463,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val clipValueMax = NodeDef {
+            var clipValueMax = NodeDef {
                 name = "clip_value_max"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3472,7 +3472,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("t")
                 Input("clip_value_min")
                 Input("clip_value_max")
@@ -3484,21 +3484,21 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(t)
                 Node(clipValueMin)
                 Node(clipValueMax)
                 Node(opNode)
             }
 
-            val tVal = Nd4j.linspace(1,12,12).reshape(3,4)
+            var tvar = Nd4j.linspace(1,12,12).reshape(3,4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val clipValueMinVal = Nd4j.scalar(0.0).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
-            val clipValueMaxVal = Nd4j.scalar(1.0).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
+            var clipValueMinvar = Nd4j.scalar(0.0).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
+            var clipValueMaxvar = Nd4j.scalar(1.0).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
 
-            val inputs = mapOf("t" to tVal,"clip_value_min" to clipValueMinVal,"clip_value_max" to clipValueMaxVal)
+            var inputs = mapOf("t" to tVal,"clip_value_min" to clipValueMinVal,"clip_value_max" to clipValueMaxVal)
 
 
             return listOf(
@@ -3516,7 +3516,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "squeeze" -> {
-            val value = NodeDef {
+            var value = NodeDef {
                 name = "value"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3525,7 +3525,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("value")
 
                 op = tensorflowOpDef.name
@@ -3539,16 +3539,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(value)
                 Node(opNode)
             }
 
-            val valuesVal = Nd4j.linspace(1,12,12).reshape(3,4,1)
+            var valuesvar = Nd4j.linspace(1,12,12).reshape(3,4,1)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-            val inputs = mapOf("value" to valuesVal)
+            var inputs = mapOf("value" to valuesVal)
 
 
             return listOf(
@@ -3564,7 +3564,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "identity_n" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3572,7 +3572,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val input2 = NodeDef {
+            var input2 = NodeDef {
                 name = "input2"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3581,7 +3581,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("input2")
                 op = tensorflowOpDef.name
@@ -3593,7 +3593,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val out0 = NodeDef {
+            var out0 = NodeDef {
                 name = "out0"
                 Input("output:0")
                 op = "Identity"
@@ -3602,7 +3602,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val out1 = NodeDef {
+            var out1 = NodeDef {
                 name = "out1"
                 Input("output:1")
                 op = "Identity"
@@ -3612,7 +3612,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(input2)
                 Node(opNode)
@@ -3621,11 +3621,11 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val inputVal = Nd4j.linspace(1,4,4)
+            var inputvar = Nd4j.linspace(1,4,4)
                 .reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-            val inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
+            var inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
 
 
             return listOf(
@@ -3641,7 +3641,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "shapes_of" -> {
-            val input1 = NodeDef {
+            var input1 = NodeDef {
                 name = "input1"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3650,7 +3650,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val input2 = NodeDef {
+            var input2 = NodeDef {
                 name = "input2"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3659,7 +3659,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input1")
                 Input("input2")
 
@@ -3678,7 +3678,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val out0 = NodeDef {
+            var out0 = NodeDef {
                 name = "out0"
                 Input("output:0")
                 op = "Identity"
@@ -3687,7 +3687,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val out1 = NodeDef {
+            var out1 = NodeDef {
                 name = "out1"
                 Input("output:1")
                 op = "Identity"
@@ -3698,7 +3698,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input1)
                 Node(input2)
                 Node(opNode)
@@ -3706,11 +3706,11 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 Node(out1)
             }
 
-            val input1Val = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
-            val input2Val = Nd4j.linspace(1,6,6).reshape(2,3).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+            var input1var = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+            var input2var = Nd4j.linspace(1,6,6).reshape(2,3).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-            val inputs = mapOf("input1" to input1Val,"input2" to input2Val)
+            var inputs = mapOf("input1" to input1Val,"input2" to input2Val)
 
 
             return listOf(
@@ -3727,7 +3727,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "dynamic_stitch" -> {
-            val indices1 = NodeDef {
+            var indices1 = NodeDef {
                 name = "indices"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3735,7 +3735,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val indices2 = NodeDef {
+            var indices2 = NodeDef {
                 name = "indices2"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3744,7 +3744,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val data0 = NodeDef {
+            var data0 = NodeDef {
                 name = "data0"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3752,7 +3752,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val data1 = NodeDef {
+            var data1 = NodeDef {
                 name = "data1"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3761,7 +3761,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("indices")
                 Input("indices2")
                 Input("data0")
@@ -3781,7 +3781,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(indices1)
                 Node(indices2)
                 Node(data0)
@@ -3789,15 +3789,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 Node(opNode)
             }
 
-            val testGraph = GraphRunner.builder().graphBytes(graphDef.toByteArray()).build()
+            var testGraph = GraphRunner.builder().graphBytes(graphDef.toByteArray()).build()
 
-            val indicesVal = Nd4j.create(floatArrayOf(1.0f,3.0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
-            val indices2Val = Nd4j.create(floatArrayOf(5.0f,0.0f,2.0f,4.0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+            var indicesvar = Nd4j.create(floatArrayOf(1.0f,3.0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+            var indices2var = Nd4j.create(floatArrayOf(5.0f,0.0f,2.0f,4.0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val dataVal = Nd4j.create(floatArrayOf(-1f,-1f)).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
-            val data2Val = Nd4j.create(floatArrayOf(0.1f,5.2f,4.3f,7.4f)).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
+            var datavar = Nd4j.create(floatArrayOf(-1f,-1f)).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
+            var data2var = Nd4j.create(floatArrayOf(0.1f,5.2f,4.3f,7.4f)).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("indices" to indicesVal,"indices2" to indices2Val,"data0" to dataVal,"data1" to data2Val)
+            var inputs = mapOf("indices" to indicesVal,"indices2" to indices2Val,"data0" to dataVal,"data1" to data2Val)
 
 
             return listOf(
@@ -3812,7 +3812,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "dynamic_partition" -> {
-            val data = NodeDef {
+            var data = NodeDef {
                 name = "data"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3820,7 +3820,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val partitions = NodeDef {
+            var partitions = NodeDef {
                 name = "partitions"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3830,7 +3830,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("data")
                 Input("partitions")
 
@@ -3845,7 +3845,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val out0 = NodeDef {
+            var out0 = NodeDef {
                 name = "out0"
                 Input("output:0")
                 op = "Identity"
@@ -3855,7 +3855,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val out1 = NodeDef {
+            var out1 = NodeDef {
                 name = "out1"
                 Input("output:1")
                 op = "Identity"
@@ -3866,7 +3866,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(data)
                 Node(partitions)
                 Node(opNode)
@@ -3874,12 +3874,12 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 Node(out1)
             }
 
-            val testGraph = GraphRunner.builder().graphBytes(graphDef.toByteArray()).build()
+            var testGraph = GraphRunner.builder().graphBytes(graphDef.toByteArray()).build()
 
-            val partitionsVal = Nd4j.create(floatArrayOf(0f,0f,1f,1f,0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
-            val dataVal = Nd4j.create(floatArrayOf(10f, 20f, 30f, 40f, 50f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+            var partitionsvar = Nd4j.create(floatArrayOf(0f,0f,1f,1f,0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+            var datavar = Nd4j.create(floatArrayOf(10f, 20f, 30f, 40f, 50f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
-            val inputs = mapOf("data" to dataVal,"partitions" to partitionsVal)
+            var inputs = mapOf("data" to dataVal,"partitions" to partitionsVal)
 
 
             return listOf(
@@ -3895,7 +3895,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "split_v" -> {
-            val splitDim = NodeDef {
+            var splitDim = NodeDef {
                 name = "split_dim"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3905,7 +3905,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val sizeSplits = NodeDef {
+            var sizeSplits = NodeDef {
                 name = "size_splits"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3913,7 +3913,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val value = NodeDef {
+            var value = NodeDef {
                 name = "value"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3922,7 +3922,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("value")
                 Input("size_splits")
                 Input("split_dim")
@@ -3941,7 +3941,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val out0 = NodeDef {
+            var out0 = NodeDef {
                 name = "out0"
                 Input("output:0")
                 op = "Identity"
@@ -3950,7 +3950,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val out1 = NodeDef {
+            var out1 = NodeDef {
                 name = "out1"
                 Input("output:1")
                 op = "Identity"
@@ -3960,7 +3960,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(value)
                 Node(sizeSplits)
                 Node(splitDim)
@@ -3969,14 +3969,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 Node(out1)
             }
 
-            val splitDimVal = Nd4j.scalar(-2.0).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
-            val sizeSplitsVal = Nd4j.create(floatArrayOf(5f,3f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+            var splitDimvar = Nd4j.scalar(-2.0).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+            var sizeSplitsvar = Nd4j.create(floatArrayOf(5f,3f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
-            val valuesVal = Nd4j.linspace(1,56,56)
+            var valuesvar = Nd4j.linspace(1,56,56)
                 .reshape(8,7).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-            val inputs = mapOf("split_dim" to splitDimVal,"value" to valuesVal,"size_splits" to sizeSplitsVal)
+            var inputs = mapOf("split_dim" to splitDimVal,"value" to valuesVal,"size_splits" to sizeSplitsVal)
 
 
             return listOf(
@@ -3991,7 +3991,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "split" -> {
-            val splitDim = NodeDef {
+            var splitDim = NodeDef {
                 name = "split_dim"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -3999,7 +3999,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val value = NodeDef {
+            var value = NodeDef {
                 name = "value"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -4008,7 +4008,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("split_dim")
                 Input("value")
 
@@ -4023,18 +4023,18 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(splitDim)
                 Node(value)
                 Node(opNode)
             }
 
-            val concatDimVal = Nd4j.scalar(0.0).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
-            val valuesVal = Nd4j.create(floatArrayOf(0f,1f,0f,1f))
+            var concatDimvar = Nd4j.scalar(0.0).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+            var valuesvar = Nd4j.create(floatArrayOf(0f,1f,0f,1f))
                 .reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-            val inputs = mapOf("split_dim" to concatDimVal,"value" to valuesVal)
+            var inputs = mapOf("split_dim" to concatDimVal,"value" to valuesVal)
 
 
             return listOf(
@@ -4050,10 +4050,10 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "matmul" -> {
-            val mmulInput = ArrayList<GraphInput>()
+            var mmulInput = ArrayList<GraphInput>()
             listOf(false,true).forEach { transA ->
                 listOf(false,true).forEach { transB ->
-                    val a = NodeDef {
+                    var a = NodeDef {
                         name = "a"
                         op = "Placeholder"
                         Attribute("dtype",AttrValue {
@@ -4061,7 +4061,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                         })
                     }
 
-                    val bNode = NodeDef {
+                    var bNode = NodeDef {
                         name = "b"
                         op = "Placeholder"
                         Attribute("dtype",AttrValue {
@@ -4070,7 +4070,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     }
 
                     println("Running test import process for op ${tensorflowOpDef.name}")
-                    val opNode = NodeDef {
+                    var opNode = NodeDef {
                         Input("a")
                         Input("b")
 
@@ -4082,20 +4082,20 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     }
 
 
-                    val graphDef = GraphDef {
+                    var graphDef = GraphDef {
                         Node(a)
                         Node(bNode)
                         Node(opNode)
                     }
 
-                    val aVal = Nd4j.linspace(1,4,4).reshape(2,2)
+                    var avar = Nd4j.linspace(1,4,4).reshape(2,2)
                         .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
-                    val bVal = Nd4j.create(floatArrayOf(0f,1f,0f,1f))
+                    var bvar = Nd4j.create(floatArrayOf(0f,1f,0f,1f))
                         .reshape(2,2)
                         .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
 
-                    val inputs = mapOf("a" to aVal,"b" to bVal)
+                    var inputs = mapOf("a" to aVal,"b" to bVal)
                     mmulInput.add(
                         GraphInput(
                         graphDef =graphDef,
@@ -4115,7 +4115,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "range" -> {
-            val start = NodeDef {
+            var start = NodeDef {
                 name = "start"
                 op = "Placeholder"
                 Attribute("dtype", AttrValue {
@@ -4123,7 +4123,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val limit = NodeDef {
+            var limit = NodeDef {
                 name = "limit"
                 op = "Placeholder"
                 Attribute("dtype", AttrValue {
@@ -4132,7 +4132,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val delta = NodeDef {
+            var delta = NodeDef {
                 name = "delta"
                 op = "Placeholder"
                 Attribute("dtype", AttrValue {
@@ -4141,7 +4141,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("start")
                 Input("limit")
                 Input("delta")
@@ -4153,20 +4153,20 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(start)
                 Node(limit)
                 Node(delta)
                 Node(opNode)
             }
 
-            val startVal = Nd4j.scalar(1)
+            var startvar = Nd4j.scalar(1)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
-            val limitVal = Nd4j.scalar(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
-            val deltaVal = Nd4j.scalar(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+            var limitvar = Nd4j.scalar(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+            var deltavar = Nd4j.scalar(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
-            val inputs = mapOf("start" to startVal, "limit" to limitVal, "delta" to deltaVal)
+            var inputs = mapOf("start" to startVal, "limit" to limitVal, "delta" to deltaVal)
 
 
             return listOf(
@@ -4181,7 +4181,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "lin_space" -> {
-            val start = NodeDef {
+            var start = NodeDef {
                 name = "start"
                 op = "Placeholder"
                 Attribute("dtype", AttrValue {
@@ -4189,7 +4189,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val stop = NodeDef {
+            var stop = NodeDef {
                 name = "stop"
                 op = "Placeholder"
                 Attribute("dtype", AttrValue {
@@ -4198,7 +4198,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val num = NodeDef {
+            var num = NodeDef {
                 name = "num"
                 op = "Placeholder"
                 Attribute("dtype", AttrValue {
@@ -4207,7 +4207,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("start")
                 Input("stop")
                 Input("num")
@@ -4222,20 +4222,20 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(start)
                 Node(stop)
                 Node(num)
                 Node(opNode)
             }
 
-            val startVal = Nd4j.scalar(1)
+            var startvar = Nd4j.scalar(1)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
-            val limitVal = Nd4j.scalar(1).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
-            val deltaVal = Nd4j.scalar(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+            var limitvar = Nd4j.scalar(1).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
+            var deltavar = Nd4j.scalar(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-            val inputs = mapOf("start" to startVal,"stop" to
+            var inputs = mapOf("start" to startVal,"stop" to
                     limitVal, "num" to deltaVal)
 
 
@@ -4253,7 +4253,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         "gather","gather_nd" -> {
             if(tensorflowOpDef.name != "GatherV2") {
-                val params = NodeDef {
+                var params = NodeDef {
                     name = "params"
                     op = "Placeholder"
                     Attribute("dtype",AttrValue {
@@ -4261,7 +4261,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val indices = NodeDef {
+                var indices = NodeDef {
                     name = "indices"
                     op = "Placeholder"
                     Attribute("dtype",AttrValue {
@@ -4270,7 +4270,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
                 println("Running test import process for op ${tensorflowOpDef.name}")
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("params")
                     Input("indices")
 
@@ -4285,18 +4285,18 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(params)
                     Node(indices)
                     Node(opNode)
                 }
 
-                val paramsVal = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
-                val indicesVal = Nd4j.create(floatArrayOf(0f,1f,0f,1f))
+                var paramsvar = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+                var indicesvar = Nd4j.create(floatArrayOf(0f,1f,0f,1f))
                     .reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-                val inputs = mapOf("params" to paramsVal,"indices" to indicesVal.dup())
+                var inputs = mapOf("params" to paramsVal,"indices" to indicesVal.dup())
 
 
                 return listOf(
@@ -4308,7 +4308,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 )
                 )
             } else {
-                val params = NodeDef {
+                var params = NodeDef {
                     name = "params"
                     op = "Placeholder"
                     Attribute("dtype",AttrValue {
@@ -4316,7 +4316,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val indices = NodeDef {
+                var indices = NodeDef {
                     name = "indices"
                     op = "Placeholder"
                     Attribute("dtype",AttrValue {
@@ -4324,7 +4324,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val axis = NodeDef {
+                var axis = NodeDef {
                     name = "axis"
                     op = "Placeholder"
                     Attribute("dtype",AttrValue {
@@ -4334,7 +4334,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
                 println("Running test import process for op ${tensorflowOpDef.name}")
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("params")
                     Input("indices")
                     Input("axis")
@@ -4352,19 +4352,19 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(params)
                     Node(indices)
                     Node(axis)
                     Node(opNode)
                 }
 
-                val paramsVal = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
-                val indicesVal = Nd4j.create(floatArrayOf(0f,1f,0f,1f))
+                var paramsvar = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+                var indicesvar = Nd4j.create(floatArrayOf(0f,1f,0f,1f))
                     .reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
-                val axisVal = Nd4j.scalar(0).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+                var axisvar = Nd4j.scalar(0).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
-                val inputs = mapOf("params" to paramsVal,"indices" to indicesVal.dup(),"axis" to axisVal)
+                var inputs = mapOf("params" to paramsVal,"indices" to indicesVal.dup(),"axis" to axisVal)
 
 
                 return listOf(
@@ -4380,7 +4380,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         }
         "stack" -> {
-            val concat1 = NodeDef {
+            var concat1 = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -4388,7 +4388,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val concat2 = NodeDef {
+            var concat2 = NodeDef {
                 name = "input2"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -4397,7 +4397,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("input2")
 
@@ -4415,16 +4415,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(concat1)
                 Node(concat2)
                 Node(opNode)
             }
 
-            val inputVal = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+            var inputvar = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-            val inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
+            var inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
 
 
             return listOf(
@@ -4439,7 +4439,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "unstack" -> {
-            val concat1 = NodeDef {
+            var concat1 = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -4448,7 +4448,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
 
                 op = tensorflowOpDef.name
@@ -4465,15 +4465,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(concat1)
                 Node(opNode)
             }
 
-            val inputVal = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+            var inputvar = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-            val inputs = mapOf("input" to inputVal)
+            var inputs = mapOf("input" to inputVal)
 
 
             return listOf(
@@ -4488,7 +4488,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "mergesum" -> {
-            val concat1 = NodeDef {
+            var concat1 = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -4496,7 +4496,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val concat2 = NodeDef {
+            var concat2 = NodeDef {
                 name = "input2"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -4505,7 +4505,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("input2")
 
@@ -4520,16 +4520,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(concat1)
                 Node(concat2)
                 Node(opNode)
             }
 
-            val inputVal = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+            var inputvar = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-            val inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
+            var inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
 
 
             return listOf(
@@ -4543,7 +4543,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "merge" -> {
-            val concat1 = NodeDef {
+            var concat1 = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -4551,7 +4551,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val concat2 = NodeDef {
+            var concat2 = NodeDef {
                 name = "input2"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -4560,7 +4560,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("input2")
 
@@ -4575,16 +4575,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(concat1)
                 Node(concat2)
                 Node(opNode)
             }
 
-            val inputVal = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+            var inputvar = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-            val inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
+            var inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
 
 
             return listOf(
@@ -4598,7 +4598,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "mergeadd" -> {
-            val concat1 = NodeDef {
+            var concat1 = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -4606,7 +4606,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val concat2 = NodeDef {
+            var concat2 = NodeDef {
                 name = "input2"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -4615,7 +4615,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("input2")
 
@@ -4635,16 +4635,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(concat1)
                 Node(concat2)
                 Node(opNode)
             }
 
-            val inputVal = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+            var inputvar = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-            val inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
+            var inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
 
 
             return listOf(
@@ -4659,7 +4659,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         "concat" -> {
             if(inputFrameworkOpName == "Concat") {
-                val concatDim = NodeDef {
+                var concatDim = NodeDef {
                     name = "concat_dim"
                     op = "Const"
                     Attribute("dtype",AttrValue {
@@ -4673,7 +4673,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                         }
                     })
                 }
-                val concat1 = NodeDef {
+                var concat1 = NodeDef {
                     name = "input"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -4681,7 +4681,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val concat2 = NodeDef {
+                var concat2 = NodeDef {
                     name = "input2"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -4690,7 +4690,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
                 println("Running test import process for op ${tensorflowOpDef.name}")
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("concat_dim")
                     Input("input")
                     Input("input2")
@@ -4706,17 +4706,17 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(concatDim)
                     Node(concat1)
                     Node(concat2)
                     Node(opNode)
                 }
 
-                val inputVal = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+                var inputvar = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-                val inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
+                var inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
 
 
                 return listOf(
@@ -4728,7 +4728,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 )
                 )
             } else { //ConcatV2
-                val concatDim = NodeDef {
+                var concatDim = NodeDef {
                     name = "concat_dim"
                     op = "Const"
                     Attribute("dtype", AttrValue {
@@ -4742,7 +4742,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                         }
                     })
                 }
-                val concat1 = NodeDef {
+                var concat1 = NodeDef {
                     name = "input"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -4750,7 +4750,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val concat2 = NodeDef {
+                var concat2 = NodeDef {
                     name = "input2"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -4759,7 +4759,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
                 println("Running test import process for op ${tensorflowOpDef.name}")
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("input")
                     Input("input2")
                     Input("concat_dim")
@@ -4775,17 +4775,17 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(concat1)
                     Node(concat2)
                     Node(concatDim)
                     Node(opNode)
                 }
 
-                val inputVal = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+                var inputvar = Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-                val inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
+                var inputs = mapOf("input" to inputVal,"input2" to inputVal.dup())
 
 
                 return listOf(
@@ -4801,7 +4801,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "shape_of" -> {
-            val tensorNode = NodeDef {
+            var tensorNode = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -4810,7 +4810,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -4823,15 +4823,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(tensorNode)
                 Node(opNode)
             }
 
-            val inputVal = Nd4j.create(floatArrayOf(1.0f,0.0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
+            var inputvar = Nd4j.create(floatArrayOf(1.0f,0.0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
 
-            val inputs = mapOf("input" to inputVal)
+            var inputs = mapOf("input" to inputVal)
 
 
             return listOf(
@@ -4845,7 +4845,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "toggle_bits","invert_permutation" -> {
-            val tensorNode = NodeDef {
+            var tensorNode = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -4854,7 +4854,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running test import process for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -4864,15 +4864,15 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(tensorNode)
                 Node(opNode)
             }
 
-            val inputVal = Nd4j.create(floatArrayOf(1.0f,0.0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+            var inputvar = Nd4j.create(floatArrayOf(1.0f,0.0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
-            val inputs = mapOf("input" to inputVal)
+            var inputs = mapOf("input" to inputVal)
 
 
             return listOf(
@@ -4887,7 +4887,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "reverse" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -4896,7 +4896,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val axis = NodeDef {
+            var axis = NodeDef {
                 name = "axis"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -4905,7 +4905,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("axis")
                 op = tensorflowOpDef.name
@@ -4920,21 +4920,21 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(axis)
                 Node(opNode)
             }
 
 
-            val inputVal = Nd4j.zeros(2,2).addi(0.5)
+            var inputvar = Nd4j.zeros(2,2).addi(0.5)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
-            val axisVal = Nd4j.zeros(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+            var axisvar = Nd4j.zeros(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
-            val inputs = mapOf("input" to inputVal,"axis" to axisVal)
+            var inputs = mapOf("input" to inputVal,"axis" to axisVal)
 
 
             return listOf(
@@ -4948,7 +4948,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "roll" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -4957,7 +4957,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val shift = NodeDef {
+            var shift = NodeDef {
                 name = "shift"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -4966,7 +4966,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val axis = NodeDef {
+            var axis = NodeDef {
                 name = "axis"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -4975,7 +4975,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("shift")
                 Input("axis")
@@ -4994,7 +4994,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(shift)
                 Node(axis)
@@ -5002,17 +5002,17 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val inputVal = Nd4j.zeros(2,2).addi(0.5)
+            var inputvar = Nd4j.zeros(2,2).addi(0.5)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
-            val shiftVal = Nd4j.zeros(2).addi(2)
+            var shiftvar = Nd4j.zeros(2).addi(2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val axisVal = Nd4j.zeros(2).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+            var axisvar = Nd4j.zeros(2).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
-            val inputs = mapOf("input" to inputVal,"shift" to shiftVal,"axis" to axisVal)
+            var inputs = mapOf("input" to inputVal,"shift" to shiftVal,"axis" to axisVal)
 
 
             return listOf(
@@ -5027,7 +5027,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "tile" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -5036,7 +5036,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val multiples = NodeDef {
+            var multiples = NodeDef {
                 name = "multiples"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -5045,7 +5045,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("multiples")
                 op = tensorflowOpDef.name
@@ -5060,22 +5060,22 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(multiples)
                 Node(opNode)
             }
 
 
-            val inputVal = Nd4j.zeros(2,2).addi(0.5)
+            var inputvar = Nd4j.zeros(2,2).addi(0.5)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
-            val multiplesVal = Nd4j.zeros(2).addi(2)
+            var multiplesvar = Nd4j.zeros(2).addi(2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
-            val inputs = mapOf("input" to inputVal,"multiples" to multiplesVal)
+            var inputs = mapOf("input" to inputVal,"multiples" to multiplesVal)
 
 
             return listOf(
@@ -5089,7 +5089,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "leakyrelu" -> {
-            val a = NodeDef {
+            var a = NodeDef {
                 name = "a"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -5098,7 +5098,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("a")
 
                 op = tensorflowOpDef.name
@@ -5113,18 +5113,18 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(a)
                 Node(opNode)
             }
 
 
-            val aVal = Nd4j.zeros(2,2).addi(0.5)
+            var avar = Nd4j.zeros(2,2).addi(0.5)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
 
-            val inputs = mapOf("a" to aVal)
+            var inputs = mapOf("a" to aVal)
 
 
             return listOf(
@@ -5137,7 +5137,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             )
         }
         "betainc" -> {
-            val a = NodeDef {
+            var a = NodeDef {
                 name = "a"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -5145,7 +5145,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val b = NodeDef {
+            var b = NodeDef {
                 name = "b"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -5153,7 +5153,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val x = NodeDef {
+            var x = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -5161,7 +5161,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("a")
                 Input("b")
                 Input("x")
@@ -5175,7 +5175,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(a)
                 Node(b)
                 Node(x)
@@ -5183,18 +5183,18 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val aVal = Nd4j.zeros(2,2).addi(0.5)
+            var avar = Nd4j.zeros(2,2).addi(0.5)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val bVal = Nd4j.zeros(2,2).addi(0.5)
-                .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
-
-
-            val xVal = Nd4j.zeros(2,2).addi(0.5)
+            var bvar = Nd4j.zeros(2,2).addi(0.5)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
-            val inputs = mapOf("a" to aVal,"b" to bVal,"x" to xVal)
+            var xvar = Nd4j.zeros(2,2).addi(0.5)
+                .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
+
+
+            var inputs = mapOf("a" to aVal,"b" to bVal,"x" to xVal)
 
 
             return listOf(
@@ -5208,7 +5208,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
         "top_k" -> {
             if(tensorflowOpDef.name == "TopK") {
-                val input = NodeDef {
+                var input = NodeDef {
                     name = "input"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -5218,7 +5218,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("input")
                     op = tensorflowOpDef.name
                     name = "output"
@@ -5232,19 +5232,19 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(input)
                     Node(opNode)
                 }
 
 
-                val xVal = Nd4j.linspace(1, 4, 4)
+                var xvar = Nd4j.linspace(1, 4, 4)
                     .reshape(2, 2)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
 
-                val inputs = mapOf("input" to xVal)
+                var inputs = mapOf("input" to xVal)
 
 
                 return listOf(
@@ -5256,7 +5256,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 )
                 )
             } else { //TopKV2
-                val input = NodeDef {
+                var input = NodeDef {
                     name = "input"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -5265,7 +5265,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val k = NodeDef {
+                var k = NodeDef {
                     name = "k"
                     op = "Const"
                     Attribute("dtype",AttrValue {
@@ -5280,7 +5280,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("input")
                     Input("k")
                     op = tensorflowOpDef.name
@@ -5293,20 +5293,20 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(input)
                     Node(k)
                     Node(opNode)
                 }
 
 
-                val xVal = Nd4j.linspace(1, 4, 4)
+                var xvar = Nd4j.linspace(1, 4, 4)
                     .reshape(2, 2)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
 
-                val inputs = mapOf("input" to xVal)
+                var inputs = mapOf("input" to xVal)
 
 
                 return listOf(
@@ -5321,7 +5321,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         }
         "enter" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -5330,7 +5330,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -5346,17 +5346,17 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(opNode)
             }
 
 
-            val xVal = Nd4j.linspace(1, 6, 6)
+            var xvar = Nd4j.linspace(1, 6, 6)
                 .reshape(2, 3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val inputs = mapOf("input" to xVal)
+            var inputs = mapOf("input" to xVal)
 
             return listOf(
                 GraphInput(
@@ -5369,7 +5369,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "Assert" -> {
-            val condition = NodeDef {
+            var condition = NodeDef {
                 name = "condition"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -5377,7 +5377,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Const"
                 Attribute("dtype",AttrValue {
@@ -5393,7 +5393,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("condition")
                 Input("input")
                 op = tensorflowOpDef.name
@@ -5404,16 +5404,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(condition)
                 Node(input)
                 Node(opNode)
             }
 
 
-            val xVal = Nd4j.create(listOf(true,true,true,true).toBooleanArray())
+            var xvar = Nd4j.create(listOf(true,true,true,true).toBooleanArray())
 
-            val inputs = mapOf("condition" to xVal)
+            var inputs = mapOf("condition" to xVal)
 
             return listOf(
                 GraphInput(
@@ -5429,7 +5429,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "bitcast" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -5438,7 +5438,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -5450,16 +5450,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(opNode)
             }
 
 
-            val xVal = Nd4j.zeros(2,3)
+            var xvar = Nd4j.zeros(2,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
 
-            val inputs = mapOf("input" to xVal)
+            var inputs = mapOf("input" to xVal)
 
             return listOf(
                 GraphInput(
@@ -5472,7 +5472,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "exit" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -5481,7 +5481,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -5491,17 +5491,17 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(opNode)
             }
 
 
-            val xVal = Nd4j.linspace(1, 6, 6)
+            var xvar = Nd4j.linspace(1, 6, 6)
                 .reshape(2, 3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val inputs = mapOf("input" to xVal)
+            var inputs = mapOf("input" to xVal)
 
             return listOf(
                 GraphInput(
@@ -5514,7 +5514,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "expand_dims" -> {
-            val input = NodeDef {
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -5522,7 +5522,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val n = NodeDef {
+            var n = NodeDef {
                 name = "dimension"
                 op = "Const"
                 Attribute("dtype",AttrValue {
@@ -5537,7 +5537,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("dimension")
                 op = tensorflowOpDef.name
@@ -5548,18 +5548,18 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(n)
                 Node(opNode)
             }
 
 
-            val xVal = Nd4j.linspace(1, 6, 6)
+            var xvar = Nd4j.linspace(1, 6, 6)
                 .reshape(2, 3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-            val inputs = mapOf("input" to xVal)
+            var inputs = mapOf("input" to xVal)
 
             return listOf(
                 GraphInput(
@@ -5573,7 +5573,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         "non_max_suppression","non_max_suppression_v3" -> {
             if(inputFrameworkOpName == "NonMaxSuppression") {
-                val overlaps = NodeDef {
+                var overlaps = NodeDef {
                     name = "overlaps"
                     op = "Placeholder"
                     Attribute("dtype",AttrValue {
@@ -5581,7 +5581,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val scores = NodeDef {
+                var scores = NodeDef {
                     name = "scores"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -5589,7 +5589,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val maxOutputSize = NodeDef {
+                var maxOutputSize = NodeDef {
                     name = "maxOutputSize"
                     op = "Const"
                     Attribute("dtype", AttrValue {
@@ -5606,7 +5606,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("overlaps")
                     Input("scores")
                     Input("maxOutputSize")
@@ -5617,7 +5617,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(overlaps)
                     Node(scores)
                     Node(maxOutputSize)
@@ -5626,17 +5626,17 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val overlapsVal = Nd4j.create(arrayOf(
+                var overlapsvar = Nd4j.create(arrayOf(
                     floatArrayOf(0f,0f,1f,1f),
                     floatArrayOf(0f,0.1f,1f,1.1f),
                     floatArrayOf(0f,-0.1f,1f,0.9f),
                     floatArrayOf(0f,10f,1f,11f)
                 )).castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val scoresVal = Nd4j.create(listOf(0.9f,0.75f,0.6f,0.95f).toFloatArray())
+                var scoresvar = Nd4j.create(listOf(0.9f,0.75f,0.6f,0.95f).toFloatArray())
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val inputs = mapOf("overlaps" to overlapsVal,"scores" to scoresVal)
+                var inputs = mapOf("overlaps" to overlapsVal,"scores" to scoresVal)
 
                 return listOf(
                     GraphInput(
@@ -5649,7 +5649,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 )
             }
             else if(inputFrameworkOpName == "NonMaxSuppressionV2") {
-                val overlaps = NodeDef {
+                var overlaps = NodeDef {
                     name = "overlaps"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -5657,7 +5657,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val scores = NodeDef {
+                var scores = NodeDef {
                     name = "scores"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -5665,7 +5665,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val maxOutputSize = NodeDef {
+                var maxOutputSize = NodeDef {
                     name = "maxOutputSize"
                     op = "Const"
                     Attribute("dtype",AttrValue {
@@ -5680,7 +5680,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val iouThreshold = NodeDef {
+                var iouThreshold = NodeDef {
                     name = "iouThreshold"
                     op = "Const"
                     Attribute("dtype", AttrValue {
@@ -5697,7 +5697,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("overlaps")
                     Input("scores")
                     Input("maxOutputSize")
@@ -5707,7 +5707,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
                 }
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(overlaps)
                     Node(scores)
                     Node(iouThreshold)
@@ -5717,17 +5717,17 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val overlapsVal = Nd4j.create(arrayOf(
+                var overlapsvar = Nd4j.create(arrayOf(
                     floatArrayOf(0f,0f,1f,1f),
                     floatArrayOf(0f,0.1f,1f,1.1f),
                     floatArrayOf(0f,-0.1f,1f,0.9f),
                     floatArrayOf(0f,10f,1f,11f)
                 )).castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val scoresVal = Nd4j.create(listOf(0.9f,0.75f,0.6f,0.95f).toFloatArray())
+                var scoresvar = Nd4j.create(listOf(0.9f,0.75f,0.6f,0.95f).toFloatArray())
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val inputs = mapOf("overlaps" to overlapsVal,"scores" to scoresVal)
+                var inputs = mapOf("overlaps" to overlapsVal,"scores" to scoresVal)
 
                 return listOf(
                     GraphInput(
@@ -5740,7 +5740,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 )
             } else {
                 //V3 and later
-                val overlaps = NodeDef {
+                var overlaps = NodeDef {
                     name = "overlaps"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -5748,7 +5748,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val scores = NodeDef {
+                var scores = NodeDef {
                     name = "scores"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -5756,7 +5756,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val maxOutputSize = NodeDef {
+                var maxOutputSize = NodeDef {
                     name = "maxOutputSize"
                     op = "Const"
                     Attribute("dtype", AttrValue {
@@ -5771,7 +5771,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val overlapThreshold = NodeDef {
+                var overlapThreshold = NodeDef {
                     name = "iouThreshold"
                     op = "Const"
                     Attribute("dtype", AttrValue {
@@ -5786,7 +5786,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val scoreThreshold = NodeDef {
+                var scoreThreshold = NodeDef {
                     name = "scoreThreshold"
                     op = "Const"
                     Attribute("dtype", AttrValue {
@@ -5801,7 +5801,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("overlaps")
                     Input("scores")
                     Input("maxOutputSize")
@@ -5812,7 +5812,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
                 }
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(overlaps)
                     Node(scores)
                     Node(scoreThreshold)
@@ -5823,17 +5823,17 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val overlapsVal = Nd4j.create(arrayOf(
+                var overlapsvar = Nd4j.create(arrayOf(
                     floatArrayOf(0f,0f,1f,1f),
                     floatArrayOf(0f,0.1f,1f,1.1f),
                     floatArrayOf(0f,-0.1f,1f,0.9f),
                     floatArrayOf(0f,10f,1f,11f)
                 )).castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val scoresVal = Nd4j.create(listOf(0.9f,0.75f,0.6f,0.95f).toFloatArray())
+                var scoresvar = Nd4j.create(listOf(0.9f,0.75f,0.6f,0.95f).toFloatArray())
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val inputs = mapOf("overlaps" to overlapsVal,"scores" to scoresVal)
+                var inputs = mapOf("overlaps" to overlapsVal,"scores" to scoresVal)
 
                 return listOf(
                     GraphInput(
@@ -5848,7 +5848,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "non_max_suppression_overlaps" -> {
-            val overlaps = NodeDef {
+            var overlaps = NodeDef {
                 name = "overlaps"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -5856,7 +5856,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val scores = NodeDef {
+            var scores = NodeDef {
                 name = "scores"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -5864,7 +5864,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val maxOutputSize = NodeDef {
+            var maxOutputSize = NodeDef {
                 name = "maxOutputSize"
                 op = "Const"
                 Attribute("dtype",AttrValue {
@@ -5879,7 +5879,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val overlapThreshold = NodeDef {
+            var overlapThreshold = NodeDef {
                 name = "overlapThreshold"
                 op = "Const"
                 Attribute("dtype",AttrValue {
@@ -5894,7 +5894,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val scoreThreshold = NodeDef {
+            var scoreThreshold = NodeDef {
                 name = "scoreThreshold"
                 op = "Const"
                 Attribute("dtype",AttrValue {
@@ -5909,7 +5909,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("overlaps")
                 Input("scores")
                 Input("maxOutputSize")
@@ -5920,7 +5920,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(overlaps)
                 Node(scores)
                 Node(scoreThreshold)
@@ -5931,17 +5931,17 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val overlapsVal = Nd4j.create(arrayOf(
+            var overlapsvar = Nd4j.create(arrayOf(
                 floatArrayOf(0f,0f,1f,1f),
                 floatArrayOf(0f,0.1f,1f,1.1f),
                 floatArrayOf(0f,-0.1f,1f,0.9f),
                 floatArrayOf(0f,10f,1f,11f)
             )).castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val scoresVal = Nd4j.create(listOf(0.9f,0.75f,0.6f,0.95f).toFloatArray())
+            var scoresvar = Nd4j.create(listOf(0.9f,0.75f,0.6f,0.95f).toFloatArray())
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val inputs = mapOf("overlaps" to overlapsVal,"scores" to scoresVal)
+            var inputs = mapOf("overlaps" to overlapsVal,"scores" to scoresVal)
 
             return listOf(
                 GraphInput(
@@ -5956,9 +5956,9 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "nth_element" -> {
-            val ret = ArrayList<GraphInput>()
+            var ret = ArrayList<GraphInput>()
             listOf(true,false).forEach { reverse ->
-                val input = NodeDef {
+                var input = NodeDef {
                     name = "input"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -5966,7 +5966,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val n = NodeDef {
+                var n = NodeDef {
                     name = "n"
                     op = "Const"
                     Attribute("dtype",AttrValue {
@@ -5981,7 +5981,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("input")
                     Input("n")
                     op = tensorflowOpDef.name
@@ -5997,18 +5997,18 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
                 }
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(input)
                     Node(n)
                     Node(opNode)
                 }
 
 
-                val xVal = Nd4j.linspace(1, 6, 6)
+                var xvar = Nd4j.linspace(1, 6, 6)
                     .reshape(2, 3)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-                val inputs = mapOf("input" to xVal)
+                var inputs = mapOf("input" to xVal)
 
                 ret.add(
                     GraphInput(
@@ -6025,7 +6025,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "cholesky" -> {
-            val tensorNode = NodeDef {
+            var tensorNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -6034,7 +6034,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -6044,17 +6044,17 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(tensorNode)
                 Node(opNode)
             }
 
 
-            val xVal = Nd4j.create(floatArrayOf(4f,12f,-16f, 12f ,37f,-43f, -16f, -43f, 98f))
+            var xvar = Nd4j.create(floatArrayOf(4f,12f,-16f, 12f ,37f,-43f, -16f, -43f, 98f))
                 .reshape(3,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("x" to xVal)
+            var inputs = mapOf("x" to xVal)
 
 
             return listOf(
@@ -6069,8 +6069,8 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "matrix_diag_part"  -> {
-            val retSolve = ArrayList<GraphInput>()
-            val input = NodeDef {
+            var retSolve = ArrayList<GraphInput>()
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -6081,7 +6081,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -6092,18 +6092,18 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(opNode)
             }
 
 
-            val inputVal = Nd4j.linspace(1, 4, 4)
+            var inputvar = Nd4j.linspace(1, 4, 4)
                 .reshape(2, 2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
 
-            val inputs = mapOf("input" to inputVal)
+            var inputs = mapOf("input" to inputVal)
 
 
             retSolve.add(
@@ -6122,8 +6122,8 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "matrix_set_diag","matrix_diag_part"  -> {
-            val retSolve = ArrayList<GraphInput>()
-            val input = NodeDef {
+            var retSolve = ArrayList<GraphInput>()
+            var input = NodeDef {
                 name = "input"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -6131,7 +6131,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val diagonal = NodeDef {
+            var diagonal = NodeDef {
                 name = "diagonal"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -6141,7 +6141,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("input")
                 Input("diagonal")
                 op = tensorflowOpDef.name
@@ -6153,21 +6153,21 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(input)
                 Node(diagonal)
                 Node(opNode)
             }
 
 
-            val inputVal = Nd4j.linspace(1, 4, 4)
+            var inputvar = Nd4j.linspace(1, 4, 4)
                 .reshape(2, 2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val diagonalVal = Nd4j.zeros(2).addi(1)
+            var diagonalvar = Nd4j.zeros(2).addi(1)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("input" to inputVal,"diagonal" to diagonalVal)
+            var inputs = mapOf("input" to inputVal,"diagonal" to diagonalVal)
 
 
             retSolve.add(
@@ -6185,9 +6185,9 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "solve","triangular_solve" -> {
-            val retSolve = ArrayList<GraphInput>()
+            var retSolve = ArrayList<GraphInput>()
             listOf(false,true).forEach { useAdjoint ->
-                val a = NodeDef {
+                var a = NodeDef {
                     name = "a"
                     op = "Placeholder"
                     Attribute("dtype",AttrValue {
@@ -6195,7 +6195,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val bNode = NodeDef {
+                var bNode = NodeDef {
                     name = "b"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -6205,7 +6205,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("a")
                     Input("b")
                     op = tensorflowOpDef.name
@@ -6219,22 +6219,22 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
                 }
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(a)
                     Node(bNode)
                     Node(opNode)
                 }
 
 
-                val aVal = Nd4j.linspace(1, 4, 4)
+                var avar = Nd4j.linspace(1, 4, 4)
                     .reshape(2, 2)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-                val bVal = Nd4j.linspace(1, 4, 4)
+                var bvar = Nd4j.linspace(1, 4, 4)
                     .reshape(2, 2)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-                val inputs = mapOf("a" to aVal,"b" to bVal)
+                var inputs = mapOf("a" to aVal,"b" to bVal)
 
 
                 retSolve.add(
@@ -6252,7 +6252,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "matrix_determinant","log_matrix_determinant" -> {
-            val tensorNode = NodeDef {
+            var tensorNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -6261,7 +6261,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -6271,7 +6271,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val finalResult = NodeDef {
+            var finalResult = NodeDef {
                 Input("output:1")
                 op = "Identity"
                 name = "finalResult"
@@ -6282,18 +6282,18 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             if(nd4jOpName == "log_matrix_determinant") {
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(tensorNode)
                     Node(opNode)
                     Node(finalResult)
                 }
 
 
-                val xVal = Nd4j.linspace(1, 4, 4)
+                var xvar = Nd4j.linspace(1, 4, 4)
                     .reshape(2, 2)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-                val inputs = mapOf("x" to xVal)
+                var inputs = mapOf("x" to xVal)
 
 
                 return listOf(
@@ -6306,17 +6306,17 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 )
 
             } else {
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(tensorNode)
                     Node(opNode)
                 }
 
 
-                val xVal = Nd4j.linspace(1, 4, 4)
+                var xvar = Nd4j.linspace(1, 4, 4)
                     .reshape(2, 2)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-                val inputs = mapOf("x" to xVal)
+                var inputs = mapOf("x" to xVal)
 
 
                 return listOf(
@@ -6332,7 +6332,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "lu" -> {
-            val tensorNode = NodeDef {
+            var tensorNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -6341,7 +6341,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -6351,17 +6351,17 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(tensorNode)
                 Node(opNode)
             }
 
 
-            val xVal = Nd4j.linspace(1, 4, 4)
+            var xvar = Nd4j.linspace(1, 4, 4)
                 .reshape(2, 2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("x" to xVal)
+            var inputs = mapOf("x" to xVal)
 
 
             return listOf(
@@ -6375,7 +6375,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "matrix_inverse" -> {
-            val tensorNode = NodeDef {
+            var tensorNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -6384,7 +6384,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -6394,17 +6394,17 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(tensorNode)
                 Node(opNode)
             }
 
 
-            val xVal = Nd4j.linspace(1, 4, 4)
+            var xvar = Nd4j.linspace(1, 4, 4)
                 .reshape(2, 2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("x" to xVal)
+            var inputs = mapOf("x" to xVal)
 
 
             return listOf(
@@ -6419,7 +6419,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         "in_top_k" -> {
             if(tensorflowOpDef.name == "InTopK") {
-                val tensorNode = NodeDef {
+                var tensorNode = NodeDef {
                     name = "x"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -6427,7 +6427,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val predictions = NodeDef {
+                var predictions = NodeDef {
                     name = "predictions"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -6435,7 +6435,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("x")
                     Input("predictions")
                     op = tensorflowOpDef.name
@@ -6450,23 +6450,23 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(tensorNode)
                     Node(predictions)
                     Node(opNode)
                 }
 
 
-                val xVal = Nd4j.linspace(1, 4, 4)
+                var xvar = Nd4j.linspace(1, 4, 4)
                     .reshape(2, 2)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val predictionsArr = Nd4j.linspace(1, 2, 2)
+                var predictionsArr = Nd4j.linspace(1, 2, 2)
                     .reshape(2)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
-                val inputs = mapOf("x" to xVal,"predictions" to predictionsArr)
+                var inputs = mapOf("x" to xVal,"predictions" to predictionsArr)
 
 
                 return listOf(
@@ -6478,7 +6478,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 )
                 )
             } else {
-                val tensorNode = NodeDef {
+                var tensorNode = NodeDef {
                     name = "x"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -6486,7 +6486,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val predictions = NodeDef {
+                var predictions = NodeDef {
                     name = "predictions"
                     op = "Placeholder"
                     Attribute("dtype",AttrValue {
@@ -6494,7 +6494,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val k = NodeDef {
+                var k = NodeDef {
                     name = "k"
                     op = "Const"
                     Attribute("dtype",AttrValue {
@@ -6509,7 +6509,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("x")
                     Input("predictions")
                     Input("k")
@@ -6522,7 +6522,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(tensorNode)
                     Node(predictions)
                     Node(k)
@@ -6530,16 +6530,16 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val xVal = Nd4j.linspace(1, 4, 4)
+                var xvar = Nd4j.linspace(1, 4, 4)
                     .reshape(2, 2)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-                val predictionsArr = Nd4j.linspace(1, 2, 2)
+                var predictionsArr = Nd4j.linspace(1, 2, 2)
                     .reshape(2)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
-                val inputs = mapOf("x" to xVal,"predictions" to predictionsArr)
+                var inputs = mapOf("x" to xVal,"predictions" to predictionsArr)
 
 
                 return listOf(
@@ -6558,7 +6558,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "onehot" -> {
-            val indices = NodeDef {
+            var indices = NodeDef {
                 name = "indices"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -6566,7 +6566,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val depth = NodeDef {
+            var depth = NodeDef {
                 name = "depth"
                 op = "Const"
                 Attribute("dtype",AttrValue {
@@ -6581,7 +6581,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val onValue = NodeDef {
+            var onValue = NodeDef {
                 name = "on"
                 op = "Const"
                 Attribute("dtype",AttrValue {
@@ -6597,7 +6597,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val offValue = NodeDef {
+            var offValue = NodeDef {
                 name = "off"
                 op = "Const"
                 Attribute("dtype",AttrValue {
@@ -6613,7 +6613,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("indices")
                 Input("depth")
                 Input("on")
@@ -6634,7 +6634,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(indices)
                 Node(depth)
                 Node(onValue)
@@ -6643,9 +6643,9 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val indicesVal = Nd4j.linspace(1, 4, 4)
+            var indicesvar = Nd4j.linspace(1, 4, 4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.INT64)
-            val inputs = mapOf("indices" to indicesVal)
+            var inputs = mapOf("indices" to indicesVal)
 
 
             return listOf(
@@ -6659,7 +6659,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "cross" -> {
-            val a = NodeDef {
+            var a = NodeDef {
                 name = "a"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -6667,7 +6667,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val b = NodeDef {
+            var b = NodeDef {
                 name = "b"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -6675,7 +6675,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("a")
                 Input("b")
                 op = tensorflowOpDef.name
@@ -6688,23 +6688,23 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(a)
                 Node(b)
                 Node(opNode)
             }
 
 
-            val aVal = Nd4j.linspace(1, 27, 27)
+            var avar = Nd4j.linspace(1, 27, 27)
                 .reshape(3,3,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
-            val bVal = Nd4j.linspace(1, 27, 27)
+            var bvar = Nd4j.linspace(1, 27, 27)
                 .reshape(3,3,3)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
 
 
-            val inputs = mapOf("a" to aVal,"b" to bVal)
+            var inputs = mapOf("a" to aVal,"b" to bVal)
 
 
             return listOf(
@@ -6718,7 +6718,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "transpose" ->  {
-            val tensorNode = NodeDef {
+            var tensorNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -6726,7 +6726,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val tensorNode2 = NodeDef {
+            var tensorNode2 = NodeDef {
                 op = "Const"
                 name = "perm"
                 Attribute("value",AttrValue {
@@ -6741,7 +6741,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 Input("perm")
                 op = tensorflowOpDef.name
@@ -6756,20 +6756,20 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(tensorNode)
                 Node(tensorNode2)
                 Node(opNode)
             }
 
 
-            val xVal = Nd4j.linspace(1, 4, 4)
+            var xvar = Nd4j.linspace(1, 4, 4)
                 .reshape(2, 2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
 
 
-            val inputs = mapOf("x" to xVal)
+            var inputs = mapOf("x" to xVal)
 
 
             return listOf(
@@ -6783,7 +6783,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         }
         "relu", "relu6" -> {
-            val tensorNode = NodeDef {
+            var tensorNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype", AttrValue {
@@ -6792,7 +6792,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -6801,11 +6801,11 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val xVal = Nd4j.linspace(1, 4, 4)
+            var xvar = Nd4j.linspace(1, 4, 4)
                 .reshape(2, 2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("x" to xVal)
+            var inputs = mapOf("x" to xVal)
 
             return listOf(
                 GraphInput(
@@ -6821,7 +6821,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "depth_to_space","space_to_depth" -> {
-            val tensorNode = NodeDef {
+            var tensorNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype", AttrValue {
@@ -6830,7 +6830,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -6845,11 +6845,11 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val xVal = Nd4j.linspace(1, 256, 256)
+            var xvar = Nd4j.linspace(1, 256, 256)
                 .reshape(4, 4,4,4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("x" to xVal)
+            var inputs = mapOf("x" to xVal)
 
             return listOf(
                 GraphInput(
@@ -6865,7 +6865,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "softmax","digamma","diag","diag_part","lgamma" -> {
-            val tensorNode = NodeDef {
+            var tensorNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype", AttrValue {
@@ -6874,7 +6874,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -6883,11 +6883,11 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val xVal = Nd4j.linspace(1, 4, 4)
+            var xvar = Nd4j.linspace(1, 4, 4)
                 .reshape(2, 2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("x" to xVal)
+            var inputs = mapOf("x" to xVal)
 
             return listOf(
                 GraphInput(
@@ -6903,11 +6903,11 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "cumsum","cumprod" -> {
-            val ret = ArrayList<GraphInput>()
+            var ret = ArrayList<GraphInput>()
             listOf(false,true).forEach { reverse ->
                 listOf(false,true).forEach { exclusive ->
-                    val inputNames = listOf("x")
-                    val tensorNode = NodeDef {
+                    var inputNames = listOf("x")
+                    var tensorNode = NodeDef {
                         name = "x"
                         op = "Placeholder"
                         Attribute("dtype",AttrValue {
@@ -6915,8 +6915,8 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                         })
                     }
 
-                    val dimensions = listOf(1)
-                    val tensorNode2 = NodeDef {
+                    var dimensions = listOf(1)
+                    var tensorNode2 = NodeDef {
                         op = "Const"
                         name = "dimensions"
                         Attribute("value",AttrValue {
@@ -6933,7 +6933,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                         })
                     }
 
-                    val opNode = NodeDef {
+                    var opNode = NodeDef {
                         Input("x")
                         Input("dimensions")
                         op = tensorflowOpDef.name
@@ -6952,18 +6952,18 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                    val graphDef = GraphDef {
+                    var graphDef = GraphDef {
                         Node(tensorNode)
                         Node(tensorNode2)
                         Node(opNode)
                     }
 
-                    val xVal = Nd4j.linspace(1, 4, 4)
+                    var xvar = Nd4j.linspace(1, 4, 4)
                         .reshape(2, 2)
                         .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
 
-                    val inputs = mapOf("x" to xVal)
+                    var inputs = mapOf("x" to xVal)
                     ret.add(
                         GraphInput(
                         graphDef =graphDef, inputNames = inputNames,
@@ -6980,7 +6980,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "Assert" -> {
-            val tensorNode = NodeDef {
+            var tensorNode = NodeDef {
                 name = "condition"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -6988,7 +6988,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val tensorNode2 = NodeDef {
+            var tensorNode2 = NodeDef {
                 op = "Placeholder"
                 name = "data"
                 Attribute("dtype",AttrValue {
@@ -6997,7 +6997,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             println("Running op def for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("condition")
                 Input("data")
                 op = tensorflowOpDef.name
@@ -7009,13 +7009,13 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(tensorNode)
                 Node(opNode)
                 Node(tensorNode2)
             }
 
-            val inputs = mapOf("data" to Nd4j.linspace(1,4,4).castTo(
+            var inputs = mapOf("data" to Nd4j.linspace(1,4,4).castTo(
                 org.nd4j.linalg.api.buffer.DataType.DOUBLE
             ),"condition" to Nd4j.ones(2).addi(1).castTo(org.nd4j.linalg.api.buffer.DataType.BOOL))
             return listOf(
@@ -7029,7 +7029,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "Where" -> {
-            val tensorNode = NodeDef {
+            var tensorNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -7039,7 +7039,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
             println("Running op def for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 op = tensorflowOpDef.name
                 name = "output"
@@ -7050,12 +7050,12 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(tensorNode)
                 Node(opNode)
             }
 
-            val inputs = mapOf("x" to Nd4j.linspace(1,4,4).castTo(
+            var inputs = mapOf("x" to Nd4j.linspace(1,4,4).castTo(
                 org.nd4j.linalg.api.buffer.DataType.DOUBLE
             ))
             return listOf(
@@ -7070,7 +7070,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         "boolean_or" -> {
             println("Running op def for op ${tensorflowOpDef.name}")
-            val inputNode = NodeDef {
+            var inputNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -7079,7 +7079,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val secondNode = NodeDef {
+            var secondNode = NodeDef {
                 name = "y"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -7087,7 +7087,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 Input("y")
                 name = "and"
@@ -7095,14 +7095,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val inputs = mapOf("x" to Nd4j.ones(2,2).castTo(
+            var inputs = mapOf("x" to Nd4j.ones(2,2).castTo(
                 org.nd4j.linalg.api.buffer.DataType.BOOL
             ), "y" to Nd4j.zeros(2,2).castTo(
                 org.nd4j.linalg.api.buffer.DataType.BOOL
             ))
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(inputNode)
                 Node(secondNode)
                 Node(opNode)
@@ -7119,7 +7119,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         "boolean_and" -> {
             println("Running op def for op ${tensorflowOpDef.name}")
-            val inputNode = NodeDef {
+            var inputNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -7128,7 +7128,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val secondNode = NodeDef {
+            var secondNode = NodeDef {
                 name = "y"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -7136,7 +7136,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 Input("y")
                 name = "and"
@@ -7144,14 +7144,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val inputs = mapOf("x" to Nd4j.ones(2,2).castTo(
+            var inputs = mapOf("x" to Nd4j.ones(2,2).castTo(
                 org.nd4j.linalg.api.buffer.DataType.BOOL
             ), "y" to Nd4j.zeros(2,2).castTo(
                 org.nd4j.linalg.api.buffer.DataType.BOOL
             ))
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(inputNode)
                 Node(secondNode)
                 Node(opNode)
@@ -7168,7 +7168,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         "igamma","igammac" -> {
             println("Running op def for op ${tensorflowOpDef.name}")
-            val a = NodeDef {
+            var a = NodeDef {
                 name = "a"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -7176,7 +7176,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val x = NodeDef {
+            var x = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -7186,7 +7186,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("a")
                 Input("x")
                 name = "igamma"
@@ -7197,13 +7197,13 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val inputs = mapOf("a" to Nd4j.ones(2,2).castTo(
+            var inputs = mapOf("a" to Nd4j.ones(2,2).castTo(
                 org.nd4j.linalg.api.buffer.DataType.FLOAT
             ),"x" to Nd4j.ones(2,2).castTo(
                 org.nd4j.linalg.api.buffer.DataType.FLOAT
             ))
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(a)
                 Node(x)
                 Node(opNode)
@@ -7219,7 +7219,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         "boolean_not" -> {
             println("Running op def for op ${tensorflowOpDef.name}")
-            val inputNode = NodeDef {
+            var inputNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -7230,18 +7230,18 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 name = "not"
                 op = tensorflowOpDef.name
             }
 
 
-            val inputs = mapOf("x" to Nd4j.ones(2,2).castTo(
+            var inputs = mapOf("x" to Nd4j.ones(2,2).castTo(
                 org.nd4j.linalg.api.buffer.DataType.BOOL
             ))
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(inputNode)
                 Node(opNode)
             }
@@ -7258,7 +7258,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         "cast" -> {
             println("Running op def for op ${tensorflowOpDef.name}")
-            val inputNode = NodeDef {
+            var inputNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -7266,7 +7266,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 name = "output"
                 op = tensorflowOpDef.name
@@ -7280,12 +7280,12 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(inputNode)
                 Node(opNode)
             }
 
-            val inputs = mapOf("x" to Nd4j.ones(2,2).castTo(
+            var inputs = mapOf("x" to Nd4j.ones(2,2).castTo(
                 org.nd4j.linalg.api.buffer.DataType.FLOAT
             ))
 
@@ -7300,14 +7300,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         "noop" -> {
             println("Running op def for op ${tensorflowOpDef.name}")
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 name = "noop"
                 op = tensorflowOpDef.name
             }
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(opNode)
             }
 
@@ -7322,7 +7322,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         "While" -> {
             println("Running op def for op ${tensorflowOpDef.name}")
-            val tensorNode = NodeDef {
+            var tensorNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -7331,7 +7331,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 name = "while"
                 op = tensorflowOpDef.name
@@ -7339,12 +7339,12 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(tensorNode)
                 Node(opNode)
             }
 
-            val inputs = mapOf("x" to Nd4j.scalar(1.0))
+            var inputs = mapOf("x" to Nd4j.scalar(1.0))
 
             return listOf(
                 GraphInput(graphDef = graphDef,inputNames = listOf("x"),
@@ -7356,7 +7356,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         "unique_with_counts","unique" -> {
             println("Running op def for op ${tensorflowOpDef.name}")
-            val tensorNode = NodeDef {
+            var tensorNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -7365,7 +7365,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
             if(tensorflowOpDef.name == "UniqueWithCountsV2" || tensorflowOpDef.name == "UniqueV2") {
-                val axis = NodeDef {
+                var axis = NodeDef {
                     name = "axis"
                     op = "Placeholder"
                     Attribute("dtype",AttrValue {
@@ -7374,7 +7374,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("x")
                     Input("axis")
                     name = "output"
@@ -7386,13 +7386,13 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(tensorNode)
                     Node(axis)
                     Node(opNode)
                 }
 
-                val inputs = mapOf("x" to Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE),
+                var inputs = mapOf("x" to Nd4j.linspace(1,4,4).reshape(2,2).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE),
                     "axis" to Nd4j.scalar(1).reshape(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT64))
 
                 return listOf(
@@ -7403,7 +7403,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 )
             }
             else {
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("x")
                     name = "output"
                     op = tensorflowOpDef.name
@@ -7414,12 +7414,12 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(tensorNode)
                     Node(opNode)
                 }
 
-                val inputs = mapOf("x" to Nd4j.linspace(1,4,4).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE))
+                var inputs = mapOf("x" to Nd4j.linspace(1,4,4).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE))
 
                 return listOf(
                     GraphInput(graphDef = graphDef,inputNames = listOf("x"),
@@ -7434,7 +7434,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
         "pad" -> {
             if(tensorflowOpDef.name == "Pad") {
-                val tensorNode = NodeDef {
+                var tensorNode = NodeDef {
                     name = "x"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -7442,7 +7442,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val tensorNode2 = NodeDef {
+                var tensorNode2 = NodeDef {
                     op = "Placeholder"
                     name = "paddings"
                     Attribute("dtype", AttrValue {
@@ -7450,7 +7450,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("x")
                     Input("paddings")
                     op = tensorflowOpDef.name
@@ -7465,13 +7465,13 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(tensorNode)
                     Node(opNode)
                     Node(tensorNode2)
                 }
 
-                val inputs = mapOf("x" to Nd4j.linspace(1,4,4).castTo(
+                var inputs = mapOf("x" to Nd4j.linspace(1,4,4).castTo(
                     org.nd4j.linalg.api.buffer.DataType.DOUBLE
                 ),"paddings" to Nd4j.ones(1,2).addi(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT32))
                 return listOf(
@@ -7480,7 +7480,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     dynamicArrays = inputs)
                 )
             } else if(tensorflowOpDef.name == "PadV2"){
-                val tensorNode = NodeDef {
+                var tensorNode = NodeDef {
                     name = "x"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -7488,7 +7488,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val tensorNode2 = NodeDef {
+                var tensorNode2 = NodeDef {
                     op = "Placeholder"
                     name = "paddings"
                     Attribute("dtype",AttrValue {
@@ -7496,7 +7496,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val constantValues = NodeDef {
+                var constantValues = NodeDef {
                     op = "Const"
                     name = "constant_values"
                     Attribute("value", AttrValue {
@@ -7513,7 +7513,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("x")
                     Input("paddings")
                     Input("constant_values")
@@ -7529,7 +7529,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(tensorNode)
                     Node(opNode)
                     Node(constantValues)
@@ -7537,7 +7537,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
                 }
 
-                val inputs = mapOf("x" to Nd4j.linspace(1,4,4).castTo(
+                var inputs = mapOf("x" to Nd4j.linspace(1,4,4).castTo(
                     org.nd4j.linalg.api.buffer.DataType.DOUBLE
                 ),"paddings" to Nd4j.ones(1,2).addi(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT32))
                 return listOf(
@@ -7554,7 +7554,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "reshape" -> {
-            val tensorNode = NodeDef {
+            var tensorNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -7562,7 +7562,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val tensorNode2 = NodeDef {
+            var tensorNode2 = NodeDef {
                 op = "Placeholder"
                 name = "shape"
                 Attribute("dtype",AttrValue {
@@ -7570,7 +7570,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 Input("shape")
                 op = tensorflowOpDef.name
@@ -7582,13 +7582,13 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(tensorNode)
                 Node(opNode)
                 Node(tensorNode2)
             }
 
-            val inputs = mapOf("x" to Nd4j.linspace(1,4,4).castTo(
+            var inputs = mapOf("x" to Nd4j.linspace(1,4,4).castTo(
                 org.nd4j.linalg.api.buffer.DataType.DOUBLE
             ),"shape" to Nd4j.ones(2).addi(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT32))
             return listOf(
@@ -7599,7 +7599,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "reduce_logsumexp" -> {
-            val tensorNode = NodeDef {
+            var tensorNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -7607,7 +7607,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 Input("dimensions")
                 op = tensorflowOpDef.name
@@ -7623,8 +7623,8 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val dimensions = listOf(0)
-            val tensorNode2 = NodeDef {
+            var dimensions = listOf(0)
+            var tensorNode2 = NodeDef {
                 op = "Const"
                 name = "dimensions"
                 Attribute("value",AttrValue {
@@ -7641,18 +7641,18 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(tensorNode)
                 Node(tensorNode2)
                 Node(opNode)
             }
 
 
-            val xVal = Nd4j.linspace(1, 4, 4)
+            var xvar = Nd4j.linspace(1, 4, 4)
                 .reshape(2, 2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("x" to xVal)
+            var inputs = mapOf("x" to xVal)
 
             return listOf(
                 GraphInput(
@@ -7665,9 +7665,9 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "argmin", "argmax" -> {
-            val ret = ArrayList<GraphInput>()
+            var ret = ArrayList<GraphInput>()
             listOf(true, false).forEach { keepDim ->
-                val tensorNode = NodeDef {
+                var tensorNode = NodeDef {
                     name = "x"
                     op = "Placeholder"
                     Attribute("dtype", AttrValue {
@@ -7675,7 +7675,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("x")
                     Input("dimensions")
                     op = tensorflowOpDef.name
@@ -7688,8 +7688,8 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val dimensions = listOf(0)
-                val tensorNode2 = NodeDef {
+                var dimensions = listOf(0)
+                var tensorNode2 = NodeDef {
                     op = "Const"
                     name = "dimensions"
                     Attribute("value", AttrValue {
@@ -7706,18 +7706,18 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(tensorNode)
                     Node(tensorNode2)
                     Node(opNode)
                 }
 
 
-                val xVal = Nd4j.linspace(1, 4, 4)
+                var xvar = Nd4j.linspace(1, 4, 4)
                     .reshape(2, 2)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-                val inputs = mapOf("x" to xVal)
+                var inputs = mapOf("x" to xVal)
 
                 ret.add(
                     GraphInput(
@@ -7733,8 +7733,8 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         }
 
         "pow" -> {
-            val ret = ArrayList<GraphInput>()
-            val tensorNode = NodeDef {
+            var ret = ArrayList<GraphInput>()
+            var tensorNode = NodeDef {
                 name = "x"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -7742,7 +7742,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val tensorNode2 = NodeDef {
+            var tensorNode2 = NodeDef {
                 op = "Const"
                 name = "y"
                 Attribute("value",AttrValue {
@@ -7759,7 +7759,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("x")
                 Input("y")
                 op = tensorflowOpDef.name
@@ -7771,18 +7771,18 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(tensorNode)
                 Node(tensorNode2)
                 Node(opNode)
             }
 
 
-            val xVal = Nd4j.linspace(1, 4, 4)
+            var xvar = Nd4j.linspace(1, 4, 4)
                 .reshape(2, 2)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
-            val inputs = mapOf("x" to xVal)
+            var inputs = mapOf("x" to xVal)
 
             ret.add(
                 GraphInput(
@@ -7801,9 +7801,9 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
         //scatter_div
         //TODO: Revisit. TF op validation seems to be different than ours.
         "scatter_add","scatter_sub","scatter_min","scatter_sub","scatter_min","scatter_mul","scatter_update","scatter_nd","scatter_nd_add","scatter_nd_sub","scatter_nd_update" -> {
-            val ret = ArrayList<GraphInput>()
+            var ret = ArrayList<GraphInput>()
             listOf(true,false).forEach { lock ->
-                val xRef = NodeDef {
+                var xRef = NodeDef {
                     name = "shape"
                     op = "Placeholder"
                     Attribute("dtype",AttrValue {
@@ -7812,7 +7812,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val tensorNode2 = NodeDef {
+                var tensorNode2 = NodeDef {
                     op = "Placeholder"
                     name = "indices"
                     Attribute("dtype", AttrValue {
@@ -7821,7 +7821,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val updates2 = NodeDef {
+                var updates2 = NodeDef {
                     op = "Placeholder"
                     name = "updates"
                     Attribute("dtype", AttrValue {
@@ -7829,7 +7829,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                     })
                 }
 
-                val opNode = NodeDef {
+                var opNode = NodeDef {
                     Input("indices")
                     Input("updates")
                     Input("shape")
@@ -7844,7 +7844,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 }
 
 
-                val graphDef = GraphDef {
+                var graphDef = GraphDef {
                     Node(xRef)
                     Node(tensorNode2)
                     Node(updates2)
@@ -7853,14 +7853,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
                 //from testScatterOpGradients.
-                val shape = Nd4j.scalar(8).reshape(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
-                val indices = Nd4j.create(floatArrayOf(4f,3f,1f,7f)).reshape(4,1)
+                var shape = Nd4j.scalar(8).reshape(1).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+                var indices = Nd4j.create(floatArrayOf(4f,3f,1f,7f)).reshape(4,1)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
-                val updates = Nd4j.linspace(1,4,4).reshape(4).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+                var updates = Nd4j.linspace(1,4,4).reshape(4).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
 
 
-                val inputs = mapOf("shape" to shape,"updates" to updates,"indices" to indices)
+                var inputs = mapOf("shape" to shape,"updates" to updates,"indices" to indices)
 
                 ret.add(
                     GraphInput(
@@ -7884,8 +7884,8 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "segment_mean", "segment_min","segment_max","segment_prod","segment_sum" -> {
-            val ret = ArrayList<GraphInput>()
-            val tensorNode = NodeDef {
+            var ret = ArrayList<GraphInput>()
+            var tensorNode = NodeDef {
                 name = "data"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -7893,7 +7893,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val segmentIds = NodeDef {
+            var segmentIds = NodeDef {
                 op = "Placeholder"
                 name = "segment_ids"
                 Attribute("dtype",AttrValue {
@@ -7902,7 +7902,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("data")
                 Input("segment_ids")
                 op = tensorflowOpDef.name
@@ -7918,20 +7918,20 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(tensorNode)
                 Node(segmentIds)
                 Node(opNode)
             }
 
 
-            val xVal = Nd4j.linspace(1, 12, 12)
+            var xvar = Nd4j.linspace(1, 12, 12)
                 .reshape(3, 4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
 
-            val indices = Nd4j.create(floatArrayOf(1.0f,2.0f,3.0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
-            val inputs = mapOf("data" to xVal,"segment_ids" to indices)
+            var indices = Nd4j.create(floatArrayOf(1.0f,2.0f,3.0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+            var inputs = mapOf("data" to xVal,"segment_ids" to indices)
 
             ret.add(
                 GraphInput(
@@ -7948,8 +7948,8 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
         "unsorted_segment_sum", "unsorted_segment_prod","unsorted_segment_min","unsorted_segment_max" -> {
-            val ret = ArrayList<GraphInput>()
-            val tensorNode = NodeDef {
+            var ret = ArrayList<GraphInput>()
+            var tensorNode = NodeDef {
                 name = "data"
                 op = "Placeholder"
                 Attribute("dtype",AttrValue {
@@ -7957,7 +7957,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val segmentIds = NodeDef {
+            var segmentIds = NodeDef {
                 op = "Placeholder"
                 name = "segment_ids"
                 Attribute("dtype",AttrValue {
@@ -7965,7 +7965,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val numSegmentsNode = NodeDef {
+            var numSegmentsNode = NodeDef {
                 op = "Const"
                 name = "num_segments"
                 Attribute("dtype",AttrValue {
@@ -7981,7 +7981,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 })
             }
 
-            val opNode = NodeDef {
+            var opNode = NodeDef {
                 Input("data")
                 Input("segment_ids")
                 Input("num_segments")
@@ -8000,7 +8000,7 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
 
 
 
-            val graphDef = GraphDef {
+            var graphDef = GraphDef {
                 Node(tensorNode)
                 Node(segmentIds)
                 Node(numSegmentsNode)
@@ -8008,14 +8008,14 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
             }
 
 
-            val xVal = Nd4j.linspace(1, 12, 12)
+            var xvar = Nd4j.linspace(1, 12, 12)
                 .reshape(3, 4)
                 .castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
 
 
-            val indices = Nd4j.create(floatArrayOf(0.0f,1.0f,0.0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
-            val numSegments = Nd4j.scalar(2).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
-            val inputs = mapOf("data" to xVal,"segment_ids" to indices,"num_segments" to numSegments)
+            var indices = Nd4j.create(floatArrayOf(0.0f,1.0f,0.0f)).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+            var numSegments = Nd4j.scalar(2).castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
+            var inputs = mapOf("data" to xVal,"segment_ids" to indices,"num_segments" to numSegments)
 
             ret.add(
                 GraphInput(

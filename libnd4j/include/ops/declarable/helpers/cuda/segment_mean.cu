@@ -50,7 +50,7 @@ static SD_KERNEL void segmentMeanLinearKernel(void* input, sd::LongType const* i
     x = reinterpret_cast<T*>(input);
     z = reinterpret_cast<T*>(output);
     //            extern __shared__ unsigned char shmem[];
-    //            val = reinterpret_cast<T*>(shmem);
+    //            var = reinterpret_cast<T*>(shmem);
     xLen = shape::length(inputShape);
     zLen = shape::length(outputShape);
 
@@ -90,7 +90,7 @@ static SD_KERNEL void unsortedSegmentMeanLinearKernel(void* input, sd::LongType 
     z = reinterpret_cast<T*>(output);
     y = reinterpret_cast<I*>(indices);
     //            extern __shared__ unsigned char shmem[];
-    //            val = reinterpret_cast<T*>(shmem);
+    //            var = reinterpret_cast<T*>(shmem);
     xLen = shape::length(inputShape);
     zLen = shape::length(outputShape);
 

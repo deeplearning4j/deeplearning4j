@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.specials;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,13 +60,13 @@ public class CudaTests extends BaseNd4jTestWithBackends {
         if (!(Nd4j.getExecutioner() instanceof GridExecutioner))
             return;
 
-        val arrayA = Nd4j.create(128, 128);
-        val arrayB = Nd4j.create(128, 128);
-        val arrayC = Nd4j.create(128, 128);
+        var arrayA = Nd4j.create(128, 128);
+        var arrayB = Nd4j.create(128, 128);
+        var arrayC = Nd4j.create(128, 128);
 
         arrayA.muli(arrayB);
 
-        val executioner = (GridExecutioner) Nd4j.getExecutioner();
+        var executioner = (GridExecutioner) Nd4j.getExecutioner();
 
         assertEquals(1, executioner.getQueueLength());
 
@@ -82,14 +82,14 @@ public class CudaTests extends BaseNd4jTestWithBackends {
         if (!(Nd4j.getExecutioner() instanceof GridExecutioner))
             return;
 
-        val exp = Nd4j.create(128, 128).assign(2.0);
+        var exp = Nd4j.create(128, 128).assign(2.0);
         Nd4j.getExecutioner().commit();
 
-        val arrayA = Nd4j.create(128, 128);
-        val arrayB = Nd4j.create(128, 128);
+        var arrayA = Nd4j.create(128, 128);
+        var arrayB = Nd4j.create(128, 128);
         arrayA.muli(arrayB);
 
-        val executioner = (GridExecutioner) Nd4j.getExecutioner();
+        var executioner = (GridExecutioner) Nd4j.getExecutioner();
 
         assertEquals(1, executioner.getQueueLength());
 

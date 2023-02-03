@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -59,7 +59,7 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
-        val inShape = input.shape();
+        var inShape = input.shape();
 
         boolean nchw = layerConf().getDataFormat() == CNN2DFormat.NCHW;
         int hIdx = nchw ? 2 : 1;
@@ -92,10 +92,10 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int wIdx = nchw ? 3 : 2;
 
         int[] padding = layerConf().getPadding();
-        val inShape = input.shape();
-        val outH = inShape[hIdx] + padding[0] + padding[1];
-        val outW = inShape[wIdx] + padding[2] + padding[3];
-        val outShape = nchw ? new long[] {inShape[0], inShape[1], outH, outW} : new long[] {inShape[0], outH, outW, inShape[3]};
+        var inShape = input.shape();
+        var outH = inShape[hIdx] + padding[0] + padding[1];
+        var outW = inShape[wIdx] + padding[2] + padding[3];
+        var outShape = nchw ? new long[] {inShape[0], inShape[1], outH, outW} : new long[] {inShape[0], outH, outW, inShape[3]};
 
         INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, input.dataType(), outShape, 'c');
 

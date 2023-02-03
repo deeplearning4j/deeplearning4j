@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.layers.samediff;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -312,7 +312,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             Map<String, long[]> paramShapes = layerConf().getLayerParams().getParamShapes();
             Map<String, SDVariable> params = new LinkedHashMap<>();
             for (String s : paramShapes.keySet()) {
-                val ps = paramShapes.get(s);
+                var ps = paramShapes.get(s);
                 SDVariable v = sameDiff.var(s, dataType, ps);
                 params.put(s, v);
             }

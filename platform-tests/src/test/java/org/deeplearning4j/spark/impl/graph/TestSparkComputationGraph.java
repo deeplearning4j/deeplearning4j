@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.spark.impl.graph;
 
-import lombok.val;
+
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -407,10 +407,10 @@ public class TestSparkComputationGraph extends BaseSparkTest {
     @Test
     public void testIssue7068() throws Exception {
 
-        val batchSize = 5;
-        val featSize = 10;
-        val labelSize = 2;
-        val random = new Random(0);
+        var batchSize = 5;
+        var featSize = 10;
+        var labelSize = 2;
+        var random = new Random(0);
 
         List<MultiDataSet> l = new ArrayList<>();
         for( int i=0; i<10; i++ ) {
@@ -422,7 +422,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         JavaRDD<MultiDataSet> rdd = sc.parallelize(l);
 
         // simple model
-        val modelConf = new NeuralNetConfiguration.Builder()
+        var modelConf = new NeuralNetConfiguration.Builder()
                 .updater(new Adam(0.01))
                 .weightInit(WeightInit.XAVIER_UNIFORM)
                 .biasInit(0)
@@ -434,14 +434,14 @@ public class TestSparkComputationGraph extends BaseSparkTest {
                 .setOutputs("output")
                 .build();
 
-        val model = new ComputationGraph(modelConf);
+        var model = new ComputationGraph(modelConf);
         model.init();
 
-        val trainingMaster =
+        var trainingMaster =
                 new ParameterAveragingTrainingMaster.Builder(batchSize)
                         .rddTrainingApproach(RDDTrainingApproach.Direct)
                         .build();
-        val sparkModel =
+        var sparkModel =
                 new SparkComputationGraph(sc, model, trainingMaster);
 
         for( int i=0; i<3; i++ ){

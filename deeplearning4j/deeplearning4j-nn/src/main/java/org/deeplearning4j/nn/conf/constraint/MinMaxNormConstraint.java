@@ -84,7 +84,7 @@ public class MinMaxNormConstraint extends BaseConstraint {
     public MinMaxNormConstraint(double min, double max, double rate, Set<String> paramNames, int... dimensions){
         super(paramNames, dimensions);
         if(rate <= 0 || rate > 1.0){
-            throw new IllegalStateException("Invalid rate: must be in interval (0,1]: got " + rate);
+            throw new IllegalStateException("Invalid rate: must be in intervar (0,1]: got " + rate);
         }
         this.min = min;
         this.max = max;

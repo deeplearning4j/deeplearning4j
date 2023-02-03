@@ -61,19 +61,19 @@ public class ApplyGradientDescent extends DynamicCustomOp {
             3) strides
          */
 
-    /*    val inputBegin = tNode.getInputs().get(1);
-        val inputEnd = tNode.getInputs().get(2);
-        val inputStrides = tNode.getInputs().get(3);
+    /*    var inputBegin = tNode.getInputs().get(1);
+        var inputEnd = tNode.getInputs().get(2);
+        var inputStrides = tNode.getInputs().get(3);
 
 
-        val iArgs = new ArrayList<Integer>();
+        var iArgs = new ArrayList<Integer>();
 
         // bit masks for this slice
-        val bm = nodeDef.getAttrOrThrow("begin_mask");
-        val xm = nodeDef.getAttrOrThrow("ellipsis_mask");
-        val em = nodeDef.getAttrOrThrow("end_mask");
-        val nm = nodeDef.getAttrOrThrow("new_axis_mask");
-        val sm = nodeDef.getAttrOrThrow("shrink_axis_mask");
+        var bm = nodeDef.getAttrOrThrow("begin_mask");
+        var xm = nodeDef.getAttrOrThrow("ellipsis_mask");
+        var em = nodeDef.getAttrOrThrow("end_mask");
+        var nm = nodeDef.getAttrOrThrow("new_axis_mask");
+        var sm = nodeDef.getAttrOrThrow("shrink_axis_mask");
 
         iArgs.add((int) bm.getI());
         iArgs.add((int) xm.getI());
@@ -85,9 +85,9 @@ public class ApplyGradientDescent extends DynamicCustomOp {
         if (inputBegin.getNode() < 0 && inputEnd.getNode() < 0 && inputStrides.getNode() < 0) {
 
             // order matters, hehe
-            val strides = graph.getVariableSpace().getVariable(tNode.getInputs().remove(3));
-            val end = graph.getVariableSpace().getVariable(tNode.getInputs().remove(2));
-            val begin = graph.getVariableSpace().getVariable(tNode.getInputs().remove(1));
+            var strides = graph.getVariableSpace().getVariable(tNode.getInputs().remove(3));
+            var end = graph.getVariableSpace().getVariable(tNode.getInputs().remove(2));
+            var begin = graph.getVariableSpace().getVariable(tNode.getInputs().remove(1));
 
             for (int e = 0; e < begin.getArray().length(); e++)
                 iArgs.add((int) begin.getArray().getInt(e));
@@ -101,7 +101,7 @@ public class ApplyGradientDescent extends DynamicCustomOp {
             // do nothing
         }
 
-        val bits = Ints.toArray(iArgs);*/
+        var bits = Ints.toArray(iArgs);*/
     }
 
 

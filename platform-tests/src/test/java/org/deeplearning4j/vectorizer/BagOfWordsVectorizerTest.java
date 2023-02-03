@@ -22,7 +22,7 @@ package org.deeplearning4j.vectorizer;
 
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.bagofwords.vectorizer.BagOfWordsVectorizer;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -65,7 +65,7 @@ public class BagOfWordsVectorizerTest extends BaseDL4JTest {
     @Test()
     @Timeout(60000L)
     public void testBagOfWordsVectorizer(@TempDir Path testDir) throws Exception {
-        val rootDir = testDir.toFile();
+        var rootDir = testDir.toFile();
         ClassPathResource resource = new ClassPathResource("rootdir/");
         resource.copyDirectory(rootDir);
 

@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.frameworkimport.tensorflow;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.*;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -136,7 +136,7 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
 
     public static Stream<Arguments> data() throws IOException {
-        val localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
+        var localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
 
         // if this variable isn't set - we're using dl4j-tests-resources
         if (localPath == null) {

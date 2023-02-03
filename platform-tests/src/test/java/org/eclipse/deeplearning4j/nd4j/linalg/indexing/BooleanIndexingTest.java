@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg.indexing;
 
-import lombok.val;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -304,7 +304,7 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
     public void testMatchConditionAllDimensions1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
 
-        int val = (int) Nd4j.getExecutioner().exec(new MatchCondition(array, Conditions.lessThan(5)))
+        int var = (int) Nd4j.getExecutioner().exec(new MatchCondition(array, Conditions.lessThan(5)))
                 .getDouble(0);
 
         assertEquals(5, val);
@@ -315,7 +315,7 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
     public void testMatchConditionAllDimensions2(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {0, 1, 2, 3, Double.NaN, 5, 6, 7, 8, 9});
 
-        int val = (int) Nd4j.getExecutioner().exec(new MatchCondition(array, Conditions.isNan()))
+        int var = (int) Nd4j.getExecutioner().exec(new MatchCondition(array, Conditions.isNan()))
                 .getDouble(0);
 
         assertEquals(1, val);
@@ -326,7 +326,7 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
     public void testMatchConditionAllDimensions3(Nd4jBackend backend) {
         INDArray array = Nd4j.create(new double[] {0, 1, 2, 3, Double.NEGATIVE_INFINITY, 5, 6, 7, 8, 9});
 
-        int val = (int) Nd4j.getExecutioner()
+        int var = (int) Nd4j.getExecutioner()
                 .exec(new MatchCondition(array, Conditions.isInfinite())).getDouble(0);
 
         assertEquals(1, val);
@@ -516,9 +516,9 @@ public class BooleanIndexingTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEpsStuff_1(Nd4jBackend backend) {
-        val dtype = Nd4j.dataType();
-        val array = Nd4j.create(new float[]{0.001f, 5e-6f, 5e-6f, 5e-6f, 5e-6f});
-        val exp = Nd4j.create(new float[]{0.001f, 1.0f, 1.0f, 1.0f, 1.0f});
+        var dtype = Nd4j.dataType();
+        var array = Nd4j.create(new float[]{0.001f, 5e-6f, 5e-6f, 5e-6f, 5e-6f});
+        var exp = Nd4j.create(new float[]{0.001f, 1.0f, 1.0f, 1.0f, 1.0f});
         BooleanIndexing.replaceWhere(array, 1.0f, Conditions.epsEquals(0));
 
         assertEquals(exp, array);

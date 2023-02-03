@@ -22,7 +22,7 @@ package org.nd4j.linalg.cpu.nativecpu.workspace;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.AllocationsTracker;
@@ -169,7 +169,7 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
         if (isDebug.get())
             log.info("Destroying workspace...");
 
-        val sizez = currentSize.getAndSet(0);
+        var sizez = currentSize.getAndSet(0);
         hostOffset.set(0);
         deviceOffset.set(0);
 

@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.params;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -55,10 +55,10 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
     public long numParams(Layer l) {
         org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf = (org.deeplearning4j.nn.conf.layers.GravesLSTM) l;
 
-        val nL = layerConf.getNOut(); //i.e., n neurons in this layer
-        val nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
+        var nL = layerConf.getNOut(); //i.e., n neurons in this layer
+        var nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
 
-        val nParams = nLast * (4 * nL) //"input" weights
+        var nParams = nLast * (4 * nL) //"input" weights
                         + nL * (4 * nL + 3) //recurrent weights
                         + 4 * nL; //bias
 
@@ -97,21 +97,21 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
                         (org.deeplearning4j.nn.conf.layers.GravesLSTM) conf.getLayer();
         double forgetGateInit = layerConf.getForgetGateBiasInit();
 
-        val nL = layerConf.getNOut(); //i.e., n neurons in this layer
-        val nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
+        var nL = layerConf.getNOut(); //i.e., n neurons in this layer
+        var nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
 
         conf.addVariable(INPUT_WEIGHT_KEY);
         conf.addVariable(RECURRENT_WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
 
-        val length = numParams(conf);
+        var length = numParams(conf);
         if (paramsView.length() != length)
             throw new IllegalStateException(
                             "Expected params view of length " + length + ", got length " + paramsView.length());
 
-        val nParamsIn = nLast * (4 * nL);
-        val nParamsRecurrent = nL * (4 * nL + 3);
-        val nBias = 4 * nL;
+        var nParamsIn = nLast * (4 * nL);
+        var nParamsRecurrent = nL * (4 * nL + 3);
+        var nBias = 4 * nL;
         INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
         INDArray inputWeightView = paramsViewReshape.get(NDArrayIndex.interval(0, nParamsIn));
         INDArray recurrentWeightView = paramsViewReshape.get(
@@ -120,10 +120,10 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
                         NDArrayIndex.interval(nParamsIn + nParamsRecurrent, nParamsIn + nParamsRecurrent + nBias));
 
         if (initializeParams) {
-            val fanIn = nL;
-            val fanOut = nLast + nL;
-            val inputWShape = new long[] {nLast, 4 * nL};
-            val recurrentWShape = new long[] {nL, 4 * nL + 3};
+            var fanIn = nL;
+            var fanOut = nLast + nL;
+            var inputWShape = new long[] {nLast, 4 * nL};
+            var recurrentWShape = new long[] {nL, 4 * nL + 3};
 
             IWeightInit rwInit;
             if(layerConf.getWeightInitFnRecurrent() != null){
@@ -162,18 +162,18 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
         org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf =
                         (org.deeplearning4j.nn.conf.layers.GravesLSTM) conf.getLayer();
 
-        val nL = layerConf.getNOut(); //i.e., n neurons in this layer
-        val nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
+        var nL = layerConf.getNOut(); //i.e., n neurons in this layer
+        var nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
 
-        val length = numParams(conf);
+        var length = numParams(conf);
         if (gradientView.length() != length)
             throw new IllegalStateException(
                             "Expected gradient view of length " + length + ", got length " + gradientView.length());
 
         INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
-        val nParamsIn = nLast * (4 * nL);
-        val nParamsRecurrent = nL * (4 * nL + 3);
-        val nBias = 4 * nL;
+        var nParamsIn = nLast * (4 * nL);
+        var nParamsRecurrent = nL * (4 * nL + 3);
+        var nBias = 4 * nL;
         INDArray inputWeightGradView = gradientViewReshape.get( NDArrayIndex.interval(0, nParamsIn))
                         .reshape('f', nLast, 4 * nL);
         INDArray recurrentWeightGradView = gradientViewReshape

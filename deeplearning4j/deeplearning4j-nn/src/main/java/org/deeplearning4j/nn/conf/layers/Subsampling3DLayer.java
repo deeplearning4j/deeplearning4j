@@ -175,10 +175,10 @@ public class Subsampling3DLayer extends NoParamLayer {
         InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
         InputType.InputTypeConvolutional3D outputType =
                         (InputType.InputTypeConvolutional3D) getOutputType(-1, inputType);
-        val actElementsPerEx = outputType.arrayElementsPerExample();
+        var actElementsPerEx = outputType.arrayElementsPerExample();
 
         //During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
-        val im2colSizePerEx = c.getChannels() * outputType.getHeight() * outputType.getWidth() * outputType.getDepth()
+        var im2colSizePerEx = c.getChannels() * outputType.getHeight() * outputType.getWidth() * outputType.getDepth()
                         * kernelSize[0] * kernelSize[1];
 
         //Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass

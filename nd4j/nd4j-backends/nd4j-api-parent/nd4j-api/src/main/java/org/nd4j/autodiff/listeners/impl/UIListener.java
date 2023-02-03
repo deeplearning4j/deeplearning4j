@@ -295,10 +295,10 @@ public class UIListener extends BaseListener {
     public ListenerResponse epochEnd(SameDiff sd, At at, LossCurve lossCurve, long epochTimeMillis) {
 
         //If any training evaluation, report it here:
-        if(epochTrainEval != null){
+        if(epochTrainEval != null) {
             long time = System.currentTimeMillis();
             for(Map.Entry<Pair<String,Integer>,Evaluation> e : epochTrainEval.entrySet()){
-                String n = "evaluation/" + e.getKey().getFirst();   //TODO what if user does same eval with multiple labels? Doesn't make sense... add validation to ensure this?
+                String n = "evaluation/" + e.getKey().getFirst();   //TODO what if user does same evar with multiple labels? Doesn't make sense... add validation to ensure this?
 
                 List<Evaluation.Metric> l = trainEvalMetrics.get(e.getKey());
                 for(Evaluation.Metric m : l) {
@@ -419,7 +419,7 @@ public class UIListener extends BaseListener {
             long time = System.currentTimeMillis();
 
             //First: check if this op is relevant at all to evaluation...
-            if(relevantOpsForEval == null){
+            if(relevantOpsForEval == null) {
                 //Build list for quick lookups to know if we should do anything for this op
                 relevantOpsForEval = new HashSet<>();
                 for (Pair<String, Integer> p : trainEvalMetrics.keySet()) {

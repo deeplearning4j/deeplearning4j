@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.params;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.LSTM;
@@ -62,10 +62,10 @@ public class LSTMParamInitializer implements ParamInitializer {
     public long numParams(Layer l) {
         LSTM layerConf = (LSTM) l;
 
-        val nL = layerConf.getNOut(); //i.e., n neurons in this layer
-        val nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
+        var nL = layerConf.getNOut(); //i.e., n neurons in this layer
+        var nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
 
-        val nParams = nLast * (4 * nL) //"input" weights
+        var nParams = nLast * (4 * nL) //"input" weights
                         + nL * (4 * nL) //recurrent weights
                         + 4 * nL; //bias
 
@@ -103,22 +103,22 @@ public class LSTMParamInitializer implements ParamInitializer {
         LSTM layerConf = (LSTM) conf.getLayer();
         double forgetGateInit = layerConf.getForgetGateBiasInit();
 
-        val nL = layerConf.getNOut(); //i.e., n neurons in this layer
-        val nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
+        var nL = layerConf.getNOut(); //i.e., n neurons in this layer
+        var nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
 
         conf.addVariable(INPUT_WEIGHT_KEY);
         conf.addVariable(RECURRENT_WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
 
-        val length = numParams(conf);
+        var length = numParams(conf);
         if (paramsView.length() != length)
             throw new IllegalStateException(
                             "Expected params view of length " + length + ", got length " + paramsView.length());
 
         INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
-        val nParamsIn = nLast * (4 * nL);
-        val nParamsRecurrent = nL * (4 * nL);
-        val nBias = 4 * nL;
+        var nParamsIn = nLast * (4 * nL);
+        var nParamsRecurrent = nL * (4 * nL);
+        var nBias = 4 * nL;
         INDArray inputWeightView = paramsViewReshape.get( NDArrayIndex.interval(0, nParamsIn));
         INDArray recurrentWeightView = paramsViewReshape.get(
                         NDArrayIndex.interval(nParamsIn, nParamsIn + nParamsRecurrent));
@@ -126,10 +126,10 @@ public class LSTMParamInitializer implements ParamInitializer {
                         NDArrayIndex.interval(nParamsIn + nParamsRecurrent, nParamsIn + nParamsRecurrent + nBias));
 
         if (initializeParams) {
-            val fanIn = nL;
-            val fanOut = nLast + nL;
-            val inputWShape = new long[] {nLast, 4 * nL};
-            val recurrentWShape = new long[] {nL, 4 * nL};
+            var fanIn = nL;
+            var fanOut = nLast + nL;
+            var inputWShape = new long[] {nLast, 4 * nL};
+            var recurrentWShape = new long[] {nL, 4 * nL};
 
             IWeightInit rwInit;
             if(layerConf.getWeightInitFnRecurrent() != null){
@@ -166,17 +166,17 @@ public class LSTMParamInitializer implements ParamInitializer {
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
         LSTM layerConf = (LSTM) conf.getLayer();
 
-        val nL = layerConf.getNOut(); //i.e., n neurons in this layer
-        val nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
+        var nL = layerConf.getNOut(); //i.e., n neurons in this layer
+        var nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
 
-        val length = numParams(conf);
+        var length = numParams(conf);
         if (gradientView.length() != length)
             throw new IllegalStateException(
                             "Expected gradient view of length " + length + ", got length " + gradientView.length());
 
-        val nParamsIn = nLast * (4 * nL);
-        val nParamsRecurrent = nL * (4 * nL);
-        val nBias = 4 * nL;
+        var nParamsIn = nLast * (4 * nL);
+        var nParamsRecurrent = nL * (4 * nL);
+        var nBias = 4 * nL;
         INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
         INDArray inputWeightGradView = gradientViewReshape.get( NDArrayIndex.interval(0, nParamsIn))
                         .reshape('f', nLast, 4 * nL);

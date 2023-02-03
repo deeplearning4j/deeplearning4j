@@ -23,7 +23,7 @@ package org.deeplearning4j.nn.adapters;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
-import lombok.val;
+
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.ModelAdapter;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -45,9 +45,9 @@ public class YoloModelAdapter implements ModelAdapter<List<DetectedObject>> {
     @Override
     public List<DetectedObject> apply(Model model, INDArray[] inputs, INDArray[] masks, INDArray[] labelsMasks) {
         if (model instanceof ComputationGraph) {
-            val blindLayer = ((ComputationGraph) model).getOutputLayer(outputLayerIndex);
+            var blindLayer = ((ComputationGraph) model).getOutputLayer(outputLayerIndex);
             if (blindLayer instanceof Yolo2OutputLayer) {
-                val output = ((ComputationGraph) model).output(false, inputs, masks, labelsMasks);
+                var output = ((ComputationGraph) model).output(false, inputs, masks, labelsMasks);
                 return ((Yolo2OutputLayer) blindLayer).getPredictedObjects(output[outputIndex], detectionThreshold);
             } else {
                 throw new ND4JIllegalStateException("Output layer with index [" + outputLayerIndex + "] is NOT Yolo2OutputLayer");

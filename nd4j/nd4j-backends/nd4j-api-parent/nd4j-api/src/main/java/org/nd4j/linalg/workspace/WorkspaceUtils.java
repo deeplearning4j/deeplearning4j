@@ -21,7 +21,7 @@
 package org.nd4j.linalg.workspace;
 
 import lombok.NonNull;
-import lombok.val;
+
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
@@ -111,7 +111,7 @@ public class WorkspaceUtils {
             return;
         }
 
-        val ws = array.data().getParentWorkspace();
+        var ws = array.data().getParentWorkspace();
 
         if (ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
 

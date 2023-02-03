@@ -90,7 +90,7 @@ public class TestReconstructionDistributions extends BaseDL4JTest {
                         double sigma = Math.sqrt(Math.exp(logSigma2));
                         NormalDistribution nd = new NormalDistribution(mu, sigma);
 
-                        double xVal = x.getDouble(i, j);
+                        double xvar = x.getDouble(i, j);
                         double thisLogProb = nd.logDensity(xVal);
                         logProbSum += thisLogProb;
                         exampleSum += thisLogProb;
@@ -158,7 +158,7 @@ public class TestReconstructionDistributions extends BaseDL4JTest {
 
                         BinomialDistribution binomial = new BinomialDistribution(1, p); //Bernoulli is a special case of binomial
 
-                        double xVal = x.getDouble(i, j);
+                        double xvar = x.getDouble(i, j);
                         double thisLogProb = binomial.logProbability((int) xVal);
                         logProbSum += thisLogProb;
                         exampleSum += thisLogProb;
@@ -237,7 +237,7 @@ public class TestReconstructionDistributions extends BaseDL4JTest {
 
                         ExponentialDistribution exp = new ExponentialDistribution(mean); //Commons math uses mean = 1/lambda
 
-                        double xVal = x.getDouble(i, j);
+                        double xvar = x.getDouble(i, j);
                         double thisLogProb = exp.logDensity(xVal);
                         logProbSum += thisLogProb;
                         exampleSum += thisLogProb;

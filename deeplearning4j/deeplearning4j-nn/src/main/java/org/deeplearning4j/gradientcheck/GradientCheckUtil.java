@@ -275,11 +275,11 @@ public class GradientCheckUtil {
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = c.net.params().dup(); //need dup: params are a *view* of full parameters
 
-        val nParams = originalParams.length();
+        var nParams = originalParams.length();
 
         Map<String, INDArray> paramTable = c.net.paramTable();
         List<String> paramNames = new ArrayList<>(paramTable.keySet());
-        val paramEnds = new long[paramNames.size()];
+        var paramEnds = new long[paramNames.size()];
         paramEnds[0] = paramTable.get(paramNames.get(0)).length();
         Map<String,Integer> stepSizeForParam;
         if(c.subset){
@@ -289,7 +289,7 @@ public class GradientCheckUtil {
             stepSizeForParam = null;
         }
         for (int i = 1; i < paramEnds.length; i++) {
-            val n = paramTable.get(paramNames.get(i)).length();
+            var n = paramTable.get(paramNames.get(i)).length();
             paramEnds[i] = paramEnds[i - 1] + n;
             if(c.subset){
                 long ss = n / c.maxPerParam;
@@ -404,7 +404,7 @@ public class GradientCheckUtil {
             i += step;
         }
 
-        val nPass = nParams - totalNFailures;
+        var nPass = nParams - totalNFailures;
         log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
                             + totalNFailures + " failed. Largest relative error = " + maxError);
 
@@ -511,11 +511,11 @@ public class GradientCheckUtil {
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = c.net.params().dup(); //need dup: params are a *view* of full parameters
 
-        val nParams = originalParams.length();
+        var nParams = originalParams.length();
 
         Map<String, INDArray> paramTable = c.net.paramTable();
         List<String> paramNames = new ArrayList<>(paramTable.keySet());
-        val paramEnds = new long[paramNames.size()];
+        var paramEnds = new long[paramNames.size()];
         paramEnds[0] = paramTable.get(paramNames.get(0)).length();
         for (int i = 1; i < paramEnds.length; i++) {
             paramEnds[i] = paramEnds[i - 1] + paramTable.get(paramNames.get(i)).length();
@@ -600,7 +600,7 @@ public class GradientCheckUtil {
             }
         }
 
-        val nPass = nParams - totalNFailures;
+        var nPass = nParams - totalNFailures;
         log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
                         + totalNFailures + " failed. Largest relative error = " + maxError);
 
@@ -644,11 +644,11 @@ public class GradientCheckUtil {
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = layer.params().dup(); //need dup: params are a *view* of full parameters
 
-        val nParams = originalParams.length();
+        var nParams = originalParams.length();
 
         Map<String, INDArray> paramTable = layer.paramTable();
         List<String> paramNames = new ArrayList<>(paramTable.keySet());
-        val paramEnds = new long[paramNames.size()];
+        var paramEnds = new long[paramNames.size()];
         paramEnds[0] = paramTable.get(paramNames.get(0)).length();
         for (int i = 1; i < paramEnds.length; i++) {
             paramEnds[i] = paramEnds[i - 1] + paramTable.get(paramNames.get(i)).length();
@@ -724,7 +724,7 @@ public class GradientCheckUtil {
         }
 
         if (print) {
-            val nPass = nParams - totalNFailures;
+            var nPass = nParams - totalNFailures;
             log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
                             + totalNFailures + " failed. Largest relative error = " + maxError);
         }

@@ -74,7 +74,7 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
 
         SDVariable sdinput = sameDiff.var(input);
         SDVariable out = sameDiff.linalg().cholesky(sdinput);
-        INDArray eval =  out.eval();
+        INDArray evar =  out.eval();
         assertEquals(expected, eval);
     }
 

@@ -21,7 +21,7 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.NonNull;
-import lombok.val;
+
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cache.ConstantHandler;
@@ -63,7 +63,7 @@ public class CpuTADManager implements TADManager {
         if (dimension == null)
             dimension = new int[] {Integer.MAX_VALUE};
 
-        val pack = Nd4j.getExecutioner().tadShapeInfoAndOffsets(array, dimension);
+        var pack = Nd4j.getExecutioner().tadShapeInfoAndOffsets(array, dimension);
 
         // now we need to copy this buffer to either device global memory or device cache
 

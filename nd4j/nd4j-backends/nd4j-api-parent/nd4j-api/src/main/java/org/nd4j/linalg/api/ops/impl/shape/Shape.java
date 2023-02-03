@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
-import lombok.val;
+
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -94,7 +94,7 @@ public class Shape extends DynamicCustomOp {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
 
         dataType = TFGraphMapper.convertType(nodeDef.getAttrOrThrow("out_type").getType());
-        val dtype = DataTypeAdapter.dtypeConv(nodeDef.getAttrOrThrow("out_type").getType());
+        var dtype = DataTypeAdapter.dtypeConv(nodeDef.getAttrOrThrow("out_type").getType());
         iArguments.add((long) FlatBuffersMapper.getDataTypeAsByte(dtype));
     }
 

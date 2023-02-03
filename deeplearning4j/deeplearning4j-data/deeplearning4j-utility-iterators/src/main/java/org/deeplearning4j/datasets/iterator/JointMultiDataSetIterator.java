@@ -23,7 +23,7 @@ package org.deeplearning4j.datasets.iterator;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
@@ -103,7 +103,7 @@ public class JointMultiDataSetIterator implements MultiDataSetIterator {
     public boolean resetSupported() {
         boolean sup = true;
 
-        for (val i: iterators)
+        for (var i: iterators)
             if (!i.resetSupported()) {
                 sup = false;
                 break;
@@ -129,7 +129,7 @@ public class JointMultiDataSetIterator implements MultiDataSetIterator {
     public boolean asyncSupported() {
         boolean sup = true;
 
-        for (val i: iterators)
+        for (var i: iterators)
             if (!i.asyncSupported()) {
                 sup = false;
                 break;
@@ -143,7 +143,7 @@ public class JointMultiDataSetIterator implements MultiDataSetIterator {
      */
     @Override
     public void reset() {
-        for (val i: iterators)
+        for (var i: iterators)
             i.reset();
     }
 
@@ -158,7 +158,7 @@ public class JointMultiDataSetIterator implements MultiDataSetIterator {
     public boolean hasNext() {
         boolean has = true;
 
-        for (val i: iterators)
+        for (var i: iterators)
             if (!i.hasNext()) {
                 has = false;
                 break;
@@ -174,17 +174,17 @@ public class JointMultiDataSetIterator implements MultiDataSetIterator {
      */
     @Override
     public MultiDataSet next() {
-        val features = new ArrayList<INDArray>();
-        val labels = new ArrayList<INDArray>();
-        val featuresMask = new ArrayList<INDArray>();
-        val labelsMask = new ArrayList<INDArray>();
+        var features = new ArrayList<INDArray>();
+        var labels = new ArrayList<INDArray>();
+        var featuresMask = new ArrayList<INDArray>();
+        var labelsMask = new ArrayList<INDArray>();
 
         boolean hasFM = false;
         boolean hasLM = false;
 
         int cnt = 0;
-        for (val i: iterators) {
-            val ds = i.next();
+        for (var i: iterators) {
+            var ds = i.next();
 
             features.add(ds.getFeatures());
             featuresMask.add(ds.getFeaturesMaskArray());
@@ -206,7 +206,7 @@ public class JointMultiDataSetIterator implements MultiDataSetIterator {
         INDArray[] fm = hasFM ? featuresMask.toArray(new INDArray[0]) : null;
         INDArray[] lm = hasLM ? labelsMask.toArray(new INDArray[0]) : null;
 
-        val mds = new org.nd4j.linalg.dataset.MultiDataSet(features.toArray(new INDArray[0]), labels.toArray(new INDArray[0]), fm, lm);
+        var mds = new org.nd4j.linalg.dataset.MultiDataSet(features.toArray(new INDArray[0]), labels.toArray(new INDArray[0]), fm, lm);
 
         if (preProcessor != null)
             preProcessor.preProcess(mds);

@@ -23,7 +23,7 @@ package org.deeplearning4j.datasets.datavec;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.val;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.SequenceRecord;
@@ -278,7 +278,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
             for (List<INDArray> exampleData : nextRRValsBatched.values()) {
                 //Assume all NDArrayWritables here
                 for (INDArray w : exampleData) {
-                    val n = w.size(0);
+                    var n = w.size(0);
 
                     if (Math.min(minExamples, n) < Integer.MAX_VALUE)
                         minExamples = (int) Math.min(minExamples, n);
@@ -408,7 +408,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
                             + " (must be equal to 1 or numClasses = " + details.oneHotNumClasses + ")");
         }
 
-        val n = arr.size(0);
+        var n = arr.size(0);
         INDArray out = Nd4j.create(n, details.oneHotNumClasses);
         for (int i = 0; i < n; i++) {
             int v = arr.getInt(i, 0);
@@ -461,7 +461,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
             if (list.get(0).size() == 1 && list.get(0).get(0) instanceof NDArrayWritable) {
                 //Special case: single NDArrayWritable...
                 INDArray temp = ((NDArrayWritable) list.get(0).get(0)).get();
-                val shape = ArrayUtils.clone(temp.shape());
+                var shape = ArrayUtils.clone(temp.shape());
                 shape[0] = minValues;
                 arr = Nd4j.create(shape);
             } else {
@@ -474,7 +474,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
                             && list.get(0).get(details.subsetStart) instanceof NDArrayWritable) {
                 //Special case: single NDArrayWritable (example: ImageRecordReader)
                 INDArray temp = ((NDArrayWritable) list.get(0).get(details.subsetStart)).get();
-                val shape = ArrayUtils.clone(temp.shape());
+                var shape = ArrayUtils.clone(temp.shape());
                 shape[0] = minValues;
                 arr = Nd4j.create(shape);
             } else {

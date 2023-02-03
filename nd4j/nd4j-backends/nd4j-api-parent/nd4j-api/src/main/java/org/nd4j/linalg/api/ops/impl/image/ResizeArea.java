@@ -21,7 +21,7 @@ package org.nd4j.linalg.api.ops.impl.image;
 
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -77,7 +77,7 @@ public class ResizeArea extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         TFGraphMapper.initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
 
-        val attrC = attributesForNode.get("align_corners");
+        var attrC = attributesForNode.get("align_corners");
         this.alignCorners = attrC != null ? attrC.getB() : false;
 
         addArgs();

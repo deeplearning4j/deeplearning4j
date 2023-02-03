@@ -19,7 +19,7 @@
  */
 package org.eclipse.deeplearning4j.dl4jcore.nn.adapters;
 
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.adapters.ArgmaxAdapter;
 import org.junit.jupiter.api.Tag;
@@ -38,18 +38,18 @@ class ArgmaxAdapterTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Softmax _ 2 D _ 1")
     void testSoftmax_2D_1() {
-        val in = new double[][] { { 1, 3, 2 }, { 4, 5, 6 } };
-        val adapter = new ArgmaxAdapter();
-        val result = adapter.apply(Nd4j.create(in));
+        var in = new double[][] { { 1, 3, 2 }, { 4, 5, 6 } };
+        var adapter = new ArgmaxAdapter();
+        var result = adapter.apply(Nd4j.create(in));
         assertArrayEquals(new int[] { 1, 2 }, result);
     }
 
     @Test
     @DisplayName("Test Softmax _ 1 D _ 1")
     void testSoftmax_1D_1() {
-        val in = new double[] { 1, 3, 2 };
-        val adapter = new ArgmaxAdapter();
-        val result = adapter.apply(Nd4j.create(in));
+        var in = new double[] { 1, 3, 2 };
+        var adapter = new ArgmaxAdapter();
+        var result = adapter.apply(Nd4j.create(in));
         assertArrayEquals(new int[] { 1 }, result);
     }
 }

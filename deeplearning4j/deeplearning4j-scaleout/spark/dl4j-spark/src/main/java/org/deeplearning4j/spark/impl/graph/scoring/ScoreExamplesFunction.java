@@ -31,7 +31,7 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import lombok.val;
+
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -64,11 +64,11 @@ public class ScoreExamplesFunction implements DoubleFlatMapFunction<Iterator<Mul
 
         ComputationGraph network = new ComputationGraph(ComputationGraphConfiguration.fromJson(jsonConfig.getValue()));
         network.init();
-        INDArray val = params.value().dup();
-        if (val.length() != network.numParams(false))
+        INDArray paramsVal = params.value().dup();
+        if (paramsVal.length() != network.numParams(false))
             throw new IllegalStateException(
                             "Network did not have same number of parameters as the broadcast set parameters");
-        network.setParams(val);
+        network.setParams(paramsVal);
 
         List<Double> ret = new ArrayList<>();
 
@@ -79,7 +79,7 @@ public class ScoreExamplesFunction implements DoubleFlatMapFunction<Iterator<Mul
             int nExamples = 0;
             while (iterator.hasNext() && nExamples < batchSize) {
                 MultiDataSet ds = iterator.next();
-                val n = ds.getFeatures(0).size(0);
+                var n = ds.getFeatures(0).size(0);
                 collect.add(ds);
                 nExamples += n;
             }

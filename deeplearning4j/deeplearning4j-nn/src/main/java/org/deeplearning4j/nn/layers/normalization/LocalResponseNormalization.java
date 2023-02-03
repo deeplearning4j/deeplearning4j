@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.layers.normalization;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -137,7 +137,7 @@ public class LocalResponseNormalization
         INDArray unitScale = triple.getSecond();
         INDArray scale = triple.getThird();
 
-        val channel = input.size(chDim);
+        var channel = input.size(chDim);
         INDArray tmp, addVal;
         Gradient retGradient = new DefaultGradient();
         INDArray reverse = activations.mul(epsilon);
@@ -213,7 +213,7 @@ public class LocalResponseNormalization
         boolean nchw = layerConf().getDataFormat() == CNN2DFormat.NCHW;
         int chDim = nchw ? 1 : 3;
 
-        val channel = input.size(chDim);
+        var channel = input.size(chDim);
         INDArray tmp, addVal;
         // x^2 = (a^j_{x,y})^2
         INDArray activitySqr = input.mul(input);

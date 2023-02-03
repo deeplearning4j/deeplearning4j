@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.linalg;
 
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -148,7 +148,7 @@ public class ShufflesTests extends BaseNd4jTestWithBackends {
         assertTrue(scanner.compareRow(features));
 
         for (int x = 0; x < 10; x++) {
-            double val = features.getRow(x).getDouble(0);
+            double var = features.getRow(x).getDouble(0);
             INDArray row = labels.getRow(x);
 
             for (int y = 0; y < row.length(); y++) {
@@ -187,7 +187,7 @@ public class ShufflesTests extends BaseNd4jTestWithBackends {
         assertTrue(scannerLabels.compareSlice(labels));
 
         for (int x = 0; x < 10; x++) {
-            double val = features.slice(x).getDouble(0);
+            double var = features.slice(x).getDouble(0);
             INDArray row = labels.slice(x);
 
             for (int y = 0; y < row.length(); y++) {
@@ -238,7 +238,7 @@ public class ShufflesTests extends BaseNd4jTestWithBackends {
 
 
         for (int x = 0; x < 10; x++) {
-            double val = features.slice(x).getDouble(0);
+            double var = features.slice(x).getDouble(0);
             INDArray sliceLabels = labels.slice(x);
             INDArray sliceLabelsMask = labelsMask.slice(x);
             INDArray sliceFeaturesMask = featuresMask.slice(x);
@@ -312,10 +312,10 @@ public class ShufflesTests extends BaseNd4jTestWithBackends {
         for (int e = 0; e < 1000; e++) {
             int length = e + 256; //RandomUtils.nextInt(121, 2073);
             int[] array1 = ArrayUtil.buildInterleavedVector(new Random(System.currentTimeMillis()), length);
-            val set = new HashSet<Integer>();
+            var set = new HashSet<Integer>();
 
             for (int i = 0; i < length; i++) {
-                val v = array1[i];
+                var v = array1[i];
 
                 // skipping passive swap step
                 if (v < 0)
@@ -443,7 +443,7 @@ public class ShufflesTests extends BaseNd4jTestWithBackends {
 
             for (int x = 0; x < newData.rows(); x++) {
                 INDArray column = newData.getColumn(x);
-                double val = column.getDouble(0);
+                double var = column.getDouble(0);
                 for (int y = 0; y < column.length(); y++) {
                     if (Math.abs(column.getFloat(y) - val) > Nd4j.EPS_THRESHOLD) {
                         System.out.print("Different data in a column: " + column.getFloat(y));

@@ -19,7 +19,7 @@
  */
 package org.datavec.arrow;
 
-import lombok.val;
+
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.records.mapper.RecordMapper;
 import org.datavec.api.records.reader.RecordReader;
@@ -56,7 +56,7 @@ class RecordMapperTest extends BaseND4JTest {
     @Test
     @DisplayName("Test Multi Write")
     void testMultiWrite() throws Exception {
-        val recordsPair = records();
+        var recordsPair = records();
         Path p = Files.createTempFile("arrowwritetest", ".arrow");
         FileUtils.write(p.toFile(), recordsPair.getFirst());
         p.toFile().deleteOnExit();
@@ -85,7 +85,7 @@ class RecordMapperTest extends BaseND4JTest {
     @Test
     @DisplayName("Test Copy From Arrow To Csv")
     void testCopyFromArrowToCsv() throws Exception {
-        val recordsPair = records();
+        var recordsPair = records();
         Path p = Files.createTempFile("arrowwritetest", ".arrow");
         FileUtils.write(p.toFile(), recordsPair.getFirst());
         p.toFile().deleteOnExit();
@@ -111,7 +111,7 @@ class RecordMapperTest extends BaseND4JTest {
     @Test
     @DisplayName("Test Copy From Csv To Arrow")
     void testCopyFromCsvToArrow() throws Exception {
-        val recordsPair = records();
+        var recordsPair = records();
         Path p = Files.createTempFile("csvwritetest", ".csv");
         FileUtils.write(p.toFile(), recordsPair.getFirst());
         p.toFile().deleteOnExit();

@@ -19,7 +19,7 @@
  */
 package org.nd4j.linalg.api.ops.custom;
 
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -70,8 +70,8 @@ public class BitCast extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         TFGraphMapper.initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
-        val t = nodeDef.getAttrOrDefault("type", null);
-        val type = ArrayOptionsHelper.convertToDataType(t.getType());
+        var t = nodeDef.getAttrOrDefault("type", null);
+        var type = ArrayOptionsHelper.convertToDataType(t.getType());
         addIArgument(type.toInt());
 
         dtype = type;

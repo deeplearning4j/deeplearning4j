@@ -40,7 +40,7 @@ template <typename X, typename Y>
 SD_KERNEL static void padCuda(const int mode, const void* vx, const sd::LongType* xShapeInfo, const void* vy,
                               const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo,
                               const void* vPadVal) {
-  const X padVal = *reinterpret_cast<const X*>(vPadVal);
+  const X padvar = *reinterpret_cast<const X*>(vPadVal);
 
   const auto x = reinterpret_cast<const X*>(vx);
   const auto y = reinterpret_cast<const Y*>(vy);

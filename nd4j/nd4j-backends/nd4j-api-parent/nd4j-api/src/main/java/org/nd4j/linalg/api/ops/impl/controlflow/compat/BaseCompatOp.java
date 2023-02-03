@@ -23,7 +23,7 @@ package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 import java.util.Arrays;
 import java.util.List;
 import lombok.NonNull;
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -110,7 +110,7 @@ public abstract class BaseCompatOp extends DynamicCustomOp {
         Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
         Map<String,PropertyMapping> map = new HashMap<>();
 
-        val frameNameMapping = PropertyMapping.builder()
+        var frameNameMapping = PropertyMapping.builder()
                 .tfAttrName("frame_name")
                 .onnxAttrName("frame_name") // not sure if it exists in onnx
                 .propertyNames(new String[]{"frameName"})

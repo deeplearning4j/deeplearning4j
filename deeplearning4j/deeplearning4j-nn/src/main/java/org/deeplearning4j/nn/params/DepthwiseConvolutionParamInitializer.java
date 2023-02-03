@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.params;
 
 
-import lombok.val;
+
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DepthwiseConvolution2D;
@@ -52,14 +52,14 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
     public long numParams(Layer l) {
         DepthwiseConvolution2D layerConf = (DepthwiseConvolution2D) l;
 
-        val depthWiseParams = numDepthWiseParams(layerConf);
-        val biasParams = numBiasParams(layerConf);
+        var depthWiseParams = numDepthWiseParams(layerConf);
+        var biasParams = numBiasParams(layerConf);
 
         return depthWiseParams + biasParams;
     }
 
     private long numBiasParams(DepthwiseConvolution2D layerConf) {
-        val nOut = layerConf.getNOut();
+        var nOut = layerConf.getNOut();
         return (layerConf.hasBias() ? nOut : 0);
     }
 
@@ -72,8 +72,8 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
      */
     private long numDepthWiseParams(DepthwiseConvolution2D layerConf) {
         int[] kernel = layerConf.getKernelSize();
-        val nIn = layerConf.getNIn();
-        val depthMultiplier = layerConf.getDepthMultiplier();
+        var nIn = layerConf.getNIn();
+        var depthMultiplier = layerConf.getDepthMultiplier();
 
         return nIn * depthMultiplier * kernel[0] * kernel[1];
     }
@@ -124,8 +124,8 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
         DepthwiseConvolution2D layerConf = (DepthwiseConvolution2D) conf.getLayer();
 
-        val depthWiseParams = numDepthWiseParams(layerConf);
-        val biasParams = numBiasParams(layerConf);
+        var depthWiseParams = numDepthWiseParams(layerConf);
+        var biasParams = numBiasParams(layerConf);
 
         INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
         INDArray depthWiseWeightView = paramsViewReshape.get(
@@ -149,14 +149,14 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
         DepthwiseConvolution2D layerConf = (DepthwiseConvolution2D) conf.getLayer();
 
         int[] kernel = layerConf.getKernelSize();
-        val nIn = layerConf.getNIn();
-        val depthMultiplier = layerConf.getDepthMultiplier();
-        val nOut = layerConf.getNOut();
+        var nIn = layerConf.getNIn();
+        var depthMultiplier = layerConf.getDepthMultiplier();
+        var nOut = layerConf.getNOut();
 
         Map<String, INDArray> out = new LinkedHashMap<>();
 
-        val depthWiseParams = numDepthWiseParams(layerConf);
-        val biasParams = numBiasParams(layerConf);
+        var depthWiseParams = numDepthWiseParams(layerConf);
+        var biasParams = numBiasParams(layerConf);
         INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
         INDArray depthWiseWeightGradientView = gradientViewReshape.get(
                         NDArrayIndex.interval(biasParams, biasParams + depthWiseParams))
@@ -191,12 +191,12 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
             int[] kernel = layerConf.getKernelSize();
             int[] stride = layerConf.getStride();
 
-            val inputDepth = layerConf.getNIn();
+            var inputDepth = layerConf.getNIn();
 
             double fanIn = inputDepth * kernel[0] * kernel[1];
             double fanOut = depthMultiplier * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
 
-            val weightsShape = new long[] {kernel[0], kernel[1], inputDepth, depthMultiplier};
+            var weightsShape = new long[] {kernel[0], kernel[1], inputDepth, depthMultiplier};
 
             return layerConf.getWeightInitFn().init(fanIn, fanOut, weightsShape, 'c',
                     weightView);

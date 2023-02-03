@@ -21,7 +21,7 @@
 package org.eclipse.deeplearning4j.dl4jcore.nn.graph;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
@@ -1950,7 +1950,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
     @Test
     public void testCloneDropoutIndependence(){
 
-        val modelConf = new NeuralNetConfiguration.Builder()
+        var modelConf = new NeuralNetConfiguration.Builder()
                 .updater(new Adam(0.01))
                 .weightInit(WeightInit.XAVIER_UNIFORM)
                 .biasInit(0)

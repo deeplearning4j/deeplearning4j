@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -254,11 +254,11 @@ public abstract class Pooling3D extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val aStrides = nodeDef.getAttrOrThrow("strides");
+        var aStrides = nodeDef.getAttrOrThrow("strides");
         List<Long> tfStrides = aStrides.getList().getIList();
-        val aKernels = nodeDef.getAttrOrThrow("ksize");
+        var aKernels = nodeDef.getAttrOrThrow("ksize");
         List<Long> tfKernels = aKernels.getList().getIList();
-        val aPadding = nodeDef.getAttrOrThrow("padding");
+        var aPadding = nodeDef.getAttrOrThrow("padding");
         List<Long> tfPadding = aPadding.getList().getIList();
 
         String paddingMode = aPadding.getS().toStringUtf8().replaceAll("\"", "");
@@ -267,7 +267,7 @@ public abstract class Pooling3D extends DynamicCustomOp {
 
         String data_format = "ndhwc";
         if (nodeDef.containsAttr("data_format")) {
-            val attr = nodeDef.getAttrOrThrow("data_format");
+            var attr = nodeDef.getAttrOrThrow("data_format");
 
             data_format = attr.getS().toStringUtf8().toLowerCase();
         }

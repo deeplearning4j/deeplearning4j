@@ -21,7 +21,7 @@
 package org.deeplearning4j.vectorizer;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -73,7 +73,7 @@ public class TfidfVectorizerTest extends BaseDL4JTest {
     @Test()
     @Timeout(60000L)
     public void testTfIdfVectorizer(@TempDir Path testDir) throws Exception {
-        val rootDir = testDir.toFile();
+        var rootDir = testDir.toFile();
         ClassPathResource resource = new ClassPathResource("tripledir/");
         resource.copyDirectory(rootDir);
 
@@ -188,7 +188,7 @@ public class TfidfVectorizerTest extends BaseDL4JTest {
     @Test()
     @Timeout(10000L)
     public void testParallelFlag1() throws Exception {
-        val vectorizer = new TfidfVectorizer.Builder()
+        var vectorizer = new TfidfVectorizer.Builder()
                 .allowParallelTokenization(false)
                 .build();
 
@@ -200,7 +200,7 @@ public class TfidfVectorizerTest extends BaseDL4JTest {
     @Timeout(20000L)
     public void testParallelFlag2() throws Exception {
         assertThrows(ND4JIllegalStateException.class,() -> {
-            val collection = new ArrayList<String>();
+            var collection = new ArrayList<String>();
             collection.add("First string");
             collection.add("Second string");
             collection.add("Third string");
@@ -208,7 +208,7 @@ public class TfidfVectorizerTest extends BaseDL4JTest {
             collection.add("Fifth string");
 //        collection.add("caboom");
 
-            val vectorizer = new TfidfVectorizer.Builder()
+            var vectorizer = new TfidfVectorizer.Builder()
                     .allowParallelTokenization(false)
                     .setIterator(new CollectionSentenceIterator(collection))
                     .setTokenizerFactory(new ExplodingTokenizerFactory(8, -1))
@@ -228,7 +228,7 @@ public class TfidfVectorizerTest extends BaseDL4JTest {
     @Timeout(20000L)
     public void testParallelFlag3() throws Exception {
         assertThrows(ND4JIllegalStateException.class,() -> {
-            val collection = new ArrayList<String>();
+            var collection = new ArrayList<String>();
             collection.add("First string");
             collection.add("Second string");
             collection.add("Third string");
@@ -237,7 +237,7 @@ public class TfidfVectorizerTest extends BaseDL4JTest {
             collection.add("Long long long string");
             collection.add("Sixth string");
 
-            val vectorizer = new TfidfVectorizer.Builder()
+            var vectorizer = new TfidfVectorizer.Builder()
                     .allowParallelTokenization(false)
                     .setIterator(new CollectionSentenceIterator(collection))
                     .setTokenizerFactory(new ExplodingTokenizerFactory(-1, 4))
@@ -271,7 +271,7 @@ public class TfidfVectorizerTest extends BaseDL4JTest {
                 throw new ND4JIllegalStateException("TokenizerFactory exploded");
 
 
-            val tkn = new ExplodingTokenizer(toTokenize, triggerWord);
+            var tkn = new ExplodingTokenizer(toTokenize, triggerWord);
 
             return tkn;
         }

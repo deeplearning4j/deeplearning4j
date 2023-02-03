@@ -22,7 +22,7 @@ package org.nd4j.linalg.jcublas.blas;
 
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.ShortPointer;
@@ -116,8 +116,8 @@ public class JcublasLevel3 extends BaseLevel3 {
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda,
                     INDArray B, int ldb, float beta, INDArray C, int ldc) {
         /*
-        val ctx = AtomicAllocator.getInstance().getDeviceContext();
-        val handle = ctx.getCublasHandle();
+        var ctx = AtomicAllocator.getInstance().getDeviceContext();
+        var handle = ctx.getCublasHandle();
         synchronized (handle) {
             Nd4j.exec(new Mmul(A, B, C, MMulTranspose.builder().transposeA(false).transposeB(false).build()));
         }
@@ -125,16 +125,16 @@ public class JcublasLevel3 extends BaseLevel3 {
 
         Nd4j.getExecutioner().push();
 
-        val ctx = allocator.getFlowController().prepareAction(C, A, B);
+        var ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         //log.info("Synchronizing CUDA stream");
         ctx.getOldStream().synchronize();
 
-        val cAPointer = new CublasPointer(A, ctx);
-        val cBPointer = new CublasPointer(B, ctx);
-        val cCPointer = new CublasPointer(C, ctx);
+        var cAPointer = new CublasPointer(A, ctx);
+        var cBPointer = new CublasPointer(B, ctx);
+        var cCPointer = new CublasPointer(C, ctx);
 
-        val handle = ctx.getCublasHandle();
+        var handle = ctx.getCublasHandle();
         synchronized (handle) {
             //log.info("Handle: {}; Stream: {}", handle.address(), ctx.getCublasStream().address());
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getCublasStream()));
@@ -248,15 +248,15 @@ public class JcublasLevel3 extends BaseLevel3 {
 
         Nd4j.getExecutioner().push();
 
-        val ctx = allocator.getFlowController().prepareAction(C, A, B);
+        var ctx = allocator.getFlowController().prepareAction(C, A, B);
 
         DataTypeValidation.assertDouble(A, B, C);
 
-        val cAPointer = new CublasPointer(A, ctx);
-        val cBPointer = new CublasPointer(B, ctx);
-        val cCPointer = new CublasPointer(C, ctx);
+        var cAPointer = new CublasPointer(A, ctx);
+        var cBPointer = new CublasPointer(B, ctx);
+        var cCPointer = new CublasPointer(C, ctx);
 
-        val handle = ctx.getCublasHandle();
+        var handle = ctx.getCublasHandle();
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getCublasStream()));
 

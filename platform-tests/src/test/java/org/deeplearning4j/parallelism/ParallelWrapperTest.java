@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.parallelism;
 
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -71,7 +71,7 @@ public class ParallelWrapperTest extends BaseDL4JTest {
         DataSetIterator mnistTest = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(batchSize, false, 12345), 4);
 
         assertTrue(mnistTrain.hasNext());
-        val t0 = mnistTrain.next();
+        var t0 = mnistTrain.next();
 
         log.info("F: {}; L: {};", t0.getFeatures().shape(), t0.getLabels().shape());
 
@@ -136,7 +136,7 @@ public class ParallelWrapperTest extends BaseDL4JTest {
         long timeY = System.currentTimeMillis();
         log.info("*** Training complete, time: {} ***", (timeY - timeX));
 
-        Evaluation eval = model.evaluate(mnistTest);
+        Evaluation evar = model.evaluate(mnistTest);
         log.info(eval.stats());
         mnistTest.reset();
 

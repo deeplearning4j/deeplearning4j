@@ -120,7 +120,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
         INDArray bias;
         INDArray biasGradView = null;
 
-        //DL4J conv3d weights: val weightsShape = new long[]{outputDepth, inputDepth, kernel[0], kernel[1], kernel[2]};
+        //DL4J conv3d weights: var weightsShape = new long[]{outputDepth, inputDepth, kernel[0], kernel[1], kernel[2]};
         //libnd4j conv3d weights: [kD, kH, kW, iC, oC]
         weights = weights.permute(2, 3, 4, 1, 0);
         INDArray opWeightGradView = weightGradView.permute(2, 3, 4, 1, 0);
@@ -253,7 +253,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
                 isNCDHW ? 0 : 1
         };
 
-        //DL4J conv3d weights: val weightsShape = new long[]{outputDepth, inputDepth, kernel[0], kernel[1], kernel[2]};
+        //DL4J conv3d weights: var weightsShape = new long[]{outputDepth, inputDepth, kernel[0], kernel[1], kernel[2]};
         //libnd4j conv3d weights: [kD, kH, kW, iC, oC]
         weights = weights.permute(2, 3, 4, 1, 0);
 

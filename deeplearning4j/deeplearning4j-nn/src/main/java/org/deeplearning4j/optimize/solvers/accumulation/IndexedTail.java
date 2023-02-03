@@ -23,7 +23,7 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -51,7 +51,7 @@ public class IndexedTail {
     // simple counter for new updates
     protected AtomicLong updatesCounter = new AtomicLong(0);
 
-    // index of last deleted element. used for maintenance, and removal of useless updates
+    // index of last deleted element. used for maintenance, and removar of useless updates
     protected AtomicLong lastDeletedIndex = new AtomicLong(-1);
 
     // this value is used as max number of possible consumers.
@@ -94,8 +94,8 @@ public class IndexedTail {
 
             //if we're already in collapsed mode - we just insta-decompress
             if (collapsedMode.get()) {
-                val lastUpdateIndex = collapsedIndex.get();
-                val lastUpdate = updates.get(lastUpdateIndex);
+                var lastUpdateIndex = collapsedIndex.get();
+                var lastUpdate = updates.get(lastUpdateIndex);
 
                 Preconditions.checkArgument(!lastUpdate.isCompressed(), "lastUpdate should NOT be compressed during collapse mode");
 
@@ -104,17 +104,17 @@ public class IndexedTail {
                 // collapser only can work if all consumers are already introduced
             } else if (allowCollapse && positions.size() >= expectedConsumers) {
                 // getting last added update
-                val lastUpdateIndex = updatesCounter.get();
+                var lastUpdateIndex = updatesCounter.get();
 
                 // looking for max common non-applied update
                 long maxIdx = firstNotAppliedIndexEverywhere();
-                val array = Nd4j.create(shape);
+                var array = Nd4j.create(shape);
 
-                val delta = lastUpdateIndex - maxIdx;
+                var delta = lastUpdateIndex - maxIdx;
                 if (delta >= collapseThreshold) {
                     log.trace("Max delta to collapse: {}; Range: <{}...{}>", delta, maxIdx, lastUpdateIndex);
                     for (long e = maxIdx; e < lastUpdateIndex; e++) {
-                        val u = updates.get(e);
+                        var u = updates.get(e);
                         if (u == null)
                             log.error("Failed on index {}", e);
                            // continue;
@@ -155,7 +155,7 @@ public class IndexedTail {
         if (updatesCounter.get() == 0)
             return maxIdx;
 
-        for (val v:positions.values()) {
+        for (var v:positions.values()) {
             if (v.get() > maxIdx)
                 maxIdx = v.get();
         }
@@ -165,7 +165,7 @@ public class IndexedTail {
 
     public long maxAppliedIndexEverywhere() {
         long maxIdx = Long.MAX_VALUE;
-        for (val v:positions.values()) {
+        for (var v:positions.values()) {
             if (v.get() < maxIdx)
                 maxIdx = v.get();
         }
@@ -240,7 +240,7 @@ public class IndexedTail {
         long globalPos = 0;
         long localPos = 0;
         long delta = 0;
-        val sessionUpdates = new ArrayList<INDArray>();
+        var sessionUpdates = new ArrayList<INDArray>();
 
         try {
             lock.readLock().lock();
@@ -256,7 +256,7 @@ public class IndexedTail {
 
             // within read lock we only move references and tag updates as applied
             for (long e = localPos; e < localPos + delta; e++) {
-                val update = updates.get(e);
+                var update = updates.get(e);
 
                 if (allowCollapse && update == null)
                     continue;
@@ -278,7 +278,7 @@ public class IndexedTail {
 
 
         // now we decompress all arrays within delta into provided array
-        for (val u:sessionUpdates) {
+        for (var u:sessionUpdates) {
             smartDecompress(u.unsafeDuplication(true), array);
         }
 
@@ -301,10 +301,10 @@ public class IndexedTail {
         }
 
         // now we should get minimal id of consumed update
-        val minIdx = maxAppliedIndexEverywhere();
-        val allPositions = new long[positions.size()];
+        var minIdx = maxAppliedIndexEverywhere();
+        var allPositions = new long[positions.size()];
         int cnt = 0;
-        for (val p:positions.values())
+        for (var p:positions.values())
             allPositions[cnt++] = p.get();
 
         log.trace("Min idx: {}; last deleted index: {}; stored updates: {}; positions: {}", minIdx, lastDeletedIndex.get(), updates.size(), allPositions);

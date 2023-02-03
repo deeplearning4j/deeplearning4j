@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.parallelism.factory;
 
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -94,8 +94,8 @@ public class DefaultTrainerContextTest extends BaseDL4JTest {
                 // optinal parameter, set to false ONLY if your system has support P2P memory access across PCIe (hint: AWS do not support P2P)
                 .build();
 
-        val context = new DefaultTrainerContext();
-        val trainer = context.create("alpha", 3, model, 0, true, wrapper, WorkspaceMode.NONE, 3);
+        var context = new DefaultTrainerContext();
+        var trainer = context.create("alpha", 3, model, 0, true, wrapper, WorkspaceMode.NONE, 3);
 
         assertEquals("alpha_thread_3", trainer.getUuid());
     }

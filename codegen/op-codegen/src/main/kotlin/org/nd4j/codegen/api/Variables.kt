@@ -33,24 +33,24 @@ class BackendConstraint(message: String? = null, check: Expression): Constraint(
 
 // Used in Constraint Expressions
 sealed class Reference
-data class NumberReference<T: Number>(val value: T): Reference()
-data class BooleanReference(val value: Boolean): Reference()
-data class InputShapeReference(val input: Input, val idx: Int): Reference()
-data class InputRankReference(val input: Input): Reference()
+data class NumberReference<T: Number>(var value: T): Reference()
+data class BooleanReference(var value: Boolean): Reference()
+data class InputShapeReference(var input: Input, var idx: Int): Reference()
+data class InputRankReference(var input: Input): Reference()
 sealed class Expression: Reference()
-data class BooleanExpression(val left: Reference, val right: Reference, val op: BooleanOperation): Expression()
-data class SameTypeExpression(val inputs: List<Input>): Expression()
-data class SameShapeExpression(val inputs: List<Input>): Expression()
-data class BroadcastableShapesExpression(val inputs: List<Input>): Expression()
+data class BooleanExpression(var left: Reference, var right: Reference, var op: BooleanOperation): Expression()
+data class SameTypeExpression(var inputs: List<Input>): Expression()
+data class SameShapeExpression(var inputs: List<Input>): Expression()
+data class BroadcastableShapesExpression(var inputs: List<Input>): Expression()
 enum class BooleanOperation{EQ, NEQ, LT, LTE, GT, GTE, AND, OR}
 
 
 // Used to define array sizes
 sealed class Count
-data class Range(val from: Int, val to: Int): Count()
-data class AtLeast(val min: Int): Count()
-data class AtMost(val max: Int): Count()
-data class Exactly(val count: Int): Count()
+data class Range(var from: Int, var to: Int): Count()
+data class AtLeast(var min: Int): Count()
+data class AtMost(var max: Int): Count()
+data class Exactly(var count: Int): Count()
 
 // Actual parameters
 interface Parameter {
@@ -66,7 +66,7 @@ interface Parameter {
      * the signature, or there is a reference chain that ends in something that is actually a part of the signature
      */
     fun defaultValueIsApplicable(otherParams: List<Parameter>): Boolean = if(hasDefaultValue()){
-        when(val defaultValue = this.defaultValue()){
+        when(var defaultValue = this.defaultValue()){
             is Number, is Boolean, null -> true
             is IntArray, is BooleanArray, is DoubleArray -> true
             is String -> true
@@ -84,8 +84,8 @@ interface Parameter {
 interface Tensor: Parameter
 
 data class Arg(
-        val name: String,
-        val type: DataType,
+        var name: String,
+        var type: DataType,
         var description: String? = null,
         var isVargarg: Boolean = false
 ) : Reference(), Parameter {
@@ -147,7 +147,7 @@ data class Arg(
     }
 
     fun isArray() = count != Exactly(1) && count != null
-    fun countMatches(size: Int) = when(val c = count!!){
+    fun countMatches(size: Int) = when(var c = count!!){
         is Range -> c.from <= size && size <= c.to
         is AtLeast -> c.min <= size
         is AtMost -> size <= c.max
@@ -165,8 +165,8 @@ data class Arg(
 }
 
 data class Input (
-        val name: String,
-        val type: DataType,
+        var name: String,
+        var type: DataType,
         var description: String? = null,
         var count: Count? = null
 ) : Parameter, Tensor {
@@ -209,8 +209,8 @@ data class Output(
 }
 
 data class Signature(
-        val parameters: List<Parameter>,
-        val description: String? = null
+        var parameters: List<Parameter>,
+        var description: String? = null
 ){
     override fun toString(): String {
         return "Signature(${parameters.joinToString {it.name()}})"
@@ -218,10 +218,10 @@ data class Signature(
 }
 
 // Used in defining default values
-data class TensorShapeValue(val tensor: Tensor) {
+data class TensorShapeValue(var tensor: Tensor) {
     override fun toString(): String = "${tensor.name()}.shape()"
 }
-data class TensorDataTypeValue(val tensor: Tensor){
+data class TensorDataTypeValue(var tensor: Tensor){
     override fun toString(): String = "${tensor.name()}.dataType()"
 }
 
@@ -237,11 +237,11 @@ fun Any?.toDescriptiveString() = when(this){
 }
 
 data class Config(
-        val name: String,
-        val inputs: MutableList<Input> = mutableListOf(),
-        val args: MutableList<Arg> = mutableListOf(),
-        val constraints: MutableList<Constraint> = mutableListOf(),
-        val doc: MutableList<DocSection> = mutableListOf()
+        var name: String,
+        var inputs: MutableList<Input> = mutableListOf(),
+        var args: MutableList<Arg> = mutableListOf(),
+        var constraints: MutableList<Constraint> = mutableListOf(),
+        var doc: MutableList<DocSection> = mutableListOf()
         ): Parameter {
     override fun isVararg(): Boolean {
         return false

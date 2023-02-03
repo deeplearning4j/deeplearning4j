@@ -22,7 +22,7 @@ package org.deeplearning4j.ui.weights;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.datavec.image.loader.ImageLoader;
 import org.deeplearning4j.core.storage.Persistable;
 import org.deeplearning4j.core.storage.StatsStorage;
@@ -258,8 +258,8 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
         /*
             We determine height of joint output image. We assume that first position holds maximum dimensionality
          */
-        val shape = tensors3D.get(0).shape();
-        val numImages = shape[0];
+        var shape = tensors3D.get(0).shape();
+        var numImages = shape[0];
         height = (shape[2]);
         width = (shape[1]);
         //        log.info("Output image dimensions: {height: " + height + ", width: " + width + "}");
@@ -425,11 +425,11 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
         int padding_col = 2;
         int zoomPadding = 20;
 
-        val tShape = tensor3D.shape();
+        var tShape = tensor3D.shape();
 
-        val numRows = tShape[0] / tShape[2];
+        var numRows = tShape[0] / tShape[2];
 
-        val height = (numRows * (tShape[1] + border + padding_col)) + padding_col + zoomPadding + zoomWidth;
+        var height = (numRows * (tShape[1] + border + padding_col)) + padding_col + zoomPadding + zoomWidth;
 
         if (height > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
@@ -449,11 +449,11 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
 
             INDArray tad2D = tensor3D.tensorAlongDimension(z, 2, 1);
 
-            val rWidth = tad2D.shape()[0];
-            val rHeight = tad2D.shape()[1];
+            var rWidth = tad2D.shape()[0];
+            var rHeight = tad2D.shape()[1];
 
-            val loc_height = (rHeight) + (border * 2) + padding_row;
-            val loc_width = (rWidth) + (border * 2) + padding_col;
+            var loc_height = (rHeight) + (border * 2) + padding_row;
+            var loc_width = (rWidth) + (border * 2) + padding_col;
 
 
 
@@ -526,11 +526,11 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
         int padding_col = 2;
         int zoomPadding = 20;
 
-        val tShape = tensor3D.shape();
+        var tShape = tensor3D.shape();
 
-        val numColumns = tShape[0] / tShape[1];
+        var numColumns = tShape[0] / tShape[1];
 
-        val width = (numColumns * (tShape[1] + border + padding_col)) + padding_col + zoomPadding + zoomWidth;
+        var width = (numColumns * (tShape[1] + border + padding_col)) + padding_col + zoomPadding + zoomWidth;
 
         BufferedImage outputImage = new BufferedImage((int) width, maxHeight, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D graphics2D = outputImage.createGraphics();
@@ -547,11 +547,11 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
 
             INDArray tad2D = tensor3D.tensorAlongDimension(z, 2, 1);
 
-            val rWidth = tad2D.shape()[0];
-            val rHeight = tad2D.shape()[1];
+            var rWidth = tad2D.shape()[0];
+            var rHeight = tad2D.shape()[1];
 
-            val loc_height = (rHeight) + (border * 2) + padding_row;
-            val loc_width = (rWidth) + (border * 2) + padding_col;
+            var loc_height = (rHeight) + (border * 2) + padding_row;
+            var loc_width = (rWidth) + (border * 2) + padding_col;
 
 
 

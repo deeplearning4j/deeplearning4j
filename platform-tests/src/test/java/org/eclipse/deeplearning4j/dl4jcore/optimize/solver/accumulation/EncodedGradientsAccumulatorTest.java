@@ -20,7 +20,7 @@
 package org.eclipse.deeplearning4j.dl4jcore.optimize.solver.accumulation;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
@@ -65,7 +65,7 @@ class EncodedGradientsAccumulatorTest extends BaseDL4JTest {
         }
         for (int numWorkers : workers) {
             EncodingHandler handler = new EncodingHandler(new FixedThresholdAlgorithm(1e-3), null, null, false);
-            val bufferSize = EncodedGradientsAccumulator.getOptimalBufferSize(numParams, numWorkers, 2);
+            var bufferSize = EncodedGradientsAccumulator.getOptimalBufferSize(numParams, numWorkers, 2);
             log.info("Workers: {}; Buffer size: {} bytes", numWorkers, bufferSize);
             EncodedGradientsAccumulator accumulator = new EncodedGradientsAccumulator(numWorkers, handler, bufferSize, 2, null, false);
             for (int e = 10; e < numParams / 10; e++) {
@@ -95,8 +95,8 @@ class EncodedGradientsAccumulatorTest extends BaseDL4JTest {
         }
         EncodingHandler handler = new EncodingHandler(new FixedThresholdAlgorithm(1e-3), null, Integer.MAX_VALUE, false);
         for (int e = 10; e < numParams / 5; e++) {
-            val gradients = getGradients(numParams, e, 2e-3);
-            val encoded = handler.encodeUpdates(0, 0, gradients);
+            var gradients = getGradients(numParams, e, 2e-3);
+            var encoded = handler.encodeUpdates(0, 0, gradients);
             assertNotNull(encoded,"Failed with e == " + e);
             int encFormat = encoded.data().getInt(3);
             assertTrue( encoded.data().length() < numParams / 16 + 6,"Failed for E = " + e + "; Format: " + encFormat + "; Length: " + encoded.data().length());

@@ -21,7 +21,7 @@
 package org.nd4j.linalg.api.rng.distribution.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.math3.exception.NumberIsTooLargeException;
 import org.apache.commons.math3.exception.OutOfRangeException;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -225,17 +225,17 @@ public class OrthogonalDistribution extends BaseDistribution {
             numRows *= shape[i];
         long numCols = shape[shape.length - 1];
 
-        val dtype = Nd4j.defaultFloatingPointType();
+        var dtype = Nd4j.defaultFloatingPointType();
 
-        val flatShape = new long[]{numRows, numCols};
-        val flatRng =  Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(dtype, flatShape, Nd4j.order()), 0.0, 1.0), random);
+        var flatShape = new long[]{numRows, numCols};
+        var flatRng =  Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(dtype, flatShape, Nd4j.order()), 0.0, 1.0), random);
 
-        val m = flatRng.rows();
-        val n = flatRng.columns();
+        var m = flatRng.rows();
+        var n = flatRng.columns();
 
-        val s = Nd4j.create(dtype, m < n ? m : n);
-        val u = Nd4j.create(dtype, m, m);
-        val v = Nd4j.create(dtype, new long[] {n, n}, 'f');
+        var s = Nd4j.create(dtype, m < n ? m : n);
+        var u = Nd4j.create(dtype, m, m);
+        var v = Nd4j.create(dtype, new long[] {n, n}, 'f');
 
         Nd4j.exec(new Svd(flatRng, true, s, u, v));
 

@@ -20,7 +20,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -116,26 +116,26 @@ public class OneHot extends DynamicCustomOp {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
         Map<String,PropertyMapping> attrs = new LinkedHashMap<>();
 
-        val depth = PropertyMapping.builder()
+        var depth = PropertyMapping.builder()
                 .propertyNames(new String[]{"depth"})
                 .tfInputPosition(1)
                 .build();
         attrs.put("depth", depth);
 
-        val on = PropertyMapping.builder()
+        var on = PropertyMapping.builder()
                 .propertyNames(new String[]{"on"})
                 .tfInputPosition(2)
                 .build();
         attrs.put("on", on);
 
-        val off = PropertyMapping.builder()
+        var off = PropertyMapping.builder()
                 .propertyNames(new String[]{"off"})
                 .tfInputPosition(3)
                 .build();
         attrs.put("off", off);
 
 
-        val axis = PropertyMapping.builder()
+        var axis = PropertyMapping.builder()
                 .propertyNames(new String[] {"jaxis"})
                 .tfAttrName("axis")
                 .build();

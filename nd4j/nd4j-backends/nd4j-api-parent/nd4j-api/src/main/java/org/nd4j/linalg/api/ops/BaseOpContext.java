@@ -23,7 +23,7 @@ package org.nd4j.linalg.api.ops;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import lombok.val;
+
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -117,7 +117,7 @@ public abstract class BaseOpContext implements OpContext {
     @Override
     public void setIArguments(long... arguments) {
         fastpath_i.clear();
-        for (val v:arguments)
+        for (var v:arguments)
             fastpath_i.add(v);
     }
 
@@ -134,7 +134,7 @@ public abstract class BaseOpContext implements OpContext {
     @Override
     public void setTArguments(double... arguments) {
         fastpath_t.clear();
-        for (val v:arguments)
+        for (var v:arguments)
             fastpath_t.add(v);
     }
 
@@ -151,7 +151,7 @@ public abstract class BaseOpContext implements OpContext {
     @Override
     public void setBArguments(boolean... arguments) {
         fastpath_b.clear();
-        for (val v:arguments)
+        for (var v:arguments)
             fastpath_b.add(v);
     }
 
@@ -168,7 +168,7 @@ public abstract class BaseOpContext implements OpContext {
     @Override
     public void setDArguments(DataType... arguments) {
         fastpath_d.clear();
-        for (val v:arguments)
+        for (var v:arguments)
             fastpath_d.add(v);
     }
 
@@ -189,9 +189,9 @@ public abstract class BaseOpContext implements OpContext {
 
     @Override
     public List<INDArray> getInputArrays() {
-        val result = new ArrayList<INDArray>();
+        var result = new ArrayList<INDArray>();
         for (int e = 0; e < Integer.MAX_VALUE; e++) {
-            val arr = fastpath_in.get(e);
+            var arr = fastpath_in.get(e);
             if (arr != null)
                 result.add(arr);
             else
@@ -213,9 +213,9 @@ public abstract class BaseOpContext implements OpContext {
 
     @Override
     public List<INDArray> getOutputArrays() {
-        val result = new ArrayList<INDArray>();
+        var result = new ArrayList<INDArray>();
         for (int e = 0; e < Integer.MAX_VALUE; e++) {
-            val arr = fastpath_out.get(e);
+            var arr = fastpath_out.get(e);
             if (arr != null)
                 result.add(arr);
             else

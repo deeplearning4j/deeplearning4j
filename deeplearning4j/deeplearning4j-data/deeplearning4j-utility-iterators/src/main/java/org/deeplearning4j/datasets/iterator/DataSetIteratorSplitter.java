@@ -22,7 +22,7 @@ package org.deeplearning4j.datasets.iterator;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -116,7 +116,7 @@ public class DataSetIteratorSplitter {
 
     public DataSetIteratorSplitter(@NonNull DataSetIterator baseIterator, int[] splits) {
         int totalBatches = 0;
-        for (val v:splits)
+        for (var v:splits)
             totalBatches += v;
 
         if (totalBatches < 0)
@@ -233,7 +233,7 @@ public class DataSetIteratorSplitter {
                         throw new UnsupportedOperationException("Reset isn't supported by underlying iterator");
                 }
 
-                val state = backedIterator.hasNext();
+                var state = backedIterator.hasNext();
                 if (state && counter.get() < numTrain)
                     return true;
                 else
@@ -243,7 +243,7 @@ public class DataSetIteratorSplitter {
             @Override
             public DataSet next() {
                 counter.incrementAndGet();
-                val p = backedIterator.next();
+                var p = backedIterator.next();
 
                 if (counter.get() == 1 && firstTrain == null) {
                     // first epoch ever, we'll save first dataset and will use it to check for equality later
@@ -327,7 +327,7 @@ public class DataSetIteratorSplitter {
 
             @Override
             public boolean hasNext() {
-                val state = backedIterator.hasNext();
+                var state = backedIterator.hasNext();
                 if (state && counter.get() < numTrain + numTest)
                     return true;
                 else

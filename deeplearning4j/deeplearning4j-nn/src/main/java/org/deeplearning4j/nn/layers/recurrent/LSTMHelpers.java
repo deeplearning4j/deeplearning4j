@@ -21,7 +21,7 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -439,11 +439,11 @@ public class LSTMHelpers {
         input = input.castTo(inputWeights.dataType());  //No-op if
 
         //Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
-        val hiddenLayerSize = recurrentWeights.size(0); //i.e., n^L
-        val prevLayerSize = inputWeights.size(0); //n^(L-1)
-        val miniBatchSize = epsilon.size(0);
+        var hiddenLayerSize = recurrentWeights.size(0); //i.e., n^L
+        var prevLayerSize = inputWeights.size(0); //n^(L-1)
+        var miniBatchSize = epsilon.size(0);
         boolean is2dInput = epsilon.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
-        val timeSeriesLength = (is2dInput ? 1 : epsilon.size(2));
+        var timeSeriesLength = (is2dInput ? 1 : epsilon.size(2));
         INDArray wFFTranspose = null;
         INDArray wOOTranspose = null;
         INDArray wGGTranspose = null;
@@ -763,22 +763,22 @@ public class LSTMHelpers {
 
 
         InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
-        val tsLength = itr.getTimeSeriesLength();
+        var tsLength = itr.getTimeSeriesLength();
 
         InputType outputType = lstmLayer.getOutputType(-1, inputType);
 
-        val numParams = lstmLayer.initializer().numParams(lstmLayer);
+        var numParams = lstmLayer.initializer().numParams(lstmLayer);
         int updaterSize = (int) lstmLayer.getIUpdater().stateSize(numParams);
 
         //Memory use during forward pass:
         //ifogActivations: nTimeSteps * [minibatch,4*layerSize] (not cached during inference fwd pass)
-        val workingMemInferencePerEx = tsLength * 4 * lstmLayer.getNOut(); //Reduced by factor of tsLength if using workspace
+        var workingMemInferencePerEx = tsLength * 4 * lstmLayer.getNOut(); //Reduced by factor of tsLength if using workspace
 
         //For training, we also have
         //nTimeSteps * 5 * [minibatch, nOut] - 4 x gate pre-outs, memory cell state - may be cached
         //nTimeSteps * [minibatch, nOut] - peephole conneciton activations, graves LSTM only - may be cached
         //Total: 4 + 5 + 1 = 10xnOut per time step (training) or 4x (inference)
-        val fwdPassPerTimeStepTrainCache = tsLength * 6 * lstmLayer.getNOut();
+        var fwdPassPerTimeStepTrainCache = tsLength * 6 * lstmLayer.getNOut();
 
         //During backprop:
         //2 dups of size [minibatch, nOut] for nablaCellState (1 alloc only for no peephole)
@@ -790,7 +790,7 @@ public class LSTMHelpers {
         // 5xnOut (independent of minibatch size) - deltaiFog, peephole etc. Only 2 if no peephole TODO
         //6 for non-graves, 9 for graves
 
-        val backpropWorkingSpace = (isGraves ? 9 : 6) * tsLength * lstmLayer.getNOut();
+        var backpropWorkingSpace = (isGraves ? 9 : 6) * tsLength * lstmLayer.getNOut();
 
         //TODO NO WAY TO TAKE LSTM WORKSPACE INTO ACCOUNT HERE :(
 

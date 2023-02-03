@@ -27,7 +27,7 @@ import org.nd4j.shade.guava.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import lombok.val;
+
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -135,7 +135,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     public void buildVocab() {
 
 
-        val constructor = new VocabConstructor.Builder<T>().addSource(iterator, minWordFrequency)
+        var constructor = new VocabConstructor.Builder<T>().addSource(iterator, minWordFrequency)
                 .setTargetVocabCache(vocab).fetchLabels(trainSequenceVectors).setStopWords(stopWords)
                 .enableScavenger(enableScavenger).setEntriesLimit(vocabLimit)
                 .allowParallelTokenization(configuration.isAllowParallelTokenization())
@@ -236,7 +236,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
      * Starts training over
      */
     public void fit() {
-        val props = Nd4j.getExecutioner().getEnvironmentInformation();
+        var props = Nd4j.getExecutioner().getEnvironmentInformation();
         if (props.getProperty("backend").equals("CUDA")) {
             if (Nd4j.getAffinityManager().getNumberOfDevices() > 1)
                 throw new IllegalStateException("Multi-GPU word2vec/doc2vec isn't available atm");
@@ -275,18 +275,18 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                 iterator.reset();
 
                 while (iterator.hasMoreSequences()) {
-                    val sequence = iterator.nextSequence();
+                    var sequence = iterator.nextSequence();
 
                     // initializing elements, only once
                     for (T element : sequence.getElements()) {
                         T realElement = vocab.tokenFor(element.getLabel());
 
                         if (realElement != null && !realElement.isInit()) {
-                            val rng = Nd4j.getRandomFactory().getNewRandomInstance(
+                            var rng = Nd4j.getRandomFactory().getNewRandomInstance(
                                     configuration.getSeed() * realElement.hashCode(),
                                     configuration.getLayersSize() + 1);
 
-                            val randArray = Nd4j.rand(new int[] {1, configuration.getLayersSize()}, rng).subi(0.5)
+                            var randArray = Nd4j.rand(new int[] {1, configuration.getLayersSize()}, rng).subi(0.5)
                                     .divi(configuration.getLayersSize());
 
                             lookupTable.getWeights().getRow(realElement.getIndex(), true).assign(randArray);
@@ -323,16 +323,16 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         if (this.stopWords == null)
             this.stopWords = new ArrayList<>();
 
-        val wordsCounter = new AtomicLong(0);
+        var wordsCounter = new AtomicLong(0);
         for (int currentEpoch = 1; currentEpoch <= numEpochs; currentEpoch++) {
-            val linesCounter = new AtomicLong(0);
+            var linesCounter = new AtomicLong(0);
 
 
-            val sequencer = new AsyncSequencer(this.iterator, this.stopWords);
+            var sequencer = new AsyncSequencer(this.iterator, this.stopWords);
             sequencer.start();
 
-            val timer = new AtomicLong(System.currentTimeMillis());
-            val threads = new ArrayList<VectorCalculationsThread>();
+            var timer = new AtomicLong(System.currentTimeMillis());
+            var threads = new ArrayList<VectorCalculationsThread>();
             for (int x = 0; x < vectorCalcThreads; x++) {
                 threads.add(x, new VectorCalculationsThread(x, currentEpoch, wordsCounter, vocab.totalWordOccurrences(), linesCounter, sequencer, timer, numEpochs));
                 threads.get(x).start();
@@ -1316,12 +1316,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         @Override
         public void run() {
             // small workspace, just to handle
-            val conf = WorkspaceConfiguration.builder()
+            var conf = WorkspaceConfiguration.builder()
                     .policyLearning(LearningPolicy.OVER_TIME)
                     .cyclesBeforeInitialization(3)
                     .initialSize(25L * 1024L * 1024L)
                     .build();
-            val workspace_id = "sequence_vectors_training_" + UUID.randomUUID();
+            var workspace_id = "sequence_vectors_training_" + UUID.randomUUID();
 
             while (digitizer.hasMoreLines()) {
                 try {
@@ -1346,7 +1346,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                     for (int i = 0; i < numIterations; i++) {
                         // we roll over sequences derived from digitizer, it's NOT window loop
                         for (int x = 0; x < sequences.size(); x++) {
-                            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, workspace_id)) {
+                            try (var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, workspace_id)) {
                                 Sequence<T> sequence = sequences.get(x);
 
                                 log.debug("LR before: {}; wordsCounter: {}; totalWordsCount: {}", learningRate.get(), this.wordsCounter.get(), this.totalWordsCount);

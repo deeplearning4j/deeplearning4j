@@ -21,7 +21,7 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -74,7 +74,7 @@ public class Concat extends DynamicCustomOp {
 
     @Override
     public void assertValidForExecution() {
-        val descriptor = getDescriptor();
+        var descriptor = getDescriptor();
         if(descriptor == null)
             throw new NoOpNameFoundException("No descriptor found for op name " + opName());
 

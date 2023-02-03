@@ -20,7 +20,7 @@
 package org.datavec.arrow;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.FieldVector;
@@ -232,7 +232,7 @@ class ArrowConverterTest extends BaseND4JTest {
     @Test
     @DisplayName("Test Create ND Array")
     void testCreateNDArray() throws Exception {
-        val recordsToWrite = recordToWrite();
+        var recordsToWrite = recordToWrite();
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         ArrowConverter.writeRecordBatchTo(recordsToWrite.getRight(), recordsToWrite.getFirst(), byteArrayOutputStream);
         File f = testDir.toFile();
@@ -246,7 +246,7 @@ class ArrowConverterTest extends BaseND4JTest {
         assertEquals(recordsToWrite.getFirst(), schemaArrowWritableRecordBatchPair.getFirst());
         assertEquals(recordsToWrite.getRight(), schemaArrowWritableRecordBatchPair.getRight().toArrayList());
         byte[] arr = byteArrayOutputStream.toByteArray();
-        val read = ArrowConverter.readFromBytes(arr);
+        var read = ArrowConverter.readFromBytes(arr);
         assertEquals(recordsToWrite, read);
         // send file
         File tmp = tmpDataFile(recordsToWrite);
@@ -263,10 +263,10 @@ class ArrowConverterTest extends BaseND4JTest {
     @DisplayName("Test Convert To Arrow Vectors")
     void testConvertToArrowVectors() {
         INDArray matrix = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        val vectors = ArrowConverter.convertToArrowVector(matrix, Arrays.asList("test", "test2"), ColumnType.Double, bufferAllocator);
+        var vectors = ArrowConverter.convertToArrowVector(matrix, Arrays.asList("test", "test2"), ColumnType.Double, bufferAllocator);
         assertEquals(matrix.rows(), vectors.size());
         INDArray vector = Nd4j.linspace(1, 4, 4);
-        val vectors2 = ArrowConverter.convertToArrowVector(vector, Arrays.asList("test"), ColumnType.Double, bufferAllocator);
+        var vectors2 = ArrowConverter.convertToArrowVector(vector, Arrays.asList("test"), ColumnType.Double, bufferAllocator);
         assertEquals(1, vectors2.size());
         assertEquals(matrix.length(), vectors2.get(0).getValueCount());
     }
@@ -282,9 +282,9 @@ class ArrowConverterTest extends BaseND4JTest {
             schemaBuilder.addColumnFloat("testf-" + i);
         }
         Schema schema = schemaBuilder.build();
-        val schema2 = ArrowConverter.toArrowSchema(schema);
+        var schema2 = ArrowConverter.toArrowSchema(schema);
         assertEquals(8, schema2.getFields().size());
-        val convertedSchema = ArrowConverter.toDatavecSchema(schema2);
+        var convertedSchema = ArrowConverter.toDatavecSchema(schema2);
         assertEquals(schema, convertedSchema);
     }
 
@@ -310,10 +310,10 @@ class ArrowConverterTest extends BaseND4JTest {
             log.error("", e);
         }
         byte[] arr = byteArrayOutputStream.toByteArray();
-        val arr2 = ArrowConverter.readFromBytes(arr);
+        var arr2 = ArrowConverter.readFromBytes(arr);
         assertEquals(2, arr2.getFirst().numColumns());
         assertEquals(3, arr2.getRight().size());
-        val arrowCols = ArrowConverter.toArrowColumns(allocator, arr2.getFirst(), arr2.getRight());
+        var arrowCols = ArrowConverter.toArrowColumns(allocator, arr2.getFirst(), arr2.getRight());
         assertEquals(2, arrowCols.size());
         assertEquals(valueCount, arrowCols.get(0).getValueCount());
     }
@@ -322,10 +322,10 @@ class ArrowConverterTest extends BaseND4JTest {
     @DisplayName("Test Vector For Edge Cases")
     void testVectorForEdgeCases() {
         BufferAllocator allocator = new RootAllocator(Long.MAX_VALUE);
-        val vector = ArrowConverter.vectorFor(allocator, "field1", new float[] { Float.MIN_VALUE, Float.MAX_VALUE });
+        var vector = ArrowConverter.vectorFor(allocator, "field1", new float[] { Float.MIN_VALUE, Float.MAX_VALUE });
         assertEquals(Float.MIN_VALUE, vector.get(0), 1e-2);
         assertEquals(Float.MAX_VALUE, vector.get(1), 1e-2);
-        val vectorInt = ArrowConverter.vectorFor(allocator, "field1", new int[] { Integer.MIN_VALUE, Integer.MAX_VALUE });
+        var vectorInt = ArrowConverter.vectorFor(allocator, "field1", new int[] { Integer.MIN_VALUE, Integer.MAX_VALUE });
         assertEquals(Integer.MIN_VALUE, vectorInt.get(0), 1e-2);
         assertEquals(Integer.MAX_VALUE, vectorInt.get(1), 1e-2);
     }
@@ -334,27 +334,27 @@ class ArrowConverterTest extends BaseND4JTest {
     @DisplayName("Test Vector For")
     void testVectorFor() {
         BufferAllocator allocator = new RootAllocator(Long.MAX_VALUE);
-        val vector = ArrowConverter.vectorFor(allocator, "field1", new float[] { 1, 2, 3 });
+        var vector = ArrowConverter.vectorFor(allocator, "field1", new float[] { 1, 2, 3 });
         assertEquals(3, vector.getValueCount());
         assertEquals(1, vector.get(0), 1e-2);
         assertEquals(2, vector.get(1), 1e-2);
         assertEquals(3, vector.get(2), 1e-2);
-        val vectorLong = ArrowConverter.vectorFor(allocator, "field1", new long[] { 1, 2, 3 });
+        var vectorLong = ArrowConverter.vectorFor(allocator, "field1", new long[] { 1, 2, 3 });
         assertEquals(3, vectorLong.getValueCount());
         assertEquals(1, vectorLong.get(0), 1e-2);
         assertEquals(2, vectorLong.get(1), 1e-2);
         assertEquals(3, vectorLong.get(2), 1e-2);
-        val vectorInt = ArrowConverter.vectorFor(allocator, "field1", new int[] { 1, 2, 3 });
+        var vectorInt = ArrowConverter.vectorFor(allocator, "field1", new int[] { 1, 2, 3 });
         assertEquals(3, vectorInt.getValueCount());
         assertEquals(1, vectorInt.get(0), 1e-2);
         assertEquals(2, vectorInt.get(1), 1e-2);
         assertEquals(3, vectorInt.get(2), 1e-2);
-        val vectorDouble = ArrowConverter.vectorFor(allocator, "field1", new double[] { 1, 2, 3 });
+        var vectorDouble = ArrowConverter.vectorFor(allocator, "field1", new double[] { 1, 2, 3 });
         assertEquals(3, vectorDouble.getValueCount());
         assertEquals(1, vectorDouble.get(0), 1e-2);
         assertEquals(2, vectorDouble.get(1), 1e-2);
         assertEquals(3, vectorDouble.get(2), 1e-2);
-        val vectorBool = ArrowConverter.vectorFor(allocator, "field1", new boolean[] { true, true, false });
+        var vectorBool = ArrowConverter.vectorFor(allocator, "field1", new boolean[] { true, true, false });
         assertEquals(3, vectorBool.getValueCount());
         assertEquals(1, vectorBool.get(0), 1e-2);
         assertEquals(1, vectorBool.get(1), 1e-2);
@@ -364,11 +364,11 @@ class ArrowConverterTest extends BaseND4JTest {
     @Test
     @DisplayName("Test Record Reader And Write File")
     void testRecordReaderAndWriteFile() throws Exception {
-        val recordsToWrite = recordToWrite();
+        var recordsToWrite = recordToWrite();
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         ArrowConverter.writeRecordBatchTo(recordsToWrite.getRight(), recordsToWrite.getFirst(), byteArrayOutputStream);
         byte[] arr = byteArrayOutputStream.toByteArray();
-        val read = ArrowConverter.readFromBytes(arr);
+        var read = ArrowConverter.readFromBytes(arr);
         assertEquals(recordsToWrite, read);
         // send file
         File tmp = tmpDataFile(recordsToWrite);
@@ -381,7 +381,7 @@ class ArrowConverterTest extends BaseND4JTest {
     @Test
     @DisplayName("Test Record Reader Meta Data List")
     void testRecordReaderMetaDataList() throws Exception {
-        val recordsToWrite = recordToWrite();
+        var recordsToWrite = recordToWrite();
         // send file
         File tmp = tmpDataFile(recordsToWrite);
         RecordReader recordReader = new ArrowRecordReader();
@@ -403,7 +403,7 @@ class ArrowConverterTest extends BaseND4JTest {
     @Test
     @DisplayName("Test Record Reader Meta Data")
     void testRecordReaderMetaData() throws Exception {
-        val recordsToWrite = recordToWrite();
+        var recordsToWrite = recordToWrite();
         // send file
         File tmp = tmpDataFile(recordsToWrite);
         RecordReader recordReader = new ArrowRecordReader();

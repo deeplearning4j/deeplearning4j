@@ -117,7 +117,7 @@ public class OldConvolution {
      * @param sx the stride along x
      * @param ph the padding width
      * @param pw the padding height
-     * @param pval the padding value
+     * @param pvar the padding value
      * @param coverAll whether to cover the whole image or not
      * @return the column formatted image
      *

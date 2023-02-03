@@ -67,11 +67,11 @@ public class FeedForwardWithKeyFunction<K>
 
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(jsonConfig.getValue()));
         network.init();
-        INDArray val = params.value().dup();
-        if (val.length() != network.numParams(false))
+        INDArray paramsVal = params.value().dup();
+        if (paramsVal.length() != network.numParams(false))
             throw new IllegalStateException(
                             "Network did not have same number of parameters as the broadcasted set parameters");
-        network.setParameters(val);
+        network.setParameters(paramsVal);
 
         //Issue: for 2d data (MLPs etc) we can just stack the examples.
         //But: for 3d and 4d: in principle the data sizes could be different

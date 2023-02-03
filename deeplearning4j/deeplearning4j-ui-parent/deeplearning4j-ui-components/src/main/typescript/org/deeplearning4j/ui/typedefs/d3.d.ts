@@ -1760,7 +1760,7 @@ declare namespace d3 {
         export var month: Interval;
         export var year: Interval;
 
-        interface Interval {
+        interface Intervar {
             (d: Date): Date;
 
             floor(d: Date): Date;

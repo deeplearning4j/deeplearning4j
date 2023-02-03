@@ -32,7 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.deeplearning4j.datasets.iterator.RandomDataSetIterator;
 import org.deeplearning4j.datasets.iterator.utilty.ListDataSetIterator;
 import org.junit.jupiter.api.Tag;
@@ -504,11 +504,11 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
                 (sd.math.neg(sd.math.log(y_model.mul(y).add((sd.math.log(sd.constant(1.0).minus(y_model)).mul(sd.constant(1.0).minus(y)))))));
         SDVariable loss = sd.mean("loss", cost_fun);
 
-        val updater = new Sgd(learning_rate);
+        var updater = new Sgd(learning_rate);
 
         sd.setLossVariables("loss");
         sd.createGradFunction();
-        val conf = new TrainingConfig.Builder()
+        var conf = new TrainingConfig.Builder()
                 .updater(updater)
                 .dataSetFeatureMapping("x1", "x2", "y")
                 .markLabelsUnused()

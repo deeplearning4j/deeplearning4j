@@ -79,7 +79,7 @@ static SD_KERNEL void col2volCuda(const void* columns, const sd::LongType* colSh
     const sd::Unsigned colHend = sd::math::sd_min<sd::Unsigned>(imH / sH + 1, oH);
     const sd::Unsigned colWend = sd::math::sd_min<sd::Unsigned>(imW / sW + 1, oW);
 
-    T val = 0;
+    T var = 0;
 
     for (sd::Unsigned colD = colDstart; colD < colDend; ++colD) {
       coords[2] = imD - colD * sD;
@@ -93,7 +93,7 @@ static SD_KERNEL void col2volCuda(const void* columns, const sd::LongType* colSh
           coords[4] = imW - colW * sW;
           if (coords[4] % dW != 0) continue;
 
-          val += col[bSiCoffset + (coords[2] / dD) * colShapeInfo[11] + (coords[3] / dH) * colShapeInfo[12] +
+          var += col[bSiCoffset + (coords[2] / dD) * colShapeInfo[11] + (coords[3] / dH) * colShapeInfo[12] +
                      (coords[4] / dW) * colShapeInfo[13] + colD * colShapeInfo[14] + colH * colShapeInfo[15] +
                      colW * colShapeInfo[16]];
         }

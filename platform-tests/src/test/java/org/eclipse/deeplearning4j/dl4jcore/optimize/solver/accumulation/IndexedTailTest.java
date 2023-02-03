@@ -20,7 +20,7 @@
 package org.eclipse.deeplearning4j.dl4jcore.optimize.solver.accumulation;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.lang3.RandomUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.optimize.solvers.accumulation.IndexedTail;
@@ -45,7 +45,7 @@ class IndexedTailTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Deltas _ 1")
     void testDeltas_1() throws Exception {
-        val tail = new IndexedTail(2);
+        var tail = new IndexedTail(2);
         assertFalse(tail.hasAnything(11));
         assertFalse(tail.hasAnything(22));
         // 3 updates in queue
@@ -76,7 +76,7 @@ class IndexedTailTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Max Applied Index _ 1")
     void testMaxAppliedIndex_1() {
-        val tail = new IndexedTail(3);
+        var tail = new IndexedTail(3);
         // "registering" 3 consumers
         assertFalse(tail.hasAnything(11));
         assertFalse(tail.hasAnything(22));
@@ -103,7 +103,7 @@ class IndexedTailTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test First Not Applied _ 1")
     void testFirstNotApplied_1() {
-        val tail = new IndexedTail(1);
+        var tail = new IndexedTail(1);
         tail.hasAnything();
         assertEquals(-1, tail.firstNotAppliedIndexEverywhere());
         tail.put(Nd4j.createUninitialized(5, 5));
@@ -118,14 +118,14 @@ class IndexedTailTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Single Threaded _ 1")
     void testSingleThreaded_1() throws Exception {
-        val tail = new IndexedTail(1);
+        var tail = new IndexedTail(1);
         for (int e = 0; e < 100; e++) {
-            val orig = Nd4j.create(5, 5).assign(e);
+            var orig = Nd4j.create(5, 5).assign(e);
             tail.put(orig);
             Nd4j.getExecutioner().commit();
             assertTrue(tail.hasAnything());
-            val temp = Nd4j.create(5, 5);
-            val status = tail.drainTo(temp);
+            var temp = Nd4j.create(5, 5);
+            var status = tail.drainTo(temp);
             assertTrue(status);
             assertArrayEquals(orig.shape(), temp.shape());
             assertEquals(orig, temp);
@@ -136,19 +136,19 @@ class IndexedTailTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Single Threaded _ 2")
     void testSingleThreaded_2() throws Exception {
-        val tail = new IndexedTail(1);
+        var tail = new IndexedTail(1);
         for (int e = 0; e < 100; e++) {
             int numUpdates = RandomUtils.nextInt(1, 10);
             int sum = 0;
             for (int f = 1; f <= numUpdates; f++) {
                 sum += f;
-                val orig = Nd4j.create(5, 5).assign(f);
+                var orig = Nd4j.create(5, 5).assign(f);
                 tail.put(orig);
             }
             Nd4j.getExecutioner().commit();
             assertTrue(tail.hasAnything());
-            val temp = Nd4j.create(5, 5);
-            val status = tail.drainTo(temp);
+            var temp = Nd4j.create(5, 5);
+            var status = tail.drainTo(temp);
             assertTrue(status);
             assertEquals(sum, temp.meanNumber().intValue());
         }
@@ -158,7 +158,7 @@ class IndexedTailTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Single Threaded _ 3")
     void testSingleThreaded_3() throws Exception {
-        val tail = new IndexedTail(2, true, new long[] { 5, 5 });
+        var tail = new IndexedTail(2, true, new long[] { 5, 5 });
         assertFalse(tail.hasAnything());
         assertFalse(tail.hasAnything(11));
         int sum = 0;
@@ -169,7 +169,7 @@ class IndexedTailTest extends BaseDL4JTest {
         }
         assertTrue(tail.getCollapsedMode().get());
         assertEquals(1, tail.updatesSize());
-        val array = tail.getUpdates().get(32L);
+        var array = tail.getUpdates().get(32L);
         assertNotNull(array);
         assertEquals(sum, (int) array.getDouble(0));
     }
@@ -177,16 +177,16 @@ class IndexedTailTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Pseudo Multi Threaded _ 1")
     void testPseudoMultiThreaded_1() throws Exception {
-        val tail = new IndexedTail(2);
+        var tail = new IndexedTail(2);
         for (int e = 0; e < 100; e++) {
             // putting in one thread
-            val orig = Nd4j.create(5, 5).assign(e);
+            var orig = Nd4j.create(5, 5).assign(e);
             tail.put(orig);
             Nd4j.getExecutioner().commit();
             for (int t = 0; t < 2; t++) {
                 assertTrue(tail.hasAnything(t));
-                val temp = Nd4j.create(5, 5);
-                val status = tail.drainTo(t, temp);
+                var temp = Nd4j.create(5, 5);
+                var status = tail.drainTo(t, temp);
                 assertTrue(status);
                 assertArrayEquals(orig.shape(), temp.shape());
                 assertEquals(orig, temp);
@@ -198,19 +198,19 @@ class IndexedTailTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Multi Threaded _ 1")
     void testMultiThreaded_1() throws Exception {
-        val numReaders = 4;
-        final val tail = new IndexedTail(numReaders);
+        var numReaders = 4;
+        final var tail = new IndexedTail(numReaders);
         final long[] sums = new long[numReaders];
-        val readers = new ArrayList<Thread>();
+        var readers = new ArrayList<Thread>();
         for (int e = 0; e < numReaders; e++) {
             final int f = e;
-            val t = new Thread(() -> {
+            var t = new Thread(() -> {
                 sums[f] = 0;
                 while (!tail.isDead()) {
                     while (tail.hasAnything()) {
-                        val updates = Nd4j.create(5, 5);
+                        var updates = Nd4j.create(5, 5);
                         tail.drainTo(updates);
-                        val mean = (int) updates.getDouble(0);
+                        var mean = (int) updates.getDouble(0);
                         sums[f] += mean;
                     }
                 }
@@ -221,7 +221,7 @@ class IndexedTailTest extends BaseDL4JTest {
         }
         int sum = 0;
         for (int e = 0; e < 10000; e++) {
-            val array = Nd4j.create(5, 5).assign(e + 1);
+            var array = Nd4j.create(5, 5).assign(e + 1);
             Nd4j.getExecutioner().commit();
             sum += (e + 1);
             tail.put(array);
@@ -229,7 +229,7 @@ class IndexedTailTest extends BaseDL4JTest {
         // just wait till everything consumed
         Thread.sleep(2000);
         tail.notifyDead();
-        for (val t : readers) t.join();
+        for (var t : readers) t.join();
         for (int e = 0; e < numReaders; e++) assertEquals(sum, sums[e],"Failed for reader [" + e + "]");
         assertEquals(0, tail.updatesSize());
     }
@@ -237,20 +237,20 @@ class IndexedTailTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Multi Threaded _ 2")
     void testMultiThreaded_2() throws Exception {
-        val numReaders = 4;
-        val numWriters = 4;
-        final val tail = new IndexedTail(numReaders);
+        var numReaders = 4;
+        var numWriters = 4;
+        final var tail = new IndexedTail(numReaders);
         final long[] sums = new long[numReaders];
-        val readers = new ArrayList<Thread>();
+        var readers = new ArrayList<Thread>();
         for (int e = 0; e < numReaders; e++) {
             final int f = e;
-            val t = new Thread(() -> {
+            var t = new Thread(() -> {
                 sums[f] = 0;
                 while (!tail.isDead()) {
                     while (tail.hasAnything()) {
-                        val updates = Nd4j.create(5, 5);
+                        var updates = Nd4j.create(5, 5);
                         tail.drainTo(updates);
-                        val mean = (int) updates.getDouble(0);
+                        var mean = (int) updates.getDouble(0);
                         sums[f] += mean;
                     }
                 }
@@ -259,13 +259,13 @@ class IndexedTailTest extends BaseDL4JTest {
             t.start();
             readers.add(t);
         }
-        val writers = new ArrayList<Thread>();
+        var writers = new ArrayList<Thread>();
         for (int e = 0; e < numWriters; e++) {
-            val f = e;
-            val t = new Thread(() -> {
+            var f = e;
+            var t = new Thread(() -> {
                 int sum = 0;
                 for (int e1 = 0; e1 < 1000; e1++) {
-                    val array = Nd4j.create(5, 5).assign(e1 + 1);
+                    var array = Nd4j.create(5, 5).assign(e1 + 1);
                     Nd4j.getExecutioner().commit();
                     sum += (e1 + 1);
                     tail.put(array);
@@ -275,11 +275,11 @@ class IndexedTailTest extends BaseDL4JTest {
             t.start();
             writers.add(t);
         }
-        for (val t : writers) t.join();
+        for (var t : writers) t.join();
         // just wait till everything consumed
         Thread.sleep(2000);
         tail.notifyDead();
-        for (val t : readers) t.join();
+        for (var t : readers) t.join();
         for (int e = 0; e < numReaders; e++) assertEquals(500500 * numWriters, sums[e],"Failed for reader [" + e + "]");
         assertEquals(0, tail.updatesSize());
     }
@@ -287,20 +287,20 @@ class IndexedTailTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Multi Threaded _ 3")
     void testMultiThreaded_3() throws Exception {
-        val numReaders = 4;
-        val numWriters = 4;
-        final val tail = new IndexedTail(numReaders, true, new long[] { 5, 5 });
+        var numReaders = 4;
+        var numWriters = 4;
+        final var tail = new IndexedTail(numReaders, true, new long[] { 5, 5 });
         final long[] sums = new long[numReaders];
-        val readers = new ArrayList<Thread>();
+        var readers = new ArrayList<Thread>();
         for (int e = 0; e < numReaders; e++) {
             final int f = e;
-            val t = new Thread(() -> {
+            var t = new Thread(() -> {
                 sums[f] = 0;
                 while (!tail.isDead()) {
                     while (tail.hasAnything()) {
-                        val updates = Nd4j.create(5, 5);
+                        var updates = Nd4j.create(5, 5);
                         tail.drainTo(updates);
-                        val mean = (int) updates.getDouble(0);
+                        var mean = (int) updates.getDouble(0);
                         sums[f] += mean;
                     }
                 }
@@ -310,12 +310,12 @@ class IndexedTailTest extends BaseDL4JTest {
             readers.add(t);
         }
         final AtomicInteger sum = new AtomicInteger(0);
-        val writers = new ArrayList<Thread>();
+        var writers = new ArrayList<Thread>();
         for (int e = 0; e < numWriters; e++) {
-            val f = e;
-            val t = new Thread(() -> {
+            var f = e;
+            var t = new Thread(() -> {
                 for (int i = 0; i < 256; i++) {
-                    val array = Nd4j.create(5, 5).assign(i + 1);
+                    var array = Nd4j.create(5, 5).assign(i + 1);
                     Nd4j.getExecutioner().commit();
                     sum.addAndGet(i + 1);
                     tail.put(array);
@@ -325,11 +325,11 @@ class IndexedTailTest extends BaseDL4JTest {
             t.start();
             writers.add(t);
         }
-        for (val t : writers) t.join();
+        for (var t : writers) t.join();
         // just wait till everything consumed
         Thread.sleep(3000);
         tail.notifyDead();
-        for (val t : readers) t.join();
+        for (var t : readers) t.join();
         log.info("Readers results: {}", sums);
         for (int e = 0; e < numReaders; e++) assertEquals(sum.get(), sums[e],"Failed for reader [" + e + "]");
         assertEquals(0, tail.updatesSize());

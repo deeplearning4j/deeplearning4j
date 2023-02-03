@@ -325,7 +325,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             cacheArray(array);
         }
 
-        // Store in LRU cache for "last used" removal if we exceed cache size
+        // Store in LRU cache for "last used" removar if we exceed cache size
         lruCache.add(array.getId());
         lruCacheValues.put(array.getId(), array);
     }

@@ -78,7 +78,7 @@ class DenseTest extends BaseDL4JTest {
         iter.reset();
         DataSet test = iter.next();
         assertEquals(model.params(), model2.params());
-        Evaluation eval = new Evaluation();
+        Evaluation evar = new Evaluation();
         INDArray output = model.output(test.getFeatures());
         eval.eval(test.getLabels(), output);
         double f1Score = eval.f1();
@@ -99,7 +99,7 @@ class DenseTest extends BaseDL4JTest {
         iter.reset();
         DataSet test = iter.next();
         assertEquals(model.params(), model2.params());
-        Evaluation eval = new Evaluation();
+        Evaluation evar = new Evaluation();
         INDArray output = model.output(test.getFeatures());
         eval.eval(test.getLabels(), output);
         double f1Score = eval.f1();

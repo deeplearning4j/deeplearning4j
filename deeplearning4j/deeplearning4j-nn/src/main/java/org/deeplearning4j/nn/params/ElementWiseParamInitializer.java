@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.params;
 
-import lombok.val;
+
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -43,7 +43,7 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer{
     @Override
     public long numParams(Layer layer) {
         FeedForwardLayer layerConf = (FeedForwardLayer) layer;
-        val nIn = layerConf.getNIn();
+        var nIn = layerConf.getNIn();
         return nIn*2; //weights + bias
     }
 
@@ -63,17 +63,17 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer{
 
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
-        val length = numParams(conf);
+        var length = numParams(conf);
         if (paramsView.length() != length)
             throw new IllegalStateException(
                     "Expected params view of length " + length + ", got length " + paramsView.length());
 
         FeedForwardLayer layerConf =
                 (FeedForwardLayer) conf.getLayer();
-        val nIn = layerConf.getNIn();
+        var nIn = layerConf.getNIn();
 
         INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
-        val nWeightParams = nIn ;
+        var nWeightParams = nIn ;
         INDArray weightView = paramsViewReshape.get(NDArrayIndex.interval(0, nWeightParams));
         INDArray biasView = paramsViewReshape.get(
                 NDArrayIndex.interval(nWeightParams, nWeightParams + nIn));
@@ -100,9 +100,9 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer{
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
         FeedForwardLayer layerConf =
                 (FeedForwardLayer) conf.getLayer();
-        val nIn = layerConf.getNIn();
-        val nOut = layerConf.getNOut();
-        val nWeightParams = nIn ;
+        var nIn = layerConf.getNIn();
+        var nOut = layerConf.getNOut();
+        var nWeightParams = nIn ;
 
         INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
         INDArray weightGradientView = gradientViewReshape.get( NDArrayIndex.interval(0, nWeightParams));
@@ -119,7 +119,7 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer{
     @Override
     protected INDArray createWeightMatrix(long nIn, long nOut, IWeightInit weightInit,
                                           INDArray weightParamView, boolean initializeParameters) {
-        val shape = new long[] {1,nIn};
+        var shape = new long[] {1,nIn};
 
         if (initializeParameters) {
             INDArray ret = weightInit.init(nIn, //Fan in

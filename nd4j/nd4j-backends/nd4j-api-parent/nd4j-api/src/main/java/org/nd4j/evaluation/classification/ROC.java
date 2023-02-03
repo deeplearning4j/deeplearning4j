@@ -230,7 +230,7 @@ public class ROC extends BaseEvaluation<ROC> {
 
             INDArray cumSumPos = isPositive.cumsum(-1);
             INDArray cumSumNeg = isNegative.cumsum(-1);
-            val length = sorted.size(0);
+            var length = sorted.size(0);
 
             INDArray t = Nd4j.create(DataType.DOUBLE, length + 2, 1);
             t.put(new INDArrayIndex[]{interval(1, length + 1), all()}, sorted.getColumn(0,true));
@@ -401,7 +401,7 @@ public class ROC extends BaseEvaluation<ROC> {
             INDArray isPositive = sorted.getColumn(1,true);
 
             INDArray cumSumPos = isPositive.cumsum(-1);
-            val length = sorted.size(0);
+            var length = sorted.size(0);
 
             /*
             Sort descending. As we iterate: decrease probability threshold T... all values <= T are predicted
@@ -599,13 +599,13 @@ public class ROC extends BaseEvaluation<ROC> {
 
             if (probAndLabel == null) {
                 //Do initial allocation
-                val initialSize = Math.max(labels2d.size(0), exactAllocBlockSize);
+                var initialSize = Math.max(labels2d.size(0), exactAllocBlockSize);
                 probAndLabel = Nd4j.create(DataType.DOUBLE, new long[]{initialSize, 2}, 'c'); //First col: probability of class 1. Second col: "is class 1"
             }
 
             //Allocate a larger array if necessary
             if (exampleCount + labels2d.size(0) >= probAndLabel.size(0)) {
-                val newSize = probAndLabel.size(0) + Math.max(exactAllocBlockSize, labels2d.size(0));
+                var newSize = probAndLabel.size(0) + Math.max(exactAllocBlockSize, labels2d.size(0));
                 INDArray newProbAndLabel = Nd4j.create(DataType.DOUBLE, new long[]{newSize, 2}, 'c');
                 if (exampleCount > 0) {
                     //If statement to handle edge case: no examples, but we need to re-allocate right away
@@ -625,7 +625,7 @@ public class ROC extends BaseEvaluation<ROC> {
                 probClass1 = predictions2d.getColumn(1,true);
                 labelClass1 = labels2d.getColumn(1,true);
             }
-            val currMinibatchSize = labels2d.size(0);
+            var currMinibatchSize = labels2d.size(0);
             probAndLabel.get(interval(exampleCount, exampleCount + currMinibatchSize),
                     NDArrayIndex.point(0)).assign(probClass1);
 
@@ -746,7 +746,7 @@ public class ROC extends BaseEvaluation<ROC> {
 
             if (this.exampleCount + other.exampleCount > this.probAndLabel.size(0)) {
                 //Allocate new array
-                val newSize = this.probAndLabel.size(0) + Math.max(other.probAndLabel.size(0), exactAllocBlockSize);
+                var newSize = this.probAndLabel.size(0) + Math.max(other.probAndLabel.size(0), exactAllocBlockSize);
                 INDArray newProbAndLabel = Nd4j.create(DataType.DOUBLE, newSize, 2);
                 newProbAndLabel.put(new INDArrayIndex[]{interval(0, exampleCount), all()}, probAndLabel.get(interval(0, exampleCount), all()));
                 probAndLabel = newProbAndLabel;

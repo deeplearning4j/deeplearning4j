@@ -21,7 +21,7 @@
 package org.nd4j.parameterserver.distributed.v2.util;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -46,9 +46,9 @@ public class MeshOrganizerTest extends BaseND4JTest {
     @Test()
     @Timeout(1000L)
     public void testDescendantsCount_1() {
-        val node = MeshOrganizer.Node.builder().build();
+        var node = MeshOrganizer.Node.builder().build();
 
-        val eNode = MeshOrganizer.Node.builder().build();
+        var eNode = MeshOrganizer.Node.builder().build();
         eNode.addDownstreamNode(MeshOrganizer.Node.builder().build());
 
         node.addDownstreamNode(MeshOrganizer.Node.builder().build());
@@ -63,35 +63,35 @@ public class MeshOrganizerTest extends BaseND4JTest {
 
     @Test
     public void testDistanceFromRoot_1() {
-        val rootNode = new MeshOrganizer.Node(true);
+        var rootNode = new MeshOrganizer.Node(true);
 
-        val node0 = rootNode.addDownstreamNode(new MeshOrganizer.Node());
-        val node1 = node0.addDownstreamNode(new MeshOrganizer.Node());
+        var node0 = rootNode.addDownstreamNode(new MeshOrganizer.Node());
+        var node1 = node0.addDownstreamNode(new MeshOrganizer.Node());
 
         assertEquals(2, node1.distanceFromRoot());
 
-        val node2 = node1.addDownstreamNode(new MeshOrganizer.Node());
+        var node2 = node1.addDownstreamNode(new MeshOrganizer.Node());
 
         assertEquals(3, node2.distanceFromRoot());
     }
 
     @Test
     public void testNextCandidate_1() {
-        val rootNode = new MeshOrganizer.Node(true);
+        var rootNode = new MeshOrganizer.Node(true);
 
-        val node0 = rootNode.addDownstreamNode(new MeshOrganizer.Node());
-        val node1 = rootNode.addDownstreamNode(new MeshOrganizer.Node());
-        val node2 = rootNode.addDownstreamNode(new MeshOrganizer.Node());
+        var node0 = rootNode.addDownstreamNode(new MeshOrganizer.Node());
+        var node1 = rootNode.addDownstreamNode(new MeshOrganizer.Node());
+        var node2 = rootNode.addDownstreamNode(new MeshOrganizer.Node());
 
-        val c1_0 = node1.getNextCandidate(null);
+        var c1_0 = node1.getNextCandidate(null);
         assertEquals(node1, c1_0);
 
-        val nn = c1_0.addDownstreamNode(new MeshOrganizer.Node());
+        var nn = c1_0.addDownstreamNode(new MeshOrganizer.Node());
     }
 
     @Test
     public void testPushDownstream_1() {
-        val rootNode = new MeshOrganizer.Node(true);
+        var rootNode = new MeshOrganizer.Node(true);
 
         for (int e = 0; e < MeshOrganizer.MAX_DOWNSTREAMS  * MeshOrganizer.MAX_DEPTH * 2; e++ )
             rootNode.pushDownstreamNode(new MeshOrganizer.Node());
@@ -102,18 +102,18 @@ public class MeshOrganizerTest extends BaseND4JTest {
 
     @Test
     public void testBasicMesh_3() {
-        val mesh = new MeshOrganizer(MeshBuildMode.MESH);
+        var mesh = new MeshOrganizer(MeshBuildMode.MESH);
 
-        val node1 = mesh.addNode("192.168.1.1");
-        val node2 = mesh.addNode("192.168.2.1");
-        val node3 = mesh.addNode("192.168.2.2");
+        var node1 = mesh.addNode("192.168.1.1");
+        var node2 = mesh.addNode("192.168.2.1");
+        var node3 = mesh.addNode("192.168.2.2");
 
         assertEquals(4, mesh.totalNodes());
         assertEquals(3, mesh.getRootNode().numberOfDownstreams());
 
-        val node4 = mesh.addNode("192.168.2.3");
-        val node5 = mesh.addNode("192.168.2.4");
-        val node6 = mesh.addNode("192.168.2.5");
+        var node4 = mesh.addNode("192.168.2.3");
+        var node5 = mesh.addNode("192.168.2.4");
+        var node6 = mesh.addNode("192.168.2.5");
 
         assertEquals(0, node1.numberOfDownstreams());
         assertEquals(0, node4.numberOfDownstreams());
@@ -124,7 +124,7 @@ public class MeshOrganizerTest extends BaseND4JTest {
 
     @Test
     public void testBasicMesh_4() {
-        val mesh = new MeshOrganizer(MeshBuildMode.MESH);
+        var mesh = new MeshOrganizer(MeshBuildMode.MESH);
 
         // smoke test
         for (int e = 0; e < 8192; e++)
@@ -134,7 +134,7 @@ public class MeshOrganizerTest extends BaseND4JTest {
         assertEquals(8193, mesh.totalNodes());
 
         // and now we'll make sure there's no nodes with number of downstreams > MAX_DOWNSTREAMS
-        for (val v: mesh.flatNodes()) {
+        for (var v: mesh.flatNodes()) {
             assertTrue(v.numberOfDownstreams() <= MeshOrganizer.MAX_DOWNSTREAMS);
             assertTrue(v.distanceFromRoot() <= MeshOrganizer.MAX_DEPTH + 1);
         }
@@ -143,7 +143,7 @@ public class MeshOrganizerTest extends BaseND4JTest {
 
     @Test
     public void testRemap_1() throws Exception {
-        val mesh = new MeshOrganizer(MeshBuildMode.MESH);
+        var mesh = new MeshOrganizer(MeshBuildMode.MESH);
 
         for (int e = 0; e < MeshOrganizer.MAX_DOWNSTREAMS; e++)
             mesh.addNode(String.valueOf(e));
@@ -153,8 +153,8 @@ public class MeshOrganizerTest extends BaseND4JTest {
 
         assertEquals(MeshOrganizer.MAX_DOWNSTREAMS, mesh.getRootNode().numberOfDownstreams());
 
-        val node4 = mesh.addNode("192.168.1.7");
-        val node1 = mesh.getNodeById("0");
+        var node4 = mesh.addNode("192.168.1.7");
+        var node1 = mesh.getNodeById("0");
 
         assertEquals(1, node1.numberOfDownstreams());
 
@@ -166,49 +166,49 @@ public class MeshOrganizerTest extends BaseND4JTest {
 
     @Test
     public void testRemap_2() throws Exception {
-        val mesh = new MeshOrganizer(MeshBuildMode.MESH);
+        var mesh = new MeshOrganizer(MeshBuildMode.MESH);
         mesh.getRootNode().setId("ROOT_NODE");
-        val nodes = new ArrayList<MeshOrganizer.Node>();
+        var nodes = new ArrayList<MeshOrganizer.Node>();
 
         for (int e = 0; e < 8192; e++) {
-            val node = mesh.addNode(java.util.UUID.randomUUID().toString());
+            var node = mesh.addNode(java.util.UUID.randomUUID().toString());
             nodes.add(node);
         }
 
-//        for (val n:nodes)
+//        for (var n:nodes)
 //            log.info("Number of downstreams: [{}]", n.numberOfDownstreams());
 
         log.info("Going for first clone");
-        val clone1 = mesh.clone();
+        var clone1 = mesh.clone();
         assertEquals(mesh, clone1);
 
-        val badNode = nodes.get(119);
+        var badNode = nodes.get(119);
         mesh.remapNode(badNode.getId());
 
         log.info("Going for second clone");
-        val clone2 = mesh.clone();
+        var clone2 = mesh.clone();
         assertEquals(mesh, clone2);
     }
 
     @Test
     public void testRemap_3() throws Exception {
-        val mesh = new MeshOrganizer(MeshBuildMode.MESH);
+        var mesh = new MeshOrganizer(MeshBuildMode.MESH);
         mesh.getRootNode().setId("ROOT_NODE");
-        val nodes = new ArrayList<MeshOrganizer.Node>();
+        var nodes = new ArrayList<MeshOrganizer.Node>();
 
         for (int e = 0; e < 512; e++) {
-            val node = mesh.addNode(String.valueOf(e));
+            var node = mesh.addNode(String.valueOf(e));
             nodes.add(node);
         }
 
-        val node = nodes.get(8);
+        var node = nodes.get(8);
         assertNotNull(node.getUpstreamNode());
         assertEquals(MeshOrganizer.MAX_DOWNSTREAMS, node.getDownstreamNodes().size());
 
         log.info("Node ID: {}; Upstream ID: {}; Downstreams: {}", node.getId(), node.getUpstreamNode().getId(), node.getDownstreamNodes());
 
         // saving current downstream IDs for later check
-        val ids = new ArrayList<String>();
+        var ids = new ArrayList<String>();
         node.getDownstreamNodes().forEach(n  -> ids.add(n.getId()));
 
 
@@ -223,8 +223,8 @@ public class MeshOrganizerTest extends BaseND4JTest {
         assertEquals(0, node.getDownstreamNodes().size());
 
         // we're making sure downstream nodes were properly updated
-        for (val i:ids) {
-            val n = mesh.getNodeById(i);
+        for (var i:ids) {
+            var n = mesh.getNodeById(i);
             assertNotNull(n);
             // ensuring upstream was properly changed
             assertNotEquals(node.getId(), n.getUpstreamNode().getId());
@@ -237,22 +237,22 @@ public class MeshOrganizerTest extends BaseND4JTest {
 
     @Test
     public void testEquality_1() throws Exception {
-        val node1 = MeshOrganizer.Node.builder()
+        var node1 = MeshOrganizer.Node.builder()
                 .id("192.168.0.1")
                 .port(38912)
                 .build();
 
-        val node2 = MeshOrganizer.Node.builder()
+        var node2 = MeshOrganizer.Node.builder()
                 .id("192.168.0.1")
                 .port(38912)
                 .build();
 
-        val node3 = MeshOrganizer.Node.builder()
+        var node3 = MeshOrganizer.Node.builder()
                 .id("192.168.0.1")
                 .port(38913)
                 .build();
 
-        val node4 = MeshOrganizer.Node.builder()
+        var node4 = MeshOrganizer.Node.builder()
                 .id("192.168.0.2")
                 .port(38912)
                 .build();
@@ -267,17 +267,17 @@ public class MeshOrganizerTest extends BaseND4JTest {
 
     @Test
     public void testEquality_2() throws Exception {
-        val node1 = MeshOrganizer.Node.builder()
+        var node1 = MeshOrganizer.Node.builder()
                 .id("192.168.0.1")
                 .port(38912)
                 .build();
 
-        val node2 = MeshOrganizer.Node.builder()
+        var node2 = MeshOrganizer.Node.builder()
                 .id("192.168.0.1")
                 .port(38912)
                 .build();
 
-        val node3 = MeshOrganizer.Node.builder()
+        var node3 = MeshOrganizer.Node.builder()
                 .id("192.168.0.1")
                 .port(38912)
                 .build();
@@ -293,10 +293,10 @@ public class MeshOrganizerTest extends BaseND4JTest {
 
     @Test
     public void testEquality_3() throws Exception {
-        val mesh1 = new MeshOrganizer();
-        val mesh2 = new MeshOrganizer();
-        val mesh3 = new MeshOrganizer(MeshBuildMode.PLAIN);
-        val mesh4 = new MeshOrganizer(MeshBuildMode.PLAIN);
+        var mesh1 = new MeshOrganizer();
+        var mesh2 = new MeshOrganizer();
+        var mesh3 = new MeshOrganizer(MeshBuildMode.PLAIN);
+        var mesh4 = new MeshOrganizer(MeshBuildMode.PLAIN);
 
         assertEquals(mesh1, mesh2);
         assertNotEquals(mesh1, mesh3);
@@ -305,9 +305,9 @@ public class MeshOrganizerTest extends BaseND4JTest {
 
     @Test
     public void testEquality_4() throws Exception {
-        val mesh1 = new MeshOrganizer(MeshBuildMode.MESH);
-        val mesh2 = new MeshOrganizer(MeshBuildMode.MESH);
-        val mesh3 = new MeshOrganizer(MeshBuildMode.PLAIN);
+        var mesh1 = new MeshOrganizer(MeshBuildMode.MESH);
+        var mesh2 = new MeshOrganizer(MeshBuildMode.MESH);
+        var mesh3 = new MeshOrganizer(MeshBuildMode.PLAIN);
 
         mesh1.addNode("192.168.1.1");
         mesh2.addNode("192.168.1.1");
@@ -319,27 +319,27 @@ public class MeshOrganizerTest extends BaseND4JTest {
 
     @Test
     public void testClone_1() throws Exception {
-        val mesh1 = new MeshOrganizer(MeshBuildMode.MESH);
+        var mesh1 = new MeshOrganizer(MeshBuildMode.MESH);
 
         for (int e = 0; e < 8192; e++)
             mesh1.addNode(java.util.UUID.randomUUID().toString());
 
-        val mesh2 = mesh1.clone();
+        var mesh2 = mesh1.clone();
         assertEquals(mesh1, mesh2);
     }
 
     @Test
     public void testSerialization_1() throws Exception {
-        val mesh1 = new MeshOrganizer(MeshBuildMode.MESH);
+        var mesh1 = new MeshOrganizer(MeshBuildMode.MESH);
 
         for (int e = 0; e < 1000; e++)
             mesh1.addNode(java.util.UUID.randomUUID().toString());
 
 
-        try(val baos = new ByteArrayOutputStream();) {
+        try(var baos = new ByteArrayOutputStream();) {
             SerializationUtils.serialize(mesh1, baos);
 
-            try(val bais = new ByteArrayInputStream(baos.toByteArray())) {
+            try(var bais = new ByteArrayInputStream(baos.toByteArray())) {
 
                 MeshOrganizer mesh2 = SerializationUtils.deserialize(bais);
                 assertEquals(mesh1, mesh2);

@@ -217,7 +217,7 @@ public interface Model {
     /**
      * Set the parameter with a new ndarray
      * @param key the key to se t
-     * @param val the new ndarray
+     * @param var the new ndarray
      */
     void setParam(String key, INDArray val);
 
