@@ -943,9 +943,6 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @ParameterizedTest
     public void testParallelLoading(Nd4jBackend backend) throws Exception {
-        Nd4j.getProfiler().start();
-        EventLogger.getInstance().setEventTypesToLog(Arrays.asList(EventType.DEALLOCATION));
-        EventLogger.getInstance().setFormatTimeAsDate(true);
         int numThreads = 16;
         boolean isIntegration = isIntegrationTests();
         Executor executor = Executors.newFixedThreadPool(numThreads);
@@ -980,7 +977,6 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
             File write = new File("pv_" + i + ".zip");
             System.out.println(UnifiedProfiler.getInstance().printCurrentStats());
             WordVectorSerializer.writeParagraphVectors(pv,write.getAbsolutePath());
-            System.out.println(UnifiedProfiler.getInstance().printCurrentStats());
 
         }
 
@@ -994,10 +990,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
                     @SneakyThrows
                     @Override
                     public void run() {
-                        System.out.println(UnifiedProfiler.getInstance().printCurrentStats());
                         WordVectorSerializer.readParagraphVectors(write);
-                        Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
-                        System.out.println(UnifiedProfiler.getInstance().printCurrentStats());
                     }
                 });
             }
@@ -1007,7 +1000,6 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         }
 
 
-        //  Nd4j.getProfiler().stop();
 
     }
 
