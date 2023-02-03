@@ -223,7 +223,7 @@ jobs:
 
           else
                   echo "Running build and deploying to snapshots"
-                  evar "${COMMAND}"
+                  eval "${COMMAND}"
           fi
 
       - name: Setup tmate session
