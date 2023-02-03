@@ -21,6 +21,7 @@
 package org.deeplearning4j.models.paragraphvectors;
 
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
+import org.nd4j.linalg.profiler.UnifiedProfiler;
 import org.nd4j.shade.guava.collect.Lists;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -1217,6 +1218,13 @@ public class ParagraphVectors extends Word2Vec {
                 elementsLearningAlgorithm.configure(vocabCache,lookupTable,configuration);
             if(this.sequenceLearningAlgorithm != null)
                 sequenceLearningAlgorithm.configure(vocabCache,lookupTable,configuration);
+
+           if(existingVectors!= null) {
+               ret.lookupTable = existingVectors.lookupTable();
+               ret.vocab = existingVectors.vocab();
+           }
+
+
             return ret;
         }
 

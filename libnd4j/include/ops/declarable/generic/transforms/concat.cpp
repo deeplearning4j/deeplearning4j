@@ -47,14 +47,12 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
   auto rankOfFirstArr = block.width() > 0 ? INPUT_VARIABLE(0)->rankOf() : 0;
   auto typeOfFirstArr = block.width() > 0 ? INPUT_VARIABLE(0)->dataType() : block.dataType();
 
+
   for (int i = 0; i < numOfInArrs; ++i) {
     auto input = INPUT_VARIABLE(i);
     auto currentRank = input->rankOf();
+    auto *shapeInfoCast = input->shapeInfo();
 
-    // TODO: follow two lines are in accordance to current tf.concat spec. Commented for compatibility with legacy
-    //        REQUIRE_TRUE(currentRank > 0, 0, "Rank of input variable %i must be greater 0, but is %lld instead.", i,
-    //        currentRank); REQUIRE_TRUE(rankOfFirstArr == currentRank, 0, "Number of dimensions in concat should be
-    //        equals, but for %i input variable %lld != %lld appears.", i, currentRank, rankOfFirstArr);
     if (!input->isEmpty()) {
       allOfSameType &= (typeOfFirstArr == input->dataType());
 
@@ -91,20 +89,38 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
   REQUIRE_TRUE(0 <= axis && (axis < rank || (axis == 0 && rank == 0)), 0,
                "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank - 1, axis);
 
-  for (int i = 1; i < numOfNonEmptyArrs; ++i)
-    REQUIRE_TRUE(nonEmptyArrs[i]->rankOf() == rank, 0, "CONCAT op: all input arrays must have the same rank !");
-
   for (int i = 1; i < numOfNonEmptyArrs; ++i) {
-    for (int dim = 0; dim < rank; ++dim)
-      if (dim != axis)
-        REQUIRE_TRUE(nonEmptyArrs[i]->sizeAt(dim) == nonEmptyArrs[0]->sizeAt(dim), 0,
-                     "CONCAT op: all input arrays must have the same dimensions (except those on input axis) !");
+    if(nonEmptyArrs[i]->rankOf() != rank) {
+      std::string error;
+      error += std::string("CONCAT op: array at index: ");
+      error += std::to_string(i);
+      error += std::string(" ");
+      error += std::string(" did not have same rank. Expected rank: " + rank);
+      error += std::string(" but was: " + nonEmptyArrs[i]->rankOf());
+      REQUIRE_TRUE(nonEmptyArrs[i]->rankOf() == rank, 0,error.c_str());
+    }
+
+    for (int dim = 0; dim < rank; ++dim) {
+      if (dim != axis) {
+        if(nonEmptyArrs[i]->sizeAt(dim) != nonEmptyArrs[0]->sizeAt(dim)) {
+          std::string error;
+          error += std::string("CONCAT op: array at index: ");
+          error += std::to_string(i);
+          error += std::string(" ");
+          error += std::string(" did not have same dimension. Expected dimension : " + nonEmptyArrs[0]->sizeAt(dim));
+          error += std::string(" but was: " + nonEmptyArrs[i]->sizeAt(dim));
+          REQUIRE_TRUE(nonEmptyArrs[i]->rankOf() == rank, 0,error.c_str());
+        }
+      }
+    }
+
   }
+
   // ******** end of input validation ******** //
 
   auto output = OUTPUT_VARIABLE(0);
 
- 
+
   helpers::concat(block.launchContext(), nonEmptyArrs, *output, axis);
 
   // delete dynamically allocated vectors with length=1
@@ -160,15 +176,33 @@ DECLARE_SHAPE_FN(concat) {
   REQUIRE_TRUE(0 <= axis && axis < rank, 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!",
                rank - 1, axis);
 
-  for (int i = 1; i < numOfNonEmptyArrs; ++i)
-    REQUIRE_TRUE(shape::rank(arrShapes.at(i)) == rank, 0, "CONCAT op: all input arrays must have the same rank !");
 
   for (int i = 1; i < numOfNonEmptyArrs; ++i) {
-    for (int dim = 0; dim < rank; ++dim)
-      if (dim != axis)
-        REQUIRE_TRUE(arrShapes.at(i)[dim + 1] == arrShapes.at(0)[dim + 1], 0,
-                     "CONCAT op: all input arrays must have the same dimensions (except those on input axis) !");
+    if (shape::rank(arrShapes.at(i)) != rank) {
+      std::string error;
+      error += std::string("CONCAT op: array at index: ");
+      error += std::string("" + i);
+      error += std::string(" ");
+      error += std::string(" did not have same rank. Expected rank: " + rank);
+      error += std::string(" but was: " + shape::rank(arrShapes.at(i)));
+      throw std::runtime_error(error.c_str());
+    }
+
+    for (int dim = 0; dim < rank; ++dim) {
+      if (dim != axis) {
+        if (arrShapes.at(i)[dim + 1] != arrShapes.at(0)[dim + 1]) {
+          std::string error;
+          error += std::string("CONCAT op: array at index: ");
+          error += std::string("" + i);
+          error += std::string(" ");
+          error += std::string(" did not have same dimension. Expected dimension : " + arrShapes.at(0)[dim + 1]);
+          error += std::string(" but was: " + arrShapes.at(0)[dim + 1]);
+          throw std::runtime_error(error.c_str());
+        }
+      }
+    }
   }
+
   // ******** end of input validation ******** //
 
   sd::LongType* outShapeInfo(nullptr);
@@ -184,190 +218,11 @@ DECLARE_SHAPE_FN(concat) {
 
   ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes.at(0), shape::order(arrShapes.at(0)));
 
-  // delete dynamically allocated vectors shapes with length=1
-  //    for(int index : shapesToDelete)
-  //        RELEASE(arrShapes[index], block.getWorkspace());
 
   auto result = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(outShapeInfo));
   RELEASE(outShapeInfo, block.getWorkspace());
   return SHAPELIST(result);
 }
-
-// //////////////////////////////////////////////////////////////////////////
-// CUSTOM_OP_IMPL(concat, -1, 1, false, 0, -2){
-//     // do something here{
-//     NDArray<T> *last = INPUT_VARIABLE((int) block.width() - 1);
-
-//     int _dimension = 0;
-//     if (block.numI() > 0)
-//         _dimension = INT_ARG(0);
-//     else {
-//         _dimension = (int) last->e(0);
-//     }
-
-//     // we want to ensure that all
-//     NDArray<T> *first = nullptr;
-//     auto output = OUTPUT_VARIABLE(0);
-
-//     int elements = 0;
-
-//     for (int e = 0; e < block.width(); e++) {
-//         auto arr = INPUT_VARIABLE(e);
-//         if (!arr->isEmpty())
-//             elements++;
-
-//         // we must find first non-empty element here
-//         if (!arr->isEmpty() && first == nullptr)
-//             first = arr;
-//     }
-
-//     REQUIRE_TRUE(first != nullptr, 0, "Concat: at least 1 non-empty input required!");
-
-//     // it's possible to get into situation when your input has only 1 input. That's just assign
-//     if (elements == 1) {
-//         output->assign(first);
-//         return sd::Status::OK;
-//     }
-
-//     bool oldScalars = first->rankOf() == 2 && first->isScalar();
-
-//     auto buffers = new sd::Pointer[elements];
-//     auto shapes = new sd::Pointer[elements];
-
-//     buffers[0] = (sd::Pointer) first->buffer();
-//     shapes[0] = (sd::Pointer) first->shapeInfo();
-
-//     if (_dimension < 0)
-//         _dimension += first->rankOf();
-
-//     if (sd::Environment::getInstance().isDebugAndVerbose()) {
-//         printf("Shape %i: ", 0);
-//         shape::printShapeInfoLinear((sd::LongType *) shapes[0]);
-//     }
-
-//     int er = 0;
-//     for (int e = 0; e < block.width(); e++) {
-//         Variable<T> *var = block.variable(e);
-//         auto array = var->getNDArray();
-
-//         if (array->isEmpty())
-//             continue;
-
-//         buffers[er] = reinterpret_cast<sd::Pointer>(array->buffer());
-//         shapes[er++] = reinterpret_cast<sd::Pointer>(array->shapeInfo());
-
-//         oldScalars &= array->rankOf() == 2 && array->isScalar();
-
-//         if (sd::Environment::getInstance().isDebugAndVerbose()) {
-//             printf("Shape %i: ", e);
-//             shape::printShapeInfoLinear(array->shapeInfo());
-//         }
-//     }
-//     if (sd::Environment::getInstance().isDebugAndVerbose())
-//         fflush(stdout);
-
-//     if (oldScalars) {
-//         sd_debug("OLD_SCALARS!\n","");
-//         _dimension = 1;
-//     }
-
-//     sd::SpecialMethods<T>::concatCpuGeneric(_dimension, elements, buffers, shapes, output->buffer(),
-//     output->shapeInfo());
-
-//     STORE_RESULT(*output);
-
-//     if (sd::Environment::getInstance().isDebugAndVerbose())
-//         output->printShapeInfo("Concat result shape");
-
-//     delete[] buffers;
-//     delete[] shapes;
-
-//     return sd::Status::OK;
-// }
-
-// DECLARE_SYN(ParallelConcat, concat);
-// DECLARE_SYN(concat_v2, concat);
-// DECLARE_SYN(concatv2, concat);
-
-// DECLARE_SHAPE_FN(concat) {
-//     auto inp = inputShape->at(0);
-//     int _dimension = INT_ARG(0);
-
-//     NDArray<T>* first = nullptr;
-//     auto last = inputShape->at(inputShape->size() - 1);
-
-//     sd::LongType elements = 0;
-//     sd::LongType *newShape;
-
-//     for (int  e = 0; e < inputShape->size(); e++) {
-//         auto s = INPUT_VARIABLE(e);
-
-//         if (!s->isEmpty()) {
-//             elements++;
-
-//             if (first == nullptr)
-//                 first = s;
-//         }
-//     }
-
-//     { // special cases for 0D concat
-//         bool allScalars = true;
-//         bool hasScalars = false;
-//         for (int e = 0; e < block.width(); e++) {
-//             auto c = INPUT_VARIABLE(e);
-
-//             if (c->isEmpty())
-//                 continue;
-
-//             allScalars &= c->rankOf() == 0;
-//             hasScalars |= c->rankOf() == 0;
-//         }
-
-//         // all scalars
-//         if (allScalars) {
-//             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), sd::LongType);
-
-//             shape::shapeBuffer(1, &elements, newShape);
-//             return SHAPELIST(newShape);
-//         }
-
-//         // any scalar
-//         if (hasScalars) {
-//             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), sd::LongType);
-//             sd::LongType length = shape::length(inp);
-//             for (int i = 1; i < block.width(); i++) {
-//                 auto c = INPUT_VARIABLE(i);
-//                 if (c->isEmpty())
-//                     continue;
-
-//                 length += c->lengthOf();
-//             }
-
-//             shape::shapeBuffer(1, &length, newShape);
-//             return SHAPELIST(newShape);
-//         }
-//     }
-
-//     ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(first->shapeInfo()), sd::LongType);
-
-//     if (_dimension < 0)
-//         _dimension += first->rankOf();
-
-//     std::memcpy(newShape, first->shapeInfo(), shape::shapeInfoByteLength(first->shapeInfo()));
-//     for (int i = 0; i < inputShape->size(); i++) {
-//         auto s = INPUT_VARIABLE(i);
-
-//         // FIXME: s == first is bad, but fast. alternatively we can subtract first size out of result
-//         if (s->isEmpty() || s == first)
-//             continue;
-
-//         newShape[_dimension + 1] += shape::shapeOf(inputShape->at(i))[_dimension];
-//     }
-
-//     shape::updateStrides(newShape, first->ordering());
-
-//     return SHAPELIST(newShape);
-// }
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(concat_bp, -1, -1, false, 0, 0) {

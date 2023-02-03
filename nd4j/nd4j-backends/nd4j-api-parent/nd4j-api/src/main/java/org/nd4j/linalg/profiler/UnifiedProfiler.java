@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
 
 import java.util.List;
 import java.util.Map;
@@ -67,6 +68,7 @@ public class UnifiedProfiler {
                 .build();
         Nd4j.getExecutioner().setProfilingConfig(profilerConfig);
         OpProfiler.getInstance().setConfig(profilerConfig);
+        EventLogger.getInstance().setEnabled(true);
 
     }
 
@@ -82,6 +84,8 @@ public class UnifiedProfiler {
                 .build();
         Nd4j.getExecutioner().setProfilingConfig(profilerConfig);
         OpProfiler.getInstance().setConfig(profilerConfig);
+        EventLogger.getInstance().setEnabled(false);
+
 
     }
 
@@ -152,6 +156,22 @@ public class UnifiedProfiler {
         return AllocationsTracker.getInstance().memoryPerDevice();
     }
 
+
+    /**
+     * Whether to enable log events.
+     * Events include timestamped events of:
+     * allocations
+     * deallocations
+     * Note this will log A LOT of information.
+     * This logger should only be used when trying to debug
+     * something like a crash where VERY fine grained information
+     * is needed to make sense of off heap events that are not provided
+     * by pre existing java tools.
+     * @param enableLogEvents
+     */
+    public void enableLogEvents(boolean enableLogEvents) {
+        EventLogger.getInstance().setEnabled(enableLogEvents);
+    }
 
     public static UnifiedProfiler getInstance() {
         return INSTANCE;

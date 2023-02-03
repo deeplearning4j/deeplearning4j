@@ -17,34 +17,22 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
+package org.nd4j.linalg.profiler.data.eventlogger;
 
-package org.nd4j.linalg.api.memory;
-
-public interface Deallocatable {
-
-    /**
-     * Whether the reference should be deallocated or not.
-     * @return
-     */
-    default boolean shouldDeAllocate() {
-        return false;
-    }
-
-    /**
-     * This method returns unique ID for this instance
-     * @return
-     */
-    String getUniqueId();
-
-    /**
-     * This method returns deallocator associated with this instance
-     * @return
-     */
-    Deallocator deallocator();
+/**
+ * Custom listener for log events.
+ *
+ * @author Adam Gibson
+ */
+public interface EventLogListener {
 
 
     /**
-     * This method returns deviceId it's affined with, so deallocator thread will be guaranteed to match it
+     * The {@link EventLogger}
+     * will call listeners when its own
+     * {@link EventLogger#log(LogEvent)}
+     * is called
+     * @param logEvent the log event that occurred
      */
-    int targetDevice();
+    void onLogEvent(LogEvent logEvent);
 }

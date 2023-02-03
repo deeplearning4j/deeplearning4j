@@ -22,6 +22,7 @@ package org.deeplearning4j.models.paragraphvectors;
 
 
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.IOUtils;
@@ -66,6 +67,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.profiler.UnifiedProfiler;
+import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
+import org.nd4j.linalg.profiler.data.eventlogger.EventType;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -74,6 +78,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -923,6 +929,71 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         log.info("vec1/vec2: {}", Transforms.cosineSim(vec1, vec2));
     }
 
+
+    @Tag(TagNames.LONG_TEST)
+    @Tag(TagNames.LARGE_RESOURCES)
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @ParameterizedTest
+    public void testParallelLoading(Nd4jBackend backend) throws Exception {
+        int numThreads = 16;
+        boolean isIntegration = isIntegrationTests();
+        Executor executor = Executors.newFixedThreadPool(numThreads);
+        File resource = Resources.asFile("/big/raw_sentences.txt");
+        SentenceIterator sentencesIter = getIterator(isIntegration, resource);
+
+        ClassPathResource resource_mixed = new ClassPathResource("paravec/");
+        File local_resource_mixed = testDir.toFile();
+        resource_mixed.copyDirectory(local_resource_mixed);
+        SentenceIterator iter = new AggregatingSentenceIterator.Builder()
+                .addSentenceIterator(sentencesIter)
+                .addSentenceIterator(new FileSentenceIterator(local_resource_mixed)).build();
+
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+
+        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread().enableDebug(true);
+        Word2Vec wordVectors = new Word2Vec.Builder().minWordFrequency(1).batchSize(250).iterations(1).epochs(1)
+                .learningRate(0.025).layerSize(150).minLearningRate(0.001)
+                .elementsLearningAlgorithm(new SkipGram<>()).useHierarchicSoftmax(true).windowSize(5)
+                .iterate(iter).tokenizerFactory(t).build();
+
+        wordVectors.fit();
+
+        ParagraphVectors pv = new ParagraphVectors.Builder().tokenizerFactory(t)
+                .iterations(10)
+                .useHierarchicSoftmax(true).trainWordVectors(true).useExistingWordVectors(wordVectors)
+                .negativeSample(0).sequenceLearningAlgorithm(new DBOW<>()).build();
+
+        for(int i = 0; i < numThreads; i++) {
+            File write = new File("pv_" + i + ".zip");
+            System.out.println(UnifiedProfiler.getInstance().printCurrentStats());
+            WordVectorSerializer.writeParagraphVectors(pv,write.getAbsolutePath());
+
+        }
+
+        int count = 0;
+        int till = 100000000;
+        while(count < till) {
+            for(int i = 0; i < numThreads; i++) {
+                File write = new File("pv_" + i + ".zip");
+
+                executor.execute(new Runnable() {
+                    @SneakyThrows
+                    @Override
+                    public void run() {
+                        WordVectorSerializer.readParagraphVectors(write);
+                    }
+                });
+            }
+
+            Thread.sleep(1000);
+            count++;
+        }
+
+
+
+    }
 
     @Test()
     @Timeout(300000)
