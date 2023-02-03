@@ -39,6 +39,9 @@ public class CpuDeallocator implements Deallocator {
         opaqueDataBuffer = buffer.getOpaqueDataBuffer();
         if(EventLogger.getInstance().isEnabled()) {
             logEvent = LogEvent.builder()
+                    .attached(buffer.isAttached())
+                    .objectId(buffer.getUniqueId())
+                    .isConstant(buffer.isConstant())
                     .bytes(buffer.getElementSize() * buffer.length())
                     .dataType(buffer.dataType())
                     .eventType(EventType.DEALLOCATION)
@@ -58,6 +61,7 @@ public class CpuDeallocator implements Deallocator {
         //perform logging
         if(logEvent != null) {
             logEvent.setEventTimeMs(System.currentTimeMillis());
+            logEvent.setThreadName(Thread.currentThread().getName());
             EventLogger.getInstance().log(logEvent);
         }
         NativeOpsHolder.getInstance().getDeviceNativeOps().deleteDataBuffer(opaqueDataBuffer);

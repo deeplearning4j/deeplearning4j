@@ -48,6 +48,10 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
     }
 
+    @Override
+    public boolean shouldDeAllocate() {
+        return !released && !constant;
+    }
 
     @Override
     public String getUniqueId() {

@@ -52,6 +52,7 @@ public class CpuOpContextDeallocator implements Deallocator {
         //perform logging
         if(logEvent != null) {
             logEvent.setEventTimeMs(System.currentTimeMillis());
+            logEvent.setThreadName(Thread.currentThread().getName());
             EventLogger.getInstance().log(logEvent);
         }
 

@@ -946,7 +946,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         Nd4j.getProfiler().start();
         EventLogger.getInstance().setEventTypesToLog(Arrays.asList(EventType.DEALLOCATION));
         EventLogger.getInstance().setFormatTimeAsDate(true);
-        int numThreads = 12;
+        int numThreads = 16;
         boolean isIntegration = isIntegrationTests();
         Executor executor = Executors.newFixedThreadPool(numThreads);
         File resource = Resources.asFile("/big/raw_sentences.txt");
@@ -962,7 +962,6 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        UnifiedProfiler.getInstance().start();
 
         Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread().enableDebug(true);
         Word2Vec wordVectors = new Word2Vec.Builder().minWordFrequency(1).batchSize(250).iterations(1).epochs(1)
@@ -1008,7 +1007,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         }
 
 
-        Nd4j.getProfiler().stop();
+        //  Nd4j.getProfiler().stop();
 
     }
 

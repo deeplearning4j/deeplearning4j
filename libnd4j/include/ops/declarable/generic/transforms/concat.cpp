@@ -47,14 +47,12 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
   auto rankOfFirstArr = block.width() > 0 ? INPUT_VARIABLE(0)->rankOf() : 0;
   auto typeOfFirstArr = block.width() > 0 ? INPUT_VARIABLE(0)->dataType() : block.dataType();
 
+
   for (int i = 0; i < numOfInArrs; ++i) {
     auto input = INPUT_VARIABLE(i);
     auto currentRank = input->rankOf();
+    auto *shapeInfoCast = input->shapeInfo();
 
-    // TODO: follow two lines are in accordance to current tf.concat spec. Commented for compatibility with legacy
-    //        REQUIRE_TRUE(currentRank > 0, 0, "Rank of input variable %i must be greater 0, but is %lld instead.", i,
-    //        currentRank); REQUIRE_TRUE(rankOfFirstArr == currentRank, 0, "Number of dimensions in concat should be
-    //        equals, but for %i input variable %lld != %lld appears.", i, currentRank, rankOfFirstArr);
     if (!input->isEmpty()) {
       allOfSameType &= (typeOfFirstArr == input->dataType());
 
@@ -95,7 +93,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
     if(nonEmptyArrs[i]->rankOf() != rank) {
       std::string error;
       error += std::string("CONCAT op: array at index: ");
-      error += std::string("" + i );
+      error += std::to_string(i);
       error += std::string(" ");
       error += std::string(" did not have same rank. Expected rank: " + rank);
       error += std::string(" but was: " + nonEmptyArrs[i]->rankOf());
@@ -107,7 +105,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
         if(nonEmptyArrs[i]->sizeAt(dim) != nonEmptyArrs[0]->sizeAt(dim)) {
           std::string error;
           error += std::string("CONCAT op: array at index: ");
-          error += std::string("" + i );
+          error += std::to_string(i);
           error += std::string(" ");
           error += std::string(" did not have same dimension. Expected dimension : " + nonEmptyArrs[0]->sizeAt(dim));
           error += std::string(" but was: " + nonEmptyArrs[i]->sizeAt(dim));

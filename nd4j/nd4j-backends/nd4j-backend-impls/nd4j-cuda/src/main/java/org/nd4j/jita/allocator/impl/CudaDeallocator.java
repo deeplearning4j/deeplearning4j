@@ -40,6 +40,8 @@ public class CudaDeallocator implements Deallocator {
         opaqueDataBuffer = buffer.getOpaqueDataBuffer();
         if(EventLogger.getInstance().isEnabled()) {
             logEvent = LogEvent.builder()
+                    .isAttached(buffer.isAttached())
+                    .isConstant(buffer.isConstant())
                     .eventType(EventType.DEALLOCATION)
                     .objectAllocationType(ObjectAllocationType.DATA_BUFFER)
                     .associatedWorkspace(Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread().getId())

@@ -197,15 +197,29 @@ public class EventLogger {
     public void log(LogEvent logEvent) {
         if(enabled.get() && eventTypesToLog.contains(logEvent.getEventType()) &&
                 this.allocationTypesToLog.contains(logEvent.getObjectAllocationType()))
-            logStream.println(String.format("%s,%s,%s,%s,%s,%s,%s",
+            logStream.println(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",
                     formatTimeAsDate.get() ?  new Timestamp(logEvent.getEventTimeMs()) : logEvent.getEventTimeMs(),
                     logEvent.getEventType(),
                     logEvent.getObjectAllocationType(),
                     logEvent.getAssociatedWorkspace(),
                     logEvent.getThreadName(),
                     logEvent.getDataType(),
-                    logEvent.getBytes()));
+                    logEvent.getBytes(),
+                    logEvent.isAttached(),
+                    logEvent.isConstant(),
+                    logEvent.getObjectId()));
+
+        if(listeners != null) {
+            for(EventLogListener listener : listeners) {
+                if(listener != null) {
+                    listener.onLogEvent(logEvent);
+                }
+            }
+        }
+
     }
+
+
 
     public static EventLogger getInstance() {
         return SINGLETON;

@@ -23,6 +23,7 @@ package org.nd4j.linalg.cpu.nativecpu.ops;
 import lombok.NonNull;
 import lombok.val;
 import org.bytedeco.javacpp.*;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
@@ -189,7 +190,10 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
         for(int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
             buffers.put(i,array.isEmpty() ? null : ((BaseCpuDataBuffer) array.data()).getOpaqueDataBuffer());
-            shapeInfoBuffer.put(i,array.shapeInfoDataBuffer().addressPointer());
+            DataBuffer dataBuffer = array.shapeInfoDataBuffer();
+            Pointer addressPointer = dataBuffer.pointer();
+            addressPointer.retainReference();
+            shapeInfoBuffer.put(i,addressPointer);
             fastpath_in.put(i,array.isEmpty() ? null : array);
         }
 

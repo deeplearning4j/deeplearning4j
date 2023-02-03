@@ -52,5 +52,8 @@ public class LogEvent {
     private long eventTimeMs;
     private String associatedWorkspace;
     private long bytes;
+    private boolean attached;
+    private boolean isConstant;
+    private String objectId;
 
 }
