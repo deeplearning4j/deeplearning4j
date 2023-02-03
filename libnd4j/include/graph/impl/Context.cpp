@@ -381,9 +381,16 @@ namespace sd {
         void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo, void const *specialShapeInfo) {
             auto dataBuffer = reinterpret_cast<InteropDataBuffer *>(vdatabuffer);
             auto shapeInfoCast = reinterpret_cast<sd::LongType const *>(shapeInfo);
+            if(shape::rank(shapeInfoCast) > SD_MAX_RANK || shape::rank(shapeInfoCast) < 0) {
+              std::string error;
+              error += std::string("Shape Buffer at index ");
+              error += std::string(" " + index);
+              error += std::string(" was corrupt! This is likely due to deallocation. Please double check the passed in shape  buffer.");
+              throw std::runtime_error(error.c_str());
+            }
             if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
             NDArray *array;
-            if (dataBuffer != nullptr && !shape::isEmpty(reinterpret_cast<sd::LongType const *>(shapeInfo))) {
+            if (dataBuffer != nullptr && !shape::isEmpty(shapeInfoCast)) {
                 array = new NDArray(dataBuffer->dataBuffer(), shapeInfoCast,
                                     sd::LaunchContext::defaultContext(),
                                     dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(

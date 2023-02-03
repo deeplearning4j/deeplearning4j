@@ -48,7 +48,7 @@ public class DeallocatorService {
     public DeallocatorService() {
         // we need to have at least 2 threads, but for CUDA we'd need at least numDevices threads, due to thread->device affinity
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
-        int numThreads = Math.max(2, numDevices * 2);
+        int numThreads = 1;
 
         for (int e = 0; e < numDevices; e++)
             deviceMap.add(new ArrayList<>());
@@ -90,7 +90,7 @@ public class DeallocatorService {
     public void pickObject(@NonNull Deallocatable deallocatable) {
         if(noPointerGc) {
             log.trace("Deallocation turned off. Reference " + deallocatable.getUniqueId() + " will need to be de allocated manually.");
-          } else {
+        } else {
             val desiredDevice = deallocatable.targetDevice();
             val map = deviceMap.get(desiredDevice);
             val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, map.size())));
@@ -123,7 +123,7 @@ public class DeallocatorService {
                 // if periodicGc is enabled, only first thread will call for it
                 if (Nd4j.getMemoryManager().isPeriodicGcActive() && threadIdx == 0 && Nd4j.getMemoryManager().getAutoGcWindow() > 0) {
                     val reference = (DeallocatableReference) queue.poll();
-                    if (reference == null) {
+                    if (reference == null || (reference != null && reference.get() != null &&  !reference.get().shouldDeAllocate())) {
                         val timeout = Nd4j.getMemoryManager().getAutoGcWindow();
                         try {
                             Thread.sleep(Nd4j.getMemoryManager().getAutoGcWindow());
@@ -133,7 +133,8 @@ public class DeallocatorService {
                         }
                     } else {
                         // invoking deallocator
-                        reference.getDeallocator().deallocate();
+                        if (reference != null && (reference.get() != null &&  reference.get().shouldDeAllocate()))
+                            reference.getDeallocator().deallocate();
                         referenceMap.remove(reference.getId());
                     }
                 } else {
@@ -141,6 +142,10 @@ public class DeallocatorService {
                         val reference = (DeallocatableReference) queue.remove();
                         if (reference == null)
                             continue;
+
+                        if( (reference.get() != null && !reference.get().shouldDeAllocate()))
+                            continue;
+
 
                         // invoking deallocator
                         reference.getDeallocator().deallocate();

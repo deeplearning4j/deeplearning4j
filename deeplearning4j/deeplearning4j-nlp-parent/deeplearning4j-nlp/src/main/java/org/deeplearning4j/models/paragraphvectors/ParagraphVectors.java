@@ -1086,7 +1086,6 @@ public class ParagraphVectors extends Word2Vec {
 
         @Override
         public ParagraphVectors build() {
-            System.out.println(UnifiedProfiler.getInstance().printCurrentStats());
             presetTables();
             if(configuration == null) {
                 configurationSpecified = false;

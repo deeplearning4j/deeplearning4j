@@ -2665,6 +2665,18 @@ void setGraphContextInputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer 
                                 void *specialShapeInfo) {
   if(ptr == nullptr)
     throw std::runtime_error("Context pointer is null!");
+  sd::LongType *shapeInfoCast = reinterpret_cast<sd::LongType *>(shapeInfo);
+  sd_printf("Setting input buffer %d\n",index);
+  if(shape::rank(shapeInfoCast) > SD_MAX_RANK || shape::rank(shapeInfoCast) < 0) {
+    std::string error;
+    error += std::string("Shape Buffer at index ");
+    error += std::string(" ");
+    error += std::to_string(index);
+    error += std::string(" ");
+    error += std::string(" was corrupt! This is likely due to deallocation. Please double check the passed in shape  buffer.");
+    throw std::runtime_error(error.c_str());
+  }
+
   ptr->setInputArray(index, buffer, shapeInfo, specialShapeInfo);
 }
 
