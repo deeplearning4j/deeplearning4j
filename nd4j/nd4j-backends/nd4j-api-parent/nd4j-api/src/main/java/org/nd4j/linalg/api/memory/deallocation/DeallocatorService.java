@@ -48,7 +48,7 @@ public class DeallocatorService {
     public DeallocatorService() {
         // we need to have at least 2 threads, but for CUDA we'd need at least numDevices threads, due to thread->device affinity
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
-        int numThreads = Math.max(2, numDevices * 2);;
+        int numThreads = Math.max(2, numDevices * 2);
 
         for (int e = 0; e < numDevices; e++)
             deviceMap.add(new ArrayList<>());
