@@ -66,7 +66,7 @@ interface Parameter {
      * the signature, or there is a reference chain that ends in something that is actually a part of the signature
      */
     fun defaultValueIsApplicable(otherParams: List<Parameter>): Boolean = if(hasDefaultValue()){
-        when(var defaultValue = this.defaultValue()){
+        when(val defaultValue = this.defaultValue()){
             is Number, is Boolean, null -> true
             is IntArray, is BooleanArray, is DoubleArray -> true
             is String -> true
@@ -147,7 +147,7 @@ data class Arg(
     }
 
     fun isArray() = count != Exactly(1) && count != null
-    fun countMatches(size: Int) = when(var c = count!!){
+    fun countMatches(size: Int) = when(val c = count!!){
         is Range -> c.from <= size && size <= c.to
         is AtLeast -> c.min <= size
         is AtMost -> size <= c.max
