@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.memory.Deallocator;
+import org.nd4j.linalg.api.memory.ReferenceMetaData;
 import org.nd4j.linalg.api.memory.enums.LocationPolicy;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
@@ -35,6 +36,7 @@ import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
 import org.nd4j.linalg.profiler.data.eventlogger.ObjectAllocationType;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.sql.Ref;
 import java.util.List;
 import java.util.Queue;
 
@@ -46,12 +48,14 @@ public class CpuWorkspaceDeallocator implements Deallocator {
     private LocationPolicy location;
     private Pair<LongPointer, Long> mmapInfo;
     private LogEvent logEvent;
+    private ReferenceMetaData referenceMetaData;
 
     public CpuWorkspaceDeallocator(@NonNull CpuWorkspace workspace) {
         this.pointersPair = workspace.workspace();
         this.pinnedPointers = workspace.pinnedPointers();
         this.externalPointers = workspace.externalPointers();
         this.location = workspace.getWorkspaceConfiguration().getPolicyLocation();
+        referenceMetaData = ReferenceMetaData.builder().build();
         if(EventLogger.getInstance().isEnabled()) {
             logEvent = LogEvent.builder()
                     .eventType(EventType.DEALLOCATION)
@@ -129,5 +133,10 @@ public class CpuWorkspaceDeallocator implements Deallocator {
     @Override
     public LogEvent logEvent() {
         return logEvent;
+    }
+
+    @Override
+    public ReferenceMetaData referenceMetaData() {
+        return referenceMetaData;
     }
 }

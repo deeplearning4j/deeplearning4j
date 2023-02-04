@@ -61,6 +61,7 @@ public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
                     if (!longCache.containsKey(descriptor)) {
                         counter.incrementAndGet();
                         Pair<DataBuffer, long[]> buffer = super.createShapeInformation(shape, stride, elementWiseStride, order, extras);
+                        buffer.getFirst().setConstant(true);
                         longCache.put(descriptor, buffer);
 
                         bytes.addAndGet(buffer.getFirst().length() * 8 * 2);

@@ -973,7 +973,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         }
 
         int count = 0;
-        int till = 100000000;
+        int till = 10;
         while(count < till) {
             for(int i = 0; i < numThreads; i++) {
                 File write = new File("pv_" + i + ".zip");

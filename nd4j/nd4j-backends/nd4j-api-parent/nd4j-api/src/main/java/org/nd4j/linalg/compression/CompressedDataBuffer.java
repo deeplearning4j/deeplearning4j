@@ -66,24 +66,29 @@ public class CompressedDataBuffer extends BaseDataBuffer {
 
     @Override
     public void write(DataOutputStream out) throws IOException {
-        //        logger.info("Writing out CompressedDataBuffer");
         // here we should mimic to usual DataBuffer array
         out.writeUTF(allocationMode.name());
         out.writeLong(compressionDescriptor.getCompressedLength());
         out.writeUTF(DataType.COMPRESSED.name());
         // at this moment we don't care about mimics anymore
-        //ByteIndexer indexer = ByteIndexer.create((BytePointer) pointer);
         out.writeUTF(compressionDescriptor.getCompressionAlgorithm());
         out.writeLong(compressionDescriptor.getCompressedLength());
         out.writeLong(compressionDescriptor.getOriginalLength());
         out.writeLong(compressionDescriptor.getNumberOfElements());
         out.writeInt(compressionDescriptor.getOriginalDataType().ordinal());
-        //        out.write(((BytePointer) pointer).getStringBytes());
         for (int x = 0; x < pointer.capacity() * pointer.sizeof(); x++) {
             byte b = pointer.asByteBuffer().get(x);
             out.writeByte(b);
         }
     }
+
+    @Override
+    public String getUniqueId() {
+        //this is actually a no op since compressed pointers don't get deallocated
+        return "CMDB_" ;
+    }
+
+
 
     @Override
     protected void setIndexer(Indexer indexer) {
