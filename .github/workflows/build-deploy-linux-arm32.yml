@@ -152,10 +152,7 @@ jobs:
           bash ./bootstrap-libnd4j-from-url.sh linux arm32
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled }}
-
+    
 
 
 
