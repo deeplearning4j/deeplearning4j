@@ -24,367 +24,404 @@
 #include <helpers/jacobiSVD.h>
 #if NOT_EXCLUDED(svd)
 namespace sd {
-namespace ops {
-namespace helpers {
+    namespace ops {
+        namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-template <typename T>
-JacobiSVD<T>::JacobiSVD(const NDArray& matrix, const bool calcU, const bool calcV, const bool fullUV) {
-  if (matrix.rankOf() != 2 || matrix.isScalar())
-    throw std::runtime_error("ops::helpers::JacobiSVD constructor: input array must be 2D matrix !");
+            template <typename T>
+            JacobiSVD<T>::JacobiSVD(const NDArray& matrix, const bool calcU, const bool calcV, const bool fullUV) {
+                if (matrix.rankOf() != 2 || matrix.isScalar())
+                    throw std::runtime_error("ops::helpers::JacobiSVD constructor: input array must be 2D matrix !");
 
-  _rows = static_cast<int>(matrix.sizeAt(0));
-  _cols = static_cast<int>(matrix.sizeAt(1));
-  _diagSize = math::sd_min<int>(_rows, _cols);
+                sd_printf("Before rows and cols\n",0);
+                _rows = static_cast<int>(matrix.sizeAt(0));
+                _cols = static_cast<int>(matrix.sizeAt(1));
+                _diagSize = math::sd_min<int>(_rows, _cols);
+                sd_printf("After rows and cols\n",0);
 
-  _calcU = calcU;
-  _calcV = calcV;
-  _fullUV = fullUV;
+                _calcU = calcU;
+                _calcV = calcV;
+                _fullUV = fullUV;
+                sd_printf("Before _s\n",0);
 
-  _s = NDArray(matrix.ordering(), {_diagSize, 1}, matrix.dataType(), matrix.getContext());
+                _s = NDArray(matrix.ordering(), {_diagSize, 1}, matrix.dataType(), matrix.getContext());
+                sd_printf("After _s\n",0);
 
-  if (_calcU) {
-    if (_fullUV)
-      _u = NDArray(matrix.ordering(), {_rows, _rows}, matrix.dataType(), matrix.getContext());
-    else
-      _u = NDArray(matrix.ordering(), {_rows, _diagSize}, matrix.dataType(), matrix.getContext());
-  } else
-    _u = NDArray(matrix.ordering(), {_rows, 1}, matrix.dataType(), matrix.getContext());
+                if (_calcU) {
+                    if (_fullUV)
+                        _u = NDArray(matrix.ordering(), {_rows, _rows}, matrix.dataType(), matrix.getContext());
+                    else
+                        _u = NDArray(matrix.ordering(), {_rows, _diagSize}, matrix.dataType(), matrix.getContext());
+                } else
+                    _u = NDArray(matrix.ordering(), {_rows, 1}, matrix.dataType(), matrix.getContext());
 
-  if (_calcV) {
-    if (_fullUV)
-      _v = NDArray(matrix.ordering(), {_cols, _cols}, matrix.dataType(), matrix.getContext());
-    else
-      _v = NDArray(matrix.ordering(), {_cols, _diagSize}, matrix.dataType(), matrix.getContext());
-  } else
-    _v = NDArray(matrix.ordering(), {_cols, 1}, matrix.dataType(), matrix.getContext());
+                if (_calcV) {
+                    if (_fullUV)
+                        _v = NDArray(matrix.ordering(), {_cols, _cols}, matrix.dataType(), matrix.getContext());
+                    else
+                        _v = NDArray(matrix.ordering(), {_cols, _diagSize}, matrix.dataType(), matrix.getContext());
+                } else
+                    _v = NDArray(matrix.ordering(), {_cols, 1}, matrix.dataType(), matrix.getContext());
 
-  _m = NDArray(matrix.ordering(), {_diagSize, _diagSize}, matrix.dataType(), matrix.getContext());
+                _m = NDArray(matrix.ordering(), {_diagSize, _diagSize}, matrix.dataType(), matrix.getContext());
 
-  evalData(matrix);
-}
+                sd_printf("Before jacobi evalData\n",0);
 
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-void JacobiSVD<T>::mulRotationOnLeft(const int i, const int j, NDArray& block, const NDArray& rotation) {
-  if (i < j) {
-    if (j + 1 > block.sizeAt(0))
-      throw std::runtime_error(
-          "ops::helpers::JacobiSVD mulRotationOnLeft: second arguments is out of array row range !");
-
-    auto temp = block({i, j + 1, j - i, 0, 0, 0}, true, true);
-    temp.assign(mmul(rotation, temp));
-
-    // auto pTemp = block({i,j+1,j-i,  0,0,0}, true, true);
-    // auto temp = pTemp.dup();
-    // pTemp.assign(mmul(rotation, temp));
-  } else {
-    if (j + 1 > block.sizeAt(0) || i + 1 > block.sizeAt(0))
-      throw std::runtime_error(
-          "ops::helpers::JacobiSVD mulRotationOnLeft: some or both integer arguments are out of array row range !");
-
-    NDArray temp(block.ordering(), {2, block.sizeAt(1)}, block.dataType(), block.getContext());
-    auto row1 = block({i, i + 1, 0, 0}, true);
-    auto row2 = block({j, j + 1, 0, 0}, true);
-    auto rowTemp1 = temp({0, 1, 0, 0}, true);
-    auto rowTemp2 = temp({1, 2, 0, 0}, true);
-    rowTemp1.assign(row1);
-    rowTemp2.assign(row2);
-    temp.assign(mmul(rotation, temp));
-    row1.assign(rowTemp1);
-    row2.assign(rowTemp2);
-  }
-}
+                evalData(matrix);
+            }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename T>
-void JacobiSVD<T>::mulRotationOnRight(const int i, const int j, NDArray& block, const NDArray& rotation) {
-  if (i < j) {
-    if (j + 1 > block.sizeAt(1))
-      throw std::runtime_error(
-          "ops::helpers::JacobiSVD mulRotationOnRight: second argument is out of array column range !");
+            template <typename T>
+            void JacobiSVD<T>::mulRotationOnLeft(const int i, const int j, NDArray& block, const NDArray& rotation) {
+                if (i < j) {
+                    if (j + 1 > block.sizeAt(0))
+                        throw std::runtime_error(
+                                "ops::helpers::JacobiSVD mulRotationOnLeft: second arguments is out of array row range !");
 
-    auto temp = block({0, 0, 0, i, j + 1, j - i}, true, true);
-    temp.assign(mmul(temp, rotation));
+                    auto temp = block({i, j + 1, j - i, 0, 0, 0}, true, true);
+                    temp.assign(mmul(rotation, temp));
 
-    // auto pTemp = block({0,0,0,  i,j+1,j-i}, true, true);
-    // auto temp = pTemp.dup();
-    // pTemp.assign(mmul(temp, rotation));
-  } else {
-    if (j + 1 > block.sizeAt(1) || i + 1 > block.sizeAt(1))
-      throw std::runtime_error(
-          "ops::helpers::JacobiSVD mulRotationOnRight: some or both integer arguments are out of array column range !");
+                    // auto pTemp = block({i,j+1,j-i,  0,0,0}, true, true);
+                    // auto temp = pTemp.dup();
+                    // pTemp.assign(mmul(rotation, temp));
+                } else {
+                    if (j + 1 > block.sizeAt(0) || i + 1 > block.sizeAt(0))
+                        throw std::runtime_error(
+                                "ops::helpers::JacobiSVD mulRotationOnLeft: some or both integer arguments are out of array row range !");
 
-    NDArray temp(block.ordering(), {block.sizeAt(0), 2}, block.dataType(), block.getContext());
-    auto col1 = block({0, 0, i, i + 1}, true);
-    auto col2 = block({0, 0, j, j + 1}, true);
-    auto colTemp1 = temp({0, 0, 0, 1}, true);
-    auto colTemp2 = temp({0, 0, 1, 2}, true);
-    colTemp1.assign(col1);
-    colTemp2.assign(col2);
-    temp.assign(mmul(temp, rotation));
-    col1.assign(colTemp1);
-    col2.assign(colTemp2);
-  }
-}
-
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-bool JacobiSVD<T>::isBlock2x2NotDiag(NDArray& block, int p, int q, T& maxElem) {
-  NDArray rotation(_m.ordering(), {2, 2}, _m.dataType(), _m.getContext());
-
-  T n = math::sd_sqrt<T, T>(block.t<T>(p, p) * block.t<T>(p, p) + block.t<T>(q, p) * block.t<T>(q, p));
-
-  const T almostZero = DataTypeUtils::min_positive<T>();
-  const T precision = DataTypeUtils::eps<T>();
-
-  if (n == (T)0.f) {
-    block.r<T>(p, p) = (T)0;
-    block.r<T>(q, p) = (T)0;
-  } else {
-    T v = block.t<T>(p, p) / n;
-
-    rotation.r<T>(0, 0) = rotation.r<T>(1, 1) = v;
-
-    v = block.t<T>(q, p) / n;
-    rotation.r<T>(0, 1) = v;
-
-    rotation.r<T>(1, 0) = -rotation.template t<T>(0, 1);
-    mulRotationOnLeft(p, q, block, rotation);
-
-    if (_calcU) mulRotationOnRight(p, q, _u, rotation.transpose());
-  }
-
-  maxElem =
-      math::sd_max<T>(maxElem, math::sd_max<T>(math::sd_abs<T>(block.t<T>(p, p)), math::sd_abs<T>(block.t<T>(q, q))));
-  T threshold = math::sd_max<T>(almostZero, precision * maxElem);
-
-  return math::sd_abs<T>(block.t<T>(p, q)) > threshold || math::sd_abs<T>(block.t<T>(q, p)) > threshold;
-}
+                    NDArray temp(block.ordering(), {2, block.sizeAt(1)}, block.dataType(), block.getContext());
+                    auto row1 = block({i, i + 1, 0, 0}, true);
+                    auto row2 = block({j, j + 1, 0, 0}, true);
+                    auto rowTemp1 = temp({0, 1, 0, 0}, true);
+                    auto rowTemp2 = temp({1, 2, 0, 0}, true);
+                    rowTemp1.assign(row1);
+                    rowTemp2.assign(row2);
+                    temp.assign(mmul(rotation, temp));
+                    row1.assign(rowTemp1);
+                    row2.assign(rowTemp2);
+                }
+            }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename T>
-bool JacobiSVD<T>::createJacobiRotation(const T& x, const T& y, const T& z, NDArray& rotation) {
-  T denom = (T)(2.f) * math::sd_abs<T>(y);
+            template <typename T>
+            void JacobiSVD<T>::mulRotationOnRight(const int i, const int j, NDArray& block, const NDArray& rotation) {
+                if (i < j) {
+                    if (j + 1 > block.sizeAt(1))
+                        throw std::runtime_error(
+                                "ops::helpers::JacobiSVD mulRotationOnRight: second argument is out of array column range !");
 
-  if (denom < DataTypeUtils::min_positive<T>()) {
-    rotation.r<T>(0, 0) = rotation.r<T>(1, 1) = (T)1.f;
-    rotation.r<T>(0, 1) = rotation.r<T>(1, 0) = (T)0.f;
+                    auto temp = block({0, 0, 0, i, j + 1, j - i}, true, true);
+                    temp.assign(mmul(temp, rotation));
 
-    return false;
-  } else {
-    T tau = (x - z) / denom;
-    T w = math::sd_sqrt<T, T>(tau * tau + (T)1.f);
-    T t;
+                    // auto pTemp = block({0,0,0,  i,j+1,j-i}, true, true);
+                    // auto temp = pTemp.dup();
+                    // pTemp.assign(mmul(temp, rotation));
+                } else {
+                    if (j + 1 > block.sizeAt(1) || i + 1 > block.sizeAt(1))
+                        throw std::runtime_error(
+                                "ops::helpers::JacobiSVD mulRotationOnRight: some or both integer arguments are out of array column range !");
 
-    if (tau > (T)0.)
-      t = (T)1.f / (tau + w);
-    else
-      t = (T)1.f / (tau - w);
-
-    T sign = t > (T)0. ? (T)1.f : (T)-1.f;
-
-    T cos = (T)1.f / math::sd_sqrt<T, T>(t * t + (T)1.f);
-    T sin = -sign * (y / math::sd_abs<T>(y)) * math::sd_abs<T>(t) * cos;
-
-    rotation.r<T>(0, 1) = sin;
-    rotation.r<T>(1, 0) = -sin;
-    rotation.r<T>(0, 0) = rotation.r<T>(1, 1) = cos;
-
-    return true;
-  }
-}
-
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-void JacobiSVD<T>::createJacobiRotationGivens(const T& p, const T& q, NDArray& rotation) {
-  T cos, sin;
-
-  if (q == (T)0) {
-    cos = p < (T)0 ? (T)-1 : (T)1;
-    sin = (T)0;
-  } else if (p == (T)0) {
-    cos = (T)0;
-    sin = q < (T)0 ? (T)1 : (T)-1;
-  } else if (math::sd_abs<T>(p) > math::sd_abs<T>(q)) {
-    T t = q / p;
-    T u = math::sd_sqrt<T, T>((T)1 + t * t);
-    if (p < (T)0) u = -u;
-    cos = (T)1 / u;
-    sin = -t * cos;
-  } else {
-    T t = p / q;
-    T u = math::sd_sqrt<T, T>((T)1 + t * t);
-    if (q < (T)0) u = -u;
-    sin = -(T)1 / u;
-    cos = -t * sin;
-  }
-
-  rotation.r<T>(0, 1) = sin;
-  rotation.r<T>(1, 0) = -sin;
-  rotation.r<T>(0, 0) = rotation.r<T>(1, 1) = cos;
-}
+                    NDArray temp(block.ordering(), {block.sizeAt(0), 2}, block.dataType(), block.getContext());
+                    auto col1 = block({0, 0, i, i + 1}, true);
+                    auto col2 = block({0, 0, j, j + 1}, true);
+                    auto colTemp1 = temp({0, 0, 0, 1}, true);
+                    auto colTemp2 = temp({0, 0, 1, 2}, true);
+                    colTemp1.assign(col1);
+                    colTemp2.assign(col2);
+                    temp.assign(mmul(temp, rotation));
+                    col1.assign(colTemp1);
+                    col2.assign(colTemp2);
+                }
+            }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename T>
-void JacobiSVD<T>::svd2x2(const NDArray& block, int p, int q, NDArray& left, NDArray& right) {
-  NDArray m(block.ordering(), {2, 2}, block.dataType(), block.getContext());
-  m.r<T>(0, 0) = block.t<T>(p, p);
-  m.r<T>(0, 1) = block.t<T>(p, q);
-  m.r<T>(1, 0) = block.t<T>(q, p);
-  m.r<T>(1, 1) = block.t<T>(q, q);
+            template <typename T>
+            bool JacobiSVD<T>::isBlock2x2NotDiag(NDArray& block, int p, int q, T& maxElem) {
+                NDArray rotation(_m.ordering(), {2, 2}, _m.dataType(), _m.getContext());
 
-  NDArray rotation(block.ordering(), {2, 2}, block.dataType(), block.getContext());
-  T t = m.t<T>(0, 0) + m.t<T>(1, 1);
-  T d = m.t<T>(1, 0) - m.t<T>(0, 1);
+                T n = math::sd_sqrt<T, T>(block.t<T>(p, p) * block.t<T>(p, p) + block.t<T>(q, p) * block.t<T>(q, p));
 
-  if (math::sd_abs<T>(d) < DataTypeUtils::min<T>()) {
-    rotation.r<T>(0, 0) = rotation.r<T>(1, 1) = (T)1;
-    rotation.r<T>(0, 1) = rotation.r<T>(1, 0) = (T)0;
-  } else {
-    T u = t / d;
-    T tmp = math::sd_sqrt<T, T>((T)1.f + u * u);
-    rotation.r<T>(0, 0) = rotation.r<T>(1, 1) = u / tmp;
-    rotation.r<T>(0, 1) = (T)1.f / tmp;
-    rotation.r<T>(1, 0) = -rotation.t<T>(0, 1);
-  }
+                const T almostZero = DataTypeUtils::min_positive<T>();
+                const T precision = DataTypeUtils::eps<T>();
 
-  m.assign(mmul(rotation, m));
+                if (n == (T)0.f) {
+                    block.r<T>(p, p) = (T)0;
+                    block.r<T>(q, p) = (T)0;
+                } else {
+                    T v = block.t<T>(p, p) / n;
 
-  createJacobiRotation(m.t<T>(0, 0), m.t<T>(0, 1), m.t<T>(1, 1), right);
+                    rotation.r<T>(0, 0) = rotation.r<T>(1, 1) = v;
 
-  left.assign(mmul(rotation, right.transpose()));
-}
+                    v = block.t<T>(q, p) / n;
+                    rotation.r<T>(0, 1) = v;
+
+                    rotation.r<T>(1, 0) = -rotation.template t<T>(0, 1);
+                    mulRotationOnLeft(p, q, block, rotation);
+
+                    if (_calcU) mulRotationOnRight(p, q, _u, rotation.transpose());
+                }
+
+                maxElem =
+                        math::sd_max<T>(maxElem, math::sd_max<T>(math::sd_abs<T>(block.t<T>(p, p)), math::sd_abs<T>(block.t<T>(q, q))));
+                T threshold = math::sd_max<T>(almostZero, precision * maxElem);
+
+                return math::sd_abs<T>(block.t<T>(p, q)) > threshold || math::sd_abs<T>(block.t<T>(q, p)) > threshold;
+            }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename T>
-void JacobiSVD<T>::evalData(const NDArray& matrix) {
-  const T precision = (T)2.f * DataTypeUtils::eps<T>();
-  const T almostZero = DataTypeUtils::min_positive<T>();
+            template <typename T>
+            bool JacobiSVD<T>::createJacobiRotation(const T& x, const T& y, const T& z, NDArray& rotation) {
+                T denom = (T)(2.f) * math::sd_abs<T>(y);
 
-  T scale = matrix.reduceNumber(reduce::AMax).template t<T>(0);
-  if (scale <   (T)1.f) scale = (T)1.f;
+                if (denom < DataTypeUtils::min_positive<T>()) {
+                    rotation.r<T>(0, 0) = rotation.r<T>(1, 1) = (T)1.f;
+                    rotation.r<T>(0, 1) = rotation.r<T>(1, 0) = (T)0.f;
 
-  if (_rows > _cols) {
-    HHcolPivQR qr(matrix / scale);
-    _m.assign(qr._qr({0, _cols, 0, _cols}));
-    _m.fillAsTriangular<T>(0., 0, 0, _m, 'l',false);
+                    return false;
+                } else {
+                    T tau = (x - z) / denom;
+                    T w = math::sd_sqrt<T, T>(tau * tau + (T)1.f);
+                    T t;
 
-    HHsequence hhSeg(qr._qr, qr._coeffs, 'u');
+                    if (tau > (T)0.)
+                        t = (T)1.f / (tau + w);
+                    else
+                        t = (T)1.f / (tau - w);
 
-    if (_fullUV)
-      hhSeg.applyTo(_u);
-    else if (_calcU) {
-      _u.setIdentity();
-      hhSeg.mulLeft(_u);
-    }
+                    T sign = t > (T)0. ? (T)1.f : (T)-1.f;
 
-    if (_calcV) _v.assign(qr._permut);
-  } else if (_rows < _cols) {
-    HHcolPivQR qr(matrix.transpose() / scale);
-    _m.assign(qr._qr({0, _rows, 0, _rows}));
-    _m.fillAsTriangular<T>(0., 0, 0, _m, 'l',false);
-    _m.transposei();
+                    T cos = (T)1.f / math::sd_sqrt<T, T>(t * t + (T)1.f);
+                    T sin = -sign * (y / math::sd_abs<T>(y)) * math::sd_abs<T>(t) * cos;
 
-    HHsequence hhSeg(qr._qr, qr._coeffs, 'u');  // type = 'u' is not mistake here !
+                    rotation.r<T>(0, 1) = sin;
+                    rotation.r<T>(1, 0) = -sin;
+                    rotation.r<T>(0, 0) = rotation.r<T>(1, 1) = cos;
 
-    if (_fullUV)
-      hhSeg.applyTo(_v);
-    else if (_calcV) {
-      _v.setIdentity();
-      hhSeg.mulLeft(_v);
-    }
+                    return true;
+                }
+            }
 
-    if (_calcU) _u.assign(qr._permut);
-  } else {
-    _m.assign(matrix({0, _diagSize, 0, _diagSize}) / scale);
+//////////////////////////////////////////////////////////////////////////
+            template <typename T>
+            void JacobiSVD<T>::createJacobiRotationGivens(const T& p, const T& q, NDArray& rotation) {
+                T cos, sin;
 
-    if (_calcU) _u.setIdentity();
+                if (q == (T)0) {
+                    cos = p < (T)0 ? (T)-1 : (T)1;
+                    sin = (T)0;
+                } else if (p == (T)0) {
+                    cos = (T)0;
+                    sin = q < (T)0 ? (T)1 : (T)-1;
+                } else if (math::sd_abs<T>(p) > math::sd_abs<T>(q)) {
+                    T t = q / p;
+                    T u = math::sd_sqrt<T, T>((T)1 + t * t);
+                    if (p < (T)0) u = -u;
+                    cos = (T)1 / u;
+                    sin = -t * cos;
+                } else {
+                    T t = p / q;
+                    T u = math::sd_sqrt<T, T>((T)1 + t * t);
+                    if (q < (T)0) u = -u;
+                    sin = -(T)1 / u;
+                    cos = -t * sin;
+                }
 
-    if (_calcV) _v.setIdentity();
-  }
+                rotation.r<T>(0, 1) = sin;
+                rotation.r<T>(1, 0) = -sin;
+                rotation.r<T>(0, 0) = rotation.r<T>(1, 1) = cos;
+            }
 
-  T maxDiagElem = 0.;
-  for (int i = 0; i < _diagSize; ++i) {
-    T current = math::sd_abs<T>(_m.t<T>(i, i));
-    if (maxDiagElem < current) maxDiagElem = current;
-  }
+//////////////////////////////////////////////////////////////////////////
+            template <typename T>
+            void JacobiSVD<T>::svd2x2(const NDArray& block, int p, int q, NDArray& left, NDArray& right) {
+                NDArray m(block.ordering(), {2, 2}, block.dataType(), block.getContext());
+                m.r<T>(0, 0) = block.t<T>(p, p);
+                m.r<T>(0, 1) = block.t<T>(p, q);
+                m.r<T>(1, 0) = block.t<T>(q, p);
+                m.r<T>(1, 1) = block.t<T>(q, q);
 
-  bool stop = false;
+                NDArray rotation(block.ordering(), {2, 2}, block.dataType(), block.getContext());
+                T t = m.t<T>(0, 0) + m.t<T>(1, 1);
+                T d = m.t<T>(1, 0) - m.t<T>(0, 1);
 
-  while (!stop) {
-    stop = true;
+                if (math::sd_abs<T>(d) < DataTypeUtils::min<T>()) {
+                    rotation.r<T>(0, 0) = rotation.r<T>(1, 1) = (T)1;
+                    rotation.r<T>(0, 1) = rotation.r<T>(1, 0) = (T)0;
+                } else {
+                    T u = t / d;
+                    T tmp = math::sd_sqrt<T, T>((T)1.f + u * u);
+                    rotation.r<T>(0, 0) = rotation.r<T>(1, 1) = u / tmp;
+                    rotation.r<T>(0, 1) = (T)1.f / tmp;
+                    rotation.r<T>(1, 0) = -rotation.t<T>(0, 1);
+                }
 
-    for (int p = 1; p < _diagSize; ++p) {
-      for (int q = 0; q < p; ++q) {
-        T threshold = math::sd_max<T>(almostZero, precision * maxDiagElem);
+                m.assign(mmul(rotation, m));
 
-        if (math::sd_abs<T>(_m.t<T>(p, q)) > threshold || math::sd_abs<T>(_m.t<T>(q, p)) > threshold) {
-          stop = false;
+                createJacobiRotation(m.t<T>(0, 0), m.t<T>(0, 1), m.t<T>(1, 1), right);
 
-          // if(isBlock2x2NotDiag(_m, p, q, maxDiagElem))
-          {
-            NDArray rotLeft(_m.ordering(), {2, 2}, _m.dataType(), _m.getContext());
-            NDArray rotRight(_m.ordering(), {2, 2}, _m.dataType(), _m.getContext());
-            svd2x2(_m, p, q, rotLeft, rotRight);
+                left.assign(mmul(rotation, right.transpose()));
+            }
 
-            mulRotationOnLeft(p, q, _m, rotLeft);
+//////////////////////////////////////////////////////////////////////////
+            template <typename T>
+            void JacobiSVD<T>::evalData(const NDArray& matrix) {
+                const T precision = (T)2.f * DataTypeUtils::eps<T>();
+                const T almostZero = DataTypeUtils::min_positive<T>();
+                sd_printf("In jacobi jacobi evalData\n",0);
 
-            if (_calcU) mulRotationOnRight(p, q, _u, rotLeft.transpose());
+                T scale = matrix.reduceNumber(reduce::AMax).template t<T>(0);
+                if (scale <   (T)1.f) scale = (T)1.f;
 
-            mulRotationOnRight(p, q, _m, rotRight);
+                if (_rows > _cols) {
+                    sd_printf("In jacobi evalData rows > cols\n",0);
 
-            if (_calcV) mulRotationOnRight(p, q, _v, rotRight);
+                    HHcolPivQR qr(matrix / scale);
+                    sd_printf("After qr \n",0);
 
-            maxDiagElem = math::sd_max<T>(
-                maxDiagElem, math::sd_max<T>(math::sd_abs<T>(_m.t<T>(p, p)), math::sd_abs<T>(_m.t<T>(q, q))));
-          }
-        }
-      }
-    }
-  }
+                    _m.assign(qr._qr({0, _cols, 0, _cols}));
+                    _m.fillAsTriangular<T>(0., 0, 0, _m, 'l',false);
+                    sd_printf("After fillAsTriangular \n",0);
 
-  for (int i = 0; i < _diagSize; ++i) {
-    _s.r<T>(i) = math::sd_abs<T>(_m.t<T>(i, i));
+                    HHsequence hhSeg(qr._qr, qr._coeffs, 'u');
+                    sd_printf("After hhSeg \n",0);
 
-    if (_calcU && _m.t<T>(i, i) < (T)0.) {
-      auto temp = _u({0, 0, i, i + 1}, true);
-      temp.applyTransform(transform::Neg, temp, nullptr);
-    }
-  }
+                    if (_fullUV)
+                        hhSeg.applyTo(_u);
+                    else if (_calcU) {
+                        _u.setIdentity();
+                        hhSeg.mulLeft(_u);
+                    }
 
-  _s *= scale;
+                    sd_printf("After hhSeg apply \n",0);
 
-  for (int i = 0; i < _diagSize; i++) {
-    int pos = (_s({i, -1, 0, 0}).indexReduceNumber(indexreduce::IndexMax, nullptr)).template e<int>(0);
-    T maxSingVal = _s({i, -1, 0, 0}).reduceNumber(reduce::Max).template t<T>(0);
+                    if (_calcV) _v.assign(qr._permut);
+                } else if (_rows < _cols) {
+                    sd_printf("In rows < columns\n",0);
 
-    if (maxSingVal == (T)0.) break;
+                    HHcolPivQR qr(matrix.transpose() / scale);
+                    _m.assign(qr._qr({0, _rows, 0, _rows}));
+                    _m.fillAsTriangular<T>(0., 0, 0, _m, 'l',false);
+                    _m.transposei();
+                    sd_printf("After in place transpose\n",0);
 
-    if (pos) {
-      pos += i;
+                    HHsequence hhSeg(qr._qr, qr._coeffs, 'u');  // type = 'u' is not mistake here !
 
-      math::sd_swap<T>(_s.r<T>(i), _s.r<T>(pos));
+                    if (_fullUV)
+                        hhSeg.applyTo(_v);
+                    else if (_calcV) {
+                        _v.setIdentity();
+                        hhSeg.mulLeft(_v);
+                    }
 
-      if (_calcU) {
-        auto temp1 = _u({0, 0, pos, pos + 1}, true);
-        auto temp2 = _u({0, 0, i, i + 1}, true);
-        temp1.swapUnsafe(temp2);
-      }
+                    sd_printf("After fullUV appy\n",0);
 
-      if (_calcV) {
-        auto temp1 = _v({0, 0, pos, pos + 1}, true);
-        auto temp2 = _v({0, 0, i, i + 1}, true);
-        temp1.swapUnsafe(temp2);
-      }
-    }
-  }
-}
+                    if (_calcU) _u.assign(qr._permut);
+                } else {
+                    _m.assign(matrix({0, _diagSize, 0, _diagSize}) / scale);
 
-BUILD_SINGLE_TEMPLATE(template class JacobiSVD, , SD_FLOAT_TYPES);
+                    if (_calcU) _u.setIdentity();
 
-}  // namespace helpers
-}  // namespace ops
+                    if (_calcV) _v.setIdentity();
+                }
+
+                sd_printf("Before maxDiagElemn",0);
+
+                T maxDiagElem = 0.;
+                for (int i = 0; i < _diagSize; ++i) {
+                    T current = math::sd_abs<T>(_m.t<T>(i, i));
+                    if (maxDiagElem < current) maxDiagElem = current;
+                }
+
+                bool stop = false;
+                sd_printf("AFter maxDiagElemn\n",0);
+
+                while (!stop) {
+                    stop = true;
+                    sd_printf("In diagSize not stopping\n",0);
+
+                    for (int p = 1; p < _diagSize; ++p) {
+                        for (int q = 0; q < p; ++q) {
+                            T threshold = math::sd_max<T>(almostZero, precision * maxDiagElem);
+
+                            if (math::sd_abs<T>(_m.t<T>(p, q)) > threshold || math::sd_abs<T>(_m.t<T>(q, p)) > threshold) {
+                                stop = false;
+
+                                NDArray rotLeft(_m.ordering(), {2, 2}, _m.dataType(), _m.getContext());
+                                NDArray rotRight(_m.ordering(), {2, 2}, _m.dataType(), _m.getContext());
+                                svd2x2(_m, p, q, rotLeft, rotRight);
+
+                                mulRotationOnLeft(p, q, _m, rotLeft);
+
+                                if (_calcU) mulRotationOnRight(p, q, _u, rotLeft.transpose());
+
+                                mulRotationOnRight(p, q, _m, rotRight);
+
+                                if (_calcV) mulRotationOnRight(p, q, _v, rotRight);
+
+                                maxDiagElem = math::sd_max<T>(
+                                        maxDiagElem, math::sd_max<T>(math::sd_abs<T>(_m.t<T>(p, p)), math::sd_abs<T>(_m.t<T>(q, q))));
+
+                            }
+                        }
+                    }
+                }
+
+
+                sd_printf("After diagSize not stopping\n",0);
+
+                for (int i = 0; i < _diagSize; ++i) {
+                    _s.r<T>(i) = math::sd_abs<T>(_m.t<T>(i, i));
+
+                    if (_calcU && _m.t<T>(i, i) < (T)0.) {
+                        auto temp = _u({0, 0, i, i + 1}, true);
+                        temp.applyTransform(transform::Neg, temp, nullptr);
+                    }
+                }
+
+
+                sd_printf("Before muli scale\n",0);
+
+                _s *= scale;
+                sd_printf("After muli scale\n",0);
+                for (int i = 0; i < _diagSize; i++) {
+                  sd_printf("Determining position\n",0);
+                  int pos = (_s({i, -1, 0, 0}).indexReduceNumber(indexreduce::IndexMax, nullptr)).template e<int>(0);
+                  sd_printf("After Determining position\n",0);
+                    T maxSingVal = _s({i, -1, 0, 0}).reduceNumber(reduce::Max).template t<T>(0);
+                    sd_printf("After maxSingVal\n",0);
+
+                    if (maxSingVal == (T)0.) break;
+
+                    if (pos) {
+                        pos += i;
+
+                        math::sd_swap<T>(_s.r<T>(i), _s.r<T>(pos));
+
+                        if (_calcU) {
+                          sd_printf("Before temp1 temp2 swapUnsafe\n",0);
+                            auto temp1 = _u({0, 0, pos, pos + 1}, true);
+                            auto temp2 = _u({0, 0, i, i + 1}, true);
+                            temp1.swapUnsafe(temp2);
+                            sd_printf("After temp1 temp2 swapUnsafe\n",0);
+
+                        }
+
+                        if (_calcV) {
+                            auto temp1 = _v({0, 0, pos, pos + 1}, true);
+                            auto temp2 = _v({0, 0, i, i + 1}, true);
+                            temp1.swapUnsafe(temp2);
+                        }
+                    }
+                }
+
+                sd_printf("AFter muli scale loop\n",0);
+
+            }
+
+            BUILD_SINGLE_TEMPLATE(template class JacobiSVD, , SD_FLOAT_TYPES);
+
+        }  // namespace helpers
+    }  // namespace ops
 }  // namespace sd
 
 #endif

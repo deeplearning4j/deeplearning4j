@@ -68,9 +68,11 @@ void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext *lc, int opNum
                                                 const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
                                                 const sd::LongType *hZShapeInfo, void *dZ,
                                                 const sd::LongType *dZShapeInfo) {
+  sd_printf("execIndexReduceScalar determining data types\n",0);
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   auto hz = reinterpret_cast<sd::LongType *>(hZ);
+  sd_printf("After execIndexReduceScalar determining data types\n",0);
 
   BUILD_DOUBLE_SELECTOR(xType, zType, hz[0] = functions::indexreduce::IndexReduce,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParams), SD_COMMON_TYPES, SD_INDEXING_TYPES);

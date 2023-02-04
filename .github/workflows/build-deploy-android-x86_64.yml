@@ -169,6 +169,6 @@ jobs:
           bash ./bootstrap-libnd4j-from-url.sh android x86_64
           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 
-   var
+   
 
 

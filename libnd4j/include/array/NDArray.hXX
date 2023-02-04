@@ -314,10 +314,10 @@ NDArray::NDArray(void *buffer, void *bufferD, const sd::LongType *shapeInfo, sd:
     errorMessage += "[";
     int len = shape::shapeInfoLength(shape::rank(shapeInfo));
     for(int i = 0; i < len; i++) {
-           errorMessage += std::string(std::to_string(shapeInfo[i]));
-           if(i < len) {
-             errorMessage += std::string(",");
-           }
+      errorMessage += std::string(std::to_string(shapeInfo[i]));
+      if(i < len) {
+        errorMessage += std::string(",");
+      }
 
     }
 
@@ -1578,6 +1578,7 @@ void NDArray::reduceNumber(sd::reduce::LongOps op, NDArray &target, void *extraP
 NDArray NDArray::indexReduceNumber(sd::indexreduce::Ops op, ExtraArguments *extraParams) {
   if (isS()) throw std::runtime_error("NDArray::indexReduceNumber: you can't use this method on String array!");
 
+  sd_printf("indexReduceNumber before exec\n",0);
   auto res = NDArrayFactory::create<sd::LongType>(0);
 
   prepareUse({&res}, {this});
@@ -1586,6 +1587,8 @@ NDArray NDArray::indexReduceNumber(sd::indexreduce::Ops op, ExtraArguments *extr
       extraParams == nullptr ? nullptr : extraParams->argumentsAsT(this->dataType()), res.buffer(), res.shapeInfo(),
       res.specialBuffer(), res.specialShapeInfo());
   registerUse({&res}, {this});
+  sd_printf("After before exec\n",0);
+
 
   return res;
 }
@@ -1766,7 +1769,7 @@ void NDArray::printIndexedBuffer(const char *msg, sd::LongType limit) const {
   if (msg) printf("%s: ", msg);
 
   if (this->isEmpty()) {
-     printf("Empty\n");
+    printf("Empty\n");
   } else if (this->rankOf() == 0) {
     if (this->isZ())
       printf("%lld\n", this->e<sd::LongType>(0));
@@ -4783,7 +4786,7 @@ void NDArray::divRowVector(const NDArray &row, NDArray &target) const {
       !row.isRowVector() || columns() != row.columns()) {
     sd_printf("NDArray::divRowVector Input rank %d, Row is row vector %d, Number of columns: %d Row length: %d\n",rankOf(),row.isRowVector(),columns(),row.lengthOf());
     throw std::invalid_argument("NDArray::divRowVector: wrong arguments !");
-    }
+  }
   if (target.dataType() != DataTypeUtils::pickPairwiseResultType(dataType(), row.dataType()))
     throw std::invalid_argument("NDArray::divRowVector: wrong type of target array !");
 
@@ -5199,8 +5202,16 @@ void NDArray::setShapeInfo(const sd::LongType *shapeInfo, const sd::DataType dty
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::setShapeInfo(const ShapeDescriptor &descriptor) {
-  auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(const_cast<ShapeDescriptor &>(descriptor));
+  if(descriptor == nullptr) {
+    throw std::runtime_error("Passed in descriptor can't be null!");
+  }
 
+
+  sd_printf("Descriptor about to set: rank %d data type %d is empty %d\n" ,descriptor.rank(),descriptor.dataType(),descriptor.isEmpty());
+  sd_printf("Before obtaining constant shape info for descriptor\n",0);
+
+  auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(const_cast<ShapeDescriptor &>(descriptor));
+  sd_printf("After obtaining constant shape info for descriptor\n",0);
   _shapeInfo = shapeBuffer.primary();
 #ifdef __CUDABLAS__
   _shapeInfoD = shapeBuffer.special();
