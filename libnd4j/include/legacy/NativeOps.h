@@ -1074,7 +1074,7 @@ static long _numpyHeaderLength(OpaqueDataBuffer *opaqueDataBuffer,sd::Pointer sh
 }
 
 template<typename  T>
-SD_LIB_EXPORT static long _numpyHeaderLengthWordSize(sd::Pointer shapeBuffer,long wordSize) {
+ static long _numpyHeaderLengthWordSize(sd::Pointer shapeBuffer,long wordSize) {
   sd::LongType* shapeBufferCast = reinterpret_cast<sd::LongType*>(shapeBuffer);
   int rank = shape::rank(shapeBufferCast);
   sd::LongType* shape = shape::shapeOf(shapeBufferCast);
