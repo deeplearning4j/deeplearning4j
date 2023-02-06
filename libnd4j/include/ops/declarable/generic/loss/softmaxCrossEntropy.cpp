@@ -415,12 +415,15 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss_grad) {
 
   auto outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(logitsShapeInfo));
 
-  auto dLdpShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(
-      outType, shape::order(logitsShapeInfo), shape::shapeOf(logitsShapeInfo), shape::rank(logitsShapeInfo)));
-  auto dLdwShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(
-      outType, shape::order(weightsShapeInfo), shape::shapeOf(weightsShapeInfo), shape::rank(weightsShapeInfo)));
-  auto dLdlShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(
-      outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo)));
+  auto desc1 = new ShapeDescriptor(
+      outType, shape::order(logitsShapeInfo), shape::shapeOf(logitsShapeInfo), shape::rank(logitsShapeInfo));
+ auto desc2 = new ShapeDescriptor(
+      outType, shape::order(weightsShapeInfo), shape::shapeOf(weightsShapeInfo), shape::rank(weightsShapeInfo));
+ auto desc3 = new ShapeDescriptor(
+     outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo));
+  auto dLdpShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc1);
+  auto dLdwShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc2);
+  auto dLdlShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc3);
 
   return SHAPELIST(dLdpShapeInfo, dLdwShapeInfo, dLdlShapeInfo);
 }

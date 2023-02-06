@@ -78,8 +78,8 @@ sd::Status LegacyReduceLongOp::validateAndExecute(Context& block) {
       if (x->rankOf() - dims.size() != z->rankOf()) {
         auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(
             z->shapeInfo(), dims, z->getContext()->getWorkspace());
-        zShapeInfoH = reinterpret_cast<sd::LongType const*>(zPack.primary());
-        zShapeInfoD = reinterpret_cast<sd::LongType const*>(zPack.special());
+        zShapeInfoH = reinterpret_cast<sd::LongType const*>(zPack->primary());
+        zShapeInfoD = reinterpret_cast<sd::LongType const*>(zPack->special());
       }
 
       std::vector<int> dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), dims);
@@ -87,19 +87,6 @@ sd::Status LegacyReduceLongOp::validateAndExecute(Context& block) {
                                           x->specialShapeInfo(), nullptr, z->buffer(), zShapeInfoH, z->specialBuffer(),
                                           zShapeInfoD, dims2.data(), dims2.size());
 
-      // auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dims);
-
-      // auto pTadShape = Environment::getInstance().isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo();
-      // //(sd::LongType *) manager.replicatePointer(tad.tadOnlyShapeInfo,
-      // shape::shapeInfoByteLength(tad.tadOnlyShapeInfo)); auto pTadOffsets = Environment::getInstance().isCPU() ?
-      // packX.primaryOffsets() : packX.specialOffsets(); //(sd::LongType *) manager.replicatePointer(tad.tadOffsets,
-      // tad.numTads * sizeof(sd::LongType));
-
-      // NativeOpExecutioner::execReduceLong(block.launchContext(), opNum, x->buffer(), x->shapeInfo(),
-      // x->specialBuffer(), x->specialShapeInfo(),
-      //         extras.argumentsAsT(x->dataType()),
-      //         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-      //         dims.data(), (int) dims.size(), pTadShape, pTadOffsets);
     }
 
     STORE_RESULT(*z);
@@ -130,8 +117,8 @@ sd::Status LegacyReduceLongOp::validateAndExecute(Context& block) {
       if (x->rankOf() - dims.size() != z->rankOf()) {
         auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(
             z->shapeInfo(), dims, z->getContext()->getWorkspace());
-        zShapeInfoH = reinterpret_cast<sd::LongType const*>(zPack.primary());
-        zShapeInfoD = reinterpret_cast<sd::LongType const*>(zPack.special());
+        zShapeInfoH = reinterpret_cast<sd::LongType const*>(zPack->primary());
+        zShapeInfoD = reinterpret_cast<sd::LongType const*>(zPack->special());
       }
 
       std::vector<int> dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), dims);
@@ -139,18 +126,6 @@ sd::Status LegacyReduceLongOp::validateAndExecute(Context& block) {
                                           x->specialShapeInfo(), nullptr, z->buffer(), zShapeInfoH, z->specialBuffer(),
                                           zShapeInfoD, dims2.data(), dims2.size());
 
-      // auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dims);
-
-      // auto pTadShape = Environment::getInstance().isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo();
-      // //(sd::LongType *) manager.replicatePointer(tad.tadOnlyShapeInfo,
-      // shape::shapeInfoByteLength(tad.tadOnlyShapeInfo)); auto pTadOffsets = Environment::getInstance().isCPU() ?
-      // packX.primaryOffsets() : packX.specialOffsets(); //(sd::LongType *) manager.replicatePointer(tad.tadOffsets,
-      // tad.numTads * sizeof(sd::LongType));
-
-      // NativeOpExecutioner::execReduceLong(block.launchContext(), opNum, x->buffer(), x->shapeInfo(),
-      // x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(x->dataType()),
-      //         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), dims.data(), (int) dims.size(),
-      //         pTadShape, pTadOffsets);
     }
   }
 

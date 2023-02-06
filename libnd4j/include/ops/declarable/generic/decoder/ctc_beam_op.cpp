@@ -129,13 +129,13 @@ DECLARE_SHAPE_FN(ctc_beam) {
 
   auto dtype_float = ArrayOptions::dataType(logitShapeInfo);
   auto dtype_index = ArrayOptions::dataType(sequenceShapeInfo);
-
-  auto output0 = ConstantShapeHelper::getInstance().createShapeInfo(
-      ShapeDescriptor(dtype_index, 'c', {batch_size, nbest_len, max_t}));
+  auto desc = new  ShapeDescriptor(dtype_index, 'c', {batch_size, nbest_len, max_t});
+  auto output0 = ConstantShapeHelper::getInstance().createShapeInfo(desc);
+  auto desc2 = new ShapeDescriptor(dtype_float, 'c', {batch_size, nbest_len});
   auto output1 =
-      ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(dtype_float, 'c', {batch_size, nbest_len}));
-  auto output2 =
-      ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(dtype_index, 'c', {batch_size, nbest_len}));
+      ConstantShapeHelper::getInstance().createShapeInfo(desc2);
+  auto desc3 = new ShapeDescriptor(dtype_index, 'c', {batch_size, nbest_len});
+  auto output2 = ConstantShapeHelper::getInstance().createShapeInfo(desc3);
   return SHAPELIST(output0, output1, output2);
 }
 

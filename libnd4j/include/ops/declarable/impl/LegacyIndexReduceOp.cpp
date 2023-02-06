@@ -51,7 +51,8 @@ ShapeList *LegacyIndexReduceOp::calculateOutputShape(ShapeList *inputShape, sd::
     newShape[6] = 1;
     newShape[7] = 99;
 
-    auto result = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(newShape, DataType::INT64));
+    auto desc = new ShapeDescriptor(newShape, DataType::INT64);
+    auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
     RELEASE(newShape, block.getWorkspace());
     return SHAPELIST(result);
   } else if (block.getAxis()->size()) {
@@ -85,7 +86,8 @@ ShapeList *LegacyIndexReduceOp::calculateOutputShape(ShapeList *inputShape, sd::
       newShape[6] = 1;
       newShape[7] = 99;
 
-      auto result = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(newShape, DataType::INT64));
+      auto desc = new ShapeDescriptor(newShape, DataType::INT64);
+      auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
       RELEASE(newShape, block.getWorkspace());
       return SHAPELIST(result);
     } else {

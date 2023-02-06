@@ -743,26 +743,49 @@ SD_LIB_HIDDEN void sd::TransformLoops<X, Z, E>::loopTransform(const X* x, const 
                                                               const sd::LongType* zShapeInfo, E* extraParams,
                                                               uint64_t threadId, uint64_t numThreads) {
   const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
+  if(xShapeInfo == nullptr) {
+    throw std::runtime_error("Input x shape info was null!");
+  }
+
+  if(xShapeInfo[0] > SD_MAX_RANK || xShapeInfo[0] < 0) {
+    throw std::runtime_error("x shape info appears to be corrupt. This is likely due to deallocation.");
+  }
+
+  if(zShapeInfo[0] > SD_MAX_RANK || zShapeInfo[0] < 0) {
+    throw std::runtime_error("z shape info appears to be corrupt. This is likely due to deallocation.");
+  }
+
+  if(zShapeInfo == nullptr) {
+    throw std::runtime_error("Input z shape info was null!");
+  }
+
+
+
+  sd_printf("TransformAny loopTransform: before casted pointers\n",0);
 
   const sd::LongType* xShape = shape::shapeOf(const_cast<sd::LongType*>(xShapeInfo));
   const sd::LongType* xStride = shape::stride(const_cast<sd::LongType*>(xShapeInfo));
   const sd::LongType* zStride = shape::stride(const_cast<sd::LongType*>(zShapeInfo));
-
+  sd_printf("TransformAny loopTransform: after casted pointers\n",0);
   const sd::LongType len = shape::length(xShapeInfo);
 
   if (len == 0) return;
 
   switch (kindOfLoop) {
-      //*********************************************//
+    //*********************************************//
     case LoopKind::EWS1: {
+      sd_printf("TransformAny EWS1: after casted pointers\n",0);
       auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
       int64_t start = span.startX(), stop = span.stopX();
 
       for (auto i = start; i < stop; i++) z[i] = OpType::op(x[i], extraParams);
+      sd_printf("After TransformAny EWS1: after casted pointers\n",0);
+
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::EWSNONZERO: {
+      sd_printf("TransformAny EWSNONZERO: after casted pointers\n",0);
       const sd::Unsigned xEws = shape::elementWiseStride(xShapeInfo);
       const sd::Unsigned zEws = shape::elementWiseStride(zShapeInfo);
 
@@ -770,10 +793,14 @@ SD_LIB_HIDDEN void sd::TransformLoops<X, Z, E>::loopTransform(const X* x, const 
       int64_t start = span.startX(), stop = span.stopX();
 
       for (auto i = start; i < stop; i++) z[i * zEws] = OpType::op(x[i * xEws], extraParams);
+      sd_printf("After TransformAny EWS1: after casted pointers\n",0);
+
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::Z_EWSNONZERO: {
+      sd_printf("TransformAny Z_EWSNONZERO: before exec\n",0);
+
       const sd::Unsigned zEws = shape::elementWiseStride(zShapeInfo);
       sd::Unsigned castXShapeInfo[SD_MAX_RANK];
       const bool canCastX = sd::DataTypeUtils::castShapeInfo<sd::Unsigned>(xShapeInfo, castXShapeInfo);
@@ -792,35 +819,56 @@ SD_LIB_HIDDEN void sd::TransformLoops<X, Z, E>::loopTransform(const X* x, const 
           z[i] = OpType::op(x[xOffset], extraParams);
         }
       }
+
+      sd_printf("TransformAny Z_EWSNONZERO: after exec\n",0);
+
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::RANK1: {
+      sd_printf("TransformAny RANK1: before exec\n",0);
       auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
 
-      for (auto i0 = span.startX(); i0 < span.stopX(); i0++)
+      for (auto i0 = span.startX(); i0 < span.stopX(); i0++) {
+        sd_printf("zStride[0] is %d xStride[0] is %d io is %d\n",zStride[0],xStride[0],i0);
         z[i0 * zStride[0]] = OpType::op(x[i0 * xStride[0]], extraParams);
+      }
+      sd_printf("TransformAny RANK1: after exec\n",0);
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::RANK2: {
+      sd_printf("TransformAny RANK2: before exec\n",0);
       auto uXShape0 = static_cast<sd::Unsigned>(xShape[0]);
       auto uXShape1 = static_cast<sd::Unsigned>(xShape[1]);
+      sd_printf("TransoformANy: loopTransform: shape %d %d\n",uXShape0,uXShape1);
 
+      sd_printf("TransformAny RANK2: After casting\n",0);
       auto loop = samediff::ThreadsHelper::pickLoop2d(numThreads, uXShape0, uXShape1);
+      sd_printf("TransformAny RANK2: After pick loop\n",0);
+
       auto span = samediff::Span2::build(loop, threadId, numThreads, 0, uXShape0, 1, 0, uXShape1, 1);
+      sd_printf("TransformAny RANK2: After span\n",0);
 
       for (auto i0 = span.startX(); i0 < span.stopX(); i0++) {
+        sd_printf("TransformAny RANK2: loop element %d\n",i0);
         auto z0 = i0 * zStride[0];
         auto x0 = i0 * xStride[0];
 
-        for (auto i1 = span.startY(); i1 < span.stopY(); ++i1)
+        for (auto i1 = span.startY(); i1 < span.stopY(); ++i1) {
+          sd_printf("zStride[0] is %d xStride[0] is %d io is %d zStride[1] is %d xStride[1] is %d\n",zStride[0],xStride[0],i0,zStride[1],xStride[1]);
           z[z0 + i1 * zStride[1]] = OpType::op(x[x0 + i1 * xStride[1]], extraParams);
+
+        }
       }
+
+      sd_printf("TransformAny RANK2: after exec\n",0);
+
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::RANK3: {
+      sd_printf("TransformAny RANK3: before exec\n",0);
       auto uXShape0 = xShape[0];
       auto uXShape1 = xShape[1];
       auto uXShape2 = xShape[2];
@@ -836,10 +884,15 @@ SD_LIB_HIDDEN void sd::TransformLoops<X, Z, E>::loopTransform(const X* x, const 
           for (sd::LongType i2 = 0; i2 < uXShape2; ++i2)
             z[z0 + i2 * zStride[2]] = OpType::op(x[x0 + i2 * xStride[2]], extraParams);
         }
+
+      sd_printf("TransformAny RANK3: after exec\n",0);
+
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::RANK4: {
+      sd_printf("TransformAny RANK4: before exec\n",0);
+
       auto uXShape0 = xShape[0];
       auto uXShape1 = xShape[1];
       auto uXShape2 = xShape[2];
@@ -857,10 +910,14 @@ SD_LIB_HIDDEN void sd::TransformLoops<X, Z, E>::loopTransform(const X* x, const 
             for (sd::LongType i3 = 0; i3 < uXShape3; ++i3)
               z[z0 + i3 * zStride[3]] = OpType::op(x[x0 + i3 * xStride[3]], extraParams);
           }
+
+      sd_printf("TransformAny RANK3: after exec\n",0);
+
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::RANK5: {
+      sd_printf("TransformAny RANK5: before exec\n",0);
       auto uXShape0 = xShape[0];
       auto uXShape1 = xShape[1];
       auto uXShape2 = xShape[2];
@@ -885,10 +942,14 @@ SD_LIB_HIDDEN void sd::TransformLoops<X, Z, E>::loopTransform(const X* x, const 
             }
           }
 
+      sd_printf("TransformAny RANK4: after exec\n",0);
+
     } break;
 
-    //*********************************************//
+      //*********************************************//
     default: {
+      sd_printf("TransformAny default: before exec\n",0);
+
       sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
       sd::Unsigned zShapeInfoCast[SD_MAX_RANK];
 
@@ -902,6 +963,9 @@ SD_LIB_HIDDEN void sd::TransformLoops<X, Z, E>::loopTransform(const X* x, const 
         auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
         z[zOffset] = OpType::op(x[xOffset], extraParams);
       }
+
+      sd_printf("TransformAny default: after exec\n",0);
+
     }
   }
 }
@@ -978,7 +1042,7 @@ void sd::Reduction3Loops<X, Z>::loopReduce3(const X* x, const sd::LongType* xSha
       };
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::EWSNONZERO: {
       Z extraParams[3];
       for (auto i = start; i < stop; i++) {
@@ -997,7 +1061,7 @@ void sd::Reduction3Loops<X, Z>::loopReduce3(const X* x, const sd::LongType* xSha
       };
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::RANK1: {
       Z extraParams[3];
       for (auto i = start; i < stop; i++) {
@@ -1019,7 +1083,7 @@ void sd::Reduction3Loops<X, Z>::loopReduce3(const X* x, const sd::LongType* xSha
       };
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::RANK2: {
       Z extraParams[3];
       for (auto i = start; i < stop; i++) {
@@ -1042,7 +1106,7 @@ void sd::Reduction3Loops<X, Z>::loopReduce3(const X* x, const sd::LongType* xSha
       };
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::RANK3: {
       Z extraParams[3];
       for (auto i = start; i < stop; i++) {
@@ -1067,7 +1131,7 @@ void sd::Reduction3Loops<X, Z>::loopReduce3(const X* x, const sd::LongType* xSha
       };
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::RANK4: {
       Z extraParams[3];
       for (auto i = start; i < stop; i++) {
@@ -1096,7 +1160,7 @@ void sd::Reduction3Loops<X, Z>::loopReduce3(const X* x, const sd::LongType* xSha
       };
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::RANK5: {
       Z extraParams[3];
       for (auto i = start; i < stop; i++) {
@@ -1127,7 +1191,7 @@ void sd::Reduction3Loops<X, Z>::loopReduce3(const X* x, const sd::LongType* xSha
       };
     } break;
 
-    //*********************************************//
+      //*********************************************//
     default: {
       sd::Unsigned castXTadShapeInfo[SD_MAX_RANK];
       const bool canCastXTad = sd::DataTypeUtils::castShapeInfo<sd::Unsigned>(xTadShapeInfo, castXTadShapeInfo);
@@ -1232,7 +1296,7 @@ void sd::Reduction3Loops<X, Z>::loopReduce3All(const X* x, const sd::LongType* x
       };
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::EWSNONZERO: {
       Z extraParams[3];
       for (sd::LongType ix = 0; ix < numXTads; ix++) {
@@ -1254,7 +1318,7 @@ void sd::Reduction3Loops<X, Z>::loopReduce3All(const X* x, const sd::LongType* x
       };
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::RANK1: {
       Z extraParams[3];
       for (sd::LongType ix = 0; ix < numXTads; ix++) {
@@ -1278,7 +1342,7 @@ void sd::Reduction3Loops<X, Z>::loopReduce3All(const X* x, const sd::LongType* x
       };
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::RANK2: {
       Z extraParams[3];
       for (sd::LongType ix = 0; ix < numXTads; ix++) {
@@ -1304,7 +1368,7 @@ void sd::Reduction3Loops<X, Z>::loopReduce3All(const X* x, const sd::LongType* x
       };
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::RANK3: {
       Z extraParams[3];
       for (sd::LongType ix = 0; ix < numXTads; ix++) {
@@ -1332,7 +1396,7 @@ void sd::Reduction3Loops<X, Z>::loopReduce3All(const X* x, const sd::LongType* x
       };
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::RANK4: {
       Z extraParams[3];
       for (sd::LongType ix = 0; ix < numXTads; ix++) {
@@ -1364,7 +1428,7 @@ void sd::Reduction3Loops<X, Z>::loopReduce3All(const X* x, const sd::LongType* x
       };
     } break;
 
-    //*********************************************//
+      //*********************************************//
     case LoopKind::RANK5: {
       Z extraParams[3];
       for (sd::LongType ix = 0; ix < numXTads; ix++) {
@@ -1398,7 +1462,7 @@ void sd::Reduction3Loops<X, Z>::loopReduce3All(const X* x, const sd::LongType* x
       };
     } break;
 
-    //*********************************************//
+      //*********************************************//
     default: {
       sd::Unsigned castXTadShapeInfo[SD_MAX_RANK];
       const bool canCastXTad = sd::DataTypeUtils::castShapeInfo<sd::Unsigned>(xTadShapeInfo, castXTadShapeInfo);

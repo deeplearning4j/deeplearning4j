@@ -101,8 +101,8 @@ DECLARE_SHAPE_FN(stack) {
 
   // insert (int) block.width() at dim position of input shape to get output shape
   outShape.insert(outShape.begin() + sd::LongType(dim), (sd::LongType)block.width());
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-      ShapeDescriptor(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), outShape)));
+  auto desc = new ShapeDescriptor(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), outShape);
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
 }
 
 }  // namespace ops

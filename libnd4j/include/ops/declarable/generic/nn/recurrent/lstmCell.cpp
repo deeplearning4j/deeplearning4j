@@ -171,8 +171,10 @@ DECLARE_SHAPE_FN(lstmCell) {
   ShapeUtils::updateStridesAndType(hShapeInfo, xtShapeInfo, shape::order(ht_1ShapeInfo));
   ShapeUtils::updateStridesAndType(cShapeInfo, xtShapeInfo, shape::order(ct_1ShapeInfo));
 
-  auto result = SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(hShapeInfo),
-                          ConstantShapeHelper::getInstance().createShapeInfo(cShapeInfo));
+  auto desc = new ShapeDescriptor(hShapeInfo);
+  auto desc2 = new ShapeDescriptor(cShapeInfo);
+  auto result = SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc),
+                          ConstantShapeHelper::getInstance().createShapeInfo(desc2));
   RELEASE(hShapeInfo, block.workspace());
   RELEASE(cShapeInfo, block.workspace());
   return result;

@@ -54,8 +54,10 @@ DECLARE_TYPES(max_pool_with_argmax) {
 DECLARE_SHAPE_FN(max_pool_with_argmax) {
   auto in = inputShape->at(0);
   auto dtype = block.numD() ? D_ARG(0) : sd::DataType::INT64;
-  auto valuesShape = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(in));
-  auto indicesShape = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(in, dtype));
+  auto desc = new ShapeDescriptor(in);
+  auto desc2 = new ShapeDescriptor(in, dtype);
+  auto valuesShape = ConstantShapeHelper::getInstance().createShapeInfo(desc);
+  auto indicesShape = ConstantShapeHelper::getInstance().createShapeInfo(desc2);
 
   return SHAPELIST(valuesShape, indicesShape);
 }

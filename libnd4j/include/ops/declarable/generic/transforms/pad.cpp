@@ -117,7 +117,7 @@ DECLARE_SHAPE_FN(pad) {
     outShapeInfo[i] = inputShapeInfo[i] + paddings->e<sd::LongType>(i - 1, 0) + paddings->e<sd::LongType>(i - 1, 1);
 
   ShapeUtils::updateStridesAndType(outShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
-  ShapeDescriptor descriptor(outShapeInfo);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(outShapeInfo);
   RELEASE(outShapeInfo, block.getWorkspace());
   return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(descriptor));
 }

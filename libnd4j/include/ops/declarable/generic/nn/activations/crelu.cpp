@@ -102,7 +102,8 @@ DECLARE_TYPES(crelu_bp) {
 
 DECLARE_SHAPE_FN(crelu_bp) {
   auto inShape = inputShape->at(0);
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape)));
+  auto desc = new ShapeDescriptor(inShape);
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
 }
 }  // namespace ops
 }  // namespace sd

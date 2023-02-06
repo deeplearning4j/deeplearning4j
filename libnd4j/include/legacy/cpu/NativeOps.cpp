@@ -298,10 +298,13 @@ void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataB
   if(shapeInfo == nullptr)
     throw std::runtime_error("Input shape info was null!");
   for(int i = 0; i < numArrays; i++) {
+    sd_printf("Setting buffer %d\n",i);
     if(inputShapeBuffers[i] == nullptr)
       throw std::runtime_error("Input shape at index was null!");
-    if(buffer != nullptr && buffer[i] != nullptr)
+    if(buffer != nullptr && buffer[i] != nullptr) {
+      sd_printf("Setting graph context input buffer with neither buffer  or buffer[i] == nullptr\n",0);
       setGraphContextInputBuffer(ptr,i,buffer[i],inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+    }
     else {
       setGraphContextInputBuffer(ptr,i, nullptr,inputShapeBuffers[i],specialShapeInfo);
     }
@@ -459,8 +462,8 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *d
 
     if (shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
       auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, dimensions);
-      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack.primary());
-      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack.special());
+      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
     std::vector<int> dims =
@@ -494,8 +497,8 @@ void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
 
     if (shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo)) {
       auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, dimensions);
-      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack.primary());
-      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack.special());
+      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
     std::vector<int> dims =
@@ -529,8 +532,8 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
 
     if (shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
       auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, dimensions);
-      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack.primary());
-      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack.special());
+      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
     std::vector<int> dims =
@@ -564,8 +567,8 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
 
     if (shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
       auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, dimensions);
-      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack.primary());
-      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack.special());
+      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
     std::vector<int> dims =
@@ -2592,9 +2595,9 @@ OpaqueConstantShapeBuffer *shapeBuffer(int rank, sd::LongType *shape, sd::LongTy
 OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::LongType *strides, sd::DataType dtype,
                                          char order, sd::LongType ews, sd::LongType extras) {
   try {
-    auto buffer = new ConstantShapeBuffer();
-    *buffer = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(
-        ShapeDescriptor(dtype, order, shape, strides, rank, ews, extras));
+    auto desc = new  ShapeDescriptor(dtype, order, shape, strides, rank, ews, extras);
+    auto buffer = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(
+        desc);
     return buffer;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -2603,9 +2606,13 @@ OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::Long
   }
 }
 
-void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) { delete ptr; }
+void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) {
+  //delete ptr;
+   }
 
-void deleteConstantDataBuffer(sd::ConstantDataBuffer *ptr) { delete ptr; }
+void deleteConstantDataBuffer(sd::ConstantDataBuffer *ptr) {
+//  delete ptr;
+}
 
 void deleteTadPack(sd::TadPack *ptr) { delete ptr; }
 
@@ -2676,6 +2683,7 @@ void setGraphContextInputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer 
     throw std::runtime_error(error.c_str());
   }
 
+  sd_printf("Setting input array at index %d\n",index);
   ptr->setInputArray(index, buffer, shapeInfo, specialShapeInfo);
 }
 

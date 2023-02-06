@@ -406,13 +406,13 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, sd::LongType *shape) 
   if (var->getNDArray() == nullptr) {
     std::shared_ptr<DataBuffer> buffer =
         std::make_shared<DataBuffer>(len * sizeof(int8_t), ArrayOptions::dataType(__shape), workspace);
-    var->setNDArray(new NDArray(buffer, ShapeDescriptor(__shape), block.launchContext()));
+    var->setNDArray(new NDArray(buffer, __shape, block.launchContext()));
   } else if (var->getNDArray()->lengthOf() != len) {
     // if length not match - lets reallocate array
     delete var->getNDArray();
     std::shared_ptr<DataBuffer> buffer =
         std::make_shared<DataBuffer>(len * sizeof(int8_t), ArrayOptions::dataType(__shape), workspace);
-    var->setNDArray(new NDArray(buffer, ShapeDescriptor(__shape), block.launchContext()));
+    var->setNDArray(new NDArray(buffer, __shape, block.launchContext()));
   }
 
   return true;
@@ -423,6 +423,7 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, std::initializer_list
   auto workspace = block.getWorkspace();
 
   sd::LongType len = shape::length(shape);
+  sd_printf("Allocating result 1\n",0);
   // if that's first run - we probably have nothing here
   if (var->getNDArray() == nullptr) {
     var->setNDArray(new NDArray(order, shape, block.dataType(), block.launchContext()));

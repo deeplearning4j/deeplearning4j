@@ -65,7 +65,7 @@ class SD_LIB_EXPORT NDArrayFactory {
   template <typename T>
   static NDArray *linspace(T from, T to, sd::LongType numElements);
 
-  static NDArray create(const ShapeDescriptor &shapeDescriptor,
+  static NDArray create(ShapeDescriptor *shapeDescriptor,
                         sd::LaunchContext *context = sd::LaunchContext ::defaultContext());
 
   static NDArray create(const char order, const std::vector<sd::LongType> &shape, sd::DataType dataType,

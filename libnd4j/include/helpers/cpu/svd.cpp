@@ -544,10 +544,18 @@ void SVD<T>::calcSingVecs(const NDArray& zhat, const NDArray& diag, const NDArra
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDArray& V) {
-  const T almostZero = DataTypeUtils::min_positive<T>();
-  auto col0 = _m({col1, col1 + size, col1, col1 + 1}, true);
-  auto diag = static_cast<const NDArray&>(_m({col1, col1 + size, col1, col1 + size}, true).diagonal('c'));
+  sd_printf("In calcBlockSVD\n",0);
 
+  const T almostZero = DataTypeUtils::min_positive<T>();
+  int end = col1 + size;
+  auto col0 = _m({col1, end, col1, col1 + 1}, true);
+  _m.printShapeInfo("M shape \n");
+  sd_printf("After col0 col1 %d size %d col1 + size %d col1 + 1 %d col1 + size %d end was %d\n",0,col1,col1 + size,col1,col1 + 1,col1 + size,end);
+  auto view = _m({col1, end, col1, end}, true);
+  sd_printf("Created a new view from _m\n",0);
+  auto diag = view.diagonal('c');
+  sd_printf("diag finished\n",0);
+  sd_printf("In calcBlockSVD after diag creation\n",0);
   diag.r<T>(0) = (T)0;
   singVals = NDArray(_m.ordering(), {size, 1}, _m.dataType(), _m.getContext());
   U = NDArray(_u.ordering(), {size + 1, size + 1}, _u.dataType(), _u.getContext());
@@ -568,9 +576,13 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
   NDArray mus(_m.ordering(), {size, 1}, _m.dataType(), _m.getContext());
   NDArray zhat(_m.ordering(), {size, 1}, _m.dataType(), _m.getContext());
 
+  sd_printf("About to calculate single values\n",0);
   calcSingVals(col0, diag, permut, singVals, shifts, mus);
+  sd_printf("After to calculate single values\n",0);
   perturb(col0, diag, permut, singVals, shifts, mus, zhat);
+  sd_printf("After perturb\n",0);
   calcSingVecs(zhat, diag, permut, singVals, shifts, mus, U, V);
+  sd_printf("After calculate single vectors\n",0);
 
   for (int i = 0; i < curSize - 1; ++i) {
     if (singVals.t<T>(i) > singVals.t<T>(i + 1)) {
@@ -588,6 +600,9 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
     }
   }
 
+  sd_printf("After calculate single vectors swapping loop\n",0);
+
+
   auto temp1 = singVals({0, curSize, 0, 0});
   for (int e = 0; e < curSize / 2; ++e) math::sd_swap<T>(temp1.r<T>(e), temp1.r<T>(curSize - 1 - e));
 
@@ -598,6 +613,8 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
     temp3.swapUnsafe(temp4);
   }
 
+  sd_printf("After calculate single vectors swapping loop temp1 temp 2\n",0);
+
   if (_calcV) {
     auto temp2 = V({0, 0, 0, curSize}, true);
     for (int i = 0; i < curSize / 2; ++i) {
@@ -606,6 +623,9 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
       temp3.swapUnsafe(temp4);
     }
   }
+
+  sd_printf("After calculate single vectors swapping loop calc \n",0);
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -749,8 +769,10 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
   sd_printf("After calc block svd assign\n",0);
 
   if (_calcV) {
+    sd_printf("In calc v after block svd assign\n",0);
     auto temp = _v({row1W, row1W + n, row1W, row1W + n}, true);
     temp.assign(mmul(temp, VofSVD));
+    sd_printf("After calc v after block svd assign\n",0);
   }
 
   sd_printf("Before3 blockM\n",0);

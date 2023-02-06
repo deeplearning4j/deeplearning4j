@@ -144,10 +144,12 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss_with_logits_grad) {
 
   DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(logitsShapeInfo));
 
-  auto dLdpShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(
-      outType, shape::order(logitsShapeInfo), shape::shapeOf(logitsShapeInfo), shape::rank(logitsShapeInfo)));
-  auto dLdlShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(
-      outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo)));
+  auto desc1 = new ShapeDescriptor(
+      outType, shape::order(logitsShapeInfo), shape::shapeOf(logitsShapeInfo), shape::rank(logitsShapeInfo));
+  auto desc2 = new ShapeDescriptor(
+      outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo));
+  auto dLdpShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc1);
+  auto dLdlShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc2);
 
   return SHAPELIST(dLdpShapeInfo, dLdlShapeInfo);
 }

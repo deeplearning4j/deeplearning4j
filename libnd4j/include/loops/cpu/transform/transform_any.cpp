@@ -44,9 +44,12 @@ template <typename OpType>
 void SD_HOST TransformAny<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, void *vz,
                                       const sd::LongType *zShapeInfo, void *vextraParams, uint64_t threadId,
                                       uint64_t numThreads) {
+  sd_printf("TransformAny kernel: before casted pointers\n",0);
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
+  sd_printf("TransformAny kernel: affter casted pointers\n",0);
   auto extraParams = reinterpret_cast<X *>(vextraParams);
+  sd_printf("TransformAny kernel: after extra params pointers\n",0);
 
   sd::TransformLoops<X, Z, X>::template loopTransform<OpType>(x, xShapeInfo, z, zShapeInfo, extraParams, threadId,
                                                               numThreads);

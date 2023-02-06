@@ -199,8 +199,10 @@ class SD_LIB_EXPORT NDArray {
    *  do not allocate memory, memory for array is passed from outside
    */
 #ifndef __JAVACPP_HACK__
-  NDArray(std::shared_ptr<DataBuffer> buffer, const ShapeDescriptor &descriptor,
+  NDArray(std::shared_ptr<DataBuffer> buffer,  ShapeDescriptor *descriptor,
           sd::LaunchContext *context = sd::LaunchContext::defaultContext(), const sd::LongType offset = 0);
+
+  NDArray(std::shared_ptr<DataBuffer> buffer,  sd::LongType *shapeInfo,  sd::LaunchContext *context = sd::LaunchContext::defaultContext(), const sd::LongType offset = 0);
 
   NDArray(std::shared_ptr<DataBuffer> buffer, char order, const std::vector<sd::LongType> &shape,
           sd::LaunchContext *context = sd::LaunchContext::defaultContext());
@@ -396,15 +398,7 @@ class SD_LIB_EXPORT NDArray {
   static void preparePrimaryUse(const std::vector<const NDArray *> &writeList,
                                 const std::vector<const NDArray *> &readList = {}, bool synchronizeWritables = false);
 
-// #ifndef __JAVACPP_HACK__
-// #if defined(HAVE_VEDA)
-//   static void registerVedaUse(const std::vector<const NDArray *> &writeList,
-//                                  const std::vector<const NDArray *> &readList = {});
-//   static void prepareVedaUse(const std::vector<const NDArray *> &writeList,
-//                                 const std::vector<const NDArray *> &readList = {}, bool synchronizeWritables = false);
 
-// #endif
-// #endif
   /**
    * This method returns buffer pointer offset by given number of elements, wrt own data type
    * @param offset
@@ -1320,8 +1314,8 @@ class SD_LIB_EXPORT NDArray {
    */
   void setShapeInfo(const sd::LongType *shapeInfo);
   void setShapeInfo(const sd::LongType *shapeInfo, const sd::DataType dtype);
-  void setShapeInfo(const ShapeDescriptor &descriptor);
-  void setShapeInfo(const ConstantShapeBuffer &shapeBuffer);
+  void setShapeInfo(ShapeDescriptor *descriptor);
+  void setShapeInfo(const ConstantShapeBuffer *shapeBuffer);
 
   /**
    *  returns absolute offset which corresponds to given sequential index
@@ -1616,12 +1610,25 @@ SD_INLINE R NDArray::templatedGet(void const *buffer, sd::LongType index) const 
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::setShapeInfo(sd::LongType *shapeInfo) {
-  auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
-  _shapeInfo = buffer.primary();
-  _shapeInfoD = buffer.special();
-
   if (shapeInfo != nullptr) {
+    sd_printf("Setting shape info using input long type shape pointers\n",0);
+    auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
+    sd_printf("Created buffer to be set\n",0);
+    if(buffer == nullptr) {
+      throw std::runtime_error("Returned buffer from cache was null!");
+    }
+    _shapeInfo = buffer->primary();
+    _shapeInfoD = buffer->special();
+    if(_shapeInfo == nullptr) {
+      throw std::runtime_error("Set shape info was null in setsShapeInfo for long long");
+    }
+
+    if(_shapeInfo[0] > SD_MAX_RANK || _shapeInfo[0] < 0)
+      throw std::runtime_error("Set shape info buffer was corrupt. Please check for deallocation.");
+
+    sd_printf("Setting access for buffer\n",0);
     _dataType = ArrayOptions::dataType(_shapeInfo);
+    sd_printf("Set data type\n",0);
     if (ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
       _length = 0;
     else
@@ -1630,15 +1637,19 @@ void NDArray::setShapeInfo(sd::LongType *shapeInfo) {
     _dataType = sd::DataType::INHERIT;
     _length = 0;
   }
+
+  sd_printf("After setting shape info using input long type shape pointers\n",0);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::setShapeInfo(sd::LongType *shapeInfo, const sd::DataType dtype) {
-  auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
-  _shapeInfo = buffer.primary();
-  _shapeInfoD = buffer.special();
+
 
   if (shapeInfo != nullptr) {
+    auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
+    _shapeInfo = buffer->primary();
+    _shapeInfoD = buffer->special();
+
     _dataType = dtype;
     if (ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
       _length = 0;
@@ -1826,14 +1837,11 @@ bool NDArray::operator!=(const NDArray &other) const {
 //////////////////////////////////////////////////////////////////////////
 DataType NDArray::dataType() const {
   return _dataType;
-  // return ArrayOptions::dataType(_shapeInfo);
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 T &NDArray::r(const sd::LongType i) {
-  // if (i >= _length)
-  //     throw std::invalid_argument("NDArray::t(i): input index is out of array length !");
   auto inputDtype = DataTypeUtils::fromT<T>();
   if (inputDtype != _dataType) {
     sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
@@ -1891,8 +1899,6 @@ T &NDArray::r(const sd::LongType i, const sd::LongType j, const sd::LongType k, 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 T NDArray::t(const sd::LongType i) const {
-  // if (i >= _length)
-  //     throw std::invalid_argument("NDArray::t(i): input index is out of array length !");
   auto inputDtype = DataTypeUtils::fromT<T>();
   if (inputDtype != _dataType) {
     sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);

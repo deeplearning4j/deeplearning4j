@@ -161,10 +161,11 @@ DECLARE_SHAPE_FN(sigm_cross_entropy_loss) {
 
   if (INT_ARG(0) != 0)  // in this case output is scalar
     outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
-  else  // in this case output has the same shape as labels and logits
-    outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(
-        outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo)));
-
+  else {  // in this case output has the same shape as labels and logits
+    auto desc = new ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo),
+                                    shape::rank(labelsShapeInfo));
+    outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
+  }
   return SHAPELIST(outShapeInfo);
 }
 

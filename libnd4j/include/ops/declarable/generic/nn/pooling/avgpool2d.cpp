@@ -134,9 +134,8 @@ DECLARE_SHAPE_FN(avgpool2d) {
     newShape[2] = oW;
     newShape[3] = iD;
   }
-
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-      ShapeDescriptor(ArrayOptions::dataType(inShape), shape::order(inShape), newShape, 4)));
+  auto desc = new ShapeDescriptor(ArrayOptions::dataType(inShape), shape::order(inShape), newShape, 4);
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
 }
 
 DECLARE_TYPES(avgpool2d_bp) {
@@ -225,8 +224,8 @@ DECLARE_SHAPE_FN(avgpool2d_bp) {
                "AVGPOOL2D_BP op: output's gradient array (next epsilon) must be 4D, but got %i instead!",
                inputShape->at(1)[0]);
 
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-      ShapeDescriptor(inputShape->at(0), ArrayOptions::dataType(inputShape->at(1)))));
+  auto desc = new  ShapeDescriptor(inputShape->at(0), ArrayOptions::dataType(inputShape->at(1)));
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
 }
 
 }  // namespace ops

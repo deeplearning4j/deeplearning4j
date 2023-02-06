@@ -57,8 +57,8 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
   int isSameMode = INT_ARG(8);                                                  // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;             // INT_ARG(9): 0-NCHW,  1-NHWC
   int wFormat = block.getIArguments()->size() > 10
-                    ? INT_ARG(10)
-                    : 0;  // 0 - [kH, kW, oC, iC], 1 - [iC, oC, kH, kW], 2 - [iC, kH, kW, oC]
+                ? INT_ARG(10)
+                : 0;  // 0 - [kH, kW, oC, iC], 1 - [iC, oC, kH, kW], 2 - [iC, kH, kW, oC]
 
   int bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
@@ -71,10 +71,10 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
                "CUSTOM DECONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
   if (bias)
-    REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0,
-                 "CUSTOM DECONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i "
-                 "instead !",
-                 oC, bias->rankOf(), bias->lengthOf());
+  REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0,
+               "CUSTOM DECONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i "
+               "instead !",
+               oC, bias->rankOf(), bias->lengthOf());
 
   if (!isNCHW) output = new NDArray(output->permute({0, 3, 1, 2}));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
 
@@ -85,7 +85,7 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
     colPermut = {2, 3, 1, 0, 4, 5};
 
   if (isSameMode)  // Note: we're intentionally swapping iH and oH, to calculated the padding for a"normal" conv (not
-                   // deconv) forward pass
+    // deconv) forward pass
     ConvolutionUtils::calcPadding2D(pH, pW, iH, iW, oH, oW, kH, kW, sH, sW, dH, dW);
 
   NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, input->dataType(), block.launchContext());
@@ -136,8 +136,8 @@ DECLARE_SHAPE_FN(deconv2d) {
   int isSameMode = INT_ARG(8);                                                                  // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 1-NHWC, 0-NCHW
   int wFormat = block.getIArguments()->size() > 10
-                    ? INT_ARG(10)
-                    : 0;  // 0 - [kH, kW, oC, iC], 1 - [iC, oC, kH, kW], 2 - [iC, kH, kW, oC]
+                ? INT_ARG(10)
+                : 0;  // 0 - [kH, kW, oC, iC], 1 - [iC, oC, kH, kW], 2 - [iC, kH, kW, oC]
 
   int indIOioC, indIiH, indWoC(0 == wFormat ? 2 : (1 == wFormat ? 1 : 3));
   if (!isNCHW) {
@@ -161,10 +161,10 @@ DECLARE_SHAPE_FN(deconv2d) {
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(),
                ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
   if (biasShapeInfo)
-    REQUIRE_TRUE(shape::rank(biasShapeInfo) <= 2 && oC == shape::length(biasShapeInfo), 0,
-                 "CUSTOM DECONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i "
-                 "instead !",
-                 oC, biasShapeInfo[0], shape::length(biasShapeInfo));
+  REQUIRE_TRUE(shape::rank(biasShapeInfo) <= 2 && oC == shape::length(biasShapeInfo), 0,
+               "CUSTOM DECONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i "
+               "instead !",
+               oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
   int oH, oW;  // output height, width
   ConvolutionUtils::calcOutSizeDeconv2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
@@ -182,8 +182,8 @@ DECLARE_SHAPE_FN(deconv2d) {
     outputShape[3] = oC;
   }
 
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-      ShapeDescriptor(ArrayOptions::dataType(weightsShapeInfo), shape::order(inputShapeInfo), outputShape, 4)));
+  auto desc = new  ShapeDescriptor(ArrayOptions::dataType(weightsShapeInfo), shape::order(inputShapeInfo), outputShape, 4);
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
 }
 
 DECLARE_TYPES(deconv2d_bp) {
@@ -196,8 +196,8 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
   auto weights = INPUT_VARIABLE(1);                             // [kH, kW, oC, iC], [iC, oC, kH, kW], [iC, kH, kW, oC]
   auto bias = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;  // [oC]
   auto gradO = block.width() > 3
-                   ? INPUT_VARIABLE(3)
-                   : INPUT_VARIABLE(2);  // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
+               ? INPUT_VARIABLE(3)
+               : INPUT_VARIABLE(2);  // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
 
   auto gradI = OUTPUT_VARIABLE(0);  // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCDHW), gradI
   auto gradW = OUTPUT_VARIABLE(1);  // [kH, kW, oC, iC], [iC, oC, kH, kW], [iC, kH, kW, oC]
@@ -224,8 +224,8 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
   int isSameMode = INT_ARG(8);                                                  // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;             // INT_ARG(9): 1-NHWC, 0-NCHW
   int wFormat = block.getIArguments()->size() > 10
-                    ? INT_ARG(10)
-                    : 0;  // 0 - [kH, kW, oC, iC], 1 - [iC, oC, kH, kW], 2 - [iC, kH, kW, oC]
+                ? INT_ARG(10)
+                : 0;  // 0 - [kH, kW, oC, iC], 1 - [iC, oC, kH, kW], 2 - [iC, kH, kW, oC]
 
   int bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
@@ -247,10 +247,10 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
                "CUSTOM DECONV2D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
   if (bias)
-    REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0,
-                 "CUSTOM DECONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, "
-                 "%i instead !",
-                 oC, bias->rankOf(), bias->lengthOf());
+  REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0,
+               "CUSTOM DECONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, "
+               "%i instead !",
+               oC, bias->rankOf(), bias->lengthOf());
 
   if (isSameMode) {  // SAME
     // Note: we're intentionally swapping iH and oH, to calculated the padding for a"normal" conv (not deconv) forward
@@ -307,8 +307,8 @@ DECLARE_SHAPE_FN(deconv2d_bp) {
   auto weightsShapeInfo = inputShape->at(1);  // [kH, kW, oC, iC], [iC, oC, kH, kW], [iC, kH, kW, oC]
   sd::LongType const* biasShapeInfo = block.width() > 3 ? inputShape->at(2) : nullptr;  // [oC]
   auto gradOShapeInfo = block.width() > 3
-                            ? inputShape->at(3)
-                            : inputShape->at(2);  // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
+                        ? inputShape->at(3)
+                        : inputShape->at(2);  // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
 
   const int rank = 4;
   REQUIRE_TRUE(shape::rank(inputShapeInfo) == rank, 0,
@@ -333,8 +333,8 @@ DECLARE_SHAPE_FN(deconv2d_bp) {
   int isSameMode = INT_ARG(8);                                                                  // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 1-NHWC, 0-NCHW
   int wFormat = block.getIArguments()->size() > 10
-                    ? INT_ARG(10)
-                    : 0;  // 0 - [kH, kW, oC, iC], 1 - [iC, oC, kH, kW], 2 - [iC, kH, kW, oC]
+                ? INT_ARG(10)
+                : 0;  // 0 - [kH, kW, oC, iC], 1 - [iC, oC, kH, kW], 2 - [iC, kH, kW, oC]
 
   int indIOioC, indIiH, indOoH, indWoC(0 == wFormat ? 2 : (1 == wFormat ? 1 : 3));
   if (!isNCHW) {
@@ -370,10 +370,10 @@ DECLARE_SHAPE_FN(deconv2d_bp) {
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(),
                ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
   if (biasShapeInfo)
-    REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0,
-                 "CUSTOM DECONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, "
-                 "%i instead !",
-                 oC, biasShapeInfo[0], shape::length(biasShapeInfo));
+  REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0,
+               "CUSTOM DECONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, "
+               "%i instead !",
+               oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
   auto gradIShapeInfo =
       ShapeBuilders::copyShapeInfoAndType(inputShapeInfo, gradOShapeInfo, false, block.getWorkspace());

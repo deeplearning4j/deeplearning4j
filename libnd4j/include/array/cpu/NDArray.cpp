@@ -375,8 +375,9 @@ NDArray NDArray::tile(const std::vector<sd::LongType>& reps) const {
   // create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer
   std::shared_ptr<DataBuffer> newBuff =
       std::make_shared<DataBuffer>(shape::length(newShapeInfo) * sizeOfT(), dataType(), getContext()->getWorkspace());
+  auto desc = new ShapeDescriptor(newShapeInfo);
   // assign new shape and new buffer to resulting array
-  NDArray result(newBuff, ShapeDescriptor(newShapeInfo), getContext());
+  NDArray result(newBuff,desc , getContext());
 
   // fill newBuff, loop through all elements of newBuff
   // looping through _buffer goes automatically by means of getSubArrayIndex applying

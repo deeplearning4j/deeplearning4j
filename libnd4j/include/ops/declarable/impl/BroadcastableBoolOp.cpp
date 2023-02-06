@@ -45,26 +45,34 @@ ShapeList *BroadcastableBoolOp::calculateOutputShape(ShapeList *inputShape, sd::
 
     const sd::LongType *newshape = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(newshape, dtype)));
+    auto desc = new ShapeDescriptor(newshape, dtype);
+    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
   } else if (shape::isScalar(x) && shape::isScalar(y)) {
     if (shape::rank(x) >= shape::rank(y)) {
-      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(x, dtype)));
+      auto desc = new ShapeDescriptor(x, dtype);
+      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
     } else {
-      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(y, dtype)));
+      auto desc = new ShapeDescriptor(y, dtype);
+      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
     }
   } else if (shape::equalsSoft(x, y)) {
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(x, dtype)));
+    auto desc = new ShapeDescriptor(x, dtype);
+    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
   } else if (shape::isScalar(x) && !shape::isScalar(y)) {
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(y, dtype)));
+    auto desc = new ShapeDescriptor(y, dtype);
+    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
   } else if (!shape::isScalar(x) && shape::isScalar(y)) {
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(x, dtype)));
+    auto desc = new ShapeDescriptor(x, dtype);
+    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
   } else if (ShapeUtils::areShapesBroadcastable(x, y)) {
     const sd::LongType *newshape = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(newshape, dtype)));
+    auto desc = new ShapeDescriptor(newshape, dtype);
+    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
   } else {
     // in this case we'll throw exception later
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(x, dtype)));
+    auto desc = new ShapeDescriptor(x, dtype);
+    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
   }
 
   return shapeList;

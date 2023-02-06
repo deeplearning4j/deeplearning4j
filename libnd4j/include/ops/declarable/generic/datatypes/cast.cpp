@@ -48,12 +48,14 @@ DECLARE_SHAPE_FN(cast) {
   auto inShape = inputShape->at(0);
   if(!block.getDArguments()->empty()) {
     DataType newType = block.dataType(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, newType)));
+    auto desc = new ShapeDescriptor(inShape, newType);
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
 
   } else {
     auto it = INT_ARG(0);
     DataType newType = DataTypeUtils::fromInt(it);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, newType)));
+    auto desc = new ShapeDescriptor(inShape, newType);
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
 
   }
  }

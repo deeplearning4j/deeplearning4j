@@ -80,20 +80,19 @@ DECLARE_SHAPE_FN(crop_and_resize) {
   outputShape[1] = width;
   outputShape[2] = height;
   outputShape[3] = in[4];
-
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-      ShapeDescriptor(ArrayOptions::dataType(in), shape::order(in), outputShape, 4)));
+  auto desc = new  ShapeDescriptor(ArrayOptions::dataType(in), shape::order(in), outputShape, 4);
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
 }
 
 DECLARE_TYPES(crop_and_resize) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
-      //                    ->setAllowedInputTypes(1, {ALL_FLOATS})
+          //                    ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS})
       ->setAllowedInputTypes(2, {ALL_INTS})
       ->setAllowedInputTypes(3, {ALL_INTS})
       ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});  // as TF
-                                                        //                    ->setAllowedOutputTypes({ALL_FLOATS});
+  //                    ->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops
 }  // namespace sd
