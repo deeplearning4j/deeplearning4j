@@ -107,7 +107,7 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create<bool>(const char order, const std::
                                                                     sd::DataType::BOOL, true, context->getWorkspace());
 
   NDArray result(buffer, descriptor, context);
-
+  delete descriptor;
   return result;
 }
 
@@ -130,7 +130,7 @@ NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>
       data.data(), DataTypeUtils::fromT<T>(), descriptor->arrLength() * sizeof(T), context->getWorkspace());
 
   NDArray result(buffer, descriptor, context);
-
+  delete descriptor;
   return result;
 }
 

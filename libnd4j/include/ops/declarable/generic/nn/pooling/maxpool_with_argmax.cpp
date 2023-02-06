@@ -58,7 +58,8 @@ DECLARE_SHAPE_FN(max_pool_with_argmax) {
   auto desc2 = new ShapeDescriptor(in, dtype);
   auto valuesShape = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   auto indicesShape = ConstantShapeHelper::getInstance().createShapeInfo(desc2);
-
+  delete desc;
+  delete desc2;
   return SHAPELIST(valuesShape, indicesShape);
 }
 }  // namespace ops

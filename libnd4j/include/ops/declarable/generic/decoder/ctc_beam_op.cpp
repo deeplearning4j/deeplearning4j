@@ -136,6 +136,9 @@ DECLARE_SHAPE_FN(ctc_beam) {
       ConstantShapeHelper::getInstance().createShapeInfo(desc2);
   auto desc3 = new ShapeDescriptor(dtype_index, 'c', {batch_size, nbest_len});
   auto output2 = ConstantShapeHelper::getInstance().createShapeInfo(desc3);
+  delete desc;
+  delete desc2;
+  delete desc3;
   return SHAPELIST(output0, output1, output2);
 }
 

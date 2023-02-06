@@ -33,19 +33,15 @@ namespace sd {
                 if (matrix.rankOf() != 2 || matrix.isScalar())
                     throw std::runtime_error("ops::helpers::JacobiSVD constructor: input array must be 2D matrix !");
 
-                sd_printf("Before rows and cols\n",0);
                 _rows = static_cast<int>(matrix.sizeAt(0));
                 _cols = static_cast<int>(matrix.sizeAt(1));
                 _diagSize = math::sd_min<int>(_rows, _cols);
-                sd_printf("After rows and cols\n",0);
 
                 _calcU = calcU;
                 _calcV = calcV;
                 _fullUV = fullUV;
-                sd_printf("Before _s\n",0);
 
                 _s = NDArray(matrix.ordering(), {_diagSize, 1}, matrix.dataType(), matrix.getContext());
-                sd_printf("After _s\n",0);
 
                 if (_calcU) {
                     if (_fullUV)
@@ -65,7 +61,6 @@ namespace sd {
 
                 _m = NDArray(matrix.ordering(), {_diagSize, _diagSize}, matrix.dataType(), matrix.getContext());
 
-                sd_printf("Before jacobi evalData\n",0);
 
                 evalData(matrix);
             }
@@ -81,9 +76,6 @@ namespace sd {
                     auto temp = block({i, j + 1, j - i, 0, 0, 0}, true, true);
                     temp.assign(mmul(rotation, temp));
 
-                    // auto pTemp = block({i,j+1,j-i,  0,0,0}, true, true);
-                    // auto temp = pTemp.dup();
-                    // pTemp.assign(mmul(rotation, temp));
                 } else {
                     if (j + 1 > block.sizeAt(0) || i + 1 > block.sizeAt(0))
                         throw std::runtime_error(
@@ -112,10 +104,6 @@ namespace sd {
 
                     auto temp = block({0, 0, 0, i, j + 1, j - i}, true, true);
                     temp.assign(mmul(temp, rotation));
-
-                    // auto pTemp = block({0,0,0,  i,j+1,j-i}, true, true);
-                    // auto temp = pTemp.dup();
-                    // pTemp.assign(mmul(temp, rotation));
                 } else {
                     if (j + 1 > block.sizeAt(1) || i + 1 > block.sizeAt(1))
                         throw std::runtime_error(
@@ -267,23 +255,17 @@ namespace sd {
             void JacobiSVD<T>::evalData(const NDArray& matrix) {
                 const T precision = (T)2.f * DataTypeUtils::eps<T>();
                 const T almostZero = DataTypeUtils::min_positive<T>();
-                sd_printf("In jacobi jacobi evalData\n",0);
 
                 T scale = matrix.reduceNumber(reduce::AMax).template t<T>(0);
                 if (scale <   (T)1.f) scale = (T)1.f;
 
                 if (_rows > _cols) {
-                    sd_printf("In jacobi evalData rows > cols\n",0);
-
                     HHcolPivQR qr(matrix / scale);
-                    sd_printf("After qr \n",0);
 
                     _m.assign(qr._qr({0, _cols, 0, _cols}));
                     _m.fillAsTriangular<T>(0., 0, 0, _m, 'l',false);
-                    sd_printf("After fillAsTriangular \n",0);
 
                     HHsequence hhSeg(qr._qr, qr._coeffs, 'u');
-                    sd_printf("After hhSeg \n",0);
 
                     if (_fullUV)
                         hhSeg.applyTo(_u);
@@ -292,17 +274,13 @@ namespace sd {
                         hhSeg.mulLeft(_u);
                     }
 
-                    sd_printf("After hhSeg apply \n",0);
 
                     if (_calcV) _v.assign(qr._permut);
                 } else if (_rows < _cols) {
-                    sd_printf("In rows < columns\n",0);
-
                     HHcolPivQR qr(matrix.transpose() / scale);
                     _m.assign(qr._qr({0, _rows, 0, _rows}));
                     _m.fillAsTriangular<T>(0., 0, 0, _m, 'l',false);
                     _m.transposei();
-                    sd_printf("After in place transpose\n",0);
 
                     HHsequence hhSeg(qr._qr, qr._coeffs, 'u');  // type = 'u' is not mistake here !
 
@@ -313,7 +291,6 @@ namespace sd {
                         hhSeg.mulLeft(_v);
                     }
 
-                    sd_printf("After fullUV appy\n",0);
 
                     if (_calcU) _u.assign(qr._permut);
                 } else {
@@ -324,7 +301,6 @@ namespace sd {
                     if (_calcV) _v.setIdentity();
                 }
 
-                sd_printf("Before maxDiagElemn",0);
 
                 T maxDiagElem = 0.;
                 for (int i = 0; i < _diagSize; ++i) {
@@ -333,11 +309,9 @@ namespace sd {
                 }
 
                 bool stop = false;
-                sd_printf("AFter maxDiagElemn\n",0);
 
                 while (!stop) {
                     stop = true;
-                    sd_printf("In diagSize not stopping\n",0);
 
                     for (int p = 1; p < _diagSize; ++p) {
                         for (int q = 0; q < p; ++q) {
@@ -367,8 +341,6 @@ namespace sd {
                 }
 
 
-                sd_printf("After diagSize not stopping\n",0);
-
                 for (int i = 0; i < _diagSize; ++i) {
                     _s.r<T>(i) = math::sd_abs<T>(_m.t<T>(i, i));
 
@@ -379,16 +351,11 @@ namespace sd {
                 }
 
 
-                sd_printf("Before muli scale\n",0);
 
                 _s *= scale;
-                sd_printf("After muli scale\n",0);
                 for (int i = 0; i < _diagSize; i++) {
-                  sd_printf("Determining position\n",0);
                   int pos = (_s({i, -1, 0, 0}).indexReduceNumber(indexreduce::IndexMax, nullptr)).template e<int>(0);
-                  sd_printf("After Determining position\n",0);
                     T maxSingVal = _s({i, -1, 0, 0}).reduceNumber(reduce::Max).template t<T>(0);
-                    sd_printf("After maxSingVal\n",0);
 
                     if (maxSingVal == (T)0.) break;
 
@@ -398,11 +365,9 @@ namespace sd {
                         math::sd_swap<T>(_s.r<T>(i), _s.r<T>(pos));
 
                         if (_calcU) {
-                          sd_printf("Before temp1 temp2 swapUnsafe\n",0);
                             auto temp1 = _u({0, 0, pos, pos + 1}, true);
                             auto temp2 = _u({0, 0, i, i + 1}, true);
                             temp1.swapUnsafe(temp2);
-                            sd_printf("After temp1 temp2 swapUnsafe\n",0);
 
                         }
 
@@ -413,8 +378,6 @@ namespace sd {
                         }
                     }
                 }
-
-                sd_printf("AFter muli scale loop\n",0);
 
             }
 

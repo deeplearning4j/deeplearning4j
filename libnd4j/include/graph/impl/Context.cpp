@@ -392,11 +392,9 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
   NDArray *array;
   if (dataBuffer != nullptr && !shape::isEmpty(shapeInfoCast)) {
-    sd_printf("Before creating non empty ndarray using shape info cast\n",0);
     array = new NDArray(dataBuffer->dataBuffer(),newShapeInfoCast);
 
   } else {
-    sd_printf("Creating shape descriptor from shape info cast with empty data buffer\n",0);
     array = new NDArray(nullptr, nullptr, shapeInfoCast);
   }
   _fastpath_in[index] = array;

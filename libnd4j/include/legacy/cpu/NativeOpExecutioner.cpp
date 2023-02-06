@@ -68,11 +68,9 @@ void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext *lc, int opNum
                                                 const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
                                                 const sd::LongType *hZShapeInfo, void *dZ,
                                                 const sd::LongType *dZShapeInfo) {
-  sd_printf("execIndexReduceScalar determining data types\n",0);
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   auto hz = reinterpret_cast<sd::LongType *>(hZ);
-  sd_printf("After execIndexReduceScalar determining data types\n",0);
 
   BUILD_DOUBLE_SELECTOR(xType, zType, hz[0] = functions::indexreduce::IndexReduce,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParams), SD_COMMON_TYPES, SD_INDEXING_TYPES);
@@ -1164,23 +1162,18 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
                                            void *dZ, const sd::LongType *dZShapeInfo, void *extraParams,
                                            const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                                            bool allowParallelism) {
-  sd_printf("execTransformAny: before data types\n",0);
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
 
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  sd_printf("execTransformAny: after data types\n",0);
 
   if (shape::isEmpty(hXShapeInfo)) return;
 
   if (opNum == sd::transform::Assign && shape::order(hXShapeInfo) == shape::order(hZShapeInfo) &&
       shape::order(hXShapeInfo) == 'c' && xType == zType && shape::elementWiseStride(hXShapeInfo) == 1 &&
       shape::elementWiseStride(hZShapeInfo) == 1) {
-    sd_printf("execTransformAny: memcpy\n",0);
     memcpy(hZ, hX, shape::length(hXShapeInfo) * sd::DataTypeUtils::sizeOfElement(xType));
-    sd_printf("execTransformAny: after memcpy\n",0);
 
   } else {
-    sd_printf("execTransformAny: Before other exec\n",0);
     auto func = PRAGMA_THREADS_DO {
       BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
                             ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),

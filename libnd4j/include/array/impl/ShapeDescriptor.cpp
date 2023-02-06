@@ -162,15 +162,10 @@ ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtyp
   }
 
   _order = shape::order(shapeInfo);
-  sd_printf("ShapeDescriptor constructor: Determined order\n",0);
   _ews = shape::elementWiseStride(shapeInfo);
-  sd_printf("ShapeDescriptor constructor: Determined ews\n",0);
   _rank = shape::rank(shapeInfo);
-  sd_printf("ShapeDescriptor constructor: Determined rank\n",0);
   _extraProperties = ArrayOptions::propertyWithoutDataType(shapeInfo);
-  sd_printf("ShapeDescriptor constructor: Determined extra properties\n",0);
   if (inheritDtype) _dataType = ArrayOptions::dataType(shapeInfo);
-  sd_printf("ShapeDescriptor constructor: Determined dtype\n",0);
 
   _shape_strides.resize(2 * _rank);
 
@@ -190,19 +185,16 @@ ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtyp
 ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, const sd::DataType dtypeOverride)
     : ShapeDescriptor::ShapeDescriptor(shapeInfo, false) {
   _dataType = dtypeOverride;
-  sd_printf("Invoking with data type override 2\n",0);
 }
 
 ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, const sd::LongType *dtypeOverride)
     : ShapeDescriptor::ShapeDescriptor(shapeInfo, ArrayOptions::dataType(dtypeOverride)) {
-          sd_printf("Invoking with data type override\n",0);
 }
 
 ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, const sd::LongType *dtypeOverride,
                                  const sd::LongType *orderOverride)
     : ShapeDescriptor::ShapeDescriptor(shapeInfo, ArrayOptions::dataType(dtypeOverride)) {
   _order = shape::order(orderOverride);
-  sd_printf("Invoking with order override 2\n",0);
 }
 
 int ShapeDescriptor::rank() const { return _rank; }

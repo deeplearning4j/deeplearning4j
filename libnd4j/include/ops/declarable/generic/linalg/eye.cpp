@@ -96,7 +96,9 @@ DECLARE_SHAPE_FN(eye) {
   auto desc = new ShapeDescriptor(outShapeInfo, dtype);
   auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   RELEASE(outShapeInfo, block.getWorkspace());
-  return SHAPELIST(result);
+  auto ret =  SHAPELIST(result);
+  delete desc;
+  return ret;
 }
 
 }  // namespace ops

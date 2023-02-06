@@ -136,8 +136,7 @@ sd::NDArray *sd::ops::DeclarableOp::getZ(Context &ctx, int inputId) {
         sd_printf("Can't get Z variable for node_%i!\n", ctx.nodeId());
       }
     } else {
-      sd_printf("BOOM!\n", "");
-      throw std::runtime_error("Boom!");
+      throw std::runtime_error("getZ: Unable to return z variable!");
     }
   }
 
@@ -423,7 +422,6 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, std::initializer_list
   auto workspace = block.getWorkspace();
 
   sd::LongType len = shape::length(shape);
-  sd_printf("Allocating result 1\n",0);
   // if that's first run - we probably have nothing here
   if (var->getNDArray() == nullptr) {
     var->setNDArray(new NDArray(order, shape, block.dataType(), block.launchContext()));

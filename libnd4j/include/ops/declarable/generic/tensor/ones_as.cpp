@@ -39,9 +39,6 @@ DECLARE_SHAPE_FN(ones_as) {
   auto in = inputShape->at(0);
   auto dtype = block.numD() ? D_ARG(0) : ArrayOptions::dataType(in);
   auto shape = sd::ConstantShapeHelper::getInstance().createShapeInfo(dtype, in);
-
-  // sd_printf("numD: %i; dtype: %s\n", block.numD(), DataTypeUtils::asString(dtype).c_str());
-
   return SHAPELIST(shape);
 }
 

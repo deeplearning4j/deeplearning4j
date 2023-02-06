@@ -64,7 +64,9 @@ sd::Status LegacyTransformBoolOp::validateAndExecute(Context &block) {
 ShapeList *LegacyTransformBoolOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
   auto inShape = inputShape->at(0);
   auto desc = new ShapeDescriptor(inShape, DataType::BOOL);
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  delete desc;
+  return ret;
 }
 }  // namespace ops
 }  // namespace sd

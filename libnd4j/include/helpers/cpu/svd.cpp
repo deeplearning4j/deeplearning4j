@@ -52,22 +52,18 @@ SVD<T>::SVD(const NDArray& matrix, const int switchSize, const bool calcU, const
 
   if (_transp) math::sd_swap<bool>(_calcU, _calcV);
 
-  sd_printf("About to creating ndarrays\n",0);
   _s = NDArray(matrix.ordering(), {_diagSize, 1}, matrix.dataType(), matrix.getContext());
   _m = NDArray(matrix.ordering(), {_diagSize + 1, _diagSize}, matrix.dataType(), matrix.getContext());
-  sd_printf("After to creating ndarrays\n",0);
 
   if (_calcU)
     _u = NDArray(matrix.ordering(), {_diagSize + 1, _diagSize + 1}, matrix.dataType(), matrix.getContext());
   else
     _u = NDArray(matrix.ordering(), {2, _diagSize + 1}, matrix.dataType(), matrix.getContext());
 
-  sd_printf("Calculated u\n",0);
   if (_calcV) {
     _v = NDArray(matrix.ordering(), {_diagSize, _diagSize}, matrix.dataType(), matrix.getContext());
   }
 
-  sd_printf("Before evalData\n",0);
 
   evalData(matrix);
 }
@@ -544,18 +540,12 @@ void SVD<T>::calcSingVecs(const NDArray& zhat, const NDArray& diag, const NDArra
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDArray& V) {
-  sd_printf("In calcBlockSVD\n",0);
 
   const T almostZero = DataTypeUtils::min_positive<T>();
   int end = col1 + size;
   auto col0 = _m({col1, end, col1, col1 + 1}, true);
-  _m.printShapeInfo("M shape \n");
-  sd_printf("After col0 col1 %d size %d col1 + size %d col1 + 1 %d col1 + size %d end was %d\n",0,col1,col1 + size,col1,col1 + 1,col1 + size,end);
   auto view = _m({col1, end, col1, end}, true);
-  sd_printf("Created a new view from _m\n",0);
   auto diag = view.diagonal('c');
-  sd_printf("diag finished\n",0);
-  sd_printf("In calcBlockSVD after diag creation\n",0);
   diag.r<T>(0) = (T)0;
   singVals = NDArray(_m.ordering(), {size, 1}, _m.dataType(), _m.getContext());
   U = NDArray(_u.ordering(), {size + 1, size + 1}, _u.dataType(), _u.getContext());
@@ -576,13 +566,9 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
   NDArray mus(_m.ordering(), {size, 1}, _m.dataType(), _m.getContext());
   NDArray zhat(_m.ordering(), {size, 1}, _m.dataType(), _m.getContext());
 
-  sd_printf("About to calculate single values\n",0);
   calcSingVals(col0, diag, permut, singVals, shifts, mus);
-  sd_printf("After to calculate single values\n",0);
   perturb(col0, diag, permut, singVals, shifts, mus, zhat);
-  sd_printf("After perturb\n",0);
   calcSingVecs(zhat, diag, permut, singVals, shifts, mus, U, V);
-  sd_printf("After calculate single vectors\n",0);
 
   for (int i = 0; i < curSize - 1; ++i) {
     if (singVals.t<T>(i) > singVals.t<T>(i + 1)) {
@@ -600,9 +586,6 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
     }
   }
 
-  sd_printf("After calculate single vectors swapping loop\n",0);
-
-
   auto temp1 = singVals({0, curSize, 0, 0});
   for (int e = 0; e < curSize / 2; ++e) math::sd_swap<T>(temp1.r<T>(e), temp1.r<T>(curSize - 1 - e));
 
@@ -613,7 +596,6 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
     temp3.swapUnsafe(temp4);
   }
 
-  sd_printf("After calculate single vectors swapping loop temp1 temp 2\n",0);
 
   if (_calcV) {
     auto temp2 = V({0, 0, 0, curSize}, true);
@@ -623,8 +605,6 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
       temp3.swapUnsafe(temp4);
     }
   }
-
-  sd_printf("After calculate single vectors swapping loop calc \n",0);
 
 }
 
@@ -637,15 +617,11 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
   const T almostZero = DataTypeUtils::min_positive<T>();
   T alphaK, betaK, r0, lambda, phi, c0, s0;
 
-  sd_printf("Before l and f\n",0);
   NDArray l(_u.ordering(), {1, k}, _u.dataType(), _u.getContext());
   NDArray f(_u.ordering(), {1, n - k - 1}, _u.dataType(), _u.getContext());
-  sd_printf("Before l and f\n",0);
 
   if (n < _switchSize) {
-    sd_printf("Before jacobi SVD\n",0);
     JacobiSVD<T> jac(_m({col1, col1 + n + 1, col1, col1 + n}, true), _calcU, _calcV, _fullUV);
-    sd_printf("After jacobi SVD\n",0);
 
     if (_calcU)
       _u({col1, col1 + n + 1, col1, col1 + n + 1}, true).assign(jac._u);
@@ -653,29 +629,21 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
       _u({0, 1, col1, col1 + n + 1}, true).assign(jac._u({0, 1, 0, 0}, true));
       _u({1, 2, col1, col1 + n + 1}, true).assign(jac._u({n, n + 1, 0, 0}, true));
     }
-    sd_printf("After u and Jacobi\n",0);
 
     if (_calcV) _v({row1W, row1W + n, col1W, col1W + n}, true).assign(jac._v);
 
     _m({col1 + shift, col1 + shift + n + 1, col1 + shift, col1 + shift + n}, true).nullify();
-    sd_printf("Before diagonal\n",0);
     auto diag = _m.diagonal('c');
-    sd_printf("After diagonal\n",0);
     diag({col1 + shift, col1 + shift + n, 0, 0}, true).assign(jac._s({0, n, 0, 0}, true));
-    sd_printf("After diagonal assign\n",0);
 
     return;
   }
 
-  sd_printf("About to transpose alpha and betak\n",0);
   alphaK = _m.t<T>(col1 + k, col1 + k);
   betaK = _m.t<T>(col1 + k + 1, col1 + k);
-  sd_printf("After to transpose alpha and betak\n",0);
-  sd_printf("About to recur in to divide and conquer to transpose alpha and betak\n",0);
 
   DivideAndConquer(k + 1 + col1, col2, k + 1 + row1W, k + 1 + col1W, shift);
   DivideAndConquer(col1, k - 1 + col1, row1W, col1W + 1, shift + 1);
-  sd_printf("After recur in toDivide and  conquer\n",0);
 
   if (_calcU) {
     lambda = _u.t<T>(col1 + k, col1 + k);
@@ -685,11 +653,9 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
     phi = _u.t<T>(0, col2 + 1);
   }
 
-  sd_printf("About to sqrt\n",0);
 
   r0 = math::sd_sqrt<T, T>((math::sd_abs<T>(alphaK * lambda) * math::sd_abs<T>(alphaK * lambda)) +
                            math::sd_abs<T>(betaK * phi) * math::sd_abs<T>(betaK * phi));
-  sd_printf("After  sqrt\n",0);
 
   if (_calcU) {
     l.assign(_u({col1 + k, col1 + k + 1, col1, col1 + k}, true));
@@ -699,7 +665,6 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
     f.assign(_u({0, 1, col1 + k + 1, col1 + n}, true));
   }
 
-  sd_printf("After  sqrt assign \n",0);
 
   if (_calcV) _v.r<T>(row1W + k, col1W) = (T)1;
 
@@ -711,23 +676,18 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
     s0 = betaK * phi / r0;
   }
 
-  sd_printf("About to calcu  assign \n",0);
 
   if (_calcU) {
     NDArray q1 = _u({col1, col1 + k + 1, col1 + k, col1 + k + 1}, true).dup();
-    sd_printf("Dupped in calcu  assign \n",0);
 
     for (int i = col1 + k - 1; i >= col1; --i)
       _u({col1, col1 + k + 1, i + 1, i + 2}, true).assign(_u({col1, col1 + k + 1, i, i + 1}, true));
-    sd_printf("Assigned d1 \n",0);
 
     NDArray temp1 = _u({col1 + k + 1, col1 + n + 1, col2 + 1, col2 + 2}, true);
-    sd_printf("After temp creation \n",0);
 
     _u({col1, col1 + k + 1, col1, col1 + 1}, true).assign(q1 * c0);
     _u({col1, col1 + k + 1, col2 + 1, col2 + 2}, true).assign(q1 * (-s0));
     _u({col1 + k + 1, col1 + n + 1, col1, col1 + 1}, true).assign(temp1 * s0);
-    sd_printf("After 3 assign block \n",0);
 
     temp1 *= c0;
   } else {
@@ -743,22 +703,17 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
     _u({0, 1, col1 + k + 1, col1 + n}).nullify();
   }
 
-  sd_printf("Before m ops and assign\n",0);
 
   _m.r<T>(col1 + shift, col1 + shift) = r0;
 
   _m({col1 + shift + 1, col1 + shift + k + 1, col1 + shift, col1 + shift + 1}, true).assign(l * alphaK);
   _m({col1 + shift + k + 1, col1 + shift + n, col1 + shift, col1 + shift + 1}, true).assign(f * betaK);
-  sd_printf("Before deflation\n",0);
 
   deflation(col1, col2, k, row1W, col1W, shift);
-  sd_printf("After deflation\n",0);
 
   NDArray UofSVD, VofSVD, singVals;
-  sd_printf("Before calc block svd\n",0);
 
   calcBlockSVD(col1 + shift, n, UofSVD, singVals, VofSVD);
-  sd_printf("After calc block svd\n",0);
   if (_calcU) {
     auto temp = _u({col1, col1 + n + 1, col1, col1 + n + 1}, true);
     temp.assign(mmul(temp, UofSVD));
@@ -766,23 +721,17 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
     auto temp = _u({0, 0, col1, col1 + n + 1}, true);
     temp.assign(mmul(temp, UofSVD));
   }
-  sd_printf("After calc block svd assign\n",0);
 
   if (_calcV) {
-    sd_printf("In calc v after block svd assign\n",0);
     auto temp = _v({row1W, row1W + n, row1W, row1W + n}, true);
     temp.assign(mmul(temp, VofSVD));
-    sd_printf("After calc v after block svd assign\n",0);
   }
 
-  sd_printf("Before3 blockM\n",0);
 
   auto blockM = _m({col1 + shift, col1 + shift + n, col1 + shift, col1 + shift + n}, true);
   blockM.nullify();
-  sd_printf("After block m nullify\n",0);
 
   blockM.diagonal('c').assign(singVals);
-  sd_printf("After diagonal assign\n",0);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -814,42 +763,30 @@ template <typename T>
 void SVD<T>::evalData(const NDArray& matrix) {
   const T almostZero = DataTypeUtils::min_positive<T>();
 
-  sd_printf("Before sizeAt 1 comparison\n",0);
   if (matrix.sizeAt(1) < _switchSize) {
-    sd_printf("Before jacobi\n",0);
     JacobiSVD<T> jac(matrix, _calcU, _calcV, _fullUV);
-    sd_debug("Executed jacobian switch size early eval %d\n",0);
 
     if (_calcU) _u = jac._u;
     if (_calcV) _v = jac._v;
-    sd_printf("In sizeAt 1 about to assign\n",0);
-
     _s.assign(jac._s);
 
     return;
   }
 
-  sd_printf("Before scale\n",0);
   T scale = matrix.reduceNumber(reduce::AMax).t<T>(0);
-  sd_printf("After scale\n",0);
 
   if (scale == (T)0.) scale = 1.;
-  sd_printf("Before bidiag \n",0);
 
   BiDiagonalUp biDiag(_transp ? matrix.transpose() : matrix / scale);
-  sd_printf("After bidiag \n",0);
 
   _u.nullify();
   _v.nullify();
-  sd_printf("After u v nullified \n",0);
 
   _m({0, _diagSize, 0, 0}, true).assign(biDiag._HHbidiag.transpose());
 
   _m({_m.sizeAt(0) - 1, _m.sizeAt(0), 0, 0}).nullify();
-  sd_printf("Afterm assign and nullify\n",0);
 
   DivideAndConquer(0, _diagSize - 1, 0, 0, 0);
-  sd_printf("After divide and conquer\n",0);
 
   for (int i = 0; i < _diagSize; ++i) {
     T a = math::sd_abs<T>(_m.t<T>(i, i));
@@ -860,7 +797,6 @@ void SVD<T>::evalData(const NDArray& matrix) {
     } else if (i == _diagSize - 1)
       break;
   }
-  sd_printf("After divide and conquer diag size\n",0);
 
   HHsequence hhV = biDiag.makeHHsequence('v');
   HHsequence hhU = biDiag.makeHHsequence('u');
@@ -869,8 +805,6 @@ void SVD<T>::evalData(const NDArray& matrix) {
     exchangeUV(hhV, hhU, _v, _u);
   else
     exchangeUV(hhU, hhV, _u, _v);
-
-  sd_printf("After exchange\n",0);
 
 }
 

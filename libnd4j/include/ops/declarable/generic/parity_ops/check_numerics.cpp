@@ -43,7 +43,9 @@ CUSTOM_OP_IMPL(check_numerics, 2, 1, true, 0, 0) {
 
 DECLARE_SHAPE_FN(check_numerics) {
   auto desc = new ShapeDescriptor(inputShape->at(0));
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  delete desc;
+  return ret;
 }
 
 DECLARE_TYPES(check_numerics) {

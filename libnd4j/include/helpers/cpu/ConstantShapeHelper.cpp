@@ -44,53 +44,41 @@ ConstantShapeHelper& ConstantShapeHelper::getInstance() {
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(sd::DataType dataType, char order,
                                                              const std::vector<sd::LongType>& shape) {
   auto descriptor = new ShapeDescriptor(dataType, order, shape);
-  return bufferForShapeInfo(descriptor);
+  auto ret =  bufferForShapeInfo(descriptor);
+  delete descriptor;
+  return ret;
 }
 
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(const sd::DataType dataType, const char order,
                                                              const int rank, const sd::LongType* shape) {
   auto descriptor = new ShapeDescriptor(dataType, order, shape, rank);
-  return bufferForShapeInfo(descriptor);
+  auto ret =  bufferForShapeInfo(descriptor);
+  delete descriptor;
+  return ret;
 }
 
 ConstantShapeBuffer * ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor *descriptor) {
   int deviceId = 0;
   std::lock_guard<std::mutex> lock(_mutex);
-  sd_printf("Before cache access\n",0);
   if(_cache.empty()) {
     throw std::runtime_error("Cache is empty!");
   }
 
-  sd_printf("Access cache based on descriptor with rank: %d order: %d is empty: %d data type: %d\n",
-            descriptor->rank(),descriptor->order(),descriptor->isEmpty(),descriptor->dataType());
-  sd_printf("Accessing cache with device id %d\n",deviceId);
-  auto cacheForDevice = _cache[deviceId];
-  sd_printf("Obtained cache\n",0);
-  auto hPtr =
-      std::make_shared<PointerWrapper>(descriptor->toShapeInfo(), std::make_shared<PrimaryPointerDeallocator>());
-  ConstantShapeBuffer *constantShapeBuffer2 = new ConstantShapeBuffer(hPtr, hPtr);
-  return constantShapeBuffer2;
- /* if (cacheForDevice.count(descriptor) == 0) {
-    sd_printf("About to create deallocator\n",0);
-
-    sd_printf("After setting up deallocator\n",0);
+  if (_cache[deviceId].count(descriptor) == 0) {
+    auto hPtr =
+        std::make_shared<PointerWrapper>(descriptor->toShapeInfo(), std::make_shared<PrimaryPointerDeallocator>());
     ConstantShapeBuffer *constantShapeBuffer2 = new ConstantShapeBuffer(hPtr);
-    sd_printf("After constant shape buffer construction\n",0);
-    sd_printf("Shape info being set is: order: %d rank %d\n",descriptor->order(),descriptor->rank());
     _cache[deviceId][descriptor] = constantShapeBuffer2;
-    sd_printf("Setting cache for descriptor\n",0);
     return constantShapeBuffer2;
   } else {
-    sd_printf("Hitting cache access\n",0);
     return _cache[deviceId].at(descriptor);
-  }*/
+  }
 }
 
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(const sd::LongType* shapeInfo) {
-  sd_printf("Before creating buffer for shape info with descriptor\n",0);
   auto descriptor = new ShapeDescriptor(shapeInfo);
-  sd_printf("After creating buffer for shape info with descriptor\n",0);
   auto ret =  bufferForShapeInfo(descriptor);
+  delete descriptor;
   return ret;
 }
 
@@ -104,7 +92,9 @@ bool ConstantShapeHelper::checkBufferExistenceForShapeInfo(ShapeDescriptor *desc
 const sd::LongType* ConstantShapeHelper::createShapeInfo(const sd::DataType dataType, const char order, const int rank,
                                                          const sd::LongType* shape) {
   auto descriptor = new ShapeDescriptor(dataType, order, shape, rank);
-  return bufferForShapeInfo(descriptor)->primary();
+  auto ret =  bufferForShapeInfo(descriptor)->primary();
+  delete descriptor;
+  return ret;
 }
 
 const sd::LongType* ConstantShapeHelper::createShapeInfo(const sd::DataType dataType, const sd::LongType* shapeInfo) {
@@ -130,7 +120,9 @@ const sd::LongType* ConstantShapeHelper::vectorShapeInfo(const sd::LongType leng
 const sd::LongType* ConstantShapeHelper::createShapeInfo(const sd::DataType dataType, const char order,
                                                          const std::vector<sd::LongType>& shape) {
   ShapeDescriptor * descriptor = new ShapeDescriptor(dataType, order, shape);
-  return bufferForShapeInfo(descriptor)->primary();
+  auto ret =  bufferForShapeInfo(descriptor)->primary();
+  delete descriptor;
+  return ret;
 }
 
 const sd::LongType* ConstantShapeHelper::createShapeInfo(ShapeDescriptor* descriptor) {
@@ -149,13 +141,11 @@ const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeI
 }
 
 const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, sd::memory::Workspace* workspace) {
-  sd_printf("Creating from existing\n",0);
   ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
-  sd_printf("After creating from existing\n",0);
   auto result = createShapeInfo(descriptor);
 
   RELEASE(shapeInfo, workspace);
-
+  delete descriptor;
   return result;
 }
 

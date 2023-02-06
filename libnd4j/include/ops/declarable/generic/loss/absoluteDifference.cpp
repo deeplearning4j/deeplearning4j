@@ -77,7 +77,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss, 3, 1, false, 0, 1) {
       break;
     }
     case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
-               // all elements of weightsBroad array
+      // all elements of weightsBroad array
       NDArray sum;
       if (weights->isScalar())
         sum = (*weights) * E.lengthOf();
@@ -91,7 +91,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss, 3, 1, false, 0, 1) {
       break;
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
-               // array divided by number of non-zero weights
+      // array divided by number of non-zero weights
       sd::LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
         if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
@@ -148,8 +148,10 @@ DECLARE_SHAPE_FN(absolute_difference_loss) {
     auto desc = new ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo),
                                     shape::rank(labelsShapeInfo));
     outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
+    delete desc;
   }
-  return SHAPELIST(outShapeInfo);
+
+  SHAPELIST(outShapeInfo);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -217,7 +219,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
       break;
     }
     case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
-               // all elements of weightsBroad array
+      // all elements of weightsBroad array
 
       NDArray sum;
       if (weights->isScalar())
@@ -244,7 +246,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
       break;
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
-               // array divided by number of non-zero weights
+      // array divided by number of non-zero weights
 
       sd::LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {

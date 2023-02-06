@@ -153,7 +153,8 @@ DECLARE_SHAPE_FN(hinge_loss) {
   else {  // in this case output has the same shape as labels and predictions
     auto desc = new ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo),
                                     shape::rank(labelsShapeInfo));
-                                    outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
+    outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
+    delete desc;
   }
   return SHAPELIST(outShapeInfo);
 }

@@ -66,7 +66,9 @@ DECLARE_SHAPE_FN(biasadd) {
 
   auto dtype = ArrayOptions::dataType(yShape);
   auto desc = new ShapeDescriptor(xShape, dtype);
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  delete desc;
+  return ret;
 }
 
 DECLARE_TYPES(biasadd) {

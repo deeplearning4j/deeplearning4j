@@ -38,13 +38,8 @@ CUSTOM_OP_IMPL(zero_fraction, 1, 1, false, 0, 0) {
     return sd::Status::OK;
   }
 
-  int numZeros = 0;
-  //            for (int e = 0; e < input->lengthOf(); e++)
-  //                if ((*input)(e) == T(0))
-  //                    numZeros++;
+
   auto countZero = input->reduceNumber(reduce::CountZero);
-  // sd_printf("Zero count is %f for %i elements.", countZero.e<double>(0), input->lengthOf());
-  // countZero /= double(input->lengthOf());
   output->p<double>(0, countZero.e<sd::LongType>(0) / double(input->lengthOf()));  // printIndexedBuffer("Zero count");
 
   return sd::Status::OK;

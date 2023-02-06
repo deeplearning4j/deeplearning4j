@@ -157,6 +157,7 @@ DECLARE_SHAPE_FN(sru) {
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo1);
   RELEASE(newShapeInfo1, block.getWorkspace());
   auto result = ConstantShapeHelper::getInstance().createShapeInfo(descriptor);
+  delete descriptor;
   return SHAPELIST(result, result);
 }
 
@@ -345,10 +346,15 @@ DECLARE_SHAPE_FN(sru_bp) {
   ShapeDescriptor *descriptor3 = new ShapeDescriptor(ArrayOptions::dataType(inShape), order, {1, 2 * inSize});
   ShapeDescriptor *descriptor4 = new ShapeDescriptor(ArrayOptions::dataType(inShape), order, {bS, inSize});
 
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(descriptor1),
+  auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(descriptor1),
                    ConstantShapeHelper::getInstance().createShapeInfo(descriptor2),
                    ConstantShapeHelper::getInstance().createShapeInfo(descriptor3),
                    ConstantShapeHelper::getInstance().createShapeInfo(descriptor4));
+  delete descriptor1;
+  delete descriptor2;
+  delete descriptor3;
+  delete descriptor4;
+  return ret;
 }
 
 //////////////////////////////////////////////////////////////////////////

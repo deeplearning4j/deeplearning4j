@@ -1611,9 +1611,7 @@ SD_INLINE R NDArray::templatedGet(void const *buffer, sd::LongType index) const 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::setShapeInfo(sd::LongType *shapeInfo) {
   if (shapeInfo != nullptr) {
-    sd_printf("Setting shape info using input long type shape pointers\n",0);
     auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
-    sd_printf("Created buffer to be set\n",0);
     if(buffer == nullptr) {
       throw std::runtime_error("Returned buffer from cache was null!");
     }
@@ -1626,9 +1624,7 @@ void NDArray::setShapeInfo(sd::LongType *shapeInfo) {
     if(_shapeInfo[0] > SD_MAX_RANK || _shapeInfo[0] < 0)
       throw std::runtime_error("Set shape info buffer was corrupt. Please check for deallocation.");
 
-    sd_printf("Setting access for buffer\n",0);
     _dataType = ArrayOptions::dataType(_shapeInfo);
-    sd_printf("Set data type\n",0);
     if (ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
       _length = 0;
     else
@@ -1638,7 +1634,6 @@ void NDArray::setShapeInfo(sd::LongType *shapeInfo) {
     _length = 0;
   }
 
-  sd_printf("After setting shape info using input long type shape pointers\n",0);
 }
 
 //////////////////////////////////////////////////////////////////////////

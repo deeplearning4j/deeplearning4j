@@ -88,7 +88,9 @@ DECLARE_SHAPE_FN(ctc_loss) {
 
   auto dtype = ArrayOptions::dataType(yShapeInfo);
   auto desc = new ShapeDescriptor(zShapeInfo, dtype);
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  delete desc;
+  return ret;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -149,7 +151,9 @@ DECLARE_SHAPE_FN(ctc_loss_grad) {
   auto yShapeInfo = inputShape->at(1);
   auto dtype = ArrayOptions::dataType(yShapeInfo);
   auto desc = new ShapeDescriptor(yShapeInfo, dtype);
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  delete desc;
+  return ret;
 }
 
 }  // namespace ops

@@ -111,18 +111,18 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
   softmax /= softmax.reduceAlongDimension(reduce::Sum, dimension, true);
 
 
-    // dEdp = softmax * sum_i(labels_i) - labels
-    //note the eps is to account for exact 0s in the log calculation being nan
-    auto labelsPlusEps = *labels + 1e-6;
-    labelsPlusEps.printBuffer("Labels plus eps");
-    dLdp->assign(((softmax * labelsPlusEps.reduceAlongDimension(reduce::Sum, dimension, true) - labelsPlusEps)));
-    auto negSoftmax = softmax;
+  // dEdp = softmax * sum_i(labels_i) - labels
+  //note the eps is to account for exact 0s in the log calculation being nan
+  auto labelsPlusEps = *labels + 1e-6;
+  labelsPlusEps.printBuffer("Labels plus eps");
+  dLdp->assign(((softmax * labelsPlusEps.reduceAlongDimension(reduce::Sum, dimension, true) - labelsPlusEps)));
+  auto negSoftmax = softmax;
 
 
-    // dEdl = -log(softmax)
-    softmax.applyTransform(transform::Log, *dLdl);
-    dLdl->applyTransform(transform::Neg,*dLdl);
-    return Status::OK;
+  // dEdl = -log(softmax)
+  softmax.applyTransform(transform::Log, *dLdl);
+  dLdl->applyTransform(transform::Neg,*dLdl);
+  return Status::OK;
 
 }
 
@@ -150,7 +150,8 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss_with_logits_grad) {
       outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo));
   auto dLdpShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc1);
   auto dLdlShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc2);
-
+  delete desc1;
+  delete desc2;
   return SHAPELIST(dLdpShapeInfo, dLdlShapeInfo);
 }
 

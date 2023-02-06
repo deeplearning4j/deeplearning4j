@@ -80,7 +80,9 @@ DECLARE_SHAPE_FN(dynamic_stitch) {
   for (int i = 1; i < outRank; ++i) outShape[i] = shape::sizeAt(restShape, i);
 
   auto desc = new ShapeDescriptor(ArrayOptions::dataType(restShape), shape::order(firstShape), outShape);
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  delete desc;
+  return ret;
 }
 }  // namespace ops
 }  // namespace sd

@@ -106,8 +106,6 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
 
   RELEASE(subArrShapeInfo, block.getWorkspace());
 
-  // auto sub = (*input)(indices, true);
-  // output->assign(sub);
 
   STORE_RESULT(output);
 

@@ -33,38 +33,28 @@ namespace helpers {
 template <typename T>
 static void svd_(const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV,
                  const int switchNum) {
-  sd_printf("In svd helper\n",0);
   auto s = outArrs[0];
   auto u = outArrs[1];
   auto v = outArrs[2];
-  sd_printf("After s,u,v\n",0);
   const int rank = x->rankOf();
   const int sRank = rank - 1;
 
-  sd_printf("before listX\n",0);
   auto listX = x->allTensorsAlongDimension({rank - 2, rank - 1});
-  sd_printf("before listS\n",0);
   auto listS = s->allTensorsAlongDimension({sRank - 1});
   ResultSet *listU(nullptr), *listV(nullptr);
 
   if (calcUV) {
-    sd_printf("in calcUV\n",0);
     listU = new ResultSet(u->allTensorsAlongDimension({rank - 2, rank - 1}));
     listV = new ResultSet(v->allTensorsAlongDimension({rank - 2, rank - 1}));
-    sd_printf("after calcUV\n",0);
   }
 
   for (int i = 0; i < listX.size(); ++i) {
-    sd_printf("calculating svd at %d\n",i);
     helpers::SVD<T> svdObj(*(listX.at(i)), switchNum, calcUV, calcUV, fullUV);
-    sd_printf("Before assign in calculating svd\n",0);
     listS.at(i)->assign(svdObj._s);
 
     if (calcUV) {
-      sd_printf("before assign in calcUV %d\n",i);
       listU->at(i)->assign(svdObj._u);
       listV->at(i)->assign(svdObj._v);
-      sd_printf("after assign in calcUV %d\n",i);
     }
   }
 

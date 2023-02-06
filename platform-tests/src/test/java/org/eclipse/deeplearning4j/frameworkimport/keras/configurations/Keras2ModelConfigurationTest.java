@@ -280,8 +280,6 @@ class Keras2ModelConfigurationTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test 5982")
     void test5982() throws Exception {
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
         Nd4j.getProfiler().start();
         File jsonFile = Resources.asFile("modelimport/keras/configs/bidirectional_last_timeStep.json");
         val modelGraphConf = KerasModelImport.importKerasSequentialConfiguration(jsonFile.getAbsolutePath());

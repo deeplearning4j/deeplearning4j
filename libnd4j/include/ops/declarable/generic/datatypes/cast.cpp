@@ -55,10 +55,11 @@ DECLARE_SHAPE_FN(cast) {
     auto it = INT_ARG(0);
     DataType newType = DataTypeUtils::fromInt(it);
     auto desc = new ShapeDescriptor(inShape, newType);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-
+    auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    delete desc;
+    return ret;
   }
- }
+}
 
 DECLARE_TYPES(cast) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::ANY);

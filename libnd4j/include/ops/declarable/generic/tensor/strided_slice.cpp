@@ -167,7 +167,6 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
     bool shrink_i = (dense_spec.shrink_axis_mask & (1 << e));
 
     if (stride_idx == 0) {
-      sd_printf("Stride is 0 at index %i\n", e);
       return false;
     }
     if (size_idx == -1) {

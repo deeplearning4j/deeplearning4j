@@ -132,7 +132,9 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::
     sd::LongType* outShapeInfo = ShapeBuilders::copyShapeInfoAndType(shapeInfo, dataType, true, workspace);
     ShapeDescriptor *descriptor = new ShapeDescriptor(outShapeInfo, dataType);
     RELEASE(outShapeInfo, workspace);
-    return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+    auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+    delete descriptor;
+    return ret;
   }
 
   const int rank = shape::rank(shapeInfo);
@@ -166,7 +168,9 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(outShapeInfo, dataType);
   RELEASE(outShapeInfo, workspace);
-  return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+  auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+  delete descriptor;
+  return ret;
 }
 
 const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimsToExclude,

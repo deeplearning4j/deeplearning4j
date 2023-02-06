@@ -298,11 +298,9 @@ void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataB
   if(shapeInfo == nullptr)
     throw std::runtime_error("Input shape info was null!");
   for(int i = 0; i < numArrays; i++) {
-    sd_printf("Setting buffer %d\n",i);
     if(inputShapeBuffers[i] == nullptr)
       throw std::runtime_error("Input shape at index was null!");
     if(buffer != nullptr && buffer[i] != nullptr) {
-      sd_printf("Setting graph context input buffer with neither buffer  or buffer[i] == nullptr\n",0);
       setGraphContextInputBuffer(ptr,i,buffer[i],inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
     }
     else {
@@ -2683,7 +2681,6 @@ void setGraphContextInputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer 
     throw std::runtime_error(error.c_str());
   }
 
-  sd_printf("Setting input array at index %d\n",index);
   ptr->setInputArray(index, buffer, shapeInfo, specialShapeInfo);
 }
 

@@ -86,7 +86,7 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
       break;
     }
     case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
-               // all elements of weightsBroad array
+      // all elements of weightsBroad array
       NDArray sum;
       sum.setContext(block.launchContext());
       if (weights->isScalar())
@@ -101,7 +101,7 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
       break;
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
-               // array divided by number of non-zero weights
+      // array divided by number of non-zero weights
       sd::LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
         if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
@@ -159,6 +159,7 @@ DECLARE_SHAPE_FN(huber_loss) {
     auto desc = new ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo),
                                     shape::rank(labelsShapeInfo));
     outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
+    delete desc;
   }
   return SHAPELIST(outShapeInfo);
 }
@@ -246,7 +247,7 @@ CUSTOM_OP_IMPL(huber_loss_grad, 3, 3, false, 1, 1) {
       break;
     }
     case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
-               // all elements of weightsBroad array
+      // all elements of weightsBroad array
 
       NDArray sum;
       sum.setContext(block.launchContext());
@@ -276,7 +277,7 @@ CUSTOM_OP_IMPL(huber_loss_grad, 3, 3, false, 1, 1) {
       break;
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
-               // array divided by number of non-zero weights
+      // array divided by number of non-zero weights
 
       sd::LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
