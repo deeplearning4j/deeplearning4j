@@ -36,6 +36,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.nativeblas.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CpuOpContext extends BaseOpContext implements OpContext, Deallocatable {
@@ -187,10 +188,12 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     public void setInputArrays(@NonNull List<INDArray> arrays) {
         PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(arrays.size());
         PointerPointer<LongPointer> shapeInfoBuffer = new PointerPointer<>(arrays.size());
+        List<DataBuffer> shapeInfoReferences = new ArrayList<>();
         for(int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
             buffers.put(i,array.isEmpty() ? null : ((BaseCpuDataBuffer) array.data()).getOpaqueDataBuffer());
             DataBuffer dataBuffer = array.shapeInfoDataBuffer();
+            shapeInfoReferences.add(dataBuffer);
             Pointer addressPointer = dataBuffer.pointer();
             addressPointer.retainReference();
             shapeInfoBuffer.put(i,addressPointer);
@@ -199,6 +202,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
         buffers.retainReference();
         shapeInfoBuffer.retainReference();
+        //TODO: something here is forcing the context input buffers to be null
         nativeOps.setGraphContextInputBuffers(context,arrays.size(),buffers,shapeInfoBuffer,null);
 
     }
