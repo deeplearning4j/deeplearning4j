@@ -153,6 +153,14 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const sd::LongType length)
 }
 
 ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtype) {
+  if(shapeInfo == nullptr) {
+    throw std::runtime_error("ShapeDescriptor constructor: Shape info can not be null!");
+  }
+
+  if(shape::rank(shapeInfo) < 0 || shape::rank(shapeInfo) > SD_MAX_RANK) {
+    throw std::runtime_error("ShapeDescriptor constructor: Corrupt shape buffer found. Likely was deallocated. Please ensure proper usage of the buffer\n");
+  }
+
   _order = shape::order(shapeInfo);
   _ews = shape::elementWiseStride(shapeInfo);
   _rank = shape::rank(shapeInfo);
@@ -181,7 +189,6 @@ ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, const sd::DataTy
 
 ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, const sd::LongType *dtypeOverride)
     : ShapeDescriptor::ShapeDescriptor(shapeInfo, ArrayOptions::dataType(dtypeOverride)) {
-  //
 }
 
 ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, const sd::LongType *dtypeOverride,
@@ -195,9 +202,14 @@ int ShapeDescriptor::rank() const { return _rank; }
 sd::LongType ShapeDescriptor::ews() const { return _ews; }
 
 sd::LongType ShapeDescriptor::arrLength() const {
+  if(_shape_strides.empty()) {
+    return 0;
+  }
+
   // when _ews == 1 allocation length is also array length
   sd::LongType len = 1;
   for (int i = 0; i < _rank; i++) len *= _shape_strides[i];
+
   return len;
 }
 
@@ -300,99 +312,99 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
   }
 }
 
-ShapeDescriptor ShapeDescriptor::emptyDescriptor(const DataType type) {
-  ShapeDescriptor descriptor;
-  descriptor._dataType = type;
-  descriptor._extraProperties = ARRAY_EMPTY;
-  descriptor._rank = 0;
-  descriptor._order = 'c';
-  descriptor._ews = 1;
+ShapeDescriptor  * ShapeDescriptor::emptyDescriptor(const DataType type) {
+  ShapeDescriptor *descriptor = new ShapeDescriptor();
+  descriptor->_dataType = type;
+  descriptor->_extraProperties = ARRAY_EMPTY;
+  descriptor->_rank = 0;
+  descriptor->_order = 'c';
+  descriptor->_ews = 1;
 
   return descriptor;
 }
 
-ShapeDescriptor ShapeDescriptor::scalarDescriptor(const DataType type) {
-  ShapeDescriptor descriptor;
-  descriptor._dataType = type;
-  descriptor._extraProperties = 0;
-  descriptor._rank = 0;
-  descriptor._order = 'c';
-  descriptor._ews = 1;
+ShapeDescriptor * ShapeDescriptor::scalarDescriptor(const DataType type) {
+  ShapeDescriptor *descriptor = new ShapeDescriptor();
+  descriptor->_dataType = type;
+  descriptor->_extraProperties = 0;
+  descriptor->_rank = 0;
+  descriptor->_order = 'c';
+  descriptor->_ews = 1;
 
   return descriptor;
 }
 
-ShapeDescriptor ShapeDescriptor::vectorDescriptor(const sd::LongType length, const DataType type) {
-  ShapeDescriptor descriptor;
-  descriptor._dataType = type;
-  descriptor._shape_strides = {length, 0};
+ShapeDescriptor * ShapeDescriptor::vectorDescriptor(const sd::LongType length, const DataType type) {
+  ShapeDescriptor *descriptor = new ShapeDescriptor();
+  descriptor->_dataType = type;
+  descriptor->_shape_strides = {length, 0};
 
   if (length > 0)
-    descriptor._shape_strides[1] = 1;
+    descriptor->_shape_strides[1] = 1;
   else {
-    descriptor._shape_strides[1] = 0;
-    descriptor._extraProperties = ARRAY_EMPTY;
+    descriptor->_shape_strides[1] = 0;
+    descriptor->_extraProperties = ARRAY_EMPTY;
   }
 
-  descriptor._order = 'c';
-  descriptor._ews = 1;
-  descriptor._rank = 1;
+  descriptor->_order = 'c';
+  descriptor->_ews = 1;
+  descriptor->_rank = 1;
 
   return descriptor;
 }
 
-ShapeDescriptor ShapeDescriptor::paddedBufferDescriptor(const DataType type, const char order,
+ShapeDescriptor  * ShapeDescriptor::paddedBufferDescriptor(const DataType type, const char order,
                                                         const std::vector<sd::LongType> &shape,
                                                         const std::vector<sd::LongType> &paddings) {
-  ShapeDescriptor descriptor;
-  descriptor._dataType = type;
-  descriptor._order = order;
-  descriptor._rank = shape.size();
-  descriptor._extraProperties = 0;
-  if (descriptor._rank < 1) {
-    descriptor._ews = 1;
+  ShapeDescriptor *descriptor = new ShapeDescriptor();
+  descriptor->_dataType = type;
+  descriptor->_order = order;
+  descriptor->_rank = shape.size();
+  descriptor->_extraProperties = 0;
+  if (descriptor->_rank < 1) {
+    descriptor->_ews = 1;
     return descriptor;
   }
 
-  descriptor._shape_strides.resize(descriptor._rank * 2);
-  auto _shape = descriptor._shape_strides.data();
-  auto _strides = descriptor._shape_strides.data() + descriptor._rank;
+  descriptor->_shape_strides.resize(descriptor->_rank * 2);
+  auto _shape = descriptor->_shape_strides.data();
+  auto _strides = descriptor->_shape_strides.data() + descriptor->_rank;
   for (int i = 0; i < shape.size(); i++) {
     _shape[i] = shape[i];
   }
   // calculate strides with paddings
-  int min_rank = descriptor._rank > paddings.size() ? paddings.size() : descriptor._rank;
+  int min_rank = descriptor->_rank > paddings.size() ? paddings.size() : descriptor->_rank;
   bool is_continous = true;
   if (order == 'c') {
-    _strides[descriptor._rank - 1] = 1L;
-    for (int j = descriptor._rank - 2; j >= 0; j--) {
+    _strides[descriptor->_rank - 1] = 1L;
+    for (int j = descriptor->_rank - 2; j >= 0; j--) {
       sd::LongType pad = (j + 1 < min_rank) ? paddings[j + 1] : 0;
       _strides[j] = _strides[j + 1] * (_shape[j + 1] + pad);
-      descriptor._extraProperties = descriptor._extraProperties | (_shape[j + 1] == 0);
+      descriptor->_extraProperties = descriptor->_extraProperties | (_shape[j + 1] == 0);
       if (pad != 0) is_continous = false;
     }
-    if (!is_continous && descriptor._rank > 0) {
+    if (!is_continous && descriptor->_rank > 0) {
       sd::LongType size_pad = paddings.size() > 0 ? paddings[0] : 0;
       // alloc size should be supplied manually as we dont have place to store it
-      descriptor._paddedAllocSize = _strides[0] * (_shape[0] + size_pad);
+      descriptor->_paddedAllocSize = _strides[0] * (_shape[0] + size_pad);
     }
   } else {
     _strides[0] = 1L;
-    for (int j = 1; j < descriptor._rank; j++) {
+    for (int j = 1; j < descriptor->_rank; j++) {
       sd::LongType pad = (j - 1 < min_rank) ? paddings[j - 1] : 0;
       _strides[j] = _strides[j - 1] * (_shape[j - 1] + pad);
-      descriptor._extraProperties = descriptor._extraProperties | (_shape[j - 1] == 0);
+      descriptor->_extraProperties = descriptor->_extraProperties | (_shape[j - 1] == 0);
       if (pad != 0) is_continous = false;
     }
-    if (!is_continous && descriptor._rank > 0) {
-      sd::LongType size_pad = paddings.size() >= descriptor._rank ? paddings[descriptor._rank - 1] : 0;
+    if (!is_continous && descriptor->_rank > 0) {
+      sd::LongType size_pad = paddings.size() >= descriptor->_rank ? paddings[descriptor->_rank - 1] : 0;
       // alloc size should be supplied manually as we dont have place to store it
-      descriptor._paddedAllocSize = _strides[descriptor._rank - 1] * (_shape[descriptor._rank - 1] + size_pad);
+      descriptor->_paddedAllocSize = _strides[descriptor->_rank - 1] * (_shape[descriptor->_rank - 1] + size_pad);
     }
   }
 
-  descriptor._ews = is_continous ? 1 : 0;
-  if (!is_continous) descriptor._extraProperties |= ARRAY_HAS_PADDED_BUFFER;
+  descriptor->_ews = is_continous ? 1 : 0;
+  if (!is_continous) descriptor->_extraProperties |= ARRAY_HAS_PADDED_BUFFER;
   return descriptor;
 }
 
@@ -400,15 +412,10 @@ ShapeDescriptor ShapeDescriptor::paddedBufferDescriptor(const DataType type, con
 
 namespace std {
 size_t hash<sd::ShapeDescriptor>::operator()(const sd::ShapeDescriptor &k) const {
-#if defined(__NEC__)
- //simplified
-   auto res = std::hash<char>()(k.order());
+  auto res = std::hash<char>()(k.order());
   res ^= std::hash<int>()((int)k.dataType()) + 0x9e3779b9 + (res << 6) + (res >> 2);
-  // res ^= std::hash<int>()(k.rank()) + 0x9e3779b9 + (res << 6) + (res >> 2);
-  // res ^= std::hash<sd::LongType>()(k.ews()) + 0x9e3779b9 + (res << 6) + (res >> 2);
   auto shape_strides = const_cast<sd::ShapeDescriptor &>(k).shape_strides();
   auto ptr = shape_strides.data();
-  // auto strides = const_cast<sd::ShapeDescriptor &>(k).strides();
   //dont include strides if its' ews==1
   int stop = k.ews()==1? shape_strides.size()/2 : shape_strides.size() ;
   for (int j=0; j < stop; j++) {
@@ -416,20 +423,5 @@ size_t hash<sd::ShapeDescriptor>::operator()(const sd::ShapeDescriptor &k) const
   }
 
   return res;
-
-#else
-  auto res = std::hash<sd::LongType>()(k.arrLength());
-  res ^= std::hash<char>()(k.order()) + 0x9e3779b9 + (res << 6) + (res >> 2);
-  res ^= k.dataType() + 0x9e3779b9 + (res << 6) + (res >> 2);
-  res ^= std::hash<int>()(k.rank()) + 0x9e3779b9 + (res << 6) + (res >> 2);
-  res ^= std::hash<sd::LongType>()(k.ews()) + 0x9e3779b9 + (res << 6) + (res >> 2);
-  auto shape_strides = const_cast<sd::ShapeDescriptor &>(k).shape_strides();
-  // auto strides = const_cast<sd::ShapeDescriptor &>(k).strides();
-  for (auto s : shape_strides) {
-    res ^= std::hash<sd::LongType>()(s) + 0x9e3779b9 + (res << 6) + (res >> 2);
-  }
-
-  return res;
-#endif
 }
 }  // namespace std

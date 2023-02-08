@@ -256,10 +256,12 @@ SD_HOST void ReduceSameFunction<X>::intermediateXD(dim3 launchDims, cudaStream_t
     const int tadRank = shape::rank(hXShapeInfo) - zRank;
 
     auto outerPack = sd::ConstantShapeHelper::getInstance().createSubArrShapeInfo(hXShapeInfo, dims, zRank);
-    auto innerPack = sd::ConstantShapeHelper::getInstance().createSubArrShapeInfo(hXShapeInfo, dims + zRank, tadRank);
+    auto innerPack = sd::ConstantShapeHelper::getInstance().createSubArrShapeInfo(hXShapeInfo,
+                                                                                  dims + zRank,
+                                                                                  tadRank);
     simpleReduce<X, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-        x, reinterpret_cast<sd::LongType const *>(outerPack.special()),
-        reinterpret_cast<sd::LongType const *>(innerPack.special()), extraParams, vreductionBuffer, z, dZShapeInfo);
+        x, reinterpret_cast<sd::LongType const *>(outerPack->special()),
+        reinterpret_cast<sd::LongType const *>(innerPack->special()), extraParams, vreductionBuffer, z, dZShapeInfo);
   }
 }
 

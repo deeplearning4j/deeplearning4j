@@ -36,15 +36,15 @@
 
 namespace sd {
 
-SD_LIB_EXPORT NDArray NDArrayFactory::create(const ShapeDescriptor& shapeDescriptor, sd::LaunchContext* context) {
-  auto status = shapeDescriptor.validate();
+SD_LIB_EXPORT NDArray NDArrayFactory::create(ShapeDescriptor *shapeDescriptor, sd::LaunchContext* context) {
+  auto status = shapeDescriptor->validate();
   if (status != SHAPE_DESC_OK) {
     sd_printf("NDArrayFactory::create: ShapeDescriptor status code [%d]\n", status);
     throw std::invalid_argument("NDArrayFactory::create: invalid ShapeDescriptor ");
   }
-  sd::LongType allocSize = shapeDescriptor.allocLength() * DataTypeUtils::sizeOfElement(shapeDescriptor.dataType());
+  sd::LongType allocSize = shapeDescriptor->allocLength() * DataTypeUtils::sizeOfElement(shapeDescriptor->dataType());
   std::shared_ptr<DataBuffer> buffer =
-      std::make_shared<DataBuffer>(allocSize, shapeDescriptor.dataType(), context->getWorkspace());
+      std::make_shared<DataBuffer>(allocSize, shapeDescriptor->dataType(), context->getWorkspace());
   NDArray result(buffer, shapeDescriptor, context);
   result.nullify();
   return result;
@@ -63,9 +63,9 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector
 
   auto shapeDescriptor = ShapeDescriptor::paddedBufferDescriptor(dataType, order, shape, paddings);
 
-  sd::LongType allocSize = shapeDescriptor.allocLength() * DataTypeUtils::sizeOfElement(shapeDescriptor.dataType());
+  sd::LongType allocSize = shapeDescriptor->allocLength() * DataTypeUtils::sizeOfElement(shapeDescriptor->dataType());
   std::shared_ptr<DataBuffer> buffer =
-      std::make_shared<DataBuffer>(allocSize, shapeDescriptor.dataType(), context->getWorkspace());
+      std::make_shared<DataBuffer>(allocSize, shapeDescriptor->dataType(), context->getWorkspace());
 
   // lets check offsets
   int check_size = paddingOffsets.size() < rank ? paddingOffsets.size() : rank;
@@ -77,9 +77,10 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector
     }
   }
 
-  sd::LongType offset = offset_from_coords(shapeDescriptor.stridesPtr(), paddingOffsets.data(), check_size);
+  sd::LongType offset = offset_from_coords(shapeDescriptor->stridesPtr(), paddingOffsets.data(), check_size);
 
   NDArray result(buffer, shapeDescriptor, context, offset);
+  delete shapeDescriptor;
   result.nullify();
   return result;
 }
@@ -91,11 +92,11 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create<bool>(const char order, const std::
   if ((int)shape.size() > SD_MAX_RANK)
     throw std::invalid_argument("NDArrayFactory::create: rank of NDArray can't exceed 32 !");
 
-  ShapeDescriptor descriptor(sd::DataType::BOOL, order, shape);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(sd::DataType::BOOL, order, shape);
 
-  if (descriptor.arrLength() != data.size()) {
+  if (descriptor->arrLength() != data.size()) {
     sd_printf("NDArrayFactory::create: data size [%i] doesn't match shape length [%lld]\n", data.size(),
-              descriptor.arrLength());
+              descriptor->arrLength());
     throw std::runtime_error("NDArrayFactory::create: data size doesn't match shape");
   }
 
@@ -107,7 +108,7 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create<bool>(const char order, const std::
                                                                     sd::DataType::BOOL, true, context->getWorkspace());
 
   NDArray result(buffer, descriptor, context);
-
+  delete descriptor;
   return result;
 }
 
@@ -117,20 +118,19 @@ NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>
                                sd::LaunchContext* context) {
   if ((int)shape.size() > SD_MAX_RANK)
     throw std::invalid_argument("NDArrayFactory::create: rank of NDArray can't exceed 32 !");
+  ShapeDescriptor *descriptor = new ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shape);
 
-  ShapeDescriptor descriptor(DataTypeUtils::fromT<T>(), order, shape);
-
-  if (descriptor.arrLength() != data.size()) {
+  if (descriptor->arrLength() != data.size()) {
     sd_printf("NDArrayFactory::create: data size [%i] doesn't match shape length [%lld]\n", data.size(),
-              descriptor.arrLength());
+              descriptor->arrLength());
     throw std::runtime_error("NDArrayFactory::create: data size doesn't match shape");
   }
 
   std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(
-      data.data(), DataTypeUtils::fromT<T>(), descriptor.arrLength() * sizeof(T), context->getWorkspace());
+      data.data(), DataTypeUtils::fromT<T>(), descriptor->arrLength() * sizeof(T), context->getWorkspace());
 
   NDArray result(buffer, descriptor, context);
-
+  delete descriptor;
   return result;
 }
 
@@ -254,8 +254,11 @@ NDArray* NDArrayFactory::create_(const T scalar, sd::LaunchContext* context) {
   std::shared_ptr<DataBuffer> buffer =
       std::make_shared<DataBuffer>(1 * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
-  NDArray* res = new NDArray(buffer, ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>()), context);
-
+  auto desc = ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>());
+  auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
+  auto recast = const_cast<sd::LongType *>(constDesc->primary());
+  NDArray* res = new NDArray(buffer, recast, context);
+  delete desc;
   res->bufferAsT<T>()[0] = scalar;
 
   res->tickWriteHost();
@@ -318,8 +321,9 @@ NDArray NDArrayFactory::create(const T scalar, sd::LaunchContext* context) {
   std::shared_ptr<DataBuffer> buffer =
       std::make_shared<DataBuffer>(1 * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
-  NDArray res(buffer, ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>()), context);
-
+  auto desc = ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>());
+  NDArray res(buffer,desc , context);
+  delete desc;
   res.bufferAsT<T>()[0] = scalar;
 
   res.tickWriteHost();
@@ -453,9 +457,11 @@ template <typename T>
 NDArray* NDArrayFactory::vector(sd::LongType length, const T value, sd::LaunchContext* context) {
   std::shared_ptr<DataBuffer> buffer =
       std::make_shared<DataBuffer>(length * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
-
-  auto res = new NDArray(buffer, ShapeDescriptor::vectorDescriptor(length, DataTypeUtils::fromT<T>()), context);
-
+  auto desc = ShapeDescriptor::vectorDescriptor(length, DataTypeUtils::fromT<T>());
+  auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
+  auto recast = const_cast<sd::LongType *>(constDesc->primary());
+  auto res = new NDArray(buffer, recast, context);
+  delete desc;
   if (value == (T)0.0f)
     res->nullify();
   else
@@ -506,14 +512,16 @@ NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>
                                sd::LaunchContext* context) {
   if ((int)shape.size() > SD_MAX_RANK)
     throw std::invalid_argument("NDArrayFactory::create: rank of NDArray can't exceed 32");
+  sd_printf("In arrLength usage aDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape, sd::DataType dtype,\n"
+            "                               sd::LaunchContext* context)\n",0);
 
-  ShapeDescriptor descriptor(dtype, order, shape);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(dtype, order, shape);
 
   std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(
-      descriptor.arrLength() * DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace());
+      descriptor->arrLength() * DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace());
 
   NDArray result(buffer, descriptor, context);
-
+  delete descriptor;
   result.nullify();
 
   return result;
@@ -523,9 +531,9 @@ NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>
 NDArray NDArrayFactory::create(sd::DataType dtype, sd::LaunchContext* context) {
   std::shared_ptr<DataBuffer> buffer =
       std::make_shared<DataBuffer>(DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace(), true);
-
-  NDArray res(buffer, ShapeDescriptor::scalarDescriptor(dtype), context);
-
+  auto desc = ShapeDescriptor::scalarDescriptor(dtype);
+  NDArray res(buffer, desc, context);
+  delete desc;
   res.nullify();
 
   return res;
@@ -543,8 +551,9 @@ NDArray NDArrayFactory::create(const std::vector<T>& values, sd::LaunchContext* 
   std::shared_ptr<DataBuffer> buffer =
       std::make_shared<DataBuffer>(values.size() * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
-  NDArray res(buffer, ShapeDescriptor::vectorDescriptor(values.size(), DataTypeUtils::fromT<T>()), context);
-
+  auto desc = ShapeDescriptor::vectorDescriptor(values.size(), DataTypeUtils::fromT<T>());
+  NDArray res(buffer, desc, context);
+  delete desc;
   memcpyFromVector<T>(res.buffer(), values);
 
   res.tickWriteHost();
@@ -639,13 +648,13 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
     throw std::invalid_argument("NDArrayFactory::create: Rank of NDArray can't exceed 32");
 
   std::vector<sd::LongType> shp(shape);
-  ShapeDescriptor descriptor(DataTypeUtils::fromT<T>(), order, shp);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shp);
 
   std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(
-      buffer, descriptor.arrLength() * sizeof(T), descriptor.dataType(), false, context->getWorkspace());
+      buffer, descriptor->arrLength() * sizeof(T), descriptor->dataType(), false, context->getWorkspace());
 
   NDArray result(pBuffer, descriptor, context);
-
+  delete descriptor;
   return result;
 }
 

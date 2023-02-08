@@ -41,17 +41,12 @@ import static org.nd4j.linalg.api.buffer.DataType.INT8;
 public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallocatable {
 
     protected transient Pointer addressPointer;
-
     private transient final long instanceId = Nd4j.getDeallocatorService().nextValue();
 
     protected BaseCpuDataBuffer() {
 
     }
 
-    @Override
-    public boolean shouldDeAllocate() {
-        return !released && !constant;
-    }
 
     @Override
     public String getUniqueId() {
@@ -60,7 +55,11 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
     @Override
     public Deallocator deallocator() {
-        return new CpuDeallocator(this);
+        if(deallocator != null)
+            return deallocator;
+
+        deallocator = new CpuDeallocator(this);
+        return deallocator;
     }
 
     public OpaqueDataBuffer getOpaqueDataBuffer() {

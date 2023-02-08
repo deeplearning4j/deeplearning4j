@@ -35,10 +35,6 @@ BROADCASTABLE_OP_IMPL(igammac, 0, 0) {
 
   BROADCAST_CHECK_EMPTY(x, y, z);
 
-  // REQUIRE_TRUE(!y->isB(), 0, "Pairwise OP: you can't divide by bool array!");
-
-  //            auto tZ = BroadcastHelper::broadcastApply({scalar::IGammac, pairwise::IGammac, broadcast::IGammac}, x,
-  //            y, z);
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::IGammac(), x, y, z);
   if (tZ == nullptr)
     return sd::Status::KERNEL_FAILURE;

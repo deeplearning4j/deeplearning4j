@@ -60,21 +60,17 @@ sd::Status LegacyReduce3Op::validateAndExecute(Context &block) {
 
     auto xTadShape = Environment::getInstance().isCPU()
                          ? packX.primaryShapeInfo()
-                         : packX.specialShapeInfo();  //(sd::LongType *) manager.replicatePointer(tadX.tadOnlyShapeInfo,
-                                                      //shape::shapeInfoByteLength(tadX.tadOnlyShapeInfo));
+                         : packX.specialShapeInfo();
     auto xTadOffsets = Environment::getInstance().isCPU()
                            ? packX.primaryOffsets()
-                           : packX.specialOffsets();  //(sd::LongType *) manager.replicatePointer(tadX.tadOffsets,
-                                                      //tadX.numTads * sizeof(sd::LongType));
+                           : packX.specialOffsets();
 
     auto yTadShape = Environment::getInstance().isCPU()
                          ? packZ.primaryShapeInfo()
-                         : packZ.specialOffsets();  //(sd::LongType *) manager.replicatePointer(tadY.tadOnlyShapeInfo,
-                                                    //shape::shapeInfoByteLength(tadY.tadOnlyShapeInfo));
+                         : packZ.specialOffsets();
     auto yTadOffsets = Environment::getInstance().isCPU()
                            ? packZ.primaryOffsets()
-                           : packZ.specialOffsets();  //(sd::LongType *) manager.replicatePointer(tadY.tadOffsets,
-                                                      //tadY.numTads * sizeof(sd::LongType));
+                           : packZ.specialOffsets();
 
     NativeOpExecutioner::execReduce3(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                      x->specialShapeInfo(), extras.argumentsAsT(z->dataType()), y->buffer(),

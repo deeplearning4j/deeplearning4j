@@ -82,8 +82,10 @@ DECLARE_SHAPE_FN(mergeadd_bp) {
 
   for (int e = 0; e < numOfInArrs; e++) {
     auto inShape = inputShape->at(e);
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(
-        ArrayOptions::dataType(inShape), shape::order(inShape), shape::shapeOf(inShape), shape::rank(inShape))));
+    auto desc = new ShapeDescriptor(
+        ArrayOptions::dataType(inShape), shape::order(inShape), shape::shapeOf(inShape), shape::rank(inShape));
+    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    delete desc;
   }
 
   return shapeList;

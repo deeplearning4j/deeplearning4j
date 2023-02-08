@@ -157,7 +157,6 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
   StridedSliceDenseSpec dense_spec = {(int)input_shape.size(), 0, 0, false, false, begin, end, strides};
   if (!dense_spec.buildDenseSpec(sparse_spec)) return false;
 
-  // sd_printv("Input shape: ", input_shape);
 
   for (int e = 0; e < (int)input_shape.size(); e++) {
     int begin_idx = begin[e];
@@ -168,7 +167,6 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
     bool shrink_i = (dense_spec.shrink_axis_mask & (1 << e));
 
     if (stride_idx == 0) {
-      sd_printf("Stride is 0 at index %i\n", e);
       return false;
     }
     if (size_idx == -1) {
@@ -248,16 +246,10 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
           indicesList->push_back(begin_idx);
           indicesList->push_back(end_idx);
           indicesList->push_back(stride_idx);
-          // (*indicesList)[3*e]   = begin_idx;
-          // (*indicesList)[3*e+1] = end_idx;
-          // (*indicesList)[3*e+2] = stride_idx;
         } else if (interval_length == 1) {
           indicesList->push_back(begin_idx);
           indicesList->push_back(begin_idx + 1);
           indicesList->push_back(1);
-          // (*indicesList)[3*e]   = begin_idx;
-          // (*indicesList)[3*e+1] = begin_idx + 1;
-          // (*indicesList)[3*e+2] = 1;
         }
       }
 
@@ -424,8 +416,8 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
     NDArray::prepareSpecialUse({z}, {x});
 
     NativeOpExecutioner::execTransformAny(block.launchContext(), sd::transform::Assign, x->bufferWithOffset(offset),
-                                          subArrShapeInfoPack.primary(), x->specialBufferWithOffset(offset),
-                                          subArrShapeInfoPack.special(), z->buffer(), z->shapeInfo(),
+                                          subArrShapeInfoPack->primary(), x->specialBufferWithOffset(offset),
+                                          subArrShapeInfoPack->special(), z->buffer(), z->shapeInfo(),
                                           z->specialBuffer(), z->specialShapeInfo(), nullptr, nullptr, nullptr, true);
 
     NDArray::registerSpecialUse({z}, {x});

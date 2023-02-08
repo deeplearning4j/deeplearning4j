@@ -36,7 +36,6 @@ static void svd_(const NDArray* x, const std::vector<NDArray*>& outArrs, const b
   auto s = outArrs[0];
   auto u = outArrs[1];
   auto v = outArrs[2];
-
   const int rank = x->rankOf();
   const int sRank = rank - 1;
 
@@ -50,8 +49,6 @@ static void svd_(const NDArray* x, const std::vector<NDArray*>& outArrs, const b
   }
 
   for (int i = 0; i < listX.size(); ++i) {
-    // NDArray<T> matrix(x->ordering(), {listX.at(i)->sizeAt(0), listX.at(i)->sizeAt(1)}, block.getContext());
-    // matrix.assign(listX.at(i));
     helpers::SVD<T> svdObj(*(listX.at(i)), switchNum, calcUV, calcUV, fullUV);
     listS.at(i)->assign(svdObj._s);
 

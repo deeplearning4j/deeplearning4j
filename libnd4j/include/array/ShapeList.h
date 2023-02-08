@@ -44,11 +44,9 @@ class SD_LIB_EXPORT ShapeList {
   ShapeList(const sd::LongType *shape = nullptr);
   ShapeList(const std::vector<const sd::LongType *> &shapes, bool isWorkspace);
   ShapeList(const std::vector<const sd::LongType *> &shapes);
-  // ShapeList(bool autoRemovable);
 
   ~ShapeList();
 
-  // std::vector<const sd::LongType *> *asVector();
   void destroy();
   int size() const;
   const sd::LongType *at(int idx);

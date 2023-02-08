@@ -65,12 +65,18 @@ DECLARE_SHAPE_FN(bitcast) {
   auto inputSize = DataTypeUtils::sizeOf(oldType);
   auto outputSize = DataTypeUtils::sizeOf(newType);
 
-  if (shape::length(inShape) == 0)
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, newType)));
-
+  if (shape::length(inShape) == 0) {
+    auto desc = new ShapeDescriptor(inShape, newType);
+    auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    delete desc;
+    return ret;
+  }
   if (inputSize == outputSize) {
     // only type should be changed
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, newType)));
+    auto desc = new ShapeDescriptor(inShape, newType);
+    auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    delete desc;
+    return ret;
   } else if (inputSize > outputSize) {
     // range of output increased by 1 with inputSize / outputSize as last dimension
     std::vector<sd::LongType> shapeOf(inputRank + 1);

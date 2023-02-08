@@ -26,7 +26,7 @@ namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(expose, -2, -2, true, 0, 0) {
   for (int e = 0; e < block.width(); e++) {
-   //omit for eager computation, normally array size should be equal to block size
+    //omit for eager computation, normally array size should be equal to block size
     if(block.getVariableSpace() == nullptr || block.getVariableSpace()->getVariables().size() != block.width()) {
       auto in = INPUT_VARIABLE(e);
       auto out = OUTPUT_VARIABLE(e);
@@ -65,7 +65,9 @@ DECLARE_SHAPE_FN(expose) {
     auto var = block.getVariable(e);
     if (var->variableType() == VariableType::NDARRAY) {
       auto inShape = inputShape->at(e);
-      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape)));
+      auto desc = new ShapeDescriptor(inShape);
+      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+      delete desc;
     }
   }
 

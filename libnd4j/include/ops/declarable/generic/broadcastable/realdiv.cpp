@@ -70,11 +70,9 @@ CUSTOM_OP_IMPL(realdiv_bp, 3, 2, false, 0, 0) {
     // PWT case case
 
     // X gradient
-    // epsNext->applyPairwiseLambda(y, lambdaX, gradX);
     epsNext->applyPairwiseTransform(pairwise::Divide, *y, *gradX);
 
     // Y gradient
-    // epsNext->applyTriplewiseLambda(x, y, lambdaY, gradY);
 
     gradY->assign((*epsNext) * -(*x) / ((*y) * (*y)));
 
@@ -85,7 +83,6 @@ CUSTOM_OP_IMPL(realdiv_bp, 3, 2, false, 0, 0) {
     auto tmpX = x->reduceNumber(reduce::Sum);
     gradY->assign(tmp * -tmpX / ((*y) * (*y)));
 
-    // epsNext->applyLambda(lambdaS, gradX);
     epsNext->applyScalarArr(scalar::Divide, *y, *gradX);
   } else {
     // broadcast case

@@ -23,6 +23,7 @@ package org.nd4j.linalg.api.memory.abstracts;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.ReferenceMetaData;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
@@ -274,6 +275,11 @@ public class DummyWorkspace implements MemoryWorkspace {
 
             @Override
             public LogEvent logEvent() {
+                return null;
+            }
+
+            @Override
+            public ReferenceMetaData referenceMetaData() {
                 return null;
             }
         };

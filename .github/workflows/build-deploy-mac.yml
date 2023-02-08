@@ -15,7 +15,7 @@ on:
       releaseVersion:
         description: 'Release version target'
         required: false
-        default: 1.0.0-M2.1
+        default: 1.0.0-M3
 
       snapshotVersion:
         description: 'Snapshot version target'
@@ -226,7 +226,4 @@ jobs:
                   eval "${COMMAND}"
           fi
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && matrix.debug_enabled }}
-
+    

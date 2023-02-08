@@ -74,8 +74,6 @@ static sd::Status listDiffFunctor_(NDArray* values, NDArray* keep, NDArray* outp
   }
 
   if (saved.size() == 0) {
-    //            if (sd::ops::conditionHelper(__FILE__, __LINE__, false, 0, "ListDiff: search returned no results") !=
-    //            0)
     sd_printf("ListDiff: search returned no results", "");
     throw std::invalid_argument("Op validation failed");
   } else {

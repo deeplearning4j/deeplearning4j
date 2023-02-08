@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.buffer;
 
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
+import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 
@@ -29,7 +30,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 
-public interface DataBuffer extends Serializable, AutoCloseable {
+public interface DataBuffer extends Serializable, AutoCloseable, Deallocatable {
     enum TypeEx {
 
     }

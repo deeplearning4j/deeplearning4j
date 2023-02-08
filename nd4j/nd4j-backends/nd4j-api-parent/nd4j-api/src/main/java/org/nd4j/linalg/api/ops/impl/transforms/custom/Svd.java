@@ -108,7 +108,7 @@ public class Svd extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         if(computeUv){
             DataType d = dataTypes.get(0);
             return Arrays.asList(d, d, d);

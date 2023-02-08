@@ -149,7 +149,6 @@ static SD_HOST void cmpBitpackCudaLauncher(sd::graph::Context& block, const NDAr
   // grid size
   const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
   auto stream = block.launchContext()->getCudaStream();
-  // sd_printf("n %i g %i th %i \n", output.lengthOf(), blocksPerGrid, threadsPerBlock);
   PointersManager manager(block.launchContext(), "compare_and_bitpack");
   NDArray::prepareSpecialUse({&output}, {&input});
   if (input.ews() > 0 && output.ews() > 0 && input.ordering() == 'c' && output.ordering() == 'c') {

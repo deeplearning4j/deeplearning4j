@@ -35,10 +35,6 @@ BROADCASTABLE_OP_IMPL(igamma, 0, 0) {
 
   BROADCAST_CHECK_EMPTY(x, y, z);
 
-  // REQUIRE_TRUE(!y->isB(), 0, "Pairwise OP: you can't divide by bool array!");
-
-  //            auto tZ = BroadcastHelper::broadcastApply({scalar::IGamma, pairwise::IGamma, broadcast::IGamma}, x, y,
-  //            z);
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::IGamma(), x, y, z);
 
   if (tZ == nullptr)

@@ -38,4 +38,13 @@ public class DeallocatableReference extends WeakReference<Deallocatable> {
         this.id = referent.getUniqueId();
         this.deallocator = referent.deallocator();
     }
+
+    public void deallocate() {
+        if(get() != null && !get().shouldDeAllocate() || deallocator.referenceMetaData().isConstant()) {
+            throw new IllegalStateException("Unable to deallocate reference. Not ready yet.");
+        }
+
+        deallocator.deallocate();
+    }
+
 }

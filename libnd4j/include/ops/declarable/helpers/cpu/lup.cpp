@@ -176,7 +176,6 @@ static NDArray lup_(LaunchContext* context, NDArray* input, NDArray* compound, N
   }
 
   for (int e = 0; e < rowNum; e++) {
-    // sd_printf("Compound matrix diag %i %f.\n", e, (*compoundMatrix)(e, e));
     determinant *= compoundMatrix.e<T>(e, e);
   }
   if (swapCount % 2) determinant = -determinant;

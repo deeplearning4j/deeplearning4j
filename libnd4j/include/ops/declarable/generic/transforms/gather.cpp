@@ -153,8 +153,11 @@ DECLARE_SHAPE_FN(gather) {
     ArrayOptions::setPropertyBit(outputShapeInfo, ARRAY_EMPTY);
   }
 
-  auto result = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(outputShapeInfo));
+  auto desc = new ShapeDescriptor(outputShapeInfo);
+
+  auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   RELEASE(outputShapeInfo, block.getWorkspace());
+  delete desc;
   return SHAPELIST(result);
 }
 

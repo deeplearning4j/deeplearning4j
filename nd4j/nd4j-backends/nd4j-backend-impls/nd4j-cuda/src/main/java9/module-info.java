@@ -32,6 +32,7 @@ open module nd4j.cuda {
     exports org.nd4j.jita.handler.impl;
     exports org.nd4j.jita.memory;
     exports org.nd4j.jita.workspace;
+    exports org.nd4j.jita.allocator;
     exports org.nd4j.linalg.jcublas;
     exports org.nd4j.linalg.jcublas.bindings;
     exports org.nd4j.linalg.jcublas.blas;

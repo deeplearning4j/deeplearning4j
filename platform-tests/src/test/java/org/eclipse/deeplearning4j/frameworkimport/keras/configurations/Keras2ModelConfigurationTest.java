@@ -280,6 +280,7 @@ class Keras2ModelConfigurationTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test 5982")
     void test5982() throws Exception {
+        Nd4j.getProfiler().start();
         File jsonFile = Resources.asFile("modelimport/keras/configs/bidirectional_last_timeStep.json");
         val modelGraphConf = KerasModelImport.importKerasSequentialConfiguration(jsonFile.getAbsolutePath());
         MultiLayerNetwork model = new MultiLayerNetwork(modelGraphConf);
@@ -307,7 +308,7 @@ class Keras2ModelConfigurationTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Reshape Embedding Concat Test")
-    // @Disabled("AB 2019/11/23 - known issue - see https://github.com/eclipse/deeplearning4j/issues/8373 and https://github.com/eclipse/deeplearning4j/issues/8441")
+        // @Disabled("AB 2019/11/23 - known issue - see https://github.com/eclipse/deeplearning4j/issues/8373 and https://github.com/eclipse/deeplearning4j/issues/8441")
     void ReshapeEmbeddingConcatTest() throws Exception {
         try (InputStream is = Resources.asStream("/modelimport/keras/configs/keras2/reshape_embedding_concat.json")) {
             ComputationGraphConfiguration config = new KerasModel().modelBuilder().modelJsonInputStream(is).enforceTrainingConfig(false).buildModel().getComputationGraphConfiguration();

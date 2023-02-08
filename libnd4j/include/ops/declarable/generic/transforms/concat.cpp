@@ -219,8 +219,10 @@ DECLARE_SHAPE_FN(concat) {
   ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes.at(0), shape::order(arrShapes.at(0)));
 
 
-  auto result = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(outShapeInfo));
+  auto desc = new ShapeDescriptor(outShapeInfo);
+  auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   RELEASE(outShapeInfo, block.getWorkspace());
+  delete desc;
   return SHAPELIST(result);
 }
 
@@ -275,8 +277,10 @@ DECLARE_SHAPE_FN(concat_bp) {
 
   for (int e = 0; e < numOfInArrs - 1; e++) {
     auto inShape = inputShape->at(e);
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(
-        ArrayOptions::dataType(inShape), shape::order(inShape), shape::shapeOf(inShape), shape::rank(inShape))));
+    auto desc = new ShapeDescriptor(
+        ArrayOptions::dataType(inShape), shape::order(inShape), shape::shapeOf(inShape), shape::rank(inShape));
+    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    delete desc;
   }
 
   return shapeList;

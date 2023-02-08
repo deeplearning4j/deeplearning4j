@@ -66,20 +66,13 @@ CUSTOM_OP_IMPL(divide_bp, 3, 2, false, 0, 0) {
   auto gradX = OUTPUT_VARIABLE(0);
   auto gradY = OUTPUT_VARIABLE(1);
 
-  /*
-              auto lambdaY = LAMBDA_TTT(_e, _x, _y) {
-                  return _e * -_x / (_y * _y);
-              };
-  */
 
   if (x->isSameShape(y)) {
     // PWT case case
 
     // X gradient
-    // epsNext->applyPairwiseLambda(y, lambdaX, gradX);
     gradX->assign((*epsNext) / (*y));
     // Y gradient
-    // epsNext->applyTriplewiseLambda(x, y, lambdaY, gradY);
     gradY->assign((*epsNext) * (*x) / ((*y) * (*y)));
     gradY->applyTransform(transform::Neg, *gradY);
 
@@ -88,12 +81,9 @@ CUSTOM_OP_IMPL(divide_bp, 3, 2, false, 0, 0) {
 
     auto tmp = epsNext->reduceNumber(reduce::Sum);
     auto tmpX = x->reduceNumber(reduce::Sum);
-    // tmpX.printBuffer("SumX");
-    // tmp.printBuffer("Sum Eps");
     gradY->assign(tmp * tmpX / ((*y) * (*y)));
     gradY->applyTransform(transform::Neg, *gradY);
 
-    // epsNext->applyLambda(lambdaS, *gradX);
     epsNext->applyScalarArr(scalar::Divide, *y, *gradX);
   } else {
     // broadcast case

@@ -1074,7 +1074,7 @@ static long _numpyHeaderLength(OpaqueDataBuffer *opaqueDataBuffer,sd::Pointer sh
 }
 
 template<typename  T>
-SD_LIB_EXPORT static long _numpyHeaderLengthWordSize(sd::Pointer shapeBuffer,long wordSize) {
+ static long _numpyHeaderLengthWordSize(sd::Pointer shapeBuffer,long wordSize) {
   sd::LongType* shapeBufferCast = reinterpret_cast<sd::LongType*>(shapeBuffer);
   int rank = shape::rank(shapeBufferCast);
   sd::LongType* shape = shape::shapeOf(shapeBufferCast);
@@ -1092,14 +1092,14 @@ SD_LIB_EXPORT static long _numpyHeaderLengthWordSize(sd::Pointer shapeBuffer,lon
 
 extern "C" {
 
-SD_LIB_EXPORT static long numpyHeaderLengthWordSize(sd::Pointer shapeBuffer,long wordSize) {
+ static long numpyHeaderLengthWordSize(sd::Pointer shapeBuffer,long wordSize) {
   auto shapeBufferCast = reinterpret_cast<sd::LongType*>(shapeBuffer);
   auto type = sd::ArrayOptions::dataType(shapeBufferCast);
   BUILD_SINGLE_SELECTOR(type, return _numpyHeaderLengthWordSize, (shapeBuffer, wordSize), SD_COMMON_TYPES);
 
 }
 
-SD_LIB_EXPORT static long numpyHeaderLength(OpaqueDataBuffer *opaqueDataBuffer,sd::Pointer shapeBuffer) {
+ static long numpyHeaderLength(OpaqueDataBuffer *opaqueDataBuffer,sd::Pointer shapeBuffer) {
   auto shapeBufferCast = reinterpret_cast<sd::LongType*>(shapeBuffer);
   auto type = sd::ArrayOptions::dataType(shapeBufferCast);
 
@@ -1109,7 +1109,7 @@ SD_LIB_EXPORT static long numpyHeaderLength(OpaqueDataBuffer *opaqueDataBuffer,s
 
 
 
-SD_LIB_EXPORT static sd::Pointer numpyFromNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd::LongType wordSize) {
+ static sd::Pointer numpyFromNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd::LongType wordSize) {
   auto shapeBufferCast = reinterpret_cast<sd::LongType*>(shapeBuffer);
   auto type = sd::ArrayOptions::dataType(shapeBufferCast);
 

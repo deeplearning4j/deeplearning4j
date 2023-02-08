@@ -77,7 +77,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss, 3, 1, false, 0, 1) {
       break;
     }
     case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
-               // all elements of weightsBroad array
+      // all elements of weightsBroad array
       NDArray sum;
       if (weights->isScalar())
         sum = (*weights) * E.lengthOf();
@@ -91,7 +91,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss, 3, 1, false, 0, 1) {
       break;
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
-               // array divided by number of non-zero weights
+      // array divided by number of non-zero weights
       sd::LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
         if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
@@ -121,6 +121,8 @@ DECLARE_SHAPE_FN(absolute_difference_loss) {
   auto weightsShapeInfo = inputShape->at(1);
   auto labelsShapeInfo = inputShape->at(2);
 
+
+
   // labels and predictions must have the same shapes
   REQUIRE_TRUE(shape::shapeEquals(labelsShapeInfo, predictionsShapeInfo), 0,
                "ABSOLUTE_DIFFERENCE_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and "
@@ -139,14 +141,18 @@ DECLARE_SHAPE_FN(absolute_difference_loss) {
       "and labels = %s instead!",
       ShapeUtils::shapeAsString(weightsShapeInfo).c_str(), ShapeUtils::shapeAsString(labelsShapeInfo).c_str());
 
+
   DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(predictionsShapeInfo));
   sd::LongType const* outShapeInfo = nullptr;
 
-  if (INT_ARG(0) != 0)  // in this case output is scalar
+  if (INT_ARG(0) != 0) {  // in this case output is scalar
     outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
-  else  // in this case output has the same shape as labels and predictions
-    outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(
-        outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo)));
+  } else {  // in this case output has the same shape as labels and predictions
+    auto desc = new ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo),
+                                    shape::rank(labelsShapeInfo));
+    outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
+    delete desc;
+  }
 
   return SHAPELIST(outShapeInfo);
 }
@@ -216,7 +222,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
       break;
     }
     case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
-               // all elements of weightsBroad array
+      // all elements of weightsBroad array
 
       NDArray sum;
       if (weights->isScalar())
@@ -243,7 +249,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
       break;
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
-               // array divided by number of non-zero weights
+      // array divided by number of non-zero weights
 
       sd::LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {

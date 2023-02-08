@@ -86,13 +86,10 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
   if (x->isScalar() && y->isScalar()) {  // both are scalars
     y->applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdx);
     x->applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdy);
-    // dLdx->assign((*y) * (*dLdz));
-    // dLdy->assign((*x) * (*dLdz));
 
   } else if (x->isScalar()) {  // x is scalar and y is not
     dLdx->assign((*y * *dLdz).reduceNumber(reduce::Sum));
     dLdz->applyScalarArr(scalar::Multiply, *x, *dLdy);
-    // dLdz->applyTrueBroadcast(broadcast::Multiply, x, dLdy, true);
   } else if (y->isScalar()) {  // y is scalar and x is not
     dLdy->assign((*x * *dLdz).reduceNumber(reduce::Sum));
     dLdz->applyScalarArr(scalar::Multiply, *y, *dLdx);
@@ -140,80 +137,6 @@ DECLARE_SHAPE_FN(multiply_bp) {
 
   return SHAPELIST(CONSTANT(dLdxShapeInfo), CONSTANT(dLdyShapeInfo));
 }
-/*
-        CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
-            auto x = INPUT_VARIABLE(0);
-            auto y = INPUT_VARIABLE(1);
-            auto epsNext = INPUT_VARIABLE(2);
-
-            auto gradX = OUTPUT_VARIABLE(0);
-            auto gradY = OUTPUT_VARIABLE(1);
-
-            auto lambdaX = LAMBDA_TT(_e, _y) {
-                return _e * _y;
-            };
-
-            auto lambdaY = LAMBDA_TT(_e, _x) {
-                return _e * _x;
-            };
-
-
-            if (x->isSameShape(y)) {
-                // PWT case case
-
-                // X gradient
-                epsNext->applyPairwiseLambda(y, lambdaX, gradX);
-
-                // Y gradient
-                epsNext->applyPairwiseLambda(x, lambdaY, gradY);
-
-            } else if (y->isScalar()) {
-                // scalar case
-                T _y = y->e(0);
-                auto lambdaS = LAMBDA_T(_e, _y) {
-                    return _e * _y;
-                };
-
-                T tmpX = x->template reduceNumber<simdOps::Sum<T>>();
-                gradY->assign(tmpX);
-
-                epsNext->applyLambda(lambdaS, *gradX);
-            } else {
-                // broadcast case
-
-                auto preX = x->dup();
-                auto preY = y->dup();
-
-                auto targetShape = epsNext->getShapeAsVector();
-
-                preX->tileToShape(targetShape);
-                preY->tileToShape(targetShape);
-
-                auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
-                auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
-
-                if (axisX.size() > 0) {
-                    auto sum = preX->template reduceAlongDimension<simdOps::Sum<T>>(axisX);
-                    gradX->assign(sum);
-                    delete sum;
-                } else
-                    gradX->assign(preX);
-
-                if (axisY.size() > 0) {
-                    auto sum = preY->template reduceAlongDimension<simdOps::Sum<T>>(axisY);
-                    gradY->assign(sum);
-                    delete sum;
-                } else
-                    gradY->assign(preY);
-
-
-                delete preX;
-                delete preY;
-            }
-
-            return sd::Status::OK;
-        }
-*/
 
 }  // namespace ops
 }  // namespace sd

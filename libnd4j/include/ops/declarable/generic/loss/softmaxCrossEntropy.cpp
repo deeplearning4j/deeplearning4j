@@ -85,8 +85,8 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
   std::vector<int> dimensions = {-1};
   NDArray shiftedLogits = *logits - logits->reduceAlongDimension(reduce::Max, dimensions, true);
   NDArray logSumExp = shiftedLogits.transform(transform::Exp)
-                          .reduceAlongDimension(reduce::Sum, dimensions, true)
-                          .transform(transform::Log);
+      .reduceAlongDimension(reduce::Sum, dimensions, true)
+      .transform(transform::Log);
   NDArray E = (*newLabels * (logSumExp - shiftedLogits)).reduceAlongDimension(reduce::Sum, dimensions);
 
   // perform weights broadcasting/tile to E if it is necessary
@@ -111,7 +111,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
       break;
     }
     case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
-               // all elements of weightsBroad array
+      // all elements of weightsBroad array
       double sum;
       if (weights->isScalar())
         sum = weights->e<double>(0) * E.lengthOf();
@@ -125,7 +125,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
       break;
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
-               // array divided by number of non-zero weights
+      // array divided by number of non-zero weights
       sd::LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
         if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
@@ -263,8 +263,8 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 
   NDArray shiftedLogits = *logits - logits->reduceAlongDimension(reduce::Max, dimensions, true);
   NDArray logSumExp = shiftedLogits.transform(transform::Exp)
-                          .reduceAlongDimension(reduce::Sum, dimensions, true)
-                          .transform(transform::Log);
+      .reduceAlongDimension(reduce::Sum, dimensions, true)
+      .transform(transform::Log);
   NDArray E = (*newLabels * (logSumExp - shiftedLogits)).reduceAlongDimension(reduce::Sum, dimensions);
 
   // perform weights broadcasting/tile to E if it is necessary
@@ -296,7 +296,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
       break;
     }
     case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
-               // all elements of weightsBroad array
+      // all elements of weightsBroad array
       NDArray sum;
       if (weights->isScalar())
         sum = (*weights) * E.lengthOf();
@@ -330,7 +330,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
       break;
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
-               // array divided by number of non-zero weights
+      // array divided by number of non-zero weights
       sd::LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
         if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
@@ -415,13 +415,18 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss_grad) {
 
   auto outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(logitsShapeInfo));
 
-  auto dLdpShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(
-      outType, shape::order(logitsShapeInfo), shape::shapeOf(logitsShapeInfo), shape::rank(logitsShapeInfo)));
-  auto dLdwShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(
-      outType, shape::order(weightsShapeInfo), shape::shapeOf(weightsShapeInfo), shape::rank(weightsShapeInfo)));
-  auto dLdlShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(
-      outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo)));
-
+  auto desc1 = new ShapeDescriptor(
+      outType, shape::order(logitsShapeInfo), shape::shapeOf(logitsShapeInfo), shape::rank(logitsShapeInfo));
+  auto desc2 = new ShapeDescriptor(
+      outType, shape::order(weightsShapeInfo), shape::shapeOf(weightsShapeInfo), shape::rank(weightsShapeInfo));
+  auto desc3 = new ShapeDescriptor(
+      outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo));
+  auto dLdpShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc1);
+  auto dLdwShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc2);
+  auto dLdlShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc3);
+  delete desc1;
+  delete desc2;
+  delete desc3;
   return SHAPELIST(dLdpShapeInfo, dLdwShapeInfo, dLdlShapeInfo);
 }
 

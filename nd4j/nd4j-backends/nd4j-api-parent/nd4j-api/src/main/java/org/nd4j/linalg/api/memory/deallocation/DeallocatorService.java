@@ -123,7 +123,7 @@ public class DeallocatorService {
                 // if periodicGc is enabled, only first thread will call for it
                 if (Nd4j.getMemoryManager().isPeriodicGcActive() && threadIdx == 0 && Nd4j.getMemoryManager().getAutoGcWindow() > 0) {
                     val reference = (DeallocatableReference) queue.poll();
-                    if (reference == null || (reference != null && reference.get() != null &&  !reference.get().shouldDeAllocate())) {
+                    if (reference == null || (reference != null && reference.get() != null &&  !reference.get().shouldDeAllocate()) || !reference.getDeallocator().referenceMetaData().isConstant()) {
                         val timeout = Nd4j.getMemoryManager().getAutoGcWindow();
                         try {
                             Thread.sleep(Nd4j.getMemoryManager().getAutoGcWindow());
@@ -133,9 +133,10 @@ public class DeallocatorService {
                         }
                     } else {
                         // invoking deallocator
-                        if (reference != null && (reference.get() != null &&  reference.get().shouldDeAllocate()))
-                            reference.getDeallocator().deallocate();
-                        referenceMap.remove(reference.getId());
+                        if (reference != null && (reference.get().shouldDeAllocate()) || reference.getDeallocator().referenceMetaData().isConstant()) {
+                            reference.deallocate();
+                            referenceMap.remove(reference.getId());
+                        }
                     }
                 } else {
                     try {
@@ -143,12 +144,12 @@ public class DeallocatorService {
                         if (reference == null)
                             continue;
 
-                        if( (reference.get() != null && !reference.get().shouldDeAllocate()))
+                        if( (reference.get() != null && !reference.get().shouldDeAllocate()) || reference.getDeallocator().referenceMetaData().isConstant())
                             continue;
 
 
                         // invoking deallocator
-                        reference.getDeallocator().deallocate();
+                        reference.deallocate();
                         referenceMap.remove(reference.getId());
                     } catch (InterruptedException e) {
                         canRun = false;

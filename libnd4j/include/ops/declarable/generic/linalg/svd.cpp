@@ -96,13 +96,18 @@ DECLARE_SHAPE_FN(svd) {
 
     shape::updateStrides(uShapeInfo, shape::order(inShapeInfo));
     shape::updateStrides(vShapeInfo, shape::order(inShapeInfo));
-
-    auto result = SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(sShapeInfo)),
-                            ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(uShapeInfo)),
-                            ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(vShapeInfo)));
+    auto desc1 = new ShapeDescriptor(sShapeInfo);
+    auto desc2 = new ShapeDescriptor(uShapeInfo);
+    auto desc3 = new ShapeDescriptor(vShapeInfo);
+    auto result = SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc1),
+                            ConstantShapeHelper::getInstance().createShapeInfo(desc2),
+                            ConstantShapeHelper::getInstance().createShapeInfo(desc3));
     RELEASE(sShapeInfo, block.workspace());
     RELEASE(uShapeInfo, block.workspace());
     RELEASE(vShapeInfo, block.workspace());
+    delete desc1;
+    delete desc2;
+    delete desc3;
     return result;
   }
 

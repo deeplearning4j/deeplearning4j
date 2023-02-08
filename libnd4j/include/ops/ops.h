@@ -2013,7 +2013,6 @@ class MatchCondition {
   SD_OP_DEF static Z update(Z old, Z opOutput, X *extraParams) { return old + opOutput; }
 
   SD_OP_DEF static Z op(X d1, X compare, X eps, int mode) {
-    sd_debug("MatchCondition: value: %f; comp: %f; eps: %f; mode: %i;\n", d1, compare, eps, mode);
     switch (mode) {
       case 0:  // equals
         return sd::math::sd_abs<X>(d1 - compare) <= eps ? 1 : 0;
