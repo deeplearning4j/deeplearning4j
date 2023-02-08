@@ -61,15 +61,6 @@ CUSTOM_OP_IMPL(squaredsubtract_bp, 3, 2, false, 0, 0) {
   auto gradX = OUTPUT_VARIABLE(0);
   auto gradY = OUTPUT_VARIABLE(1);
 
-  /*
-  auto lambdaX = LAMBDA_TTT(_e, _x, _y) {
-      return _e * (T) 2.0 * (_x - _y) ;
-  };
-
-  auto lambdaY = LAMBDA_TTT(_e, _x, _y) {
-      return _e * (T) 2.0 * (_y - _x);
-  };
-  */
 
   auto ts = NDArrayFactory::create(x->dataType(), 2, block.launchContext());
 
@@ -77,19 +68,15 @@ CUSTOM_OP_IMPL(squaredsubtract_bp, 3, 2, false, 0, 0) {
     // PWT case case
 
     // X gradient
-    // epsNext->applyTriplewiseLambda(x, y, lambdaX, gradX);
     gradX->assign((*epsNext) * ts * ((*x) - (*y)));
 
     // Y gradient
-    // epsNext->applyTriplewiseLambda(x, y, lambdaY, gradY);
     gradY->assign((*epsNext) * ts * ((*y) - (*x)));
 
   } else if (y->isScalar()) {
     // scalar case
     auto tmpX = x->reduceNumber(reduce::Sum);
     gradY->assign(tmpX);
-
-    // epsNext->applyPairwiseLambda(x, lambdaS, gradX);
     gradX->assign((*epsNext) * ts * ((*x) - (*y)));
   } else {
     // broadcast case
@@ -102,8 +89,6 @@ CUSTOM_OP_IMPL(squaredsubtract_bp, 3, 2, false, 0, 0) {
     preX.tileToShape(targetShape, preX);
     preY.tileToShape(targetShape, preY);
 
-    // epsNext->applyTriplewiseLambda(x, y, lambdaX, preX);
-    // epsNext->applyTriplewiseLambda(x, y, lambdaY, preY);
     auto resX = (*epsNext) * ts * ((*x) - (*y));
     preX.assign(resX);
     auto resY = (*epsNext) * ts * ((*y) - (*x));

@@ -49,7 +49,9 @@ DECLARE_SHAPE_FN(cast) {
   if(!block.getDArguments()->empty()) {
     DataType newType = block.dataType(0);
     auto desc = new ShapeDescriptor(inShape, newType);
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    delete desc;
+    return ret;
 
   } else {
     auto it = INT_ARG(0);

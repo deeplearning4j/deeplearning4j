@@ -403,15 +403,19 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, sd::LongType *shape) 
 
   // if that's first run - we probably have nothing here
   if (var->getNDArray() == nullptr) {
+    auto desc = new ShapeDescriptor(__shape);
     std::shared_ptr<DataBuffer> buffer =
-        std::make_shared<DataBuffer>(len * sizeof(int8_t), ArrayOptions::dataType(__shape), workspace);
-    var->setNDArray(new NDArray(buffer, __shape, block.launchContext()));
+        std::make_shared<DataBuffer>(len * sizeof(int8_t),desc->dataType(), workspace);
+    var->setNDArray(new NDArray(buffer, desc, block.launchContext()));
+    delete desc;
   } else if (var->getNDArray()->lengthOf() != len) {
     // if length not match - lets reallocate array
     delete var->getNDArray();
+    auto desc = new ShapeDescriptor(__shape);
     std::shared_ptr<DataBuffer> buffer =
-        std::make_shared<DataBuffer>(len * sizeof(int8_t), ArrayOptions::dataType(__shape), workspace);
-    var->setNDArray(new NDArray(buffer, __shape, block.launchContext()));
+        std::make_shared<DataBuffer>(len * sizeof(int8_t), desc->dataType(), workspace);
+    var->setNDArray(new NDArray(buffer, desc, block.launchContext()));
+    delete desc;
   }
 
   return true;

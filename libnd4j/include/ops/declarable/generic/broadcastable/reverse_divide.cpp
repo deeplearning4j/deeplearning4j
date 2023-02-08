@@ -65,11 +65,9 @@ CUSTOM_OP_IMPL(reversedivide_bp, 3, 2, false, 0, 0) {
     // PWT case case
 
     // X gradient
-    // epsNext->applyTriplewiseLambda(x, y, lambdaX, gradX);
     gradX->assign((*epsNext) * (*y) / ((*x) * (*x)));
     gradX->applyTransform(transform::Neg, *gradX);
     // Y gradient
-    // epsNext->applyPairwiseLambda(x, lambdaY, gradY);
     gradY->assign((*epsNext) / (*x));
   } else if (y->isScalar()) {
     // scalar case

@@ -101,7 +101,9 @@ DECLARE_SHAPE_FN(pad) {
   auto inputShapeInfo = inputShape->at(0);
   auto paddings = INPUT_VARIABLE(1);
   const int rank = inputShapeInfo[0];
-
+  if(rank < 0 || rank > SD_MAX_RANK) {
+    throw std::runtime_error("PAD op: Bad shape buffer. Likely corrupt. Please ensure buffer was not deallocated.");
+  }
   // paddings validation
   const std::vector<sd::LongType> expectedPaddingsShape = {rank, 2};
   const std::vector<sd::LongType> currentPaddingsShape = paddings->getShapeAsVector();
@@ -119,8 +121,9 @@ DECLARE_SHAPE_FN(pad) {
   ShapeUtils::updateStridesAndType(outShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
   ShapeDescriptor *descriptor = new ShapeDescriptor(outShapeInfo);
   RELEASE(outShapeInfo, block.getWorkspace());
+  auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(descriptor));
   delete descriptor;
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(descriptor));
+  return ret;
 }
 
 }  // namespace ops

@@ -37,7 +37,7 @@ namespace sd {
 class SD_LIB_EXPORT ConstantShapeHelper {
  private:
   std::mutex _mutex;
-  std::vector<SD_MAP_IMPL<ShapeDescriptor *, ConstantShapeBuffer *>> _cache;
+  std::vector<SD_MAP_IMPL<ShapeDescriptor , ConstantShapeBuffer *>> _cache;
 #if defined(__NEC__)
   bool _cache_existing_pointers = true;
 #endif

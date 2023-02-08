@@ -202,9 +202,14 @@ int ShapeDescriptor::rank() const { return _rank; }
 sd::LongType ShapeDescriptor::ews() const { return _ews; }
 
 sd::LongType ShapeDescriptor::arrLength() const {
+  if(_shape_strides.empty()) {
+    return 0;
+  }
+
   // when _ews == 1 allocation length is also array length
   sd::LongType len = 1;
   for (int i = 0; i < _rank; i++) len *= _shape_strides[i];
+
   return len;
 }
 
@@ -407,15 +412,10 @@ ShapeDescriptor  * ShapeDescriptor::paddedBufferDescriptor(const DataType type, 
 
 namespace std {
 size_t hash<sd::ShapeDescriptor>::operator()(const sd::ShapeDescriptor &k) const {
-#if defined(__NEC__)
- //simplified
-   auto res = std::hash<char>()(k.order());
+  auto res = std::hash<char>()(k.order());
   res ^= std::hash<int>()((int)k.dataType()) + 0x9e3779b9 + (res << 6) + (res >> 2);
-  // res ^= std::hash<int>()(k.rank()) + 0x9e3779b9 + (res << 6) + (res >> 2);
-  // res ^= std::hash<sd::LongType>()(k.ews()) + 0x9e3779b9 + (res << 6) + (res >> 2);
   auto shape_strides = const_cast<sd::ShapeDescriptor &>(k).shape_strides();
   auto ptr = shape_strides.data();
-  // auto strides = const_cast<sd::ShapeDescriptor &>(k).strides();
   //dont include strides if its' ews==1
   int stop = k.ews()==1? shape_strides.size()/2 : shape_strides.size() ;
   for (int j=0; j < stop; j++) {
@@ -423,20 +423,5 @@ size_t hash<sd::ShapeDescriptor>::operator()(const sd::ShapeDescriptor &k) const
   }
 
   return res;
-
-#else
-  auto res = std::hash<sd::LongType>()(k.arrLength());
-  res ^= std::hash<char>()(k.order()) + 0x9e3779b9 + (res << 6) + (res >> 2);
-  res ^= k.dataType() + 0x9e3779b9 + (res << 6) + (res >> 2);
-  res ^= std::hash<int>()(k.rank()) + 0x9e3779b9 + (res << 6) + (res >> 2);
-  res ^= std::hash<sd::LongType>()(k.ews()) + 0x9e3779b9 + (res << 6) + (res >> 2);
-  auto shape_strides = const_cast<sd::ShapeDescriptor &>(k).shape_strides();
-  // auto strides = const_cast<sd::ShapeDescriptor &>(k).strides();
-  for (auto s : shape_strides) {
-    res ^= std::hash<sd::LongType>()(s) + 0x9e3779b9 + (res << 6) + (res >> 2);
-  }
-
-  return res;
-#endif
 }
 }  // namespace std

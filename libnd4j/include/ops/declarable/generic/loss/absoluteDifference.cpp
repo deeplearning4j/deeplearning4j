@@ -121,6 +121,8 @@ DECLARE_SHAPE_FN(absolute_difference_loss) {
   auto weightsShapeInfo = inputShape->at(1);
   auto labelsShapeInfo = inputShape->at(2);
 
+
+
   // labels and predictions must have the same shapes
   REQUIRE_TRUE(shape::shapeEquals(labelsShapeInfo, predictionsShapeInfo), 0,
                "ABSOLUTE_DIFFERENCE_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and "
@@ -139,19 +141,20 @@ DECLARE_SHAPE_FN(absolute_difference_loss) {
       "and labels = %s instead!",
       ShapeUtils::shapeAsString(weightsShapeInfo).c_str(), ShapeUtils::shapeAsString(labelsShapeInfo).c_str());
 
+
   DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(predictionsShapeInfo));
   sd::LongType const* outShapeInfo = nullptr;
 
-  if (INT_ARG(0) != 0)  // in this case output is scalar
+  if (INT_ARG(0) != 0) {  // in this case output is scalar
     outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
-  else {  // in this case output has the same shape as labels and predictions
+  } else {  // in this case output has the same shape as labels and predictions
     auto desc = new ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo),
                                     shape::rank(labelsShapeInfo));
     outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
     delete desc;
   }
 
-  SHAPELIST(outShapeInfo);
+  return SHAPELIST(outShapeInfo);
 }
 
 //////////////////////////////////////////////////////////////////////////

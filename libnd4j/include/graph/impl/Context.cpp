@@ -392,7 +392,9 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
   NDArray *array;
   if (dataBuffer != nullptr && !shape::isEmpty(shapeInfoCast)) {
-    array = new NDArray(dataBuffer->dataBuffer(),newShapeInfoCast);
+    array = new NDArray(dataBuffer->dataBuffer(),newShapeInfoCast, sd::LaunchContext::defaultContext(),
+                        dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
+                            shapeInfoCast)));
 
   } else {
     array = new NDArray(nullptr, nullptr, shapeInfoCast);
@@ -412,7 +414,10 @@ void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo
   auto newShapeInfoCast = const_cast<sd::LongType *>(shapeInfoCast);
   NDArray *array;
   if (dataBuffer != nullptr && !shape::isEmpty(shapeInfoCast))
-    array = new NDArray(dataBuffer->dataBuffer(),newShapeInfoCast);
+    array = new NDArray(dataBuffer->dataBuffer(),newShapeInfoCast,
+                        sd::LaunchContext::defaultContext(),
+                        dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
+                            shapeInfoCast)));
 
   else {
     array = new NDArray(nullptr, nullptr, shapeInfoCast);

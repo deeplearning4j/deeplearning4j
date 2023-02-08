@@ -117,7 +117,6 @@ NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>
                                sd::LaunchContext* context) {
   if ((int)shape.size() > SD_MAX_RANK)
     throw std::invalid_argument("NDArrayFactory::create: rank of NDArray can't exceed 32 !");
-
   ShapeDescriptor *descriptor = new ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shape);
 
   if (descriptor->arrLength() != data.size()) {
@@ -321,8 +320,9 @@ NDArray NDArrayFactory::create(const T scalar, sd::LaunchContext* context) {
   std::shared_ptr<DataBuffer> buffer =
       std::make_shared<DataBuffer>(1 * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
-  NDArray res(buffer, ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>()), context);
-
+  auto desc = ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>());
+  NDArray res(buffer,desc , context);
+  delete desc;
   res.bufferAsT<T>()[0] = scalar;
 
   res.tickWriteHost();
@@ -510,6 +510,8 @@ NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>
                                sd::LaunchContext* context) {
   if ((int)shape.size() > SD_MAX_RANK)
     throw std::invalid_argument("NDArrayFactory::create: rank of NDArray can't exceed 32");
+  sd_printf("In arrLength usage aDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape, sd::DataType dtype,\n"
+            "                               sd::LaunchContext* context)\n",0);
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(dtype, order, shape);
 
@@ -639,6 +641,8 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<sd::LongTyp
 template <typename T>
 NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializer_list<sd::LongType>& shape,
                                sd::LaunchContext* context) {
+  sd_printf("In arrLength usage at  NDArrayFactory::create(T* buffer, const char order, const std::initializer_list<sd::LongType>& shape,\n"
+            "                               sd::LaunchContext* context\n",0);
   if ((int)shape.size() > SD_MAX_RANK)
     throw std::invalid_argument("NDArrayFactory::create: Rank of NDArray can't exceed 32");
 
@@ -649,7 +653,7 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
       buffer, descriptor->arrLength() * sizeof(T), descriptor->dataType(), false, context->getWorkspace());
 
   NDArray result(pBuffer, descriptor, context);
-
+  delete descriptor;
   return result;
 }
 

@@ -218,18 +218,24 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vecto
 
       ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
       RELEASE(newShapeInfo, workspace);
-      return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+      auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+      delete descriptor;
+      return ret;
     } else if (supportOldShapes) {
       ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), sd::LongType);
       shape::shapeOldScalar(dataType, newShapeInfo, 'c');
       ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
       RELEASE(newShapeInfo, workspace);
-      return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+      auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+      delete descriptor;
+      return ret;
     } else {
       newShapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
       ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
       RELEASE(newShapeInfo, workspace);
-      return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+      auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+      delete descriptor;
+      return ret;
     }
   }
 
@@ -250,7 +256,9 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vecto
     ShapeUtils::updateStridesAndType(newShapeInfo, shapeInfo, order);
     ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
     RELEASE(newShapeInfo, workspace);
-    return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+    auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+    delete descriptor;
+    return ret;
   }
 
   int newRank = rank - dimSize;
@@ -262,13 +270,17 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vecto
       ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), sd::LongType);
       shape::shapeOldScalar(ArrayOptions::dataType(shapeInfo), newShapeInfo, 'c');
       ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
+      auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
       RELEASE(newShapeInfo, workspace);
-      return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+      delete descriptor;
+      return ret;
     } else {
       newShapeInfo = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(shapeInfo), workspace);
       ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
+      auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
       RELEASE(newShapeInfo, workspace);
-      return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+      delete descriptor;
+      return ret;
     }
   }
 
@@ -299,7 +311,9 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vecto
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
   RELEASE(newShapeInfo, workspace);
-  return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+  auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+  delete descriptor;
+  return ret;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -347,9 +361,11 @@ const sd::LongType* ShapeUtils::evalPermShapeInfo(const int* dimensions, const i
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfoNew);
 
-  RELEASE(shapeInfoNew, workspace);
 
-  return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+  auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+  RELEASE(shapeInfoNew, workspace);
+  delete descriptor;
+  return ret;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -428,6 +428,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                     if (!trimmer) {
                         externalCount.incrementAndGet();
                         AllocationsTracker.getInstance().getTracker(id).allocateSpilled(type,kind,numElements,requiredMemory);
+                        AllocationsTracker.getInstance().getTracker(id).allocateExternal(type,kind,numElements,requiredMemory);
                         spilledAllocationsSize.addAndGet(requiredMemory);
                         PagedPointer pointer = new PagedPointer(
                                 memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize),

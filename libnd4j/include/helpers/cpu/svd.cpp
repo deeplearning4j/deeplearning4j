@@ -432,8 +432,6 @@ void SVD<T>::calcSingVals(const NDArray& col0, const NDArray& diag, const NDArra
 
       T fLeft = secularEq(leftShifted, col0, diag, permut, diagShifted, shift);
       T fRight = secularEq(rightShifted, col0, diag, permut, diagShifted, shift);
-      // if(fLeft * fRight >= (T)0.)
-      // throw "ops::helpers::SVD::calcSingVals method: fLeft * fRight >= (T)0. !";
 
       while (rightShifted - leftShifted >
              (T)2.f * DataTypeUtils::eps<T>() *

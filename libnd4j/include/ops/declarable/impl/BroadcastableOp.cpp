@@ -52,7 +52,9 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
   if (shape::isEmpty(x) || shape::isEmpty(y)) {
     // this is edge case, [3, 4] + [] = []
     if ((shape::isEmpty(x) && shape::rank(x) == 0) || (shape::isEmpty(y) && shape::rank(y) == 0)) {
-      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor::emptyDescriptor(dtype)));
+      auto desc = ShapeDescriptor::emptyDescriptor(dtype);
+      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+      delete desc;
       return shapeList;
     }
 
@@ -68,7 +70,7 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
       delete desc;
     } else {
       auto desc = new ShapeDescriptor(y, dtype);
-      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));    delete desc;
+      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
       delete desc;
     }
   } else if (shape::equalsSoft(x, y)) {

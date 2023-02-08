@@ -97,7 +97,6 @@ PLATFORM_IMPL(add, ENGINE_CPU) {
 
   auto length0 = input0->lengthOf();
   auto length1 = input1->lengthOf();
-  // sd_printf("%s %d:  %d %d\n",__FILE__, __LINE__, (int)length0, (int)length1);
   auto func = handle.getFunctionByConstPtrName("vedaAdd_A");
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, (uint64_t)length0, vIn0, (uint64_t)length1, vIn1, vO));
 
@@ -150,7 +149,6 @@ PLATFORM_IMPL(multiply, ENGINE_CPU) {
 
   auto length0 = input0->lengthOf();
   auto length1 = input1->lengthOf();
-  // sd_printf("mult %s %d:  %d %d\n",__FILE__, __LINE__, (int)length0, (int)length1);
   auto func = handle.getFunctionByConstPtrName("vedaMult_A");
   VEDA_CALL_THROW(vedaLaunchKernel(func, 0, (uint64_t)length0, vIn0, (uint64_t)length1, vIn1, vO));
 
