@@ -66,7 +66,6 @@ static void adamUpdater_(const NDArray& gradient, const NDArray& initStateU, con
       for (auto i = start; i < stop; i++) {
         stM[i] = beta1 * initM[i] + grad[i] * (1 - beta1);
         stU[i] = beta2 * initU[i] + grad[i] * grad[i] * (1 - beta2);
-
         up[i] = (stM[i] * epsilonT) / (sd::math::sd_sqrt<T, T>(stU[i]) + epsilon);
       }
     };
@@ -94,7 +93,6 @@ static void adamUpdater_(const NDArray& gradient, const NDArray& initStateU, con
 
       stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * (1 - beta1);
       stU[stUOffset] = beta2 * initU[initUOffset] + grad[xOffset] * grad[xOffset] * (1 - beta2);
-
       up[zOffset] = (stM[stMOffset] * epsilonT) / (sd::math::sd_sqrt<T, T>(stU[stUOffset]) + epsilon);
     }
   };

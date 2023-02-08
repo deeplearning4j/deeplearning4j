@@ -80,6 +80,7 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector
   sd::LongType offset = offset_from_coords(shapeDescriptor->stridesPtr(), paddingOffsets.data(), check_size);
 
   NDArray result(buffer, shapeDescriptor, context, offset);
+  delete shapeDescriptor;
   result.nullify();
   return result;
 }
@@ -257,7 +258,7 @@ NDArray* NDArrayFactory::create_(const T scalar, sd::LaunchContext* context) {
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   auto recast = const_cast<sd::LongType *>(constDesc->primary());
   NDArray* res = new NDArray(buffer, recast, context);
-
+ delete desc;
   res->bufferAsT<T>()[0] = scalar;
 
   res->tickWriteHost();
@@ -456,10 +457,11 @@ template <typename T>
 NDArray* NDArrayFactory::vector(sd::LongType length, const T value, sd::LaunchContext* context) {
   std::shared_ptr<DataBuffer> buffer =
       std::make_shared<DataBuffer>(length * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
-  auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo( ShapeDescriptor::vectorDescriptor(length, DataTypeUtils::fromT<T>()));
+  auto desc = ShapeDescriptor::vectorDescriptor(length, DataTypeUtils::fromT<T>());
+  auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   auto recast = const_cast<sd::LongType *>(constDesc->primary());
   auto res = new NDArray(buffer, recast, context);
-
+delete desc;
   if (value == (T)0.0f)
     res->nullify();
   else
@@ -529,9 +531,9 @@ NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>
 NDArray NDArrayFactory::create(sd::DataType dtype, sd::LaunchContext* context) {
   std::shared_ptr<DataBuffer> buffer =
       std::make_shared<DataBuffer>(DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace(), true);
-
-  NDArray res(buffer, ShapeDescriptor::scalarDescriptor(dtype), context);
-
+auto desc = ShapeDescriptor::scalarDescriptor(dtype);
+  NDArray res(buffer, desc, context);
+delete desc;
   res.nullify();
 
   return res;
@@ -549,8 +551,9 @@ NDArray NDArrayFactory::create(const std::vector<T>& values, sd::LaunchContext* 
   std::shared_ptr<DataBuffer> buffer =
       std::make_shared<DataBuffer>(values.size() * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
-  NDArray res(buffer, ShapeDescriptor::vectorDescriptor(values.size(), DataTypeUtils::fromT<T>()), context);
-
+  auto desc = ShapeDescriptor::vectorDescriptor(values.size(), DataTypeUtils::fromT<T>());
+  NDArray res(buffer, desc, context);
+delete desc;
   memcpyFromVector<T>(res.buffer(), values);
 
   res.tickWriteHost();

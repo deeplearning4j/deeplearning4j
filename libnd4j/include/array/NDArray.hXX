@@ -108,9 +108,13 @@ namespace sd {
 
         if (shape.size() == 0) {
             if (data.size() == 0) {
-                setShapeInfo( ConstantShapeHelper::getInstance().bufferForShapeInfo(ShapeDescriptor::emptyDescriptor(dtype)));
+              auto desc = ShapeDescriptor::emptyDescriptor(dtype);
+                setShapeInfo( ConstantShapeHelper::getInstance().bufferForShapeInfo(desc));
+                delete desc;
             } else {
-                setShapeInfo( ConstantShapeHelper::getInstance().bufferForShapeInfo(ShapeDescriptor::scalarDescriptor(dtype)));
+              auto desc = ShapeDescriptor::scalarDescriptor(dtype);
+                setShapeInfo( ConstantShapeHelper::getInstance().bufferForShapeInfo(desc));
+                delete desc;
             }
         } else {
             auto desc = new ShapeDescriptor(dtype, order, shape);
@@ -224,8 +228,10 @@ namespace sd {
         _isAttached = getContext()->getWorkspace() != nullptr;
 
         if (isScalar) {
-            auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo( ShapeDescriptor::scalarDescriptor(dtype));
+            auto desc = ShapeDescriptor::scalarDescriptor(dtype);
+            auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo( desc);
             setShapeInfo(constDesc);
+            delete desc;
             _buffer = std::make_shared<DataBuffer>(sizeOfT(), dtype, getContext()->getWorkspace());
             _buffer->setToZeroBuffers();
         } else
@@ -374,7 +380,7 @@ namespace sd {
 
         auto descriptor = new ShapeDescriptor(shapeInfo);
         setShapeInfo(ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo));
-         delete descriptor;
+        delete descriptor;
         if (!isEmpty() && buffer != nullptr)
             _buffer = std::make_shared<DataBuffer>(buffer != nullptr ? buffer : buffer,
                                                    bufferD, lengthOf() * sizeOfT(), dataType(), isBuffAlloc,
