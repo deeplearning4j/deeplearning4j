@@ -57,7 +57,7 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
 
     private LearnedSelfAttentionLayer(){/*No arg constructor for serialization*/}
 
-    protected LearnedSelfAttentionLayer(Builder builder){
+    protected LearnedSelfAttentionLayer(Builder builder) {
         super(builder);
         nIn = builder.nIn;
         nOut = builder.nOut;
