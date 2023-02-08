@@ -93,11 +93,8 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
   lockedWordsSize->push_back(lockedWords->size());
   const std::vector<sd::LongType> *lockedWordsShape = lockedWordsSize;
 
-  sd_printf("Before array creation indices vec size %d\n",indicesVec->size());
   auto indicesArrOne = indicesVec->size() > 0 ? NDArrayFactory::create<sd::LongType>('c',*indicesShape,*indicesVec) : NDArrayFactory::empty<sd::LongType>();
-  sd_printf("After indices array factory creation\n",0);
   auto indicesArr = new NDArray(indicesArrOne);
-  sd_printf("After indices array creation\n",0);
   auto codesArrOne = codesVec->size() > 0 ?  NDArrayFactory::create<sd::LongType>('c',*codesShape,*codesVec) :  NDArrayFactory::empty<sd::LongType>();
   auto codesArr = new NDArray(codesArrOne);
 
@@ -105,14 +102,11 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
 
   auto contextArrOne = context->size() > 0 ? NDArrayFactory::create<sd::LongType>('c',*contextShape,*contextVec) : NDArrayFactory::empty<sd::LongType>();
   auto contextArr = new NDArray(contextArrOne);
-  sd_printf("After context array creation\n",0);
 
 
   auto lockedWordsOne = lockedWordsVec->size() > 0 ?  NDArrayFactory::create<sd::LongType>('c',*lockedWordsShape,*lockedWordsVec) : NDArrayFactory::empty<sd::LongType>();
   auto lockedWordsArr = new NDArray(lockedWordsOne);
-  sd_printf("After words array creation\n",0);
 
-  sd_printf("After array creation\n",0);
   auto target = I_ARG(currIdx++);
   auto ngStarter = I_ARG(currIdx++);
   auto numLabels = I_ARG(currIdx++);

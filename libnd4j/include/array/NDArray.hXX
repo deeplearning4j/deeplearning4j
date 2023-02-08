@@ -109,16 +109,16 @@ namespace sd {
         if (shape.size() == 0) {
             if (data.size() == 0) {
               auto desc = ShapeDescriptor::emptyDescriptor(dtype);
-                setShapeInfo( ConstantShapeHelper::getInstance().bufferForShapeInfo(desc));
+                setShapeInfo( desc);
                 delete desc;
             } else {
               auto desc = ShapeDescriptor::scalarDescriptor(dtype);
-                setShapeInfo( ConstantShapeHelper::getInstance().bufferForShapeInfo(desc));
+                setShapeInfo( desc);
                 delete desc;
             }
         } else {
             auto desc = new ShapeDescriptor(dtype, order, shape);
-            setShapeInfo( ConstantShapeHelper::getInstance().bufferForShapeInfo(desc));
+            setShapeInfo( desc);
             delete desc;
         }
 
@@ -333,8 +333,9 @@ namespace sd {
         _context = context;
         _isAttached = getContext()->getWorkspace() != nullptr;
         _offset = 0;
-
-        setShapeInfo( ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo));
+        auto descriptor = new ShapeDescriptor(shapeInfo);
+        setShapeInfo( descriptor);
+        delete descriptor;
 
         if (this->isEmpty()) {
             tickReadDevice();
