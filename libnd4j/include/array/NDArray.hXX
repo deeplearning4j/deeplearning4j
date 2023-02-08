@@ -379,7 +379,7 @@ namespace sd {
         _offset = 0;
 
         auto descriptor = new ShapeDescriptor(shapeInfo);
-        setShapeInfo(ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo));
+        setShapeInfo(descriptor);
         delete descriptor;
         if (!isEmpty() && buffer != nullptr)
             _buffer = std::make_shared<DataBuffer>(buffer != nullptr ? buffer : buffer,
