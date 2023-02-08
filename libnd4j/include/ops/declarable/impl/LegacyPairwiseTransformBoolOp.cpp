@@ -67,7 +67,10 @@ sd::Status LegacyPairwiseTransformBoolOp::validateAndExecute(Context &block) {
  */
 ShapeList *LegacyPairwiseTransformBoolOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
   auto inShape = inputShape->at(0);
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, DataType::BOOL)));
+  auto desc = new ShapeDescriptor(inShape, DataType::BOOL);
+  auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  delete desc;
+  return ret;
 }
 }  // namespace ops
 }  // namespace sd

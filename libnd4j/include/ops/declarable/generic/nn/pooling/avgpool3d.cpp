@@ -146,8 +146,10 @@ DECLARE_SHAPE_FN(avgpool3dnew) {
     outputShape[4] = iC;
   }
   // TF DOC: A Tensor. Has the same type as input.
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-      ShapeDescriptor(ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo), outputShape, 5)));
+  auto desc = new ShapeDescriptor(ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo), outputShape, 5);
+  auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  delete desc;
+  return ret;
 }
 
 DECLARE_TYPES(avgpool3dnew_bp) {
@@ -224,8 +226,10 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 14) {
 }
 
 DECLARE_SHAPE_FN(avgpool3dnew_bp) {
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-      ShapeDescriptor(inputShape->at(0), ArrayOptions::dataType(inputShape->at(1)))));
+  auto desc = new ShapeDescriptor(inputShape->at(0), ArrayOptions::dataType(inputShape->at(1)));
+  auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  delete desc;
+  return ret;
 }
 
 }  // namespace ops

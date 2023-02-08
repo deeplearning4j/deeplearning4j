@@ -55,13 +55,7 @@ public class OrthogonalDistribution extends BaseDistribution {
         this.gain = gain;
         this.random = Nd4j.getRandom();
     }
-/*
-    max doesn't want this distripution
-    public OrthogonalDistribution(@NonNull INDArray gains) {
-        this.gains = gains;
-        this.random = Nd4j.getRandom();
-    }
-*/
+
     /**
      * Access the mean.
      *
@@ -219,7 +213,7 @@ public class OrthogonalDistribution extends BaseDistribution {
     }
 
     @Override
-    public INDArray sample(long[] shape){
+    public INDArray sample(long[] shape) {
         long numRows = 1;
         for (int i = 0; i < shape.length - 1; i++)
             numRows *= shape[i];
@@ -251,7 +245,8 @@ public class OrthogonalDistribution extends BaseDistribution {
     }
 
     @Override
-    public INDArray sample(INDArray target){
-        return target.assign(sample(target.shape()));
+    public INDArray sample(INDArray target) {
+        INDArray retSample = sample(target.shape());
+        return target.assign(retSample);
     }
 }

@@ -172,8 +172,6 @@ DECLARE_SHAPE_FN(range) {
         delta = INPUT_VARIABLE(2)->e<sd::LongType>(0);
       }
 
-      // sd_printf("Start: [%lld]; Limit: [%lld]; Delta: [%lld];\n", start, limit, delta)
-
       if (limit == start) {
         // Return [0] to match TF
         return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(0, dtype));

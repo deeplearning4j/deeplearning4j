@@ -46,7 +46,6 @@ static sd::Status _randomCropFunctor(graph::Context& context, NDArray* input, ND
   sd::LongType maxIndex = output->argMax();
   sd::LongType startPos = output->e<sd::LongType>(maxIndex);
   sd::LongType lastDim = input->sizeAt(-1);
-  // sd_printf("Before processing: %i %i. Output length %i\n", maxIndex, startPos, output->lengthOf());
   sd::LongType pos = 0;
   sd::LongType width = startPos + shape->e<sd::LongType>(last);
   if (width >= lastDim) {

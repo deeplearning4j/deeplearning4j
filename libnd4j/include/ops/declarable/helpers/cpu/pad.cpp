@@ -41,7 +41,6 @@ static void copy_core_rank(const T* x, T* coreZ, const sd::LongType* xShapes, co
   auto lastStrideX = xStrides[constRank - 1];
   auto lastStrideZ = zStrides[constRank - 1];
   auto inputLastSize = xShapes[constRank - 1];
-  // sd_printf("%d %d %d %d %d\n",start, stop,(int)offset.second, (int)lastStrideX, (int)lastStrideZ);
   if (lastStrideZ == 1 && lastStrideX == 1) {
     for (auto k = 0; k < (stop - start); k++) {
       auto xPtr = &(x[offset.first]);

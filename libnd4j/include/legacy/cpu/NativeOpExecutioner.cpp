@@ -850,9 +850,9 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, const voi
   samediff::Threads::parallel_for(
       func, 0, zLen, 1,
       !allowParallelism
-          ? 1
-          : sd::math::sd_max<int>(
-                1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
+      ? 1
+      : sd::math::sd_max<int>(
+          1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
 
 
 #endif
@@ -925,9 +925,9 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
   samediff::Threads::parallel_for(
       func, 0, zLen, 1,
       !allowParallelism
-          ? 1
-          : sd::math::sd_max<int>(
-                1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
+      ? 1
+      : sd::math::sd_max<int>(
+          1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -991,9 +991,9 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext *lc, int opNum, const 
   samediff::Threads::parallel_for(
       func, 0, zLen, 1,
       !allowParallelism
-          ? 1
-          : sd::math::sd_max<int>(
-                1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
+      ? 1
+      : sd::math::sd_max<int>(
+          1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1163,6 +1163,7 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
                                            const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                                            bool allowParallelism) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
+
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
   if (shape::isEmpty(hXShapeInfo)) return;
@@ -1171,6 +1172,7 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
       shape::order(hXShapeInfo) == 'c' && xType == zType && shape::elementWiseStride(hXShapeInfo) == 1 &&
       shape::elementWiseStride(hZShapeInfo) == 1) {
     memcpy(hZ, hX, shape::length(hXShapeInfo) * sd::DataTypeUtils::sizeOfElement(xType));
+
   } else {
     auto func = PRAGMA_THREADS_DO {
       BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,

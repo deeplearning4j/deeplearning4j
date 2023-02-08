@@ -131,8 +131,10 @@ DECLARE_SHAPE_FN(pnormpool2d) {
     newShape[3] = iC;
   }
 
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-      ShapeDescriptor(ArrayOptions::dataType(inShape), order, newShape, 4)));
+  auto desc = new ShapeDescriptor(ArrayOptions::dataType(inShape), order, newShape, 4);
+  auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+  delete desc;
+  return ret;
 }
 
 DECLARE_TYPES(pnormpool2d_bp) {
@@ -238,8 +240,8 @@ DECLARE_SHAPE_FN(pnormpool2d_bp) {
                "PNORMPOOL2D_BP op: output's gradient array (next epsilon) must be 4D, but got %i instead!",
                inputShape->at(1)[0]);
 
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
-      ShapeDescriptor(inputShape->at(0), ArrayOptions::dataType(inputShape->at(1)))));
+  auto desc = new  ShapeDescriptor(inputShape->at(0), ArrayOptions::dataType(inputShape->at(1)));
+  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
 }
 
 }  // namespace ops

@@ -166,7 +166,6 @@ sd::Status GraphExecutioner::executeFlatNode(Graph *graph, Node *node, VariableS
 
       auto var = variableSpace->getVariable(pair);
 
-      // sd_printf("HasArray: [%i]; Removable: [%i]\n", var->hasNDArray(), var->isRemovable());
       var->setNDArray(array);
       var->markRemovable(true);
     }

@@ -22,6 +22,7 @@ package org.nd4j.linalg.cpu.nativecpu.buffer;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.memory.Deallocator;
+import org.nd4j.linalg.api.memory.ReferenceMetaData;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
 import org.nd4j.linalg.profiler.data.eventlogger.EventType;
@@ -34,9 +35,15 @@ import org.nd4j.nativeblas.OpaqueDataBuffer;
 public class CpuDeallocator implements Deallocator {
     private final transient OpaqueDataBuffer opaqueDataBuffer;
     private LogEvent logEvent;
+    private ReferenceMetaData referenceMetaData;
 
     public CpuDeallocator(BaseCpuDataBuffer buffer) {
         opaqueDataBuffer = buffer.getOpaqueDataBuffer();
+        referenceMetaData = ReferenceMetaData.
+                builder()
+                .isConstant(buffer.isConstant())
+                .build();
+
         if(EventLogger.getInstance().isEnabled()) {
             logEvent = LogEvent.builder()
                     .attached(buffer.isAttached())
@@ -64,11 +71,17 @@ public class CpuDeallocator implements Deallocator {
             logEvent.setThreadName(Thread.currentThread().getName());
             EventLogger.getInstance().log(logEvent);
         }
+
         NativeOpsHolder.getInstance().getDeviceNativeOps().deleteDataBuffer(opaqueDataBuffer);
     }
 
     @Override
     public LogEvent logEvent() {
         return logEvent;
+    }
+
+    @Override
+    public ReferenceMetaData referenceMetaData() {
+        return referenceMetaData;
     }
 }

@@ -104,7 +104,6 @@ void compareAndBitpack_(const NDArray& input, const NDArray& thresholdScalar, ND
   if (input.ordering() == 'c' && output.ordering() == 'c' && input.ews() == 1 && output.ews() == 1) {
     FUNC_1D func = [buff, outBuff, threshold](uint64_t thread_id, int64_t start, int64_t stop,
                                               int64_t increment) -> void {
-      // sd_printf("s: %i e: %i \n", (int)start,(int)stop);
       auto outBuffPart = outBuff + start;
       auto buffPart = buff + start * 8;
       auto len = stop - start;
@@ -154,7 +153,6 @@ void compareAndBitpack_(const NDArray& input, const NDArray& thresholdScalar, ND
                          uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) -> void {
         sd::LongType coords[SD_MAX_RANK] = {};
         sd::LongType* ptr_coords = (sd::LongType*)&coords;
-        // sd_printf("generic s: %i e: %i \n", (int)start,(int)stop);
         auto len = (stop - start);
         // its extended as {rank+1} so extendedStrides[rank] is valid
         auto innermostStride = extendedStrides[rank];

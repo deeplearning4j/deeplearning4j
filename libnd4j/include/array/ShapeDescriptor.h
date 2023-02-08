@@ -123,12 +123,12 @@ class SD_LIB_EXPORT ShapeDescriptor {
 
   sd::LongType *toShapeInfo() const;
 
-  static ShapeDescriptor emptyDescriptor(const DataType type);
-  static ShapeDescriptor scalarDescriptor(const DataType type);
-  static ShapeDescriptor vectorDescriptor(const sd::LongType length, const DataType type);
+  static ShapeDescriptor * emptyDescriptor(const DataType type);
+  static ShapeDescriptor  * scalarDescriptor(const DataType type);
+  static ShapeDescriptor * vectorDescriptor(const sd::LongType length, const DataType type);
 
   // create Descriptor with padded buffer.
-  static ShapeDescriptor paddedBufferDescriptor(const DataType type, const char order,
+  static ShapeDescriptor * paddedBufferDescriptor(const DataType type, const char order,
                                                 const std::vector<sd::LongType> &shape,
                                                 const std::vector<sd::LongType> &paddings);
 };

@@ -31,7 +31,9 @@ import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.primitives.AtomicDouble;
 import org.nd4j.common.primitives.Triple;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 
@@ -64,6 +66,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
     }
     protected transient OpaqueDataBuffer ptrDataBuffer;
+    protected transient Deallocator deallocator;
 
     protected DataType type;
     protected long length;
@@ -92,6 +95,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient AtomicBoolean referenced = new AtomicBoolean(false);
 
     public BaseDataBuffer() {}
+
+    @Override
+    public Deallocator deallocator() {
+        return deallocator;
+    }
 
     /**
      * Initialize the opType of this buffer
@@ -1801,7 +1809,22 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param reallyConstant
      */
     public void setConstant(boolean reallyConstant) {
+        deallocator().referenceMetaData().setConstant(reallyConstant);
+        if(EventLogger.getInstance().isEnabled())
+            deallocator().logEvent().setConstant(reallyConstant);
         this.constant = reallyConstant;
+
+
+    }
+
+    @Override
+    public boolean shouldDeAllocate() {
+        return !isConstant() && !released;
+    }
+
+    @Override
+    public int targetDevice() {
+        return 0;
     }
 
     /**

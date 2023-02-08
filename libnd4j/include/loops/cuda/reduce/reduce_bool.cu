@@ -245,8 +245,8 @@ SD_HOST void ReduceBoolFunction<X, Z>::intermediateXD(dim3 launchDims, cudaStrea
     auto innerPack = sd::ConstantShapeHelper::getInstance().createSubArrShapeInfo(hXShapeInfo, dims + zRank, tadRank);
 
     simpleReduce<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-        x, reinterpret_cast<sd::LongType const *>(outerPack.special()),
-        reinterpret_cast<sd::LongType const *>(innerPack.special()), extraParams, vreductionBuffer, z, dZShapeInfo);
+        x, reinterpret_cast<sd::LongType const *>(outerPack->special()),
+        reinterpret_cast<sd::LongType const *>(innerPack->special()), extraParams, vreductionBuffer, z, dZShapeInfo);
     sd::DebugHelper::checkErrorCode(stream, "reduceBoolDim(...) failed");
   }
 }

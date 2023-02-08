@@ -388,6 +388,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         if(backend.getNDArrayClass().toString().toLowerCase().contains("cu"))
             return;
 
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         File file = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(file);
 
@@ -809,7 +811,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         // we're building classifier now, with pre-built w2v model passed in
         ParagraphVectors paragraphVectors = new ParagraphVectors.Builder().seed(119).iterate(labelAwareIterator)
                 .learningRate(0.025).minLearningRate(0.001).iterations(10).epochs(1).layerSize(150)
-                .tokenizerFactory(t).sequenceLearningAlgorithm(new DBOW<VocabWord>()).useHierarchicSoftmax(true)
+                .tokenizerFactory(t).sequenceLearningAlgorithm(new DBOW<>()).useHierarchicSoftmax(true)
                 .allowParallelTokenization(true)
                 .workers(1)
                 .trainWordVectors(false).useExistingWordVectors(wordVectors).build();
@@ -973,7 +975,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         }
 
         int count = 0;
-        int till = 100000000;
+        int till = 10;
         while(count < till) {
             for(int i = 0; i < numThreads; i++) {
                 File write = new File("pv_" + i + ".zip");

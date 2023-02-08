@@ -52,6 +52,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,8 +77,13 @@ public class TestTimeDistributed extends BaseDL4JTest {
     @ParameterizedTest
     @MethodSource("org.eclipse.deeplearning4j.dl4jcore.nn.layers.recurrent.TestTimeDistributed#params")
     public void testTimeDistributed(RNNFormat rnnDataFormat,Nd4jBackend backend){
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
         for(WorkspaceMode wsm : new WorkspaceMode[]{WorkspaceMode.ENABLED, WorkspaceMode.NONE}) {
-
+            Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
+                    .checkForNAN(true)
+                    .checkForINF(true)
+                    .build());
             MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
                     .trainingWorkspaceMode(wsm)
                     .inferenceWorkspaceMode(wsm)

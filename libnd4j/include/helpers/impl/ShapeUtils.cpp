@@ -130,9 +130,11 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::
                                                          const bool keepDims, sd::memory::Workspace* workspace) {
   if (dimsToExclude.size() == 0) {  // return copy of input shape
     sd::LongType* outShapeInfo = ShapeBuilders::copyShapeInfoAndType(shapeInfo, dataType, true, workspace);
-    ShapeDescriptor descriptor(outShapeInfo, dataType);
+    ShapeDescriptor *descriptor = new ShapeDescriptor(outShapeInfo, dataType);
     RELEASE(outShapeInfo, workspace);
-    return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
+    auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+    delete descriptor;
+    return ret;
   }
 
   const int rank = shape::rank(shapeInfo);
@@ -164,9 +166,11 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::
     outShapeInfo = ShapeBuilders::createShapeInfo(dataType, order, outShape, workspace);
   }
 
-  ShapeDescriptor descriptor(outShapeInfo, dataType);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(outShapeInfo, dataType);
   RELEASE(outShapeInfo, workspace);
-  return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
+  auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+  delete descriptor;
+  return ret;
 }
 
 const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimsToExclude,
@@ -212,20 +216,26 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vecto
       ShapeUtils::updateStridesAndType(newShapeInfo, shapeInfo, order);
       ArrayOptions::setDataType(newShapeInfo, dataType);
 
-      ShapeDescriptor descriptor(newShapeInfo, dataType);
+      ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
       RELEASE(newShapeInfo, workspace);
-      return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
+      auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+      delete descriptor;
+      return ret;
     } else if (supportOldShapes) {
       ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), sd::LongType);
       shape::shapeOldScalar(dataType, newShapeInfo, 'c');
-      ShapeDescriptor descriptor(newShapeInfo, dataType);
+      ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
       RELEASE(newShapeInfo, workspace);
-      return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
+      auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+      delete descriptor;
+      return ret;
     } else {
       newShapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
-      ShapeDescriptor descriptor(newShapeInfo, dataType);
+      ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
       RELEASE(newShapeInfo, workspace);
-      return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
+      auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+      delete descriptor;
+      return ret;
     }
   }
 
@@ -244,9 +254,11 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vecto
         newShapeInfo[i + 1] = shapeInfo[i + 1];
 
     ShapeUtils::updateStridesAndType(newShapeInfo, shapeInfo, order);
-    ShapeDescriptor descriptor(newShapeInfo, dataType);
+    ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
     RELEASE(newShapeInfo, workspace);
-    return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
+    auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+    delete descriptor;
+    return ret;
   }
 
   int newRank = rank - dimSize;
@@ -257,14 +269,18 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vecto
     if (supportOldShapes) {
       ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), sd::LongType);
       shape::shapeOldScalar(ArrayOptions::dataType(shapeInfo), newShapeInfo, 'c');
-      ShapeDescriptor descriptor(newShapeInfo, dataType);
+      ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
+      auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
       RELEASE(newShapeInfo, workspace);
-      return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
+      delete descriptor;
+      return ret;
     } else {
       newShapeInfo = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(shapeInfo), workspace);
-      ShapeDescriptor descriptor(newShapeInfo, dataType);
+      ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
+      auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
       RELEASE(newShapeInfo, workspace);
-      return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
+      delete descriptor;
+      return ret;
     }
   }
 
@@ -293,9 +309,11 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vecto
 
   ShapeUtils::updateStridesAndType(newShapeInfo, shapeInfo, order);
 
-  ShapeDescriptor descriptor(newShapeInfo, dataType);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
   RELEASE(newShapeInfo, workspace);
-  return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
+  auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+  delete descriptor;
+  return ret;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -341,11 +359,13 @@ const sd::LongType* ShapeUtils::evalPermShapeInfo(const int* dimensions, const i
 
   if (setContigStrides) shape::updateStrides(shapeInfoNew, arr.ordering());
 
-  ShapeDescriptor descriptor(shapeInfoNew);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfoNew);
 
+
+  auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
   RELEASE(shapeInfoNew, workspace);
-
-  return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
+  delete descriptor;
+  return ret;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -484,9 +504,9 @@ bool ShapeUtils::evalBroadcastShapeInfo(const sd::LongType* max, const sd::LongT
     memset(shape::stride(tmpShapeInfo), 0, shape::rank(tmpShapeInfo) * sizeof(sd::LongType));
   }
 
-  ShapeDescriptor descriptor(tmpShapeInfo);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(tmpShapeInfo);
   RELEASE(tmpShapeInfo, workspace);
-  resultShapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
+  resultShapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
 
   return true;
 }
@@ -521,9 +541,10 @@ bool ShapeUtils::evalCommonBroadcastShapeInfo(const std::vector<const NDArray*>&
   shape::updateStrides(tmpShapeInfo, arrays[0]->ordering());
   ArrayOptions::setDataType(tmpShapeInfo, arrays[0]->dataType());
 
-  ShapeDescriptor descriptor(tmpShapeInfo);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(tmpShapeInfo);
   RELEASE(tmpShapeInfo, workspace);
-  resultShapeInfo = const_cast<sd::LongType*>(ConstantShapeHelper::getInstance().createShapeInfo(descriptor));
+  auto bufferForSHape = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor);
+  resultShapeInfo = const_cast<sd::LongType*>(ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary());
 
   return true;
 }
@@ -588,9 +609,9 @@ const sd::LongType* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std:
   shape::updateStrides(newShapeInfo, arr.ordering());
   ArrayOptions::setDataType(newShapeInfo, arr.dataType());
 
-  ShapeDescriptor descriptor(newShapeInfo);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
   RELEASE(newShapeInfo, workspace);
-  return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
+  return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
 }
 
 std::vector<sd::LongType> ShapeUtils::pullShapeFromShapeInfo(const sd::LongType* shapeInfo) {
@@ -723,10 +744,10 @@ const sd::LongType* ShapeUtils::evalDiagShapeInfo(const sd::LongType* shapeInfoC
   }
 
   ShapeUtils::updateStridesAndType(outputShapeInfo, shapeInfo, shape::order(shapeInfo));
-
-  auto result = ConstantShapeHelper::getInstance().createShapeInfo(outputShapeInfo);
+  auto nonConstShape = const_cast<sd::LongType *>(outputShapeInfo);
+  auto result = ConstantShapeHelper::getInstance().bufferForShapeInfo(nonConstShape);
   RELEASE(outputShapeInfo, workspace);
-  return result;
+  return result->primary();
 }
 
 std::vector<int> ShapeUtils::evalBroadcastBackwardAxis(const sd::LongType* operandShapeInfo,

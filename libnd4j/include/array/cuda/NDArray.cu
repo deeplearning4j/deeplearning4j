@@ -156,7 +156,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
 }
 BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::fillAsTriangular,
                       (const float val, int lower, int upper, NDArray& target, const char direction,
-                       const bool includeEdges),
+                          const bool includeEdges),
                       SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
@@ -200,7 +200,7 @@ static void identityMatrixCudaLauncher(const int blocksPerGrid, const int thread
 }
 BUILD_SINGLE_TEMPLATE(template void identityMatrixCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                       const cudaStream_t* stream, void* vx, const sd::LongType* xShapeInfo, const float val),
+                          const cudaStream_t* stream, void* vx, const sd::LongType* xShapeInfo, const float val),
                       SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
@@ -220,7 +220,7 @@ void NDArray::setIdentity() {
   syncToDevice();
   BUILD_SINGLE_SELECTOR(dataType(), identityMatrixCudaLauncher,
                         (blocksPerGrid, threadsPerBlock, sharedMem, getContext()->getCudaStream(), platformBuffer(),
-                         platformShapeInfo(), 1.f),
+                            platformShapeInfo(), 1.f),
                         SD_COMMON_TYPES);
   tickWriteDevice();
 
@@ -245,7 +245,7 @@ void NDArray::swapUnsafe(NDArray& other) {
   prepareSpecialUse({&other, this}, {&other, this});
   BUILD_SINGLE_SELECTOR(xType, templatedSwapUnsafe,
                         (specialBuffer(), specialShapeInfo(), other.specialBuffer(), other.specialShapeInfo(),
-                         getContext()->getCudaStream()),
+                            getContext()->getCudaStream()),
                         SD_COMMON_TYPES);
   registerSpecialUse({&other, this}, {&other, this});
 
@@ -349,8 +349,9 @@ NDArray NDArray::tile(const std::vector<sd::LongType>& reps) const {
   std::shared_ptr<DataBuffer> newBuff = std::make_shared<DataBuffer>(shape::length(newShapeInfo) * sizeOfT(),
                                                                      dataType(), getContext()->getWorkspace(), true);
   // assign new shape and new buffer to resulting array
-  NDArray result(newBuff, ShapeDescriptor(newShapeInfo), getContext());
-
+  ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
+  NDArray result(newBuff,descriptor , getContext());
+  delete descriptor;
   // fill newBuff, loop through all elements of newBuff
   // looping through buffer() goes automatically by means of getSubArrayIndex applying
   const auto resultLen = result.lengthOf();
@@ -360,7 +361,7 @@ NDArray NDArray::tile(const std::vector<sd::LongType>& reps) const {
   prepareSpecialUse({&result}, {this});
   BUILD_SINGLE_SELECTOR(xType, tileKernelH,
                         (this->specialBuffer(), this->specialShapeInfo(), result.specialBuffer(),
-                         result.specialShapeInfo(), resultLen, stream),
+                            result.specialShapeInfo(), resultLen, stream),
                         SD_COMMON_TYPES);
   registerSpecialUse({&result}, {this});
 
@@ -469,12 +470,12 @@ static void repeatCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
                                const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
                                const sd::LongType* zShapeInfo, const int* repeats, const int repSize, const int axis) {
   repeatCuda<X, Z>
-      <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, repeats, repSize, axis);
+  <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, repeats, repSize, axis);
 }
 BUILD_DOUBLE_TEMPLATE(template void repeatCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                       const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                       const sd::LongType* zShapeInfo, const int* repeats, const int repSize, const int axis),
+                          const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
+                          const sd::LongType* zShapeInfo, const int* repeats, const int repSize, const int axis),
                       SD_COMMON_TYPES, SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
@@ -494,7 +495,7 @@ NDArray NDArray::repeat(const int axis, const std::vector<int>& repeats) const {
   BUILD_SINGLE_SELECTOR_TWICE(
       dataType(), repeatCudaLauncher,
       (blocksPerGrid, threadsPerBlock, sharedMem, getContext()->getCudaStream(), specialBuffer(), specialShapeInfo(),
-       output.specialBuffer(), output.specialShapeInfo(), reps, repeats.size(), axis),
+          output.specialBuffer(), output.specialShapeInfo(), reps, repeats.size(), axis),
       SD_COMMON_TYPES);
   prepareSpecialUse({&output}, {this});
 
@@ -523,7 +524,7 @@ void NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& t
   BUILD_DOUBLE_SELECTOR(
       dataType(), target.dataType(), repeatCudaLauncher,
       (blocksPerGrid, threadsPerBlock, sharedMem, getContext()->getCudaStream(), specialBuffer(), specialShapeInfo(),
-       target.specialBuffer(), target.specialShapeInfo(), reps, repeats.size(), axis),
+          target.specialBuffer(), target.specialShapeInfo(), reps, repeats.size(), axis),
       SD_COMMON_TYPES, SD_COMMON_TYPES);
   prepareSpecialUse({&target}, {this});
 

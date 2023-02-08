@@ -98,16 +98,14 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
   NDArray::prepareSpecialUse({output}, {input});
 
   NativeOpExecutioner::execTransformAny(
-      block.launchContext(), sd::transform::Assign, input->bufferWithOffset(offset), subArrShapeInfoPack.primary(),
-      input->specialBufferWithOffset(offset), subArrShapeInfoPack.special(), output->buffer(), output->shapeInfo(),
+      block.launchContext(), sd::transform::Assign, input->bufferWithOffset(offset), subArrShapeInfoPack->primary(),
+      input->specialBufferWithOffset(offset), subArrShapeInfoPack->special(), output->buffer(), output->shapeInfo(),
       output->specialBuffer(), output->specialShapeInfo(), nullptr, nullptr, nullptr, true);
 
   NDArray::registerSpecialUse({output}, {input});
 
   RELEASE(subArrShapeInfo, block.getWorkspace());
 
-  // auto sub = (*input)(indices, true);
-  // output->assign(sub);
 
   STORE_RESULT(output);
 

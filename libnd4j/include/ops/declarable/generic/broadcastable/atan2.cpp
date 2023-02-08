@@ -36,14 +36,8 @@ BROADCASTABLE_OP_IMPL(tf_atan2, 0, 0) {
 
   BROADCAST_CHECK_EMPTY(x, y, z);
 
-  // auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Atan2<T>>(y, x, z);
   x->applyTrueBroadcast(sd::BroadcastOpsTuple::custom(scalar::Atan2, pairwise::Atan2, broadcast::Atan2), *y, *z, true);
 
-  // if (tZ == nullptr)
-  //     return sd::Status::KERNEL_FAILURE;
-  // else if (tZ != z) {
-  //     OVERWRITE_RESULT(tZ);
-  // }
 
   return sd::Status::OK;
 }
