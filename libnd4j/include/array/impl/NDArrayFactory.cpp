@@ -644,8 +644,6 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<sd::LongTyp
 template <typename T>
 NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializer_list<sd::LongType>& shape,
                                sd::LaunchContext* context) {
-  sd_printf("In arrLength usage at  NDArrayFactory::create(T* buffer, const char order, const std::initializer_list<sd::LongType>& shape,\n"
-            "                               sd::LaunchContext* context\n",0);
   if ((int)shape.size() > SD_MAX_RANK)
     throw std::invalid_argument("NDArrayFactory::create: Rank of NDArray can't exceed 32");
 
