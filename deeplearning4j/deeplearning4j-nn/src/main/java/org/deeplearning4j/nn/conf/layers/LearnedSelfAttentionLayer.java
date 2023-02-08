@@ -49,6 +49,8 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
     private boolean projectInput;
     private int nQueries;
 
+    private boolean scaled;
+
     private static final String WEIGHT_KEY_QUERY_PROJECTION = "Wq";
     private static final String WEIGHT_KEY_KEY_PROJECTION = "Wk";
     private static final String WEIGHT_KEY_VALUE_PROJECTION = "Wv";
@@ -65,6 +67,7 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
         headSize = builder.headSize == 0 ? nOut / nHeads : builder.headSize;
         projectInput = builder.projectInput;
         nQueries = builder.nQueries;
+        scaled = builder.scaled;
     }
 
     @Override
@@ -106,7 +109,7 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
 
         params.addWeightParam(WEIGHT_QUERIES, 1, nIn, nQueries);
 
-        if(projectInput){
+        if(projectInput) {
             params.addWeightParam(WEIGHT_KEY_QUERY_PROJECTION, nHeads, headSize, nIn);
             params.addWeightParam(WEIGHT_KEY_KEY_PROJECTION,   nHeads, headSize, nIn);
             params.addWeightParam(WEIGHT_KEY_VALUE_PROJECTION, nHeads, headSize, nIn);
@@ -120,9 +123,9 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
             for (Map.Entry<String, INDArray> e : params.entrySet()) {
                 if(e.getKey().equals(WEIGHT_KEY_OUT_PROJECTION)){
                     WeightInitUtil.initWeights(nIn, headSize, e.getValue().shape(), weightInit, null, 'c', e.getValue());
-                }else if(e.getKey().equals(WEIGHT_QUERIES)){
+                }else if(e.getKey().equals(WEIGHT_QUERIES)) {
                     WeightInitUtil.initWeights(nIn, nQueries, e.getValue().shape(), weightInit, null, 'c', e.getValue());
-                }else{
+                }else {
                     WeightInitUtil.initWeights(nHeads * headSize, nOut, e.getValue().shape(), weightInit, null, 'c', e.getValue());
                 }
             }
@@ -144,9 +147,9 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
             val Wv = paramTable.get(WEIGHT_KEY_VALUE_PROJECTION);
             val Wo = paramTable.get(WEIGHT_KEY_OUT_PROJECTION);
 
-            return sameDiff.nn.multiHeadDotProductAttention(getLayerName(), queries, layerInput, layerInput, Wq, Wk, Wv, Wo, mask, true);
+            return sameDiff.nn.multiHeadDotProductAttention(getLayerName(), queries, layerInput, layerInput, Wq, Wk, Wv, Wo, mask, scaled);
         }else{
-            return sameDiff.nn.dotProductAttention(getLayerName(), queries, layerInput, layerInput, mask, true);
+            return sameDiff.nn.dotProductAttention(getLayerName(), queries, layerInput, layerInput, mask, scaled);
         }
     }
 
@@ -191,6 +194,24 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
          */
         private int nQueries;
 
+
+        /**
+         * Whether to scale output or not
+         */
+        private boolean scaled;
+
+
+
+        /**
+         * @param scaled Whether to scale the input or not.
+         *               Defaults to true.
+         */
+        public Builder scale(boolean scaled) {
+            this.scaled = scaled;
+            return this;
+        }
+
+
         /**
          * @param nIn Number of inputs to the layer (input size)
          */
@@ -218,7 +239,7 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
         /**
          * Size of attention heads
          */
-        public Builder headSize(int headSize){
+        public Builder headSize(int headSize) {
             this.headSize = headSize;
             return this;
         }
@@ -226,7 +247,7 @@ public class LearnedSelfAttentionLayer extends SameDiffLayer {
         /**
          * Project input before applying attention or not.
          */
-        public Builder projectInput(boolean projectInput){
+        public Builder projectInput(boolean projectInput) {
             this.projectInput = projectInput;
             return this;
         }

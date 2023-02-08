@@ -28,12 +28,34 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 
 import java.util.Map;
 
+/**
+ * Docs from https://keras.io/api/layers/attention_layers/attention/
+ * @author Adam Gibson
+ */
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class KerasAttentionLayer extends KerasLayer {
 
-    protected int numTrainableParams;
+    private final int NUM_TRAINABLE_PARAMS = 2;
+    private boolean useScale;
+    private double dropOut;
+    private String scoreMode;
+    /**
+     * Float between 0 and 1. Fraction of the units to drop for the attention scores. Defaults to 0.0.
+     */
+    private final String LAYER_DROP_OUT = "dropout";
+    /**
+     * Function to use to compute attention scores, one of {"dot", "concat"}. "dot" refers to
+     * the dot product between the query and key vectors.\
+     * "concat" refers to the hyperbolic tangent of the concatenation of the query and key vectors.
+     */
+    private final String LAYER_SCORE_MODE = "score_mode";
+    private final String LAYER_SCORE_MODE_DOT = "dot";
+    private final String LAYER_SCORE_MODE_CONCAT = "concat";
+
+
+    private final String LAYER_USE_SCALE = "use_scale";
 
 
     public KerasAttentionLayer(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
@@ -49,7 +71,6 @@ public class KerasAttentionLayer extends KerasLayer {
 
     public KerasAttentionLayer(Map<String, Object> layerConfig, boolean enforceTrainingConfig) throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        numTrainableParams = 2;
 
 
     }
