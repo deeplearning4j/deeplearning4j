@@ -416,6 +416,9 @@ class SD_LIB_EXPORT NDArray {
    */
   NDArray &operator=(const NDArray &other);
 
+
+
+
   /**
    *  move assignment operator
    */
