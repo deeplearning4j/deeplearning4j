@@ -1723,7 +1723,7 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
       throw std::runtime_error("Input shape was null!");
     }
 
-    if(shape_ != nullptr && shape_[0] > SD_MAX_RANK || shape_[0] < 0) {
+    if((shape_ != nullptr && shape_[0] > SD_MAX_RANK) || shape_[0] < 0) {
       throw std::runtime_error("Input shape rank is invalid. Either > 32 or < 0. Likely corrupt. Please check your input shapes.");
     }
 
