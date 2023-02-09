@@ -27,6 +27,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/reverse.h>
+#include <helpers/AttentionHelper.h>
 
 namespace sd {
 namespace ops {
@@ -35,76 +36,33 @@ CUSTOM_OP_IMPL(dot_product_attention, 3, -1, false, 0, 2) {
   auto queries = INPUT_VARIABLE(0);
   auto keys = INPUT_VARIABLE(1);
   auto values = INPUT_VARIABLE(2);
-  auto mask = block.width() > 3 ? INPUT_VARIABLE(3) : nullptr;
+  auto qMask = block.width() > 3 ? INPUT_VARIABLE(3) : nullptr;
+  auto vMask = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
 
-  auto output = OUTPUT_VARIABLE(0);
-  NDArray *weights;
-  bool outputWeights = INT_ARG(1);
-  if (outputWeights) {
-    weights = OUTPUT_VARIABLE(1);
-  } else {
-    auto weightShape = ShapeUtils::evalShapeForMatmul(keys->shapeInfo(), queries->shapeInfo(), true, false);
-    weights = new NDArray('c', weightShape, values->dataType(), block.launchContext());
-  }
+  auto dropout = block.numT() > 0 ? T_ARG(0) : 0.0;
+  auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
+  auto returnAttentionScores = block.numB() > 1 ? B_ARG(1) : false;
 
-  int normalization = INT_ARG(0);
+  int attentionType = block.numI() > 0 ? I_ARG(0) : ATTENTION_TYPE_DOT_PRODUCT;
 
-  REQUIRE_TRUE(queries->rankOf() == keys->rankOf() && keys->rankOf() == values->rankOf(), 0,
-               "dot_product_attention: Queries, Keys and Values must have same rank. "
-               "But got queries = %s, keys = %s, values = %s",
-               ShapeUtils::shapeAsString(queries).c_str(), ShapeUtils::shapeAsString(keys).c_str(),
-               ShapeUtils::shapeAsString(values).c_str());
+  std::vector<sd::NDArray*> inputs = {queries,keys,values};
+  std::vector<sd::NDArray *> masks2 = {qMask,vMask};
 
-  REQUIRE_TRUE(queries->rankOf() == 3 || queries->rankOf() == 4, 0,
-               "dot_product_attention: Queries, Keys and Values must be rank 3 arrays for single headed attention "
-               "or rank 4 arrays for multi headed attention. But got rank = %i",
-               queries->rankOf());
+  auto output2 = AttentionHelper::doAttention(inputs,
+                               masks2,
+                               false,
+                               returnAttentionScores,
+                               useCausalMask,
+                               dropout,
+                               ATTENTION_SCORE_MODE_DOT,
+                               attentionType,
+                               true);
 
-  REQUIRE_TRUE(queries->sizeAt(0) == keys->sizeAt(0) && keys->sizeAt(0) == values->sizeAt(0), 0,
-               "dot_product_attention: Queries, Keys and Values must have the same mini batch size. "
-               "But got queries = %i, keys = %i, values = %i",
-               queries->sizeAt(0), keys->sizeAt(0), values->sizeAt(0));
+  auto firstOutput = const_cast<sd::NDArray * const>(output2[0][0]);
+  OUTPUT_VARIABLE(0)->assign(firstOutput);
 
-  REQUIRE_TRUE(queries->sizeAt(-2) == keys->sizeAt(-2), 0,
-               "dot_product_attention: Queries and Keys must have the same feature size. "
-               "But got queries = %i, keys = %i",
-               queries->sizeAt(-2), keys->sizeAt(-2));
-
-  REQUIRE_TRUE(keys->sizeAt(-1) == values->sizeAt(-1), 0,
-               "dot_product_attention: Keys and Values must have the same timestep length. "
-               "But got keys = %i, values = %i",
-               keys->sizeAt(-1), values->sizeAt(-1));
-
-  sd::ops::matmul mmul;
-  mmul.execute({keys, queries}, {weights}, {}, {1}, {});
-  if (normalization) {
-    *weights /= sqrt((double)keys->sizeAt(-2));
-  }
-
-  if (mask != nullptr) {
-    NDArray reshapedMask;
-    if (weights->rankOf() == 4) {
-      reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), 1, mask->sizeAt(1), 1});
-    } else {
-      reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(1), 1});
-    }
-
-    // the mask is 0 for positions we want to skip, and 1 for positions we want to keep. By subtracting 1 from
-    // it we get -1 for those we want to skip and 0 for those we want to keep. Multiplying it by 1e9 then
-    // turns all of those we want to skip into very large negative values. By adding this to the weights
-    // before going through the softmax, we effectively push all masked positions to zero after softmax.
-    //
-    // we are using 1e9 to mean effectively infinity
-    *weights += (reshapedMask - 1) * 1e9;
-  }
-
-  sd::ops::softmax softmax;
-  softmax.execute({weights}, std::vector<NDArray *>{weights}, {}, {-2}, {}, {}, true);
-
-  mmul.execute({values, weights}, {output}, {}, {}, {});
-
-  if (!outputWeights) {
-    delete weights;
+  if(returnAttentionScores) {
+    OUTPUT_VARIABLE(1)->assign(output2[0][1]);
   }
 
   return sd::Status::OK;
@@ -127,7 +85,8 @@ DECLARE_SHAPE_FN(dot_product_attention) {
       sd::ArrayOptions::dataType(values_shape), 'c',
       ShapeUtils::evalShapeForMatmul(values_shape, weights_shape, false, false));
 
-  if (INT_ARG(1)) {
+  auto returnAttentionScores = block.numB() > 1 ? B_ARG(1) : false;
+  if (returnAttentionScores) {
     return SHAPELIST(output_shape, weights_shape);
   } else {
     return SHAPELIST(output_shape);

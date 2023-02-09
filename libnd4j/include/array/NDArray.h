@@ -523,6 +523,12 @@ class SD_LIB_EXPORT NDArray {
   template <typename T>
   const T *bufferAsT() const;
 
+  template <typename T>
+  std::vector<T> *vectorasT();
+
+  template <typename T>
+  const std::vector<T> *vectorasT() const;
+
 
   template <typename T>
   T *  bufferasTWithOffset(sd::LongType offset);

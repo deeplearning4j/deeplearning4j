@@ -17,6 +17,22 @@
             }
         },
         {
+            "name": "base_cpu_tests",
+            "displayName": "Configure preset for the base with tests",
+            "description": "Sets generator, build and install directory",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/blasbuild/cpu",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+                "SD_LIBRARY_NAME": "nd4jcpu",
+                "SD_CPU": true,
+                "SD_BUILD_TESTS": "ON",
+                "SD_ALL_OPS": true,
+                "OPENBLAS_PATH": "$env{HOME}/.javacpp/cache/openblas-0.3.19-1.5.7-linux-x86_64.jar/org/bytedeco/openblas/linux-x86_64"
+            }
+        },
+        {
             "name": "base_cuda",
             "displayName": "Configure preset for the base Cuda",
             "description": "Sets generator, build and install directory",
@@ -31,8 +47,29 @@
                 "SD_CUDA": true,
                 "BLAS":true,
                 "COMPUTE": "auto",
+                "SD_BUILD_TESTS": "ON",
                 "CUDA_TOOLKIT_ROOT_DIR": "/usr/local/cuda-11.6",
                 "CMAKE_CUDA_COMPILER": "/usr/local/cuda-11.6/bin/nvcc"
+            }
+
+        },
+        {
+            "name": "base_cuda_tests",
+            "displayName": "Configure preset for the base Cuda",
+            "description": "Sets generator, build and install directory",
+            "hidden": true,
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/blasbuild/cuda",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+                "SD_LIBRARY_NAME": "nd4jcuda",
+                "SD_ALL_OPS": true,
+                "SD_CUDA": true,
+                "BLAS":true,
+                "COMPUTE": "auto",
+                "CUDA_TOOLKIT_ROOT_DIR": "/usr/local/cuda-11.8",
+                "CMAKE_CUDA_COMPILER": "/usr/local/cuda-11.8/bin/nvcc"
             }
 
         },
@@ -121,6 +158,13 @@
             "displayName": "",
             "configurePreset": "cuda_cudnn_debug",
             "jobs": 64
+        },
+        {
+            "name": "cpu_debug_test",
+            "description": "",
+            "displayName": "",
+            "configurePreset": "cuda_cudnn_debug",
+            "jobs": 64
         }
     ],
     "testPresets": [
@@ -135,6 +179,12 @@
             "description": "",
             "displayName": "",
             "configurePreset": "cuda_cudnn_debug"
+        },
+        {
+            "name": "cpu_debug_test",
+            "description": "",
+            "displayName": "",
+            "configurePreset": "base_cpu_tests"
         }
     ]
 }
