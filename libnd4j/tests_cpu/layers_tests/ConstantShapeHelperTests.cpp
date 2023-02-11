@@ -76,16 +76,16 @@ TEST_F(ConstantTadHelperTests, test_cachedAmount_1) {
 
 TEST_F(ConstantShapeHelperTests, basic_test_1) {
   auto ptr = ShapeBuilders::createShapeInfo(sd::DataType::BFLOAT16, 'f', {5, 10, 15});
-  ShapeDescriptor descriptor(ptr);
-  ShapeDescriptor descriptor2(ptr);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(ptr);
+  ShapeDescriptor *descriptor2 = new ShapeDescriptor(ptr);
 
   ASSERT_EQ(descriptor, descriptor2);
 
-  ASSERT_EQ(1, descriptor.ews());
-  ASSERT_EQ(3, descriptor.rank());
-  ASSERT_EQ('f', descriptor.order());
-  ASSERT_EQ(sd::DataType::BFLOAT16, descriptor.dataType());
-  ASSERT_FALSE(descriptor.isEmpty());
+  ASSERT_EQ(1, descriptor->ews());
+  ASSERT_EQ(3, descriptor->rank());
+  ASSERT_EQ('f', descriptor->order());
+  ASSERT_EQ(sd::DataType::BFLOAT16, descriptor->dataType());
+  ASSERT_FALSE(descriptor->isEmpty());
 
   ASSERT_FALSE(ConstantShapeHelper::getInstance().checkBufferExistenceForShapeInfo(descriptor));
 
@@ -95,22 +95,24 @@ TEST_F(ConstantShapeHelperTests, basic_test_1) {
 
   auto buffer2 = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor2);
 
-  ASSERT_TRUE(buffer.primary() != nullptr);
-  ASSERT_TRUE(buffer.primary() == buffer2.primary());
-  ASSERT_TRUE(buffer.special() == buffer2.special());
+  ASSERT_TRUE(buffer->primary() != nullptr);
+  ASSERT_TRUE(buffer->primary() == buffer2->primary());
+  ASSERT_TRUE(buffer->special() == buffer2->special());
 
+  delete descriptor;
+  delete descriptor2;
   delete[] ptr;
 }
 
 TEST_F(ConstantShapeHelperTests, stress_test_1) {
   for (auto x = 0; x < 1000; x++) {
     auto ptr = ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', {5, x + 10, x + 1});
-    ShapeDescriptor descriptor(ptr);
+    ShapeDescriptor *descriptor = new ShapeDescriptor(ptr);
     ConstantShapeHelper::getInstance().createShapeInfo(descriptor);
     delete[] ptr;
+    delete descriptor;
   }
-  ShapeDescriptor aShape(sd::DataType::FLOAT32, 'c', {(sd::LongType)5, (sd::LongType)382, (sd::LongType)373});
-  //    sd_printf("%d\n", ConstantShapeHelper::getInstance().cachedEntriesForDevice(0));
+  ShapeDescriptor *aShape = new ShapeDescriptor(sd::DataType::FLOAT32, 'c', {(sd::LongType)5, (sd::LongType)382, (sd::LongType)373});
 
   auto timeStart = std::chrono::system_clock::now();
   ASSERT_TRUE(ConstantShapeHelper::getInstance().checkBufferExistenceForShapeInfo(aShape));
@@ -118,6 +120,7 @@ TEST_F(ConstantShapeHelperTests, stress_test_1) {
 
   auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
   sd_printf("Total time (us) %lld\n", outerTime);
+  delete aShape;
 }
 
 TEST_F(ConstantShapeHelperTests, basic_test_3) {
@@ -299,41 +302,48 @@ TEST_F(ConstantShapeHelperTests, ShapeDescriptor_paddedBuffer) {
   for (auto& order : orders) {
     auto shapeDesc1 =
         ShapeDescriptor::paddedBufferDescriptor(DataType::FLOAT32, order, {n, c, h, w}, {n_pad, c_pad, h_pad, w_pad});
-    auto shapeDesc2 = ShapeDescriptor(DataType::FLOAT32, order, {n + n_pad, c + c_pad, h + h_pad, w + w_pad});
+    auto shapeDesc2 = new ShapeDescriptor(DataType::FLOAT32, order, {n + n_pad, c + c_pad, h + h_pad, w + w_pad});
     auto shapeDesc3 = ShapeDescriptor::paddedBufferDescriptor(DataType::FLOAT32, order, {n, c, h, w}, {n_pad, c_pad});
-    auto shapeDesc4 = ShapeDescriptor(DataType::FLOAT32, order, {n + n_pad, c + c_pad, h, w});
+    auto shapeDesc4 = new ShapeDescriptor(DataType::FLOAT32, order, {n + n_pad, c + c_pad, h, w});
     auto shapeDesc5 =
         ShapeDescriptor::paddedBufferDescriptor(DataType::FLOAT32, order, {n, c, h, w}, {0, 0, h_pad, w_pad});
-    auto shapeDesc6 = ShapeDescriptor(DataType::FLOAT32, order, {n, c, h + h_pad, w + w_pad});
+    auto shapeDesc6 = new ShapeDescriptor(DataType::FLOAT32, order, {n, c, h + h_pad, w + w_pad});
 
-    ASSERT_TRUE(shapeDesc1.validate() == SHAPE_DESC_OK);
-    ASSERT_TRUE(shapeDesc2.validate() == SHAPE_DESC_OK);
-    ASSERT_TRUE(shapeDesc3.validate() == SHAPE_DESC_OK);
-    ASSERT_TRUE(shapeDesc4.validate() == SHAPE_DESC_OK);
-    ASSERT_TRUE(shapeDesc5.validate() == SHAPE_DESC_OK);
-    ASSERT_TRUE(shapeDesc6.validate() == SHAPE_DESC_OK);
+    ASSERT_TRUE(shapeDesc1->validate() == SHAPE_DESC_OK);
+    ASSERT_TRUE(shapeDesc2->validate() == SHAPE_DESC_OK);
+    ASSERT_TRUE(shapeDesc3->validate() == SHAPE_DESC_OK);
+    ASSERT_TRUE(shapeDesc4->validate() == SHAPE_DESC_OK);
+    ASSERT_TRUE(shapeDesc5->validate() == SHAPE_DESC_OK);
+    ASSERT_TRUE(shapeDesc6->validate() == SHAPE_DESC_OK);
 
-    ASSERT_EQ(shapeDesc1.allocLength(), shapeDesc2.allocLength());
-    ASSERT_EQ(shapeDesc3.allocLength(), shapeDesc4.allocLength());
-    ASSERT_EQ(shapeDesc5.allocLength(), shapeDesc6.allocLength());
+    ASSERT_EQ(shapeDesc1->allocLength(), shapeDesc2->allocLength());
+    ASSERT_EQ(shapeDesc3->allocLength(), shapeDesc4->allocLength());
+    ASSERT_EQ(shapeDesc5->allocLength(), shapeDesc6->allocLength());
 
-    const auto& v1 = shapeDesc1.stridesPtr();
-    const auto& v2 = shapeDesc2.stridesPtr();
-    const auto& v3 = shapeDesc3.stridesPtr();
-    const auto& v4 = shapeDesc4.stridesPtr();
-    const auto& v5 = shapeDesc5.stridesPtr();
-    const auto& v6 = shapeDesc6.stridesPtr();
+    const auto& v1 = shapeDesc1->stridesPtr();
+    const auto& v2 = shapeDesc2->stridesPtr();
+    const auto& v3 = shapeDesc3->stridesPtr();
+    const auto& v4 = shapeDesc4->stridesPtr();
+    const auto& v5 = shapeDesc5->stridesPtr();
+    const auto& v6 = shapeDesc6->stridesPtr();
 
-    for (int i = 0; i < shapeDesc1.rank(); i++) {
+    for (int i = 0; i < shapeDesc1->rank(); i++) {
 
       ASSERT_EQ(v1[i], v2[i]);
 
     }
-    for (int i = 0; i < shapeDesc3.rank(); i++) {
+    for (int i = 0; i < shapeDesc3->rank(); i++) {
       ASSERT_EQ(v3[i], v4[i]);
     }
-    for (int i = 0; i < shapeDesc5.rank(); i++) {
+    for (int i = 0; i < shapeDesc5->rank(); i++) {
       ASSERT_EQ(v5[i], v6[i]);
     }
+
+    delete shapeDesc1;
+    delete shapeDesc2;
+    delete shapeDesc3;
+    delete shapeDesc4;
+    delete shapeDesc5;
+    delete shapeDesc6;
   }
 }

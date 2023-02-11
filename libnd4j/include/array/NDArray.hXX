@@ -2207,37 +2207,8 @@ BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT, *NDArray::bufferAsT(), S
 
 //////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
-template <typename T>
-const std::vector<T> *NDArray::vectorasT() const {
-  syncToHost();
-  auto buff = bufferAsT<T>();
-  std::vector<T> ret = new std::vector<T>(lengthOf());
-  for(int i = 0; i < lengthOf(); i++) {
-    ret.at(i) = buff[i];
-  }
-  return ret;
-}
 
 
-
-BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT const, *NDArray::vectorasT() const, SD_COMMON_TYPES);
-
-template <typename T>
-std::vector<T> *NDArray::vectorasT() {
-  if(buffer() == nullptr)
-    return nullptr;
-  auto buff = bufferAsT<T>();
-  std::vector<T> ret = new std::vector<T>(lengthOf());
-  for(int i = 0; i < lengthOf(); i++) {
-    ret.at(i) = buff[i];
-  }
-
-  return ret;
-}
-
-
-
-BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT, *NDArray::vectorasT(), SD_COMMON_TYPES);
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -5048,8 +5019,13 @@ ResultSet NDArray::allExamples() const {
 ////////////////////////////////////////////////////////////////////////
 sd::LongType NDArray::getOffset(const sd::LongType i) const {
   if (i >= lengthOf()) {
-    sd_debug("NDArray::getOffset: input index %d array length %d\n", i, lengthOf());
-    throw std::invalid_argument("NDArray::getOffset: input index %d is out of array length %d!");
+    std::string errorMessage;
+    errorMessage += "NDArray::getOffset: input index ";
+    errorMessage += std::to_string(i);
+    errorMessage += " array length: ";
+    errorMessage += std::to_string(lengthOf());
+    sd_debug(errorMessage.c_str(),0);
+    throw std::invalid_argument(errorMessage.c_str());
   }
 
   return shape::getIndexOffset(i, _shapeInfo);

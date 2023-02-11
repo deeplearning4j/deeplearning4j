@@ -225,7 +225,9 @@ def dropped_weights():
    * @param scale
    * @return
    */
-  static NDArray *doDotProductAttention(sd::NDArray *query,sd::NDArray *key,int scoreMode = ATTENTION_SCORE_MODE_DOT,bool scale = true,
+  static NDArray *doDotProductAttention(sd::NDArray *query,sd::NDArray *key,
+                                        int scoreMode = ATTENTION_SCORE_MODE_DOT,
+                                        double scale = true,
                                         sd::NDArray *concatWeights = nullptr);
 
   /**
@@ -237,7 +239,7 @@ def dropped_weights():
    * @param concatWeights
    * @return
    */
-  static NDArray *doDotProductAttentionBp(sd::NDArray *query, sd::NDArray *key, sd::NDArray *values, bool scale,
+  static NDArray *doDotProductAttentionBp(sd::NDArray *query, sd::NDArray *key, sd::NDArray *values, double scale,
                                           sd::NDArray *concatWeights, int scoreMode, sd::NDArray *dLdq,
                                           sd::NDArray *dLdk, sd::NDArray *dLdv, sd::NDArray *eps,
                                           LaunchContext *launchContext);
@@ -309,8 +311,7 @@ return result
                                               bool useCausalMask = false,
                                               double dropout = 0.0,
                                               int attentionType = ATTENTION_TYPE_DOT_PRODUCT,
-                                              int dotProductType = ATTENTION_SCORE_MODE_DOT,
-                                              bool scale = true);
+                                              int dotProductType = ATTENTION_SCORE_MODE_DOT, double scale = true);
 
 
 

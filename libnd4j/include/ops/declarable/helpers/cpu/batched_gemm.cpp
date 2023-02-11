@@ -64,6 +64,8 @@ static void bgemm_(const std::vector<NDArray *> &vA, const std::vector<NDArray *
     std::vector<T *> buffersB(batchSize);
     std::vector<T *> buffersC(batchSize);
 
+
+
     for (int e = 0; e < batchSize; e++) {
       buffersA[e] = reinterpret_cast<T *>(vA[e]->buffer());
       buffersB[e] = reinterpret_cast<T *>(vB[e]->buffer());
@@ -81,6 +83,8 @@ static void bgemm_(const std::vector<NDArray *> &vA, const std::vector<NDArray *
           (float **)buffersB.data(), tldB, (float *)betas->buffer(), (float **)buffersC.data(), tldC, vA.size(), tsize);
     }
 
+
+
     // release temporary arrays
     RELEASE(tA, arr->getContext()->getWorkspace());
     RELEASE(tB, arr->getContext()->getWorkspace());
@@ -92,6 +96,9 @@ static void bgemm_(const std::vector<NDArray *> &vA, const std::vector<NDArray *
     RELEASE(tldC, arr->getContext()->getWorkspace());
     RELEASE(tsize, arr->getContext()->getWorkspace());
   } else {
+
+
+
     CBLAS_TRANSPOSE tA = (CBLAS_TRANSPOSE)transA;
     CBLAS_TRANSPOSE tB = (CBLAS_TRANSPOSE)transB;
     int vaSize = vA.size();
@@ -102,14 +109,11 @@ static void bgemm_(const std::vector<NDArray *> &vA, const std::vector<NDArray *
         auto C = reinterpret_cast<T *>(vC.at(p)->buffer());
         auto alpha = alphas->e<T>(p);
         auto beta = betas->e<T>(p);
-
         for (int m = 0; m < M; ++m) {
           for (int n = 0; n < N; ++n) {
             T c_mnp = 0;
             PRAGMA_OMP_SIMD
             for (int k = 0; k < K; ++k) {
-              int aidx = tA == CblasNoTrans ? (m + k * lda) : (m * lda + k);
-              int bIdx = tB == CblasNoTrans ? (k + n * ldb) : (k * ldb + n);
               c_mnp += A[tA == CblasNoTrans ? (m + k * lda) : (m * lda + k)] *
                        B[tB == CblasNoTrans ? (k + n * ldb) : (k * ldb + n)];
             }

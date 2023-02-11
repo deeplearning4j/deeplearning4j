@@ -32,32 +32,44 @@
 namespace sd {
 namespace ops {
 
-CUSTOM_OP_IMPL(dot_product_attention, 3, -1, false, 0, 2) {
+CUSTOM_OP_IMPL(dot_product_attention, -2, -1, false, 0, -2) {
   auto queries = INPUT_VARIABLE(0);
-  auto keys = INPUT_VARIABLE(1);
-  auto values = INPUT_VARIABLE(2);
+  auto values = INPUT_VARIABLE(1);
+  auto keys = block.width() > 2  ? INPUT_VARIABLE(2) : values;
   auto qMask = block.width() > 3 ? INPUT_VARIABLE(3) : nullptr;
   auto vMask = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
 
   auto dropout = block.numT() > 0 ? T_ARG(0) : 0.0;
+
   auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
   auto returnAttentionScores = block.numB() > 1 ? B_ARG(1) : false;
+  //permute the inputs before processing. This is to allow the old shapes of batch size x dim x Tv
+  auto permuteInputs = block.numB() > 2 ? B_ARG(2) : false;
+
 
   int attentionType = block.numI() > 0 ? I_ARG(0) : ATTENTION_TYPE_DOT_PRODUCT;
 
-  std::vector<sd::NDArray*> inputs = {queries,keys,values};
-  std::vector<sd::NDArray *> masks2 = {qMask,vMask};
+  auto inputKeys = permuteInputs ? new NDArray(keys->permute({0,2,1})) : keys;
+  auto inputQueries = permuteInputs ? new NDArray(queries->permute({0,2,1})) : queries;
 
+  auto qMaskInput = permuteInputs  && qMask != nullptr ? new NDArray(qMask->permute({0,2,1})) : qMask;
+  auto vMaskInput = permuteInputs  && vMask != nullptr ? new NDArray(vMask->permute({0,2,1})) : vMask;
+
+  std::vector<sd::NDArray*> inputs = {inputQueries,inputKeys,values};
+  std::vector<sd::NDArray *> masks2 = {qMaskInput,vMaskInput};
+
+  sd_printf("About to execute attention\n",0);
   auto output2 = AttentionHelper::doAttention(inputs,
-                               masks2,
-                               false,
-                               returnAttentionScores,
-                               useCausalMask,
-                               dropout,
-                               ATTENTION_SCORE_MODE_DOT,
-                               attentionType,
-                               true);
+                                              masks2,
+                                              false,
+                                              returnAttentionScores,
+                                              useCausalMask,
+                                              dropout,
+                                              ATTENTION_SCORE_MODE_DOT,
+                                              attentionType,
+                                              true);
 
+  sd_printf("Attention performed\n",0);
   auto firstOutput = const_cast<sd::NDArray * const>(output2[0][0]);
   OUTPUT_VARIABLE(0)->assign(firstOutput);
 
@@ -74,22 +86,60 @@ DECLARE_TYPES(dot_product_attention) {
 }
 
 DECLARE_SHAPE_FN(dot_product_attention) {
+  auto firstInputType = INPUT_VARIABLE(0)->dataType();
   auto query_shape = inputShape->at(0);
-  auto keys_shape = inputShape->at(1);
-  auto values_shape = inputShape->at(2);
+  REQUIRE_TRUE(query_shape[0] == 3,0,"Query input must be rank 3.");
+  auto values_shape = inputShape->at(1);
+  REQUIRE_TRUE(values_shape[0] == 3,0,"Values input must be rank 3.");
+  auto keys_shape = block.inputs()->size() > 2 ? inputShape->at(2) : values_shape;
+  REQUIRE_TRUE(keys_shape[0] == 3,0,"Key input must be rank 3.");
 
-  auto weights_shape = ConstantShapeHelper::getInstance().createShapeInfo(
-      sd::ArrayOptions::dataType(values_shape), 'c',
-      ShapeUtils::evalShapeForMatmul(keys_shape, query_shape, true, false));
-  auto output_shape = ConstantShapeHelper::getInstance().createShapeInfo(
-      sd::ArrayOptions::dataType(values_shape), 'c',
-      ShapeUtils::evalShapeForMatmul(values_shape, weights_shape, false, false));
 
+
+  int attentionType = block.numI() > 0 ? I_ARG(0) : ATTENTION_TYPE_DOT_PRODUCT;
+
+  auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
   auto returnAttentionScores = block.numB() > 1 ? B_ARG(1) : false;
-  if (returnAttentionScores) {
-    return SHAPELIST(output_shape, weights_shape);
-  } else {
-    return SHAPELIST(output_shape);
+
+  if(attentionType == ATTENTION_SCORE_MODE_DOT) {
+    //inputs: batchSize,Tq,dim batchSize,Tq,Tv
+    //outputs: batchSize,Tq,Tv
+    auto qShape = shape::shapeOf(query_shape);
+    auto keyShape = shape::shapeOf(keys_shape);
+    auto valueShape = shape::shapeOf(values_shape);
+    ShapeDescriptor *descriptor = new ShapeDescriptor(firstInputType,'c',{qShape[0],valueShape[1],valueShape[2]});
+    auto constOutputScores = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+    if(returnAttentionScores) {
+      ShapeDescriptor *scoresShape = new ShapeDescriptor(firstInputType,'c',{qShape[0],values_shape[1],valueShape[2]});
+      auto attentionScoresShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
+      delete descriptor;
+      delete scoresShape;
+      return SHAPELIST(constOutputScores,attentionScoresShape);
+    }
+
+    delete descriptor;
+    return SHAPELIST(constOutputScores);
+
+
+  } else if(attentionType == ATTENTION_SCORE_MODE_CONCAT) {
+    //inputs: batchSize,Tq,dim batchSize,Tq,Tv
+    //outputs: batchSize,Tq,Tv
+    auto qShape = shape::shapeOf(query_shape);
+    auto keyShape = shape::shapeOf(keys_shape);
+    auto valueShape = shape::shapeOf(values_shape);
+    ShapeDescriptor *descriptor = new ShapeDescriptor(firstInputType,'c',{qShape[0],valueShape[1],valueShape[2]});
+    auto constOutputScores = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+    if(returnAttentionScores) {
+      ShapeDescriptor *scoresShape = new ShapeDescriptor(firstInputType,'c',{qShape[0],values_shape[1],valueShape[2]});
+      auto attentionScoresShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
+      delete descriptor;
+      delete scoresShape;
+      return SHAPELIST(constOutputScores,attentionScoresShape);
+    }
+
+    delete descriptor;
+    return SHAPELIST(constOutputScores);
+
   }
 }
 

@@ -83,7 +83,24 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
 
 
   auto alpha = INPUT_VARIABLE(0);
+  NDArray *alphaInput = nullptr;
+  if(alpha->lengthOf() != batchSize) {
+    alphaInput = new NDArray('c',{batchSize},alpha->dataType());
+    alphaInput->assign(alpha);
+  } else {
+    alphaInput = alpha;
+  }
+
+
   auto beta = INPUT_VARIABLE(1);
+  NDArray *betaInput = nullptr;
+  if(beta->lengthOf() != batchSize) {
+    betaInput = new NDArray('c',{batchSize},beta->dataType());
+    betaInput->assign(beta);
+  } else {
+    betaInput = beta;
+  }
+
   std::vector<NDArray*> vA(batchSize);
   std::vector<NDArray*> vB(batchSize);
   std::vector<NDArray*> vC(batchSize);
@@ -109,9 +126,16 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
   REQUIRE_TRUE(vA.size() == vB.size() && vA.size() == vC.size() && vA.size() == batchSize, 0,
                "BatchedGemm: mismatched numbers of A, B, C for unknown reason");
 
-  sd::ops::helpers::bgemm(vA, vB, vC, alpha, beta, transA, transB, M, N, K, ldA, ldB, ldC);
+  sd::ops::helpers::bgemm(vA, vB, vC, alphaInput, betaInput, transA, transB, M, N, K, ldA, ldB, ldC);
 
 
+  if(alphaInput != alpha) {
+    delete alphaInput;
+  }
+
+  if(betaInput != beta) {
+    delete betaInput;
+  }
 
 
   return sd::Status::OK;
