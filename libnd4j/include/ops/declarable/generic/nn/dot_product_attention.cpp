@@ -36,6 +36,12 @@ CUSTOM_OP_IMPL(dot_product_attention, -2, -1, false, 0, -2) {
   auto queries = INPUT_VARIABLE(0);
   auto values = INPUT_VARIABLE(1);
   auto keys = block.width() > 2  ? INPUT_VARIABLE(2) : values;
+
+
+  REQUIRE_TRUE(queries->rankOf() == 3,0,"Input rank of queries must be 3.");
+  REQUIRE_TRUE(values->rankOf() == 3,0,"Input rank of values must be 3.");
+  REQUIRE_TRUE(values->rankOf() == 3,0,"Input rank of keys must be 3.");
+
   auto qMask = block.width() > 3 ? INPUT_VARIABLE(3) : nullptr;
   auto vMask = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
 
@@ -52,13 +58,13 @@ CUSTOM_OP_IMPL(dot_product_attention, -2, -1, false, 0, -2) {
   auto inputKeys = permuteInputs ? new NDArray(keys->permute({0,2,1})) : keys;
   auto inputQueries = permuteInputs ? new NDArray(queries->permute({0,2,1})) : queries;
 
+
   auto qMaskInput = permuteInputs  && qMask != nullptr ? new NDArray(qMask->permute({0,2,1})) : qMask;
   auto vMaskInput = permuteInputs  && vMask != nullptr ? new NDArray(vMask->permute({0,2,1})) : vMask;
 
   std::vector<sd::NDArray*> inputs = {inputQueries,inputKeys,values};
   std::vector<sd::NDArray *> masks2 = {qMaskInput,vMaskInput};
 
-  sd_printf("About to execute attention\n",0);
   auto output2 = AttentionHelper::doAttention(inputs,
                                               masks2,
                                               false,
@@ -69,7 +75,6 @@ CUSTOM_OP_IMPL(dot_product_attention, -2, -1, false, 0, -2) {
                                               attentionType,
                                               true);
 
-  sd_printf("Attention performed\n",0);
   auto firstOutput = const_cast<sd::NDArray * const>(output2[0][0]);
   OUTPUT_VARIABLE(0)->assign(firstOutput);
 
@@ -140,6 +145,8 @@ DECLARE_SHAPE_FN(dot_product_attention) {
     delete descriptor;
     return SHAPELIST(constOutputScores);
 
+  } else {
+    throw std::runtime_error("dot_product_attention: Calculate output shape: Invalid attention type.");
   }
 }
 
@@ -147,77 +154,51 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
   auto queries = INPUT_VARIABLE(0);
   auto keys = INPUT_VARIABLE(1);
   auto values = INPUT_VARIABLE(2);
-  auto eps = INPUT_VARIABLE(3);
-  auto mask = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
+  auto qMask = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
+  auto vMask = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
+  auto eps = INPUT_VARIABLE(block.width() - 1);
+
 
   auto dLdq = OUTPUT_VARIABLE(0);
   auto dLdk = OUTPUT_VARIABLE(1);
   auto dLdv = OUTPUT_VARIABLE(2);
 
   int normalization = INT_ARG(0);
+  REQUIRE_TRUE(queries->rankOf() == 3,0,"Input rank of queries must be 3.");
+  REQUIRE_TRUE(values->rankOf() == 3,0,"Input rank of values must be 3.");
+  REQUIRE_TRUE(values->rankOf() == 3,0,"Input rank of keys must be 3.");
 
-  REQUIRE_TRUE(queries->rankOf() == keys->rankOf() && keys->rankOf() == values->rankOf(), 0,
-               "dot_product_attention: Queries, Keys and Values must have same rank. "
-               "But got queries = %s, keys = %s, values = %s",
-               ShapeUtils::shapeAsString(queries).c_str(), ShapeUtils::shapeAsString(keys).c_str(),
-               ShapeUtils::shapeAsString(values).c_str());
+  auto dropout = block.numT() > 0 ? T_ARG(0) : 0.0;
 
-  REQUIRE_TRUE(queries->rankOf() == 3 || queries->rankOf() == 4, 0,
-               "dot_product_attention: Queries, Keys and Values must be rank 3 arrays for single headed attention "
-               "or rank 4 arrays for multi headed attention. But got rank = %i",
-               queries->rankOf());
+  auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
+  auto returnAttentionScores = block.numB() > 1 ? B_ARG(1) : false;
+  //permute the inputs before processing. This is to allow the old shapes of batch size x dim x Tv
+  auto permuteInputs = block.numB() > 2 ? B_ARG(2) : false;
 
-  REQUIRE_TRUE(queries->sizeAt(0) == keys->sizeAt(0) && keys->sizeAt(0) == values->sizeAt(0), 0,
-               "dot_product_attention: Queries, Keys and Values must have the same mini batch size. "
-               "But got queries = %i, keys = %i, values = %i",
-               queries->sizeAt(0), keys->sizeAt(0), values->sizeAt(0));
 
-  REQUIRE_TRUE(queries->sizeAt(-2) == keys->sizeAt(-2), 0,
-               "dot_product_attention: Queries and Keys must have the same feature size. "
-               "But got queries = %i, keys = %i",
-               queries->sizeAt(-2), keys->sizeAt(-2));
+  int attentionType = block.numI() > 0 ? I_ARG(0) : ATTENTION_TYPE_DOT_PRODUCT;
 
-  REQUIRE_TRUE(keys->sizeAt(-1) == values->sizeAt(-1), 0,
-               "dot_product_attention: Keys and Values must have the same timestep length. "
-               "But got keys = %i, values = %i",
-               keys->sizeAt(-1), values->sizeAt(-1));
+  auto inputKeys = permuteInputs ? new NDArray(keys->permute({0,2,1})) : keys;
+  auto inputQueries = permuteInputs ? new NDArray(queries->permute({0,2,1})) : queries;
 
-  double factor;
-  if (normalization) factor = sqrt((double)keys->sizeAt(-2));
+  auto qMaskInput = permuteInputs  && qMask != nullptr ? new NDArray(qMask->permute({0,2,1})) : qMask;
+  auto vMaskInput = permuteInputs  && vMask != nullptr ? new NDArray(vMask->permute({0,2,1})) : vMask;
 
-  auto weightShape = ShapeUtils::evalShapeForMatmul(keys->shapeInfo(), queries->shapeInfo(), true, false);
+  std::vector<sd::NDArray*> inputs = {inputQueries,inputKeys,values,eps};
+  std::vector<sd::NDArray *> masks2 = {qMaskInput,vMaskInput};
+  std::vector<sd::NDArray *> outputs = {dLdq,dLdk,dLdv};
+   AttentionHelper::doAttentionBp(
+      inputs,
+      masks2,
+      false,
+      returnAttentionScores,
+      useCausalMask,
+      dropout,
+      ATTENTION_SCORE_MODE_DOT,
+      attentionType,
+      1.0,
+      outputs);
 
-  sd::ops::matmul mmul;
-  NDArray preSoftmax('c', weightShape, values->dataType(), block.launchContext());
-  mmul.execute({keys, queries}, {&preSoftmax}, {}, {1}, {});
-
-  if (normalization) preSoftmax /= factor;
-
-  if (mask != nullptr) {
-    NDArray reshapedMask;
-    if (preSoftmax.rankOf() == 4) {
-      reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), 1, mask->sizeAt(1), 1});
-    } else {
-      reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(1), 1});
-    }
-    preSoftmax += (reshapedMask - 1) * 1e9;
-  }
-
-  NDArray weights('c', weightShape, values->dataType(), block.launchContext());
-  sd::ops::softmax softmax;
-  softmax.execute({&preSoftmax}, {&weights}, {}, {-2}, {});
-
-  sd::ops::matmul_bp mmul_bp;
-  NDArray dLdw(weights.shapeInfo(), block.workspace());
-  mmul_bp.execute({values, &weights, eps}, std::vector<NDArray *>{dLdv, &dLdw}, {}, {}, {});
-
-  NDArray dLds(preSoftmax.shapeInfo(), block.workspace());
-  sd::ops::softmax_bp softmax_bp;
-  softmax_bp.execute({&preSoftmax, &dLdw}, {&dLds}, {}, {-2}, {});
-
-  if (normalization) dLds /= factor;
-
-  mmul_bp.execute({keys, queries, &dLds}, std::vector<NDArray *>{dLdk, dLdq}, {}, {1}, {});
 
   return sd::Status::OK;
 }
