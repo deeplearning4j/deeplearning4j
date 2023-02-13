@@ -29,6 +29,7 @@
 #include <indexing/NDIndexUtils.h>
 #include <helpers/AttentionHelper.h>
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/batched_gemm.h>
 #if NOT_EXCLUDED(OP_multi_head_dot_product_attention)
 
 namespace sd {
@@ -728,7 +729,6 @@ void AttentionHelper::doDotProductAttention(sd::NDArray *query, sd::NDArray *key
   sd::ops::expand_dims expandDims;
   sd::ops::reduce_sum reduceSum;
   sd::ops::create_view createView;
-  auto all = NDIndexUtils::createAll();
   sd::ops::tanh tanh1;
   if(scoreMode == ATTENTION_SCORE_MODE_DOT) {
     int transA = 0;
@@ -748,36 +748,21 @@ void AttentionHelper::doDotProductAttention(sd::NDArray *query, sd::NDArray *key
     auto beta = NDArrayFactory::valueOf<double>({1},0.0);
     auto betaCasted = beta->cast(query->dataType());
 
-
-    std::vector<NDArray *>inputs;
-    std::vector<NDArray *> keyInputs;
-    std::vector<NDArray *> outputs;
-    //add alpha and beta before the batch gemm, this just needs to be broadcasted
-    inputs.push_back(&alphaCasted);
-    inputs.push_back(&betaCasted);
-
-    //divide by 2: queries and keys
-    int batchSize = query->sizeAt(0) / 2;
-    for(int i = 0; i < batchSize; i++) {
-      auto point = NDIndexUtils::createPoint(i);
-      auto querySlice = createView.evaluate({query,&point,&all,&all},{},{});
-      auto keySlice = createView.evaluate({&keyInput,&point,&all,&all},{},{});
-      auto outSlice = createView.evaluate({attentionScoresOut,&point,&all,&all},{},{});
-      inputs.push_back(querySlice.at(0));
-      keyInputs.push_back(keySlice.at(0));
-      outSlice.at(0)->printShapeInfo("Output slice");
-      outputs.push_back(outSlice.at(0));
-    }
-
-    sd_printf("Obtained input and key batches\n",0);
-
-    for(int i = 0; i < keyInputs.size(); i++) {
-      inputs.push_back(keyInputs[i]);
-    }
-
-    sd_printf("M: %d N: %d k: %d lda: %d ldb %d ldc: %d batchSize: %d transA: %d transB: %d\n",M,N,k,lda,ldb,ldc,batchSize,transA,transB);
-
-    matmul2.execute(inputs,outputs,{},{transA,transB,M,N,k,lda,ldb,ldc,batchSize});
+    sd::NDArray all = NDIndexUtils::createAll();
+    sd::ops::helpers::bgemm(query,
+                            &keyInput,
+                            attentionScoresOut,
+                            &alphaCasted,
+                            &betaCasted,
+                            transA,
+                            transB,
+                            M,
+                            N,
+                            k,
+                            lda,
+                            ldb,
+                            ldc,
+                            &all);
     sd_printf("After matmul\n",0);
     if(scale != 0.0) {
       *attentionScoresOut *= scale;

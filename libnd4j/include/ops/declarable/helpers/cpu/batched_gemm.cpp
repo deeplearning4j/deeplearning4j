@@ -24,15 +24,62 @@
 #include <ops/declarable/helpers/batched_gemm.h>
 #include <system/op_boilerplate.h>
 #include <types/float16.h>
+#include <indexing/NDIndexUtils.h>
+#include <ops/declarable/CustomOperations.h>
+
 #if NOT_EXCLUDED(OP_batched_gemm)
 namespace sd {
 namespace ops {
 namespace helpers {
 
+
+ void bgemm(sd::NDArray *a,  sd::NDArray *b,  sd::NDArray *c,   NDArray *alphas,   NDArray *betas,
+                   int transA, int transB, int M, int N, int K,  int lda,  int ldb,  int ldc,
+                   sd::NDArray *all) {
+   sd::NDArray *allIndex = nullptr;
+  if(all != nullptr)
+    allIndex = all;
+  else {
+    sd::NDArray allLocal = NDIndexUtils::createAll();
+    all = &allLocal;
+  }
+
+
+
+
+  int batchSize = a->sizeAt(0);
+  std::vector<NDArray *>inputs;
+  std::vector<NDArray *> bInputs;
+  std::vector<NDArray *> outputs;
+
+  sd::ops::create_view createView;
+
+  //add alpha and beta before the batch gemm, this just needs to be broadcasted
+  inputs.push_back(alphas);
+  inputs.push_back(betas);
+
+
+  //divide by 2: queries and keys
+  for(int i = 0; i < batchSize; i++) {
+    auto point = NDIndexUtils::createPoint(i);
+    auto aSlice = createView.evaluate({a,&point,allIndex,allIndex},{},{});
+    auto bSlice = createView.evaluate({b,&point,allIndex,allIndex},{},{});
+    auto outSlice = createView.evaluate({c,&point,allIndex,allIndex},{},{});
+    inputs.push_back(aSlice.at(0));
+    bInputs.push_back(bSlice.at(0));
+    outputs.push_back(outSlice.at(0));
+  }
+
+
+
+  bgemm(inputs, bInputs,outputs,alphas,betas,transA,transB,M,N,K,lda,ldb,ldc);
+
+}
+
 template <typename T>
-static void bgemm_(const std::vector<NDArray *> &vA, const std::vector<NDArray *> &vB, std::vector<NDArray *> &vC,
-                   const NDArray *alphas, const NDArray *betas, int transA, int transB, int M, int N, int K,
-                   const int lda, const int ldb, const int ldc) {
+static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector<NDArray *> &vC,
+                    NDArray *alphas,  NDArray *betas, int transA, int transB, int M, int N, int K,
+                    int lda,  int ldb,  int ldc) {
   int batchSize = vA.size();
   if (BlasHelper::getInstance().hasBatchedGEMM<T>()) {
     auto arr = vA.at(0);
@@ -106,8 +153,8 @@ static void bgemm_(const std::vector<NDArray *> &vA, const std::vector<NDArray *
         auto A = reinterpret_cast<T *>(vA.at(p)->buffer());
         auto B = reinterpret_cast<T *>(vB.at(p)->buffer());
         auto C = reinterpret_cast<T *>(vC.at(p)->buffer());
-        auto alpha = alphas->e<T>(p);
-        auto beta = betas->e<T>(p);
+        auto alpha = alphas->isScalar() ? alphas->e<T>(0) : alphas->e<T>(p);
+        auto beta = betas->isScalar() ? betas->e<T>(0) : betas->e<T>(p);
         for (int m = 0; m < M; ++m) {
           for (int n = 0; n < N; ++n) {
             T c_mnp = 0;
@@ -129,18 +176,18 @@ static void bgemm_(const std::vector<NDArray *> &vA, const std::vector<NDArray *
   }
 }
 
-void bgemm(const std::vector<NDArray *> &vA, const std::vector<NDArray *> &vB, std::vector<NDArray *> &vC,
-           const NDArray *alphas, const NDArray *betas, int transA, int transB, int M, int N, int K, const int lda,
-           const int ldb, const int ldc) {
+void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector<NDArray *> &vC,
+            NDArray *alphas,  NDArray *betas, int transA, int transB, int M, int N, int K,  int lda,
+            int ldb,  int ldc) {
   auto xType = vA.at(0)->dataType();
   BUILD_SINGLE_SELECTOR(xType, bgemm_, (vA, vB, vC, alphas, betas, transA, transB, M, N, K, lda, ldb, ldc),
                         SD_FLOAT_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template void bgemm_,
-                      (const std::vector<NDArray *> &vA, const std::vector<NDArray *> &vB, std::vector<NDArray *> &vC,
-                          const NDArray *alphas, const NDArray *betas, int transA, int transB, int M, int N, int K,
-                          const int lda, const int ldb, const int ldc),
+                      ( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector<NDArray *> &vC,
+                           NDArray *alphas,  NDArray *betas, int transA, int transB, int M, int N, int K,
+                           int lda,  int ldb,  int ldc),
                       SD_FLOAT_TYPES);
 
 }  // namespace helpers

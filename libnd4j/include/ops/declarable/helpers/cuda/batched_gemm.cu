@@ -28,9 +28,51 @@
 #include <system/op_boilerplate.h>
 #include <types/float16.h>
 
+#include <indexing/NDIndexUtils.h>
+#include <ops/declarable/CustomOperations.h>
+
 namespace sd {
 namespace ops {
 namespace helpers {
+
+
+static void bgemm(sd::NDArray *a, sd::NDArray *b, sd::NDArray *c,  NDArray *alphas,  NDArray *betas,
+                  int transA, int transB, int M, int N, int K, const int lda, const int ldb, const int ldc,
+                  sd::NDArray *all) {
+  sd::NDArray *allIndex = nullptr;
+  if(all != nullptr)
+    allIndex = all;
+  else {
+    sd::NDArray allLocal = NDIndexUtils::createAll();
+    all = &allLocal;
+  }
+
+
+  int batchSize = a->sizeAt(0) / 2;
+  std::vector<NDArray *>inputs;
+  std::vector<NDArray *> keyInputs;
+  std::vector<NDArray *> outputs;
+
+  sd::ops::create_view createView;
+
+  //add alpha and beta before the batch gemm, this just needs to be broadcasted
+  inputs.push_back(alphas);
+  inputs.push_back(betas);
+
+  //divide by 2: queries and keys
+  for(int i = 0; i < batchSize; i++) {
+    auto point = NDIndexUtils::createPoint(i);
+    auto aSlice = createView.evaluate({a,&point,all,all},{},{});
+    auto bSlice = createView.evaluate({b,&point,all,all},{},{});
+    auto outSlice = createView.evaluate({c,&point,all,all},{},{});
+    inputs.push_back(aSlice.at(0));
+    keyInputs.push_back(bSlice.at(0));
+    outputs.push_back(outSlice.at(0));
+  }
+
+  bgemm(inputs,keyInputs,outputs,alphas,betas,transA,transB,M,N,K,lda,ldb,ldc);
+
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // bsxMXK x bSxKxN = bSxMxN
