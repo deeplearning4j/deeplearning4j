@@ -367,7 +367,34 @@ void AttentionHelper::applyAttentionScores(sd::NDArray *scores, sd::NDArray *val
    * TODO: create new batch gemm helper and then execute usual batch gemm create view batches
    */
 
-  matmul.execute({weights,value},{attentionScores});
+  int M = scores->sizeAt(1);
+  int N = value->sizeAt(-1);
+  int k = scores->sizeAt(-1);
+  int lda = scores->sizeAt(1);
+  int ldb = value->sizeAt(1);
+  int ldc = M;
+
+
+  auto alpha = NDArrayFactory::valueOf<double>({1},1.0);
+  auto alphaCasted = alpha->cast(scores->dataType());
+  auto beta = NDArrayFactory::valueOf<double>({1},0.0);
+  auto betaCasted = beta->cast(scores->dataType());
+  auto all = NDIndexUtils::createAll();
+
+  sd::ops::helpers::bgemm(weights,
+                          value,
+                          attentionScores,
+                          &alphaCasted,
+                          &betaCasted,
+                          0,
+                          0,
+                          M,
+                          N,
+                          k,
+                          lda,
+                          ldb,
+                          ldc,
+                          &all);
 
 }
 

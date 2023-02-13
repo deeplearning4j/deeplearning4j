@@ -41,11 +41,8 @@ namespace helpers {
     allIndex = all;
   else {
     sd::NDArray allLocal = NDIndexUtils::createAll();
-    all = &allLocal;
+    allIndex = &allLocal;
   }
-
-
-
 
   int batchSize = a->sizeAt(0);
   std::vector<NDArray *>inputs;
@@ -53,11 +50,6 @@ namespace helpers {
   std::vector<NDArray *> outputs;
 
   sd::ops::create_view createView;
-
-  //add alpha and beta before the batch gemm, this just needs to be broadcasted
-  inputs.push_back(alphas);
-  inputs.push_back(betas);
-
 
   //divide by 2: queries and keys
   for(int i = 0; i < batchSize; i++) {
@@ -148,6 +140,7 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
     CBLAS_TRANSPOSE tA = (CBLAS_TRANSPOSE)transA;
     CBLAS_TRANSPOSE tB = (CBLAS_TRANSPOSE)transB;
     int vaSize = vA.size();
+    sd_printf("va size is %d\n",vaSize);
     auto func = PRAGMA_THREADS_FOR {
       for (auto p = start; p < stop; p++) {
         auto A = reinterpret_cast<T *>(vA.at(p)->buffer());
