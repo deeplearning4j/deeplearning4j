@@ -40,9 +40,9 @@ class AttentionTests : public testing::Test {
 };
 
 TEST_F(AttentionTests, basic_dot_product_attention) {
-  auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
-  auto values = NDArrayFactory::create<float>('c', {10, 4, 3});
-  auto queries = NDArrayFactory::create<float>('c', {10, 4, 1});
+  auto keys = NDArrayFactory::create<float>('c', {10, 3,4});
+  auto values = NDArrayFactory::create<float>('c', {10, 3,4});
+  auto queries = NDArrayFactory::create<float>('c', {10, 1, 4});
 
   sd::ops::dot_product_attention op;
   auto result = op.evaluate({&queries, &values,&keys}, {},{},{false,false,true},{});
@@ -51,13 +51,13 @@ TEST_F(AttentionTests, basic_dot_product_attention) {
 
 
 TEST_F(AttentionTests, basic_dot_product_attention_bp) {
-    auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
-    auto values = NDArrayFactory::create<float>('c', {10, 4, 3});
-    auto queries = NDArrayFactory::create<float>('c', {10, 4, 1});
-    auto eps = NDArrayFactory::create<float>('c', {10, 4, 1});
+  auto keys = NDArrayFactory::create<float>('c', {10, 3, 4});
+    auto values = NDArrayFactory::create<float>('c', {10, 3, 4});
+    auto queries = NDArrayFactory::create<float>('c', {10, 1, 4});
+    auto eps = NDArrayFactory::create<float>('c', {10, 1, 4});
 
     sd::ops::dot_product_attention_bp op;
-    auto result = op.evaluate({&queries, &keys, &values, &eps}, {}, {}, {false,false,true});
+    auto result = op.evaluate({&queries, &values,&keys,  &eps}, {}, {}, {false,false,true});
     ASSERT_EQ(sd::Status::OK, result.status());
 }
 

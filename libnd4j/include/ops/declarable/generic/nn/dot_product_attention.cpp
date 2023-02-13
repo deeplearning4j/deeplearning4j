@@ -38,6 +38,7 @@ CUSTOM_OP_IMPL(dot_product_attention, -2, -1, false, 0, -2) {
   auto keys = block.width() > 2  ? INPUT_VARIABLE(2) : values;
 
 
+
   REQUIRE_TRUE(queries->rankOf() == 3,0,"Input rank of queries must be 3.");
   REQUIRE_TRUE(values->rankOf() == 3,0,"Input rank of values must be 3.");
   REQUIRE_TRUE(values->rankOf() == 3,0,"Input rank of keys must be 3.");
@@ -47,41 +48,50 @@ CUSTOM_OP_IMPL(dot_product_attention, -2, -1, false, 0, -2) {
 
   auto dropout = block.numT() > 0 ? T_ARG(0) : 0.0;
 
+  auto scale = block.numT() > 1 ? T_ARG(1) : 1.0;
+
   auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
   auto returnAttentionScores = block.numB() > 1 ? B_ARG(1) : false;
   //permute the inputs before processing. This is to allow the old shapes of batch size x dim x Tv
-  auto permuteInputs = block.numB() > 2 ? B_ARG(2) : false;
 
 
   int attentionType = block.numI() > 0 ? I_ARG(0) : ATTENTION_TYPE_DOT_PRODUCT;
 
-  auto inputKeys = permuteInputs ? new NDArray(keys->permute({0,2,1})) : keys;
-  auto inputQueries = permuteInputs ? new NDArray(queries->permute({0,2,1})) : queries;
+
+  std::vector<sd::NDArray*> inputs = {queries,values,keys};
+  std::vector<sd::NDArray *> masks2 = {qMask,vMask};
+
+  auto outputScores = OUTPUT_VARIABLE(0);
+  outputScores->printShapeInfo("Output scores shape");
+  NDArray calculatedScores('c',{queries->sizeAt(0),queries->sizeAt(1),values->sizeAt(1)},queries->dataType());
+  sd_printf("Doing attention\n",0);
+
+   int batchSize = queries->sizeAt(0);
+   int tq = queries->sizeAt(1);
+   int tv = values->sizeAt(1);
+   //attention scores will be computed anyways, pass in a created array regardless
+   auto attentionScores = returnAttentionScores ? OUTPUT_VARIABLE(1) : new NDArray(queries->dataType(),{batchSize,tq,tv});
 
 
-  auto qMaskInput = permuteInputs  && qMask != nullptr ? new NDArray(qMask->permute({0,2,1})) : qMask;
-  auto vMaskInput = permuteInputs  && vMask != nullptr ? new NDArray(vMask->permute({0,2,1})) : vMask;
 
-  std::vector<sd::NDArray*> inputs = {inputQueries,inputKeys,values};
-  std::vector<sd::NDArray *> masks2 = {qMaskInput,vMaskInput};
+  AttentionHelper::doAttention(inputs,
+                               masks2,
+                               false,
+                               returnAttentionScores,
+                               useCausalMask,
+                               dropout,
+                               ATTENTION_SCORE_MODE_DOT,
+                               attentionType,
+                               scale,
+                               &calculatedScores,
+                                attentionScores);
 
-  auto output2 = AttentionHelper::doAttention(inputs,
-                                              masks2,
-                                              false,
-                                              returnAttentionScores,
-                                              useCausalMask,
-                                              dropout,
-                                              ATTENTION_SCORE_MODE_DOT,
-                                              attentionType,
-                                              true);
 
-  auto firstOutput = const_cast<sd::NDArray * const>(output2[0][0]);
-  OUTPUT_VARIABLE(0)->assign(firstOutput);
-
-  if(returnAttentionScores) {
-    OUTPUT_VARIABLE(1)->assign(output2[0][1]);
+  if(!returnAttentionScores) {
+    delete attentionScores;
   }
 
+  sd_printf("Done with attention\n",0);
   return sd::Status::OK;
 }
 
@@ -112,10 +122,10 @@ DECLARE_SHAPE_FN(dot_product_attention) {
     auto qShape = shape::shapeOf(query_shape);
     auto keyShape = shape::shapeOf(keys_shape);
     auto valueShape = shape::shapeOf(values_shape);
-    ShapeDescriptor *descriptor = new ShapeDescriptor(firstInputType,'c',{qShape[0],valueShape[1],valueShape[2]});
+    ShapeDescriptor *descriptor = new ShapeDescriptor(firstInputType,'c',{qShape[0],qShape[1],valueShape[2]});
     auto constOutputScores = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
     if(returnAttentionScores) {
-      ShapeDescriptor *scoresShape = new ShapeDescriptor(firstInputType,'c',{qShape[0],values_shape[1],valueShape[2]});
+      ShapeDescriptor *scoresShape = new ShapeDescriptor(firstInputType,'c',{qShape[0],values_shape[1],valueShape[1]});
       auto attentionScoresShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
       delete descriptor;
       delete scoresShape;
@@ -132,7 +142,7 @@ DECLARE_SHAPE_FN(dot_product_attention) {
     auto qShape = shape::shapeOf(query_shape);
     auto keyShape = shape::shapeOf(keys_shape);
     auto valueShape = shape::shapeOf(values_shape);
-    ShapeDescriptor *descriptor = new ShapeDescriptor(firstInputType,'c',{qShape[0],valueShape[1],valueShape[2]});
+    ShapeDescriptor *descriptor = new ShapeDescriptor(firstInputType,'c',{qShape[0],qShape[1],valueShape[2]});
     auto constOutputScores = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
     if(returnAttentionScores) {
       ShapeDescriptor *scoresShape = new ShapeDescriptor(firstInputType,'c',{qShape[0],values_shape[1],valueShape[2]});
@@ -150,20 +160,20 @@ DECLARE_SHAPE_FN(dot_product_attention) {
   }
 }
 
-CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
+CUSTOM_OP_IMPL(dot_product_attention_bp, -2, 3, false, 0, -2) {
   auto queries = INPUT_VARIABLE(0);
-  auto keys = INPUT_VARIABLE(1);
-  auto values = INPUT_VARIABLE(2);
+  auto values = INPUT_VARIABLE(1);
+  auto keys = INPUT_VARIABLE(2);
+  auto eps = INPUT_VARIABLE(3);
   auto qMask = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
   auto vMask = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
-  auto eps = INPUT_VARIABLE(block.width() - 1);
 
 
   auto dLdq = OUTPUT_VARIABLE(0);
   auto dLdk = OUTPUT_VARIABLE(1);
   auto dLdv = OUTPUT_VARIABLE(2);
 
-  int normalization = INT_ARG(0);
+
   REQUIRE_TRUE(queries->rankOf() == 3,0,"Input rank of queries must be 3.");
   REQUIRE_TRUE(values->rankOf() == 3,0,"Input rank of values must be 3.");
   REQUIRE_TRUE(values->rankOf() == 3,0,"Input rank of keys must be 3.");
@@ -178,16 +188,13 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
 
   int attentionType = block.numI() > 0 ? I_ARG(0) : ATTENTION_TYPE_DOT_PRODUCT;
 
-  auto inputKeys = permuteInputs ? new NDArray(keys->permute({0,2,1})) : keys;
-  auto inputQueries = permuteInputs ? new NDArray(queries->permute({0,2,1})) : queries;
 
-  auto qMaskInput = permuteInputs  && qMask != nullptr ? new NDArray(qMask->permute({0,2,1})) : qMask;
-  auto vMaskInput = permuteInputs  && vMask != nullptr ? new NDArray(vMask->permute({0,2,1})) : vMask;
+  eps->printShapeInfo("Eps  shape info");
 
-  std::vector<sd::NDArray*> inputs = {inputQueries,inputKeys,values,eps};
-  std::vector<sd::NDArray *> masks2 = {qMaskInput,vMaskInput};
+  std::vector<sd::NDArray*> inputs = {queries,values,keys,eps};
+  std::vector<sd::NDArray *> masks2 = {qMask,vMask};
   std::vector<sd::NDArray *> outputs = {dLdq,dLdk,dLdv};
-   AttentionHelper::doAttentionBp(
+  AttentionHelper::doAttentionBp(
       inputs,
       masks2,
       false,

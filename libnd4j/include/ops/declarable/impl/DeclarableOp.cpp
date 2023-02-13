@@ -314,9 +314,9 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
             delete outSha;
 
             sd_printf(
-                "Expected vs provided shapes mismatch %s vs %s at index %i with expected shape info %s and output "
+                "Op name: %s Failed to set output for op context. Expected vs provided shapes mismatch %s vs %s at index %i with expected shape info %s and output "
                 "shape info %s\n",
-                eShape.c_str(), aShape.c_str(), pair.second, eShapeInfoString.c_str(), aShapeInfoString.c_str());
+                getOpName()->c_str(),eShape.c_str(), aShape.c_str(), pair.second, eShapeInfoString.c_str(), aShapeInfoString.c_str());
 
             throw std::runtime_error("Expected vs provided shapes mismatch first case");
           }
@@ -352,13 +352,12 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
             auto eShapeInfoString = ShapeUtils::shapeInfoAsString(out);
             auto aShapeInfoString = ShapeUtils::shapeInfoAsString(array->shapeInfo());
             if (eShapeInfoString != aShapeInfoString) {
-              // outSha->destroy();
               delete outSha;
 
               sd_printf(
-                  "Expected vs provided shapes mismatch %s vs %s at index %i with expected shape info %s and output "
+                  "OP name: %s Expected vs provided shapes mismatch %s vs %s at index %i with expected shape info %s and output "
                   "shape info %s. Conditions, shapeEquals: %d, array empty: %d\n",
-                  eShape.c_str(), aShape.c_str(), idx, eShapeInfoString.c_str(), aShapeInfoString.c_str(), shapeEquals,
+                  getOpName()->c_str(),eShape.c_str(), aShape.c_str(), idx, eShapeInfoString.c_str(), aShapeInfoString.c_str(), shapeEquals,
                   arrayEmpty);
               throw std::runtime_error("Output array did not match expected shape.");
             }

@@ -170,6 +170,8 @@ class SD_LIB_EXPORT Context : public sd::graph::ContextPrototype {
 
   unsigned long width() override;
 
+  unsigned long outputWidth();
+
   // methods used in java interop
   /**
    * This method checks if Context uses fastpath variable access
@@ -246,6 +248,7 @@ class SD_LIB_EXPORT Context : public sd::graph::ContextPrototype {
 
   bool isTraining();
   bool isInference();
+
 };
 }  // namespace graph
 }  // namespace sd

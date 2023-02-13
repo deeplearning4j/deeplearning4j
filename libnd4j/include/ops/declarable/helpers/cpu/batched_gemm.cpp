@@ -96,8 +96,7 @@ static void bgemm_(const std::vector<NDArray *> &vA, const std::vector<NDArray *
     RELEASE(tldC, arr->getContext()->getWorkspace());
     RELEASE(tsize, arr->getContext()->getWorkspace());
   } else {
-
-
+    sd_printf("Before gemm execution\n",0);
 
     CBLAS_TRANSPOSE tA = (CBLAS_TRANSPOSE)transA;
     CBLAS_TRANSPOSE tB = (CBLAS_TRANSPOSE)transB;
@@ -117,8 +116,6 @@ static void bgemm_(const std::vector<NDArray *> &vA, const std::vector<NDArray *
               c_mnp += A[tA == CblasNoTrans ? (m + k * lda) : (m * lda + k)] *
                        B[tB == CblasNoTrans ? (k + n * ldb) : (k * ldb + n)];
             }
-
-
             C[m + n * ldc] = alpha * c_mnp + beta * C[m + n * ldc];
           }
         }
@@ -126,6 +123,9 @@ static void bgemm_(const std::vector<NDArray *> &vA, const std::vector<NDArray *
     };
 
     samediff::Threads::parallel_tad(func, 0, vaSize);
+
+    sd_printf("After gemm execution\n",0);
+
   }
 }
 

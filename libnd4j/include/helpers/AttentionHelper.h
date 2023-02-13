@@ -154,7 +154,7 @@ return
    * @param useCausalMask
    * @return
    */
-  static sd::NDArray computeAttentionMask(sd::NDArray *query,sd::NDArray *value,
+  static NDArray *computeAttentionMask(sd::NDArray *query,sd::NDArray *value,
                                           sd::NDArray *queryMask = nullptr,
                                           sd::NDArray *keyMask = nullptr,
                                           sd::NDArray *valueMask = nullptr,
@@ -212,7 +212,8 @@ def dropped_weights():
                                       return tf.matmul(weights, value), weights
    * @return
    */
-  static std::vector<sd::NDArray *> applyAttentionScores(sd::NDArray *scores,sd::NDArray *value, sd::NDArray *scoresMask = nullptr,double dropout = 0.0);
+  static void applyAttentionScores(sd::NDArray *scores, sd::NDArray *value, sd::NDArray *scoresMask,
+                                                     double dropout, sd::NDArray *attentionScores);
 
 
 
@@ -225,10 +226,8 @@ def dropped_weights():
    * @param scale
    * @return
    */
-  static NDArray *doDotProductAttention(sd::NDArray *query,sd::NDArray *key,
-                                        int scoreMode = ATTENTION_SCORE_MODE_DOT,
-                                        double scale = true,
-                                        sd::NDArray *concatWeights = nullptr);
+  static void doDotProductAttention(sd::NDArray *query, sd::NDArray *key, int scoreMode, double scale,
+                                     sd::NDArray *concatWeights, sd::NDArray *attentionScoresOut);
 
   /**
    *
@@ -240,9 +239,9 @@ def dropped_weights():
    * @return
    */
   static void attentionBpHelper(sd::NDArray *query, sd::NDArray *key, sd::NDArray *values, double scale,
-                                          sd::NDArray *concatWeights, int scoreMode, sd::NDArray *dLdq,
-                                          sd::NDArray *dLdk, sd::NDArray *dLdv, sd::NDArray *eps,
-                                          LaunchContext *launchContext = sd::LaunchContext::defaultContext());
+                                sd::NDArray *concatWeights, int scoreMode, sd::NDArray *dLdq, sd::NDArray *dLdk,
+                                sd::NDArray *dLdv, sd::NDArray *eps, LaunchContext *launchContext, sd::NDArray *qMask,
+                                sd::NDArray *kMask, sd::NDArray *vMask, bool useCausalMask);
 
   /**
    *
@@ -252,7 +251,7 @@ def dropped_weights():
    * @param scale
    * @return
    */
-  static NDArray *doAdditiveAttention(sd::NDArray *query, sd::NDArray *key, double scale);
+  static void doAdditiveAttention(sd::NDArray *query, sd::NDArray *key, double scale, sd::NDArray *scores);
 
 
 
@@ -304,14 +303,9 @@ return result
    * @param returnAttentionScores
    * @param useCausalMask
    */
-  static std::vector<NDArray *> * doAttention(std::vector<NDArray *>  &inputs,
-                                              std::vector<sd::NDArray *> &masks,
-                                              bool training = false,
-                                              bool returnAttentionScores = false,
-                                              bool useCausalMask = false,
-                                              double dropout = 0.0,
-                                              int attentionType = ATTENTION_TYPE_DOT_PRODUCT,
-                                              int dotProductType = ATTENTION_SCORE_MODE_DOT, double scale = true);
+  static void doAttention(std::vector<NDArray *> &inputs, std::vector<sd::NDArray *> &masks, bool training,
+                          bool returnAttentionScores, bool useCausalMask, double dropout, int attentionType,
+                          int dotProductType, double scale, sd::NDArray *scores, sd::NDArray *attentionScores);
 
 
 
@@ -364,9 +358,10 @@ return result
    * @param useCausalMask
    */
   static void doAttentionBp(std::vector<NDArray *> &inputs, std::vector<sd::NDArray *> &masks,
-                                               bool training, bool returnAttentionScores, bool useCausalMask,
-                                               double dropout, int attentionType, int dotProductType, double scale,
-                                               std::vector<NDArray *> outputs);
+                            bool training, bool returnAttentionScores, bool useCausalMask,
+                            double dropout, int attentionType, int dotProductType, double scale,
+                            std::vector<NDArray *> outputs,
+                            sd::LaunchContext *context = sd::LaunchContext::defaultContext());
 
 
 };

@@ -101,6 +101,7 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
     betaInput = beta;
   }
 
+  sd_printf("After alphs and betas\n",0);
   std::vector<NDArray*> vA(batchSize);
   std::vector<NDArray*> vB(batchSize);
   std::vector<NDArray*> vC(batchSize);
@@ -126,8 +127,21 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
   REQUIRE_TRUE(vA.size() == vB.size() && vA.size() == vC.size() && vA.size() == batchSize, 0,
                "BatchedGemm: mismatched numbers of A, B, C for unknown reason");
 
-  sd::ops::helpers::bgemm(vA, vB, vC, alphaInput, betaInput, transA, transB, M, N, K, ldA, ldB, ldC);
-
+  sd_printf("Before bgemm execution\n",0);
+  sd::ops::helpers::bgemm(vA,
+                          vB,
+                          vC,
+                          alphaInput,
+                          betaInput,
+                          transA,
+                          transB,
+                          M,
+                          N,
+                          K,
+                          ldA,
+                          ldB,
+                          ldC);
+  sd_printf("After bgemm execution\n",0);
 
   if(alphaInput != alpha) {
     delete alphaInput;
@@ -329,7 +343,7 @@ DECLARE_SHAPE_FN(batched_gemm_bp) {
 DECLARE_TYPES(batched_gemm_bp) {
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_FLOATS})
-      //                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
+          //                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
       ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
