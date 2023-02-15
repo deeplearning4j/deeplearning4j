@@ -99,27 +99,9 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
   sd_debug("MKL-DNN is not used for batchnorm!\n", 0);
 
   // formula: output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
-  // auto v = input->varianceAlongDimension(variance::SummaryStatsVariance, false,
-  // ShapeUtils::evalDimsToExclude(input->rankOf(), axes)); auto m = input->reduceAlongDimension(sd::reduce::Mean,
-  // ShapeUtils::evalDimsToExclude(input->rankOf(), axes));
-
   helpers::batchnorm(input, mean, variance, gamma, beta, output, axes, epsilon);
 
-  // NDArray stdInv = *v + epsilon;
-  // stdInv.applyTransform(transform::Reciprocal);               // 1 / (variance + epsilon)
-  // stdInv.applyTransform(transform::Sqrt);                     // 1 / (variance + epsilon)^0.5
-  // if(applyScale)
-  //     stdInv *= *gamma;
 
-  //  // empty array with same shape as input
-  // input->applyBroadcast(sd::broadcast::Subtract, axes, m, output);
-  // output->applyBroadcast(sd::broadcast::Multiply, axes, &stdInv);
-
-  // if(applyOffset)
-  //     output->applyBroadcast(sd::broadcast::Add, axes, beta);
-
-  // delete v;
-  // delete m;
 
   return sd::Status::OK;
 }
@@ -294,34 +276,6 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   *dLdM = 0;  // put zeros so far
   *dLdV = 0;  // put zeros so far
 
-  // java code
-  // NDArray std = *variance + epsilon;
-  // std.applyTransform(transform::Reciprocal);                           // 1 / (variance + epsilon)
-  // std.applyTransform(transform::Sqrt);                                 // 1 / (variance + epsilon)^0.5
-  // NDArray xMu(input);
-  // input->applyBroadcast(sd::broadcast::Subtract, axes, mean, &xMu);
-  // NDArray xHat(input);
-  // xMu.applyBroadcast(sd::broadcast::Multiply, axes, &std, &xHat);
-  // NDArray dxhat(input);
-  // dLdO->applyBroadcast(sd::broadcast::Multiply, axes, gamma, &dxhat);
-  // NDArray temp = dxhat*xMu;
-  // temp.reduceAlongDimension(reduce::Sum, dLdV, excludedAxes, keepUnitiesInShape);
-  // *dLdV *= -0.5f * std*std*std;
-  // NDArray* dxmu1 = dxhat.reduceAlongDimension(reduce::Sum, excludedAxes, keepUnitiesInShape);
-  // *dxmu1 *= -std;
-  // NDArray* dxmu2 = xMu.reduceAlongDimension(reduce::Sum, excludedAxes, keepUnitiesInShape);
-  // *dxmu2 *=  *dLdV * (-2.f/N);
-  // NDArray dLdmu = *dxmu1 + *dxmu2;
-  // dLdmu *= (1.f /N);
-  // *dLdV *= (2.f/N);
-  // dxhat.applyBroadcast(sd::broadcast::Multiply, axes, &std);
-  // xMu.applyBroadcast(sd::broadcast::Multiply, axes, dLdV);
-  // dxhat += xMu;
-  // dxhat.applyBroadcast(sd::broadcast::Add, axes, &dLdmu, dLdI);
-  // delete  dxmu1;
-  // delete  dxmu2;
-  // xHat *= *dLdO;
-  // xHat.reduceAlongDimension(reduce::Sum, dLdG, excludedAxes, keepUnitiesInShape);
 
   return sd::Status::OK;
 }

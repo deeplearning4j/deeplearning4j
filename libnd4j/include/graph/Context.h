@@ -71,7 +71,7 @@ class SD_LIB_EXPORT Context : public sd::graph::ContextPrototype {
 
  public:
   Context(ContextPrototype* prototype, VariableSpace* variableSpace);
-
+  Context();
   explicit Context(int nodeId, VariableSpace* variableSpace = nullptr);
   Context(int nodeId, VariableSpace* variableSpace, bool isInplace);
 
