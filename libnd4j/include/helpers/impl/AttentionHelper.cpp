@@ -683,8 +683,9 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
 
 
     int transA2 = 0;
-    int transB2 = 1;
+    int transB2 = 0;
     int M2 = values->sizeAt(1);
+    //note: we transposed weights here. May need to change this back to -1
     int N2 = weightInput.sizeAt(-1);
     int k2 = values->sizeAt(-1);
     int lda2 = values->sizeAt(1);

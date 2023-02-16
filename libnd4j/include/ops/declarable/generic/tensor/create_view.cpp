@@ -90,7 +90,8 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
     auto stride = indexVector[2];
     auto indexIndices = std::vector<sd::LongType>();
     //accumulate the target indices
-    for(sd::LongType j = 0; j < numIndices; j++) {
+    //prevent out of bounds
+    for(sd::LongType j = 0; j < indexVector.size() - 3; j++) {
       indexIndices.push_back(indexVector[j + 3]);
     }
 

@@ -51,8 +51,6 @@ TEST_F(AttentionTests, basic_dot_product_attention) {
 
 
 TEST_F(AttentionTests, basic_dot_product_attention_bp) {
-  sd::Environment::getInstance().setDebug(true);
-  sd::Environment::getInstance().setVerbose(true);
   auto keys = NDArrayFactory::create<float>('c', {10, 3, 4});
   auto values = NDArrayFactory::create<float>('c', {10, 3, 4});
   auto queries = NDArrayFactory::create<float>('c', {10, 1, 4});

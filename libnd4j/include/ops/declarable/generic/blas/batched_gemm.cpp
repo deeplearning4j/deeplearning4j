@@ -177,7 +177,8 @@ DECLARE_SHAPE_FN(batched_gemm) {
   int ldB = INT_ARG(6);
   int ldC = INT_ARG(7);
   int batchSize = INT_ARG(8);
-
+  auto firstInput = inputShape->at(2);
+  auto secondInput =   inputShape->at(batchSize + 2);
   auto firstType = ArrayOptions::dataType(inputShape->at(0));
   for (int e = 1; e < block.width(); e++) {
     REQUIRE_TRUE(firstType == ArrayOptions::dataType(inputShape->at(1)), 0,
@@ -224,46 +225,6 @@ CUSTOM_OP_IMPL(batched_gemm_bp, -1, -1, false, 0, 9) {
   int ldB = INT_ARG(6);
   int ldC = INT_ARG(7);
   int batchSize = INT_ARG(8);
-  if(transA == 0) {
-    int ldaComp = M > 1 ? M : 1;
-    if(ldA < ldaComp) throw std::runtime_error("LDA must be >= max(1,m) when transa == false");
-  } else {
-    int ldaComp = K > 1 ? K : 1;
-    if(ldA < ldaComp)
-      throw std::runtime_error("LDA must be >= max(1,k) when transa == true");
-  }
-
-  if(transB == 0) {
-    int ldBComp = K > 1 ? K : 1;
-    if(ldB < ldBComp) {
-      throw std::runtime_error("LDB must be >= max(1,k) when transb == false");
-    }
-  } else {
-    int ldbComp = N > 1 ? N : 1;
-    if(ldB < ldbComp)
-      throw std::runtime_error("LDB must be >= max(1,N) when transb == true");
-  }
-
-  int ldcComp = M > 1 ? M : 1;
-  if(ldC < ldcComp) {
-    throw std::runtime_error("LDC must be < max(1,M) when transc != false");
-  }
-
-
-  if (transA == 0) transA = 111;
-
-  if (transB == 0) transB = 111;
-
-  if (transA == 1) transA = 112;
-
-  if (transB == 1) transB = 112;
-  if(M < 0) throw std::runtime_error("M < 0");
-  if(N < 0) throw std::runtime_error("N < 0");
-  if(K < 0) throw std::runtime_error("K < 0");
-
-  REQUIRE_TRUE((transA == 111 || transA == 112) && (transB == 111 || transB == 112), 0,
-               "BatchedGemm: valid values for transA and transB are: 0/1 or 111/112, for NoTrans/Trans respectively")
-  REQUIRE_TRUE(M > 0 && N > 0 && K > 0 && ldA > 0 && ldB > 0 && ldC > 0 && batchSize > 0, 0, "");
 
   batched_gemm batchedGemm;
 
@@ -303,8 +264,26 @@ CUSTOM_OP_IMPL(batched_gemm_bp, -1, -1, false, 0, 9) {
     betaInput = beta;
   }
 
-  sd::ops::helpers::bgemm(dlDOut, matricesB, dldXOutputs, alphaInput, betaInput, transA, transB, M, N, K, ldA, ldB, ldC);
-  sd::ops::helpers::bgemm(matricesA, dlDOut, dldYOutputs, alphaInput, betaInput, transA, transB, M, N, K, ldA, ldB, ldC);
+
+  int transA1 = 0;
+  int transB1 = transB;
+  int M1 = dlDOut[0]->sizeAt(0);
+  int N1 = matricesB[0]->sizeAt(1);
+  int k1 = dlDOut[0]->sizeAt(1);
+  int lda1 = dlDOut[0]->sizeAt(0);
+  int ldb1 = matricesB[0]->sizeAt(0);
+  int ldc1 = dldXOutputs[0]->sizeAt(0);
+  sd::ops::helpers::bgemm(dlDOut, matricesB, dldXOutputs, alphaInput, betaInput, transA1, transB1, M1, N1, k1, lda1, ldb1, ldc1);
+
+  int transA2 = transA;
+  int transB2 = 0;
+  int M2 = matricesA[0]->sizeAt(0);
+  int N2 = dlDOut[0]->sizeAt(1);
+  int k2 = matricesA[0]->sizeAt(1);
+  int lda2 = dlDOut[0]->sizeAt(0);
+  int ldb2 = dlDOut[0]->sizeAt(0);
+  int ldc2 = dlDOut[0]->sizeAt(0);
+  sd::ops::helpers::bgemm(matricesA, dlDOut, dldYOutputs, alphaInput, betaInput, transA2, transB2, M2, N2, k2, lda2, ldb2, ldc2);
 
 
   if(alphaInput != alpha) {
@@ -322,128 +301,23 @@ CUSTOM_OP_IMPL(batched_gemm_bp, -1, -1, false, 0, 9) {
 
 
 DECLARE_SHAPE_FN(batched_gemm_bp) {
-  int transA = INT_ARG(0);
-  int transB = INT_ARG(1);
-  int M = INT_ARG(2);
-  int N = INT_ARG(3);
-  int K = INT_ARG(4);
-  int ldA = INT_ARG(5);
-  int ldB = INT_ARG(6);
-  int ldC = INT_ARG(7);
+  sd::LongType *xShapeInfo;
+  sd::LongType *yShapeInfo;
   int batchSize = INT_ARG(8);
-  sd_printf("Setting DLDX and DLDY shape\n",0);
-
-  batched_gemm batchedGemm;
-  std::vector<sd::NDArray *> aInputs;
-  std::vector<sd::NDArray *> bInputs;
-  std::vector<sd::NDArray *> epsInputs;
-  std::vector<sd::NDArray *> alphaBeta;
-
-  auto dldxVarSpace = new VariableSpace();
-  auto dldyVarSpace = new VariableSpace();
-  auto dldxInputList = SHAPELIST();
-  auto dldYInputList = SHAPELIST();
-  auto epsVars = std::vector<sd::NDArray *>();
-  for(int i = 0; i < 2; i++) {
-    alphaBeta.push_back(INPUT_VARIABLE(i));
+  COPY_SHAPE(inputShape->at(2), xShapeInfo);
+  COPY_SHAPE(inputShape->at(2 + batchSize), yShapeInfo);
+  auto xConstant = CONSTANT(xShapeInfo);
+  auto yConstant = CONSTANT(yShapeInfo);
+  auto ret = SHAPELIST();
+  for(int i = 0; i < batchSize; i++) {
+    ret->push_back(xConstant);
   }
-
-  sd_printf("Done setting alphas and betas\n",0);
 
   for(int i = 0; i < batchSize; i++) {
-    aInputs.push_back(INPUT_VARIABLE(i + 2));
-    bInputs.push_back(INPUT_VARIABLE(batchSize + i + 2));
-    epsVars.push_back(INPUT_VARIABLE(i +  2 + (batchSize * 2)));
+    ret->push_back(yConstant);
   }
 
-
-  aInputs[0]->printShapeInfo("Alpha inputs");
-  bInputs[0]->printShapeInfo("Beta inputs");
-  epsVars[0]->printShapeInfo("Eps inputs");
-  dldxVarSpace->putVariable(0,alphaBeta[0]);
-  dldxVarSpace->putVariable(1,alphaBeta[1]);
-  dldyVarSpace->putVariable(0,alphaBeta[0]);
-  dldyVarSpace->putVariable(1,alphaBeta[1]);
-
-  // 1 x 3, 3 x 4
-  for(int i = 0; i < batchSize; i++) {
-    dldxVarSpace->putVariable(i + 2,epsVars[i]);
-    dldyVarSpace->putVariable(i + 2,aInputs[i]);
-  }
-
-  //
-
-  for(int i = 0; i < batchSize; i++) {
-    dldxVarSpace->putVariable(i * batchSize + 2,bInputs[i]);
-    dldyVarSpace->putVariable(i * batchSize + 2,epsVars[i]);
-  }
-
-
-  for(int i = 0; i < dldxVarSpace->getVariables().size(); i++) {
-    dldxInputList->push_back(dldxVarSpace->getVariables()[i]->getNDArray()->shapeInfo());
-    dldYInputList->push_back(dldyVarSpace->getVariables()[i]->getNDArray()->shapeInfo());
-  }
-
-  sd_printf("A inputs size %d\n",aInputs.size());
-  sd_printf("B inputs size %d\n",bInputs.size());
-
-  sd_printf("After batch size \n",0);
-
-
-
-  auto ctx = graph::Context(0, dldxVarSpace);
-
-  auto dldxAShape = dldxVarSpace->getVariables()[2]->getNDArray();
-  auto dldxBShape = dldxVarSpace->getVariables()[2 + batchSize]->getNDArray();
-  for(int i = 0; i < dldxVarSpace->getVariables().size(); i++) {
-    sd_printf("DLDX var space shape info at %d\n",i);
-    dldxVarSpace->getVariables()[i]->getNDArray()->printShapeInfo("DLDX shape info:");
-  }
-
-  int transa1 = 0;
-  int transb1 = 0;
-  int M1 = transa1 > 0 ? (int) aInputs[0]->sizeAt(1) : (int)  aInputs[0]->sizeAt(0);
-  int N1 = transb1 > 0? (int) bInputs[0]->sizeAt(0): (int)dldxBShape->sizeAt(1);
-  int K1 = transb1 > 0 ? (int) aInputs[0]->sizeAt(0) : (int) aInputs[0]->sizeAt(1) ;
-  int lda1 = (int)  aInputs[0]->sizeAt(0);
-  int ldb1 = (int) bInputs[0]->sizeAt(0);
-  int ldc1 = (int) aInputs[0]->sizeAt(0);
-
-  ctx.setIArguments({transa1,transb1,M1,N1,K1,lda1,ldb1,ldc1,batchSize});
-  dldxAShape->printShapeInfo("DLDX shape:");
-  dldxBShape->printShapeInfo("DLDY Shape:");
-  sd_printf("M1: %d N1: %d K1: %d lda1: %d ldb1 %d ldc %d\n",M1,N1,K1,lda1,ldb1,ldc1);
-  //eps: 1 x 4 4 x 3: 1 x 3
-  auto dldxShape = batchedGemm.calculateOutputShape(dldxInputList,ctx);
-  sd_printf("DLDX shape size: %d\n",dldxShape->size());
-  shape::printShapeInfo(dldxShape->at(0));
-
-
-
-  auto bCtx = graph::Context(0, dldyVarSpace);
-
-  auto dldyAShape = dldyVarSpace->getVariables()[2];
-  auto dldyBShape = dldyVarSpace->getVariables()[2 + batchSize];
-  int transa2 = transA;
-  int transb2 = 0;
-  int M2 = transa2 > 0 ? (int) dldyAShape->getNDArray()->sizeAt(0): (int)  dldyAShape->getNDArray()->sizeAt(1);
-  int N2 = transb2 > 0? (int)  dldyBShape->getNDArray()->sizeAt(1): (int) dldyBShape->getNDArray()->sizeAt(0);
-  int K2 = transb2 > 0 ? (int) dldyBShape->getNDArray()->sizeAt(1): (int) dldyBShape->getNDArray()->sizeAt(0);
-  int lda2 = (int)  dldyAShape->getNDArray()->sizeAt(0);
-  int ldb2 = (int) dldyBShape->getNDArray()->sizeAt(0);
-  int ldc2 = (int)  dldyAShape->getNDArray()->sizeAt(0);
-
-  bCtx.setIArguments({transa2,transb2,M2,N2,K2,lda2,ldb2,ldc2,batchSize});
-  sd_printf("Set i arguments\n",0);
-  //TODO: reset a and b list for each batch gemm to be eps slices this may need to be true for op execution as well
-
-
-  //3 x 4, 1 x 3
-  auto dldyShape = batchedGemm.calculateOutputShape(dldYInputList,bCtx);
-  shape::printShapeInfo(dldyShape->at(0));
-
-  sd_printf("Set DLDX and DLDY shape\n",0);
-  return SHAPELIST(dldxShape->at(0),dldyShape->at(0));
+  return ret;
 }
 
 
