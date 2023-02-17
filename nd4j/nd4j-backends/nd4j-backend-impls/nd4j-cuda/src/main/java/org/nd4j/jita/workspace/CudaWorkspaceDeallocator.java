@@ -23,7 +23,6 @@ package org.nd4j.jita.workspace;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.memory.Deallocator;
-import org.nd4j.linalg.api.memory.ReferenceMetaData;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.factory.Nd4j;
@@ -45,13 +44,13 @@ public class CudaWorkspaceDeallocator implements Deallocator {
     private Queue<PointersPair> pinnedPointers;
     private List<PointersPair> externalPointers;
     private LogEvent logEvent;
-    private ReferenceMetaData referenceMetaData;
+    private boolean isConstant;
 
     public CudaWorkspaceDeallocator(@NonNull CudaWorkspace workspace) {
         this.pointersPair = workspace.workspace();
         this.pinnedPointers = workspace.pinnedPointers();
         this.externalPointers = workspace.externalPointers();
-        referenceMetaData = ReferenceMetaData.builder().build();
+        isConstant = false;
         if(EventLogger.getInstance().isEnabled()) {
             logEvent = LogEvent.builder()
                     .objectId(workspace.getUniqueId())
@@ -119,7 +118,7 @@ public class CudaWorkspaceDeallocator implements Deallocator {
     }
 
     @Override
-    public ReferenceMetaData referenceMetaData() {
-        return referenceMetaData;
+    public boolean isConstant() {
+        return isConstant;
     }
 }

@@ -41,7 +41,8 @@ public interface Deallocator {
 
     /**
      * Reference metadata for determining whether to deallocate a reference.
+     *
      * @return
      */
-    ReferenceMetaData referenceMetaData();
+    boolean isConstant();
 }

@@ -40,7 +40,7 @@ public class DeallocatableReference extends WeakReference<Deallocatable> {
     }
 
     public void deallocate() {
-        if(get() != null && !get().shouldDeAllocate() || deallocator.referenceMetaData().isConstant()) {
+        if(get() != null && !get().shouldDeAllocate() || deallocator.isConstant()) {
             throw new IllegalStateException("Unable to deallocate reference. Not ready yet.");
         }
 

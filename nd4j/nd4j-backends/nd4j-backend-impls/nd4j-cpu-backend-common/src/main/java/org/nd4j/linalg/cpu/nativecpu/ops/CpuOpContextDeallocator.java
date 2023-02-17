@@ -21,7 +21,6 @@
 package org.nd4j.linalg.cpu.nativecpu.ops;
 
 import org.nd4j.linalg.api.memory.Deallocator;
-import org.nd4j.linalg.api.memory.ReferenceMetaData;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
 import org.nd4j.linalg.profiler.data.eventlogger.EventType;
@@ -33,11 +32,9 @@ import org.nd4j.nativeblas.OpaqueContext;
 public class CpuOpContextDeallocator implements Deallocator {
     private transient final OpaqueContext context;
     private LogEvent logEvent;
-    private ReferenceMetaData referenceMetaData;
 
     public CpuOpContextDeallocator(CpuOpContext ctx) {
         context = (OpaqueContext) ctx.contextPointer();
-        referenceMetaData = ReferenceMetaData.builder().build();
         if(EventLogger.getInstance().isEnabled()) {
             logEvent = LogEvent.builder()
                     .eventType(EventType.DEALLOCATION)
@@ -67,7 +64,7 @@ public class CpuOpContextDeallocator implements Deallocator {
     }
 
     @Override
-    public ReferenceMetaData referenceMetaData() {
-        return referenceMetaData;
+    public boolean isConstant() {
+        return false;
     }
 }
