@@ -26,7 +26,6 @@ import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -35,7 +34,6 @@ import org.nd4j.linalg.api.ops.ExecutionMode;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
-import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -160,7 +158,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     }
 
     @Override
-    public String getUniqueId() {
+    public long getUniqueId() {
         return new String("CTX_" + id);
     }
 

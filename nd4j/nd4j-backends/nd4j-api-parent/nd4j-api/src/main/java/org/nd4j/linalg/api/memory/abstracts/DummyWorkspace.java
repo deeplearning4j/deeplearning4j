@@ -260,8 +260,8 @@ public class DummyWorkspace implements MemoryWorkspace {
     }
 
     @Override
-    public String getUniqueId() {
-        return java.util.UUID.randomUUID().toString();
+    public long getUniqueId() {
+        return 0;
     }
 
     @Override
@@ -279,7 +279,7 @@ public class DummyWorkspace implements MemoryWorkspace {
 
             @Override
             public boolean isConstant() {
-                return null;
+                return false;
             }
         };
     }

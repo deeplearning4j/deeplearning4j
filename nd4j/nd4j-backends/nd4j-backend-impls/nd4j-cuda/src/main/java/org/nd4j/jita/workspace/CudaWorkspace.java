@@ -23,6 +23,7 @@ package org.nd4j.jita.workspace;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -53,6 +54,7 @@ import static org.nd4j.linalg.workspace.WorkspaceUtils.getAligned;
 @Slf4j
 public class CudaWorkspace extends Nd4jWorkspace {
 
+    public final static long BASE_CUDA_DATA_BUFFER_OFFSET = RandomUtils.nextLong();
 
     public CudaWorkspace(@NonNull WorkspaceConfiguration configuration) {
         super(configuration);
@@ -418,8 +420,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
     }
 
     @Override
-    public String getUniqueId() {
-        return "Workspace_" + getId() + "_" + Nd4j.getDeallocatorService().nextValue();
+    public long getUniqueId() {
+        return BASE_CUDA_DATA_BUFFER_OFFSET + Nd4j.getDeallocatorService().nextValue();
     }
 
     @Override

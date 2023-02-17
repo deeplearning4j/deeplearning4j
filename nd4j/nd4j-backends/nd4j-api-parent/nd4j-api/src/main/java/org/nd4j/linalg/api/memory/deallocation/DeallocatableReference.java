@@ -29,7 +29,7 @@ import java.lang.ref.WeakReference;
 
 @Data
 public class DeallocatableReference extends WeakReference<Deallocatable> {
-    private String id;
+    private long id;
     private Deallocator deallocator;
 
     public DeallocatableReference(Deallocatable referent, ReferenceQueue<? super Deallocatable> q) {

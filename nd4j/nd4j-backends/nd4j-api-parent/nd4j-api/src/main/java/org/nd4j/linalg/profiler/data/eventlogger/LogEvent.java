@@ -54,6 +54,6 @@ public class LogEvent {
     private long bytes;
     private boolean attached;
     private boolean isConstant;
-    private String objectId;
+    private long objectId;
 
 }

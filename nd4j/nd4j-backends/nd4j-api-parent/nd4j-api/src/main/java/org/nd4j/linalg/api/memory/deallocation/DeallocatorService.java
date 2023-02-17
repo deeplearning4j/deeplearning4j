@@ -23,19 +23,16 @@ package org.nd4j.linalg.api.memory.deallocation;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.collections4.trie.PatriciaTrie;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.factory.Nd4j;
 
-
 import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
@@ -47,7 +44,8 @@ public class DeallocatorService {
     //ConcurrentHashMap (the prior implementation) which has higher throughput overall but is inefficient
     //for the amount of memory overhead it has. String compression
     //with a large number of objects is more important over throughput.
-    private Map<String,DeallocatableReference> referenceMap = Collections.synchronizedMap(new PatriciaTrie<>());
+    private Map<Long,DeallocatableReference> referenceMap = new ConcurrentSkipListMap<>();
+
     private List<List<ReferenceQueue<Deallocatable>>> deviceMap = new ArrayList<>();
     private Boolean noPointerGc;
     private final transient AtomicLong counter = new AtomicLong(0);

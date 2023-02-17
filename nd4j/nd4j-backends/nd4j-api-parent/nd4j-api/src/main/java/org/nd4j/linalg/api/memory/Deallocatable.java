@@ -32,9 +32,10 @@ public interface Deallocatable {
 
     /**
      * This method returns unique ID for this instance
+     *
      * @return
      */
-    String getUniqueId();
+    long getUniqueId();
 
     /**
      * This method returns deallocator associated with this instance

@@ -83,9 +83,9 @@ public class CompressedDataBuffer extends BaseDataBuffer {
     }
 
     @Override
-    public String getUniqueId() {
+    public long getUniqueId() {
         //this is actually a no op since compressed pointers don't get deallocated
-        return "CMDB_" ;
+        return 0;
     }
 
 
