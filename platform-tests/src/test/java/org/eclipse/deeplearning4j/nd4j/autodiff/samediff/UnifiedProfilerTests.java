@@ -35,8 +35,16 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.profiler.UnifiedProfiler;
+import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
+import org.nd4j.linalg.profiler.data.eventlogger.EventType;
+import org.nd4j.linalg.profiler.data.eventlogger.ObjectAllocationType;
 import org.nd4j.weightinit.impl.XavierInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
+
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+import java.util.Arrays;
 
 import static org.deeplearning4j.datasets.iterator.RandomDataSetIterator.Values.INTEGER_0_10;
 import static org.nd4j.linalg.api.buffer.DataType.FLOAT;
@@ -50,7 +58,15 @@ public class UnifiedProfilerTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testProfiler(Nd4jBackend backend) {
         Nd4j.getProfiler().start();
-        System.out.println(Nd4j.getProfiler().printCurrentStats());
+        try {
+            EventLogger.getInstance().setLogStream(new PrintStream(new FileOutputStream("your-logfile.log")));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        EventLogger.getInstance().setEventTypesToLog(Arrays.asList(EventType.DEALLOCATION,EventType.ALLOCATION));
+        EventLogger.getInstance().setAllocationTypesToLog(Arrays.asList(ObjectAllocationType.DATA_BUFFER));
+
+
         int batchSize = 4;
         int modelDim = 8;
 

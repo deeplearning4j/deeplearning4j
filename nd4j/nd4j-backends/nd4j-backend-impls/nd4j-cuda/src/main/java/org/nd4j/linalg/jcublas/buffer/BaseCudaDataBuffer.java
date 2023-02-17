@@ -23,6 +23,7 @@ package org.nd4j.linalg.jcublas.buffer;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.val;
+import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.common.base.Preconditions;
@@ -76,6 +77,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Getter
     protected transient volatile AllocationPoint allocationPoint;
+    public final static long BASE_CUDA_DATA_BUFFER_OFFSET = RandomUtils.nextLong();
 
     private static AtomicAllocator allocator = AtomicAllocator.getInstance();
 
@@ -1703,8 +1705,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
 
     @Override
-    public String getUniqueId() {
-        return "BCDB_" + allocationPoint.getObjectId();
+    public long getUniqueId() {
+        return BASE_CUDA_DATA_BUFFER_OFFSET + allocationPoint.getObjectId();
     }
 
     /**

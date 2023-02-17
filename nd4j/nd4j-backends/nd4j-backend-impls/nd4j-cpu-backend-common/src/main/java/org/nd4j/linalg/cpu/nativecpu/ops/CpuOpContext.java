@@ -22,6 +22,7 @@ package org.nd4j.linalg.cpu.nativecpu.ops;
 
 import lombok.NonNull;
 import lombok.val;
+import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -44,6 +45,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     private OpaqueContext context = nativeOps.createGraphContext(1);
     private final transient long id = Nd4j.getDeallocatorService().nextValue();
+    public final static long BASE_CPU_OP_CONTEXT_OFFSET = RandomUtils.nextLong();
 
     private transient DoublePointer tArgs;
     private transient BooleanPointer bArgs;
@@ -311,8 +313,8 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     }
 
     @Override
-    public String getUniqueId() {
-        return new String("CTX_" + id);
+    public long getUniqueId() {
+        return BASE_CPU_OP_CONTEXT_OFFSET + id;
     }
 
     @Override

@@ -21,6 +21,7 @@
 package org.nd4j.linalg.cpu.nativecpu.buffer;
 
 import lombok.val;
+import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
@@ -43,14 +44,16 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     protected transient Pointer addressPointer;
     private transient final long instanceId = Nd4j.getDeallocatorService().nextValue();
 
+    public final static long BASE_CPU_DATA_BUFFER_OFFSET = RandomUtils.nextLong();
+
     protected BaseCpuDataBuffer() {
 
     }
 
 
     @Override
-    public String getUniqueId() {
-        return "BCDB_" + instanceId;
+    public long getUniqueId() {
+        return BASE_CPU_DATA_BUFFER_OFFSET + instanceId;
     }
 
     @Override

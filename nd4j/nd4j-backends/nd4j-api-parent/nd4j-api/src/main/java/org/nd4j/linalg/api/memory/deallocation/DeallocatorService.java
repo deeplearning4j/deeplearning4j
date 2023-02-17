@@ -28,19 +28,24 @@ import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.factory.Nd4j;
 
-
 import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class DeallocatorService {
     private Thread[] deallocatorThreads;
     private ReferenceQueue<Deallocatable>[] queues;
-    private Map<String, DeallocatableReference> referenceMap = new ConcurrentHashMap<>();
+    //note we do this for thread safety while reducing the amount of memory
+    //strings take up. There is a performance trade off with respect to
+    //ConcurrentHashMap (the prior implementation) which has higher throughput overall but is inefficient
+    //for the amount of memory overhead it has. String compression
+    //with a large number of objects is more important over throughput.
+    private Map<Long,DeallocatableReference> referenceMap = new ConcurrentSkipListMap<>();
+
     private List<List<ReferenceQueue<Deallocatable>>> deviceMap = new ArrayList<>();
     private Boolean noPointerGc;
     private final transient AtomicLong counter = new AtomicLong(0);
@@ -123,7 +128,7 @@ public class DeallocatorService {
                 // if periodicGc is enabled, only first thread will call for it
                 if (Nd4j.getMemoryManager().isPeriodicGcActive() && threadIdx == 0 && Nd4j.getMemoryManager().getAutoGcWindow() > 0) {
                     val reference = (DeallocatableReference) queue.poll();
-                    if (reference == null || (reference != null && reference.get() != null &&  !reference.get().shouldDeAllocate()) || !reference.getDeallocator().referenceMetaData().isConstant()) {
+                    if (reference == null || (reference != null && reference.get() != null &&  !reference.get().shouldDeAllocate()) || !reference.getDeallocator().isConstant()) {
                         val timeout = Nd4j.getMemoryManager().getAutoGcWindow();
                         try {
                             Thread.sleep(Nd4j.getMemoryManager().getAutoGcWindow());
@@ -133,7 +138,7 @@ public class DeallocatorService {
                         }
                     } else {
                         // invoking deallocator
-                        if (reference != null && (reference.get().shouldDeAllocate()) || reference.getDeallocator().referenceMetaData().isConstant()) {
+                        if (reference != null && (reference.get().shouldDeAllocate()) || reference.getDeallocator().isConstant()) {
                             reference.deallocate();
                             referenceMap.remove(reference.getId());
                         }
@@ -144,7 +149,7 @@ public class DeallocatorService {
                         if (reference == null)
                             continue;
 
-                        if( (reference.get() != null && !reference.get().shouldDeAllocate()) || reference.getDeallocator().referenceMetaData().isConstant())
+                        if( (reference.get() != null && !reference.get().shouldDeAllocate()) || reference.getDeallocator().isConstant())
                             continue;
 
 
