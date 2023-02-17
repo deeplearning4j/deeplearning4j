@@ -22,7 +22,6 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 import lombok.NonNull;
 import lombok.val;
-import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
@@ -50,7 +49,6 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     private OpaqueContext context = nativeOps.createGraphContext(1);
     private final transient long id = Nd4j.getDeallocatorService().nextValue();
-    public final static long BASE_CUDA_OP_CONTEXT_OFFSET = RandomUtils.nextLong();
 
     public CudaOpContext() {
         Nd4j.getDeallocatorService().pickObject(this);
@@ -161,7 +159,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public long getUniqueId() {
-        return BASE_CUDA_OP_CONTEXT_OFFSET + id;
+        return new String("CTX_" + id);
     }
 
     @Override
