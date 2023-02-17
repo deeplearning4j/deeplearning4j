@@ -40,8 +40,20 @@ public interface Deallocator {
     LogEvent logEvent();
 
     /**
-     * Reference metadata for determining whether to deallocate a reference.
+     * Returns whether the deallocator
+     * is constant or not.
+     *
      * @return
      */
-    ReferenceMetaData referenceMetaData();
+    boolean isConstant();
+
+    /**
+     * Sets whether this deallocator is constant or not.
+     * This is needed for when something like a databuffer changes its state.
+     * @param constant
+     */
+    default void setConstant(boolean constant) {
+        //default is no op. Only databuffer deallocators really need to update
+        //their state as constant or not.
+    }
 }

@@ -29,7 +29,7 @@ import java.lang.ref.WeakReference;
 
 @Data
 public class DeallocatableReference extends WeakReference<Deallocatable> {
-    private String id;
+    private long id;
     private Deallocator deallocator;
 
     public DeallocatableReference(Deallocatable referent, ReferenceQueue<? super Deallocatable> q) {
@@ -40,7 +40,7 @@ public class DeallocatableReference extends WeakReference<Deallocatable> {
     }
 
     public void deallocate() {
-        if(get() != null && !get().shouldDeAllocate() || deallocator.referenceMetaData().isConstant()) {
+        if(get() != null && !get().shouldDeAllocate() || deallocator.isConstant()) {
             throw new IllegalStateException("Unable to deallocate reference. Not ready yet.");
         }
 

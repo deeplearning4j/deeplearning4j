@@ -31,6 +31,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -62,11 +63,14 @@ import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.shade.netty.util.concurrent.DefaultThreadFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -74,7 +78,32 @@ import static org.junit.jupiter.api.Assertions.*;
 @NativeTag
 public class OpExecutionerTests extends BaseNd4jTestWithBackends {
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMultiThreadedReduce(Nd4jBackend backend) throws InterruptedException {
+        INDArray vec1 = Nd4j.create(new float[] {1, 2, 3, 4, 5});
+        int count = 1000;
+        int j  = 0;
+        while(j < count) {
+            ExecutorService executorService = Executors.newCachedThreadPool();
+            for(int i = 0; i < 1000; i++) {
+                executorService.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try(MemoryWorkspace memoryWorkspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread()) {
+                            INDArray vec1 = Nd4j.create(new float[] {1, 2, 3, 4, 5});
+                            vec1.norm2Number();
+                        }
+                    }
+                });
+            }
 
+            executorService.awaitTermination(10, TimeUnit.SECONDS);
+            j++;
+        }
+
+
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

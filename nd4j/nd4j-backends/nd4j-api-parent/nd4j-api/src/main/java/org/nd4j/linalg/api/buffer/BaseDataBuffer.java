@@ -1809,7 +1809,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param reallyConstant
      */
     public void setConstant(boolean reallyConstant) {
-        deallocator().referenceMetaData().setConstant(reallyConstant);
+        deallocator().setConstant(reallyConstant);
         if(EventLogger.getInstance().isEnabled())
             deallocator().logEvent().setConstant(reallyConstant);
         this.constant = reallyConstant;

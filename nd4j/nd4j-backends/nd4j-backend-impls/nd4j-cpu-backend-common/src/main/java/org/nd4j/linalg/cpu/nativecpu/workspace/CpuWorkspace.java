@@ -23,6 +23,7 @@ package org.nd4j.linalg.cpu.nativecpu.workspace;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.AllocationsTracker;
@@ -50,6 +51,9 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
     protected LongPointer mmap;
 
+    public final static long BASE_CPU_WORK_SPACE_OFFSET = RandomUtils.nextLong();
+
+
     public CpuWorkspace(@NonNull WorkspaceConfiguration configuration) {
         super(configuration);
     }
@@ -64,8 +68,9 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
     }
 
 
-    public String getUniqueId() {
-        return "Workspace_" + getId() + "_" + Nd4j.getDeallocatorService().nextValue();
+    @Override
+    public long getUniqueId() {
+        return BASE_CPU_WORK_SPACE_OFFSET + Nd4j.getDeallocatorService().nextValue();
     }
 
     @Override
