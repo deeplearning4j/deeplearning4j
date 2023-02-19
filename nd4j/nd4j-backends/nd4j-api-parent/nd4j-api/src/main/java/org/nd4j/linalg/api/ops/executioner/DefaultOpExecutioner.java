@@ -1028,7 +1028,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         return op.y();
     }
 
-    public void setZ(INDArray z, Op op, OpContext oc){
+    public void setZ(INDArray z, Op op, OpContext oc) {
         if(oc != null)
             oc.setOutputArray(0, z);
         else
