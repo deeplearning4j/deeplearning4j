@@ -46,7 +46,7 @@
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
         <backend.artifactId>nd4j-native</backend.artifactId>
-
+        <org.nd4j.linalg.api.ops.udf.packages>org.nd4j.linalg.api.ops</org.nd4j.linalg.api.ops.udf.packages>
         <lombok.version>1.18.24</lombok.version>
         <derby.version>10.13.1.1</derby.version>
         <maven-surefire-plugin.version>3.0.0-M1</maven-surefire-plugin.version>
@@ -79,7 +79,7 @@
         <surefire.threads>8</surefire.threads>
         <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
         <excludedTests>large-resources,downloads,long-running-test</excludedTests>
-     <!--   <preload>/usr/local/lib/libjemalloc.so.2</preload>-->
+        <!--   <preload>/usr/local/lib/libjemalloc.so.2</preload>-->
     </properties>
 
     <dependencyManagement>
