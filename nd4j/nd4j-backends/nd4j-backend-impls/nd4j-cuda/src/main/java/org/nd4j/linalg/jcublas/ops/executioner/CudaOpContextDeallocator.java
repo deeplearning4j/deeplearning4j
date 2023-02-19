@@ -34,6 +34,7 @@ public class CudaOpContextDeallocator implements Deallocator {
     private transient LogEvent logEvent;
     private long ctxId = -1;
 
+
     public CudaOpContextDeallocator(CudaOpContext ctx) {
         context = (OpaqueContext) ctx.contextPointer();
         if(EventLogger.getInstance().isEnabled()) {

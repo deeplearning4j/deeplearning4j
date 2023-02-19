@@ -27,6 +27,10 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
 import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.linalg.factory.ops.*;
 import org.nd4j.linalg.profiler.UnifiedProfiler;
+import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
+import org.nd4j.linalg.profiler.data.eventlogger.EventType;
+import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
+import org.nd4j.linalg.profiler.data.eventlogger.ObjectAllocationType;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.nd4j.shade.guava.primitives.Ints;
@@ -1396,10 +1400,28 @@ public class Nd4j {
         return createBufferDetachedImpl( Shape.lengthOf(shape), type);
     }
 
+    private static void logAllocationIfNeeded(DataType dataType, long bytes) {
+        if(EventLogger.getInstance().isEnabled()) {
+            LogEvent logEvent = LogEvent.builder()
+                    .associatedWorkspace(null)
+                    .objectAllocationType(ObjectAllocationType.DATA_BUFFER)
+                    .eventType(EventType.ALLOCATION)
+                    .bytes(bytes)
+                    .eventTimeMs(System.currentTimeMillis())
+                    .threadName(Thread.currentThread().getName())
+                    .dataType(dataType)
+                    .build();
+
+            EventLogger.getInstance().log(logEvent);
+
+        }
+    }
+
     // used by createBufferDetached(long[] DataType) and createBufferDetached(int[] , DataType)
     private static DataBuffer createBufferDetachedImpl(long length, DataType type){
-        switch (type){
 
+       logAllocationIfNeeded(dataType(),length * type.width());
+        switch (type) {
             case DOUBLE:
                 return DATA_BUFFER_FACTORY_INSTANCE.createDouble(length);
             case FLOAT:
@@ -1477,6 +1499,7 @@ public class Nd4j {
      * @return the created buffer
      */
     public static DataBuffer createBufferDetached(int[] data) {
+        logAllocationIfNeeded(DataType.INT32,data.length * DataType.INT32.width());
         return DATA_BUFFER_FACTORY_INSTANCE.createInt(data);
     }
 
@@ -1487,6 +1510,7 @@ public class Nd4j {
      * @return the created buffer
      */
     public static DataBuffer createBufferDetached(long[] data) {
+        logAllocationIfNeeded(DataType.INT64,data.length * DataType.INT64.width());
         return DATA_BUFFER_FACTORY_INSTANCE.createLong(data);
     }
 
@@ -1559,6 +1583,7 @@ public class Nd4j {
      * @return the created buffer
      */
     public static DataBuffer createBufferDetached(float[] data) {
+        logAllocationIfNeeded(DataType.FLOAT,data.length * DataType.FLOAT.width());
         return DATA_BUFFER_FACTORY_INSTANCE.createFloat(data);
     }
 
@@ -1566,6 +1591,7 @@ public class Nd4j {
      * See {@link #createBufferDetached(float[])}
      */
     public static DataBuffer createBufferDetached(double[] data) {
+        logAllocationIfNeeded(DataType.DOUBLE,data.length * DataType.DOUBLE.width());
         return DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
     }
 
@@ -1682,6 +1708,7 @@ public class Nd4j {
      * @return the created buffer.
      */
     public static DataBuffer createTypedBufferDetached(double[] data, DataType dataType) {
+        logAllocationIfNeeded(DataType.DOUBLE,data.length * DataType.DOUBLE.width());
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
@@ -1691,6 +1718,7 @@ public class Nd4j {
      * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(float[] data, DataType dataType) {
+        logAllocationIfNeeded(DataType.FLOAT,data.length * DataType.FLOAT.width());
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
@@ -1700,6 +1728,7 @@ public class Nd4j {
      * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(int[] data, DataType dataType) {
+        logAllocationIfNeeded(DataType.INT32,data.length * DataType.INT32.width());
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
@@ -1709,6 +1738,7 @@ public class Nd4j {
      * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(long[] data, DataType dataType) {
+        logAllocationIfNeeded(DataType.INT64,data.length * DataType.INT64.width());
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
@@ -1718,6 +1748,7 @@ public class Nd4j {
      * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(short[] data, DataType dataType) {
+        logAllocationIfNeeded(DataType.INT16,data.length * DataType.INT16.width());
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
@@ -1727,6 +1758,7 @@ public class Nd4j {
      * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(byte[] data, DataType dataType) {
+        logAllocationIfNeeded(DataType.INT8,data.length * DataType.INT8.width());
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
@@ -1736,6 +1768,7 @@ public class Nd4j {
      * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(boolean[] data, DataType dataType) {
+        logAllocationIfNeeded(DataType.BOOL,data.length * DataType.BOOL.width());
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
         buffer.setData(data);
         return buffer;
@@ -4461,6 +4494,7 @@ public class Nd4j {
      */
     @SuppressWarnings("WeakerAccess") // For now. If part of public API it will need testing.
     public static INDArray createUninitializedDetached(DataType dataType, char ordering, long... shape){
+        logAllocationIfNeeded(dataType,ArrayUtil.prod(shape) * dataType.width());
         return INSTANCE.createUninitializedDetached(dataType, ordering, shape);
     }
 

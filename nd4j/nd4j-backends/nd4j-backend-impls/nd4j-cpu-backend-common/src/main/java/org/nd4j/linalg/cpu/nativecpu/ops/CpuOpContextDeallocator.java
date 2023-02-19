@@ -35,6 +35,7 @@ public class CpuOpContextDeallocator implements Deallocator {
     private LogEvent logEvent;
     private long ctxId = -1;
 
+
     public CpuOpContextDeallocator(CpuOpContext ctx) {
         context = (OpaqueContext) ctx.contextPointer();
         if(EventLogger.getInstance().isEnabled()) {
