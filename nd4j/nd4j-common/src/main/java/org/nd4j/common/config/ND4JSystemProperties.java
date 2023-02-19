@@ -240,7 +240,8 @@ public class ND4JSystemProperties {
 
 
     /**
-     * Set the package names to be scanned when using udfs
+     * Set the package names to be scanned when using udfs.
+     * The value should be a comma separated list.
      */
     public final static String UDF_NAME_SPACES = "org.nd4j.linalg.api.ops.udf.packages";
 
