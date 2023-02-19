@@ -143,7 +143,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     private static Table<DataType, String, List<INDArray>> arrays = HashBasedTable.create();
 
     private static boolean enableCache = Boolean
-            .parseBoolean(System.getProperty(ND4JSystemProperties.SAMEDIFF_MEMORY_CACHE_DISABLE, "true"));
+            .parseBoolean(System.getProperty(ND4JSystemProperties.SAMEDIFF_MEMORY_CACHE_ENABLE, "true"));
 
     /**
      * Create an ArrayCacheMemoryMgr with default settings as per
