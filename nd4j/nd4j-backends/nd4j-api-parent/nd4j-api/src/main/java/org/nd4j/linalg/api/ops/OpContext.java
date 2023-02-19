@@ -30,6 +30,12 @@ import java.util.List;
 public interface OpContext extends AutoCloseable {
 
     /**
+     * Returns the id of the op context (mainly used for tracking purposes)
+     * @return
+     */
+    long id();
+
+    /**
      * Returns true if the op context
      * currently contains a valid data type arguments pointer
      * @return

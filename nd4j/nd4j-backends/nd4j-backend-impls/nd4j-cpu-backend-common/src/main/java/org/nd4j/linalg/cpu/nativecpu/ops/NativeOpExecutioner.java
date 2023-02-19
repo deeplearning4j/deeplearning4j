@@ -69,6 +69,7 @@ import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.primitives.Optional;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.linalg.profiler.OpContextTracker;
 import org.nd4j.nativeblas.*;
 
 import java.util.*;
@@ -166,18 +167,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         long[] retShape = Shape.reductionShape(x, dimension, true, keepDims);
 
         if(z == null || x == z) {
-            val ret = Nd4j.createUninitialized(DataType.LONG, retShape);
-
+            val ret = Nd4j.createUninitialized(DataType.INT64, retShape);
             setZ(ret, op, oc);
             z = ret;
-        } else if(!Arrays.equals(retShape, z.shape())){
+        } else if(!Arrays.equals(retShape, z.shape())) {
             throw new IllegalStateException("Z array shape does not match expected return type for op " + op
                     + ": expected shape " + Arrays.toString(retShape) + ", z.shape()=" + Arrays.toString(z.shape()));
         }
 
         op.validateDataTypes();
-
-        Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension, DataType.INT).addressPointer();
 
         Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(x, dimension);
 
@@ -346,7 +344,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
          * for immutable buffers for the dimensions.
          * This gives us a pointer which is passed around in libnd4j.
          */
-        Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension, DataType.INT).addressPointer();
         val xb = ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
         val zb = ((BaseCpuDataBuffer) z.data()).getOpaqueDataBuffer();
         if (op instanceof Variance) {
@@ -844,7 +841,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets, devTadShapeInfoZ, devTadOffsetsZ);
 
-        Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension, DataType.INT).addressPointer();
 
         val xb = ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
         val yb = ((BaseCpuDataBuffer) y.data()).getOpaqueDataBuffer();

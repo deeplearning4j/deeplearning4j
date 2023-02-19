@@ -20,6 +20,8 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.profiler.OpContextTracker;
+import org.nd4j.linalg.profiler.data.OpContextInfo;
 import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
 import org.nd4j.linalg.profiler.data.eventlogger.EventType;
 import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
@@ -30,6 +32,7 @@ import org.nd4j.nativeblas.OpaqueContext;
 public class CudaOpContextDeallocator implements Deallocator {
     private transient final OpaqueContext context;
     private transient LogEvent logEvent;
+    private long ctxId = -1;
 
     public CudaOpContextDeallocator(CudaOpContext ctx) {
         context = (OpaqueContext) ctx.contextPointer();
@@ -42,11 +45,18 @@ public class CudaOpContextDeallocator implements Deallocator {
 
         }
 
+        if(OpContextTracker.getInstance().isEnabled()) {
+            ctxId = ctx.id();
+        }
+
     }
 
     @Override
     public void deallocate() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().deleteGraphContext(context);
+        if(OpContextTracker.getInstance().isEnabled()) {
+            OpContextTracker.getInstance().deallocateContext(ctxId);
+        }
     }
 
     @Override

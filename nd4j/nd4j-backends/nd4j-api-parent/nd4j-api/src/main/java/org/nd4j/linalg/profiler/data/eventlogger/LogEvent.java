@@ -55,5 +55,7 @@ public class LogEvent {
     private boolean attached;
     private boolean isConstant;
     private long objectId;
+    @Builder.Default
+    private long opContextId = -1;
 
 }

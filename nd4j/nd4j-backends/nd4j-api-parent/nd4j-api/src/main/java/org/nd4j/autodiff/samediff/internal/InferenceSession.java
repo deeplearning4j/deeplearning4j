@@ -87,6 +87,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     private AbstractDependencyTracker<SDValue, Dep> arrayUseTracker = new HashDependencyTracker<>();
 
 
+    @Getter
     private Map<String,OpContext> opContexts = new HashMap<>();
 
     public InferenceSession(@NonNull SameDiff sameDiff) {
