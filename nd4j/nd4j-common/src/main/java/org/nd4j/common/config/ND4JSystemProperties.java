@@ -238,6 +238,14 @@ public class ND4JSystemProperties {
      */
     public final static String EVENT_LOGGER_FORMAT_AS_DATE = "org.nd4j.linalg.profiler.eventlogger.logdate";
 
+
+    /**
+     * Set the package names to be scanned when using udfs.
+     * The value should be a comma separated list.
+     */
+    public final static String UDF_NAME_SPACES = "org.nd4j.linalg.api.ops.udf.packages";
+
+
     private ND4JSystemProperties() {
     }
 }
