@@ -80,6 +80,8 @@ public class BatchMmulBp extends DynamicCustomOp {
 
         this.transposeA = transposeA ? 1 : 0;
         this.transposeB = transposeB ? 1 : 0;
+        this.batchSize = inputsA.length;
+
     }
 
     public BatchMmulBp(INDArray alphas,
@@ -111,6 +113,8 @@ public class BatchMmulBp extends DynamicCustomOp {
         addArgs();
     }
 
+
+
     @Override
     public void configureWithSameDiff(SameDiff sameDiff) {
         super.configureWithSameDiff(sameDiff);
@@ -138,6 +142,7 @@ public class BatchMmulBp extends DynamicCustomOp {
             this.ldc = this.M;
         }
 
+        this.batchSize = (args().length -  2) / 2;
 
 
         //only add arguments when fully initialized
@@ -149,7 +154,7 @@ public class BatchMmulBp extends DynamicCustomOp {
 
     @Override
     public int getNumOutputs() {
-        return batchSize;
+        return 2 * batchSize;
     }
 
     public void addArgs() {
@@ -163,11 +168,10 @@ public class BatchMmulBp extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         List<DataType> out = new ArrayList<>();
-        for(int i = 0; i < batchSize; i++) {  //-2 for the alpha and beta params
+        for(int i = 0; i < batchSize * 2; i++) {  //-2 for the alpha and beta params
             Preconditions.checkState(dataTypes.get(i).isFPType(), "Inputs to batch mmul op must all be a floating point type: got %s", dataTypes);
-            if(i % 2 == 0) {
-                out.add(dataTypes.get(i));
-            }
+            out.add(dataTypes.get(i));
+
         }
 
         return out;

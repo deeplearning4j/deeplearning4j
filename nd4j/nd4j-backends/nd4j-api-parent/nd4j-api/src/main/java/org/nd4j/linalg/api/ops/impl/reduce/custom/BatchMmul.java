@@ -57,10 +57,17 @@ public class BatchMmul extends DynamicCustomOp {
     private SDVariable[] matricesA,matricesB;
     private SDVariable alphas,betas;
     protected int lda,ldb,ldc;
-    public BatchMmul(SameDiff sameDiff, SDVariable[] matricesA, SDVariable[] matricesB, boolean transposeA, boolean transposeB) {
+    public BatchMmul(SameDiff sameDiff,
+                     SDVariable[] matricesA,
+                     SDVariable[] matricesB,
+                     boolean transposeA,
+                     boolean transposeB) {
         this(sameDiff, ArrayUtils.addAll(matricesA, matricesB), transposeA, transposeB);
         this.matricesA = matricesA;
         this.matricesB = matricesB;
+        this.alphas = sameDiff.constant(Nd4j.scalar(matricesA[0].dataType(),1.0));
+        this.betas = sameDiff.constant(Nd4j.scalar(matricesB[0].dataType(),0.0));
+
     }
 
     public BatchMmul(SameDiff sameDiff,
@@ -75,17 +82,46 @@ public class BatchMmul extends DynamicCustomOp {
         this.transposeA = transposeA ? 1 : 0;
         this.transposeB = transposeB ? 1 : 0;
         this.batchSize = matrices.length / 2;
-
+        this.alphas = arg(0);
+        this.betas = arg(1);
+        this.matricesA = new SDVariable[batchSize];
+        this.matricesB = new SDVariable[batchSize];
+        for(int i = 0 ; i < batchSize; i++) {
+            matricesA[i] = arg(i + 2);
+            matricesB[i] = arg(i + 2 + batchSize);
+        }
     }
 
 
 
-    public BatchMmul(SameDiff sd, SDVariable alphas, SDVariable betas, SDVariable[] inputsA, SDVariable[] inputsB, boolean transposeA, boolean transposeB) {
+    public BatchMmul(SameDiff sd, SDVariable alphas,
+                     SDVariable betas,
+                     SDVariable[] inputsA,
+                     SDVariable[] inputsB, boolean transposeA, boolean transposeB) {
         super(sd, ArrayUtil.concat(SDVariable.class,
                 new SDVariable[]{alphas,betas},
                 inputsA,inputsB
         ));
 
+        this.batchSize = inputsA.length;
+
+        this.transposeA = transposeA ? 1 : 0;
+        this.transposeB = transposeB ? 1 : 0;
+
+        long[] firstShape = inputsA[0].getShape();
+        long[] lastShape = inputsB[0].getShape();
+
+        this.M = transposeA ? (int) firstShape[1]: (int) firstShape[0];
+        this.N = transposeB ? (int) lastShape[0]: (int) lastShape[1];
+        this.K = transposeB ? (int) lastShape[1]: (int) lastShape[0];
+        this.lda = (int) firstShape[0];
+        this.ldb = (int) lastShape[0];
+        this.ldc = (int) firstShape[0];
+        addArgs();
+        this.alphas = alphas;
+        this.betas = betas;
+        this.matricesA = inputsA;
+        this.matricesB = inputsB;
     }
 
     public BatchMmul(INDArray alphas, INDArray betas, INDArray[] inputsA, INDArray[] inputsB, boolean transposeA, boolean transposeB) {
@@ -143,7 +179,17 @@ public class BatchMmul extends DynamicCustomOp {
         //only add arguments when fully initialized
         if(M > 0 && N > 0 && K > 0 && firstShape != null && lastShape != null) {
             addArgs();
+        }
 
+
+
+        this.alphas = arg(0);
+        this.betas = arg(1);
+        this.matricesA = new SDVariable[batchSize];
+        this.matricesB = new SDVariable[batchSize];
+        for(int i = 0 ; i < batchSize; i++) {
+            matricesA[i] = arg(i + 2);
+            matricesB[i] = arg(i + 2 + batchSize);
         }
     }
 

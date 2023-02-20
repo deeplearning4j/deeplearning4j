@@ -31,6 +31,7 @@ namespace sd {
 namespace ops {
 
 CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
+  sd_printf("Before op execution \n",0);
   int transA = INT_ARG(0);
   int transB = INT_ARG(1);
   int M = INT_ARG(2);
@@ -81,10 +82,10 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
                "BatchedGemm: valid values for transA and transB are: 0/1 or 111/112, for NoTrans/Trans respectively")
   REQUIRE_TRUE(M > 0 && N > 0 && K > 0 && ldA > 0 && ldB > 0 && ldC > 0 && batchSize > 0, 0, "");
 
-
+  sd_printf("Before alphas/betas\n",0);
   auto alpha = INPUT_VARIABLE(0);
   NDArray *alphaInput = nullptr;
-  if(alpha->lengthOf() != batchSize) {
+  if(alpha->isScalar()) {
     alphaInput = new NDArray('c',{batchSize},alpha->dataType());
     alphaInput->assign(alpha);
   } else {
@@ -94,7 +95,7 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
 
   auto beta = INPUT_VARIABLE(1);
   NDArray *betaInput = nullptr;
-  if(beta->lengthOf() != batchSize) {
+  if(beta->isScalar()) {
     betaInput = new NDArray('c',{batchSize},beta->dataType());
     betaInput->assign(beta);
   } else {
@@ -110,6 +111,8 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
   for (int e = 0; e < batchSize; e++) {
     vA[e] = INPUT_VARIABLE(e + 2);
     vB[e] = INPUT_VARIABLE(e + 2 + batchSize);
+    vA[e]->printShapeInfo("A shape info");
+    vB[e]->printShapeInfo("B shape info");
     vC[e] = OUTPUT_VARIABLE(e);
 
     REQUIRE_TRUE(firstType == vC[e]->dataType(), 0, "BatchedGemm: all inputs and outputs must have same data type");
@@ -130,16 +133,13 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
 
     if(transB == 111) {
       REQUIRE_TRUE(N == vB[e]->sizeAt(1), 0, "BatchedGemm: batch %i, number of B.rows() should be equal to N transB: false", e);
-      REQUIRE_TRUE(K == vA[e]->sizeAt(0) , 0,
+      REQUIRE_TRUE(K == vA[e]->sizeAt(1) , 0,
                    "BatchedGemm: batch %i, number of B.rows() should be equal to K transB: false", e);
     } else {
       REQUIRE_TRUE(N == vB[e]->sizeAt(0), 0, "BatchedGemm: batch %i, number of B.columns() should be equal to N transB: true", e);
       REQUIRE_TRUE(K == vA[e]->sizeAt(1) , 0,
                    "BatchedGemm: batch %i, number of B.rows() should be equal to K transB: true", e);
     }
-
-
-
   }
 
   REQUIRE_TRUE(vA.size() == vB.size() && vA.size() == vC.size() && vA.size() == batchSize, 0,
@@ -188,6 +188,7 @@ DECLARE_SHAPE_FN(batched_gemm) {
   auto shapeList = SHAPELIST();
 
   if (!(M > 0 && N > 0 && K > 0 && ldA > 0 && ldB > 0 && ldC > 0 && batchSize > 0)) {
+    sd_printf("Invalid input shape returned. Something was 0. M: %d N: %d K %d ldA %d ldB %d ldC %d batchSize %d\n",M,N,K,ldA,ldB,ldC,batchSize);
     shapeList->push_back(
         ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShape->at(0)), 'c', {1, 1}));
     return shapeList;
