@@ -19,6 +19,7 @@
  */
 package org.nd4j.onnxruntime.util;
 
+import onnx.Onnx;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.bytedeco.onnxruntime.*;
@@ -28,9 +29,11 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.onnxruntime.runner.enums.ONNXType;
+import org.nd4j.shade.guava.primitives.Longs;
 import org.slf4j.Logger;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.bytedeco.onnxruntime.global.onnxruntime.*;
 import static org.nd4j.linalg.api.buffer.DataType.*;
@@ -96,6 +99,26 @@ public class ONNXUtils {
     public static ONNXType getTypeForInput(Session session,long i) {
         TypeInfo typeInfo = session.GetInputTypeInfo(i);
         return ONNXType.values()[typeInfo.GetONNXType()];
+    }
+
+
+    /**
+     * Returns a zeroed array of the input data.
+     * This array's shape and data type are determined
+     * from {@link Onnx.ValueInfoProto#getType()}
+     * tensor field.
+     * given the value type. Mainly used for quick debugging/
+     * testing.
+     * @param valueInfoProto the value info proto
+     *                       to get the shape information from
+     * @return the sample tensor
+     */
+    public static INDArray getSampleForValueInfo(Onnx.ValueInfoProto valueInfoProto) {
+        Preconditions.checkState(valueInfoProto.hasType(),"Value info must have a type!");
+        Onnx.TypeProto.Tensor tensorType = valueInfoProto.getType().getTensorType();
+        long[] shape = Longs.toArray(tensorType.getShape().getDimList().stream().map(input -> input.getDimValue()).collect(Collectors.toList()));
+        DataType type = dataTypeForOnnxType(tensorType.getElemType());
+        return Nd4j.create(type,shape);
     }
 
     /**
@@ -245,11 +268,26 @@ public class ONNXUtils {
      * @return
      */
     public static Value getTensor(INDArray ndArray, MemoryInfo memoryInfo) {
+        if(ndArray == null || ndArray.isEmpty()) {
+            /**
+             *   static Value CreateTensor(const OrtMemoryInfo* info, void* p_data, size_t p_data_byte_count, const int64_t* shape, size_t shape_len,
+             *                             ONNXTensorElementDataType type)
+             */
+            LongPointer dims = new LongPointer(0);
+            Value ret =  Value.CreateTensor(
+                    memoryInfo.asOrtMemoryInfo(),
+                    new FloatPointer(),
+                    0,
+                    dims,
+                    0,
+                    onnxTypeForDataType(FLOAT));
+            return ret;
+        }
+
         Pointer inputTensorValuesPtr = ndArray.data().pointer();
         Pointer inputTensorValues = inputTensorValuesPtr;
         long sizeInBytes = ndArray.length() * ndArray.data().getElementSize();
 
-        //        public static native Value CreateTensor(@Const OrtMemoryInfo var0, Pointer var1, @Cast({"size_t"}) long var2, @Cast({"const int64_t*"}) LongPointer var4, @Cast({"size_t"}) long var5, @Cast({"ONNXTensorElementDataType"}) int var7);
         /**
          *   static Value CreateTensor(const OrtMemoryInfo* info, void* p_data, size_t p_data_byte_count, const int64_t* shape, size_t shape_len,
          *                             ONNXTensorElementDataType type)
