@@ -202,7 +202,7 @@ NDArray *AttentionHelper::computeAttentionMask(sd::NDArray *query,
   sd::ops::boolean_and booleanAnd;
   auto all = sd::NDIndexUtils::createAll();
   auto newAxis = sd::NDIndexUtils::createNewAxis();
-  if(queryMask != nullptr && !queryMask->isEmpty()) {
+  if(queryMask != nullptr) {
     internalQueryMask = new NDArray(queryMask->cast(sd::DataType::BOOL));
     if(autoMask != nullptr) {
       //  auto_mask = query_mask[:, :, tf.newaxis]  # shape is [B, T, 1]
@@ -213,8 +213,7 @@ NDArray *AttentionHelper::computeAttentionMask(sd::NDArray *query,
 
   sd_printf("After query mask creation\n",0);
 
-  if(valueMask != nullptr && !valueMask->isEmpty()) {
-    sd_printf("Creating value mask\n",0);
+  if(valueMask != nullptr) {
     internalValueMask = new NDArray(valueMask->cast(sd::DataType::BOOL));
     // mask = value_mask[:, tf.newaxis, :]  # shape is [B, 1, S]
     //                                    auto_mask = mask if auto_mask is None else auto_mask & mask
@@ -230,8 +229,7 @@ NDArray *AttentionHelper::computeAttentionMask(sd::NDArray *query,
 
 
 
-  if(keyMask != nullptr && !keyMask->isEmpty()) {
-    sd_printf("Creating key mask\n",0);
+  if(keyMask != nullptr) {
     internalKeyMask = new NDArray(keyMask->cast(sd::DataType::BOOL));
     //mask = key_mask[:, tf.newaxis, :]  # shape is [B, 1, S]
     //                                 auto_mask = mask if auto_mask is None else auto_mask & mask
@@ -340,19 +338,16 @@ def dropped_weights():
                                     return tf.matmul(weights, value), weights
  * @return
  */
-void AttentionHelper::applyAttentionScores(sd::NDArray *scores, sd::NDArray *value, sd::NDArray *scoresMask,
-                                           double dropout, int randomSeed, sd::NDArray *applyScoresOut) {
-  scores->printShapeInfo("Scores shape: ");
-  value->printShapeInfo("Value shape: ");
-  scores->printShapeInfo("Attention scores shape info");
+void AttentionHelper::applyAttentionScores(sd::NDArray *scores, sd::NDArray *value,
+                                           sd::NDArray *scoresMask, double dropout,
+                                           sd::NDArray *attentionScores) {
   sd::ops::boolean_not booleanNot;
   sd::ops::softmax softmax;
   sd::ops::dropout dropoutOp;
-  sd::ops::matmul matmul;
+  sd::ops::batched_gemm matmul;
 
   if (scoresMask != nullptr) {
-    auto castedScoresMask = scoresMask->cast(sd::DataType::BOOL);
-    auto paddingMaks = booleanNot.evaluate({&castedScoresMask}).at(0);
+    auto paddingMaks = booleanNot.evaluate({scoresMask}).at(0);
     if (scores->dataType() == DataType::BFLOAT16) {
       *scores -= 65504 * paddingMaks->cast(scores->dataType());
     } else {
@@ -363,18 +358,46 @@ void AttentionHelper::applyAttentionScores(sd::NDArray *scores, sd::NDArray *val
   auto softmaxOutput = softmax.evaluate({scores});
   auto weights = softmaxOutput.at(0);
   if (dropout > 0) {
-    auto dropout2 = dropoutOp.evaluate({weights}, {dropout}, {randomSeed});
+    auto dropout2 = dropoutOp.evaluate({weights}, {dropout}, {});
     auto dropoutResult = dropout2.at(0);
     weights = dropoutResult;
   }
 
+  /**
+   * TODO: create new batch gemm helper and then execute usual batch gemm create view batches
+   */
 
-  scores->printShapeInfo("Attention scores shape");
+  int M = scores->sizeAt(1);
+  int N = value->sizeAt(-1);
+  int k = scores->sizeAt(-1);
+  int lda = scores->sizeAt(1);
+  int ldb = value->sizeAt(1);
+  int ldc = M;
 
-  //batch size, tq tv
-  //batch size tv dim
-  //output: batch size, tq dim
-  matmul.execute({weights,value},{applyScoresOut});
+
+  auto alpha = NDArrayFactory::valueOf<double>({1},1.0);
+  auto alphaCasted = alpha->cast(scores->dataType());
+  auto beta = NDArrayFactory::valueOf<double>({1},0.0);
+  auto betaCasted = beta->cast(scores->dataType());
+  auto all = NDIndexUtils::createAll();
+
+
+  //weights of batch size, TQ TV
+  //attention scores of batch size, TQ TV
+  sd::ops::helpers::bgemm(weights,
+                          value,
+                          attentionScores,
+                          &alphaCasted,
+                          &betaCasted,
+                          0,
+                          0,
+                          M,
+                          N,
+                          k,
+                          lda,
+                          ldb,
+                          ldc,
+                          &all);
 
 }
 
@@ -432,39 +455,130 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
   query->printShapeInfo("Query shape info begin ");
   values->printShapeInfo("Values shape info begin");
   key->printShapeInfo("Key shape info begin");
-  sd::ops::matmul matMul;
-  sd::ops::matmul_bp matMulBp;
   sd::ops::batched_gemm_bp batchedGemmBp;
   sd::ops::batched_gemm batchedGemm;
   sd::ops::expand_dims expandDims;
   sd::ops::reduce_sum_bp reduceSum;
   sd::ops::tanh_bp tanh1;
   sd::ops::add_bp addBp;
+  sd::ops::create_view createView;
 
-
+  std::vector<sd::NDArray> pointIndices;
+  int batchSize = query->sizeAt(0) / 2;
+  for(int i = 0; i < batchSize; i++) {
+    pointIndices.push_back(NDIndexUtils::createPoint(i));
+  }
 
   if(scoreMode == ATTENTION_SCORE_MODE_DOT) {
 
     //A: value, B: weights
+
+    auto alpha = NDArrayFactory::valueOf<double>({1},1.0);
+    auto alphaCasted = alpha->cast(query->dataType());
+    auto beta = NDArrayFactory::valueOf<double>({1},0.0);
+    auto betaCasted = beta->cast(query->dataType());
+    auto all = NDIndexUtils::createAll();
+
+    std::vector<NDArray *>queryInputs;
+    std::vector<NDArray *> keyInputs;
+    std::vector<NDArray *> valueInputs;
+
+    std::vector<NDArray *> epsInputs;
+    std::vector<NDArray *> dldKSlices;
+    std::vector<NDArray *> dldVSlices;
+    std::vector<NDArray *> dldQSlices;
+
+
+
+
+    //add alpha and beta before the batch gemm, this just needs to be broadcasted
+    //divide by 2: queries and keys
+    for(int i = 0; i < batchSize; i++) {
+      auto point = pointIndices[i];
+      auto querySlice = createView.evaluate({query,&point,&all,&all},{},{});
+      auto keySlice = createView.evaluate({key,&point,&all,&all},{},{});
+      auto epsSlice = createView.evaluate({eps,&point,&all,&all},{},{});
+      auto valueSlice = createView.evaluate({values,&point,&all,&all},{},{});
+      auto dLdQSlice = createView.evaluate({dLdq,&point,&all,&all},{},{});
+      auto dLdKSlice = createView.evaluate({dLdk,&point,&all,&all},{},{});
+      auto dLdVSlice = createView.evaluate({dLdv,&point,&all,&all},{},{});
+
+      querySlice.at(0)->printShapeInfo("Query slice: %d");
+      keySlice.at(0)->printShapeInfo("Key slice: %d");
+      epsSlice.at(0)->printShapeInfo("Eps slice: %d");
+      valueSlice.at(0)->printShapeInfo("Values slice: %d");
+
+      queryInputs.push_back(querySlice.at(0));
+      keyInputs.push_back(keySlice.at(0));
+      epsInputs.push_back(epsSlice.at(0));
+      valueInputs.push_back(valueSlice.at(0));
+
+      dldQSlices.push_back(dLdQSlice.at(0));
+      dldKSlices.push_back(dLdKSlice.at(0));
+      dldVSlices.push_back(dLdVSlice.at(0));
+
+    }
+
+    queryInputs[0]->printShapeInfo("Query shape info");
+    keyInputs[0]->printShapeInfo("Key shape info");
     //note we permute already and do not need to do so again here
     auto weightShapeInfo = ShapeUtils::evalShapeForMatmul(
-        query->shapeInfo(),
-        key->shapeInfo(),
+        queryInputs[0]->shapeInfo(),
+        keyInputs[0]->shapeInfo(),
         false,
         true);
-
-    const sd::LongType *weightShapeInfoInput = ConstantShapeHelper::getInstance().createShapeInfo(query->dataType(),'c',weightShapeInfo);
-    NDArray preSoftmax( weightShapeInfoInput);
+    std::vector<sd::LongType> weightShape  = {batchSize * 2,weightShapeInfo[0],weightShapeInfo[1]};
+    NDArray preSoftmax('c', weightShape, values->dataType(), launchContext);
     preSoftmax.printShapeInfo("Pre softmax shape");
+    std::vector<NDArray *> weightsInputs;
+    weightsInputs.push_back(&alphaCasted);
+    weightsInputs.push_back(&betaCasted);
+
+    for(int i = 0; i < queryInputs.size(); i++) {
+      weightsInputs.push_back(queryInputs[i]);
+    }
+
+    for(int i = 0; i < keyInputs.size(); i++) {
+      weightsInputs.push_back(keyInputs[i]);
+    }
 
 
+
+
+    std::vector<sd::NDArray *> preSoftmaxSlices;
+    for(int i = 0; i < keyInputs.size(); i++) {
+      auto point = pointIndices[i];
+      auto preSoftmaxSlice = createView.evaluate({&preSoftmax,&point,&all,&all},{},{});
+      preSoftmaxSlices.push_back(preSoftmaxSlice.at(0));
+    }
 
 
     int transA = 0;
     int transB = 1;
-    matMul.execute({query,key},{&preSoftmax},{transA,transB});
+    int M = query->sizeAt(1);
+    int N = key->sizeAt(1);
+    int k = query->sizeAt(-1);
+    int lda = query->sizeAt(1);
+    int ldb = key->sizeAt(-1);
+    int ldc = M;
+    sd_printf("M: %d N: %d k: %d lda: %d ldb %d ldc: %d batchSize: %d transA: %d transB: %d\n",M,N,k,lda,ldb,ldc,batchSize,transA,transB);
+
+    batchedGemm.execute(weightsInputs,
+                        preSoftmaxSlices,
+                        {},{
+                            transA,
+                            transB,
+                            M,
+                            N,
+                            k,
+                            lda,
+                            ldb,
+                            ldc,
+                            batchSize
+                        });
 
     sd_printf("Done Computing first batch gemm\n",0);
+    preSoftmaxSlices[0]->printShapeInfo("Pre soft max slices output shape:");
 
     sd_printf("Computing attention mask\n",0);
     auto mask = AttentionHelper::computeAttentionMask(query,
@@ -481,14 +595,15 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
     if(mask != nullptr)
       preSoftmax += (*mask - 1) * 1e9;
 
+    sd_printf("Applying mask\n",0);
     //end masking pre query/key matrix multiply section
-    const sd::LongType *weightShape = const_cast<const sd::LongType *>(shape::shapeOf(weightShapeInfo.data()));
 
-    NDArray weights(weightShapeInfoInput);
+    NDArray weights('c', weightShape, values->dataType(), launchContext);
     weights.printShapeInfo("Weights shape: ");
     sd::ops::softmax softmax;
     softmax.execute({&preSoftmax}, {&weights},{}, {-2}, {});
 
+    sd_printf("Done Computing first batch softmax\n",0);
 
 
     //permuted due to keys being permuted. Weights are query * keys permuted by 0,2,1 note we do this
@@ -497,16 +612,102 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
     //begin dldw
     NDArray dLdw(weightInput.shapeInfo());
 
+    std::vector<NDArray *> dldwSlices;
+    for(int i = 0; i < batchSize; i++) {
+      auto point = pointIndices[i];
+      //note weights here are permuted due to weights being query * key permuted to 0,2,1
+      auto weightSlice = createView.evaluate({&dLdw,&point,&all,&all},{},{});
+      dldwSlices.push_back(weightSlice.at(0));
+    }
+
+    sd_printf("Done Computing dldwslices with size %d\n",dldwSlices.size());
+
+    std::vector<NDArray *> weightsSlices;
+    for(int i = 0; i < batchSize; i++) {
+      auto point = pointIndices[i];
+      //note weights here are permuted due to weights being query * key permuted to 0,2,1
+      auto weightSlice = createView.evaluate({&weightInput,&point,&all,&all},{},{});
+      weightsSlices.push_back(weightSlice.at(0));
+    }
+
+    sd_printf("Computed weight slices\n",0);
+    std::vector<sd::NDArray *> dldWInputs;
+    dldWInputs.push_back(&alphaCasted);
+    dldWInputs.push_back(&betaCasted);
+   //TODO: this looks strange. It's the only way to get out a dldx with a matching shape to the input.
+    //the dldx is : dLdOut, matricesB, false, transposeB == 1)
+    for(int i = 0; i < valueInputs.size(); i++) {
+      REQUIRE_TRUE(valueInputs[i] != nullptr,0,"Value inputs must not be null!");
+      dldWInputs.push_back(valueInputs[i]);
+    }
+
+     for(int i = 0; i < dldwSlices.size(); i++) {
+       REQUIRE_TRUE(dldwSlices[i] != nullptr,0,"dldwSlices must not be null!");
+       dldWInputs.push_back(weightsSlices[i]);
+     }
+
+
+    sd_printf("Computed valueInputs slices with size \n",valueInputs.size());
+
+    sd_printf("Computed dldWInputs slices with size %d\n",dldwSlices.size());
+
+    for(int i = 0; i < epsInputs.size(); i++) {
+      REQUIRE_TRUE(epsInputs[i] != nullptr,0,"eps must not be null!");
+      dldWInputs.push_back(epsInputs[i]);
+    }
+    sd_printf("Computed eps slices\n",0);
+
+
+    //outputs for dldv dldw
+    std::vector<sd::NDArray *> dldWdlDv;
+    for(int i = 0; i < dldVSlices.size(); i++) {
+      dldWdlDv.push_back(dldVSlices[i]);
+      dldVSlices[i]->printShapeInfo("DLDV slice shape:");
+    }
+
+    for(int i = 0; i < dldwSlices.size(); i++) {
+      dldWdlDv.push_back(dldwSlices[i]);
+      dldwSlices[i]->printShapeInfo("DLDW slice shape:");
+    }
+
+
+    sd_printf("Computed dldWdlDv slices\n",0);
+
+
+    sd_printf("Computed dldWdlDv 2 slices\n",0);
+
+    sd_printf("About to execute first batch gemm bp\n",0);
+
+    //TODO:  P name: batched_gemm_bp Expected vs provided shapes mismatch [1, 3] vs [4, 3] at index 0 with expected shape info [2, 1, 3, 1, 1, 8192, 1, 102] and output shape info [2, 4, 3, 3, 1, 8192, 1, 99]. Conditions, shapeEquals: 0, array empty: 0
+
+
+
+    int transA2 = 0;
+    int transB2 = 0;
+    int M2 = values->sizeAt(1);
+    //note: we transposed weights here. May need to change this back to -1
+    int N2 = weightInput.sizeAt(-1);
+    int k2 = values->sizeAt(-1);
+    int lda2 = values->sizeAt(1);
+    int ldb2 = weightInput.sizeAt(1);
+    int ldc2 = M;
 
 
 
     //inputs: values, weights, eps
     //output is dldv, dldw
-    auto epsTranspose = eps->permute({0,2,1});
-
-    //weights * value?
-    matMulBp.execute({values,&weights,&epsTranspose},{dLdv,&dLdw},{},{1,1});
-
+    batchedGemmBp.execute(dldWInputs,dldWdlDv,{},{
+                                                           transA2,
+                                                        transB2,
+                                                           M2,
+                                                           N2,
+                                                           k2,
+                                                           lda2,
+                                                           ldb2,
+                                                           ldc2,
+                                                           batchSize
+                                                       });
+    sd_printf("After execution of batch gemm bp\n",0);
     //first matrix multiply  backprop end
 
     NDArray dLds(preSoftmax.shapeInfo());
@@ -517,6 +718,54 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
     if(scale != 0.0)
       dLds /= scale;
 
+
+    std::vector<sd::NDArray *> dldSSlices;
+    for(int i = 0; i < batchSize; i++) {
+      auto point = pointIndices[i];
+      auto weightSlice = createView.evaluate({&dLds,&point,&all,&all},{},{});
+      dldSSlices.push_back(weightSlice.at(0));
+    }
+
+
+    std::vector<sd::NDArray *> dldV;
+    std::vector<sd::NDArray *> dldW;
+    for(int i = 0; i < batchSize; i++) {
+      dldV.push_back(dldWdlDv.at(i));
+      dldW.push_back(dldWdlDv.at(i + batchSize));
+    }
+
+    std::vector<NDArray *> dldKdlDqInputs;
+
+    dldKdlDqInputs.push_back(&alphaCasted);
+    dldKdlDqInputs.push_back(&betaCasted);
+    alphaCasted.printShapeInfo("Alpha shape:");
+    betaCasted.printShapeInfo("Beta shape: ");
+    for(int i = 0; i < queryInputs.size(); i++) {
+      dldKdlDqInputs.push_back(queryInputs[i]);
+    }
+
+    for(int i = 0; i < keyInputs.size(); i++) {
+      dldKdlDqInputs.push_back(keyInputs[i]);
+    }
+
+    for(int i = 0; i < dldSSlices.size(); i++) {
+      dldKdlDqInputs.push_back(dldSSlices[i]);
+    }
+
+    std::vector<sd::NDArray *> dldKdldQOutputs;
+    for(int i  = 0; i < dldQSlices.size(); i++) {
+      dldKdldQOutputs.push_back(dldQSlices[i]);
+      dldQSlices[i]->printShapeInfo("Query slice shape info");
+    }
+
+    for(int i  = 0; i < dldKSlices.size(); i++) {
+      dldKdldQOutputs.push_back(dldKSlices[i]);
+      dldKSlices[i]->printShapeInfo("Key slice shape info");
+    }
+
+
+    sd_printf("About to perform second backprop\n",0);
+
     int transA3 = 0;
     int transB3 = 1;
     int M3 = query->sizeAt(1);
@@ -525,10 +774,14 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
     int lda3 = query->sizeAt(1);
     int ldb3 = key->sizeAt(1);
     int ldc3 = M3;
-
+    dldKSlices[0]->printShapeInfo("DlDK slice: ");
+    dldQSlices[0]->printShapeInfo("DLDQ Slice: ");
+    dldSSlices[0]->printShapeInfo("DLDS Slice: ");
+    sd_printf("M: %d N: %d K: %d lda: %d ldb %d ldc:%d\n",M2,N2,k2,lda2,ldb2,ldc2);
     //inputs: keys,queries,dlds
     //outputs: dldk, dldq
-    matMulBp.execute({key,query,&dLds},{dLdk,dLdq},{transA3,transB3});
+    batchedGemmBp.execute(dldKdlDqInputs,dldKdldQOutputs,{},{transA3,transB3,M3,N3,k3,lda3,ldb3,ldc3,batchSize});
+    sd_printf("After to perform second backprop\n",0);
 
 
   } else if(scoreMode == ATTENTION_SCORE_MODE_CONCAT) {
@@ -577,14 +830,41 @@ void AttentionHelper::doDotProductAttention(sd::NDArray *query, sd::NDArray *key
                                             sd::NDArray *concatWeights, sd::NDArray *attentionScoresOut) {
 
   sd::ops::batched_gemm matmul2;
-  sd::ops::matmul matmul3;
   sd::ops::expand_dims expandDims;
   sd::ops::reduce_sum reduceSum;
   sd::ops::create_view createView;
   sd::ops::tanh tanh1;
   if(scoreMode == ATTENTION_SCORE_MODE_DOT) {
-    matmul3.execute({query,key},{attentionScoresOut},{0,1});
+    int transA = 0;
+    int transB = 1;
 
+    //A: query, B: key
+    int M = query->sizeAt(1);
+    int N = key->sizeAt(-1);
+    int k = query->sizeAt(-1);
+    int lda = query->sizeAt(1);
+    int ldb = key->sizeAt(1);
+    int ldc = M;
+    auto alpha = NDArrayFactory::valueOf<double>({1},1.0);
+    auto alphaCasted = alpha->cast(query->dataType());
+    auto beta = NDArrayFactory::valueOf<double>({1},0.0);
+    auto betaCasted = beta->cast(query->dataType());
+
+    sd::NDArray all = NDIndexUtils::createAll();
+    sd::ops::helpers::bgemm(query,
+                            key,
+                            attentionScoresOut,
+                            &alphaCasted,
+                            &betaCasted,
+                            transA,
+                            transB,
+                            M,
+                            N,
+                            k,
+                            lda,
+                            ldb,
+                            ldc,
+                            &all);
     sd_printf("After matmul\n",0);
     if(scale != 0.0) {
       *attentionScoresOut *= scale;
@@ -766,7 +1046,7 @@ void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs,
 
     sd::NDArray attentionScores(scores->dataType(),{batchSize,tq,tv});
     //inputs: scores:  batch size tq tv value:batch size, tv,dim scoresmask: batch size 1 tv or batch size tq tv
-    applyAttentionScores(scores, v, scoresMask, dropout, 0, nullptr);
+    applyAttentionScores(scores, v, scoresMask, dropout, &attentionScores);
 
     if(qMask != nullptr) {
       qMaskInternal = expandDims.evaluate({qMaskInternal},{},{-1}).at(0);
@@ -827,19 +1107,25 @@ return result
  * @param returnAttentionScores
  * @param useCausalMask
  */
-void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<sd::NDArray *> &masks, bool training,
-                                  bool returnAttentionScores, bool useCausalMask, double dropout, int attentionType,
-                                  int dotProductType, double scale, sd::NDArray *attentionScores, int dropoutSeed,
-                                  sd::NDArray *applyScoresOut) {
+void AttentionHelper::doAttention(std::vector<NDArray *> &inputs,
+                                  std::vector<sd::NDArray *> &masks,
+                                  bool training,
+                                  bool returnAttentionScores,
+                                  bool useCausalMask,
+                                  double dropout,
+                                  int attentionType,
+                                  int dotProductType,
+                                  double scale,
+                                  sd::NDArray *scores,
+                                  sd::NDArray *attentionScores) {
   auto q = inputs[0];
   auto v = inputs[1];
   auto k = inputs.size() > 2 ? inputs[2]  : v;
   auto concatWeights = inputs.size() > 3 ? inputs[3] : nullptr;
 
   int batchSize = q->sizeAt(0);
-  int tq = q->sizeAt(-2);
-  int tv = v->sizeAt(-2);
-  int dim = q->sizeAt(-1);
+  int tq = q->sizeAt(1);
+  int tv = v->sizeAt(1);
 
   sd::ops::expand_dims expandDims;
   sd::ops::ones_as onesAs;
@@ -853,7 +1139,7 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<sd
 
   NDArray *casualPointer = nullptr;
   if(attentionType == ATTENTION_TYPE_ADDITIVE) {
-    doAdditiveAttention(q, v, scale, attentionScores);
+    doAdditiveAttention(q, v, scale, scores);
   } else if(attentionType == ATTENTION_TYPE_DOT_PRODUCT) {
     //inputs: query and value
     //shape: batch_size Tq dim (batch_size Tv dim)
@@ -863,7 +1149,7 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<sd
                           dotProductType,
                           scale,
                           concatWeights,
-                          attentionScores);
+                          scores);
     sd_printf("After do dot product attention\n",0);
   }
 
@@ -872,7 +1158,7 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<sd
   }
 
   if(useCausalMask) {
-    auto scoresShape = shapeOf.evaluate({attentionScores}).at(0);
+    auto scoresShape = shapeOf.evaluate({scores}).at(0);
     /*
      * # causal_mask_shape = [1, Tq, Tv].
  causal_mask_shape = tf.concat(
@@ -898,20 +1184,14 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<sd
   sd_printf("Merging masks\n",0);
   auto scoresMask = mergeMasks(vMask,casualPointer);
 
-
-  applyScoresOut->printShapeInfo("Apply scores out:");
   sd_printf("After merging masks\n",0);
-  if(training)
-    applyAttentionScores(attentionScores, v, scoresMask, dropout, dropoutSeed, applyScoresOut);
-  else
-    applyAttentionScores(attentionScores, v, scoresMask, 0, dropoutSeed, applyScoresOut);
-
+  applyAttentionScores(scores, v, scoresMask, dropout, attentionScores);
   sd_printf("Applied attention scores\n",0);
   //inputs: scores:  batch size tq tv value:batch size, tv,dim scoresmask: batch size 1 tv or batch size tq tv
   if(qMask != nullptr) {
     qMaskInternal = expandDims.evaluate({qMaskInternal},{},{-1}).at(0);
-    auto casted = qMaskInternal->cast(attentionScores->dataType());
-    *attentionScores *= casted;
+    auto casted = qMaskInternal->cast(scores->dataType());
+    *scores *= casted;
   }
 
 }
