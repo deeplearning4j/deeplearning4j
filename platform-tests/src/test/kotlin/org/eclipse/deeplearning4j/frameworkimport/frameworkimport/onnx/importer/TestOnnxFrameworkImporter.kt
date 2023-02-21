@@ -35,8 +35,10 @@ class TestOnnxFrameworkImporter {
         //defined
         val output = importer.runImport(file.absolutePath, suggestDynamicVariables = true)
         //ensure that the graph with an eager mode can automatically import the model
+        println(output.summary())
         assertNotNull(output)
-
+        val output2 = output.outputAll(inputs)
+        println(output2)
 
     }
 

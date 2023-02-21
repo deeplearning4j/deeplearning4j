@@ -32,11 +32,11 @@ SD_LIB_HIDDEN void gruCell(sd::LaunchContext* context, const NDArray* x, const N
                            const NDArray* Wc, const NDArray* bru, const NDArray* bc, NDArray* r, NDArray* u, NDArray* c,
                            NDArray* h);
 
-SD_LIB_HIDDEN void gruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* hLast, const NDArray* Wru,
-                           const NDArray* Wc, const NDArray* b, NDArray* gates, NDArray* h);
+SD_LIB_HIDDEN void gruCell(const NDArray* x, const NDArray* hLast, const NDArray* Wru, const NDArray* Wc,
+                           const NDArray* b, NDArray* gates, NDArray* h, bool linearBeforeReset);
 
 SD_LIB_HIDDEN void gruTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* h0, const NDArray* Wx,
-                               const NDArray* Wh, const NDArray* b, NDArray* h);
+                               const NDArray* Wh, const NDArray* b, NDArray* h, bool linearBeforeReset);
 
 SD_LIB_HIDDEN void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hLast, const NDArray* W,
                              const NDArray* Wc, const NDArray* b, const NDArray* bc, const NDArray* dLdr,
