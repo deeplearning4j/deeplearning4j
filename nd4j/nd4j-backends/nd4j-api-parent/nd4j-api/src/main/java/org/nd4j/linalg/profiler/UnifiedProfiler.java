@@ -69,7 +69,7 @@ public class UnifiedProfiler {
         Nd4j.getExecutioner().setProfilingConfig(profilerConfig);
         OpProfiler.getInstance().setConfig(profilerConfig);
         EventLogger.getInstance().setEnabled(true);
-        OpContextTracker.getInstance().setEnabled(true);
+
     }
 
     public void stop() {
@@ -85,18 +85,10 @@ public class UnifiedProfiler {
         Nd4j.getExecutioner().setProfilingConfig(profilerConfig);
         OpProfiler.getInstance().setConfig(profilerConfig);
         EventLogger.getInstance().setEnabled(false);
-        OpContextTracker.getInstance().setEnabled(false);
 
 
     }
 
-    /**
-     * Information about op contexts.
-     * @return
-     */
-    public String opContextInfo() {
-        return OpContextTracker.getInstance().printStats(false);
-    }
 
     /**
      * Returns bandwidth info for each device
@@ -106,7 +98,7 @@ public class UnifiedProfiler {
         StringBuilder stringBuilder = new StringBuilder();
         Map<Integer, Map<MemcpyDirection, Long>> currentBandwidth = PerformanceTracker.getInstance().getCurrentBandwidth();
         currentBandwidth.entrySet().forEach(device -> {
-            stringBuilder.append("Device " + device.getKey() + " memcpy bandwidth info:-------\n");
+           stringBuilder.append("Device " + device.getKey() + " memcpy bandwidth info:-------\n");
             device.getValue().entrySet().forEach(memcpyDirectionLongEntry -> {
                 stringBuilder.append("Direction " + memcpyDirectionLongEntry.getKey() + " bandwidth transferred: " + memcpyDirectionLongEntry.getValue() + "\n");
 
@@ -128,7 +120,6 @@ public class UnifiedProfiler {
         stringBuilder.append(AllocationsTracker.getInstance().memoryInfo());
         stringBuilder.append(MemoryTracker.getInstance().memoryPerDevice());
         stringBuilder.append(bandwidthInfo());
-        stringBuilder.append(OpContextTracker.getInstance().printStats(false));
         return stringBuilder.toString();
     }
 

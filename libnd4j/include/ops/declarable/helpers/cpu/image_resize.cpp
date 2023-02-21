@@ -794,6 +794,7 @@ static sd::Status resizeBicubicAntialias(sd::LaunchContext* context, NDArray con
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (kernel.get(), image, (sd::LongType)width, (sd::LongType)height, antialias, output),
                         SD_NUMERIC_TYPES, SKIP_FIRST_COMMA(TTYPE_FLOAT32));
+  return sd::Status::OK;
 }
 #endif
 

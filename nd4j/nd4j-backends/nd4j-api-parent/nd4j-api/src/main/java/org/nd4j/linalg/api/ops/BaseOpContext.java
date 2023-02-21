@@ -27,7 +27,6 @@ import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.profiler.OpContextTracker;
 
 import java.util.*;
 
@@ -185,9 +184,6 @@ public abstract class BaseOpContext implements OpContext {
 
     @Override
     public void setInputArray(int index, @NonNull INDArray array) {
-        if(OpContextTracker.getInstance().isEnabled()) {
-            OpContextTracker.getInstance().associateInput(array,this);
-        }
         fastpath_in.put(index, array);
     }
 
@@ -231,9 +227,6 @@ public abstract class BaseOpContext implements OpContext {
 
     @Override
     public void setOutputArray(int index, @NonNull INDArray array) {
-        if(OpContextTracker.getInstance().isEnabled()) {
-            OpContextTracker.getInstance().associateOutput(array,this);
-        }
         fastpath_out.put(index, array);
     }
 
@@ -275,10 +268,7 @@ public abstract class BaseOpContext implements OpContext {
     public void purge() {
         fastpath_in.clear();
         fastpath_out.clear();
-        if(OpContextTracker.getInstance().isEnabled()) {
-            OpContextTracker.getInstance().purge(this);
-        }
-     }
+    }
 
     @Override
     public void setArgs(INDArray[] inputArrs, long[] iArgs, DataType[] dArgs, double[] tArgs, boolean[] bArgs) {
@@ -297,7 +287,7 @@ public abstract class BaseOpContext implements OpContext {
 
     @Override
     public void transferTArgs() {
-        setTArguments();
+setTArguments();
     }
 
     @Override
