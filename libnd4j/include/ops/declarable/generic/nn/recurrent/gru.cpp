@@ -42,6 +42,9 @@ CUSTOM_OP_IMPL(gru, 5, 1, false, 0, 0) {
 
   auto h = OUTPUT_VARIABLE(0);  // cell outputs [time, bS, nOut], that is per each time step
 
+
+  auto linearBeforeReset = block.numB() > 0 ? B_ARG(0) : false;
+
   const int bS = x->sizeAt(1);
   const int nIn = x->sizeAt(2);
   const int nOut = hI->sizeAt(1);
@@ -64,7 +67,7 @@ CUSTOM_OP_IMPL(gru, 5, 1, false, 0, 0) {
                "GRU operation: wrong shape of biases array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(bCorrectShape).c_str(), ShapeUtils::shapeAsString(b).c_str());
 
-  helpers::gruTimeLoop(block.launchContext(), x, hI, Wx, Wh, b, h);
+  helpers::gruTimeLoop(block.launchContext(), x, hI, Wx, Wh, b, h, linearBeforeReset);
 
   return sd::Status::OK;
 }
@@ -85,12 +88,11 @@ DECLARE_SHAPE_FN(gru) {
   const int bS = x->sizeAt(1);
   const int nIn = x->sizeAt(2);
   const int nOut = hI->sizeAt(1);
-
   const std::vector<sd::LongType> h0CorrectShape = {bS, nOut};
   const std::vector<sd::LongType> wxCorrectShape = {nIn, 3 * nOut};
   const std::vector<sd::LongType> whCorrectShape = {nOut, 3 * nOut};
   const std::vector<sd::LongType> bCorrectShape = {3 * nOut};
-
+ 
   REQUIRE_TRUE(hI->isSameShape(h0CorrectShape), 0,
                "GRU operation: wrong shape of previous cell output array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(h0CorrectShape).c_str(), ShapeUtils::shapeAsString(hI).c_str());
