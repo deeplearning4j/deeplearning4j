@@ -15,7 +15,7 @@ option(SD_CHECK_VECTORIZATION "checks for vectorization" OFF)
 option(SD_BUILD_TESTS "Build tests" OFF)
 option(SD_STATIC_LIB "Build static library" OFF)
 option(SD_SHARED_LIB "Build shared library" ON)
-option(SD_SANITIZE "Enable Address Sanitizer" ON)
+option(SD_SANITIZE "Enable Address Sanitizer" OFF)
 option(SD_USE_LTO "Use link time optimization" OFF)
 option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OFF)
 
