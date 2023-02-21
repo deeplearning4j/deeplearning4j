@@ -23,24 +23,7 @@ class TestOnnxFrameworkImporter {
 
 
 
-    @Test
-    fun testGru() {
-        val importer = OnnxFrameworkImporter()
-        val file = File("/home/agibsonccc/Documents/GitHub/deeplearning4j/Single_GRU.onnx")
-        val onnxRunner = OnnxRuntimeRunner(file.absolutePath)
-        val inputs = mapOf("input" to ONNXUtils.getSampleForValueInfo(onnxRunner.inputs[0]),
-            "hidden" to ONNXUtils.getSampleForValueInfo(onnxRunner.inputs[1]))
-        val runnerOutput = onnxRunner.exec(inputs)
-        //tests model import with constant initializers where an output of a constant node is
-        //defined
-        val output = importer.runImport(file.absolutePath, suggestDynamicVariables = true)
-        //ensure that the graph with an eager mode can automatically import the model
-        println(output.summary())
-        assertNotNull(output)
-        val output2 = output.outputAll(inputs)
-        println(output2)
 
-    }
 
     @Test
     fun testConstantInitialization() {
