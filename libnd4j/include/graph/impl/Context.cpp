@@ -320,6 +320,11 @@ LaunchContext *Context::launchContext() {
   }
 }
 
+
+unsigned long Context::outputWidth() {
+  return _fastpath_out.size();
+}
+
 unsigned long Context::width() {
   if (!_fastpath_in.empty())
     return _fastpath_in.size();

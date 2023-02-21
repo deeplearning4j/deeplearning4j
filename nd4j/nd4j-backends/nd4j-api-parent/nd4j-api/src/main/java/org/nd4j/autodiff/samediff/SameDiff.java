@@ -4719,7 +4719,7 @@ public class SameDiff extends SDBaseOps {
      * @param function
      */
     public void defineFunction(String function, SameDiffFunctionDefinition functionDefinition) {
-        defineFunction(function, functionDefinition, new LinkedHashMap<String, INDArray>());
+        defineFunction(function, functionDefinition, new LinkedHashMap<>());
     }
 
     /**

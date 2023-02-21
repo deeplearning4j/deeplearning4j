@@ -290,12 +290,9 @@ void sd::graph::VariableSpace::putVariable(int id, NDArray* array) {
 }
 
 sd::graph::Variable* sd::graph::VariableSpace::getVariable(int id) {
-  sd_debug("Getting variable with id %d\n",id);
   if (id < 0) {
-    sd_debug("Getting the variables at %d\n",id);
     return _variables.at(id);
   } else {
-    sd_debug("Returning temporary id %d\n",id);
     return _temporary.at(id);
   }
 }
