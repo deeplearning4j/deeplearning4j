@@ -40,30 +40,27 @@ class AttentionTests : public testing::Test {
 };
 
 TEST_F(AttentionTests, basic_dot_product_attention) {
-  auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
-  auto values = NDArrayFactory::create<float>('c', {10, 4, 3});
-  auto queries = NDArrayFactory::create<float>('c', {10, 4, 1});
+  auto keys = NDArrayFactory::create<float>('c', {10, 3,4});
+  auto values = NDArrayFactory::create<float>('c', {10, 3,4});
+  auto queries = NDArrayFactory::create<float>('c', {10, 1, 4});
 
   sd::ops::dot_product_attention op;
-  auto result = op.evaluate({&queries, &keys, &values}, {1, 0});
+  auto result = op.evaluate({&queries, &values,&keys}, {},{},{false,true},{});
   ASSERT_EQ(sd::Status::OK, result.status());
 }
 
-/*
-//Ignored: AB 2019/05/21 - Segmentation fault on on linux-ppc64le-cpu -
-https://github.com/deeplearning4j/deeplearning4j/issues/7657 TEST_F(AttentionTests, basic_dot_product_attention_bp) {
-    auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
-    auto values = NDArrayFactory::create<float>('c', {10, 4, 3});
-    auto queries = NDArrayFactory::create<float>('c', {10, 4, 1});
-    auto eps = NDArrayFactory::create<float>('c', {10, 4, 1});
 
-    sd::ops::dot_product_attention_bp op;
-    auto result = op.execute({&queries, &keys, &values, &eps}, {}, {1, 0}, {});
-    ASSERT_EQ(sd::Status::OK, result->status());
+TEST_F(AttentionTests, basic_dot_product_attention_bp) {
+  auto keys = NDArrayFactory::create<float>('c', {10, 3, 4});
+  auto values = NDArrayFactory::create<float>('c', {10, 3, 4});
+  auto queries = NDArrayFactory::create<float>('c', {10, 1, 4});
+  auto eps = NDArrayFactory::create<float>('c', {10, 1, 4});
 
-    delete result;
+  sd::ops::dot_product_attention_bp op;
+  auto result = op.evaluate({&queries, &values,&keys,  &eps}, {}, {}, {false,true});
+  ASSERT_EQ(sd::Status::OK, result.status());
 }
-*/
+
 
 TEST_F(AttentionTests, basic_dot_product_attention_with_weights) {
   auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
@@ -71,7 +68,7 @@ TEST_F(AttentionTests, basic_dot_product_attention_with_weights) {
   auto queries = NDArrayFactory::create<float>('c', {10, 4, 1});
 
   sd::ops::dot_product_attention op;
-  auto result = op.evaluate({&queries, &keys, &values}, {1, 1});
+  auto result = op.evaluate({&queries, &keys, &values}, {},{},{false,true});
   ASSERT_EQ(sd::Status::OK, result.status());
 }
 
@@ -79,31 +76,27 @@ TEST_F(AttentionTests, basic_dot_product_attention_with_mask) {
   auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
   auto values = NDArrayFactory::create<float>('c', {10, 4, 3});
   auto queries = NDArrayFactory::create<float>('c', {10, 4, 1});
-  auto mask = NDArrayFactory::create<float>('c', {10, 3});
+  auto mask = NDArrayFactory::create<float>('c', {10,4, 3});
   mask.assign(1.);
 
   sd::ops::dot_product_attention op;
-  auto result = op.evaluate({&queries, &keys, &values, &mask}, {1, 0});
+  auto result = op.evaluate({&queries, &keys, &values, &mask}, {},{},{false,true});
   ASSERT_EQ(sd::Status::OK, result.status());
 }
 
-/*
-//AB 2019/05/28 - Segfault on ppc64le - See issue #7657
 TEST_F(AttentionTests, basic_dot_product_attention_bp_with_mask) {
-    auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
-    auto values = NDArrayFactory::create<float>('c', {10, 4, 3});
-    auto queries = NDArrayFactory::create<float>('c', {10, 4, 1});
-    auto eps = NDArrayFactory::create<float>('c', {10, 4, 1});
-    auto mask = NDArrayFactory::create<float>('c', {10, 3});
-    mask.assign(1.);
+  auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
+  auto values = NDArrayFactory::create<float>('c', {10, 4, 3});
+  auto queries = NDArrayFactory::create<float>('c', {10, 4, 1});
+  auto eps = NDArrayFactory::create<float>('c', {10, 4, 1});
+  auto mask = NDArrayFactory::create<float>('c', {10, 3});
+  mask.assign(1.);
 
-    sd::ops::dot_product_attention_bp op;
-    auto result = op.execute({&queries, &keys, &values, &eps, &mask}, {}, {1, 0}, {});
-    ASSERT_EQ(sd::Status::OK, result->status());
+  sd::ops::dot_product_attention_bp op;
+  auto result = op.evaluate({&queries, &keys, &values, &eps, &mask}, {}, {1, 0}, {});
+  ASSERT_EQ(sd::Status::OK, result.status());
 
-    delete result;
 }
- */
 
 TEST_F(AttentionTests, multi_head_input_dot_product_attention_with_mask) {
   auto keys = NDArrayFactory::create<float>('c', {2, 5, 4, 3});
@@ -113,27 +106,22 @@ TEST_F(AttentionTests, multi_head_input_dot_product_attention_with_mask) {
   mask.assign(1.);
 
   sd::ops::dot_product_attention op;
-  auto result = op.evaluate({&queries, &keys, &values, &mask}, {1, 0});
+  auto result = op.evaluate({&queries, &keys, &values, &mask}, {},{},{false,true});
   ASSERT_EQ(sd::Status::OK, result.status());
 }
 
-/*
-//AB 2019/05/30 - Segfault on ppc64le - See issue #7657
 TEST_F(AttentionTests, multi_head_input_dot_product_attention_bp_with_mask) {
-    auto keys = NDArrayFactory::create<float>('c', {2, 5, 4, 3});
-    auto values = NDArrayFactory::create<float>('c', {2, 5, 4, 3});
-    auto queries = NDArrayFactory::create<float>('c', {2, 5, 4, 1});
-    auto eps = NDArrayFactory::create<float>('c', {2, 5, 4, 1});
-    auto mask = NDArrayFactory::create<float>('c', {2, 3});
-    mask.assign(1.);
+  auto keys = NDArrayFactory::create<float>('c', {2, 5, 4, 3});
+  auto values = NDArrayFactory::create<float>('c', {2, 5, 4, 3});
+  auto queries = NDArrayFactory::create<float>('c', {2, 5, 4, 1});
+  auto eps = NDArrayFactory::create<float>('c', {2, 5, 4, 1});
+  auto mask = NDArrayFactory::create<float>('c', {2, 3});
+  mask.assign(1.);
 
-    sd::ops::dot_product_attention_bp op;
-    auto result = op.execute({&queries, &keys, &values, &eps, &mask}, {}, {1, 0}, {});
-    ASSERT_EQ(sd::Status::OK, result->status());
-
-    delete result;
+  sd::ops::dot_product_attention_bp op;
+  auto result = op.evaluate({&queries, &keys, &values, &eps, &mask}, {}, {}, {false,true});
+  ASSERT_EQ(sd::Status::OK, result.status());
 }
- */
 
 TEST_F(AttentionTests, basic_multi_head_dot_product_attention) {
   auto keys = NDArrayFactory::create<float>('c', {10, 4, 5});
@@ -150,28 +138,23 @@ TEST_F(AttentionTests, basic_multi_head_dot_product_attention) {
   ASSERT_EQ(sd::Status::OK, result.status());
 }
 
-/*
-//AB 2019/05/30 - Other attention BP tests are segfaulting on ppc64le - disabling this pre-emptively - See issue #7657
 TEST_F(AttentionTests, basic_multi_head_dot_product_bp_attention) {
-    auto keys = NDArrayFactory::create<float>('c', {10, 4, 5});
-    auto values = NDArrayFactory::create<float>('c', {10, 4, 5});
-    auto queries = NDArrayFactory::create<float>('c', {10, 4, 2});
+  auto keys = NDArrayFactory::create<float>('c', {10, 4, 5});
+  auto values = NDArrayFactory::create<float>('c', {10, 4, 5});
+  auto queries = NDArrayFactory::create<float>('c', {10, 4, 2});
 
-    auto Wk = NDArrayFactory::create<float>('c', {2, 3, 4});
-    auto Wv = NDArrayFactory::create<float>('c', {2, 3, 4});
-    auto Wq = NDArrayFactory::create<float>('c', {2, 3, 4});
-    auto Wo = NDArrayFactory::create<float>('c', {2* 3, 7});
+  auto Wk = NDArrayFactory::create<float>('c', {2, 3, 4});
+  auto Wv = NDArrayFactory::create<float>('c', {2, 3, 4});
+  auto Wq = NDArrayFactory::create<float>('c', {2, 3, 4});
+  auto Wo = NDArrayFactory::create<float>('c', {2* 3, 7});
 
-    auto eps = NDArrayFactory::create<float>('c', {10, 7, 2});
+  auto eps = NDArrayFactory::create<float>('c', {10, 7, 2});
 
 
-    sd::ops::multi_head_dot_product_attention_bp op;
-    auto result = op.execute({&queries, &keys, &values, &Wk, &Wv, &Wq, &Wo, &eps}, {}, {1, 0}, {});
-    ASSERT_EQ(sd::Status::OK, result->status());
-
-    delete result;
+  sd::ops::multi_head_dot_product_attention_bp op;
+  auto result = op.evaluate({&queries, &keys, &values, &Wk, &Wv, &Wq, &Wo, &eps}, {}, {},{false,true});
+  ASSERT_EQ(sd::Status::OK, result.status());
 }
- */
 
 TEST_F(AttentionTests, basic_multi_head_dot_product_attention_with_mask) {
   auto keys = NDArrayFactory::create<float>('c', {10, 4, 5});
@@ -191,28 +174,24 @@ TEST_F(AttentionTests, basic_multi_head_dot_product_attention_with_mask) {
   ASSERT_EQ(sd::Status::OK, result.status());
 }
 
-/*
 //AB 2019/05/30 - Other attention BP tests are segfaulting on ppc64le - disabling this pre-emptively - See issue #7657
 TEST_F(AttentionTests, basic_multi_head_dot_product_bp_attention_with_mask) {
-    auto keys = NDArrayFactory::create<float>('c', {10, 4, 5});
-    auto values = NDArrayFactory::create<float>('c', {10, 4, 5});
-    auto queries = NDArrayFactory::create<float>('c', {10, 4, 2});
+  auto keys = NDArrayFactory::create<float>('c', {10, 4, 5});
+  auto values = NDArrayFactory::create<float>('c', {10, 4, 5});
+  auto queries = NDArrayFactory::create<float>('c', {10, 4, 2});
 
-    auto Wk = NDArrayFactory::create<float>('c', {2, 3, 4});
-    auto Wv = NDArrayFactory::create<float>('c', {2, 3, 4});
-    auto Wq = NDArrayFactory::create<float>('c', {2, 3, 4});
-    auto Wo = NDArrayFactory::create<float>('c', {2* 3, 7});
+  auto Wk = NDArrayFactory::create<float>('c', {2, 3, 4});
+  auto Wv = NDArrayFactory::create<float>('c', {2, 3, 4});
+  auto Wq = NDArrayFactory::create<float>('c', {2, 3, 4});
+  auto Wo = NDArrayFactory::create<float>('c', {2* 3, 7});
 
-    auto eps = NDArrayFactory::create<float>('c', {10, 7, 2});
+  auto eps = NDArrayFactory::create<float>('c', {10, 7, 2});
 
-    auto mask = NDArrayFactory::create<float>('c', {10, 5});
-    mask.assign(1.);
+  auto mask = NDArrayFactory::create<float>('c', {10, 5});
+  mask.assign(1.);
 
 
-    sd::ops::multi_head_dot_product_attention_bp op;
-    auto result = op.execute({&queries, &keys, &values, &Wk, &Wv, &Wq, &Wo, &eps, &mask}, {}, {1, 0}, {});
-    ASSERT_EQ(sd::Status::OK, result->status());
-
-    delete result;
+  sd::ops::multi_head_dot_product_attention_bp op;
+  auto result = op.evaluate({&queries, &keys, &values, &Wk, &Wv, &Wq, &Wo, &eps, &mask}, {}, {1, 0}, {});
+  ASSERT_EQ(sd::Status::OK, result.status());
 }
- */
