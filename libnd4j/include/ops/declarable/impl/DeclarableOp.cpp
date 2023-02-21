@@ -1079,18 +1079,15 @@ sd::Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std
                                  bool isInplace) {
   Context ctx(1);
 
-  sd_printf("Setting input arrays\n",0);
   for (int e = 0; e < inputs.size(); e++) {
     ctx.setInputArray(e, inputs[e]);
   }
 
-  sd_printf("Set input arrays\n",0);
 
   for (int e = 0; e < outputs.size(); e++) {
     ctx.setOutputArray(e, outputs[e]);
   }
 
-  sd_printf("Set output arrays\n",0);
 
   if (isInplace) ctx.markInplace(isInplace);
 
@@ -1098,7 +1095,6 @@ sd::Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std
   ctx.setTArguments(tArgs);
   ctx.setBArguments(bArgs);
   ctx.setDArguments(dArgs);
-  sd_printf("Set arguments\n",0);
 
   return execute(&ctx);
 }
