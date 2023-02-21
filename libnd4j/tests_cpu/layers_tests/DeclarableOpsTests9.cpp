@@ -1843,11 +1843,13 @@ TEST_F(DeclarableOpsTests9, compare_and_bitpack_test7) {
   std::vector<sd::LongType> strides1 = {s1};
   std::vector<sd::LongType> shape2 = {pp / 8};
   std::vector<sd::LongType> strides2 = {t1};
-  ShapeDescriptor desc1(DataType::BOOL, 'c', shape1, strides1, s1);
-  ShapeDescriptor desc2(DataType::UINT8, 'c', shape2, strides2, t1);
+  ShapeDescriptor *desc1 = new ShapeDescriptor(DataType::BOOL, 'c', shape1, strides1, s1);
+  ShapeDescriptor *desc2 = new ShapeDescriptor(DataType::UINT8, 'c', shape2, strides2, t1);
   auto x = NDArrayFactory::create(desc1);
   auto output = NDArrayFactory::create(desc2);
   auto exp = NDArrayFactory::create(desc2);
+  delete desc1;
+  delete desc2;
   auto threshold = NDArrayFactory::create<bool>(true);
   auto buff = x.bufferAsT<bool>();
   uint8_t* expBuff = exp.bufferAsT<uint8_t>();
@@ -1890,14 +1892,16 @@ TEST_F(DeclarableOpsTests9, compare_and_bitpack_test8) {
   std::vector<sd::LongType> strides1 = {s3, s2, s1};
   std::vector<sd::LongType> shape2 = {pp, pp, pp / 8};
   std::vector<sd::LongType> strides2 = {t3, t2, t1};
-  ShapeDescriptor desc1(DataType::BOOL, 'c', shape1, strides1, 0);
-  ShapeDescriptor desc2(DataType::UINT8, 'c', shape2, strides2, 0);
+  ShapeDescriptor *desc1 = new ShapeDescriptor(DataType::BOOL, 'c', shape1, strides1, 0);
+  ShapeDescriptor *desc2 = new ShapeDescriptor(DataType::UINT8, 'c', shape2, strides2, 0);
   auto x = NDArrayFactory::create(desc1);
   auto output = NDArrayFactory::create(desc2);
   auto exp = NDArrayFactory::create(desc2);
   auto threshold = NDArrayFactory::create<bool>(true);
   auto buff = x.bufferAsT<bool>();
   uint8_t* expBuff = exp.bufferAsT<uint8_t>();
+  delete desc1;
+  delete desc2;
   // generate test
   for (int i = 0; i < pp; i++) {
     for (int j = 0; j < pp; j++) {

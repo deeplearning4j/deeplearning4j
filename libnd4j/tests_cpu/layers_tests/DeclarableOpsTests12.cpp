@@ -2822,14 +2822,13 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test1) {
        21.219858f, 21.57067f,   22.397337f, 23.155449f, 23.436079f, 24.194195f, 25.020863f, 25.371672f});
 
   sd::ops::image_resize op;
-  // resize with lancos5 without antialising and aspect ratio preserving
+  // resize with lancos5 without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeLanczos5}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results[0];  ///.at(0);
-                             //    result->printBuffer("Lancos5 Resized to 7x8");
-                             //    expected.printBuffer("Lancos5 Expect for 7x8");
+  
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2849,7 +2848,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test2) {
        21.219858f, 21.57067f,   22.397337f, 23.155449f, 23.436079f, 24.194195f, 25.020863f, 25.371672f});
 
   sd::ops::image_resize op;
-  // resize with lanczos5 without antialising and aspect ratio preserving
+  // resize with lanczos5 without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeLanczos5}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2876,15 +2875,12 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test3) {
        21.204287f, 21.581398f, 22.352386f, 23.01116f,  23.539333f, 24.19811f,  24.969095f, 25.346205f});
 
   sd::ops::image_resize op;
-  // resize with lanczos3 without antialising and aspect ratio preserving
+  // resize with lanczos3 without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeLanczos3}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results[0];  ///.at(0);
-                             //    result.printBuffer("Lanczos3 Resized to 8x7");
-                             //    expected.printBuffer("Lanczos3 Expect for 8x7");
-  ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
 
@@ -2903,14 +2899,12 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test4) {
        20.705086f, 21.082823f, 21.698452f,  22.35807f,  22.93193f,  23.591549f, 24.207174f, 24.584913f});
 
   sd::ops::image_resize op;
-  // resize with gaussian without antialising and aspect ratio preserving
+  // resize with gaussian without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeGaussian}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results[0];  ///.at(0);
-                             //    result.printBuffer("Lanczos3 Resized to 8x7");
-                             //    expected.printBuffer("Lanczos3 Expect for 8x7");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2930,14 +2924,12 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test5) {
        21.218851f, 21.635252f, 22.353308f, 22.978308f, 23.603308f, 24.228308f, 24.946362f, 25.362762f});
 
   sd::ops::image_resize op;
-  // resize with bicubic without antialising and aspect ratio preserving
+  // resize with bicubic without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeBicubic}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //    result->printBuffer("Bicubic Resized to 7x8");
-                             //    expected.printBuffer("Bicubic Expect for 7x8");
+  auto result = results[0];  
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2957,14 +2949,12 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test6) {
        21.219305f,  21.635706f, 22.353762f, 22.978762f, 23.603762f, 24.228764f, 24.946815f, 25.363216f});
 
   sd::ops::image_resize op;
-  // resize with bicubic with antialising and without aspect ratio preserving
+  // resize with bicubic with antialiasing and without aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeBicubic}, {false, true});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //    result->printBuffer("Bicubic Resized to 7x8");
-                             //    expected.printBuffer("Bicubic Expect for 7x8");
+  auto result = results[0];  
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2994,12 +2984,12 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test6_10x10_a) {
        25.273290634f, 25.529409409f});
 
   sd::ops::image_resize op;
-  // resize with bicubic without antialising and aspect ratio preserving
+  // resize with bicubic without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeBicubic}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
+  auto result = results[0];  
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -3029,13 +3019,13 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test6_10x10_b) {
        25.171875000f, 25.421875000f});
 
   sd::ops::image_resize op;
-  // resize with bicubic without antialising and aspect ratio preserving
+  // resize with bicubic without antialiasing and aspect ratio preserving
   bool exclude_outside = false;
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeBicubic}, {false, false, exclude_outside});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
+  auto result = results[0]; 
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -3065,7 +3055,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test6_10x10_c) {
        25.335937500f, 25.632812500f});
 
   sd::ops::image_resize op;
-  // resize with bicubic without antialising and aspect ratio preserving
+  // resize with bicubic without antialiasing and aspect ratio preserving
   bool exclude_outside = false;
   double coef = -0.75;
   auto results = op.evaluate({&input, &size}, {-0.75}, {ops::helpers::kResizeBicubic}, {false, false, exclude_outside});
@@ -3102,7 +3092,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test6_10x10_d) {
        25.468750000f, 25.562500000f});
 
   sd::ops::image_resize op;
-  // resize with bicubic without antialising and aspect ratio preserving
+  // resize with bicubic without antialiasing and aspect ratio preserving
   bool exclude_outside = false;
   double coef = -0.75;
   auto results = op.evaluate({&input, &size}, {-0.75},
@@ -3131,14 +3121,12 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test7) {
        20.985931f,  21.387209f, 22.0625f,   22.6875f,   23.3125f,   23.937498f, 24.612793f, 25.014061f});
 
   sd::ops::image_resize op;
-  // resize with Mitchell cubic with antialising and without aspect ratio preserving
+  // resize with Mitchell cubic with antialiasing and without aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeMitchellcubic}, {false, true});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //    result->printBuffer("Mitchell cubic Resized to 7x8");
-                             //    expected.printBuffer("Mitchell cubic Expect for 7x8");
+  auto result = results[0];
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -3158,14 +3146,12 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test8) {
        21.f,       21.4375f,   22.0625f,   22.6875f,   23.3125f,   23.9375f,   24.5625f,   25.f});
 
   sd::ops::image_resize op;
-  // resize with bilinear without antialising and aspect ratio preserving
+  // resize with bilinear without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeBilinear}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //    result->printBuffer("Bilinear Resized to 7x8");
-                             //    expected.printBuffer("Bilinear Expect for 7x8");
+  auto result = results[0];
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -3185,14 +3171,12 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test9) {
        21.f,       21.4f,      22.f,       22.8f,      23.2f,      24.f,       24.6f,      25.f});
 
   sd::ops::image_resize op;
-  // resize with area without antialising and aspect ratio preserving
+  // resize with area without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeArea}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //    result->printBuffer("Area Resized to 7x8");
-                             //    expected.printBuffer("Area Expect for 7x8");
+  auto result = results[0];
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -3210,16 +3194,14 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test10a) {
                                     });
 
   sd::ops::image_resize op;
-  // resize with nearest neigbors without antialising and aspect ratio preserving
+  // resize with nearest neigbors without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {},
                              {ops::helpers::kResizeNearest, ops::helpers::CoordinateTransformationMode::HALF_PIXEL},
                              {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //   result->printBuffer("Nearest neighbor Resized to 7x8");
-                             //   expected.printBuffer("Nearest neighbor Expect for 7x8");
+  auto result = results[0];
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -3234,7 +3216,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test10b) {
        13, 14, 15, 15, 16, 16, 17, 18, 18, 19, 20, 20, 16, 16, 17, 18, 18, 19, 20, 20, 21, 21, 22, 23, 23, 24, 25, 25});
 
   sd::ops::image_resize op;
-  // resize with nearest neigbors without antialising and aspect ratio preserving
+  // resize with nearest neigbors without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {},
                              {ops::helpers::kResizeNearest, ops::helpers::CoordinateTransformationMode::HALF_PIXEL,
                               ops::helpers::ROUND_PREFER_FLOOR},
@@ -3259,7 +3241,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test10c) {
        13, 14, 15, 15, 16, 16, 17, 18, 18, 19, 20, 20, 16, 16, 17, 18, 18, 19, 20, 20, 21, 21, 22, 23, 23, 24, 25, 25});
 
   sd::ops::image_resize op;
-  // resize with nearest neigbors without antialising and aspect ratio preserving
+  // resize with nearest neigbors without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {},
                              {ops::helpers::kResizeNearest, ops::helpers::CoordinateTransformationMode::HALF_PIXEL,
                               ops::helpers::ROUND_PREFER_CEIL},
@@ -3268,8 +3250,6 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test10c) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results[0];  ///.at(0);
-                             //   result->printBuffer("Nearest neighbor Resized to 7x8");
-                             //   expected.printBuffer("Nearest neighbor Expect for 7x8");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -3284,7 +3264,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test10d) {
        14, 14, 15, 15, 16, 17, 18, 18, 19, 19, 20, 20, 21, 22, 23, 23, 24, 24, 25, 25, 21, 22, 23, 23, 24, 24, 25, 25});
 
   sd::ops::image_resize op;
-  // resize with nearest neigbors without antialising and aspect ratio preserving
+  // resize with nearest neigbors without antialiasing and aspect ratio preserving
   auto results = op.evaluate(
       {&input, &size}, {},
       {ops::helpers::kResizeNearest, ops::helpers::CoordinateTransformationMode::HALF_PIXEL, ops::helpers::CEIL},
@@ -3292,9 +3272,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test10d) {
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //   result->printBuffer("Nearest neighbor Resized to 7x8");
-                             //   expected.printBuffer("Nearest neighbor Expect for 7x8");
+  auto result = results[0];
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -3309,15 +3287,13 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test11) {
        13, 14, 15, 15, 16, 16, 17, 18, 18, 19, 20, 20, 16, 16, 17, 18, 18, 19, 20, 20, 21, 21, 22, 23, 23, 24, 25, 25});
 
   sd::ops::image_resize op;
-  // resize with nearest neigbors without antialising and aspect ratio preserving
+  // resize with nearest neigbors without antialiasing and aspect ratio preserving
   auto results =
       op.evaluate({&input, &size}, {}, {ops::helpers::kResizeNearest, ops::helpers::ROUND_PREFER_CEIL}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //    result->printBuffer("Nearest neighbor Resized to 7x8");
-                             //    expected.printBuffer("Nearest neighbor Expect for 7x8");
+  auto result = results[0];
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -3346,7 +3322,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test12_Input_Strided) {
       relaxed_strides[j] = allowedStride * 2 + 7;
     }
 
-    ShapeDescriptor desc(DataType::INT32, 'c', {5, 6, 7, channel}, relaxed_strides, 0);
+    ShapeDescriptor *desc = new ShapeDescriptor(DataType::INT32, 'c', {5, 6, 7, channel}, relaxed_strides, 0);
     auto input = NDArrayFactory::create(desc);
     input.assign(input_ews);
     for (auto antialias : antialias_options) {
@@ -3367,6 +3343,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test12_Input_Strided) {
 
         ASSERT_TRUE(result_ews->isSameShape(result_nonews));
         ASSERT_TRUE(result_ews->equalsTo(result_nonews));
+        delete desc;
       }  // methods
     }
 
@@ -3386,9 +3363,6 @@ TEST_F(DeclarableOpsTests12, TriangularSolve_Test_1) {
   auto res = op.evaluate({&a, &b});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printIndexedBuffer("TriangularSolve");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
