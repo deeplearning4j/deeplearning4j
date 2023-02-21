@@ -135,12 +135,10 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
     RELEASE(tldC, arr->getContext()->getWorkspace());
     RELEASE(tsize, arr->getContext()->getWorkspace());
   } else {
-    sd_printf("Before gemm execution\n",0);
 
     CBLAS_TRANSPOSE tA = (CBLAS_TRANSPOSE)transA;
     CBLAS_TRANSPOSE tB = (CBLAS_TRANSPOSE)transB;
     int vaSize = vA.size();
-    sd_printf("va size is %d\n",vaSize);
     auto func = PRAGMA_THREADS_FOR {
       for (auto p = start; p < stop; p++) {
         auto A = reinterpret_cast<T *>(vA.at(p)->buffer());
@@ -163,8 +161,6 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
     };
 
     samediff::Threads::parallel_tad(func, 0, vaSize);
-
-    sd_printf("After gemm execution\n",0);
 
   }
 }

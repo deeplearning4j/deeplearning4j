@@ -81,7 +81,21 @@ public class BatchMmulBp extends DynamicCustomOp {
         this.transposeA = transposeA ? 1 : 0;
         this.transposeB = transposeB ? 1 : 0;
         this.batchSize = inputsA.length;
-
+        long[] firstShape = inputsA[0].getShape();
+        if(firstShape == null) {
+            throw new IllegalArgumentException("Unable to determine input shape. Please ensure your variables at least have a shape on them if they are placeholders.");
+        }
+        long[] lastShape = inputsB[0].getShape();
+        if(lastShape == null) {
+            throw new IllegalArgumentException("Unable to determine input shape. Please ensure your variables at least have a shape on them if they are placeholders.");
+        }
+        this.M = transposeA ? (int) firstShape[1]: (int) firstShape[0];
+        this.N = transposeB ? (int) lastShape[0]: (int) lastShape[1];
+        this.K = transposeB ? (int) lastShape[1]: (int) lastShape[0];
+        this.lda = (int) firstShape[0];
+        this.ldb = (int) lastShape[0];
+        this.ldc = (int) firstShape[0];
+        addArgs();
     }
 
     public BatchMmulBp(INDArray alphas,
@@ -111,6 +125,7 @@ public class BatchMmulBp extends DynamicCustomOp {
         this.ldb = (int) lastShape[0];
         this.ldc = (int) firstShape[0];
         addArgs();
+        this.batchSize = inputsA.length;
     }
 
 
@@ -154,7 +169,24 @@ public class BatchMmulBp extends DynamicCustomOp {
 
     @Override
     public int getNumOutputs() {
-        return 2 * batchSize;
+        return 2 * batchSize + 2;
+    }
+
+    @Override
+    public void configureFromArguments() {
+        if(!iArguments.isEmpty()) {
+            this.transposeA = iArguments.get(0).intValue();
+            this.transposeB = iArguments.get(1).intValue();
+            this.M = iArguments.get(2).intValue();
+            this.N = iArguments.get(3).intValue();
+            this.K = iArguments.get(4).intValue();
+            this.lda = iArguments.get(5).intValue();
+            this.ldb = iArguments.get(6).intValue();
+            this.ldc = iArguments.get(7).intValue();
+            this.batchSize = iArguments.get(8).intValue();
+        }
+
+
     }
 
     public void addArgs() {
@@ -168,7 +200,8 @@ public class BatchMmulBp extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         List<DataType> out = new ArrayList<>();
-        for(int i = 0; i < batchSize * 2; i++) {  //-2 for the alpha and beta params
+        //alphas, betas, list of as, list of bs
+        for(int i = 0; i < (batchSize * 2) + 2; i++) {  //-2 for the alpha and beta params
             Preconditions.checkState(dataTypes.get(i).isFPType(), "Inputs to batch mmul op must all be a floating point type: got %s", dataTypes);
             out.add(dataTypes.get(i));
 

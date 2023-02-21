@@ -792,7 +792,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
         SDVariable features = sd.placeHolder("features", DataType.DOUBLE, batchSize, seqLength);
         SDVariable labels = sd.placeHolder("labels", DataType.DOUBLE, batchSize, batchSize);
         SDVariable var = sd.var("variable", seqLength, batchSize);
-       SDVariable[] predictions = sd.batchMmul(new String[]{"predictions"},sd.constant(1.0),sd.constant(0.0),new SDVariable[]{features},new SDVariable[]{var});
+        SDVariable[] predictions = sd.batchMmul(new String[]{"predictions"},sd.constant(1.0),sd.constant(0.0),new SDVariable[]{features},new SDVariable[]{var});
         sd.loss.meanSquaredError("loss", labels, predictions[0], null);
 
         TrainingConfig config = new TrainingConfig.Builder()

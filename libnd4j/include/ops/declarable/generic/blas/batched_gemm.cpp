@@ -82,7 +82,6 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
                "BatchedGemm: valid values for transA and transB are: 0/1 or 111/112, for NoTrans/Trans respectively")
   REQUIRE_TRUE(M > 0 && N > 0 && K > 0 && ldA > 0 && ldB > 0 && ldC > 0 && batchSize > 0, 0, "");
 
-  sd_printf("Before alphas/betas\n",0);
   auto alpha = INPUT_VARIABLE(0);
   NDArray *alphaInput = nullptr;
   if(alpha->isScalar()) {
@@ -102,7 +101,6 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
     betaInput = beta;
   }
 
-  sd_printf("After alphs and betas\n",0);
   std::vector<NDArray*> vA(batchSize);
   std::vector<NDArray*> vB(batchSize);
   std::vector<NDArray*> vC(batchSize);
@@ -111,8 +109,6 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
   for (int e = 0; e < batchSize; e++) {
     vA[e] = INPUT_VARIABLE(e + 2);
     vB[e] = INPUT_VARIABLE(e + 2 + batchSize);
-    vA[e]->printShapeInfo("A shape info");
-    vB[e]->printShapeInfo("B shape info");
     vC[e] = OUTPUT_VARIABLE(e);
 
     REQUIRE_TRUE(firstType == vC[e]->dataType(), 0, "BatchedGemm: all inputs and outputs must have same data type");
@@ -145,7 +141,6 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
   REQUIRE_TRUE(vA.size() == vB.size() && vA.size() == vC.size() && vA.size() == batchSize, 0,
                "BatchedGemm: mismatched numbers of A, B, C for unknown reason");
 
-  sd_printf("Before bgemm execution\n",0);
   sd::ops::helpers::bgemm(vA,
                           vB,
                           vC,
@@ -159,7 +154,6 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
                           ldA,
                           ldB,
                           ldC);
-  sd_printf("After bgemm execution\n",0);
 
 
 
@@ -214,9 +208,6 @@ DECLARE_TYPES(batched_gemm) {
 
 
 CUSTOM_OP_IMPL(batched_gemm_bp, -1, -1, false, 0, 9) {
-  sd_printf("Block input size: %d Output width: %d \n",block.width(),block.outputWidth());
-
-
   int transA = INT_ARG(0);
   int transB = INT_ARG(1);
   int M = INT_ARG(2);
@@ -234,17 +225,16 @@ CUSTOM_OP_IMPL(batched_gemm_bp, -1, -1, false, 0, 9) {
   std::vector<NDArray *> dlDOut;
   std::vector<NDArray *> dldXOutputs;
   std::vector<NDArray *> dldYOutputs;
-  sd_printf("Block input size: %d Output width: %d\n",block.width(),block.outputWidth());
 
   for (int e = 0; e < batchSize; e++) {
     matricesA.push_back(INPUT_VARIABLE(e + 2));
     matricesB.push_back(INPUT_VARIABLE(e + 2 + batchSize));
     dlDOut.push_back(INPUT_VARIABLE(e + 2 + batchSize * 2));
-    dldXOutputs.push_back(OUTPUT_VARIABLE(e));
-    dldYOutputs.push_back(OUTPUT_VARIABLE(e + batchSize));
+    //alphas and betas are also set for outputs even though they're zero,every input needs a gradient
+    dldXOutputs.push_back(OUTPUT_VARIABLE(e + 2));
+    dldYOutputs.push_back(OUTPUT_VARIABLE(e + 2 + batchSize));
   }
 
-  sd_printf("After batch gemm in batch bp\n",0);
 
   auto alpha = INPUT_VARIABLE(0);
   NDArray *alphaInput = nullptr;
@@ -310,6 +300,10 @@ DECLARE_SHAPE_FN(batched_gemm_bp) {
   auto xConstant = CONSTANT(xShapeInfo);
   auto yConstant = CONSTANT(yShapeInfo);
   auto ret = SHAPELIST();
+  //alpha
+  ret->push_back(xConstant);
+  //beta
+  ret->push_back(yConstant);
   for(int i = 0; i < batchSize; i++) {
     ret->push_back(xConstant);
   }
@@ -317,7 +311,6 @@ DECLARE_SHAPE_FN(batched_gemm_bp) {
   for(int i = 0; i < batchSize; i++) {
     ret->push_back(yConstant);
   }
-
   return ret;
 }
 
