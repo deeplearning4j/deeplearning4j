@@ -31,7 +31,6 @@ namespace sd {
 namespace ops {
 
 CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
-  sd_printf("Before op execution \n",0);
   int transA = INT_ARG(0);
   int transB = INT_ARG(1);
   int M = INT_ARG(2);
