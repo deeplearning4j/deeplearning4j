@@ -34,7 +34,7 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: ubuntu-18.04
+        default: ubuntu-20.04
 
       debug_enabled:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
