@@ -175,7 +175,6 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     }
 
 
-    }
     @Override
     public Deallocator deallocator() {
         return new CudaOpContextDeallocator(this);
