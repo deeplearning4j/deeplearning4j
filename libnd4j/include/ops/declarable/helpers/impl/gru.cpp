@@ -77,7 +77,7 @@ void gruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, co
   NDArray br = (*b)({0, nOut});         // [nOut]
   NDArray bu = (*b)({nOut, 2 * nOut});  // [nOut]
 
-  // × means matrix multipication
+  // × means matrix multiplication
   // * means element-wise product or so called Hadamard product
 
   // reset gate
@@ -100,8 +100,13 @@ void gruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, co
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh,
-             const NDArray* b, NDArray* gates, NDArray* h) {
+void gruCell(const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh, const NDArray* b,
+             NDArray* gates, NDArray* h, bool linearBeforeReset) {
+
+  if(linearBeforeReset) {
+    throw std::runtime_error("GRU: Linear before reset not implemented. Please set to false.");
+  }
+
   // Inputs:
   // x        input [bS, nIn]
   // hI       previous cell output [bS, nOut],  that is at previous time step t-1
@@ -124,6 +129,8 @@ void gruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, co
   // c = tanh(zc)
   // h = (1-u)*c + u*hI
 
+
+
   const int bS = x->sizeAt(0);
   const int nIn = x->sizeAt(1);
   const int nOut = hI->sizeAt(1);
@@ -140,21 +147,29 @@ void gruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, co
   NDArray u = (*gates)({0, 0, nOut, 2 * nOut});      // [bS, nOut]
   NDArray c = (*gates)({0, 0, 2 * nOut, 3 * nOut});  // [bS, nOut]
 
+
+
   // reset and update gates
   ru += temp({0, 0, 0, 2 * nOut});
   ru.applyTransform(transform::Sigmoid, ru);
+
 
   // cell gate
   c.assign(c * r + temp({0, 0, 2 * nOut, 3 * nOut}));
   c.applyTransform(transform::Tanh, c);
 
+
+
   // cell output
   h->assign(u * *hI + (1.f - u) * c);
+
+
+
 }
 
 //////////////////////////////////////////////////////////////////////////
 void gruTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh,
-                 const NDArray* b, NDArray* h) {
+                 const NDArray* b, NDArray* h, bool linearBeforeReset) {
   // sL means time steps
 
   // x   input [sL, bS, nIn]
@@ -175,8 +190,9 @@ void gruTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* hI
   auto hSet = h->allTensorsAlongDimension({1, 2});  // sub-arrays with shape [bS, nOut]
 
   // time loop
-  for (int t = 0; t < sL; ++t)
-    gruCell(context, xSet.at(t), t == 0 ? hI : hSet.at(t - 1), Wx, Wh, b, &gates, hSet.at(t));
+  for (int t = 0; t < sL; ++t) {
+    gruCell(xSet.at(t), t == 0 ? hI : hSet.at(t - 1), Wx, Wh, b, &gates, hSet.at(t), linearBeforeReset);
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -519,7 +535,7 @@ void gruTimeLoopBp(sd::LaunchContext* context, const NDArray* x, const NDArray* 
   hSet.at(0)->assign(hI);
 
   // forward time loop
-  for (int t = 0; t < sL; ++t) gruCell(context, xSet.at(t), hSet.at(t), Wx, Wh, b, gatesSet.at(t), hSet.at(t + 1));
+  for (int t = 0; t < sL; ++t) gruCell(xSet.at(t), hSet.at(t), Wx, Wh, b, gatesSet.at(t), hSet.at(t + 1), false);
 
   // backward time loop
   for (int t = sL - 1; t >= 0; --t)

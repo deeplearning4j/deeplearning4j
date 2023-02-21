@@ -6169,50 +6169,8 @@ mappings {
 }
 mappings {
   frameworkName: "onnx"
-  opName: "gruCell"
+  opName: "noop"
   inputFrameworkOpName: "GRU"
-  rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "X"
-    inputTensorName: "R"
-    inputTensorName: "W"
-    inputTensorName: "B"
-    inputTensorName: "initial_h"
-    inputTensorName: "B"
-    outputTensorName: "input"
-    outputTensorName: "Wru"
-    outputTensorName: "Wc"
-    outputTensorName: "bc"
-    outputTensorName: "hLast"
-    outputTensorName: "bru"
-    inputToOutput {
-      key: "Wc"
-      value: "W"
-    }
-    inputToOutput {
-      key: "Wru"
-      value: "R"
-    }
-    inputToOutput {
-      key: "bc"
-      value: "B"
-    }
-    inputToOutput {
-      key: "bru"
-      value: "B"
-    }
-    inputToOutput {
-      key: "hLast"
-      value: "initial_h"
-    }
-    inputToOutput {
-      key: "input"
-      value: "X"
-    }
-    ruleType: "tensor"
-    inputFrameworkOpName: "GRU"
-  }
 }
 mappings {
   frameworkName: "onnx"

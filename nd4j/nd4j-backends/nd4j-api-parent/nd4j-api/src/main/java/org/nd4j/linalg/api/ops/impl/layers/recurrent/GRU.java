@@ -51,7 +51,7 @@ public class GRU extends DynamicCustomOp {
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 5, "Expected 5 inputs to GRU: initial cell output, input-to-hidden weights, hidden-to-hidden weights and biases got %s", inputDataTypes);
         DataType dt = inputDataTypes.get(1);
         for (int i = 0; i < inputDataTypes.size(); i++) {
-            Preconditions.checkState(inputDataTypes.get(i).isFPType(), "All input types must be a floating point type, got %s", dt);
+            Preconditions.checkState(inputDataTypes.get(i).isFPType(), "All input types must be a floating point type, got %s at index %d", dt,0);
         }
         Preconditions.checkState(dt.isFPType(), "Input type 1 must be a floating point type, got %s", dt);
         return Collections.singletonList(dt);

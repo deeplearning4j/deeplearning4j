@@ -85,6 +85,7 @@ DECLARE_CONFIGURABLE_OP(axpy, 2, 1, false, -2, 0);
  */
 #if NOT_EXCLUDED(OP_batched_gemm)
 DECLARE_CUSTOM_OP(batched_gemm, -1, -1, false, 0, 9);
+DECLARE_CUSTOM_OP(batched_gemm_bp, -1, -1, false, 0, 9);
 #endif
 
 /**

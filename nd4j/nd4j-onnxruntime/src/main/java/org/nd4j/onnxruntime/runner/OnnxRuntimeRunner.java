@@ -54,7 +54,10 @@ public class OnnxRuntimeRunner implements Closeable  {
     private   static Env env;
     private Pointer bp;
     private Onnx.ModelProto modelProto;
-
+    @Getter
+    private List<Onnx.TensorProto> initializers = new ArrayList<>();
+    @Getter
+    private List<Onnx.ValueInfoProto> inputs = new ArrayList<>();
     @Builder
     public OnnxRuntimeRunner(String modelUri) {
         if(env == null) {
@@ -79,6 +82,17 @@ public class OnnxRuntimeRunner implements Closeable  {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
+            for(int i = 0; i < modelProto.getGraph().getInitializerCount(); i++) {
+                Onnx.TensorProto initializer = modelProto.getGraph().getInitializer(i);
+                initializers.add(initializer);
+            }
+
+            for(int i = 0; i < modelProto.getGraph().getInputCount(); i++) {
+                inputs.add(modelProto.getGraph().getInput(i));
+            }
+
+
         }
         runOptions = new RunOptions();
         memoryInfo = MemoryInfo.CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
@@ -128,7 +142,7 @@ public class OnnxRuntimeRunner implements Closeable  {
             }
             //empty sequence
             else if(arr.size() == 0) {
-                    throw new IllegalArgumentException("Onnx Runtime does not support empty sequences! Found at input name " + inputName.getString());
+                throw new IllegalArgumentException("Onnx Runtime does not support empty sequences! Found at input name " + inputName.getString());
             } else if(arr.size() > 1 || typeForInput == ONNXType.ONNX_TYPE_SEQUENCE) {
                 ValueVector inputTensor = getSequence(arr, memoryInfo);
                 inputVal.position(i).put(Value.CreateSequence(inputTensor));

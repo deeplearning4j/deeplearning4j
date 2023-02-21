@@ -767,7 +767,9 @@ public class TestMiscOpValidation extends BaseOpValidation {
         SameDiff sd = SameDiff.create();
         SDVariable[] res2 = sd.batchMmul(sd.constant(a),
                 sd.constant(b),
-                new SDVariable[]{sd.constant(a),sd.constant(a)},new SDVariable[]{sd.constant(b),sd.constant(b)});
+                new SDVariable[]{sd.constant(a),
+                        sd.constant(a)},
+                new SDVariable[]{sd.constant(b),sd.constant(b)});
         assertEquals(assertion,res2[0].eval()); // wrong result (or crash)
 
 
@@ -778,6 +780,37 @@ public class TestMiscOpValidation extends BaseOpValidation {
         assertEquals(assertion,res3[0].eval());
     }
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBatchMMulBp(Nd4jBackend backend) {
+        int batchSize = 4;
+        int seqLength = 8;
+
+        SameDiff sd = SameDiff.create();
+
+        SDVariable features = sd.placeHolder("features", DataType.DOUBLE, batchSize, seqLength);
+        SDVariable labels = sd.placeHolder("labels", DataType.DOUBLE, batchSize, batchSize);
+        SDVariable var = sd.var("variable", seqLength, batchSize);
+        SDVariable[] predictions = sd.batchMmul(new String[]{"predictions"},sd.constant(1.0),sd.constant(0.0),new SDVariable[]{features},new SDVariable[]{var});
+        sd.loss.meanSquaredError("loss", labels, predictions[0], null);
+
+        TrainingConfig config = new TrainingConfig.Builder()
+                .updater(new Adam(0.1))
+                .dataSetFeatureMapping("features")
+                .dataSetLabelMapping("labels")
+                .build();
+        sd.setTrainingConfig(config);
+
+        RecordReader reader = new CollectionRecordReader(
+                Collections.nCopies(batchSize, Collections.nCopies(seqLength + batchSize, new IntWritable(1))));
+        DataSetIterator iterator = new RecordReaderDataSetIterator(
+                reader, batchSize, seqLength, seqLength + batchSize - 1, true);
+
+        System.out.println(sd.output(iterator, "predictions").get("predictions")); // forward pass works
+
+        sd.fit(iterator, 1); // backward pass throws exception
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

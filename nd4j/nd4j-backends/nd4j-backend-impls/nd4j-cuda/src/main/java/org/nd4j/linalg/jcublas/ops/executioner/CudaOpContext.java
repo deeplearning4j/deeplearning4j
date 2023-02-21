@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.linalg.profiler.OpContextTracker;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueContext;
@@ -54,11 +55,19 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     public CudaOpContext() {
         Nd4j.getDeallocatorService().pickObject(this);
+        if(OpContextTracker.getInstance().isEnabled()) {
+            OpContextTracker.getInstance().allocateOpContext(this);
+        }
     }
 
     @Override
     public void close() {
         // no-op
+    }
+
+    @Override
+    public long id() {
+        return id;
     }
 
     @Override
@@ -164,6 +173,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
         return BASE_CUDA_OP_CONTEXT_OFFSET + id;
 
     }
+
 
     @Override
     public Deallocator deallocator() {

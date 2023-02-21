@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.cpu.nativecpu.buffer.BaseCpuDataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.linalg.profiler.OpContextTracker;
 import org.nd4j.nativeblas.*;
 
 import java.util.ArrayList;
@@ -54,6 +55,9 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
     public CpuOpContext() {
         Nd4j.getDeallocatorService().pickObject(this);
+        if(OpContextTracker.getInstance().isEnabled()) {
+            OpContextTracker.getInstance().allocateOpContext(this);
+        }
     }
 
     @Override
@@ -84,6 +88,11 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     public void setBArguments(Pointer arguments, int length) {
         this.bArgs = arguments instanceof BooleanPointer ?(BooleanPointer) arguments : new BooleanPointer(arguments);
         nativeOps.setGraphContextBArguments(context, this.bArgs,length);
+    }
+
+    @Override
+    public long id() {
+        return id;
     }
 
     @Override
@@ -200,6 +209,9 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             addressPointer.retainReference();
             shapeInfoBuffer.put(i,addressPointer);
             fastpath_in.put(i,array.isEmpty() ? null : array);
+            if(OpContextTracker.getInstance().isEnabled()) {
+                OpContextTracker.getInstance().associateInput(array,this);
+            }
         }
 
         buffers.retainReference();
@@ -219,6 +231,9 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             buffers1[i] = array.isEmpty() ? null : ((BaseCpuDataBuffer) array.data()).getOpaqueDataBuffer();
             shapeInfoBufers2[i] = (LongPointer) array.shapeInfoDataBuffer().addressPointer();
             fastpath_out.put(i,array);
+            if(OpContextTracker.getInstance().isEnabled()) {
+                OpContextTracker.getInstance().associateOutput(array,this);
+            }
         }
 
         PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(buffers1);
