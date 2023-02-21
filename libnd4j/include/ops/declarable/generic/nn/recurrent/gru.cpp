@@ -88,7 +88,6 @@ DECLARE_SHAPE_FN(gru) {
   const int bS = x->sizeAt(1);
   const int nIn = x->sizeAt(2);
   const int nOut = hI->sizeAt(1);
-  sd_printf("Batch size %d nIn %d nOut %d\n",bS,nIn,nOut);
   const std::vector<sd::LongType> h0CorrectShape = {bS, nOut};
   const std::vector<sd::LongType> wxCorrectShape = {nIn, 3 * nOut};
   const std::vector<sd::LongType> whCorrectShape = {nOut, 3 * nOut};
