@@ -513,9 +513,7 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
   if (bRank > 2) bBatchDims = ShapeUtils::evalDimsToExclude(bRank, {bKaxis, bNaxis});
   if (cRank > 2) cBatchDims = ShapeUtils::evalDimsToExclude(cRank, {cMaxis, cNaxis});
 
-  // BUILD_TRIPLE_SELECTOR(A->dataType(), B->dataType(), C->dataType(), batchedGemm, (A, B, C, aBatchDims.data(),
-  // bBatchDims.data(), cBatchDims.data(), aMaxis, aKaxis, bKaxis, bNaxis, cMaxis, cNaxis, alpha, beta),
-  // SD_COMMON_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
+
   BUILD_SINGLE_SELECTOR_THRICE(A->dataType(), batchedGemm,
                                (A, B, C, aBatchDims.data(), bBatchDims.data(), cBatchDims.data(), aMaxis, aKaxis,
                                 bKaxis, bNaxis, cMaxis, cNaxis, alpha, beta),
