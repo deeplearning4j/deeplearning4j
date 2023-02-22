@@ -166,11 +166,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         long[] retShape = Shape.reductionShape(x, dimension, true, keepDims);
 
         if(z == null || x == z) {
-            val ret = Nd4j.createUninitialized(DataType.LONG, retShape);
+            val ret = Nd4j.createUninitialized(DataType.INT64, retShape);
 
             setZ(ret, op, oc);
             z = ret;
-        } else if(!Arrays.equals(retShape, z.shape())){
+        } else if(!Arrays.equals(retShape, z.shape())) {
             throw new IllegalStateException("Z array shape does not match expected return type for op " + op
                     + ": expected shape " + Arrays.toString(retShape) + ", z.shape()=" + Arrays.toString(z.shape()));
         }

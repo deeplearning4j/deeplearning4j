@@ -27,6 +27,7 @@ import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.profiler.OpContextTracker;
 
 import java.util.*;
 
@@ -184,6 +185,9 @@ public abstract class BaseOpContext implements OpContext {
 
     @Override
     public void setInputArray(int index, @NonNull INDArray array) {
+        if(OpContextTracker.getInstance().isEnabled()) {
+            OpContextTracker.getInstance().associateInput(array,this);
+        }
         fastpath_in.put(index, array);
     }
 

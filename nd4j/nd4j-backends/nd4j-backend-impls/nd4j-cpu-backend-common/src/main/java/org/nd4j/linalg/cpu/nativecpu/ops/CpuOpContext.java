@@ -216,7 +216,6 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
         buffers.retainReference();
         shapeInfoBuffer.retainReference();
-        //TODO: something here is forcing the context input buffers to be null
         nativeOps.setGraphContextInputBuffers(context,arrays.size(),buffers,shapeInfoBuffer,null);
 
     }
