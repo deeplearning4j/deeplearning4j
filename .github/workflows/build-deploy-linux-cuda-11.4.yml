@@ -44,7 +44,7 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: ubuntu-20.04
+        default: ubuntu-18.04
 
       cudaVersion:
         description: 'Pick the cuda version'
