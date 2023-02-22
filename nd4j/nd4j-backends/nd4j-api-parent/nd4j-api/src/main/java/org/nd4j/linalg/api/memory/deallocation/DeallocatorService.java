@@ -20,6 +20,7 @@
 
 package org.nd4j.linalg.api.memory.deallocation;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -77,6 +78,7 @@ public class DeallocatorService {
     //ConcurrentHashMap (the prior implementation) which has higher throughput overall but is inefficient
     //for the amount of memory overhead it has. String compression
     //with a large number of objects is more important over throughput.
+    @Getter
     private Map<Long,DeallocatableReference> referenceMap = new ConcurrentSkipListMap<>();
 
     private List<List<ReferenceQueue<Deallocatable>>> deviceMap = new ArrayList<>();

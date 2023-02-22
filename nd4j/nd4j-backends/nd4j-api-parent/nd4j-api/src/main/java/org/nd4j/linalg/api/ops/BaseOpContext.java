@@ -231,6 +231,9 @@ public abstract class BaseOpContext implements OpContext {
 
     @Override
     public void setOutputArray(int index, @NonNull INDArray array) {
+        if(OpContextTracker.getInstance().isEnabled()) {
+            OpContextTracker.getInstance().associateOutput(array,this);
+        }
         fastpath_out.put(index, array);
     }
 
@@ -272,6 +275,9 @@ public abstract class BaseOpContext implements OpContext {
     public void purge() {
         fastpath_in.clear();
         fastpath_out.clear();
+        if(OpContextTracker.getInstance().isEnabled()) {
+            OpContextTracker.getInstance().purge(this);
+        }
     }
 
     @Override
