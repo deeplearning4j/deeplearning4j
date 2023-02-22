@@ -634,10 +634,8 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   // validating data types for inputs and (optionally) outputs
   REQUIRE_OK(this->validateDataTypes(*block));
 
-  sd_printf("Preparing outputs\n",0);
   // this method will allocate output NDArrays for this op
   auto numOutputs = this->prepareOutputs(*block);
-  sd_printf("After Preparing outputs\n",0);
 
   if (Environment::getInstance().isProfiling()) {
     timeStart = std::chrono::system_clock::now();

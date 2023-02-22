@@ -177,7 +177,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         op.validateDataTypes();
 
-        Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension, DataType.INT).addressPointer();
 
         Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(x, dimension);
 
@@ -346,7 +345,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
          * for immutable buffers for the dimensions.
          * This gives us a pointer which is passed around in libnd4j.
          */
-        Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension, DataType.INT).addressPointer();
         val xb = ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
         val zb = ((BaseCpuDataBuffer) z.data()).getOpaqueDataBuffer();
         if (op instanceof Variance) {
