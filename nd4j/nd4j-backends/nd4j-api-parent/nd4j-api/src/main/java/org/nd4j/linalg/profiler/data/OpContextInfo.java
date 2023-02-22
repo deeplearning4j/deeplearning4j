@@ -73,14 +73,25 @@ public class OpContextInfo {
 
 
     public void addOutput(INDArray input,boolean createdByOutput) {
+       if(input == null)
+           return;
         addOutputType(input.dataType());
         outputCreatedByCtx.add(createdByOutput);
-        addOutputByteWidth(input.data().length() * input.data().dataType().width());
+        if(!input.isEmpty())
+            addOutputByteWidth(input.data().length() * input.data().dataType().width());
+
+        else  addOutputByteWidth(0L);
+
     }
 
     public void addInput(INDArray input) {
+      if(input == null)
+          return;
         addInputType(input.dataType());
-        addInputByteWidth(input.data().length() * input.data().dataType().width());
+        if(!input.isEmpty())
+            addInputByteWidth(input.data().length() * input.data().dataType().width());
+        else  addInputByteWidth(0L);
+
     }
 
     public void addInputType(DataType input) {
