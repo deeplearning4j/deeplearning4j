@@ -525,10 +525,9 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
 
     //inputs: values, weights, eps
     //output is dldv, dldw
-    auto epsTranspose = eps->permute({0,2,1});
 
     //weights * value?
-    matMulBp.execute({values,&weights,&epsTranspose},{dLdv,&dLdw},{},{1,1});
+    matMulBp.execute({&weights,values,eps},{&dLdw,dLdv},{},{0,0});
 
     //first matrix multiply  backprop end
 
@@ -551,7 +550,7 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
 
     //inputs: keys,queries,dlds
     //outputs: dldk, dldq
-    matMulBp.execute({key,query,&dLds},{dLdk,dLdq},{transA3,transB3});
+    matMulBp.execute({key,query,&dLds},{dLdk,dLdq},{},{0,1,1});
 
 
   } else if(scoreMode == ATTENTION_SCORE_MODE_CONCAT) {
