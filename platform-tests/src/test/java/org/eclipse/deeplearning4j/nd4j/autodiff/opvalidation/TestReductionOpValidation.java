@@ -1124,14 +1124,10 @@ public class TestReductionOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDotProductAttention(Nd4jBackend backend) {
-        final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
-        final INDArray values = Nd4j.rand(new int[]{10, 4, 3});
-        final INDArray query = Nd4j.rand(new int[]{10, 4, 1});
+        final INDArray keys = Nd4j.rand(new int[]{10, 3,4});
+        final INDArray values = Nd4j.rand(new int[]{10, 3,4});
+        final INDArray query = Nd4j.rand(new int[]{10, 1,4});
 
-        final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
-                .divi(Math.sqrt(keys.size(1)));
-        Nd4j.exec(new SoftMax(exec, exec, 1));
-        final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
 
         SameDiff sd = SameDiff.create();
         SDVariable sdQ = sd.var("q", query);

@@ -44,8 +44,8 @@ public class DotProductAttention extends DynamicCustomOp {
         super(null, sameDiff, mask == null ? new SDVariable[] {queries, keys, values} : new SDVariable[] {queries, keys, values, mask}, false);
         this.scaled = scaled;
         this.withWeights = withWeights;
-        addIArgument(scaled ? 1 : 0);
-        addIArgument(withWeights ? 1 : 0);
+        addIArgument(0);
+        addBArgument(withWeights);
     }
 
     public DotProductAttention(@NonNull INDArray queries, @NonNull INDArray keys, @NonNull INDArray values, INDArray mask, boolean scaled){
@@ -56,8 +56,8 @@ public class DotProductAttention extends DynamicCustomOp {
         super(wrapFilterNull(queries, keys, values, mask), null);
         this.scaled = scaled;
         this.withWeights = withWeights;
-        addIArgument(scaled ? 1 : 0);
-        addIArgument(withWeights ? 1 : 0);
+        addIArgument(0);
+        addBArgument(withWeights);
     }
 
     @Override
