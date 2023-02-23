@@ -459,7 +459,6 @@ fun NN() = Namespace("NN") {
         }
     }
 
-
     /**
      * TODO: redo interface to accomodate for new functionality.
      * Final decision was to accomodate older interface at the end.
@@ -467,56 +466,6 @@ fun NN() = Namespace("NN") {
      * Then change the dl4j layers that use this to use the appropriate data layout.
      * Previous debate was whether to use a v2 version of this op instead.
      */
-    Op("dotProductAttentionV2") {
-        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
-        val q = Input(NUMERIC, "queries") { description = "input 3D array \"queries\" of shape [batchSize, featureKeys, queryCount]\n" +
-                "or 4D array of shape [batchSize, numHeads, featureKeys, queryCount]" }
-        val v = Input(NUMERIC, "values") { description = "input 3D array \"values\" of shape [batchSize, featureValues, timesteps]\n" +
-                "or 4D array of shape [batchSize, numHeads, featureValues, timesteps]" }
-
-        val k = Input(NUMERIC, "keys") { description = "input 3D array \"keys\" of shape [batchSize, featureKeys, timesteps]\n" +
-                "or 4D array of shape [batchSize, numHeads, featureKeys, timesteps]" }
-        val queryMask = Input(NUMERIC, "queryMask") { description = "input 3D array \"keys\" of shape [batchSize, featureKeys, timesteps]\n" +
-                "or 4D array of shape [batchSize, numHeads, featureKeys, timesteps]" }
-        val valueMask = Input(NUMERIC, "valueMask") { description = "input 3D array \"keys\" of shape [batchSize, featureKeys, timesteps]\n" +
-                "or 4D array of shape [batchSize, numHeads, featureKeys, timesteps]" }
-
-        val s = Arg(FLOATING_POINT, "scaleFactor") { defaultValue = 1.0; description = "normalization, scale factor for normalization" }
-        val dropout = Arg(FLOATING_POINT, "dropoutProbability") { defaultValue = 0.0; description = "dropout probability" }
-        val scoreMode = Arg(INT, "scoreMode") { defaultValue = 0; description = "normalization, false -> do not apply normalization, true -> apply normalization" }
-        val useCausalMask = Arg(BOOL, "useCausalMask") { defaultValue = false; description = "withWeights return attention weights as well, false -> only one output, true -> two outputs" }
-
-        val withWeights = Arg(BOOL, "withWeights") { defaultValue = false; description = "withWeights return attention weights as well, false -> only one output, true -> two outputs" }
-
-        Output(NUMERIC, "output") { description = " Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount],\n" +
-                "(optionally) Attention Weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount]" }
-
-        Signature(q,v,k,queryMask,valueMask, s,dropout,scoreMode,useCausalMask,withWeights)
-
-        Doc(Language.ANY, DocScope.ALL) {
-            """
-             This operation performs dot product attention on the given timeseries input with the given queries
-             out = sum(similarity(k_i, q) * v_i)
-            
-             similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q
-            
-             Optionally with normalization step:
-             similarity(k, q) = softmax(k * q / sqrt(size(q))
-            
-             See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)
-            
-             Note: This supports multiple queries at once, if only one query is available the queries vector still has to
-             be 3D but can have queryCount = 1
-            
-             Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for
-             both.
-            
-             Note: Queries, keys and values must either be all rank 3 or all rank 4 arrays. Mixing them doesn't work. The
-             output rank will depend on the input rank.
-            """.trimIndent()
-        }
-    }
-
     Op("dotProductAttention") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         val q = Input(NUMERIC, "queries") { description = "input 3D array \"queries\" of shape [batchSize, featureKeys, queryCount]\n" +
@@ -557,8 +506,6 @@ fun NN() = Namespace("NN") {
             """.trimIndent()
         }
     }
-
-
 
     Op("multiHeadDotProductAttention") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
