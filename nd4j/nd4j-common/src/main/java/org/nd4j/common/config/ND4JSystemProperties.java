@@ -172,7 +172,7 @@ public class ND4JSystemProperties {
      * during a samediff inference session. This may have bad side effects (especially involving views)
      * This allows enabling or disabling of that behavior.
      */
-    public final static String SAMEDIFF_MEMORY_CACHE_ENABLE = "org.nd4j.autodiff.samediff.cache";
+    public final static String SAMEDIFF_MEMORY_CACHE_ENABLE = "org.nd4j.autodiff.samediff.cache.enable";
 
     /**
      * Used to trigger loading the import reflection cache. This allows the user to control the initial scan

@@ -263,7 +263,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         Preconditions.checkState(!lruCache.contains(id), "Array was released multiple times: id=%s, shape=%ndShape", id,
                 array);
 
-        if (enableCache == false) {
+        if (!enableCache) {
             if (array.closeable()) {
                 array.close();
             }

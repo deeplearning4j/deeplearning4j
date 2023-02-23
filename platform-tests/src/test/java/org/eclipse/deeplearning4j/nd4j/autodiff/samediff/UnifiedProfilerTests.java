@@ -19,7 +19,6 @@
  */
 package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.datasets.iterator.RandomDataSetIterator;
 import org.junit.jupiter.api.Tag;
@@ -28,7 +27,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
-import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
@@ -36,7 +34,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
-import org.nd4j.linalg.profiler.OpContextTracker;
 import org.nd4j.linalg.profiler.UnifiedProfiler;
 import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
 import org.nd4j.linalg.profiler.data.eventlogger.EventType;
@@ -48,11 +45,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
-import java.util.Collection;
-
 
 import static org.deeplearning4j.datasets.iterator.RandomDataSetIterator.Values.INTEGER_0_10;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.nd4j.linalg.api.buffer.DataType.FLOAT;
 
 @Slf4j
@@ -60,7 +54,6 @@ import static org.nd4j.linalg.api.buffer.DataType.FLOAT;
 @Tag(TagNames.TRAINING)
 @Tag(TagNames.SAMEDIFF)
 public class UnifiedProfilerTests extends BaseNd4jTestWithBackends {
-    @SneakyThrows
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testProfiler(Nd4jBackend backend) {
@@ -96,9 +89,10 @@ public class UnifiedProfilerTests extends BaseNd4jTestWithBackends {
         DataSetIterator iterator = new RandomDataSetIterator(1, new long[]{batchSize, modelDim}, new long[]{batchSize, modelDim}, INTEGER_0_10, INTEGER_0_10);
 
         sd.fit(iterator, 10);
-        sd.output(iterator,"predictions");
+
         System.out.println(Nd4j.getProfiler().printCurrentStats());
-        Thread.sleep(10000);
+
+
         Nd4j.getProfiler().stop();
 
     }
