@@ -459,6 +459,13 @@ fun NN() = Namespace("NN") {
         }
     }
 
+    /**
+     * TODO: redo interface to accomodate for new functionality.
+     * Final decision was to accomodate older interface at the end.
+     *
+     * Then change the dl4j layers that use this to use the appropriate data layout.
+     * Previous debate was whether to use a v2 version of this op instead.
+     */
     Op("dotProductAttention") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         val q = Input(NUMERIC, "queries") { description = "input 3D array \"queries\" of shape [batchSize, featureKeys, queryCount]\n" +

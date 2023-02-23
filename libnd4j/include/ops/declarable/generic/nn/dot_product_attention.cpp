@@ -39,9 +39,26 @@ CUSTOM_OP_IMPL(dot_product_attention, -2, -1, false, 0, -2) {
 
 
 
-  REQUIRE_TRUE(queries->rankOf() == 3,0,"Input rank of queries must be 3.");
-  REQUIRE_TRUE(values->rankOf() == 3,0,"Input rank of values must be 3.");
-  REQUIRE_TRUE(values->rankOf() == 3,0,"Input rank of keys must be 3.");
+  REQUIRE_TRUE(queries->rankOf() == keys->rankOf() && keys->rankOf() == values->rankOf(), 0,
+               "dot_product_attention: Queries, Keys and Values must have same rank. "
+               "But got queries = %s, keys = %s, values = %s", ShapeUtils::shapeAsString(queries).c_str(),
+               ShapeUtils::shapeAsString(keys).c_str(), ShapeUtils::shapeAsString(values).c_str());
+
+  REQUIRE_TRUE(queries->rankOf() == 3 || queries->rankOf() == 4, 0,
+               "dot_product_attention: Queries, Keys and Values must be rank 3 arrays for single headed attention "
+               "or rank 4 arrays for multi headed attention. But got rank = %i", queries->rankOf());
+
+  REQUIRE_TRUE(queries->sizeAt(0) == keys->sizeAt(0) && keys->sizeAt(0) == values->sizeAt(0), 0,
+               "dot_product_attention: Queries, Keys and Values must have the same mini batch size. "
+               "But got queries = %i, keys = %i, values = %i", queries->sizeAt(0), keys->sizeAt(0), values->sizeAt(0));
+
+  REQUIRE_TRUE(queries->sizeAt(-2) == keys->sizeAt(-2), 0,
+               "dot_product_attention: Queries and Keys must have the same feature size. "
+               "But got queries = %i, keys = %i", queries->sizeAt(-2), keys->sizeAt(-2));
+
+  REQUIRE_TRUE(keys->sizeAt(-1) == values->sizeAt(-1), 0,
+               "dot_product_attention: Keys and Values must have the same timestep length. "
+               "But got keys = %i, values = %i", keys->sizeAt(-1), values->sizeAt(-1));
 
   auto qMask = block.width() > 3 ? INPUT_VARIABLE(3) : nullptr;
   auto vMask = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
@@ -100,11 +117,8 @@ DECLARE_TYPES(dot_product_attention) {
 DECLARE_SHAPE_FN(dot_product_attention) {
   auto firstInputType = INPUT_VARIABLE(0)->dataType();
   auto query_shape = inputShape->at(0);
-  REQUIRE_TRUE(query_shape[0] == 3,0,"Query input must be rank 3.");
   auto values_shape = inputShape->at(1);
-  REQUIRE_TRUE(values_shape[0] == 3,0,"Values input must be rank 3.");
-  auto keys_shape = block.inputs()->size() > 2 ? inputShape->at(2) : values_shape;
-  REQUIRE_TRUE(keys_shape[0] == 3,0,"Key input must be rank 3.");
+  auto keys_shape = block.inputs()->size() > 2 ? inputShape->at(-2) : values_shape;
 
 
 
