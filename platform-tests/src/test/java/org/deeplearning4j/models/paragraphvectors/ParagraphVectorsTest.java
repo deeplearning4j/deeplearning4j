@@ -63,6 +63,7 @@ import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.common.util.SerializationUtils;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.WorkspaceAllocationsTracker;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -939,10 +940,13 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     public void testParallelLoading(Nd4jBackend backend) throws Exception {
         int numThreads = 16;
         boolean isIntegration = isIntegrationTests();
+        //Nd4j.getProfiler().start();
+        //EventLogger.getInstance().setEventTypesToLog(Arrays.asList(EventType.DEALLOCATION));
         Executor executor = Executors.newFixedThreadPool(numThreads);
         File resource = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator sentencesIter = getIterator(isIntegration, resource);
 
+        //Nd4j.getProfiler().start();
         ClassPathResource resource_mixed = new ClassPathResource("paravec/");
         File local_resource_mixed = testDir.toFile();
         resource_mixed.copyDirectory(local_resource_mixed);
@@ -964,6 +968,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
         ParagraphVectors pv = new ParagraphVectors.Builder().tokenizerFactory(t)
                 .iterations(10)
+                .tokenizerFactory(new DefaultTokenizerFactory())
                 .useHierarchicSoftmax(true).trainWordVectors(true).useExistingWordVectors(wordVectors)
                 .negativeSample(0).sequenceLearningAlgorithm(new DBOW<>()).build();
 
@@ -984,7 +989,9 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
                     @SneakyThrows
                     @Override
                     public void run() {
-                        WordVectorSerializer.readParagraphVectors(write);
+                        var vectors = WordVectorSerializer.readParagraphVectors(write);
+                        vectors.setTokenizerFactory(new DefaultTokenizerFactory());
+                        vectors.inferVector("this is a test");
                     }
                 });
             }

@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.memory.deallocation;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
@@ -33,7 +34,10 @@ import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -80,6 +84,9 @@ public class DeallocatorService {
     //with a large number of objects is more important over throughput.
     @Getter
     private Map<Long,DeallocatableReference> referenceMap = new ConcurrentSkipListMap<>();
+    private static Set<Long> deallocatedIds = new ConcurrentSkipListSet<>();
+
+    private static AtomicBoolean blockDeallocator = new AtomicBoolean(false);
 
     private List<List<ReferenceQueue<Deallocatable>>> deviceMap = new ArrayList<>();
     private Boolean noPointerGc;
@@ -88,7 +95,7 @@ public class DeallocatorService {
     public DeallocatorService() {
         // we need to have at least 2 threads, but for CUDA we'd need at least numDevices threads, due to thread->device affinity
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
-        int numThreads = Math.max(2, numDevices * 2);
+        int numThreads = 1;
 
         for (int e = 0; e < numDevices; e++)
             deviceMap.add(new ArrayList<>());
@@ -117,6 +124,12 @@ public class DeallocatorService {
 
 
     }
+
+
+    public void toggleDeallocationBlock(boolean shouldBlock) {
+        blockDeallocator.set(shouldBlock);
+    }
+
 
     public long nextValue() {
         return counter.incrementAndGet();
@@ -154,13 +167,20 @@ public class DeallocatorService {
             setContextClassLoader(null);
         }
 
+        @SneakyThrows
         @Override
         public void run() {
             Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
             boolean canRun = true;
             long cnt = 0;
             while (canRun) {
+                if(blockDeallocator.get()) {
+                    Thread.sleep(1000);
+                }
+
                 // if periodicGc is enabled, only first thread will call for it
+
+
                 if (Nd4j.getMemoryManager().isPeriodicGcActive() && threadIdx == 0 && Nd4j.getMemoryManager().getAutoGcWindow() > 0) {
                     val reference = (DeallocatableReference) queue.poll();
                     if (reference == null || (reference != null && reference.get() != null &&  !reference.get().shouldDeAllocate()) || !reference.getDeallocator().isConstant()) {
@@ -176,6 +196,8 @@ public class DeallocatorService {
                         if (reference != null && (reference.get().shouldDeAllocate()) || reference.getDeallocator().isConstant()) {
                             reference.deallocate();
                             referenceMap.remove(reference.getId());
+                        } else {
+                            referenceMap.remove(reference.getId());
                         }
                     }
                 } else {
@@ -187,10 +209,13 @@ public class DeallocatorService {
                         if( (reference.get() != null && !reference.get().shouldDeAllocate()) || reference.getDeallocator().isConstant())
                             continue;
 
+                        if(deallocatedIds.contains(reference.getId()))
+                            throw new IllegalArgumentException("Deallocating already deallocated reference.");
 
                         // invoking deallocator
                         reference.deallocate();
                         referenceMap.remove(reference.getId());
+                        deallocatedIds.add(reference.getId());
                     } catch (InterruptedException e) {
                         canRun = false;
                     } catch (Exception e) {

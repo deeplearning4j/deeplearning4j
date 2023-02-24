@@ -2605,11 +2605,9 @@ OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::Long
 }
 
 void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) {
-  //delete ptr;
    }
 
 void deleteConstantDataBuffer(sd::ConstantDataBuffer *ptr) {
-//  delete ptr;
 }
 
 void deleteTadPack(sd::TadPack *ptr) { delete ptr; }
