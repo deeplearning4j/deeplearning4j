@@ -1819,7 +1819,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public boolean shouldDeAllocate() {
-        return !isConstant() || dataType() != DataType.INT64;
+        return !isConstant() && !released;
     }
 
     @Override
