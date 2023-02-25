@@ -1813,7 +1813,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
         deallocator().setConstant(reallyConstant);
         if(EventLogger.getInstance().isEnabled())
             deallocator().logEvent().setConstant(reallyConstant);
-        Nd4j.getDeallocatorService().getReferenceMap().remove(getUniqueId());
+        if(reallyConstant)
+            Nd4j.getDeallocatorService().getReferenceMap().remove(getUniqueId());
+
         this.constant = reallyConstant;
 
 
