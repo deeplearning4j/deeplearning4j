@@ -174,9 +174,6 @@ public class DeallocatorService {
             boolean canRun = true;
             long cnt = 0;
             while (canRun) {
-                if(blockDeallocator.get()) {
-                    Thread.sleep(1000);
-                }
 
                 // if periodicGc is enabled, only first thread will call for it
 

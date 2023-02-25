@@ -33,6 +33,7 @@ import org.nd4j.common.primitives.Triple;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
@@ -1812,6 +1813,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         deallocator().setConstant(reallyConstant);
         if(EventLogger.getInstance().isEnabled())
             deallocator().logEvent().setConstant(reallyConstant);
+        Nd4j.getDeallocatorService().getReferenceMap().remove(getUniqueId());
         this.constant = reallyConstant;
 
 
