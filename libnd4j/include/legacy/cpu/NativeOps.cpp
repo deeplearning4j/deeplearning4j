@@ -2605,9 +2605,11 @@ OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::Long
 }
 
 void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) {
-   }
+  throw std::runtime_error("Unsupported deletion of constant shape buffers");
+}
 
 void deleteConstantDataBuffer(sd::ConstantDataBuffer *ptr) {
+  throw std::runtime_error("Unsupported deletion of databuffer");
 }
 
 void deleteTadPack(sd::TadPack *ptr) { delete ptr; }
