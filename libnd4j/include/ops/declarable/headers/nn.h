@@ -249,8 +249,8 @@ DECLARE_CUSTOM_OP(dot_product_attention_bp, 4, 3, false, 0, 1);
  * timesteps, queryCount]
  */
 #if NOT_EXCLUDED(OP_dot_product_attention_v2)
-DECLARE_CUSTOM_OP(dot_product_attention_v2, -2, -1, false, -2, 2);
-DECLARE_CUSTOM_OP(dot_product_attention_v2_bp, -2, -3, false, -2, 1);
+DECLARE_CUSTOM_OP(dot_product_attention_v2, 3, -1, false, 0, 2);
+DECLARE_CUSTOM_OP(dot_product_attention_v2_bp, 4, 3, false, 0, 1);
 #endif
 
 
