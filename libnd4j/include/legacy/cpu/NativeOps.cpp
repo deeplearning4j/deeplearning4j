@@ -2605,11 +2605,13 @@ OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::Long
 }
 
 void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) {
-  throw std::runtime_error("Unsupported deletion of constant shape buffers");
+ //implemented in cuda backend: used there only
+ //constant buffers otherwise should stick around
 }
 
 void deleteConstantDataBuffer(sd::ConstantDataBuffer *ptr) {
-  throw std::runtime_error("Unsupported deletion of databuffer");
+  //implemented in cuda backend: used there only
+  //constant buffers otherwise should stick around
 }
 
 void deleteTadPack(sd::TadPack *ptr) { delete ptr; }
