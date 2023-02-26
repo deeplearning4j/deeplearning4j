@@ -44,8 +44,8 @@ public class DotProductAttention extends DynamicCustomOp {
         super(null, sameDiff, mask == null ? new SDVariable[] {queries, keys, values} : new SDVariable[] {queries, keys, values, mask}, false);
         this.scaled = scaled;
         this.withWeights = withWeights;
-        addIArgument(0);
-        addBArgument(withWeights);
+        addIArgument(scaled ? 1 : 0);
+        addIArgument(withWeights ? 1 : 0);
     }
 
     public DotProductAttention(@NonNull INDArray queries, @NonNull INDArray keys, @NonNull INDArray values, INDArray mask, boolean scaled){
@@ -56,8 +56,8 @@ public class DotProductAttention extends DynamicCustomOp {
         super(wrapFilterNull(queries, keys, values, mask), null);
         this.scaled = scaled;
         this.withWeights = withWeights;
-        addIArgument(0);
-        addBArgument(withWeights);
+        addIArgument(scaled ? 1 : 0);
+        addIArgument(withWeights ? 1 : 0);
     }
 
     @Override
@@ -81,7 +81,7 @@ public class DotProductAttention extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 3 || dataTypes.size() == 4), "Expected exactly 3 or 4 input datatypes, got %s", dataTypes);
         DataType first = dataTypes.get(0);
         for( int i=0; i<dataTypes.size(); i++ ) {

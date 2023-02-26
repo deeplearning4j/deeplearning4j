@@ -38,36 +38,42 @@ import java.util.List;
 
 @NoArgsConstructor
 public class DotProductAttentionV2 extends DynamicCustomOp {
-    private boolean withWeights,useCausalMask;
-    private double scaleFactor;
-    private double dropout;
+    private boolean withWeights;
+    private boolean scaled;
 
     private int scoreMode;
 
-    private SDVariable queryMask,valueMask;
 
 
 
-    public DotProductAttentionV2(INDArray queries, INDArray values, INDArray keys, INDArray queryMask, INDArray valueMask, double scaleFactor, double dropoutProbability, int scoreMode, boolean useCausalMask, boolean withWeights) {
-        addInputArgument(wrapFilterNull(queries,values,keys,queryMask,valueMask));
-        addTArgument(scaleFactor,dropoutProbability);
-        addIArgument(scoreMode);
-        addBArgument(useCausalMask,withWeights);
+    public DotProductAttentionV2(@NonNull INDArray queries, @NonNull INDArray keys, @NonNull INDArray values, INDArray mask, boolean scaled){
+        this(queries, keys, values, mask, scaled, false);
     }
 
-    public DotProductAttentionV2(SameDiff sd, SDVariable queries, SDVariable values, SDVariable keys, SDVariable queryMask, SDVariable valueMask, double scaleFactor, double dropoutProbability, int scoreMode, boolean useCausalMask, boolean withWeights) {
-        super(null, sd, inputs(sd,queries, values, keys, queryMask, valueMask), false);
-        this.scaleFactor = scaleFactor;
-        this.dropout = dropoutProbability;
-        this.scoreMode = scoreMode;
-        this.useCausalMask = useCausalMask;
+    public DotProductAttentionV2(@NonNull INDArray queries, @NonNull INDArray keys, @NonNull INDArray values, INDArray mask, boolean scaled, boolean withWeights){
+        super(wrapFilterNull(queries, keys, values, mask), null);
+        this.scaled = scaled;
         this.withWeights = withWeights;
-        this.queryMask = queryMask;
-        this.valueMask = valueMask;
+        addIArgument(0);
+        addBArgument(withWeights);
+    }
+
+    public DotProductAttentionV2(SameDiff sd, SDVariable queries, SDVariable values, SDVariable keys, SDVariable queryMask, SDVariable valueMask, boolean scaled, int scoreMode, boolean b, boolean b1) {
+        super(null, sd, inputs(sd,queries, values, keys, queryMask, valueMask), false);
+        this.scaled = scaled;
+        this.scoreMode = scoreMode;
+        this.withWeights = withWeights;
+        addIArgument(scoreMode);
+        addBArgument(withWeights);
+    }
+
+    public DotProductAttentionV2(INDArray queries, INDArray values, INDArray keys, INDArray queryMask, INDArray valueMask, boolean scaled, int scoreMode, boolean useCausalMask, boolean withWeights) {
+        super(wrapFilterNull(queries, keys, values, queryMask,valueMask), null);
+        this.scaled = scaled;
+        this.withWeights = withWeights;
         addIArgument(scoreMode);
         addBArgument(useCausalMask);
         addBArgument(withWeights);
-        addTArgument(scaleFactor,dropoutProbability);
     }
 
     private static SDVariable[] inputs(SameDiff sd,
@@ -86,35 +92,6 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
 
     }
 
-    @Override
-    public void configureFromArguments() {
-        super.configureFromArguments();
-        if(bArguments.size() > 0)
-            this.useCausalMask = bArguments.get(0);
-        if(bArguments.size() > 1)
-            this.withWeights = bArguments.get(1);
-
-        if(iArguments.size() > 0)
-            this.scoreMode = iArguments.get(0).intValue();
-
-
-        if(tArguments.size() > 0)
-            this.scaleFactor = tArguments.get(0);
-
-        if(tArguments.size() > 1)
-            this.dropout = tArguments.get(1);
-
-    }
-
-    @Override
-    public void configureWithSameDiff(SameDiff sameDiff) {
-        super.configureWithSameDiff(sameDiff);
-        if(args().length > 3)
-            this.queryMask = arg(3);
-
-        if(args().length > 4)
-            this.valueMask = arg(4);
-    }
 
     @Override
     public String opName() {
@@ -123,26 +100,16 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient) {
-        return Arrays.asList(new DotProductAttentionV2Bp(sameDiff,
-                arg(0),
-                arg(1),
-                arg(2),
-                gradient.get(0),
-                queryMask,
-                valueMask,
-                scaleFactor,
-                dropout,
-                scoreMode,
-                useCausalMask,
-                withWeights).outputVariables());
+        SDVariable mask = args().length == 4 ? arg(3) : null;
+        return Arrays.asList(new DotProductAttentionV2Bp(sameDiff, arg(0), arg(1), arg(2), gradient.get(0), mask, scaled).outputVariables());
     }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         DataType first = dataTypes.get(0);
-        for( int i = 0; i < dataTypes.size(); i++) {
+        for( int i = 0; i<dataTypes.size(); i++) {
             Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);
-            if(i > 0) {
+            if(i > 0){
                 Preconditions.checkState(first == dataTypes.get(i), "All datatypes must be same type, got input datatypes %s", dataTypes);
             }
         }
