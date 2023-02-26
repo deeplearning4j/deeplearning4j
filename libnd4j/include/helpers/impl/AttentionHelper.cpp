@@ -595,8 +595,12 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
    * @param scale
    * @return
  */
-void AttentionHelper::doDotProductAttention(sd::NDArray *query, sd::NDArray *key, int scoreMode, double scale,
-                                            sd::NDArray *concatWeights, sd::NDArray *attentionScoresOut) {
+void AttentionHelper::doDotProductAttention(sd::NDArray *query,
+                                            sd::NDArray *key,
+                                            int scoreMode,
+                                            double scale,
+                                            sd::NDArray *concatWeights,
+                                            sd::NDArray *attentionScoresOut) {
 
   sd::ops::batched_gemm matmul2;
   sd::ops::matmul matmul3;
