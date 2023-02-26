@@ -2605,11 +2605,13 @@ OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::Long
 }
 
 void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) {
-  //delete ptr;
-   }
+ //implemented in cuda backend: used there only
+ //constant buffers otherwise should stick around
+}
 
 void deleteConstantDataBuffer(sd::ConstantDataBuffer *ptr) {
-//  delete ptr;
+  //implemented in cuda backend: used there only
+  //constant buffers otherwise should stick around
 }
 
 void deleteTadPack(sd::TadPack *ptr) { delete ptr; }

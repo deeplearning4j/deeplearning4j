@@ -486,6 +486,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     public long profilingConfigurableHookIn(CustomOp op, OpContext oc) {
         List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
         List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
+        Nd4j.getDeallocatorService().toggleDeallocationBlock(false);
 
 
         for (val arr: inArgs) {
@@ -514,10 +515,11 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     public long profilingConfigurableHookIn(Op op, DataBuffer... tadBuffers) {
+        Nd4j.getDeallocatorService().toggleDeallocationBlock(true);
 
-        if (OpProfiler.getInstance().getConfig() == null)
+        if (OpProfiler.getInstance().getConfig() == null) {
             return System.nanoTime();
-
+        }
 
 
         if (OpProfiler.getInstance().getConfig().isStackTrace() ||
@@ -532,14 +534,17 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             checkForWorkspaces(op, null);
         }
 
+
         return System.nanoTime();
     }
 
 
     public void profilingConfigurableHookOut(Op op, OpContext oc, long timeStart) {
-        if (OpProfiler.getInstance().getConfig() == null)
-            return;
+        Nd4j.getDeallocatorService().toggleDeallocationBlock(false);
 
+        if (OpProfiler.getInstance().getConfig() == null) {
+            return;
+        }
         if (OpProfiler.getInstance().getConfig().isStackTrace()) {
             OpProfiler.getInstance().processStackCall(op, timeStart);
         }
@@ -572,6 +577,8 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     public void profilingConfigurableHookOut(CustomOp op, OpContext oc, long timeStart) {
+        Nd4j.getDeallocatorService().toggleDeallocationBlock(false);
+
         if (OpProfiler.getInstance().getConfig() == null)
             return;
 
@@ -1009,7 +1016,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             op.setX(x);
     }
 
-    public INDArray getX(Op op, OpContext oc){
+    public INDArray getX(Op op, OpContext oc) {
         if( oc != null )
             return oc.getInputArray(0);
         return op.x();
