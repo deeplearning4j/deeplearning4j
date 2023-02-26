@@ -31,15 +31,15 @@ namespace ops {
 
 
 CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
- //construct codes and indices from the IARGS
- //we do this to avoid serialization overhead from the JVM for frequently created small arrays
+  //construct codes and indices from the IARGS
+  //we do this to avoid serialization overhead from the JVM for frequently created small arrays
   auto numCodes = I_ARG(0);
   auto numIndices = I_ARG(1);
   auto numIterations = I_ARG(2);
   //2 for the number of indices/codes 1 for the iteration 3 for the mandatory args
- auto numMin = numIndices + numCodes + 2  + 1 + 3;
-   std::vector<sd::LongType> *codes = new std::vector<sd::LongType>();
-   std::vector<sd::LongType> *indices = new std::vector<sd::LongType>();
+  auto numMin = numIndices + numCodes + 2  + 1 + 3;
+  std::vector<sd::LongType> *codes = new std::vector<sd::LongType>();
+  std::vector<sd::LongType> *indices = new std::vector<sd::LongType>();
 
   int currIdx = 3;
   for(int i = 0; i < numCodes; i++) {
@@ -127,8 +127,8 @@ CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
                                       numWorkers,1e-4,numIterations);
 
 
- delete codes;
- delete indices;
+  delete codes;
+  delete indices;
   delete indicesArr;
   delete codesArr;
 
@@ -185,8 +185,8 @@ CONFIGURABLE_OP_IMPL(skipgram, 12, 12, true, 0, 0) {
   REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0,
                "SkipGram: expTable must have the same data type as syn0 table");
 
-    sd::ops::helpers::skipgram(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *indices,
-                               *codes, *alpha, *randomValue, *inferenceVector, isPreciseMode, numWorkers,iterations,minLearningRate);
+  sd::ops::helpers::skipgram(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *indices,
+                             *codes, *alpha, *randomValue, *inferenceVector, isPreciseMode, numWorkers,iterations,minLearningRate);
 
   return sd::Status::OK;
 }

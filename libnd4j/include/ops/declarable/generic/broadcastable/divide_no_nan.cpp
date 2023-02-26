@@ -45,7 +45,6 @@ BROADCASTABLE_OP_IMPL(divide_no_nan, 0, 0) {
 
   return sd::Status::OK;
 }
-DECLARE_SYN(Div, divide);
 
 DECLARE_TYPES(divide_no_nan) {
   getOpDescriptor()
