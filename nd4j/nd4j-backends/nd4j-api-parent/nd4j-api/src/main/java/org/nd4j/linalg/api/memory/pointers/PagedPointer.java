@@ -85,7 +85,7 @@ public class PagedPointer extends Pointer {
 
 
     public FloatPointer asFloatPointer() {
-        return new ImmortalFloatPointer(this);
+        return new FloatPointer(this);
     }
 
     public DoublePointer asDoublePointer() {

@@ -198,7 +198,9 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast
 
   RELEASE(newShapeInfo, workspace);
 
-  return bufferForShapeInfo(descriptor);
+  auto ret = bufferForShapeInfo(descriptor);
+  delete descriptor;
+  return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -221,7 +223,9 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(
 
   RELEASE(newShapeInfo, workspace);
 
-  return bufferForShapeInfo(descriptor);
+  auto ret =  bufferForShapeInfo(descriptor);
+  delete descriptor;
+  return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -231,9 +235,11 @@ ConstantShapeBuffer* ConstantShapeHelper::createSubArrShapeInfo(const sd::LongTy
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
 
-  RELEASE(newShapeInfo, workspace);
+  //RELEASE(newShapeInfo, workspace);
 
-  return bufferForShapeInfo(descriptor);
+  auto ret = bufferForShapeInfo(descriptor);
+  delete descriptor;
+  return ret;
 }
 
 }  // namespace sd

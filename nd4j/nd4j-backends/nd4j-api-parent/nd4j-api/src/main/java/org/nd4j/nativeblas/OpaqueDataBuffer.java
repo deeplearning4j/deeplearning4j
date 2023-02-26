@@ -156,7 +156,7 @@ public class OpaqueDataBuffer extends Pointer {
      * @return
      */
     public Pointer primaryBuffer() {
-        return NativeOpsHolder.getInstance().getDeviceNativeOps().dbPrimaryBuffer(this);
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().dbPrimaryBuffer(this).retainReference();
     }
 
     /**
@@ -164,7 +164,8 @@ public class OpaqueDataBuffer extends Pointer {
      * @return
      */
     public Pointer specialBuffer() {
-        return NativeOpsHolder.getInstance().getDeviceNativeOps().dbSpecialBuffer(this);
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().
+                dbSpecialBuffer(this).retainReference();
     }
 
     /**
