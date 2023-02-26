@@ -72,7 +72,7 @@
         <netty.version>4.1.74.Final</netty.version>
         <test.heap.size>34g</test.heap.size>
         <test.offheap.size>34g</test.offheap.size>
-        <test.nogc>false</test.nogc>
+        <test.nogc>true</test.nogc>
         <dokka.version>1.4.30</dokka.version>
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>

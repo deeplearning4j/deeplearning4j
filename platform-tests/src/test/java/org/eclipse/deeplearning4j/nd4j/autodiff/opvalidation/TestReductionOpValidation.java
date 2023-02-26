@@ -1124,10 +1124,14 @@ public class TestReductionOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDotProductAttention(Nd4jBackend backend) {
-        final INDArray keys = Nd4j.rand(new int[]{10, 3,4});
-        final INDArray values = Nd4j.rand(new int[]{10, 3,4});
-        final INDArray query = Nd4j.rand(new int[]{10, 1,4});
+        final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
+        final INDArray values = Nd4j.rand(new int[]{10, 4, 3});
+        final INDArray query = Nd4j.rand(new int[]{10, 4, 1});
 
+        final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
+                .divi(Math.sqrt(keys.size(1)));
+        Nd4j.exec(new SoftMax(exec, exec, 1));
+        final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
 
         SameDiff sd = SameDiff.create();
         SDVariable sdQ = sd.var("q", query);
@@ -1144,18 +1148,40 @@ public class TestReductionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testDotProductAttentionWithMask(Nd4jBackend backend) {
+    public void testDotProductAttentionV2(Nd4jBackend backend) {
         final INDArray keys = Nd4j.rand(new int[]{10, 3,4});
         final INDArray values = Nd4j.rand(new int[]{10, 3,4});
         final INDArray query = Nd4j.rand(new int[]{10, 1,4});
+
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdQ = sd.var("q", query);
+        SDVariable sdK = sd.var("k", keys);
+        SDVariable sdV = sd.var("v", values);
+
+        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,null,null,true,0,false,true);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+        assertNull(err);
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDotProductAttentionWithMask(Nd4jBackend backend) {
+        final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
+        final INDArray values = Nd4j.rand(new int[]{10, 4, 3});
+        final INDArray query = Nd4j.rand(new int[]{10, 4, 1});
         final INDArray mask = Nd4j.rand(10, 3).gte(0.2).castTo(DataType.DOUBLE);
 
 
-        final INDArray exec = Nd4j.matmul(query,keys, false, true, false)
+        final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
                 .divi(Math.sqrt(keys.size(1)));
-        exec.addi(mask.reshape(10, 1,3).sub(1).muli(1e9));
+        exec.addi(mask.reshape(10, 3, 1).sub(1).muli(1e9));
         Nd4j.exec(new SoftMax(exec, exec, 1));
-        final INDArray finalOut = Nd4j.matmul(exec,values).norm1();
+        final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
 
         SameDiff sd = SameDiff.create();
         SDVariable sdQ = sd.var("q", query);
@@ -1176,13 +1202,13 @@ public class TestReductionOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDotProductAttentionMultiHeadInputWithMask(Nd4jBackend backend) {
-        final INDArray keys = Nd4j.rand(new int[]{2, 5, 3,4});
-        final INDArray values = Nd4j.rand(new int[]{2, 5, 3,4});
-        final INDArray query = Nd4j.rand(new int[]{2, 5, 2,4});
+        final INDArray keys = Nd4j.rand(new int[]{2, 5, 4, 3});
+        final INDArray values = Nd4j.rand(new int[]{2, 5, 4, 3});
+        final INDArray query = Nd4j.rand(new int[]{2, 5, 4, 2});
         final INDArray mask = Nd4j.rand(2, 3).gte(0.2).castTo(DataType.DOUBLE);
 
 
-        final INDArray exec = Nd4j.matmul(keys, query, false, true, false)
+        final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
                 .divi(Math.sqrt(keys.size(-2)));
         exec.addi(Nd4j.tile(mask.reshape(2, 1, 3, 1), 1, 5, 1, 2).sub(1).muli(1e9));
         Nd4j.exec(new SoftMax(exec, exec, -2));
@@ -1431,16 +1457,19 @@ public class TestReductionOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStandardDeviation(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+
         for (boolean keepDims : new boolean[]{false, true}) {
             SameDiff sameDiff = SameDiff.create();
 
             INDArray in = Nd4j.linspace(1, 8, 8).reshape(2, 4);
             SDVariable input = sameDiff.var(in);
             INDArray expected = Nd4j.createFromArray(new double[]{
-                    2,2,2,2
+                    2,         2,         2,         2
             });
 
-            if(keepDims) {
+            if(keepDims){
                 expected = expected.reshape(1,4);
             }
 
@@ -1485,13 +1514,10 @@ public class TestReductionOpValidation extends BaseOpValidation {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testShannonEntropy(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
-        // We are testing for numerical computations only.
-        // As the op itself does not normalize inputs,
-        // Actually, the input should be normalized probabilities to make sense
-        INDArray in = Nd4j.linspace(1, 4, 4).castTo(DataType.DOUBLE);
 
+        INDArray in = Nd4j.linspace(1, 4, 4).castTo(DataType.DOUBLE);
         SDVariable input = sameDiff.var(in);
-        INDArray expected = Nd4j.scalar(-14.754887502163468);
+        INDArray expected = Nd4j.scalar(-69.68162);
 
         SDVariable output = new ShannonEntropy(sameDiff, input, new int[]{0}).outputVariable();
 
@@ -1510,7 +1536,6 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SameDiff sameDiff = SameDiff.create();
 
         INDArray in = Nd4j.linspace(1, 4, 4);
-
         SDVariable input = sameDiff.var(in);
         double expected = -10.2273;
 

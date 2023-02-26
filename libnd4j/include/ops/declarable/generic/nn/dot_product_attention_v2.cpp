@@ -32,7 +32,7 @@
 namespace sd {
 namespace ops {
 
-CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, 0, -2) {
+CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   auto queries = INPUT_VARIABLE(0);
   auto values = INPUT_VARIABLE(1);
   auto keys = block.width() > 2  ? INPUT_VARIABLE(2) : values;
@@ -52,7 +52,7 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, 0, -2) {
                "dot_product_attention: Queries, Keys and Values must have the same mini batch size. "
                "But got queries = %i, keys = %i, values = %i", queries->sizeAt(0), keys->sizeAt(0), values->sizeAt(0));
 
-  REQUIRE_TRUE(queries->sizeAt(-2) == keys->sizeAt(-2), 0,
+  REQUIRE_TRUE(queries->sizeAt(-1) == keys->sizeAt(-1), 0,
                "dot_product_attention: Queries and Keys must have the same feature size. "
                "But got queries = %i, keys = %i", queries->sizeAt(-2), keys->sizeAt(-2));
 
