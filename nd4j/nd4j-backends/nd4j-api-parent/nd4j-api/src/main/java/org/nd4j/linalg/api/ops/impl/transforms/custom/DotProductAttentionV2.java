@@ -68,6 +68,7 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
         addIArgument(scoreMode);
         addBArgument(useCausalMask);
         addBArgument(withWeights);
+        addBArgument(training);
         addTArgument(scaleFactor,dropoutProbability);
     }
 

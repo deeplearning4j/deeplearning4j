@@ -513,23 +513,20 @@ void AttentionHelper::doDotProductAttention(sd::NDArray *query,
                                             sd::NDArray *concatWeights,
                                             sd::NDArray *attentionScoresOut) {
 
-  sd::ops::batched_gemm matmul2;
   sd::ops::matmul matmul3;
-  sd::ops::expand_dims expandDims;
-  sd::ops::reduce_sum reduceSum;
-  sd::ops::create_view createView;
-  sd::ops::tanh tanh1;
+
   if(scoreMode == ATTENTION_SCORE_MODE_DOT) {
     matmul3.execute({query,key},{attentionScoresOut},{0,1});
-
-    sd_printf("After matmul\n",0);
-    if(scale != 0.0) {
+    if(scale != 0.0 && scale != 1.0) {
       *attentionScoresOut *= scale;
     }
-    attentionScoresOut->printShapeInfo("Final weights: ");
 
   } else if(scoreMode == ATTENTION_SCORE_MODE_CONCAT) {
     REQUIRE_TRUE(concatWeights != nullptr,0,"Concat weights required when using attention score mode concat!");
+    sd::ops::expand_dims expandDims;
+    sd::ops::reduce_sum reduceSum;
+    sd::ops::create_view createView;
+    sd::ops::tanh tanh1;
     auto qReshaped = expandDims.evaluate({query},{},{-1}).at(0);
     auto kReshaped = expandDims.evaluate({key},{},{-3}).at(0);
     auto scaled =  scale > 0 ? ( scale * (*qReshaped + *kReshaped)) : ((*qReshaped + *kReshaped));
