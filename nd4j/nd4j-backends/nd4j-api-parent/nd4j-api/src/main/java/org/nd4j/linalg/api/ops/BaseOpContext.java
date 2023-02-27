@@ -278,7 +278,7 @@ public abstract class BaseOpContext implements OpContext {
         if(OpContextTracker.getInstance().isEnabled()) {
             OpContextTracker.getInstance().purge(this);
         }
-     }
+    }
 
     @Override
     public void setArgs(INDArray[] inputArrs, long[] iArgs, DataType[] dArgs, double[] tArgs, boolean[] bArgs) {
@@ -297,7 +297,7 @@ public abstract class BaseOpContext implements OpContext {
 
     @Override
     public void transferTArgs() {
-        setTArguments();
+setTArguments();
     }
 
     @Override

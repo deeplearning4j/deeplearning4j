@@ -481,7 +481,8 @@ fun NN() = Namespace("NN") {
         val valueMask = Input(NUMERIC, "valueMask") { description = "input 3D array \"keys\" of shape [batchSize, featureKeys, timesteps]\n" +
                 "or 4D array of shape [batchSize, numHeads, featureKeys, timesteps]" }
 
-        val s = Arg(BOOL, "scaled") { description = "normalization, false -> do not apply normalization, true -> apply normalization" }
+        val s = Arg(FLOATING_POINT, "scaleFactor") { defaultValue = 1.0; description = "normalization, scale factor for normalization" }
+        val dropout = Arg(FLOATING_POINT, "dropoutProbability") { defaultValue = 0.0; description = "dropout probability" }
         val scoreMode = Arg(INT, "scoreMode") { defaultValue = 0; description = "normalization, false -> do not apply normalization, true -> apply normalization" }
         val useCausalMask = Arg(BOOL, "useCausalMask") { defaultValue = false; description = "withWeights return attention weights as well, false -> only one output, true -> two outputs" }
 
@@ -490,7 +491,7 @@ fun NN() = Namespace("NN") {
         Output(NUMERIC, "output") { description = " Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount],\n" +
                 "(optionally) Attention Weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount]" }
 
-        Signature(q,v,k,queryMask,valueMask, s,scoreMode,useCausalMask,withWeights)
+        Signature(q,v,k,queryMask,valueMask, s,dropout,scoreMode,useCausalMask,withWeights)
 
         Doc(Language.ANY, DocScope.ALL) {
             """

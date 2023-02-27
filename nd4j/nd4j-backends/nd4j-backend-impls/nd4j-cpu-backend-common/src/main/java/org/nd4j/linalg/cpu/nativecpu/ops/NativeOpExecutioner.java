@@ -69,7 +69,6 @@ import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.primitives.Optional;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.ArrayUtil;
-import org.nd4j.linalg.profiler.OpContextTracker;
 import org.nd4j.nativeblas.*;
 
 import java.util.*;
@@ -168,6 +167,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         if(z == null || x == z) {
             val ret = Nd4j.createUninitialized(DataType.INT64, retShape);
+
             setZ(ret, op, oc);
             z = ret;
         } else if(!Arrays.equals(retShape, z.shape())) {
@@ -176,6 +176,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         op.validateDataTypes();
+
 
         Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(x, dimension);
 
@@ -841,6 +842,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets, devTadShapeInfoZ, devTadOffsetsZ);
 
+        Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension, DataType.INT).addressPointer();
 
         val xb = ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
         val yb = ((BaseCpuDataBuffer) y.data()).getOpaqueDataBuffer();

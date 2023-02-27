@@ -69,6 +69,7 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
 
   auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
   auto returnAttentionScores = block.numB() > 1 ? B_ARG(1) : false;
+  auto training = block.numB() > 2 ? B_ARG(2) : false;
   //permute the inputs before processing. This is to allow the old shapes of batch size x dim x Tv
 
 
@@ -77,32 +78,30 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
 
   std::vector<sd::NDArray*> inputs = {queries,values,keys};
   std::vector<sd::NDArray *> masks2 = {qMask,vMask};
-
-  auto outputScores = OUTPUT_VARIABLE(0);
-  outputScores->printShapeInfo("Output scores shape");
-  NDArray calculatedScores('c',{queries->sizeAt(0),queries->sizeAt(1),values->sizeAt(1)},queries->dataType());
   sd_printf("Doing attention\n",0);
 
-   int batchSize = queries->sizeAt(0);
-   int tq = queries->sizeAt(1);
-   int tv = values->sizeAt(1);
-   //attention scores will be computed anyways, pass in a created array regardless
-   auto attentionScores = returnAttentionScores ? OUTPUT_VARIABLE(1) : new NDArray(queries->dataType(),{batchSize,tq,tv});
-
-   sd_printf("Return Attention scores %d\n",returnAttentionScores);
-
+  int batchSize = queries->sizeAt(0);
+  int tq = queries->sizeAt(-2);
+  int tv = values->sizeAt(-2);
+  int dim = values->sizeAt(-1);
+  //attention scores will be computed anyways, pass in a created array regardless
+  sd_printf("TQ: %d TV: %d Batch size %d\n",tq,tv,batchSize);
+  auto applyScoresOut = OUTPUT_VARIABLE(0);
+  auto attentionScores = returnAttentionScores ? OUTPUT_VARIABLE(1) : new NDArray(queries->dataType(),{batchSize,tq,tv});
+  applyScoresOut->printShapeInfo("Apply scores out shape.");
 
   AttentionHelper::doAttention(inputs,
                                masks2,
-                               false,
+                               training,
                                returnAttentionScores,
                                useCausalMask,
                                dropout,
-                               ATTENTION_SCORE_MODE_DOT,
+                               attentionType,
                                attentionType,
                                scale,
-                               &calculatedScores,
-                                attentionScores);
+                               attentionScores,
+                               block.randomSeed(),
+                               applyScoresOut);
 
 
   sd_printf("Done with attention\n",0);
@@ -116,11 +115,14 @@ DECLARE_TYPES(dot_product_attention_v2) {
 
 DECLARE_SHAPE_FN(dot_product_attention_v2) {
   auto firstInputType = INPUT_VARIABLE(0)->dataType();
-  auto query_shape = inputShape->at(0);
-  auto values_shape = inputShape->at(1);
-  auto keys_shape = block.inputs()->size() > 2 ? inputShape->at(2) : values_shape;
+  auto queries = INPUT_VARIABLE(0);
+  auto values = INPUT_VARIABLE(1);
+  auto keys = block.width() > 2  ? INPUT_VARIABLE(2) : values;
 
-
+  int batchSize = queries->sizeAt(0);
+  int tq = queries->sizeAt(-2);
+  int tv = values->sizeAt(-2);
+  int dim = values->sizeAt(-1);
 
   int attentionType = block.numI() > 0 ? I_ARG(0) : ATTENTION_SCORE_MODE_DOT;
 
@@ -128,16 +130,14 @@ DECLARE_SHAPE_FN(dot_product_attention_v2) {
   auto returnAttentionScores = block.numB() > 1 ? B_ARG(1) : false;
 
   if(attentionType == ATTENTION_SCORE_MODE_DOT) {
+    sd_printf("COMPUTE OUTPUT SHAPE: batch size %d tq %d dim %d\n",batchSize,tq,dim);
     //inputs: batchSize,Tq,dim batchSize,Tq,Tv
-    //outputs: batchSize,Tq,Tv
-    auto qShape = shape::shapeOf(query_shape);
-    auto keyShape = shape::shapeOf(keys_shape);
-    auto valueShape = shape::shapeOf(values_shape);
-    ShapeDescriptor *descriptor = new ShapeDescriptor(firstInputType,'c',{qShape[0],qShape[1],valueShape[2]});
+    //outputs: batchSize,Tq, dim batchSize,Tq,Tv
+    ShapeDescriptor *descriptor = new ShapeDescriptor(firstInputType,'c',{batchSize,tq,dim});
     auto constOutputScores = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
     if(returnAttentionScores) {
       sd_printf("Returning scores\n",0);
-      ShapeDescriptor *scoresShape = new ShapeDescriptor(firstInputType,'c',{qShape[0],values_shape[1],valueShape[1]});
+      ShapeDescriptor *scoresShape = new ShapeDescriptor(firstInputType,'c',{batchSize,tq,tv});
       auto attentionScoresShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
       delete descriptor;
       delete scoresShape;
@@ -151,13 +151,11 @@ DECLARE_SHAPE_FN(dot_product_attention_v2) {
   } else if(attentionType == ATTENTION_SCORE_MODE_CONCAT) {
     //inputs: batchSize,Tq,dim batchSize,Tq,Tv
     //outputs: batchSize,Tq,Tv
-    auto qShape = shape::shapeOf(query_shape);
-    auto keyShape = shape::shapeOf(keys_shape);
-    auto valueShape = shape::shapeOf(values_shape);
-    ShapeDescriptor *descriptor = new ShapeDescriptor(firstInputType,'c',{qShape[0],qShape[1],valueShape[2]});
+    sd_printf("Performing concat attention shape output\n",0);
+    ShapeDescriptor *descriptor = new ShapeDescriptor(firstInputType,'c',{batchSize,tq,dim});
     auto constOutputScores = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
     if(returnAttentionScores) {
-      ShapeDescriptor *scoresShape = new ShapeDescriptor(firstInputType,'c',{qShape[0],values_shape[1],valueShape[2]});
+      ShapeDescriptor *scoresShape = new ShapeDescriptor(firstInputType,'c',{batchSize,tq,tv});
       auto attentionScoresShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
       delete descriptor;
       delete scoresShape;

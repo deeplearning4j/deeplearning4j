@@ -27,7 +27,6 @@ import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.memory.Deallocatable;
-import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.lang.ref.ReferenceQueue;

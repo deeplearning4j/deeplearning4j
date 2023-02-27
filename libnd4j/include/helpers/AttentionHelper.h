@@ -212,8 +212,8 @@ def dropped_weights():
                                       return tf.matmul(weights, value), weights
    * @return
    */
-  static void applyAttentionScores(sd::NDArray *scores, sd::NDArray *value, sd::NDArray *scoresMask,
-                                                     double dropout, sd::NDArray *attentionScores);
+  static void applyAttentionScores(sd::NDArray *scores, sd::NDArray *value, sd::NDArray *scoresMask, double dropout,
+                                   int randomSeed, sd::NDArray *applyScoresOut);
 
 
 
@@ -305,7 +305,8 @@ return result
    */
   static void doAttention(std::vector<NDArray *> &inputs, std::vector<sd::NDArray *> &masks, bool training,
                           bool returnAttentionScores, bool useCausalMask, double dropout, int attentionType,
-                          int dotProductType, double scale, sd::NDArray *scores, sd::NDArray *attentionScores);
+                          int dotProductType, double scale, sd::NDArray *attentionScores, int dropoutSeed,
+                          sd::NDArray *applyScoresOut);
 
 
 

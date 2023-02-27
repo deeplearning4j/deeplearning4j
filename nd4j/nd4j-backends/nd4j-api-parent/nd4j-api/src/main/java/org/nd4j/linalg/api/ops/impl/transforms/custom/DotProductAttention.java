@@ -66,6 +66,15 @@ public class DotProductAttention extends DynamicCustomOp {
     }
 
     @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        if(iArguments.size() > 0)
+            this.scaled = iArguments.get(0) > 0;
+        if(iArguments.size() > 1)
+            this.withWeights = iArguments.get(1) > 0;
+    }
+
+    @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient) {
         SDVariable mask = args().length == 4 ? arg(3) : null;
         return Arrays.asList(new DotProductAttentionBp(sameDiff, arg(0), arg(1), arg(2), gradient.get(0), mask, scaled).outputVariables());

@@ -156,7 +156,8 @@ public class NDNN {
    * or 4D array of shape [batchSize, numHeads, featureKeys, timesteps] (NUMERIC type)
    * @param valueMask input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
    * or 4D array of shape [batchSize, numHeads, featureKeys, timesteps] (NUMERIC type)
-   * @param scaled normalization, false -> do not apply normalization, true -> apply normalization
+   * @param scaleFactor normalization, scale factor for normalization
+   * @param dropoutProbability dropout probability
    * @param scoreMode normalization, false -> do not apply normalization, true -> apply normalization
    * @param useCausalMask withWeights return attention weights as well, false -> only one output, true -> two outputs
    * @param withWeights withWeights return attention weights as well, false -> only one output, true -> two outputs
@@ -164,14 +165,14 @@ public class NDNN {
    * (optionally) Attention Weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount] (NUMERIC type)
    */
   public INDArray dotProductAttentionV2(INDArray queries, INDArray values, INDArray keys,
-      INDArray queryMask, INDArray valueMask, boolean scaled, int scoreMode, boolean useCausalMask,
-      boolean withWeights) {
+      INDArray queryMask, INDArray valueMask, double scaleFactor, double dropoutProbability,
+      int scoreMode, boolean useCausalMask, boolean withWeights) {
     NDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
     NDValidation.validateNumerical("dotProductAttentionV2", "values", values);
     NDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
     NDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
     NDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, scaled, scoreMode, useCausalMask, withWeights))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, scoreMode, useCausalMask, withWeights))[0];
   }
 
   /**

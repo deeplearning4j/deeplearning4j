@@ -57,6 +57,4 @@ public class LogEvent {
     private long objectId;
     @Builder.Default
     private long opContextId = -1;
-
-
 }

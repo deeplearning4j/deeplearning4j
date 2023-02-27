@@ -101,6 +101,16 @@ public class MultiHeadDotProductAttention extends DynamicCustomOp {
     }
 
     @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        if(iArguments.size() > 0)
+            this.scaled = iArguments.get(0) > 0;
+        if(iArguments.size() > 1)
+            this.withWeights = iArguments.get(1) > 0;
+    }
+
+
+    @Override
     public int getNumOutputs() {
         if(withWeights){
             return 2;

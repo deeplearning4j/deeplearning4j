@@ -202,7 +202,7 @@ NDArray *AttentionHelper::computeAttentionMask(sd::NDArray *query,
   sd::ops::boolean_and booleanAnd;
   auto all = sd::NDIndexUtils::createAll();
   auto newAxis = sd::NDIndexUtils::createNewAxis();
-  if(queryMask != nullptr) {
+  if(queryMask != nullptr && !queryMask->isEmpty()) {
     internalQueryMask = new NDArray(queryMask->cast(sd::DataType::BOOL));
     if(autoMask != nullptr) {
       //  auto_mask = query_mask[:, :, tf.newaxis]  # shape is [B, T, 1]
@@ -213,7 +213,8 @@ NDArray *AttentionHelper::computeAttentionMask(sd::NDArray *query,
 
   sd_printf("After query mask creation\n",0);
 
-  if(valueMask != nullptr) {
+  if(valueMask != nullptr && !valueMask->isEmpty()) {
+    sd_printf("Creating value mask\n",0);
     internalValueMask = new NDArray(valueMask->cast(sd::DataType::BOOL));
     // mask = value_mask[:, tf.newaxis, :]  # shape is [B, 1, S]
     //                                    auto_mask = mask if auto_mask is None else auto_mask & mask
@@ -229,7 +230,8 @@ NDArray *AttentionHelper::computeAttentionMask(sd::NDArray *query,
 
 
 
-  if(keyMask != nullptr) {
+  if(keyMask != nullptr && !keyMask->isEmpty()) {
+    sd_printf("Creating key mask\n",0);
     internalKeyMask = new NDArray(keyMask->cast(sd::DataType::BOOL));
     //mask = key_mask[:, tf.newaxis, :]  # shape is [B, 1, S]
     //                                 auto_mask = mask if auto_mask is None else auto_mask & mask
@@ -338,16 +340,19 @@ def dropped_weights():
                                     return tf.matmul(weights, value), weights
  * @return
  */
-void AttentionHelper::applyAttentionScores(sd::NDArray *scores, sd::NDArray *value,
-                                           sd::NDArray *scoresMask, double dropout,
-                                           sd::NDArray *attentionScores) {
+void AttentionHelper::applyAttentionScores(sd::NDArray *scores, sd::NDArray *value, sd::NDArray *scoresMask,
+                                           double dropout, int randomSeed, sd::NDArray *applyScoresOut) {
+  scores->printShapeInfo("Scores shape: ");
+  value->printShapeInfo("Value shape: ");
+  scores->printShapeInfo("Attention scores shape info");
   sd::ops::boolean_not booleanNot;
   sd::ops::softmax softmax;
   sd::ops::dropout dropoutOp;
-  sd::ops::batched_gemm matmul;
+  sd::ops::matmul matmul;
 
   if (scoresMask != nullptr) {
-    auto paddingMaks = booleanNot.evaluate({scoresMask}).at(0);
+    auto castedScoresMask = scoresMask->cast(sd::DataType::BOOL);
+    auto paddingMaks = booleanNot.evaluate({&castedScoresMask}).at(0);
     if (scores->dataType() == DataType::BFLOAT16) {
       *scores -= 65504 * paddingMaks->cast(scores->dataType());
     } else {
@@ -358,46 +363,18 @@ void AttentionHelper::applyAttentionScores(sd::NDArray *scores, sd::NDArray *val
   auto softmaxOutput = softmax.evaluate({scores});
   auto weights = softmaxOutput.at(0);
   if (dropout > 0) {
-    auto dropout2 = dropoutOp.evaluate({weights}, {dropout}, {});
+    auto dropout2 = dropoutOp.evaluate({weights}, {dropout}, {randomSeed});
     auto dropoutResult = dropout2.at(0);
     weights = dropoutResult;
   }
 
-  /**
-   * TODO: create new batch gemm helper and then execute usual batch gemm create view batches
-   */
 
-  int M = scores->sizeAt(1);
-  int N = value->sizeAt(-1);
-  int k = scores->sizeAt(-1);
-  int lda = scores->sizeAt(1);
-  int ldb = value->sizeAt(1);
-  int ldc = M;
+  scores->printShapeInfo("Attention scores shape");
 
-
-  auto alpha = NDArrayFactory::valueOf<double>({1},1.0);
-  auto alphaCasted = alpha->cast(scores->dataType());
-  auto beta = NDArrayFactory::valueOf<double>({1},0.0);
-  auto betaCasted = beta->cast(scores->dataType());
-  auto all = NDIndexUtils::createAll();
-
-
-  //weights of batch size, TQ TV
-  //attention scores of batch size, TQ TV
-  sd::ops::helpers::bgemm(weights,
-                          value,
-                          attentionScores,
-                          &alphaCasted,
-                          &betaCasted,
-                          0,
-                          0,
-                          M,
-                          N,
-                          k,
-                          lda,
-                          ldb,
-                          ldc,
-                          &all);
+  //batch size, tq tv
+  //batch size tv dim
+  //output: batch size, tq dim
+  matmul.execute({weights,value},{applyScoresOut});
 
 }
 
@@ -792,7 +769,7 @@ void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs,
 
     sd::NDArray attentionScores(scores->dataType(),{batchSize,tq,tv});
     //inputs: scores:  batch size tq tv value:batch size, tv,dim scoresmask: batch size 1 tv or batch size tq tv
-    applyAttentionScores(scores, v, scoresMask, dropout, &attentionScores);
+    applyAttentionScores(scores, v, scoresMask, dropout, 0, nullptr);
 
     if(qMask != nullptr) {
       qMaskInternal = expandDims.evaluate({qMaskInternal},{},{-1}).at(0);
@@ -853,25 +830,19 @@ return result
  * @param returnAttentionScores
  * @param useCausalMask
  */
-void AttentionHelper::doAttention(std::vector<NDArray *> &inputs,
-                                  std::vector<sd::NDArray *> &masks,
-                                  bool training,
-                                  bool returnAttentionScores,
-                                  bool useCausalMask,
-                                  double dropout,
-                                  int attentionType,
-                                  int dotProductType,
-                                  double scale,
-                                  sd::NDArray *scores,
-                                  sd::NDArray *attentionScores) {
+void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<sd::NDArray *> &masks, bool training,
+                                  bool returnAttentionScores, bool useCausalMask, double dropout, int attentionType,
+                                  int dotProductType, double scale, sd::NDArray *attentionScores, int dropoutSeed,
+                                  sd::NDArray *applyScoresOut) {
   auto q = inputs[0];
   auto v = inputs[1];
   auto k = inputs.size() > 2 ? inputs[2]  : v;
   auto concatWeights = inputs.size() > 3 ? inputs[3] : nullptr;
 
   int batchSize = q->sizeAt(0);
-  int tq = q->sizeAt(1);
-  int tv = v->sizeAt(1);
+  int tq = q->sizeAt(-2);
+  int tv = v->sizeAt(-2);
+  int dim = q->sizeAt(-1);
 
   sd::ops::expand_dims expandDims;
   sd::ops::ones_as onesAs;
@@ -885,7 +856,7 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs,
 
   NDArray *casualPointer = nullptr;
   if(attentionType == ATTENTION_TYPE_ADDITIVE) {
-    doAdditiveAttention(q, v, scale, scores);
+    doAdditiveAttention(q, v, scale, attentionScores);
   } else if(attentionType == ATTENTION_TYPE_DOT_PRODUCT) {
     //inputs: query and value
     //shape: batch_size Tq dim (batch_size Tv dim)
@@ -895,7 +866,7 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs,
                           dotProductType,
                           scale,
                           concatWeights,
-                          scores);
+                          attentionScores);
     sd_printf("After do dot product attention\n",0);
   }
 
@@ -904,7 +875,7 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs,
   }
 
   if(useCausalMask) {
-    auto scoresShape = shapeOf.evaluate({scores}).at(0);
+    auto scoresShape = shapeOf.evaluate({attentionScores}).at(0);
     /*
      * # causal_mask_shape = [1, Tq, Tv].
  causal_mask_shape = tf.concat(
@@ -930,14 +901,20 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs,
   sd_printf("Merging masks\n",0);
   auto scoresMask = mergeMasks(vMask,casualPointer);
 
+
+  applyScoresOut->printShapeInfo("Apply scores out:");
   sd_printf("After merging masks\n",0);
-  applyAttentionScores(scores, v, scoresMask, dropout, attentionScores);
+  if(training)
+    applyAttentionScores(attentionScores, v, scoresMask, dropout, dropoutSeed, applyScoresOut);
+  else
+    applyAttentionScores(attentionScores, v, scoresMask, 0, dropoutSeed, applyScoresOut);
+
   sd_printf("Applied attention scores\n",0);
   //inputs: scores:  batch size tq tv value:batch size, tv,dim scoresmask: batch size 1 tv or batch size tq tv
   if(qMask != nullptr) {
     qMaskInternal = expandDims.evaluate({qMaskInternal},{},{-1}).at(0);
-    auto casted = qMaskInternal->cast(scores->dataType());
-    *scores *= casted;
+    auto casted = qMaskInternal->cast(attentionScores->dataType());
+    *attentionScores *= casted;
   }
 
 }

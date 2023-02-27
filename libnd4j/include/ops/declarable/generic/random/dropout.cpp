@@ -37,7 +37,6 @@ CONFIGURABLE_OP_IMPL(dropout, 1, 1, true, 1, 1) {
 
   int seed = INT_ARG(0);
 
-  // FIXME: float?
   double probValue = T_ARG(0);
   if(inverted) {
     probValue = 1 - probValue;
