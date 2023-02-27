@@ -70,38 +70,24 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
   auto returnAttentionScores = block.numB() > 1 ? B_ARG(1) : false;
   auto training = block.numB() > 2 ? B_ARG(2) : false;
-  //permute the inputs before processing. This is to allow the old shapes of batch size x dim x Tv
-
 
   int attentionType = block.numI() > 0 ? I_ARG(0) : ATTENTION_TYPE_DOT_PRODUCT;
 
 
   std::vector<sd::NDArray*> inputs = {queries,values,keys};
   std::vector<sd::NDArray *> masks2 = {qMask,vMask};
-  sd_printf("Doing attention\n",0);
 
   int batchSize = queries->sizeAt(0);
   int tq = queries->sizeAt(-2);
   int tv = values->sizeAt(-2);
   int dim = values->sizeAt(-1);
-  //attention scores will be computed anyways, pass in a created array regardless
-  sd_printf("TQ: %d TV: %d Batch size %d\n",tq,tv,batchSize);
+
+
   auto applyScoresOut = OUTPUT_VARIABLE(0);
   auto attentionScores = returnAttentionScores ? OUTPUT_VARIABLE(1) : new NDArray(queries->dataType(),{batchSize,tq,tv});
-  applyScoresOut->printShapeInfo("Apply scores out shape.");
 
-  AttentionHelper::doAttention(inputs,
-                               masks2,
-                               training,
-                               returnAttentionScores,
-                               useCausalMask,
-                               dropout,
-                               attentionType,
-                               attentionType,
-                               scale,
-                               attentionScores,
-                               block.randomSeed(),
-                               applyScoresOut);
+  AttentionHelper::doAttention(inputs, masks2, training, returnAttentionScores, useCausalMask, dropout, attentionType,
+                               scale, attentionScores, block.randomSeed(), applyScoresOut);
 
 
   sd_printf("Done with attention\n",0);
@@ -183,35 +169,29 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
   auto dLdv = OUTPUT_VARIABLE(1);
   auto dLdk = OUTPUT_VARIABLE(2);
 
-
-  REQUIRE_TRUE(queries->rankOf() == 3,0,"Input rank of queries must be 3.");
-  REQUIRE_TRUE(values->rankOf() == 3,0,"Input rank of values must be 3.");
-  REQUIRE_TRUE(values->rankOf() == 3,0,"Input rank of keys must be 3.");
-
   auto dropout = block.numT() > 0 ? T_ARG(0) : 0.0;
+  auto scale = block.numT() > 1 ? T_ARG(1) : 1.0;
+
 
   auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
   auto returnAttentionScores = block.numB() > 1 ? B_ARG(1) : false;
+  auto training = block.numB() > 2 ? B_ARG(2) : false;
 
   int attentionType = block.numI() > 0 ? I_ARG(0) : ATTENTION_TYPE_DOT_PRODUCT;
 
 
-  eps->printShapeInfo("Eps  shape info");
-
   std::vector<sd::NDArray*> inputs = {queries,values,keys,eps};
   std::vector<sd::NDArray *> masks2 = {qMask,vMask};
   std::vector<sd::NDArray *> outputs = {dLdq,dLdv,dLdk};
-  AttentionHelper::doAttentionBp(
-      inputs,
-      masks2,
-      false,
-      returnAttentionScores,
-      useCausalMask,
-      dropout,
-      ATTENTION_SCORE_MODE_DOT,
-      attentionType,
-      1.0,
-      outputs);
+  AttentionHelper::doAttentionBp(inputs,
+                                 masks2,
+                                 training,
+                                 returnAttentionScores,
+                                 useCausalMask,
+                                 dropout,
+                                 attentionType,
+                                 scale,
+                                 outputs);
 
 
   return sd::Status::OK;
