@@ -36,7 +36,10 @@ import java.util.List;
 @NoArgsConstructor
 public class DotProductAttentionV2Bp extends DynamicCustomOp {
 
-
+    private double scaleFactor = 1.0;
+    private double dropout = 0.0;
+    private int scoreMode;
+    private boolean useCausalMask,  withWeights;
     public DotProductAttentionV2Bp(SameDiff sameDiff,
                                    SDVariable queries,
                                    SDVariable values,
@@ -48,16 +51,17 @@ public class DotProductAttentionV2Bp extends DynamicCustomOp {
                                    double dropout,
                                    int scoreMode,
                                    boolean useCausalMask,
-                                   boolean withWeights,
-                                   boolean training) {
+                                   boolean withWeights) {
         super(null, sameDiff,inputs(sameDiff,queries,values,keys,eps,queryMask,valueMask), false);
+        this.scaleFactor = scaleFactor;
+        this.dropout = dropout;
+        this.scoreMode = scoreMode;
         addIArgument(scoreMode);
 
         addTArgument(scaleFactor);
         addTArgument(dropout);
         addBArgument(useCausalMask);
         addBArgument(withWeights);
-        addBArgument(training);
     }
 
     private static SDVariable[] inputs(SameDiff sd,

@@ -38,7 +38,7 @@ import java.util.List;
 
 @NoArgsConstructor
 public class DotProductAttentionV2 extends DynamicCustomOp {
-    private boolean withWeights,useCausalMask,training;
+    private boolean withWeights,useCausalMask;
     private double scaleFactor;
     private double dropout;
 
@@ -48,25 +48,25 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
 
 
 
-    public DotProductAttentionV2(INDArray queries, INDArray values, INDArray keys, INDArray queryMask, INDArray valueMask, double scaleFactor, double dropoutProbability, int scoreMode, boolean useCausalMask, boolean withWeights,boolean training) {
+    public DotProductAttentionV2(INDArray queries, INDArray values, INDArray keys, INDArray queryMask, INDArray valueMask, double scaleFactor, double dropoutProbability, int scoreMode, boolean useCausalMask, boolean withWeights) {
         addInputArgument(wrapFilterNull(queries,values,keys,queryMask,valueMask));
         addTArgument(scaleFactor,dropoutProbability);
         addIArgument(scoreMode);
-        addBArgument(useCausalMask,withWeights,training);
+        addBArgument(useCausalMask,withWeights);
     }
 
-    public DotProductAttentionV2(SameDiff sd, SDVariable queries, SDVariable values, SDVariable keys, SDVariable queryMask, SDVariable valueMask, double scaleFactor, double dropoutProbability, int scoreMode, boolean useCausalMask, boolean withWeights,boolean training) {
+    public DotProductAttentionV2(SameDiff sd, SDVariable queries, SDVariable values, SDVariable keys, SDVariable queryMask, SDVariable valueMask, double scaleFactor, double dropoutProbability, int scoreMode, boolean useCausalMask, boolean withWeights) {
         super(null, sd, inputs(sd,queries, values, keys, queryMask, valueMask), false);
         this.scaleFactor = scaleFactor;
         this.dropout = dropoutProbability;
         this.scoreMode = scoreMode;
         this.useCausalMask = useCausalMask;
         this.withWeights = withWeights;
-        this.training = training;
         this.queryMask = queryMask;
         this.valueMask = valueMask;
         addIArgument(scoreMode);
-        addBArgument(useCausalMask,withWeights,training);
+        addBArgument(useCausalMask);
+        addBArgument(withWeights);
         addTArgument(scaleFactor,dropoutProbability);
     }
 
@@ -93,9 +93,6 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
             this.useCausalMask = bArguments.get(0);
         if(bArguments.size() > 1)
             this.withWeights = bArguments.get(1);
-
-        if(bArguments.size() > 2)
-            this.training = bArguments.get(2);
 
         if(iArguments.size() > 0)
             this.scoreMode = iArguments.get(0).intValue();
@@ -137,8 +134,7 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
                 dropout,
                 scoreMode,
                 useCausalMask,
-                withWeights,
-                training).outputVariables());
+                withWeights).outputVariables());
     }
 
     @Override

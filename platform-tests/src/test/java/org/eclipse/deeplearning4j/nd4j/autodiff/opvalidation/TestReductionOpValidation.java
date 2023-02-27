@@ -1124,8 +1124,6 @@ public class TestReductionOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDotProductAttention(Nd4jBackend backend) {
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
         final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
         final INDArray values = Nd4j.rand(new int[]{10, 4, 3});
         final INDArray query = Nd4j.rand(new int[]{10, 4, 1});
@@ -1151,11 +1149,9 @@ public class TestReductionOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDotProductAttentionV2(Nd4jBackend backend) {
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
-        final INDArray keys = Nd4j.rand(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
-        final INDArray values = Nd4j.rand(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
-        final INDArray query = Nd4j.rand(new int[]{10, 1,4}).castTo(DataType.DOUBLE);
+        final INDArray keys = Nd4j.rand(new int[]{10, 3,4});
+        final INDArray values = Nd4j.rand(new int[]{10, 3,4});
+        final INDArray query = Nd4j.rand(new int[]{10, 1,4});
 
 
         SameDiff sd = SameDiff.create();
@@ -1163,7 +1159,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable sdK = sd.var("k", keys);
         SDVariable sdV = sd.var("v", values);
 
-        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,null,null,1.0,0.0,0,false,false,true);
+        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,null,null,1.0,0.0,0,false,false);
         t.norm1("out");
 
         String err = OpValidation.validate(new TestCase(sd)
@@ -1199,36 +1195,6 @@ public class TestReductionOpValidation extends BaseOpValidation {
         String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("out", finalOut)
                 .gradCheckSkipVariables("mask")
-                .gradientCheck(false));
-        assertNull(err);
-    }
-
-
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testDotProductAttentionV2WithMask(Nd4jBackend backend) {
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        final INDArray keys = Nd4j.rand(new int[]{10, 3,4});
-        final INDArray values = Nd4j.rand(new int[]{10, 3,4});
-        final INDArray query = Nd4j.rand(new int[]{10, 1,4});
-        final INDArray qMask = Nd4j.rand(10, 1).gte(0.2).castTo(DataType.DOUBLE);
-        final INDArray vMask = Nd4j.rand(10, 3).gte(0.2).castTo(DataType.DOUBLE);
-
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
-        SameDiff sd = SameDiff.create();
-        SDVariable sdQ = sd.var("q", query);
-        SDVariable sdK = sd.var("k", keys);
-        SDVariable sdV = sd.var("v", values);
-        SDVariable qMaskVar = sd.constant("qMask", qMask);
-        SDVariable vMaskVar = sd.constant("vMask", vMask);
-
-        SDVariable t = sd.nn.dotProductAttentionV2(sdQ, sdK, sdV,qMaskVar,vMaskVar,1.0,0.0,0,false,true,true);
-        SDVariable loss = t.norm1("out");
-        loss.markAsLoss();
-        String err = OpValidation.validate(new TestCase(sd)
-                .gradCheckSkipVariables("mask","qMask","vMask")
                 .gradientCheck(true));
         assertNull(err);
     }

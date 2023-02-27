@@ -460,6 +460,13 @@ fun NN() = Namespace("NN") {
     }
 
 
+    /**
+     * TODO: redo interface to accomodate for new functionality.
+     * Final decision was to accomodate older interface at the end.
+     *
+     * Then change the dl4j layers that use this to use the appropriate data layout.
+     * Previous debate was whether to use a v2 version of this op instead.
+     */
     Op("dotProductAttentionV2") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         val q = Input(NUMERIC, "queries") { description = "input 3D array \"queries\" of shape [batchSize, featureKeys, queryCount]\n" +
@@ -478,13 +485,13 @@ fun NN() = Namespace("NN") {
         val dropout = Arg(FLOATING_POINT, "dropoutProbability") { defaultValue = 0.0; description = "dropout probability" }
         val scoreMode = Arg(INT, "scoreMode") { defaultValue = 0; description = "normalization, false -> do not apply normalization, true -> apply normalization" }
         val useCausalMask = Arg(BOOL, "useCausalMask") { defaultValue = false; description = "withWeights return attention weights as well, false -> only one output, true -> two outputs" }
+
         val withWeights = Arg(BOOL, "withWeights") { defaultValue = false; description = "withWeights return attention weights as well, false -> only one output, true -> two outputs" }
-        val training = Arg(BOOL, "training") { defaultValue = false; description = "withWeights return attention weights as well, false -> only one output, true -> two outputs" }
 
         Output(NUMERIC, "output") { description = " Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount],\n" +
                 "(optionally) Attention Weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount]" }
 
-        Signature(q,v,k,queryMask,valueMask, s,dropout,scoreMode,useCausalMask,withWeights,training)
+        Signature(q,v,k,queryMask,valueMask, s,dropout,scoreMode,useCausalMask,withWeights)
 
         Doc(Language.ANY, DocScope.ALL) {
             """
