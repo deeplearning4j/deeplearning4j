@@ -26,7 +26,9 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -34,13 +36,48 @@ import java.util.List;
 @NoArgsConstructor
 public class DotProductAttentionV2Bp extends DynamicCustomOp {
 
-    private boolean scaled;
 
-    public DotProductAttentionV2Bp(SameDiff sameDiff, SDVariable queries, SDVariable keys, SDVariable values, SDVariable eps, SDVariable mask, boolean scaled) {
-        super(null, sameDiff, mask == null ? new SDVariable[] {queries, keys, values, eps} : new SDVariable[] {queries, keys, values, eps, mask}, false);
-        this.scaled = scaled;
-        addIArgument(scaled ? 1 : 0);
+    public DotProductAttentionV2Bp(SameDiff sameDiff,
+                                   SDVariable queries,
+                                   SDVariable values,
+                                   SDVariable keys,
+                                   SDVariable eps,
+                                   SDVariable queryMask,
+                                   SDVariable valueMask,
+                                   double scaleFactor,
+                                   double dropout,
+                                   int scoreMode,
+                                   boolean useCausalMask,
+                                   boolean withWeights,
+                                   boolean training) {
+        super(null, sameDiff,inputs(sameDiff,queries,values,keys,eps,queryMask,valueMask), false);
+        addIArgument(scoreMode);
+
+        addTArgument(scaleFactor);
+        addTArgument(dropout);
+        addBArgument(useCausalMask);
+        addBArgument(withWeights);
+        addBArgument(training);
     }
+
+    private static SDVariable[] inputs(SameDiff sd,
+                                       SDVariable queries,
+                                       SDVariable values,
+                                       SDVariable keys,
+                                       SDVariable eps,
+                                       SDVariable queryMask,
+                                       SDVariable valueMask) {
+        List<SDVariable> inputs = new ArrayList<>();
+        inputs.add(queries);
+        inputs.add(values);
+        inputs.add(keys == null ? values : keys);
+        inputs.add(eps);
+        inputs.add(queryMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : queryMask);
+        inputs.add(valueMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : valueMask);
+        return inputs.toArray(new SDVariable[inputs.size()]);
+
+    }
+
 
     @Override
     public String opName() {
@@ -54,7 +91,6 @@ public class DotProductAttentionV2Bp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 4 || dataTypes.size() == 5), "Expected 4 or 5 input datatypes, got %s", dataTypes);
         DataType first = dataTypes.get(0);
         for( int i = 0; i < dataTypes.size(); i++) {
             Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);

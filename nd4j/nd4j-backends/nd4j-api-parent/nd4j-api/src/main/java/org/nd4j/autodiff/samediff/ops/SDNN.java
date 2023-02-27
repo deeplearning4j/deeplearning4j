@@ -257,22 +257,24 @@ public class SDNN extends SDOps {
    * or 4D array of shape [batchSize, numHeads, featureKeys, timesteps] (NUMERIC type)
    * @param valueMask input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
    * or 4D array of shape [batchSize, numHeads, featureKeys, timesteps] (NUMERIC type)
-   * @param scaled normalization, false -> do not apply normalization, true -> apply normalization
+   * @param scaleFactor normalization, scale factor for normalization
+   * @param dropoutProbability dropout probability
    * @param scoreMode normalization, false -> do not apply normalization, true -> apply normalization
    * @param useCausalMask withWeights return attention weights as well, false -> only one output, true -> two outputs
    * @param withWeights withWeights return attention weights as well, false -> only one output, true -> two outputs
+   * @param training withWeights return attention weights as well, false -> only one output, true -> two outputs
    * @return output  Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount],
    * (optionally) Attention Weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount] (NUMERIC type)
    */
   public SDVariable dotProductAttentionV2(SDVariable queries, SDVariable values, SDVariable keys,
-      SDVariable queryMask, SDVariable valueMask, boolean scaled, int scoreMode,
-      boolean useCausalMask, boolean withWeights) {
+      SDVariable queryMask, SDVariable valueMask, double scaleFactor, double dropoutProbability,
+      int scoreMode, boolean useCausalMask, boolean withWeights, boolean training) {
     SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
     SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
     SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
     SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
     SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, scaled, scoreMode, useCausalMask, withWeights).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, scoreMode, useCausalMask, withWeights, training).outputVariable();
   }
 
   /**
@@ -306,22 +308,25 @@ public class SDNN extends SDOps {
    * or 4D array of shape [batchSize, numHeads, featureKeys, timesteps] (NUMERIC type)
    * @param valueMask input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
    * or 4D array of shape [batchSize, numHeads, featureKeys, timesteps] (NUMERIC type)
-   * @param scaled normalization, false -> do not apply normalization, true -> apply normalization
+   * @param scaleFactor normalization, scale factor for normalization
+   * @param dropoutProbability dropout probability
    * @param scoreMode normalization, false -> do not apply normalization, true -> apply normalization
    * @param useCausalMask withWeights return attention weights as well, false -> only one output, true -> two outputs
    * @param withWeights withWeights return attention weights as well, false -> only one output, true -> two outputs
+   * @param training withWeights return attention weights as well, false -> only one output, true -> two outputs
    * @return output  Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount],
    * (optionally) Attention Weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount] (NUMERIC type)
    */
   public SDVariable dotProductAttentionV2(String name, SDVariable queries, SDVariable values,
-      SDVariable keys, SDVariable queryMask, SDVariable valueMask, boolean scaled, int scoreMode,
-      boolean useCausalMask, boolean withWeights) {
+      SDVariable keys, SDVariable queryMask, SDVariable valueMask, double scaleFactor,
+      double dropoutProbability, int scoreMode, boolean useCausalMask, boolean withWeights,
+      boolean training) {
     SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
     SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
     SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
     SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
     SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, scaled, scoreMode, useCausalMask, withWeights).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, scoreMode, useCausalMask, withWeights, training).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
