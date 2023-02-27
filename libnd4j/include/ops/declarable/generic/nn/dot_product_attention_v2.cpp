@@ -63,9 +63,9 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   auto qMask = block.width() > 3 ? INPUT_VARIABLE(3) : nullptr;
   auto vMask = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
 
-  auto dropout = block.numT() > 0 ? T_ARG(0) : 0.0;
 
-  auto scale = block.numT() > 1 ? T_ARG(1) : 1.0;
+  auto scale = block.numT() > 1 ? T_ARG(0) : 1.0;
+  auto dropout = block.numT() > 0 ? T_ARG(1) : 0.0;
 
   auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
   auto returnAttentionScores = block.numB() > 1 ? B_ARG(1) : false;
@@ -86,11 +86,19 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   auto applyScoresOut = OUTPUT_VARIABLE(0);
   auto attentionScores = returnAttentionScores ? OUTPUT_VARIABLE(1) : new NDArray(queries->dataType(),{batchSize,tq,tv});
 
-  AttentionHelper::doAttention(inputs, masks2, training, returnAttentionScores, useCausalMask, dropout, attentionType,
-                               scale, attentionScores, block.randomSeed(), applyScoresOut);
+  AttentionHelper::doAttention(inputs,
+                               masks2,
+                               training,
+                               returnAttentionScores,
+                               useCausalMask,
+                               dropout,
+                               attentionType,
+                               scale,
+                               attentionScores,
+                               block.randomSeed(),
+                               applyScoresOut);
 
 
-  sd_printf("Done with attention\n",0);
   return sd::Status::OK;
 }
 
@@ -178,7 +186,6 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
   auto training = block.numB() > 2 ? B_ARG(2) : false;
 
   int attentionType = block.numI() > 0 ? I_ARG(0) : ATTENTION_TYPE_DOT_PRODUCT;
-
 
   std::vector<sd::NDArray*> inputs = {queries,values,keys,eps};
   std::vector<sd::NDArray *> masks2 = {qMask,vMask};

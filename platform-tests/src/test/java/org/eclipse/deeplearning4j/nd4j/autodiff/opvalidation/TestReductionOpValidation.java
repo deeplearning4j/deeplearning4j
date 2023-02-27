@@ -1124,6 +1124,8 @@ public class TestReductionOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDotProductAttention(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
         final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
         final INDArray values = Nd4j.rand(new int[]{10, 4, 3});
         final INDArray query = Nd4j.rand(new int[]{10, 4, 1});
@@ -1149,9 +1151,11 @@ public class TestReductionOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDotProductAttentionV2(Nd4jBackend backend) {
-        final INDArray keys = Nd4j.rand(new int[]{10, 3,4});
-        final INDArray values = Nd4j.rand(new int[]{10, 3,4});
-        final INDArray query = Nd4j.rand(new int[]{10, 1,4});
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        final INDArray keys = Nd4j.rand(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
+        final INDArray values = Nd4j.rand(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
+        final INDArray query = Nd4j.rand(new int[]{10, 1,4}).castTo(DataType.DOUBLE);
 
 
         SameDiff sd = SameDiff.create();

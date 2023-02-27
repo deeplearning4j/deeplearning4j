@@ -317,17 +317,17 @@ void AttentionHelper::applyAttentionScores(sd::NDArray *scores,
   sd::ops::dropout dropoutOp;
   sd::ops::matmul matmul;
 
-  if (scoresMask != nullptr) {
-    auto castedScoresMask = scoresMask->cast(sd::DataType::BOOL);
-    auto paddingMaks = booleanNot.evaluate({&castedScoresMask}).at(0);
-    if (scores->dataType() == DataType::BFLOAT16) {
-      *scores -= 65504 * paddingMaks->cast(scores->dataType());
-    } else {
-      *scores -= 1.0e9 * paddingMaks->cast(scores->dataType());
-    }
-  }
+   if (scoresMask != nullptr) {
+     auto castedScoresMask = scoresMask->cast(sd::DataType::BOOL);
+     auto paddingMaks = booleanNot.evaluate({&castedScoresMask}).at(0);
+     if (scores->dataType() == DataType::BFLOAT16) {
+       *scores -= 65504 * paddingMaks->cast(scores->dataType());
+     } else {
+       *scores -= 1.0e9 * paddingMaks->cast(scores->dataType());
+     }
+   }
 
-  auto softmaxOutput = softmax.evaluate({scores});
+  auto softmaxOutput = softmax.evaluate({scores},{},{-2});
   auto weights = softmaxOutput.at(0);
   if (dropout > 0) {
     auto dropout2 = dropoutOp.evaluate({weights}, {dropout}, {randomSeed});
@@ -394,7 +394,6 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
 
   sd::ops::matmul matMul;
   sd::ops::matmul_bp matMulBp;
-  sd::ops::expand_dims expandDims;
   sd::ops::reduce_sum_bp reduceSum;
   sd::ops::tanh_bp tanh1;
   sd::ops::add_bp addBp;
@@ -424,6 +423,7 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
 
     auto mask = AttentionHelper::computeAttentionMask(query, values, qMask, nullptr, nullptr, useCausalMask);
 
+
     if(scale != 0.0 && scale != 1.0)
       preSoftmax /= scale;
     if(mask != nullptr)
@@ -443,26 +443,24 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
     //begin dldw
     NDArray dLdw(weightInput.shapeInfo());
 
-
-    //inputs: values, weights, eps
-    //output is dldv, dldw
-
     //weights * value?
-    matMulBp.execute({&weights,values,eps},{&dLdw,dLdv},{},{0,0});
-
-    //first matrix multiply  backprop end
+    matMulBp.execute({&weights,values,eps},{&dLdw,dLdv},{},{});
 
     NDArray dLds(preSoftmax.shapeInfo());
     sd::ops::softmax_bp softmax_bp;
     softmax_bp.execute({&preSoftmax, &dLdw}, {&dLds}, {}, {-2}, {});
+    //first matrix multiply  backprop end
 
-    if(scale != 0.0)
-      dLds /= scale;
+    /* if(scale != 0.0)
+      dLds /= scale; */
+    //inputs: values, weights, eps
+    //output is dldv, dldw
+
 
     //inputs: keys,queries,dlds
     //outputs: dldk, dldq
     matMulBp.execute({key,query,&dLds},{dLdk,dLdq},{},{0,1,1});
-
+    dLdk->transposei();
 
   } else if(scoreMode == ATTENTION_SCORE_MODE_CONCAT) {
     REQUIRE_TRUE(concatWeights != nullptr,0,"Concat weights required when using attention score mode concat!");
@@ -475,6 +473,7 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
      *
      * TODO: remember to factor in k,v and q gradients.
      */
+    sd::ops::expand_dims expandDims;
 
 
     auto qReshaped = expandDims.evaluate({query},{},{-1}).at(0);
@@ -514,15 +513,17 @@ void AttentionHelper::doDotProductAttention(sd::NDArray *query,
                                             sd::NDArray *attentionScoresOut) {
 
   sd::ops::matmul matmul3;
+  sd_printf("Executing attention type: %d\n",scoreMode);
 
   if(scoreMode == ATTENTION_SCORE_MODE_DOT) {
     matmul3.execute({query,key},{attentionScoresOut},{0,1});
-    if(scale != 0.0 && scale != 1.0) {
-      *attentionScoresOut *= scale;
-    }
+    /*  if(scale != 0.0 && scale != 1.0) {
+        *attentionScoresOut *= scale;
+      } */
 
   } else if(scoreMode == ATTENTION_SCORE_MODE_CONCAT) {
     REQUIRE_TRUE(concatWeights != nullptr,0,"Concat weights required when using attention score mode concat!");
+    throw std::runtime_error("Invalid code path");
     sd::ops::expand_dims expandDims;
     sd::ops::reduce_sum reduceSum;
     sd::ops::create_view createView;
@@ -649,11 +650,12 @@ void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs, std::vector<
 
   scores = attentionScoresOut;
 
-  if(vmaskInternal != nullptr) {
+  /*if(vmaskInternal != nullptr && !vmaskInternal->isEmpty()) {
     vmaskInternal = expandDims.evaluate({vMask},{},{-1}).at(0);
-  }
+  } */
 
   if(useCausalMask) {
+    throw std::runtime_error("useCausalMask enabled");
     auto scoresShape = shapeOf.evaluate({scores}).at(0);
     /*
      * # causal_mask_shape = [1, Tq, Tv].
@@ -775,7 +777,7 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<sd
                           attentionScores);
   }
 
-  if(vMask != nullptr) {
+  if(vMask != nullptr && !vMask->isEmpty()) {
     vmaskInternal = expandDims.evaluate({vMask},{},{-1}).at(0);
   }
 
@@ -821,11 +823,11 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<sd
                          applyScoresOut);
 
   //inputs: scores:  batch size tq tv value:batch size, tv,dim scoresmask: batch size 1 tv or batch size tq tv
-  if(qMask != nullptr) {
-    qMaskInternal = expandDims.evaluate({qMaskInternal},{},{-1}).at(0);
-    auto casted = qMaskInternal->cast(attentionScores->dataType());
-    *attentionScores *= casted;
-  }
+   if(qMask != nullptr && !qMask->isEmpty()) {
+     qMaskInternal = expandDims.evaluate({qMaskInternal},{},{-1}).at(0);
+     auto casted = qMaskInternal->cast(attentionScores->dataType());
+     *attentionScores *= casted;
+   }
 
 }
 

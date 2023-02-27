@@ -66,9 +66,7 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
         this.queryMask = queryMask;
         this.valueMask = valueMask;
         addIArgument(scoreMode);
-        addBArgument(useCausalMask);
-        addBArgument(withWeights);
-        addBArgument(training);
+        addBArgument(useCausalMask,withWeights,training);
         addTArgument(scaleFactor,dropoutProbability);
     }
 
