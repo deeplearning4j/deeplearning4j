@@ -203,7 +203,7 @@ public class EventLogger {
             RunTimeMemory runTimeMemory = RunTimeMemory.sample();
             logEvent.setWorkspaceInfo(workspaceInfo);
             logEvent.setRunTimeMemory(runTimeMemory);
-            logStream.println(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",
+            logStream.println(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",
                     formatTimeAsDate.get() ? new Timestamp(logEvent.getEventTimeMs()) : logEvent.getEventTimeMs(),
                     logEvent.getEventType(),
                     logEvent.getObjectAllocationType(),
