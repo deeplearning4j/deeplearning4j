@@ -60,8 +60,19 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
                "dot_product_attention: Keys and Values must have the same timestep length. "
                "But got keys = %i, values = %i", keys->sizeAt(-1), values->sizeAt(-1));
 
+
+
+
   auto qMask = block.width() > 3 ? INPUT_VARIABLE(3) : nullptr;
   auto vMask = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
+
+  if(qMask != nullptr && !qMask->isEmpty()) {
+    REQUIRE_TRUE(qMask->rankOf() == queries->rankOf() - 1,0,"dot_product_attention: Query mask must be of rank %i but received rank: %i",queries->rankOf() - 1,qMask->rankOf());
+  }
+
+  if(vMask != nullptr && !vMask->isEmpty()) {
+    REQUIRE_TRUE(vMask->rankOf() == values->rankOf() - 1,0,"dot_product_attention: Values mask must be of rank %i but received rank: %i",values->rankOf() - 1,vMask->rankOf());
+  }
 
 
   auto scale = block.numT() > 1 ? T_ARG(0) : 1.0;
@@ -80,7 +91,6 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   int batchSize = queries->sizeAt(0);
   int tq = queries->sizeAt(-2);
   int tv = values->sizeAt(-2);
-  int dim = values->sizeAt(-1);
 
 
   auto applyScoresOut = OUTPUT_VARIABLE(0);
