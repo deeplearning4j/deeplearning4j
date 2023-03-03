@@ -194,11 +194,7 @@ void AttentionHelper::applyAttentionScores(sd::NDArray *scores,
     if (scores->dataType() == DataType::BFLOAT16) {
       *scores -= 65504 * paddingMask->cast(scores->dataType());
     } else {
-      sd_printf("Scores -= about to execute\n",0);
-      scores->printShapeInfo("Scores shape info");
-      paddingMask->printShapeInfo("Padding mask shape info");
       *scores -= 1.0e9 * paddingMask->cast(scores->dataType());
-      sd_printf("Scores -= after execute\n",0);
     }
   }
 
@@ -217,31 +213,6 @@ void AttentionHelper::applyAttentionScores(sd::NDArray *scores,
 
 }
 
-/**
- if scores_mask is not None:
- padding_mask = tf.logical_not(scores_mask)
- # Bias so padding positions do not contribute to attention
- # distribution.  Note 65504. is the max float16 value.
- if scores.dtype is tf.float16:
-     scores -= 65504.0 * tf.cast(padding_mask, dtype=scores.dtype)
- else:
-     scores -= 1.0e9 * tf.cast(padding_mask, dtype=scores.dtype)
-if training is None:
- training = backend.learning_phase()
-weights = tf.nn.softmax(scores)
-
-if self.dropout > 0:
-
-     def dropped_weights():
-                         return self._random_generator.dropout(
-                             weights, rate=self.dropout
-                             )
-
-                             weights = control_flow_util.smart_cond(
-                                                            training, dropped_weights, lambda: tf.identity(weights)
-                                                                )
-                                           return tf.matmul(weights, value), weights
- */
 
 
 /**
@@ -312,7 +283,7 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
       }
 
       auto times = (maskCast - 1) * 1e9;
-      preSoftmax += times;
+      preSoftmax -= times;
     }
     //end masking pre query/key matrix multiply section
 

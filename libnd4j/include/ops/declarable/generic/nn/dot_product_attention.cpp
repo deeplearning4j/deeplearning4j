@@ -191,7 +191,7 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
    } else {
      reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(1), 1});
    }
-   preSoftmax += (reshapedMask - 1) * 1e9;
+   preSoftmax -= (reshapedMask - 1) * 1e9;
  }
 
  NDArray weights('c', weightShape, values->dataType(), block.launchContext());
