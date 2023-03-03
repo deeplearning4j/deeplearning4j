@@ -60,11 +60,6 @@ sd::NDArray AttentionHelper::multiHeadProject(const sd::NDArray *input, const sd
 
 
 /**
-   * def _lower_triangular_mask(shape):
-"""Creates a lower-triangular boolean mask over the last 2 dimensions."""
-row_index = tf.cumsum(tf.ones(shape=shape, dtype=tf.int32), axis=-2)
-col_index = tf.cumsum(tf.ones(shape=shape, dtype=tf.int32), axis=-1)
-return tf.greater_equal(row_index, col_index)
    * @param shape
    * @return
    */
@@ -80,29 +75,6 @@ sd::NDArray* AttentionHelper::lowerTriangularMask(std::vector<sd::LongType> *sha
 }
 
 /**
- * def _compute_causal_mask(self, query, value=None):
-"""Computes a causal mask (e.g., for masked self-attention layers).
-For example, if query and value both contain sequences of length 4,
-this function returns a boolean `Tensor` equal to:
-```
-[[[True,  False, False, False],
-[True,  True,  False, False],
-[True,  True,  True,  False],
-[True,  True,  True,  True]]]
-```
-Args:
-query: query `Tensor` of shape `(B, T, ...)`.
-value: value `Tensor` of shape `(B, S, ...)` (optional, defaults to
-query).
-Returns:
-mask: a boolean `Tensor` of shape [1, T, S] containing a lower
-      triangular matrix of shape [T, S].
-"""
-q_seq_length = tf.shape(query)[1]
-v_seq_length = q_seq_length if value is None else tf.shape(value)[1]
-return tf.linalg.band_part(  # creates a lower triangular matrix
-  tf.ones((1, q_seq_length, v_seq_length), tf.bool), -1, 0
-)
  * @param query
  * @param value
  * @return
@@ -120,66 +92,6 @@ sd::NDArray AttentionHelper::computeCasualMask(sd::NDArray *query,sd::NDArray *v
 
 
 /**
- * def _compute_attention_mask(
-self, query, value, key=None, attention_mask=None, use_causal_mask=False
-):
-"""Computes the attention mask, using the Keras masks of the inputs.
-* The `query`'s mask is reshaped from [B, T] to [B, T, 1].
-* The `value`'s mask is reshaped from [B, S] to [B, 1, S].
-* The `key`'s mask is reshaped from [B, S] to [B, 1, S]. The `key`'s
-mask is ignored if `key` is `None` or if `key is value`.
-* If `use_causal_mask=True`, then the causal mask is computed. Its shape
-is [1, T, S].
-All defined masks are merged using a logical AND operation (`&`).
-In general, if the `query` and `value` are masked, then there is no need
-to define the `attention_mask`.
-Args:
-query: Projected query `Tensor` of shape `(B, T, N, key_dim)`.
-key: Projected key `Tensor` of shape `(B, T, N, key_dim)`.
-value: Projected value `Tensor` of shape `(B, T, N, value_dim)`.
-attention_mask: a boolean mask of shape `(B, T, S)`, that prevents
-  attention to certain positions.
-use_causal_mask: A boolean to indicate whether to apply a causal mask
-  to prevent tokens from attending to future tokens (e.g., used in a
-  decoder Transformer).
-Returns:
-attention_mask: a boolean mask of shape `(B, T, S)`, that prevents
-  attention to certain positions, based on the Keras masks of the
-  `query`, `key`, `value`, and `attention_mask` tensors, and the
-  causal mask if `use_causal_mask=True`.
-"""
-query_mask = getattr(query, "_keras_mask", None)
-value_mask = getattr(value, "_keras_mask", None)
-key_mask = getattr(key, "_keras_mask", None)
-auto_mask = None
-if query_mask is not None:
-  query_mask = tf.cast(query_mask, tf.bool)  # defensive casting
-  # B = batch size, T = max query length
-  auto_mask = query_mask[:, :, tf.newaxis]  # shape is [B, T, 1]
-
-
-if value_mask is not None:
-  value_mask = tf.cast(value_mask, tf.bool)  # defensive casting
-  # B = batch size, S == max value length
-  mask = value_mask[:, tf.newaxis, :]  # shape is [B, 1, S]
-  auto_mask = mask if auto_mask is None else auto_mask & mask
-if key_mask is not None:
-  key_mask = tf.cast(key_mask, tf.bool)  # defensive casting
-  # B == batch size, S == max key length == max value length
-  mask = key_mask[:, tf.newaxis, :]  # shape is [B, 1, S]
-  auto_mask = mask if auto_mask is None else auto_mask & mask
-if use_causal_mask:
-  # the shape of the causal mask is [1, T, S]
-  mask = self._compute_causal_mask(query, value)
-  auto_mask = mask if auto_mask is None else auto_mask & mask
-if auto_mask is not None:
-  # merge attention_mask & automatic mask, to shape [B, T, S]
-  attention_mask = (
-      auto_mask
-      if attention_mask is None
-      else tf.cast(attention_mask, bool) & auto_mask
-  )
-return
  * @param query
  * @param value
  * @param attentionMask
@@ -216,6 +128,7 @@ NDArray *AttentionHelper::computeAttentionMask(sd::NDArray *query, sd::NDArray *
     } else {
       autoMask = new NDArray(booleanAnd.evaluate({autoMask,mask}).at(0));
     }
+
   }
 
 
@@ -238,6 +151,7 @@ NDArray *AttentionHelper::computeAttentionMask(sd::NDArray *query, sd::NDArray *
     }
   }
 
+
   return autoMask;
 }
 
@@ -256,56 +170,7 @@ sd::NDArray * AttentionHelper::mergeMasks(sd::NDArray *x,sd::NDArray *y) {
 }
 
 
-/**
- * def _apply_scores(self, scores, value, scores_mask=None, training=None):
-"""Applies attention scores to the given value tensor.
-To use this method in your attention layer, follow the steps:
-* Use `query` tensor of shape `[batch_size, Tq]` and `key` tensor of
-shape `[batch_size, Tv]` to calculate the attention `scores`.
-* Pass `scores` and `value` tensors to this method. The method applies
-`scores_mask`, calculates `attention_distribution = softmax(scores)`,
-then returns `matmul(attention_distribution, value).
-* Apply `query_mask` and return the result.
-Args:
-scores: Scores float tensor of shape `[batch_size, Tq, Tv]`.
-value: Value tensor of shape `[batch_size, Tv, dim]`.
-scores_mask: A boolean mask `Tensor` of shape `[batch_size, 1, Tv]` or
-  `[batch_size, Tq, Tv]`. If given, scores at positions where
-  `scores_mask==False` do not contribute to the result. It must
-  contain at least one `True` value in each line along the last
-  dimension.
-training: Python boolean indicating whether the layer should behave in
-  training mode (adding dropout) or in inference mode (no dropout).
-Returns:
-Tensor of shape `[batch_size, Tq, dim]`.
-Attention scores after masking and softmax with shape
-  `[batch_size, Tq, Tv]`.
-"""
-if scores_mask is not None:
-  padding_mask = tf.logical_not(scores_mask)
-  # Bias so padding positions do not contribute to attention
-  # distribution.  Note 65504. is the max float16 value.
-  if scores.dtype is tf.float16:
-      scores -= 65504.0 * tf.cast(padding_mask, dtype=scores.dtype)
-  else:
-      scores -= 1.0e9 * tf.cast(padding_mask, dtype=scores.dtype)
-if training is None:
-  training = backend.learning_phase()
-weights = tf.nn.softmax(scores)
 
-if self.dropout > 0:
-
-def dropped_weights():
-                  return self._random_generator.dropout(
-                      weights, rate=self.dropout
-                      )
-
-                      weights = control_flow_util.smart_cond(
-                                                     training, dropped_weights, lambda: tf.identity(weights)
-                                                         )
-                                    return tf.matmul(weights, value), weights
- * @return
- */
 void AttentionHelper::applyAttentionScores(sd::NDArray *scores,
                                            sd::NDArray *value,
                                            sd::NDArray *scoresMask,
@@ -317,17 +182,27 @@ void AttentionHelper::applyAttentionScores(sd::NDArray *scores,
   sd::ops::dropout dropoutOp;
   sd::ops::matmul matmul;
 
-  if (scoresMask != nullptr) {
+  if (scoresMask != nullptr && !scoresMask->isEmpty()) {
+    REQUIRE_TRUE(scoresMask->sizeAt(-2) == 1 || scoresMask->sizeAt(-2) == scores->sizeAt(-2),0,
+                 "Scores mask must be either broadcastable or equal to scores shape. scores size at -2: was: %i scores size at -2 was: %i",scoresMask->sizeAt(-2),scores->sizeAt(-2));
+
+    REQUIRE_TRUE(scoresMask->sizeAt(-1) == scores->sizeAt(-1),0,
+                 "Scores mask must be either broadcastable or equal to scores shape. scores size at -1: was: %i scores size at -1 was: %i",scoresMask->sizeAt(-1),scores->sizeAt(-1));
+
     auto castedScoresMask = scoresMask->cast(sd::DataType::BOOL);
-    auto paddingMaks = booleanNot.evaluate({&castedScoresMask}).at(0);
+    auto paddingMask = booleanNot.evaluate({&castedScoresMask}).at(0);
     if (scores->dataType() == DataType::BFLOAT16) {
-      *scores -= 65504 * paddingMaks->cast(scores->dataType());
+      *scores -= 65504 * paddingMask->cast(scores->dataType());
     } else {
-      *scores -= 1.0e9 * paddingMaks->cast(scores->dataType());
+      sd_printf("Scores -= about to execute\n",0);
+      scores->printShapeInfo("Scores shape info");
+      paddingMask->printShapeInfo("Padding mask shape info");
+      *scores -= 1.0e9 * paddingMask->cast(scores->dataType());
+      sd_printf("Scores -= after execute\n",0);
     }
   }
 
-  auto softmaxOutput = softmax.evaluate({scores});
+  auto softmaxOutput = softmax.evaluate({scores},{},{-2});
   auto weights = softmaxOutput.at(0);
   if (dropout > 0) {
     auto dropout2 = dropoutOp.evaluate({weights}, {dropout}, {randomSeed});
@@ -394,7 +269,6 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
 
   sd::ops::matmul matMul;
   sd::ops::matmul_bp matMulBp;
-  sd::ops::expand_dims expandDims;
   sd::ops::reduce_sum_bp reduceSum;
   sd::ops::tanh_bp tanh1;
   sd::ops::add_bp addBp;
@@ -422,13 +296,24 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
     int transB = 1;
     matMul.execute({query,key},{&preSoftmax},{transA,transB});
 
-    auto mask = AttentionHelper::computeAttentionMask(query, values, qMask, nullptr, nullptr, useCausalMask);
+    auto mask = AttentionHelper::computeAttentionMask(query, values, qMask, vMask, nullptr, useCausalMask);
 
-    if(scale != 0.0 && scale != 1.0)
+
+    if(scale != 0.0 && scale != 1.0) {
       preSoftmax /= scale;
-    if(mask != nullptr)
-      preSoftmax += (*mask - 1) * 1e9;
+    }
 
+    if(mask != nullptr) {
+      auto maskCast = mask->cast(query->dataType());
+      if (preSoftmax.rankOf() == 4) {
+        maskCast = maskCast.reshape(mask->ordering(), {mask->sizeAt(0), 1,mask->sizeAt(-1), 1,});
+      } else {
+        maskCast = maskCast.reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(-1),1});
+      }
+
+      auto times = (maskCast - 1) * 1e9;
+      preSoftmax += times;
+    }
     //end masking pre query/key matrix multiply section
 
     NDArray weights(weightShapeInfoInput);
@@ -443,27 +328,24 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
     //begin dldw
     NDArray dLdw(weightInput.shapeInfo());
 
-
-    //inputs: values, weights, eps
-    //output is dldv, dldw
-    auto epsTranspose = eps->permute({0,2,1});
-
     //weights * value?
-    matMulBp.execute({values,&weights,&epsTranspose},{dLdv,&dLdw},{},{1,1});
-
-    //first matrix multiply  backprop end
+    matMulBp.execute({&weights,values,eps},{&dLdw,dLdv},{},{});
 
     NDArray dLds(preSoftmax.shapeInfo());
     sd::ops::softmax_bp softmax_bp;
     softmax_bp.execute({&preSoftmax, &dLdw}, {&dLds}, {}, {-2}, {});
+    //first matrix multiply  backprop end
 
-    if(scale != 0.0)
-      dLds /= scale;
+    /* if(scale != 0.0)
+      dLds /= scale; */
+    //inputs: values, weights, eps
+    //output is dldv, dldw
+
 
     //inputs: keys,queries,dlds
     //outputs: dldk, dldq
-    matMulBp.execute({key,query,&dLds},{dLdk,dLdq},{transA3,transB3});
-
+    matMulBp.execute({key,query,&dLds},{dLdk,dLdq},{},{0,1,1});
+    dLdk->transposei();
 
   } else if(scoreMode == ATTENTION_SCORE_MODE_CONCAT) {
     REQUIRE_TRUE(concatWeights != nullptr,0,"Concat weights required when using attention score mode concat!");
@@ -476,6 +358,7 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
      *
      * TODO: remember to factor in k,v and q gradients.
      */
+    sd::ops::expand_dims expandDims;
 
 
     auto qReshaped = expandDims.evaluate({query},{},{-1}).at(0);
@@ -514,23 +397,20 @@ void AttentionHelper::doDotProductAttention(sd::NDArray *query,
                                             sd::NDArray *concatWeights,
                                             sd::NDArray *attentionScoresOut) {
 
-  sd::ops::batched_gemm matmul2;
   sd::ops::matmul matmul3;
-  sd::ops::expand_dims expandDims;
-  sd::ops::reduce_sum reduceSum;
-  sd::ops::create_view createView;
-  sd::ops::tanh tanh1;
+
   if(scoreMode == ATTENTION_SCORE_MODE_DOT) {
     matmul3.execute({query,key},{attentionScoresOut},{0,1});
-
-    sd_printf("After matmul\n",0);
-    if(scale != 0.0) {
+    if(scale != 0.0 && scale != 1.0) {
       *attentionScoresOut *= scale;
     }
-    attentionScoresOut->printShapeInfo("Final weights: ");
 
   } else if(scoreMode == ATTENTION_SCORE_MODE_CONCAT) {
     REQUIRE_TRUE(concatWeights != nullptr,0,"Concat weights required when using attention score mode concat!");
+    sd::ops::expand_dims expandDims;
+    sd::ops::reduce_sum reduceSum;
+    sd::ops::create_view createView;
+    sd::ops::tanh tanh1;
     auto qReshaped = expandDims.evaluate({query},{},{-1}).at(0);
     auto kReshaped = expandDims.evaluate({key},{},{-3}).at(0);
     auto scaled =  scale > 0 ? ( scale * (*qReshaped + *kReshaped)) : ((*qReshaped + *kReshaped));
@@ -653,8 +533,8 @@ void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs, std::vector<
 
   scores = attentionScoresOut;
 
-  if(vmaskInternal != nullptr) {
-    vmaskInternal = expandDims.evaluate({vMask},{},{-1}).at(0);
+  if(vmaskInternal != nullptr && !vmaskInternal->isEmpty()) {
+    vmaskInternal = expandDims.evaluate({vMask},{},{-2}).at(0);
   }
 
   if(useCausalMask) {
@@ -779,8 +659,8 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<sd
                           attentionScores);
   }
 
-  if(vMask != nullptr) {
-    vmaskInternal = expandDims.evaluate({vMask},{},{-1}).at(0);
+  if(vMask != nullptr && !vMask->isEmpty()) {
+    vmaskInternal = expandDims.evaluate({vMask},{},{-2}).at(0);
   }
 
   if(useCausalMask) {
@@ -807,25 +687,15 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<sd
     //delete lowerTriangleMaskShape;
   }
 
-  auto scoresMask = mergeMasks(vMask,casualPointer);
+  auto scoresMask = mergeMasks(vmaskInternal,casualPointer);
 
-  if(training)
-    applyAttentionScores(attentionScores,
-                         v,
-                         scoresMask,
-                         dropout,
-                         dropoutSeed,
-                         applyScoresOut);
-  else
-    applyAttentionScores(attentionScores,
-                         v,
-                         scoresMask,
-                         0,
-                         dropoutSeed,
-                         applyScoresOut);
-
+  if(training) {
+    applyAttentionScores(attentionScores, v, scoresMask, dropout, dropoutSeed, applyScoresOut);
+  } else {
+    applyAttentionScores(attentionScores, v, scoresMask, 0, dropoutSeed, applyScoresOut);
+  }
   //inputs: scores:  batch size tq tv value:batch size, tv,dim scoresmask: batch size 1 tv or batch size tq tv
-  if(qMask != nullptr) {
+  if(qMask != nullptr && !qMask->isEmpty()) {
     qMaskInternal = expandDims.evaluate({qMaskInternal},{},{-1}).at(0);
     auto casted = qMaskInternal->cast(attentionScores->dataType());
     *attentionScores *= casted;
