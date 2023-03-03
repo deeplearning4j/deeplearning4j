@@ -23,7 +23,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.linalg.api.memory.Deallocator;
+import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.profiler.UnifiedProfiler;
+import org.nd4j.linalg.profiler.data.RunTimeMemory;
+import org.nd4j.linalg.profiler.data.WorkspaceInfo;
 
 import java.io.PrintStream;
 import java.sql.Timestamp;
@@ -195,9 +198,13 @@ public class EventLogger {
      */
     public void log(LogEvent logEvent) {
         if(enabled.get() && eventTypesToLog.contains(logEvent.getEventType()) &&
-                this.allocationTypesToLog.contains(logEvent.getObjectAllocationType()))
-            logStream.println(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",
-                    formatTimeAsDate.get() ?  new Timestamp(logEvent.getEventTimeMs()) : logEvent.getEventTimeMs(),
+                this.allocationTypesToLog.contains(logEvent.getObjectAllocationType())) {
+            WorkspaceInfo workspaceInfo = WorkspaceInfo.sample(logEvent.getAssociatedWorkspace(), MemoryKind.HOST);
+            RunTimeMemory runTimeMemory = RunTimeMemory.sample();
+            logEvent.setWorkspaceInfo(workspaceInfo);
+            logEvent.setRunTimeMemory(runTimeMemory);
+            logStream.println(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",
+                    formatTimeAsDate.get() ? new Timestamp(logEvent.getEventTimeMs()) : logEvent.getEventTimeMs(),
                     logEvent.getEventType(),
                     logEvent.getObjectAllocationType(),
                     logEvent.getAssociatedWorkspace(),
@@ -206,8 +213,17 @@ public class EventLogger {
                     logEvent.getBytes(),
                     logEvent.isAttached(),
                     logEvent.isConstant(),
-                    logEvent.getObjectId()));
-
+                    logEvent.getObjectId(),
+                    logEvent.getWorkspaceInfo().getAllocatedMemory(),
+                    logEvent.getWorkspaceInfo().getExternalBytes(),
+                    logEvent.getWorkspaceInfo().getPinnedBytes(),
+                    logEvent.getWorkspaceInfo().getSpilledBytes(),
+                    logEvent.getRunTimeMemory().getRuntimeFreeMemory(),
+                    logEvent.getRunTimeMemory().getJavacppAvailablePhysicalBytes(),
+                    logEvent.getRunTimeMemory().getJavaCppMaxPhysicalBytes(),
+                    logEvent.getRunTimeMemory().getJavacppMaxBytes(),
+                    logEvent.getRunTimeMemory().getRuntimeMaxMemory()));
+        }
         if(listeners != null) {
             for(EventLogListener listener : listeners) {
                 if(listener != null) {
