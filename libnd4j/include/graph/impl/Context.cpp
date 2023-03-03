@@ -222,9 +222,9 @@ void Context::pushNDArrayToVariableSpace(std::pair<int, int> &pair, NDArray *arr
       _variableSpace->putVariable(pair, var);
       var->markRemovable(removable);
     } else {
-      sd_debug("Context: Getting variable in push ndarray",0);
+      sd_debug("Context: Getting variable in push ndarray\n",0);
       auto var = _variableSpace->getVariable(pair);
-      sd_debug("Context: After getting variable in push ndarray to variable space",0);
+      sd_debug("Context: After getting variable in push ndarray to variable space\n",0);
       if (var->hasNDArray()) {
         if (var->getNDArray() != array) {
           if (var->isRemovable() && var->hasNDArray() && !var->getNDArray()->isView()) {

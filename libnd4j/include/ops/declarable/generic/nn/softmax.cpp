@@ -67,7 +67,7 @@ CONFIGURABLE_OP_IMPL(softmax_bp, 2, 1, true, 0, 0) {
   helpers::softmax(block.launchContext(), *input, *gradI, dim);
 
   auto sumAlongDim = (*gradI * *gradO).reduceAlongDimension(reduce::Sum, {dim}, true);
-  gradI->assign(*gradI * (*gradO - sumAlongDim));
+  gradI->assign(*gradI * (*gradO - (sumAlongDim + SD_EPSILON)));
 
   return sd::Status::OK;
 }

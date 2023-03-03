@@ -204,6 +204,7 @@ NDArray *AttentionHelper::computeAttentionMask(sd::NDArray *query, sd::NDArray *
       autoMask = createView.evaluate({internalQueryMask,&all,&all,&newAxis}).at(0);
     }
 
+    internalQueryMask->printShapeInfo("Internal query mask");
   }
 
   if(valueMask != nullptr && !valueMask->isEmpty()) {
@@ -216,6 +217,8 @@ NDArray *AttentionHelper::computeAttentionMask(sd::NDArray *query, sd::NDArray *
     } else {
       autoMask = new NDArray(booleanAnd.evaluate({autoMask,mask}).at(0));
     }
+
+    mask->printShapeInfo("Value mask");
   }
 
 
@@ -231,12 +234,15 @@ NDArray *AttentionHelper::computeAttentionMask(sd::NDArray *query, sd::NDArray *
 
   if(autoMask != nullptr) {
     if(attentionMask == nullptr) {
+      sd_printf("Returning automask\n",0);
       return autoMask;
     } else {
       auto ret = new NDArray(booleanAnd.evaluate({attentionMask,autoMask}).at(0));
+      ret->printShapeInfo("Auto mask and ret");
       return ret;
     }
   }
+
 
   return autoMask;
 }
@@ -439,7 +445,21 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
     }
 
     if(mask != nullptr) {
-      preSoftmax += (*mask - 1) * 1e9;
+      sd_printf("About to apply mask \n",0);
+      sd_printf("Mask data type is %d\n",mask->isS());
+      sd_printf("Presoftmax is string %d\n",preSoftmax.isS());
+      auto maskCast = mask->cast(query->dataType());
+      if (preSoftmax.rankOf() == 4) {
+        maskCast = maskCast.reshape(mask->ordering(), {mask->sizeAt(0), 1,mask->sizeAt(-1), 1,});
+      } else {
+        maskCast = maskCast.reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(-1),1});
+      }
+
+      auto times = (maskCast - 1) * 1e9;
+      sd_printf("After times * 1e9 \n",0);
+      times.printBuffer("Times buffer");
+      preSoftmax += times;
+      sd_printf("Applied mask\n",0);
     }
     //end masking pre query/key matrix multiply section
 

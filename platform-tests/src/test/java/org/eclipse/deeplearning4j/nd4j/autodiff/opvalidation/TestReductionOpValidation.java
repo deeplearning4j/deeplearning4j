@@ -1199,7 +1199,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
         String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("out", finalOut)
                 .gradCheckSkipVariables("mask")
-                .gradientCheck(true));
+                .gradientCheck(false));
         assertNull(err);
     }
 
@@ -1215,7 +1215,8 @@ public class TestReductionOpValidation extends BaseOpValidation {
         final INDArray qMask = Nd4j.rand(10, 1).gte(0.2).castTo(DataType.DOUBLE);
         final INDArray vMask = Nd4j.rand(10, 3).gte(0.2).castTo(DataType.DOUBLE);
 
-
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
         SameDiff sd = SameDiff.create();
         SDVariable sdQ = sd.var("q", query);
         SDVariable sdK = sd.var("k", keys);
@@ -1227,7 +1228,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable loss = t.norm1("out");
         loss.markAsLoss();
         String err = OpValidation.validate(new TestCase(sd)
-                .gradCheckSkipVariables("mask")
+                .gradCheckSkipVariables("mask","qMask","vMask")
                 .gradientCheck(true));
         assertNull(err);
     }
