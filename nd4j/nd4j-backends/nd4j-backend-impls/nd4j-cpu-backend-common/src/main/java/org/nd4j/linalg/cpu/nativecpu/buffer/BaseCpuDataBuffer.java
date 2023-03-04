@@ -149,7 +149,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             setIndexer(LongIndexer.create((LongPointer) pointer));
         }
 
-        Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
     }
 
     /**
@@ -171,7 +171,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         // for vew we need "externally managed" pointer and deallocator registration
         ptrDataBuffer = ((BaseCpuDataBuffer) underlyingBuffer).ptrDataBuffer.createView(length * underlyingBuffer.getElementSize(), offset * underlyingBuffer.getElementSize());
-        Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
 
 
         // update pointer now
@@ -261,7 +261,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         if (ptrDataBuffer == null) {
             ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length(), type, false);
-            Nd4j.getDeallocatorService().pickObject(this);
+            this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
         }
 
         actualizePointerAndIndexer();
@@ -391,7 +391,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
                 fillPointerWithZero();
         }
 
-        Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
     }
 
     public void actualizePointerAndIndexer() {
@@ -656,7 +656,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         // creating & registering native DataBuffer
         ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(data.length, DataType.FLOAT, false);
         ptrDataBuffer.setPrimaryBuffer(pointer, data.length);
-        Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
 
         setIndexer(FloatIndexer.create((FloatPointer) pointer));
 
@@ -678,7 +678,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         //note: data buffer is owned externally no deallocator added
 
         ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, dataType(), this.pointer, null);
-        Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
 
         workspaceGenerationId = workspace.getGenerationId();
         setIndexer(FloatIndexer.create((FloatPointer) pointer));
@@ -778,7 +778,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         // creating & registering native DataBuffer
         ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(data.length, DataType.DOUBLE, false);
         ptrDataBuffer.setPrimaryBuffer(pointer, data.length);
-        Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
 
         length = data.length;
         underlyingLength = data.length;
@@ -813,7 +813,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         // creating & registering native DataBuffer
         ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(data.length, DataType.INT32, false);
         ptrDataBuffer.setPrimaryBuffer(pointer, data.length);
-        Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
 
         length = data.length;
         underlyingLength = data.length;
@@ -834,7 +834,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         // creating & registering native DataBuffer
         ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(data.length, DataType.INT64, false);
         ptrDataBuffer.setPrimaryBuffer(pointer, data.length);
-        Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
 
         length = data.length;
         underlyingLength = data.length;
@@ -872,6 +872,8 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     @Override
     protected void release() {
         ptrDataBuffer.closeBuffer();
+        Nd4j.getDeallocatorService().getReferenceMap().remove(getUniqueId());
+        deallocator().deallocate();
         super.release();
     }
 
