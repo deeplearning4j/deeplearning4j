@@ -282,7 +282,7 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
         maskCast = maskCast.reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(-1),1});
       }
 
-      auto times = (maskCast - 1) * 1e9;
+      auto times = maskCast * 1e9;
       preSoftmax -= times;
     }
     //end masking pre query/key matrix multiply section
@@ -293,8 +293,6 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
 
 
 
-    //permuted due to keys being permuted. Weights are query * keys permuted by 0,2,1 note we do this
-    //instead of doing transb true
     auto weightInput = weights;
     //begin dldw
     NDArray dLdw(weightInput.shapeInfo());

@@ -84,9 +84,9 @@ public class DotProductAttention extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 3 || dataTypes.size() == 4), "Expected exactly 3 or 4 input datatypes, got %s", dataTypes);
         DataType first = dataTypes.get(0);
-        for( int i=0; i<dataTypes.size(); i++ ) {
-            Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);
-            if(i > 0){
+        for( int i = 0; i < dataTypes.size(); i++) {
+            Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got dataypes %s", dataTypes);
+            if(i > 0) {
                 Preconditions.checkState(first == dataTypes.get(i), "All datatypes must be same type, got input datatypes %s", dataTypes);
             }
         }
@@ -99,9 +99,9 @@ public class DotProductAttention extends DynamicCustomOp {
 
     @Override
     public int getNumOutputs() {
-        if(withWeights){
+        if(withWeights) {
             return 2;
-        }else{
+        }else {
             return 1;
         }
     }

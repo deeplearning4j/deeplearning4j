@@ -95,7 +95,7 @@ public class DeallocatorService {
     public DeallocatorService() {
         // we need to have at least 2 threads, but for CUDA we'd need at least numDevices threads, due to thread->device affinity
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
-        int numThreads = 1;
+        int numThreads = 8;
 
         for (int e = 0; e < numDevices; e++)
             deviceMap.add(new ArrayList<>());
@@ -176,8 +176,6 @@ public class DeallocatorService {
             while (canRun) {
 
                 // if periodicGc is enabled, only first thread will call for it
-
-
                 if (Nd4j.getMemoryManager().isPeriodicGcActive() && threadIdx == 0 && Nd4j.getMemoryManager().getAutoGcWindow() > 0) {
                     val reference = (DeallocatableReference) queue.poll();
                     if (reference == null || (reference != null && reference.get() != null &&  !reference.get().shouldDeAllocate()) || !reference.getDeallocator().isConstant()) {

@@ -1183,7 +1183,8 @@ public class TestReductionOpValidation extends BaseOpValidation {
 
         final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
                 .divi(Math.sqrt(keys.size(1) + 1e-5));
-        exec.addi(mask.reshape(10, 3, 1).sub(1).muli(1e9));
+        //note
+        exec.subi(mask.reshape(10, 3, 1).mul(1e9));
         Nd4j.exec(new SoftMax(exec, exec, 1));
         final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
 
@@ -1193,7 +1194,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable sdV = sd.var("v", values);
         SDVariable sdMask = sd.constant("mask", mask);
 
-        SDVariable t = sd.nn.dotProductAttention(sdQ, sdK, sdV, sdMask, true);
+        SDVariable t = sd.nn.dotProductAttention(sdQ, sdK, sdV, sdMask, false);
         t.norm1("out");
 
         String err = OpValidation.validate(new TestCase(sd)
@@ -1224,7 +1225,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable qMaskVar = sd.constant("qMask", qMask);
         SDVariable vMaskVar = sd.constant("vMask", vMask);
 
-        SDVariable t = sd.nn.dotProductAttentionV2(sdQ, sdK, sdV,qMaskVar,vMaskVar,1.0,0.0,0,false,true,true);
+        SDVariable t = sd.nn.dotProductAttentionV2(sdQ, sdK, sdV,qMaskVar,vMaskVar,1.0,0.0,0,false,false,true);
         SDVariable loss = t.norm1("out");
         loss.markAsLoss();
         String err = OpValidation.validate(new TestCase(sd)
