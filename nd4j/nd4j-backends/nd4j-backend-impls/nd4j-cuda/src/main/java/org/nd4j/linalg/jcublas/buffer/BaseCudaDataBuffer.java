@@ -112,7 +112,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, this.type,  pointer, specialPointer);
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, this.type.width() * length);
 
-        Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
         if (released)
             throw new IllegalStateException("You can't use DataBuffer once it was released");
     }
@@ -135,7 +135,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         //cuda specific bits
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, length * elementSize);
         allocationPoint.tickHostWrite();
-        Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
 
         // now we're getting context and copying our stuff to device
         val context = AtomicAllocator.getInstance().getDeviceContext();
@@ -408,7 +408,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
 
         // let deallocator pick up this object
-        Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
     }
 
     public BaseCudaDataBuffer(long length, int elementSize, boolean initialize) {
@@ -454,7 +454,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, elementSize * length);
 
         // registering for deallocation
-        Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
 
         workspaceGenerationId = workspace.getGenerationId();
         this.attached = true;
@@ -510,7 +510,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, length);
         val hostPointer = allocationPoint.getHostPointer();
 
-        Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
 
         switch (underlyingBuffer.dataType()) {
             case DOUBLE:
@@ -1290,7 +1290,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         if (ptrDataBuffer == null) {
             ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length(), type, false);
-            Nd4j.getDeallocatorService().pickObject(this);
+            this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
         }
 
         actualizePointerAndIndexer();
@@ -1328,7 +1328,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             this.type = t;
 
-            Nd4j.getDeallocatorService().pickObject(this);
+            this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
 
             switch (type) {
                 case DOUBLE: {

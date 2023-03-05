@@ -72,6 +72,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected DataType type;
     protected long length;
 
+    protected long deallocationId;
     protected long underlyingLength;
     protected long offset;
     protected byte elementSize;
