@@ -109,6 +109,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     // this field holds jvm copy of shapeInfo
     protected transient JvmShapeInfo jvmShapeInfo;
+    protected transient DataBuffer addressShapeInfoPointer;
 
 
     private static final AtomicLong arrayCounter = new AtomicLong(0);
@@ -1022,6 +1023,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     private void setShapeInformation(Pair<DataBuffer, long[]> shapeInfo) {
         this.jvmShapeInfo = new JvmShapeInfo(shapeInfo.getSecond());
+        this.addressShapeInfoPointer = shapeInfo.getFirst();
     }
 
 
@@ -4512,9 +4514,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public DataBuffer shapeInfoDataBuffer() {
         Nd4j.getCompressor().autoDecompress(this);
-        val si = Nd4j.getShapeInfoProvider().createShapeInformation(jvmShapeInfo.shape, jvmShapeInfo.stride,  jvmShapeInfo.ews, jvmShapeInfo.order, ArrayOptionsHelper.dataType(jvmShapeInfo.javaShapeInformation), Shape.isEmpty(jvmShapeInfo.javaShapeInformation));
-        si.getFirst().setConstant(true);
-        return si.getFirst();
+        if(this.addressShapeInfoPointer == null) {
+            val si = Nd4j.getShapeInfoProvider().createShapeInformation(jvmShapeInfo.shape, jvmShapeInfo.stride,  jvmShapeInfo.ews, jvmShapeInfo.order, ArrayOptionsHelper.dataType(jvmShapeInfo.javaShapeInformation), Shape.isEmpty(jvmShapeInfo.javaShapeInformation));
+            si.getFirst().setConstant(true);
+            this.addressShapeInfoPointer = si.getFirst();
+            return si.getFirst();
+        }
+
+        return addressShapeInfoPointer;
     }
 
     @Override

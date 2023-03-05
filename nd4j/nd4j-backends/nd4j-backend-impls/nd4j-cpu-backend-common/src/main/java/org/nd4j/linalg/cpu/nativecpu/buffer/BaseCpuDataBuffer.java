@@ -232,6 +232,8 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             temp = new PagedPointer(temp.address() + offset * getElementSize());
 
         Pointer.memcpy(ptr, temp, length * Nd4j.sizeOfDataType(dtype));
+        temp.deallocate();
+        temp.releaseReference();
     }
 
     @Override
