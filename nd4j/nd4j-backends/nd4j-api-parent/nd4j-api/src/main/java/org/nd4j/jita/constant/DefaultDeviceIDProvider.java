@@ -19,5 +19,12 @@
  */
 package org.nd4j.jita.constant;
 
+/**
+ * Default {@link DeviceIDProvider}
+ * that just returns 0 for the device (meaning the cpu)
+ *
+ * @author Adam Gibson
+ */
 public class DefaultDeviceIDProvider implements DeviceIDProvider {
+    //default implementation: just returns 0
 }

@@ -34,10 +34,14 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ *
+ * Thread safe cache for providing
+ * shape info based on a long shape descriptor.
+ *
  * @author raver119@gmail.com
  */
 @Slf4j
-public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
+public class ProtectedCachedShapeInfoProvider extends BaseShapeInfoProvider {
 
 
     private AtomicLong cacheHit = new AtomicLong(1);
@@ -47,10 +51,10 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
 
     protected static final ConstantProtector protector = ConstantProtector.getInstance();
 
-    private static ProtectedCudaShapeInfoProvider ourInstance = new ProtectedCudaShapeInfoProvider();
+    private static ProtectedCachedShapeInfoProvider ourInstance = new ProtectedCachedShapeInfoProvider();
 
 
-    public ProtectedCudaShapeInfoProvider() {
+    public ProtectedCachedShapeInfoProvider() {
 
     }
 
@@ -62,7 +66,7 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
         protector.purgeProtector();
     }
 
-    public static ProtectedCudaShapeInfoProvider getInstance() {
+    public static ProtectedCachedShapeInfoProvider getInstance() {
         return ourInstance;
     }
 
