@@ -184,17 +184,16 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
   mmul.execute({keys, queries}, {&preSoftmax}, {}, {1}, {});
 
   if (normalization) preSoftmax /= factor;
-
-   if (mask != nullptr) {
-    NDArray reshapedMask;
+  NDArray reshapedMask;
+  if (mask != nullptr) {
     if (preSoftmax.rankOf() == 4) {
       reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), 1, mask->sizeAt(1), 1});
     } else {
       reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(1), 1});
     }
 
-    auto newMask =  reshapedMask  * 1e9;
-    preSoftmax -= newMask;
+    reshapedMask  *= 1e9;
+    preSoftmax -= reshapedMask;
   }
 
   NDArray weights('c', weightShape, values->dataType(), block.launchContext());
@@ -210,7 +209,9 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
   softmax_bp.execute({&preSoftmax, &dLdw}, {&dLds}, {}, {-2}, {});
 
   if (normalization) dLds /= factor;
-
+  if(mask != nullptr) {
+    dLds *= reshapedMask;
+  }
   mmul_bp.execute({keys, queries, &dLds}, std::vector<NDArray *>{dLdk, dLdq}, {}, {1}, {});
 
   return sd::Status::OK;

@@ -274,6 +274,7 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
       preSoftmax /= scale;
     }
 
+    NDArray times;
     if(mask != nullptr) {
       auto maskCast = mask->cast(query->dataType());
       if (preSoftmax.rankOf() == 4) {
@@ -282,7 +283,7 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
         maskCast = maskCast.reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(-1),1});
       }
 
-      auto times = maskCast * 1e9;
+      times = maskCast * 1e9;
       preSoftmax -= times;
     }
     //end masking pre query/key matrix multiply section
@@ -305,8 +306,11 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
     softmax_bp.execute({&preSoftmax, &dLdw}, {&dLds}, {}, {-2}, {});
     //first matrix multiply  backprop end
 
-    /* if(scale != 0.0)
-      dLds /= scale; */
+     if(scale != 0.0 && scale != 1.0)
+      dLds /= scale;
+     if(mask != nullptr) {
+       dLds *= times;
+     }
     //inputs: values, weights, eps
     //output is dldv, dldw
 
