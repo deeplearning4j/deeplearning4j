@@ -38,6 +38,13 @@ CONFIGURABLE_OP_IMPL(matrix_band_part, 1, 1, true, 0, 0) {
     REQUIRE_TRUE(block.numI() == 2, 0, "matrix_band_part: min and max band numbers should be given before.");
     minLower = INT_ARG(0);
     maxUpper = INT_ARG(1);
+    if(minLower < 0) {
+      minLower += input->rankOf();
+    }
+    if(maxUpper < 0) {
+      maxUpper += input->rankOf();
+    }
+
   } else {
     REQUIRE_TRUE(block.width() == 3, 0,
                  "matrix_band_part: min and max band numbers should be given as scalars before.");
@@ -48,6 +55,13 @@ CONFIGURABLE_OP_IMPL(matrix_band_part, 1, 1, true, 0, 0) {
                  maxUpperT->rankOf());
     minLower = minLowerT->e<sd::LongType>(0);
     maxUpper = maxUpperT->e<sd::LongType>(0);
+    if(minLower < 0) {
+      minLower += input->rankOf();
+    }
+    if(maxUpper < 0) {
+      maxUpper += input->rankOf();
+    }
+
   }
   REQUIRE_TRUE(input->rankOf() >= 2, 0, "matrix_band_part: Input rank should be 2 or greater.");
   sd::LongType N = input->sizeAt(-2);

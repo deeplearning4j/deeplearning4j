@@ -199,7 +199,6 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
   NDArray weights('c', weightShape, values->dataType(), block.launchContext());
   sd::ops::softmax softmax;
   softmax.execute({&preSoftmax}, {&weights}, {}, {-2}, {});
-  weights.printIndexedBuffer("Weights post softmax");
   sd::ops::matmul_bp mmul_bp;
   NDArray dLdw(weights.shapeInfo(), block.workspace());
   mmul_bp.execute({values, &weights, eps}, std::vector<NDArray *>{dLdv, &dLdw}, {}, {}, {});

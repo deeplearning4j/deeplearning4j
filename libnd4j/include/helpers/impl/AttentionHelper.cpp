@@ -79,15 +79,32 @@ sd::NDArray* AttentionHelper::lowerTriangularMask(std::vector<sd::LongType> *sha
  * @param value
  * @return
  */
-sd::NDArray AttentionHelper::computeCasualMask(sd::NDArray *query,sd::NDArray *value) {
-  auto qSeqLength = query->sizeAt(1);
-  auto vSeqLength = value != nullptr ? value->sizeAt(1) : qSeqLength;
-  sd::ops::matrix_band_part matrixBandPart;
-  auto ones = NDArrayFactory::create('c',{1,qSeqLength,vSeqLength},sd::DataType::INT32);
-  ones.assign(1);
-  auto lower = matrixBandPart.evaluate({&ones},{},{-1,0});
-  auto ret = lower.at(0)->cast(sd::DataType::BOOL);
-  return ret;
+NDArray *AttentionHelper::computeCasualMask(sd::NDArray *query, sd::NDArray *value, bool multiHead) {
+  if(multiHead) {
+    auto qSeqLength = query->sizeAt(1);
+    auto vSeqLength = value != nullptr ? value->sizeAt(1) : qSeqLength;
+    sd::ops::matrix_band_part matrixBandPart;
+    auto ones = NDArrayFactory::create('c',{1,qSeqLength,vSeqLength},sd::DataType::INT32);
+    ones.assign(1);
+    auto lower = matrixBandPart.evaluate({&ones},{},{-1,0});
+    auto ret = new NDArray(lower.at(0)->cast(sd::DataType::BOOL));
+    return ret;
+
+  } else {
+    std::vector<sd::LongType> causalMaskShape2;
+    causalMaskShape2.push_back(query->sizeAt(0));
+    //4d
+    if(query->rankOf() > 3)
+      causalMaskShape2.push_back(query->sizeAt(1));
+
+    causalMaskShape2.push_back(query->sizeAt(-2));
+    causalMaskShape2.push_back(value->sizeAt(-2));
+
+    auto ret  = lowerTriangularMask(&causalMaskShape2);
+    return ret;
+
+  }
+
 }
 
 
@@ -133,11 +150,11 @@ NDArray *AttentionHelper::computeAttentionMask(sd::NDArray *query, sd::NDArray *
 
 
   if(useCausalMask) {
-    auto mask = computeCasualMask(query,value);
+    auto mask = computeCasualMask(query, value, false);
     if(autoMask == nullptr) {
       autoMask = new NDArray(mask);
     } else {
-      autoMask = new NDArray(booleanAnd.evaluate({autoMask,&mask}).at(0));
+      autoMask = new NDArray(booleanAnd.evaluate({autoMask,mask}).at(0));
     }
   }
 
@@ -223,20 +240,11 @@ void AttentionHelper::applyAttentionScores(sd::NDArray *scores,
    * @param scale
    * @return
  */
-void AttentionHelper::attentionBpHelper(sd::NDArray *query,
-                                        sd::NDArray *key,
-                                        sd::NDArray *values,
-                                        double scale,
-                                        sd::NDArray *concatWeights,
-                                        int scoreMode,
-                                        sd::NDArray *dLdq,
-                                        sd::NDArray *dLdk,
-                                        sd::NDArray *dLdv,
-                                        sd::NDArray *eps,
-                                        LaunchContext *launchContext,
-                                        sd::NDArray *qMask,
-                                        sd::NDArray *vMask,
-                                        bool useCausalMask) {
+void AttentionHelper::attentionBpHelper(sd::NDArray *query, sd::NDArray *key, sd::NDArray *values, double scale,
+                                        sd::NDArray *concatWeights, int scoreMode, sd::NDArray *dLdq, sd::NDArray *dLdk,
+                                        sd::NDArray *dLdv, sd::NDArray *eps, LongType dropoutSeed,
+                                        sd::NDArray *qMask, sd::NDArray *vMask, bool useCausalMask, double dropout,
+                                        bool training) {
 
   sd::ops::matmul matMul;
   sd::ops::matmul_bp matMulBp;
@@ -254,6 +262,7 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
         key->shapeInfo(),
         false,
         true);
+
 
     const sd::LongType *weightShapeInfoInput = ConstantShapeHelper::getInstance().createShapeInfo(
         query->dataType(),
@@ -293,6 +302,14 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
     softmax.execute({&preSoftmax}, {&weights},{}, {-2}, {});
 
 
+    if(dropout > 0.0 && training) {
+      sd_printf("Before drop out\n",0);
+      sd::ops::dropout dropoutOp;
+      dropoutOp.execute({&weights},{&weights},{dropout},{dropoutSeed},{});
+      sd_printf("After drop out\n",0);
+    }
+
+
 
     auto weightInput = weights;
     //begin dldw
@@ -305,12 +322,17 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
     sd::ops::softmax_bp softmax_bp;
     softmax_bp.execute({&preSoftmax, &dLdw}, {&dLds}, {}, {-2}, {});
     //first matrix multiply  backprop end
+    if(dropout > 0.0 && training) {
+      sd::ops::dropout_bp dropoutOp;
+      dropoutOp.execute({&weights,&dLdw},{&dLdw},{dropout},{dropoutSeed},{});
+    }
 
-     if(scale != 0.0 && scale != 1.0)
+    if(scale != 0.0 && scale != 1.0)
       dLds /= scale;
-     if(mask != nullptr) {
-       dLds *= times;
-     }
+
+    if(mask != nullptr) {
+      dLds *= times;
+    }
     //inputs: values, weights, eps
     //output is dldv, dldw
 
@@ -319,6 +341,15 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
     //outputs: dldk, dldq
     matMulBp.execute({key,query,&dLds},{dLdk,dLdq},{},{0,1,1});
     dLdk->transposei();
+
+    if(vMask != nullptr) {
+      *dLdv *= *vMask;
+    }
+
+    if(qMask != nullptr) {
+      *dLdq *= *qMask;
+    }
+
 
   } else if(scoreMode == ATTENTION_SCORE_MODE_CONCAT) {
     REQUIRE_TRUE(concatWeights != nullptr,0,"Concat weights required when using attention score mode concat!");
@@ -341,7 +372,7 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query,
 
     tanh1.execute({epsExpanded},{epsExpanded});
 
-    NDArray dLdw(weights.shapeInfo(), false,launchContext);
+    NDArray dLdw(weights.shapeInfo(), false, sd::LaunchContext::defaultContext());
     addBp.execute({values,&weights,epsExpanded},std::vector<NDArray *>{dLdv,&dLdw},{},{},{});
     addBp.execute({key,query, &dLdw},std::vector<NDArray *>{dLdk, dLdq}, {}, {}, {});
 
@@ -421,65 +452,27 @@ void AttentionHelper::doAdditiveAttention(sd::NDArray *query, sd::NDArray *key, 
 
 
 /**
- * def call(
-self,
-inputs,
-mask=None,
-training=None,
-return_attention_scores=False,
-use_causal_mask=False,
-):
-self._validate_call_args(inputs=inputs, mask=mask)
-q = inputs[0]
-v = inputs[1]
-k = inputs[2] if len(inputs) > 2 else v
-q_mask = mask[0] if mask else None
-v_mask = mask[1] if mask else None
-scores = self._calculate_scores(query=q, key=k)
-if v_mask is not None:
-  # Mask of shape [batch_size, 1, Tv].
-  v_mask = tf.expand_dims(v_mask, axis=-2)
-if self.causal or use_causal_mask:
-  # Creates a lower triangular mask, so position i cannot attend to
-  # positions j>i. This prevents the flow of information from the
-  # future into the past.
-  scores_shape = tf.shape(scores)
-  # causal_mask_shape = [1, Tq, Tv].
-  causal_mask_shape = tf.concat(
-      [tf.ones_like(scores_shape[:-2]), scores_shape[-2:]], axis=0
-  )
-  causal_mask = _lower_triangular_mask(causal_mask_shape)
-else:
-  causal_mask = None
-scores_mask = _merge_masks(v_mask, causal_mask)
-result, attention_scores = self._apply_scores(
-  scores=scores, value=v, scores_mask=scores_mask, training=training
-)
-if q_mask is not None:
-  # Mask of shape [batch_size, Tq, 1].
-  q_mask = tf.expand_dims(q_mask, axis=-1)
-  result *= tf.cast(q_mask, dtype=result.dtype)
-if return_attention_scores:
-  return result, attention_scores
-return result
  * @param inputs
  * @param mask
  * @param training
  * @param returnAttentionScores
  * @param useCausalMask
  */
-void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs, std::vector<sd::NDArray *> &masks, bool training,
-                                    bool returnAttentionScores, bool useCausalMask, double dropout, int attentionType,
-                                    double scale, std::vector<NDArray *> outputs, LaunchContext *context) {
+void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs,
+                                    std::vector<sd::NDArray *> &masks,
+                                    bool training,
+                                    bool returnAttentionScores,
+                                    bool useCausalMask,
+                                    double dropout,
+                                    int attentionType,
+                                    double scale,
+                                    std::vector<NDArray *> outputs, LongType dropoutSeed) {
+  sd_printf("In method\n",0);
   auto q = inputs[0];
   auto v = inputs[1];
   auto k = inputs[2];
   auto eps = inputs.size() > 3 ? inputs[3] : inputs[2];
 
-
-  int batchSize = q->sizeAt(0);
-  int tq = q->sizeAt(1);
-  int tv = v->sizeAt(1);
   auto concatWeights = inputs.size() > 4 ? inputs[4] : nullptr;
 
   sd::ops::expand_dims expandDims;
@@ -492,105 +485,32 @@ void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs, std::vector<
   auto vmaskInternal = vMask;
   auto qMaskInternal = qMask;
 
-
-  NDArray *casualPointer = nullptr;
-
-  NDArray *attentionScoresOut = nullptr;
-  NDArray *scores = nullptr;
   auto dLdq = outputs[0];
   auto dLdk = outputs[1];
   auto dLdv = outputs[2];
-
-  attentionBpHelper(q, k, v, scale, concatWeights, attentionType, dLdq, dLdk, dLdv, eps, context, qMaskInternal,
-                    vmaskInternal, useCausalMask);
-
-  scores = attentionScoresOut;
-
-  if(vmaskInternal != nullptr && !vmaskInternal->isEmpty()) {
-    vmaskInternal = expandDims.evaluate({vMask},{},{-2}).at(0);
-  }
-
-  if(useCausalMask) {
-    auto scoresShape = shapeOf.evaluate({scores}).at(0);
-    /*
-     * # causal_mask_shape = [1, Tq, Tv].
- causal_mask_shape = tf.concat(
-     [tf.ones_like(scores_shape[:-2]), scores_shape[-2:]], axis=0
- )
- causal_mask = _lower_triangular_mask(causal_mask_shape)
-     */
-    auto interval = NDIndexUtils::createInterval(0,-2);
-    auto intervalBegin = NDIndexUtils::createInterval(-2,-1);
-    auto scoresBegin = createView.evaluate({scoresShape,&intervalBegin}).at(0);
-    auto scoresEnd = createView.evaluate({scoresShape,&interval});
-    auto onesLike = onesAs.evaluate({scoresEnd.at(0)}).at(0);
-    auto causalMaskShape = concatOp.evaluate({onesLike,scoresEnd.at(0)});
-    auto lowerTriangleMaskInput = causalMaskShape.at(0)->asT(sd::DataType::INT64);
-    std::vector<sd::LongType> *lowerTriangleMaskShape = new std::vector<sd::LongType>(lowerTriangleMaskInput.lengthOf());
-    for(int i = 0; i < lowerTriangleMaskInput.lengthOf(); i++) {
-      lowerTriangleMaskShape->push_back(lowerTriangleMaskInput.bufferAsT<sd::LongType>()[i]);
-    }
-    casualPointer = lowerTriangularMask(lowerTriangleMaskShape);
-    delete lowerTriangleMaskShape;
-    auto scoresMask = mergeMasks(vMask,casualPointer);
-
-    sd::NDArray attentionScores(scores->dataType(),{batchSize,tq,tv});
-    //inputs: scores:  batch size tq tv value:batch size, tv,dim scoresmask: batch size 1 tv or batch size tq tv
-    applyAttentionScores(scores, v, scoresMask, dropout, 0, nullptr);
-
-    if(qMask != nullptr && !qMask->isEmpty()) {
-      qMaskInternal = expandDims.evaluate({qMaskInternal},{},{-1}).at(0);
-      auto casted = qMaskInternal->cast(attentionScores.dataType());
-      *scores *= casted;
-    }
-
-  }
+  sd_printf("Before helper \n",0);
+  attentionBpHelper(q,
+                    k,
+                    v,
+                    scale,
+                    concatWeights,
+                    attentionType,
+                    dLdq,
+                    dLdk,
+                    dLdv,
+                    eps,
+                    dropoutSeed,
+                    qMaskInternal,
+                    vmaskInternal,
+                    useCausalMask,
+                    dropout,
+                    training);
+  sd_printf("After helper \n",0);
 
 }
 
 
 /**
- * def call(
-self,
-inputs,
-mask=None,
-training=None,
-return_attention_scores=False,
-use_causal_mask=False,
-):
-self._validate_call_args(inputs=inputs, mask=mask)
-q = inputs[0]
-v = inputs[1]
-k = inputs[2] if len(inputs) > 2 else v
-q_mask = mask[0] if mask else None
-v_mask = mask[1] if mask else None
-scores = self._calculate_scores(query=q, key=k)
-if v_mask is not None:
-  # Mask of shape [batch_size, 1, Tv].
-  v_mask = tf.expand_dims(v_mask, axis=-2)
-if self.causal or use_causal_mask:
-  # Creates a lower triangular mask, so position i cannot attend to
-  # positions j>i. This prevents the flow of information from the
-  # future into the past.
-  scores_shape = tf.shape(scores)
-  # causal_mask_shape = [1, Tq, Tv].
-  causal_mask_shape = tf.concat(
-      [tf.ones_like(scores_shape[:-2]), scores_shape[-2:]], axis=0
-  )
-  causal_mask = _lower_triangular_mask(causal_mask_shape)
-else:
-  causal_mask = None
-scores_mask = _merge_masks(v_mask, causal_mask)
-result, attention_scores = self._apply_scores(
-  scores=scores, value=v, scores_mask=scores_mask, training=training
-)
-if q_mask is not None:
-  # Mask of shape [batch_size, Tq, 1].
-  q_mask = tf.expand_dims(q_mask, axis=-1)
-  result *= tf.cast(q_mask, dtype=result.dtype)
-if return_attention_scores:
-  return result, attention_scores
-return result
  * @param inputs
  * @param mask
  * @param training
@@ -637,27 +557,16 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<sd
   }
 
   if(useCausalMask) {
-    auto scoresShape = shapeOf.evaluate({attentionScores}).at(0);
-    /*
-     * # causal_mask_shape = [1, Tq, Tv].
- causal_mask_shape = tf.concat(
-     [tf.ones_like(scores_shape[:-2]), scores_shape[-2:]], axis=0
- )
- causal_mask = _lower_triangular_mask(causal_mask_shape)
-     */
-    auto interval = NDIndexUtils::createInterval(0,-2);
-    auto intervalBegin = NDIndexUtils::createInterval(-2,-1);
-    auto scoresBegin = createView.evaluate({scoresShape,&intervalBegin}).at(0);
-    auto scoresEnd = createView.evaluate({scoresShape,&interval});
-    auto onesLike = onesAs.evaluate({scoresEnd.at(0)}).at(0);
-    auto causalMaskShape = concatOp.evaluate({onesLike,scoresEnd.at(0)});
-    auto lowerTriangleMaskInput = causalMaskShape.at(0)->asT(sd::DataType::INT64);
-    std::vector<sd::LongType> *lowerTriangleMaskShape = new std::vector<sd::LongType>(lowerTriangleMaskInput.lengthOf());
-    for(int i = 0; i < lowerTriangleMaskInput.lengthOf(); i++) {
-      lowerTriangleMaskShape->push_back(lowerTriangleMaskInput.bufferAsT<sd::LongType>()[i]);
+    std::vector<sd::LongType> causalMaskShape2;
+    causalMaskShape2.push_back(attentionScores->sizeAt(0));
+    //4d
+    if(attentionScores->rankOf() > 3)
+      causalMaskShape2.push_back(attentionScores->sizeAt(1));
+
+    for(int i = attentionScores->rankOf() - 2; i < attentionScores->rankOf(); i++) {
+      causalMaskShape2.push_back(attentionScores->sizeAt(i));
     }
-    casualPointer = lowerTriangularMask(lowerTriangleMaskShape);
-    //delete lowerTriangleMaskShape;
+    casualPointer = lowerTriangularMask(&causalMaskShape2);
   }
 
   auto scoresMask = mergeMasks(vmaskInternal,casualPointer);

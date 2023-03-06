@@ -90,7 +90,6 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
                                scale, attentionScores, block.randomSeed(), applyScoresOut);
 
 
-  sd_printf("Done with attention\n",0);
   return sd::Status::OK;
 }
 
@@ -180,9 +179,11 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
   int attentionType = block.numI() > 0 ? I_ARG(0) : ATTENTION_TYPE_DOT_PRODUCT;
 
 
+
   std::vector<sd::NDArray*> inputs = {queries,values,keys,eps};
   std::vector<sd::NDArray *> masks2 = {qMask,vMask};
   std::vector<sd::NDArray *> outputs = {dLdq,dLdv,dLdk};
+  int seed = block.getRNG() == nullptr ? 0 : 0;
   AttentionHelper::doAttentionBp(inputs,
                                  masks2,
                                  training,
@@ -191,7 +192,8 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
                                  dropout,
                                  attentionType,
                                  scale,
-                                 outputs);
+                                 outputs,
+                                 seed);
 
 
   return sd::Status::OK;

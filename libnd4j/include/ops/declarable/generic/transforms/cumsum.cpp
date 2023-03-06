@@ -43,14 +43,16 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, -2) {
     return sd::Status::OK;
   }
 
-  if (block.getIArguments()->size() == 2 && block.width() == 1) {
+
+
+  if (block.getIArguments()->size() <= 2 && block.width() == 1) {
     // all at once case
     sd::ops::helpers::prefix(block.launchContext(), scalar::Add, input, output, exclusive, reverse);
   } else {
-    std::vector<int> dims(block.numI() - 2);
-
+    std::vector<int> dims;
     if (block.width() == 1) {
-      for (int e = 0; e < block.numI() - 2; e++) dims[e] = INT_ARG(e + 2);
+      for (int e = 0; e < block.numI() - 2; e++) dims.push_back(INT_ARG(e + 2));
+
     } else {
       auto ax = INPUT_VARIABLE(1);
       dims = ax->template asVectorT<int>();
@@ -78,19 +80,18 @@ CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, -2) {
   auto gradOut = block.width() == 3 ? INPUT_VARIABLE(2) : INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);
   //    output->assign(gradOut);
-  const bool exclusive = INT_ARG(0) == 1;
-  const bool reverse = INT_ARG(1) == 1;
+  const bool exclusive = block.width() > 0 ? INT_ARG(0) == 1 : false;
+  const bool reverse = block.width() > 1 ?  INT_ARG(1) == 1 : false;
 
   std::vector<int> dims;
 
   if (block.width() > 2) {
     dims = axis->template asVectorT<int>();
     OUTPUT_VARIABLE(1)->assign(1.0f);
-  } else if (int newSize = (block.numI() - 2)) {
-    dims.resize(newSize);
-
-    for (int e = 0; e < newSize; e++) dims[e] = INT_ARG(e + 2);
+  } else if (block.numI() > 2) {
+    for (int e = 0; e < block.numI() - 2; e++) dims[e] = INT_ARG(e + 2);
   }
+
   if (!exclusive && !reverse) {
     if (dims.size())
       sd::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, dims, false, true);

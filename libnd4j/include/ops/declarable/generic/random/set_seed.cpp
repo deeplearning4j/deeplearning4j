@@ -29,7 +29,6 @@
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(set_seed, -2, 1, false, 0, -2) {
-  //            REQUIRE_TRUE(block.getRNG() != nullptr, 0, "RNG should be defined in Graph");
   auto rng = block.getRng();  //.getRNG();
 
   sd::LongType seed = 0;
