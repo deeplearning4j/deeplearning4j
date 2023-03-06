@@ -29,12 +29,12 @@
 namespace sd {
 namespace ops {
 
-CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
+CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  const bool exclusive = INT_ARG(0) == 1;
-  const bool reverse = INT_ARG(1) == 1;
+  const bool exclusive = block.width() > 0 ? INT_ARG(0) == 1 : false;
+  const bool reverse = block.width() > 1 ? INT_ARG(1) == 1 : false;
 
   REQUIRE_TRUE(input->dataType() == output->dataType(), 0, "CumSum: input and output data types must be equal");
 
@@ -72,7 +72,7 @@ DECLARE_TYPES(cumsum) {
       ->setSameMode(false);
 }
 
-CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
+CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto axis = block.width() == 3 ? INPUT_VARIABLE(1) : nullptr;
   auto gradOut = block.width() == 3 ? INPUT_VARIABLE(2) : INPUT_VARIABLE(1);

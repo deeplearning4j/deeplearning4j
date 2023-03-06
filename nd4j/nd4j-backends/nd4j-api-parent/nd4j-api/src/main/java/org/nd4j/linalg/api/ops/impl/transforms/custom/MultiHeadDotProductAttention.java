@@ -84,7 +84,7 @@ public class MultiHeadDotProductAttention extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 7 || dataTypes.size() == 8), "Expected 7 or 8 input datatypes, got %s", dataTypes);
         DataType first = dataTypes.get(0);
         for( int i=0; i<dataTypes.size(); i++ ) {
@@ -112,9 +112,9 @@ public class MultiHeadDotProductAttention extends DynamicCustomOp {
 
     @Override
     public int getNumOutputs() {
-        if(withWeights){
+        if(withWeights) {
             return 2;
-        }else{
+        } else {
             return 1;
         }
     }
