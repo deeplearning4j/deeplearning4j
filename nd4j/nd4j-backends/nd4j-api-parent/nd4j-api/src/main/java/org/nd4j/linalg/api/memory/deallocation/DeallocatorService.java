@@ -31,10 +31,7 @@ import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.lang.ref.ReferenceQueue;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -83,7 +80,7 @@ public class DeallocatorService {
     //for the amount of memory overhead it has. String compression
     //with a large number of objects is more important over throughput.
     @Getter
-    private Map<Long,DeallocatableReference> referenceMap = new ConcurrentSkipListMap<>();
+    private Map<Deallocatable,DeallocatableReference> referenceMap = Collections.synchronizedMap(new WeakHashMap<>());
 
     private static AtomicBoolean blockDeallocator = new AtomicBoolean(false);
 
@@ -148,7 +145,7 @@ public class DeallocatorService {
             val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, map.size())));
             if(referenceMap.containsKey(deallocatable.getUniqueId()))
                 throw new IllegalArgumentException("Duplicate deallocatable key found!");
-            referenceMap.put(deallocatable.getUniqueId(), reference);
+            referenceMap.put(deallocatable, reference);
             return deallocatable.getUniqueId();
         }
 

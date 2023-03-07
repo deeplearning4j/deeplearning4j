@@ -874,8 +874,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     @Override
     protected void release() {
         ptrDataBuffer.closeBuffer();
-        Nd4j.getDeallocatorService().getReferenceMap().remove(getUniqueId());
-        deallocator().deallocate();
         super.release();
     }
 
