@@ -64,6 +64,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     public void close() {
         // no-op
         Nd4j.getDeallocatorService().getReferenceMap().remove(deallocationId);
+        deallocator().deallocate();
     }
 
     @Override

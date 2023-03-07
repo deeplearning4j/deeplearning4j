@@ -84,7 +84,6 @@ public class DeallocatorService {
     //with a large number of objects is more important over throughput.
     @Getter
     private Map<Long,DeallocatableReference> referenceMap = new ConcurrentSkipListMap<>();
-    private static Set<Long> deallocatedIds = new ConcurrentSkipListSet<>();
 
     private static AtomicBoolean blockDeallocator = new AtomicBoolean(false);
 
@@ -147,6 +146,8 @@ public class DeallocatorService {
             val desiredDevice = deallocatable.targetDevice();
             val map = deviceMap.get(desiredDevice);
             val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, map.size())));
+            if(referenceMap.containsKey(deallocatable.getUniqueId()))
+                throw new IllegalArgumentException("Duplicate deallocatable key found!");
             referenceMap.put(deallocatable.getUniqueId(), reference);
             return deallocatable.getUniqueId();
         }
@@ -204,13 +205,10 @@ public class DeallocatorService {
                         if( (reference.get() != null && !reference.get().shouldDeAllocate()) || reference.getDeallocator().isConstant())
                             continue;
 
-                        if(deallocatedIds.contains(reference.getId()))
-                            throw new IllegalArgumentException("Deallocating already deallocated reference.");
 
                         // invoking deallocator
                         reference.deallocate();
                         referenceMap.remove(reference.getId());
-                        deallocatedIds.add(reference.getId());
                     } catch (InterruptedException e) {
                         canRun = false;
                     } catch (Exception e) {
