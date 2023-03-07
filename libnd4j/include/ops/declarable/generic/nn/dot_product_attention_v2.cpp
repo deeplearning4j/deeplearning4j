@@ -183,7 +183,8 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
   std::vector<sd::NDArray*> inputs = {queries,values,keys,eps};
   std::vector<sd::NDArray *> masks2 = {qMask,vMask};
   std::vector<sd::NDArray *> outputs = {dLdq,dLdv,dLdk};
-  int seed = block.getRNG() == nullptr ? 0 : 0;
+
+  int seed = block.randomSeed();
   AttentionHelper::doAttentionBp(inputs,
                                  masks2,
                                  training,

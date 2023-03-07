@@ -91,7 +91,7 @@ class SD_LIB_EXPORT AttentionHelper {
    * @param scale
    * @return
    */
-  static void doDotProductAttention(sd::NDArray *query, sd::NDArray *key, int scoreMode, double scale,
+  static void attentionHelper(sd::NDArray *query, sd::NDArray *key, int scoreMode, double scale,
                                      sd::NDArray *concatWeights, sd::NDArray *attentionScoresOut);
 
   /**

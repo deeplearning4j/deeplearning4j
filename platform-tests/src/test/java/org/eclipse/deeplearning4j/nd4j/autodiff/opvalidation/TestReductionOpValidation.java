@@ -1219,6 +1219,30 @@ public class TestReductionOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDotProductAttentionV2Additive(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        final INDArray keys = Nd4j.rand(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
+        final INDArray values = Nd4j.rand(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
+        final INDArray query = Nd4j.rand(new int[]{10, 1,4}).castTo(DataType.DOUBLE);
+
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdQ = sd.var("q", query);
+        SDVariable sdK = sd.var("k", keys);
+        SDVariable sdV = sd.var("v", values);
+
+        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,null,null,1.0,0.0,1,false,false,true);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+        assertNull(err);
+    }
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDotProductAttentionWithMask(Nd4jBackend backend) {
