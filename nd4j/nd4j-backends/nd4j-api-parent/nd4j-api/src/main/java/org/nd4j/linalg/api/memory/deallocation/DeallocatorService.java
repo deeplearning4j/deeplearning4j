@@ -35,6 +35,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -83,8 +85,9 @@ public class DeallocatorService {
     //for the amount of memory overhead it has. String compression
     //with a large number of objects is more important over throughput.
     @Getter
-    private Map<Long,DeallocatableReference> referenceMap = new ConcurrentSkipListMap<>();
-    private static Set<Long> deallocatedIds = new ConcurrentSkipListSet<>();
+
+    private Map<Deallocatable,DeallocatableReference> referenceMap = Collections.synchronizedMap(new WeakHashMap<>());
+
 
     private static AtomicBoolean blockDeallocator = new AtomicBoolean(false);
 
@@ -95,7 +98,9 @@ public class DeallocatorService {
     public DeallocatorService() {
         // we need to have at least 2 threads, but for CUDA we'd need at least numDevices threads, due to thread->device affinity
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
-        int numThreads = 1;
+
+        int numThreads =  4;
+
 
         for (int e = 0; e < numDevices; e++)
             deviceMap.add(new ArrayList<>());
@@ -140,16 +145,20 @@ public class DeallocatorService {
      *
      * @param deallocatable object to track
      */
-    public void pickObject(@NonNull Deallocatable deallocatable) {
+    public long pickObject(@NonNull Deallocatable deallocatable) {
         if(noPointerGc) {
             log.trace("Deallocation turned off. Reference " + deallocatable.getUniqueId() + " will need to be de allocated manually.");
         } else {
             val desiredDevice = deallocatable.targetDevice();
             val map = deviceMap.get(desiredDevice);
             val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, map.size())));
-            referenceMap.put(deallocatable.getUniqueId(), reference);
-
+            if(referenceMap.containsKey(deallocatable.getUniqueId()))
+                throw new IllegalArgumentException("Duplicate deallocatable key found!");
+            referenceMap.put(deallocatable, reference);
+            return deallocatable.getUniqueId();
         }
+
+        return -1;
     }
 
 
@@ -172,7 +181,6 @@ public class DeallocatorService {
         public void run() {
             Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
             boolean canRun = true;
-            long cnt = 0;
             while (canRun) {
 
                 // if periodicGc is enabled, only first thread will call for it
@@ -183,7 +191,7 @@ public class DeallocatorService {
                     if (reference == null || (reference != null && reference.get() != null &&  !reference.get().shouldDeAllocate()) || !reference.getDeallocator().isConstant()) {
                         val timeout = Nd4j.getMemoryManager().getAutoGcWindow();
                         try {
-                            Thread.sleep(Nd4j.getMemoryManager().getAutoGcWindow());
+                            Thread.sleep(timeout);
                             Nd4j.getMemoryManager().invokeGc();
                         } catch (InterruptedException e) {
                             canRun = false;

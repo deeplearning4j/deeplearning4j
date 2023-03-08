@@ -1611,7 +1611,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType(array.dataType()), MemcpyDirection.HOST_TO_HOST);
 
-            //newMap.put(keySet.get(nodeId), array);
             String nodeName = loop.getVariableName(var);
             newMap.put(nodeName, array);
         }
@@ -1807,19 +1806,26 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         Shape.setElementWiseStride(merged,(int) elementWiseStride);
         LongPointer longPointer = new LongPointer(merged);
-        loop.setShapeBuffer(new LongPointer(longPointer),dtype.toInt(),new LongPointer(ret.pointer()),order,(int) elementWiseStride,empty);
-
+        loop.setShapeBuffer(longPointer,dtype.toInt(),new LongPointer(ret.pointer()),order,(int) elementWiseStride,empty);
+        longPointer.deallocate();
+        longPointer.releaseReference();
         return ret;
     }
 
     @Override
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, long extras) {
-        OpaqueConstantShapeBuffer dbf = loop.shapeBufferEx(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, extras);
+        LongPointer shapePointer = new LongPointer(shape);
+        LongPointer stridePointer = new LongPointer(stride);
+        OpaqueConstantShapeBuffer dbf = loop.shapeBufferEx(shape.length, shapePointer, stridePointer, dtype.toInt(), order, elementWiseStride, extras);
         if (loop.lastErrorCode() != 0)
             throw new RuntimeException(loop.lastErrorMessage());
 
         val result = new LongBuffer(loop.getConstantShapeBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
 
+        shapePointer.deallocate();
+        stridePointer.deallocate();
+        shapePointer.releaseReference();
+        stridePointer.releaseReference();
         loop.deleteConstantShapeBuffer(dbf);
 
         return result;
@@ -1846,7 +1852,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if(inNames != null){
             sb.append(". Input var names: ").append(Arrays.toString(inNames));
         }
-        if(outNames != null){
+        if(outNames != null) {
             sb.append(". Output var names: ").append(Arrays.toString(outNames));
         }
     }

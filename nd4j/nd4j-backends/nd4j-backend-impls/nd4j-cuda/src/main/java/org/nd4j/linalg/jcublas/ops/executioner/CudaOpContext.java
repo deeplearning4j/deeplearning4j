@@ -52,9 +52,9 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     private OpaqueContext context = nativeOps.createGraphContext(1);
     private final transient long id = Nd4j.getDeallocatorService().nextValue();
     public final static long BASE_CUDA_OP_CONTEXT_OFFSET = RandomUtils.nextLong();
-
+   private long deallocationId;
     public CudaOpContext() {
-        Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
         if(OpContextTracker.getInstance().isEnabled()) {
             OpContextTracker.getInstance().allocateOpContext(this);
         }
@@ -62,7 +62,6 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public void close() {
-        // no-op
     }
 
     @Override

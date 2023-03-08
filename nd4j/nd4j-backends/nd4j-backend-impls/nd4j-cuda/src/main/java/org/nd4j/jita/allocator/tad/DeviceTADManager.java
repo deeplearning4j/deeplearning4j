@@ -47,7 +47,7 @@ public class DeviceTADManager extends BasicTADManager {
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
 
         for (int i = 0; i < numDevices; i++) {
-            tadCache.add(i, new ConcurrentHashMap<TadDescriptor, Pair<DataBuffer, DataBuffer>>());
+            tadCache.add(i, new ConcurrentHashMap<>());
         }
     }
 
@@ -81,7 +81,6 @@ public class DeviceTADManager extends BasicTADManager {
 
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
 
-        //log.info("Requested TAD for device [{}], dimensions: [{}]", deviceId, Arrays.toString(dimension));
 
         //extract the dimensions and shape buffer for comparison
         TadDescriptor descriptor = new TadDescriptor(array, dimension);

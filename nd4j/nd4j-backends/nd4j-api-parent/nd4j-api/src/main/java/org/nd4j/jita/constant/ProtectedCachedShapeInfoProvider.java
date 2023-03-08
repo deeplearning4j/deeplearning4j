@@ -26,20 +26,23 @@ import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.common.primitives.Pair;
-import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ *
+ * Thread safe cache for providing
+ * shape info based on a long shape descriptor.
+ *
  * @author raver119@gmail.com
  */
 @Slf4j
-public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
+public class ProtectedCachedShapeInfoProvider extends BaseShapeInfoProvider {
 
-    private AtomicAllocator allocator;
 
     private AtomicLong cacheHit = new AtomicLong(1);
     private AtomicLong cacheMiss = new AtomicLong(1);
@@ -48,10 +51,10 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
 
     protected static final ConstantProtector protector = ConstantProtector.getInstance();
 
-    private static ProtectedCudaShapeInfoProvider ourInstance = new ProtectedCudaShapeInfoProvider();
+    private static ProtectedCachedShapeInfoProvider ourInstance = new ProtectedCachedShapeInfoProvider();
 
 
-    private ProtectedCudaShapeInfoProvider() {
+    public ProtectedCachedShapeInfoProvider() {
 
     }
 
@@ -63,7 +66,7 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
         protector.purgeProtector();
     }
 
-    public static ProtectedCudaShapeInfoProvider getInstance() {
+    public static ProtectedCachedShapeInfoProvider getInstance() {
         return ourInstance;
     }
 
@@ -84,7 +87,7 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
         if (elementWiseStride < 0)
             elementWiseStride = 0;
 
-        Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
+        Integer deviceId = Nd4j.getDeviceIdProvider().getDeviceId();
 
         LongShapeDescriptor descriptor = new LongShapeDescriptor(shape, stride, offset, elementWiseStride, order, extras);
 

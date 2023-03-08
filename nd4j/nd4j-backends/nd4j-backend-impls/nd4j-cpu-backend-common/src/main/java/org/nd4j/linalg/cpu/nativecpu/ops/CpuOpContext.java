@@ -52,9 +52,9 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     private transient BooleanPointer bArgs;
     private transient IntPointer dArgs;
     private transient LongPointer iArgs;
-
+    private transient  long deallocationId;
     public CpuOpContext() {
-        Nd4j.getDeallocatorService().pickObject(this);
+        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
         if(OpContextTracker.getInstance().isEnabled()) {
             OpContextTracker.getInstance().allocateOpContext(this);
         }

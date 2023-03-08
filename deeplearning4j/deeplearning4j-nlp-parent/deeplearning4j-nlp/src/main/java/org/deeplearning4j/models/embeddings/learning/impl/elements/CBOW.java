@@ -293,6 +293,10 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
 
                 Nd4j.getExecutioner().exec(cbow);
+
+
+                Nd4j.close(currentWindowIndexes,inputWindowWords,alphas,randoms,codes,numLabelsArray,indices);
+
                 batches.get().clear();
                 return 0.0;
             } else {
