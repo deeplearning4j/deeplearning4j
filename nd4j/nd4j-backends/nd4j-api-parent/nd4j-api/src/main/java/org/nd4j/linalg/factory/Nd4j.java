@@ -21,7 +21,6 @@
 package org.nd4j.linalg.factory;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.jita.constant.DeviceIDProvider;
 import org.nd4j.linalg.api.blas.BLASLapackDelegator;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
@@ -259,7 +258,6 @@ public class Nd4j {
 
     private final static String BLAS_LAPACK_DELEGATOR = "blaslapackdelegator";
     private final static String STATS_PROVIDER_KEY = "statsprovider";
-    private final static String DEVICE_ID_PROVDER_KEY = "deviceidprovider";
 
 
     private final static String MEMORY_MANAGER = "memorymanager";
@@ -284,8 +282,6 @@ public class Nd4j {
     private static AtomicReference<DataType> defaultFloatingPointDataType;
 
     private static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
-    private static DeviceIDProvider DEVICE_ID_PROVIDER;
-
     private static BlasWrapper BLAS_WRAPPER_INSTANCE;
     protected static NDArrayFactory INSTANCE;
     private static ConvolutionInstance CONVOLUTION_INSTANCE;
@@ -634,15 +630,6 @@ public class Nd4j {
      */
     public static OpExecutioner getExecutioner() {
         return OP_EXECUTIONER_INSTANCE;
-    }
-
-    /**
-     * Get the device id provider
-     *
-     * @return the operation executioner instance.
-     */
-    public static DeviceIDProvider getDeviceIdProvider() {
-        return DEVICE_ID_PROVIDER;
     }
 
     /**
@@ -5214,7 +5201,7 @@ public class Nd4j {
                 showAttractiveMessage(getMessageForNativeHalfPrecision());
             }
 
-            if (Nd4j.dataType() != dtype) {
+            if (Nd4j.dataType() != dtype){
                 DataTypeUtil.setDTypeForContext(dtype);
             }
 
@@ -5245,9 +5232,6 @@ public class Nd4j {
             String rand = pp.toString(RANDOM_PROVIDER, DefaultRandom.class.getName());
             Class<? extends org.nd4j.linalg.api.rng.Random> randomClazz = ND4JClassLoading.loadClassByName(rand);
             randomFactory = new RandomFactory(randomClazz);
-            Class<? extends DeviceIDProvider> deviceIDProviderClass = ND4JClassLoading
-                    .loadClassByName(pp.toString(DEVICE_ID_PROVDER_KEY));
-            DEVICE_ID_PROVIDER = deviceIDProviderClass.newInstance();
 
             Class<? extends MemoryWorkspaceManager> workspaceManagerClazz = ND4JClassLoading
                     .loadClassByName(pp.toString(WORKSPACE_MANAGER));
