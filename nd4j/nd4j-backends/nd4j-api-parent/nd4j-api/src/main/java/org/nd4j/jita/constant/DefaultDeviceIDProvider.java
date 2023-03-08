@@ -17,34 +17,14 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
+package org.nd4j.jita.constant;
 
-package org.nd4j.linalg.api.memory.deallocation;
-
-import lombok.Data;
-import org.nd4j.linalg.api.memory.Deallocatable;
-import org.nd4j.linalg.api.memory.Deallocator;
-
-import java.lang.ref.ReferenceQueue;
-import java.lang.ref.WeakReference;
-
-@Data
-public class DeallocatableReference extends WeakReference<Deallocatable> {
-    private long id;
-    private Deallocator deallocator;
-
-    public DeallocatableReference(Deallocatable referent, ReferenceQueue<? super Deallocatable> q) {
-        super(referent, q);
-
-        this.id = referent.getUniqueId();
-        this.deallocator = referent.deallocator();
-    }
-
-    public void deallocate() {
-        if(get() != null && !get().shouldDeAllocate() || deallocator.isConstant()) {
-            throw new IllegalStateException("Unable to deallocate reference. Not ready yet.");
-        }
-
-        deallocator.deallocate();
-    }
-
+/**
+ * Default {@link DeviceIDProvider}
+ * that just returns 0 for the device (meaning the cpu)
+ *
+ * @author Adam Gibson
+ */
+public class DefaultDeviceIDProvider implements DeviceIDProvider {
+    //default implementation: just returns 0
 }
