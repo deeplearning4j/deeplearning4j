@@ -31,10 +31,7 @@ import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.lang.ref.ReferenceQueue;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -83,8 +80,7 @@ public class DeallocatorService {
     //for the amount of memory overhead it has. String compression
     //with a large number of objects is more important over throughput.
     @Getter
-    private Map<Long,DeallocatableReference> referenceMap = new ConcurrentSkipListMap<>();
-    private static Set<Long> deallocatedIds = new ConcurrentSkipListSet<>();
+    private Map<Deallocatable,DeallocatableReference> referenceMap = Collections.synchronizedMap(new WeakHashMap<>());
 
     private static AtomicBoolean blockDeallocator = new AtomicBoolean(false);
 
@@ -147,7 +143,9 @@ public class DeallocatorService {
             val desiredDevice = deallocatable.targetDevice();
             val map = deviceMap.get(desiredDevice);
             val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, map.size())));
-            referenceMap.put(deallocatable.getUniqueId(), reference);
+            if(referenceMap.containsKey(deallocatable.getUniqueId()))
+                throw new IllegalArgumentException("Duplicate deallocatable key found!");
+            referenceMap.put(deallocatable, reference);
             return deallocatable.getUniqueId();
         }
 
@@ -204,13 +202,10 @@ public class DeallocatorService {
                         if( (reference.get() != null && !reference.get().shouldDeAllocate()) || reference.getDeallocator().isConstant())
                             continue;
 
-                        if(deallocatedIds.contains(reference.getId()))
-                            throw new IllegalArgumentException("Deallocating already deallocated reference.");
 
                         // invoking deallocator
                         reference.deallocate();
                         referenceMap.remove(reference.getId());
-                        deallocatedIds.add(reference.getId());
                     } catch (InterruptedException e) {
                         canRun = false;
                     } catch (Exception e) {

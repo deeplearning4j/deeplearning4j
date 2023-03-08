@@ -217,6 +217,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
         if(configuration.getWorkers() > 1) {
             Nd4j.getEnvironment().setMaxThreads(1);
         }
+
         Random random = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * sequence.hashCode(),
                 lookupTable.layerSize() + 1);
 

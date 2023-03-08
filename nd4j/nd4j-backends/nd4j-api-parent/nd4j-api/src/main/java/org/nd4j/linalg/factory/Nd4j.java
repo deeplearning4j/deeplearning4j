@@ -2367,6 +2367,22 @@ public class Nd4j {
         stream.close();
     }
 
+
+    /**
+     * Close the passed in ndarrays.
+     * @param close
+     */
+    public static void close(INDArray...close) {
+        for(INDArray arr : close) {
+            if(arr == null)
+                continue;
+
+            if(arr.closeable() && !arr.data().wasClosed()) {
+                arr.close();
+            }
+        }
+    }
+
     /**
      * Convert an ndarray to a byte array
      * @param arr the array to convert

@@ -5642,7 +5642,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (!closeable())
             throw new ND4JIllegalStateException("Can't release this INDArray");
 
-        data.close();
+        //data.close();
 
         released = true;
     }
