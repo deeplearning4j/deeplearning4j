@@ -120,9 +120,9 @@ class SD_LIB_EXPORT AttentionHelper {
    * @return
    */
   static void additiveAttentionBpHelper(sd::NDArray *query, sd::NDArray *key, sd::NDArray *values, double scale,
-                                sd::NDArray *concatWeights, int scoreMode, sd::NDArray *dLdq, sd::NDArray *dLdk,
-                                sd::NDArray *dLdv, sd::NDArray *eps, LongType dropoutSeed, sd::NDArray *qMask,
-                                sd::NDArray *vMask, bool useCausalMask, double dropout, bool training);
+                                        sd::NDArray *concatWeights, sd::NDArray *dLdq, sd::NDArray *dLdk,
+                                        sd::NDArray *dLdv, sd::NDArray *eps, LongType dropoutSeed, sd::NDArray *qMask,
+                                        sd::NDArray *vMask, bool useCausalMask, double dropout, bool training);
 
   /**
    *
@@ -134,9 +134,9 @@ class SD_LIB_EXPORT AttentionHelper {
    * @return
    */
   static void dotProductAttentionBpHelper(sd::NDArray *query, sd::NDArray *key, sd::NDArray *values, double scale,
-                                sd::NDArray *concatWeights, int scoreMode, sd::NDArray *dLdq, sd::NDArray *dLdk,
-                                sd::NDArray *dLdv, sd::NDArray *eps, LongType dropoutSeed, sd::NDArray *qMask,
-                                sd::NDArray *vMask, bool useCausalMask, double dropout, bool training);
+                                          sd::NDArray *dLdq, sd::NDArray *dLdk, sd::NDArray *dLdv, sd::NDArray *eps,
+                                          LongType dropoutSeed, sd::NDArray *qMask, sd::NDArray *vMask,
+                                          bool useCausalMask, double dropout, bool training);
 
 
 

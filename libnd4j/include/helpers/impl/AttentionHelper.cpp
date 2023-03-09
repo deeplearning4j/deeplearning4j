@@ -231,19 +231,19 @@ void AttentionHelper::applyAttentionScores(sd::NDArray *scores,
 }
 
 void AttentionHelper::additiveAttentionBpHelper(sd::NDArray *query, sd::NDArray *key, sd::NDArray *values, double scale,
-                                                sd::NDArray *concatWeights, int scoreMode, sd::NDArray *dLdq, sd::NDArray *dLdk,
-                                                sd::NDArray *dLdv, sd::NDArray *eps, LongType dropoutSeed, sd::NDArray *qMask,
-                                                sd::NDArray *vMask, bool useCausalMask, double dropout, bool training) {
+                                                sd::NDArray *concatWeights, sd::NDArray *dLdq, sd::NDArray *dLdk,
+                                                sd::NDArray *dLdv, sd::NDArray *eps, LongType dropoutSeed,
+                                                sd::NDArray *qMask, sd::NDArray *vMask, bool useCausalMask,
+                                                double dropout, bool training) {
 
   sd::ops::matmul matMul;
   sd::ops::matmul_bp matMulBp;
   sd::ops::reduce_sum reduceSum;
-  sd::ops::tanh_bp tanh1;
   sd::ops::add_bp addBp;
+  sd::ops::tanh tanh1;
   /**
    * Each bp needs the original inputs + the backwards pass.
    */
-  sd::ops::tanh tanh2;
   sd::ops::reduce_sum reduceSum1;
   sd::ops::reduce_sum_bp reduceSumBp1;
   sd::ops::tanh_bp tanhBp;
@@ -265,7 +265,7 @@ void AttentionHelper::additiveAttentionBpHelper(sd::NDArray *query, sd::NDArray 
 
 
   NDArray preSoftmax( weightShapeInfoInput);
-
+  preSoftmax.printShapeInfo("Pre softmax shape info");
   sd::ops::expand_dims expandDims;
 
   auto qReshaped = expandDims.evaluate({query},{},{-2}).at(0);
@@ -314,20 +314,34 @@ void AttentionHelper::additiveAttentionBpHelper(sd::NDArray *query, sd::NDArray 
   auto weightInput = weights;
   //begin dldw
   NDArray dLdw(weightInput.shapeInfo());
-
-
-
+  weights.printShapeInfo("Weights shape info");
 
   matMulBp.execute({&weights,values,eps},{&dLdw,dLdv},{},{});
 
-  auto epsToSum = dLdw * *qPlusK;
-  sd_printf("After eps to sum\n",0);
-  auto dTanh = (dLdw * scale);
+  dLdv->printShapeInfo("DLDV shape info");
+  dLdk->printShapeInfo("DLDK shape info");
+  dLdw.printShapeInfo("DLDW shape info");
+  qPlusK->printShapeInfo("QPLUS k shape info");
+  auto expandDimsDLDW = expandDims.evaluate({dLdk},{},{1},{}).at(0);
+  expandDimsDLDW->printShapeInfo("Expand dims dldw shape");
+  auto dTanh = (*expandDimsDLDW * scale);
   sd_printf("After dtanh\n",0);
-  tanhBp.execute({qPlusK,&dTanh},{&dTanh},{},{});
+
+  //TODO: need to figure out correct output shape here. The dout could be eps or another thing.
+  //TODO: see if numpy can do some extra  broadcasting we can't here.
+  //TODO: theoretically d_out shoul dbe the same as the output from calculate scores: 10,3,4?
+  //ideally this should be 10,1,4 with expand dims is 10,1,1,4
+  //TODO: q plus k ends up being 10,1,3,4
+  tanhBp.execute({qPlusK,expandDimsDLDW},{&dTanh},{},{});
   sd_printf("End  tanhbp\n",0);
-  reduceSumBp1.execute({qReshaped,&dTanh},{dLdq});
-  reduceSumBp1.execute({kReshaped,&dTanh},{dLdk});
+  qReshaped->printShapeInfo("Q reshaped");
+  kReshaped->printShapeInfo("K reshaped");
+  dTanh.printShapeInfo("Dtanh shape info");
+
+  
+
+  reduceSumBp1.execute({qReshaped,&dTanh},{dLdq},{},{-1},{true});
+  reduceSumBp1.execute({kReshaped,&dTanh},{dLdk},{},{-1},{true});
   sd_printf("End  reduce sum bp\n",0);
   squeeze.execute({dLdq},{dLdq},{},{-1});
   squeeze.execute({dLdk},{dLdk},{},{-2});
@@ -376,11 +390,11 @@ void AttentionHelper::additiveAttentionBpHelper(sd::NDArray *query, sd::NDArray 
 
 }
 
-
-void  AttentionHelper::dotProductAttentionBpHelper(sd::NDArray *query, sd::NDArray *key, sd::NDArray *values, double scale,
-                                                   sd::NDArray *concatWeights, int scoreMode, sd::NDArray *dLdq, sd::NDArray *dLdk,
-                                                   sd::NDArray *dLdv, sd::NDArray *eps, LongType dropoutSeed, sd::NDArray *qMask,
-                                                   sd::NDArray *vMask, bool useCausalMask, double dropout, bool training) {
+void AttentionHelper::dotProductAttentionBpHelper(sd::NDArray *query, sd::NDArray *key, sd::NDArray *values,
+                                                  double scale, sd::NDArray *dLdq, sd::NDArray *dLdk, sd::NDArray *dLdv,
+                                                  sd::NDArray *eps, LongType dropoutSeed, sd::NDArray *qMask,
+                                                  sd::NDArray *vMask, bool useCausalMask, double dropout,
+                                                  bool training) {
   sd::ops::matmul matMul;
   sd::ops::matmul_bp matMulBp;
   sd::ops::reduce_sum reduceSum;
@@ -502,9 +516,11 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query, sd::NDArray *key, sd
                                         bool training) {
 
   if(scoreMode == ATTENTION_SCORE_MODE_CONCAT) {
-    additiveAttentionBpHelper(query,key,values,scale,concatWeights,scoreMode,dLdq,dLdk,dLdv,eps,dropoutSeed,qMask,vMask,useCausalMask,dropout, training);
+    additiveAttentionBpHelper(query, key, values, scale, concatWeights, dLdq, dLdk, dLdv, eps, dropoutSeed, qMask,
+                              vMask, useCausalMask, dropout, training);
   } else if(scoreMode == ATTENTION_SCORE_MODE_DOT) {
-    dotProductAttentionBpHelper(query,key,values,scale,concatWeights,scoreMode,dLdq,dLdk,dLdv,eps,dropoutSeed,qMask,vMask,useCausalMask,dropout, training);
+    dotProductAttentionBpHelper(query, key, values, scale, dLdq, dLdk, dLdv, eps, dropoutSeed, qMask, vMask,
+                                useCausalMask, dropout, training);
   }
 
 
