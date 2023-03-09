@@ -27,13 +27,13 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.common.config.ND4JSystemProperties;
-import org.nd4j.common.primitives.Counter;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.lang.ref.ReferenceQueue;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -80,24 +80,18 @@ public class DeallocatorService {
     //for the amount of memory overhead it has. String compression
     //with a large number of objects is more important over throughput.
     @Getter
-    private Map<Long,DeallocatableReference> referenceMap = Collections.synchronizedMap(new WeakHashMap<>());
-
-    private Map<Long,String> referenceTypes = new ConcurrentHashMap<>();
-
-    private Counter<String> allocated = new Counter<>();
-    private Counter<String> deallocated = new Counter<>();
+    private Map<Deallocatable,DeallocatableReference> referenceMap = Collections.synchronizedMap(new WeakHashMap<>());
 
     private static AtomicBoolean blockDeallocator = new AtomicBoolean(false);
 
     private List<List<ReferenceQueue<Deallocatable>>> deviceMap = new ArrayList<>();
     private Boolean noPointerGc;
-    private  int numThreads =  4;
-
     private final transient AtomicLong counter = new AtomicLong(0);
 
     public DeallocatorService() {
         // we need to have at least 2 threads, but for CUDA we'd need at least numDevices threads, due to thread->device affinity
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        int numThreads =  4;
 
         for (int e = 0; e < numDevices; e++)
             deviceMap.add(new ArrayList<>());
@@ -148,10 +142,11 @@ public class DeallocatorService {
         } else {
             val desiredDevice = deallocatable.targetDevice();
             val map = deviceMap.get(desiredDevice);
-            allocated.incrementCount(deallocatable.getClass().getName(),1.0);
-            referenceTypes.put(deallocatable.getUniqueId(),deallocatable.getClass().getName());
-            val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, numThreads)));
-            referenceMap.put(deallocatable.getUniqueId(), reference);
+            val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, map.size())));
+            if(referenceMap.containsKey(deallocatable)) {
+                return -1;
+            }
+            referenceMap.put(deallocatable, reference);
             return deallocatable.getUniqueId();
         }
 
@@ -182,7 +177,7 @@ public class DeallocatorService {
                 // if periodicGc is enabled, only first thread will call for it
                 if (threadIdx == 0 && Nd4j.getMemoryManager().getAutoGcWindow() > 0) {
                     val reference = (DeallocatableReference) queue.poll();
-                    if (reference == null) {
+                    if (reference == null || (reference != null || !reference.getDeallocator().isConstant())) {
                         val timeout = Nd4j.getMemoryManager().getAutoGcWindow();
                         try {
                             Thread.sleep(timeout);
@@ -192,34 +187,27 @@ public class DeallocatorService {
                         }
                     } else {
                         // invoking deallocator
-                        if (reference != null) {
-                            if(referenceTypes.containsKey(reference.getId())) {
-                                deallocated.incrementCount(referenceTypes.get(reference.getId()), 1.0);
-                                referenceTypes.remove(reference.getId());
-                                reference.deallocate();
-                            }
-
-                            if(referenceMap.containsKey(reference.getId()))
-                                referenceMap.remove(reference.getId());
+                        if (reference != null   || reference.getDeallocator().isConstant()) {
+                            reference.deallocate();
+                            if(reference.get() != null)
+                                referenceMap.remove(reference.get());
+                        } else {
+                            if(reference.get() != null)
+                                referenceMap.remove(reference.get());
                         }
                     }
                 } else {
                     try {
                         val reference = (DeallocatableReference) queue.remove();
-                        if (reference == null)
+                        if (reference == null || reference.getDeallocator().isConstant())
                             continue;
 
 
 
-                        if(referenceTypes.containsKey(reference.getId())) {
-                            deallocated.incrementCount(referenceTypes.get(reference.getId()), 1.0);
-                            referenceTypes.remove(reference.getId());
-                            // invoking deallocator
-                            reference.deallocate();
-                        }
-
-                        if(referenceMap.containsKey(reference.getId()))
-                            referenceMap.remove(reference.getId());
+                        // invoking deallocator
+                        reference.deallocate();
+                        if(reference.get() != null)
+                            referenceMap.remove(reference.get());
                     } catch (InterruptedException e) {
                         canRun = false;
                     } catch (Exception e) {
