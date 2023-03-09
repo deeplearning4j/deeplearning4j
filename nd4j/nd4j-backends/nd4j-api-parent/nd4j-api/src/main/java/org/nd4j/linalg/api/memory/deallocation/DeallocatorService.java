@@ -143,8 +143,9 @@ public class DeallocatorService {
             val desiredDevice = deallocatable.targetDevice();
             val map = deviceMap.get(desiredDevice);
             val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, map.size())));
-            if(referenceMap.containsKey(deallocatable))
-                throw new IllegalArgumentException("Duplicate deallocatable key found!");
+            if(referenceMap.containsKey(deallocatable)) {
+                return -1;
+            }
             referenceMap.put(deallocatable, reference);
             return deallocatable.getUniqueId();
         }
@@ -176,7 +177,7 @@ public class DeallocatorService {
                 // if periodicGc is enabled, only first thread will call for it
                 if (threadIdx == 0 && Nd4j.getMemoryManager().getAutoGcWindow() > 0) {
                     val reference = (DeallocatableReference) queue.poll();
-                    if (reference == null || (reference != null && reference.get() != null &&  !reference.get().shouldDeAllocate()) || !reference.getDeallocator().isConstant()) {
+                    if (reference == null || (reference != null || !reference.getDeallocator().isConstant())) {
                         val timeout = Nd4j.getMemoryManager().getAutoGcWindow();
                         try {
                             Thread.sleep(timeout);
@@ -186,7 +187,7 @@ public class DeallocatorService {
                         }
                     } else {
                         // invoking deallocator
-                        if (reference != null && (reference.get().shouldDeAllocate()) || reference.getDeallocator().isConstant()) {
+                        if (reference != null   || reference.getDeallocator().isConstant()) {
                             reference.deallocate();
                             referenceMap.remove(reference);
                         } else {
@@ -196,11 +197,9 @@ public class DeallocatorService {
                 } else {
                     try {
                         val reference = (DeallocatableReference) queue.remove();
-                        if (reference == null)
+                        if (reference == null || reference.getDeallocator().isConstant())
                             continue;
 
-                        if( (reference.get() != null && !reference.get().shouldDeAllocate()) || reference.getDeallocator().isConstant())
-                            continue;
 
 
                         // invoking deallocator
