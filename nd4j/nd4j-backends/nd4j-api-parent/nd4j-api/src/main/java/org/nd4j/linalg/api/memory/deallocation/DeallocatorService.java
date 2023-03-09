@@ -143,7 +143,7 @@ public class DeallocatorService {
             val desiredDevice = deallocatable.targetDevice();
             val map = deviceMap.get(desiredDevice);
             val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, map.size())));
-            if(referenceMap.containsKey(deallocatable.getUniqueId()))
+            if(referenceMap.containsKey(deallocatable))
                 throw new IllegalArgumentException("Duplicate deallocatable key found!");
             referenceMap.put(deallocatable, reference);
             return deallocatable.getUniqueId();
@@ -174,7 +174,7 @@ public class DeallocatorService {
             boolean canRun = true;
             while (canRun) {
                 // if periodicGc is enabled, only first thread will call for it
-                if (Nd4j.getMemoryManager().isPeriodicGcActive() && threadIdx == 0 && Nd4j.getMemoryManager().getAutoGcWindow() > 0) {
+                if (threadIdx == 0 && Nd4j.getMemoryManager().getAutoGcWindow() > 0) {
                     val reference = (DeallocatableReference) queue.poll();
                     if (reference == null || (reference != null && reference.get() != null &&  !reference.get().shouldDeAllocate()) || !reference.getDeallocator().isConstant()) {
                         val timeout = Nd4j.getMemoryManager().getAutoGcWindow();
@@ -188,9 +188,9 @@ public class DeallocatorService {
                         // invoking deallocator
                         if (reference != null && (reference.get().shouldDeAllocate()) || reference.getDeallocator().isConstant()) {
                             reference.deallocate();
-                            referenceMap.remove(reference.getId());
+                            referenceMap.remove(reference);
                         } else {
-                            referenceMap.remove(reference.getId());
+                            referenceMap.remove(reference);
                         }
                     }
                 } else {
@@ -205,7 +205,7 @@ public class DeallocatorService {
 
                         // invoking deallocator
                         reference.deallocate();
-                        referenceMap.remove(reference.getId());
+                        referenceMap.remove(reference);
                     } catch (InterruptedException e) {
                         canRun = false;
                     } catch (Exception e) {
