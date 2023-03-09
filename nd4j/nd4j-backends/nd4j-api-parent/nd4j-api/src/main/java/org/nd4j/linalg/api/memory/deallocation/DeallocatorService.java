@@ -189,9 +189,11 @@ public class DeallocatorService {
                         // invoking deallocator
                         if (reference != null   || reference.getDeallocator().isConstant()) {
                             reference.deallocate();
-                            referenceMap.remove(reference);
+                            if(reference.get() != null)
+                                referenceMap.remove(reference.get());
                         } else {
-                            referenceMap.remove(reference);
+                            if(reference.get() != null)
+                                referenceMap.remove(reference.get());
                         }
                     }
                 } else {
@@ -204,7 +206,8 @@ public class DeallocatorService {
 
                         // invoking deallocator
                         reference.deallocate();
-                        referenceMap.remove(reference);
+                        if(reference.get() != null)
+                            referenceMap.remove(reference.get());
                     } catch (InterruptedException e) {
                         canRun = false;
                     } catch (Exception e) {
