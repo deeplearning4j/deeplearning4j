@@ -333,18 +333,37 @@ void AttentionHelper::additiveAttentionBpHelper(sd::NDArray *query, sd::NDArray 
   //ideally this should be 10,1,4 with expand dims is 10,1,1,4
   //TODO: q plus k ends up being 10,1,3,4
   tanhBp.execute({qPlusK,expandDimsDLDW},{&dTanh},{},{});
+
+
+  /**
+   * sd::ops::tanh tanh1;
+   * 10,1,1,4
+auto qReshaped = expandDims.evaluate({query},{},{-2}).at(0);
+   10,1,3,4
+auto kReshaped = expandDims.evaluate({key},{},{-3}).at(0);
+   10,1,3,4
+auto scaled =  scale > 0 ? ( scale * (*qReshaped + *kReshaped)) : ((*qReshaped + *kReshaped));
+auto qPlusK = tanh1.evaluate({&scaled});
+reduceSum.execute({qPlusK.at(0)},{attentionScoresOut},{},{-1});
+
+
+   */
   sd_printf("End  tanhbp\n",0);
   qReshaped->printShapeInfo("Q reshaped");
   kReshaped->printShapeInfo("K reshaped");
   dTanh.printShapeInfo("Dtanh shape info");
 
-  
-
-  reduceSumBp1.execute({qReshaped,&dTanh},{dLdq},{},{-1},{true});
-  reduceSumBp1.execute({kReshaped,&dTanh},{dLdk},{},{-1},{true});
+  auto squeezedQReshaped = expandDims.evaluate({qReshaped},{},{-1},{}).at(0);
+  auto squeezedKReshaped = expandDims.evaluate({kReshaped},{},{-2},{}).at(0);
+  sd_printf("Before execution eval test\n",0);
+  //TODO: tanh tries to reshape to a 40 length array. Assuming 10,3,4 but elements are only 40 in length?
+  auto reduceSumQBpOutput = reduceSumBp1.evaluate({squeezedQReshaped,&dTanh},{},{-1});
+  auto reduceSumKBpOutput = reduceSumBp1.evaluate({squeezedKReshaped,&dTanh},{},{-1},{});
+  sd_printf("After execution eval test\n",0);
+  reduceSumBp1.execute({squeezedQReshaped,&dTanh},{dLdq},{},{-1},{});
+  reduceSumBp1.execute({squeezedKReshaped,&dTanh},{dLdk},{},{-1},{});
   sd_printf("End  reduce sum bp\n",0);
-  squeeze.execute({dLdq},{dLdq},{},{-1});
-  squeeze.execute({dLdk},{dLdk},{},{-2});
+
   sd_printf("End  squeeze\n",0);
 
 

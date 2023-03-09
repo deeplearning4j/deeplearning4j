@@ -2872,8 +2872,14 @@ namespace sd {
                 throw std::runtime_error(
                         "NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast "
                         "operation !");
-            if (!shape::equalsTypesAndShapesSoft(target.shapeInfo(), newShapeInfo))
-                throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape or type of target array is wrong !");
+            if (!shape::equalsTypesAndShapesSoft(target.shapeInfo(), newShapeInfo)) {
+             std::string errorMessage;
+             errorMessage += std::string("NDArray::applyTrueBroadcast method: the shape or type of target array is wrong !");
+             shape::printShapeInfo(target.shapeInfo());
+             shape::printShapeInfo(newShapeInfo);
+              throw std::runtime_error(
+                  "NDArray::applyTrueBroadcast method: the shape or type of target array is wrong ! Both target and expected are printed above.");
+            }
         }
 
         sd::LongType const *xShapeInfoH = shapeInfo();
