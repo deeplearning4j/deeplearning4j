@@ -256,7 +256,6 @@ NDArray* NDArrayFactory::create_(const T scalar, sd::LaunchContext* context) {
 
   auto desc = ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>());
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
-  delete desc;
   auto recast = const_cast<sd::LongType *>(constDesc->primary());
   NDArray* res = new NDArray(buffer, recast, context);
   delete desc;

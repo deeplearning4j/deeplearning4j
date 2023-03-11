@@ -232,7 +232,6 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vecto
     } else {
       newShapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
       ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
-      RELEASE(newShapeInfo, workspace);
       auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
       delete descriptor;
       return ret;
@@ -1074,45 +1073,6 @@ std::vector<int> ShapeUtils::evalDimsForReduceOp(const int rank, const std::vect
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/*
-bool ShapeUtils::isSubArrayCase(const NDArray& arr1, const NDArray& arr2, std::vector<int>& sameDims) {
 
-    if(!sameDims.empty())
-        sameDims.clear();
-
-    const NDArray* max = &arr1;
-    const NDArray* min = &arr2;
-
-    if(arr1.lengthOf() < arr2.lengthOf()) {
-        max = &arr2;
-        min = &arr1;
-    }
-
-    int numUnitiesInMin = 0;
-
-    for (int iMax = -1, iMin = -1; iMax >= -max->rankOf() && iMin >= -min->rankOf(); ) {
-
-        if(max->sizeAt(iMax) == 1) {      // ignore unities in shape
-            --iMax;
-            continue;
-        }
-
-        if(min->sizeAt(iMin) == 1) {     // ignore unities in shape
-            ++numUnitiesInMin;
-            --iMin;
-            continue;
-        }
-
-        if(max->sizeAt(iMax) == min->sizeAt(iMin)) {
-            sameDims.insert(sameDims.begin(), iMax + max->rankOf());
-            --iMin;
-        }
-
-        --iMax;
-    }
-
-    return sameDims.size() + numUnitiesInMin == min->rankOf();
-}
-*/
 
 }  // namespace sd
