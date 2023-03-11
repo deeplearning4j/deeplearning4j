@@ -51,10 +51,10 @@ public class VocabWord extends SequenceElement implements Serializable {
      */
     @Getter
     @Setter
-    protected Long vocabId;
+    protected long vocabId;
     @Getter
     @Setter
-    protected Long affinityId;
+    protected long affinityId;
 
     public static VocabWord none() {
         return new VocabWord(0, "none");

@@ -1608,6 +1608,9 @@ public class Nd4j {
         return DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
     }
 
+
+
+
     /**
      * See {@link #createBuffer(float[])}
      */

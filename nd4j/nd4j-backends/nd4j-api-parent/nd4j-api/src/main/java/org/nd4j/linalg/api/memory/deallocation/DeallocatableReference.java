@@ -26,7 +26,6 @@ import org.nd4j.linalg.api.memory.Deallocator;
 
 import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
-import java.lang.ref.WeakReference;
 
 @Data
 public class DeallocatableReference extends PhantomReference<Deallocatable> {
@@ -41,7 +40,7 @@ public class DeallocatableReference extends PhantomReference<Deallocatable> {
     }
 
     public void deallocate() {
-        if(get() != null && !get().shouldDeAllocate() || deallocator.isConstant()) {
+        if(deallocator.isConstant()) {
             throw new IllegalStateException("Unable to deallocate reference. Not ready yet.");
         }
 

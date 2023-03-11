@@ -232,7 +232,7 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vecto
     } else {
       newShapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
       ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
-     // RELEASE(newShapeInfo, workspace);
+      RELEASE(newShapeInfo, workspace);
       auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
       delete descriptor;
       return ret;
@@ -278,7 +278,7 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vecto
       newShapeInfo = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(shapeInfo), workspace);
       ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
       auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
-     // RELEASE(newShapeInfo, workspace);
+      RELEASE(newShapeInfo, workspace);
       delete descriptor;
       return ret;
     }
@@ -507,7 +507,7 @@ bool ShapeUtils::evalBroadcastShapeInfo(const sd::LongType* max, const sd::LongT
   ShapeDescriptor *descriptor = new ShapeDescriptor(tmpShapeInfo);
   RELEASE(tmpShapeInfo, workspace);
   resultShapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
-
+   delete descriptor;
   return true;
 }
 
@@ -545,7 +545,7 @@ bool ShapeUtils::evalCommonBroadcastShapeInfo(const std::vector<const NDArray*>&
   RELEASE(tmpShapeInfo, workspace);
   auto bufferForSHape = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor);
   resultShapeInfo = const_cast<sd::LongType*>(bufferForSHape->primary());
-
+  delete descriptor;
   return true;
 }
 
@@ -610,7 +610,7 @@ const sd::LongType* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std:
   ArrayOptions::setDataType(newShapeInfo, arr.dataType());
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
- // RELEASE(newShapeInfo, workspace);
+  RELEASE(newShapeInfo, workspace);
   auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
   delete descriptor;
   return ret;

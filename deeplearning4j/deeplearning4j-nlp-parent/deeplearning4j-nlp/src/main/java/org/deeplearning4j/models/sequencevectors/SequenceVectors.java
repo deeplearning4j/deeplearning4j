@@ -307,6 +307,11 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
                             lookupTable.getWeights().getRow(realElement.getIndex(), true).assign(randArray);
                             realElement.setInit(true);
+                            try {
+                                rng.close();
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
                         }
                     }
                 }

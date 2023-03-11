@@ -395,16 +395,10 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
   bool is_dim0;
 
   // FIXME: remove this method once we get 1D vectors supported
-  // vectorize(input_shape);
   REQUIRE_TRUE(
       _preprocess_strided_slice(&indices, &final_shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask,
                                 end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0),
       0, "StridedSlice: shape calculation failed");
-  //            if(z->lengthOf() == 1 && !z->isEmpty() && (input_shape.size() == 2 && input_shape[0] == 1)) {
-  //            //(indices.size() == 6) && (indices[2] - indices[0] == 1)) {
-  //                z->assign(x->e<float>(indices[0]));
-  //            }
-  //            else {
   if (indices.size()) {
     sd::LongType* subArrShapeInfo = nullptr;
     ALLOCATE(subArrShapeInfo, block.getWorkspace(), shape::shapeInfoLength(x->rankOf()), sd::LongType);

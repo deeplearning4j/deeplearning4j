@@ -136,13 +136,10 @@ const sd::LongType* ConstantShapeHelper::createShapeInfo(ShapeDescriptor* descri
 }
 
 const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, bool destroyOriginal) {
-  sd_printf("Before creating from exsting with boolean destroyOriginal\n",0);
   ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
   auto result = createShapeInfo(descriptor);
-  sd_printf("After creating from exsting with boolean destroyOriginal\n",0);
-
   if (destroyOriginal) RELEASE(shapeInfo, nullptr)
-
+  delete descriptor;
   return result;
 }
 
@@ -235,7 +232,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createSubArrShapeInfo(const sd::LongTy
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
 
-  //RELEASE(newShapeInfo, workspace);
+  RELEASE(newShapeInfo, workspace);
 
   auto ret = bufferForShapeInfo(descriptor);
   delete descriptor;

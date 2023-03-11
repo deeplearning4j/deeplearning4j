@@ -228,6 +228,13 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
         if(configuration.getWorkers() > 1) {
             Nd4j.getEnvironment().setMaxThreads(numThreadsOriginal);
         }
+
+        try {
+            random.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
         return inferSequence(ret,sequence,nextRandom,learningRate,minLearningRate,iterations);
     }
 
