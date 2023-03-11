@@ -832,7 +832,7 @@
                         </classpathDependencyExclude>
                     </classpathDependencyExcludes>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
-                    <argLine>${jdk9.exports} -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                    <argLine>${jdk9.exports} -Dorg.nd4j.linalg.api.ops.udf.packages=org.nd4j.linalg.api.ops -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
                     <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
                     <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
                     <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>

@@ -20,10 +20,14 @@
 
 package org.nd4j.imports.converters;
 
+import dorkbox.annotation.AnnotationDefaults;
+import dorkbox.annotation.AnnotationDetector;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.common.config.ND4JClassLoading;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.onnx.OnnxDescriptorParser;
 import org.nd4j.imports.descriptors.onnx.OpDescriptor;
@@ -36,6 +40,8 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.OpDef;
 
+import java.io.IOException;
+import java.lang.annotation.ElementType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
@@ -47,6 +53,7 @@ public class DifferentialFunctionClassHolder {
     private Map<String, DifferentialFunction> onnxNames = ImportClassMapping.getOnnxOpMappingFunctions();
     private Map<Long,Class<?>> customOpHashToClass = new HashMap<>();
     private Map<Long,Map<String,Class<?>>> customOpHashToClasses = new HashMap<>(); //Only contains ops with 1 hash to multiple classes
+    private Map<String,Class<?>> udfs = new HashMap<>();
     private List<String> missingOps = new ArrayList<>();
 
     private Map<String,OpDescriptor> onnxOpDescriptors;
@@ -307,6 +314,33 @@ public class DifferentialFunctionClassHolder {
                 m.put(e.getKey(), df.getClass());
             }
         }
+
+
+
+        try {
+            // Get a list of all classes annotated with @UserDefinedOp,
+            if(System.getProperties().containsKey(ND4JSystemProperties.UDF_NAME_SPACES)) {
+                String[] packageNames = System.getProperty(ND4JSystemProperties.UDF_NAME_SPACES).split(",");
+                List<Class<?>> classModules = AnnotationDetector.scanClassPath(ND4JClassLoading.getNd4jClassloader(),packageNames)
+                        .forAnnotations(UserDefinedOp.class)  // one or more annotations
+                        .on(ElementType.TYPE) // optional, default ElementType.TYPE. One ore more element types
+                        .collect(AnnotationDefaults.getType);
+                classModules.forEach(udf ->  {
+                    try {
+                        UserDefinedCustomOp o = (UserDefinedCustomOp) udf.newInstance();
+                        udfs.put(o.opName(),udf);
+                    } catch (InstantiationException e) {
+                        throw new RuntimeException(e);
+                    } catch (IllegalAccessException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Unable to start the client", e);
+        }
+
     }
 
 
@@ -382,6 +416,9 @@ public class DifferentialFunctionClassHolder {
             case ExternalErrorsFunction.OP_NAME:
                 return ExternalErrorsFunction.class;
             default:
+                if(udfs.containsKey(name)) {
+                    return udfs.get(name);
+                }
                 if(customOpHashToClasses.containsKey(customOpHash)) {
                     return customOpHashToClasses.get(customOpHash).get(name);
                 } else if(customOpHashToClass.containsKey(customOpHash)) {
