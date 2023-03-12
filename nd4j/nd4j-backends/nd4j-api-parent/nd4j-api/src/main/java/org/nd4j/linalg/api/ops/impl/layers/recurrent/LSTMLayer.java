@@ -294,7 +294,7 @@ public class LSTMLayer extends DynamicCustomOp {
     }
 
     @Override
-    public int getNumOutputs(){
+    public int getNumOutputs() {
 
         return Booleans.countTrue(
                 configuration.isRetFullSequence(), //retFullSequence: B_ARG(5)

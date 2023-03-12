@@ -72,32 +72,34 @@ public class LSTMLayerBp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
+        List<DataType> ret = new ArrayList<>();
+        for(int i = 0; i < 3; i++) {
+            ret.add(arg().dataType());
+        }
 
-        DataType dt = inputDataTypes.get(1);
-        Preconditions.checkState(dt.isFPType(), "Input type 1 must be a floating point type, got %s", dt);
-        ArrayList<DataType> list = new ArrayList<>();
-        list.add(dt); // dLdx
-        list.add(dt); // dLdWx
-        list.add(dt); // dLdWr
+        if(weights.hasBias()) {
+            ret.add(arg().dataType());
+        }
 
-        if (this.weights.hasBias()) {
-            list.add(dt);
-        } // dLdb
 
-        if (this.maxTSLength != null) {
-            list.add(dt);
-        } // dLdSl
-        if (this.yLast != null) {
-            list.add(dt);
-        } //dLdhI
-        if (this.cLast != null) {
-            list.add(dt);
-        } // dLdcI
-        if (this.weights.hasPH()) {
-            list.add(dt);
-        } // dLdWp
+        if(maxTSLength != null) {
+            ret.add(arg().dataType());
+        }
 
-        return list;
+        if(cLast != null) {
+            ret.add(arg().dataType());
+        }
+
+        if(yLast != null) {
+            ret.add(arg().dataType());
+        }
+
+        if(weights.hasPH()) {
+            ret.add(arg().dataType());
+        }
+
+
+        return ret;
     }
 
 
@@ -155,17 +157,30 @@ public class LSTMLayerBp extends DynamicCustomOp {
 
     @Override
     public int getNumOutputs() {
+        int ret = 3;
+        if(weights.hasBias()) {
+            ret++;
+        }
 
-        return Booleans.countTrue(
-                true,
-                true,
-                true,
-                weights.hasBias(),
-                this.maxTSLength != null,
-                this.yLast != null,
-                this.cLast != null,
-                weights.hasPH()
-        );
+
+        if(maxTSLength != null) {
+            ret++;
+        }
+
+        if(cLast != null) {
+            ret++;
+        }
+
+        if(yLast != null) {
+            ret++;
+        }
+
+        if(weights.hasPH()) {
+            ret++;
+        }
+
+
+        return ret;
     }
 
 
