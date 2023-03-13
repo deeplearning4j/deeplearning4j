@@ -219,11 +219,8 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
             Nd4j.getEnvironment().setMaxThreads(numThreadsOriginal);
         }
 
-        try {
-            random.close();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        //close since we don't have a deallocator for random instances
+        random.close();
         return ret;
     }
 

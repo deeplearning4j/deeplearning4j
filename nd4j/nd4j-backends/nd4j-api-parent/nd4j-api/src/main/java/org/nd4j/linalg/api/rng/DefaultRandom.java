@@ -265,7 +265,7 @@ public class DefaultRandom implements Random, RandomGenerator {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         //
     }
 

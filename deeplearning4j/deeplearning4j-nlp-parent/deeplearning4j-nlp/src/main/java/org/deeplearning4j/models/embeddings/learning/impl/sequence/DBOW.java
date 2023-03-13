@@ -211,7 +211,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
 
 
-       //when workers are > 1 the openmp in the scalar op can cause a crash
+        //when workers are > 1 the openmp in the scalar op can cause a crash
         //set to 1 to workaround
         int numThreadsOriginal = Nd4j.getEnvironment().maxThreads();
         if(configuration.getWorkers() > 1) {
@@ -230,11 +230,9 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
             Nd4j.getEnvironment().setMaxThreads(numThreadsOriginal);
         }
 
-        try {
-            random.close();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        //close since we don't have a deallocator for random instances
+        random.close();
+
 
         return inferSequence(ret,sequence,nextRandom,learningRate,minLearningRate,iterations);
     }
