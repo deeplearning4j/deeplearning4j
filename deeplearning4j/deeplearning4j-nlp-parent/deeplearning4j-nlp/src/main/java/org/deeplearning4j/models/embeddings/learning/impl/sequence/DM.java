@@ -208,7 +208,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
             Nd4j.getEnvironment().setMaxThreads(1);
         }
 
-        INDArray ret = Nd4j.createUninitialized(this.lookupTable.getWeights().dataType(),lookupTable.layerSize());
+        INDArray ret = Nd4j.createUninitializedDetached(this.lookupTable.getWeights().dataType(),lookupTable.layerSize());
         Nd4j.rand(ret,random);
         ret.subi(0.5).divi(lookupTable.layerSize());
 
