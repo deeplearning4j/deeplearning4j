@@ -1623,6 +1623,8 @@ public class TestLayerOpValidation extends BaseOpValidation {
         //  T2NS: 3 = [timeLength, 2, numExamples, inOutSize] (for ONNX)
 
 
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         for (boolean useCLast : new boolean[]{false, true}) {
             for (boolean useYLast : new boolean[]{false, true}) {
 

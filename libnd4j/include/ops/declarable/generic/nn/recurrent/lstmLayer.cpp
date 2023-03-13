@@ -914,11 +914,22 @@ DECLARE_SHAPE_FN(lstmLayer_bp) {
 
   auto outShapes = SHAPELIST(x->shapeInfo(), Wx->shapeInfo(), Wr->shapeInfo());
 
-  if (b != nullptr) outShapes->push_back(b->shapeInfo());
-  if (seqLen != nullptr) outShapes->push_back(seqLen->shapeInfo());
-  if (hI != nullptr) outShapes->push_back(hI->shapeInfo());
-  if (cI != nullptr) outShapes->push_back(cI->shapeInfo());
-  if (Wp != nullptr) outShapes->push_back(Wp->shapeInfo());
+  if (b != nullptr) {
+    outShapes->push_back(b->shapeInfo());
+  }
+  if (seqLen != nullptr) {
+    outShapes->push_back(seqLen->shapeInfo());
+  }
+  if (hI != nullptr) {
+    outShapes->push_back(hI->shapeInfo());
+  }
+  if (cI != nullptr) {
+    outShapes->push_back(cI->shapeInfo());
+  }
+
+  if (Wp != nullptr) {
+    outShapes->push_back(Wp->shapeInfo());
+  }
 
   return outShapes;
 }
