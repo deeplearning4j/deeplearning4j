@@ -249,11 +249,8 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
         log.info("Inf before: {}", ret);
         dm(0, sequence, (int) nextRandom.get() % window, nextRandom, learningRate,Collections.emptyList(), ret);
-        try {
-            random.close();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        random.close();
+
         return ret;
     }
 
