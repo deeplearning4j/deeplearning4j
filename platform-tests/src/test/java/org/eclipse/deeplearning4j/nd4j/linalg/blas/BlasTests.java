@@ -58,21 +58,9 @@ public class BlasTests extends BaseNd4jTestWithBackends {
         INDArray assertArr = Nd4j.create(assertion);
         INDArray inputMatrix = Nd4j.create( inputArray );
         int nColumns = inputMatrix.columns();
-        System.out.println();
-        System.out.println( "Test results for backend: " + Nd4j.backend.toString() );
-        System.out.println();
-        System.out.println( "inputMatrix before PCA.pca_factor call:" );
-        System.out.println( inputMatrix.toString() );
-        System.out.println();
         INDArray factor = PCA.pca_factor( inputMatrix, nColumns, false );
         assertEquals(assertArr,factor);
-        System.out.println( "inputMatrix after PCA.pca_factor call:" );
-        System.out.println( inputMatrix.toString() );
-        System.out.println();
-        System.out.println( "factor matrix as returned by PCA.pca_factor call:" );
-        System.out.println( factor.toString() );
-        System.out.println();
-        System.out.println( "Current Backend: " + Nd4j.backend.toString() );
+
 
     }
 
