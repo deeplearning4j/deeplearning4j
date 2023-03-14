@@ -196,6 +196,11 @@ public class PCA {
             factor.putColumn(i, V.getColumn(i));
         }
 
+        //difference from cuda vs cpu backends
+        //see: https://github.com/deeplearning4j/deeplearning4j/issues/9931
+        if(Nd4j.getEnvironment().isCPU())
+            return factor.transpose();
+
         return factor;
     }
 
