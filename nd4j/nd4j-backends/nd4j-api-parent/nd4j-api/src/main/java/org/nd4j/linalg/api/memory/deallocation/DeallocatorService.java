@@ -194,9 +194,13 @@ public class DeallocatorService {
                         // invoking deallocator
                         if (reference != null) {
                             reference.deallocate();
-                            deallocated.incrementCount(referenceTypes.get(reference.getId()),1.0);
-                            referenceTypes.remove(reference.getId());
-                            referenceMap.remove(reference.getId());
+                            if(referenceTypes.containsKey(reference.getId())) {
+                                deallocated.incrementCount(referenceTypes.get(reference.getId()), 1.0);
+                                referenceTypes.remove(reference.getId());
+                            }
+
+                            if(referenceMap.containsKey(reference.getId()))
+                                referenceMap.remove(reference.getId());
                         }
                     }
                 } else {
@@ -208,9 +212,12 @@ public class DeallocatorService {
 
                         // invoking deallocator
                         reference.deallocate();
-                        deallocated.incrementCount(referenceTypes.get(reference.getId()),1.0);
-                        referenceMap.remove(reference.getId());
-                        referenceTypes.remove(reference.getId());
+                        if(referenceTypes.containsKey(reference.getId())) {
+                            deallocated.incrementCount(referenceTypes.get(reference.getId()), 1.0);
+                            referenceTypes.remove(reference.getId());
+                        }
+                        if(referenceMap.containsKey(reference.getId()))
+                            referenceMap.remove(reference.getId());
                     } catch (InterruptedException e) {
                         canRun = false;
                     } catch (Exception e) {
