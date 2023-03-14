@@ -208,7 +208,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
             Nd4j.getEnvironment().setMaxThreads(1);
         }
 
-        INDArray ret = Nd4j.createUninitialized(this.lookupTable.getWeights().dataType(),lookupTable.layerSize());
+        INDArray ret = Nd4j.createUninitializedDetached(this.lookupTable.getWeights().dataType(),lookupTable.layerSize());
         Nd4j.rand(ret,random);
         ret.subi(0.5).divi(lookupTable.layerSize());
 
@@ -218,6 +218,9 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
         if(configuration.getWorkers() > 1) {
             Nd4j.getEnvironment().setMaxThreads(numThreadsOriginal);
         }
+
+        //close since we don't have a deallocator for random instances
+        random.close();
         return ret;
     }
 
@@ -246,6 +249,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
         log.info("Inf before: {}", ret);
         dm(0, sequence, (int) nextRandom.get() % window, nextRandom, learningRate,Collections.emptyList(), ret);
+        random.close();
 
         return ret;
     }

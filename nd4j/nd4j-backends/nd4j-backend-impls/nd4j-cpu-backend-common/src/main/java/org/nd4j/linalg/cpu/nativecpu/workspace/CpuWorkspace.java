@@ -56,15 +56,19 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
     public CpuWorkspace(@NonNull WorkspaceConfiguration configuration) {
         super(configuration);
+        Nd4j.getDeallocatorService().pickObject(this);
     }
 
     public CpuWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String workspaceId) {
         super(configuration, workspaceId);
+        Nd4j.getDeallocatorService().pickObject(this);
+
     }
 
     public CpuWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String workspaceId, Integer deviceId) {
         super(configuration, workspaceId);
         this.deviceId = deviceId;
+        Nd4j.getDeallocatorService().pickObject(this);
     }
 
 

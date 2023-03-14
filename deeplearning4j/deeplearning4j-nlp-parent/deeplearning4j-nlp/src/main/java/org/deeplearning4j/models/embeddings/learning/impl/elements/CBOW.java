@@ -190,7 +190,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
 
     public double doExec(List<BatchItem<T>> items, INDArray inferenceVector) {
-        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfig(),"cbow-exec-" + Thread.currentThread().getName())) {
+        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             boolean useHS = configuration.isUseHierarchicSoftmax();
             boolean useNegative = configuration.getNegative() > 0;
             boolean useInference = inferenceVector != null;
@@ -212,14 +212,14 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                         maxWinWordsCols = curr;
                 }
 
-                INDArray inputWindowWords = Nd4j.create(DataType.INT32, items.size(), maxWinWordsCols);
-                INDArray inputWordsStatuses = Nd4j.create(DataType.INT32, items.size(), maxWinWordsCols);
-                INDArray randoms = Nd4j.create(DataType.INT64, items.size());
-                INDArray alphas = Nd4j.create(DataType.DOUBLE, items.size());
-                INDArray currentWindowIndexes = Nd4j.create(DataType.INT32, items.size());
-                INDArray codes = Nd4j.create(DataType.INT8, items.size(), maxCols);
-                INDArray indices = Nd4j.create(DataType.INT32, items.size(), maxCols);
-                INDArray numLabelsArray = Nd4j.create(DataType.INT32, items.size());
+                INDArray inputWindowWords = Nd4j.createUninitializedDetached(DataType.INT32, items.size(), maxWinWordsCols);
+                INDArray inputWordsStatuses = Nd4j.createUninitializedDetached(DataType.INT32, items.size(), maxWinWordsCols);
+                INDArray randoms = Nd4j.createUninitializedDetached(DataType.INT64, items.size());
+                INDArray alphas = Nd4j.createUninitializedDetached(DataType.DOUBLE, items.size());
+                INDArray currentWindowIndexes = Nd4j.createUninitializedDetached(DataType.INT32, items.size());
+                INDArray codes = Nd4j.createUninitializedDetached(DataType.INT8, items.size(), maxCols);
+                INDArray indices = Nd4j.createUninitializedDetached(DataType.INT32, items.size(), maxCols);
+                INDArray numLabelsArray = Nd4j.createUninitializedDetached(DataType.INT32, items.size());
 
                 for (int cnt = 0; cnt < items.size(); cnt++) {
                     T currentWord = items.get(cnt).getWord();

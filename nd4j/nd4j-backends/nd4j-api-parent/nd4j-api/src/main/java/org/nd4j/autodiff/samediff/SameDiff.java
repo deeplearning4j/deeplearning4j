@@ -6172,7 +6172,6 @@ public class SameDiff extends SDBaseOps {
             vars.add(fg.variables(i));
         }
 
-//        FlatConfiguration conf = fg.configuration();
 
         /* Reconstruct the graph
         We'll do the reconstruction manually here, rather than using sd.var(...), so that we have more control
@@ -6189,7 +6188,6 @@ public class SameDiff extends SDBaseOps {
         }
 
         //Reconstruct variables:
-        Map<Integer, SDVariable> varNodeIds = new HashMap<>();
         Map<Pair<Integer, Integer>, SDVariable> variablesByNodeAndOutNum = new HashMap<>();
         Map<String, List<SDVariable>> variablesByName = new HashMap<>();
         for (FlatVariable v : vars) {

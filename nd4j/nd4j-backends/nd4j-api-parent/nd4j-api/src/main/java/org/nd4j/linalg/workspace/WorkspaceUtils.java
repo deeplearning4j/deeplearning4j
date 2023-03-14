@@ -172,7 +172,7 @@ public class WorkspaceUtils {
      */
     public static int getTotalRequiredMemoryForWorkspace(INDArray arr) {
         if(!Nd4j.getBackend().getNDArrayClass().getName().toLowerCase().contains("cu")) {
-            long ret =  getAligned(arr.length() * arr.dataType().width()) + getAligned(arr.shapeInfoJava().length * DataType.INT64.width());
+            long ret =  getAligned(arr.length() * arr.dataType().width());
             return (int) ret;
         } else {
             long ret = getAligned(arr.length() * arr.dataType().width());

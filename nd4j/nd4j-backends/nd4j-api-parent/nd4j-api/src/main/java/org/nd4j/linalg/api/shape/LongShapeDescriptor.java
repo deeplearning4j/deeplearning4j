@@ -38,8 +38,6 @@ public class LongShapeDescriptor {
 
     private long ews;
 
-    private long hashShape = 0;
-    private long hashStride = 0;
 
     @Getter
     private long[] shape;
@@ -51,19 +49,6 @@ public class LongShapeDescriptor {
     private long extras;
 
     public LongShapeDescriptor(long[] shape, long[] stride, long offset, long ews, char order, long extras) {
-        /*
-        if (shape != null) {
-            hashShape = shape[0];
-            for (int i = 1; i < shape.length; i++)
-                hashShape = 31 * hashShape + shape[i];
-        }
-        
-        if (stride != null) {
-            hashStride = stride[0];
-            for (int i = 1; i < stride.length; i++)
-                hashStride = 31 * hashStride + stride[i];
-        }
-        */
         this.shape = Arrays.copyOf(shape, shape.length);
         this.stride = Arrays.copyOf(stride, stride.length);
 
@@ -171,7 +156,7 @@ public class LongShapeDescriptor {
      * Return a new LongShapeDescriptor with the same shape, strides, order etc but with the specified datatype instead
      * @param dataType Datatype of the returned descriptor
      */
-    public LongShapeDescriptor asDataType(DataType dataType){
+    public LongShapeDescriptor asDataType(DataType dataType) {
         long extras = 0L;
         extras = ArrayOptionsHelper.setOptionBit(extras, dataType);
         if(isEmpty()){

@@ -263,7 +263,7 @@ public abstract class NativeRandom implements Random {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         /*
             Do nothing here, since we use WeakReferences for actual deallocation
          */

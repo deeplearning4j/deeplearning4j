@@ -101,4 +101,6 @@ public class CpuNativeRandom extends NativeRandom {
     public void setStates(long rootState, long nodeState) {
         nativeOps.setRandomGeneratorStates((OpaqueRandomGenerator)statePointer, rootState, nodeState);
     }
+
+
 }

@@ -295,12 +295,12 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
 
 
     public  Double doExec(List<BatchItem<T>> items,INDArray inferenceVector) {
-        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfig(),"skipgram-exec-" + Thread.currentThread().getName())) {
+        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             if (items.size() > 1) {
-                INDArray targetArray = Nd4j.create(DataType.INT32, items.size());
-                INDArray ngStarterArray = Nd4j.create(DataType.INT32, items.size());
-                INDArray alphasArray = Nd4j.create(syn0.get().dataType(), items.size());
-                INDArray randomValuesArr = Nd4j.create(DataType.INT64, items.size());
+                INDArray targetArray = Nd4j.createUninitializedDetached(DataType.INT32, items.size());
+                INDArray ngStarterArray = Nd4j.createUninitializedDetached(DataType.INT32, items.size());
+                INDArray alphasArray = Nd4j.createUninitializedDetached(syn0.get().dataType(), items.size());
+                INDArray randomValuesArr = Nd4j.createUninitializedDetached(DataType.INT64, items.size());
                 int maxCols = 1;
                 for (int i = 0; i < items.size(); i++) {
                     int curr = items.get(i).getWord().getCodeLength();

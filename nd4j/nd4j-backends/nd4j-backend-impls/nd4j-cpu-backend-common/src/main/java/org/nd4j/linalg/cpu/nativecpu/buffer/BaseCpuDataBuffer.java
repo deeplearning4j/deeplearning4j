@@ -292,14 +292,14 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length, dataType(), false).retainReference();
 
         if (dataType() == DataType.DOUBLE) {
-            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asDoublePointer().retainReference();
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asDoublePointer();
 
             indexer = DoubleIndexer.create((DoublePointer) pointer);
 
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == DataType.FLOAT) {
-            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asFloatPointer().retainReference();
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asFloatPointer();
 
             setIndexer(FloatIndexer.create((FloatPointer) pointer));
 
@@ -307,76 +307,76 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
                 fillPointerWithZero();
 
         } else if (dataType() == DataType.HALF) {
-            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asShortPointer().retainReference();
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asShortPointer();
 
             setIndexer(HalfIndexer.create((ShortPointer) pointer));
 
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == DataType.BFLOAT16) {
-            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asShortPointer().retainReference();
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asShortPointer();
 
             setIndexer(Bfloat16Indexer.create((ShortPointer) pointer));
 
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == DataType.INT) {
-            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asIntPointer().retainReference();
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asIntPointer();
 
             setIndexer(IntIndexer.create((IntPointer) pointer));
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == DataType.LONG) {
-            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asLongPointer().retainReference();
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asLongPointer();
 
             setIndexer(LongIndexer.create((LongPointer) pointer));
 
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == DataType.BYTE) {
-            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asBytePointer().retainReference();
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asBytePointer();
 
             setIndexer(ByteIndexer.create((BytePointer) pointer));
 
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == DataType.SHORT) {
-            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asShortPointer().retainReference();
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asShortPointer();
 
             setIndexer(ShortIndexer.create((ShortPointer) pointer));
 
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == DataType.UBYTE) {
-            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asBytePointer().retainReference();
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asBytePointer();
 
             setIndexer(UByteIndexer.create((BytePointer) pointer));
 
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == DataType.UINT16) {
-            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asShortPointer().retainReference();
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asShortPointer();
 
             setIndexer(UShortIndexer.create((ShortPointer) pointer));
 
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == DataType.UINT32) {
-            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asIntPointer().retainReference();
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asIntPointer();
 
             setIndexer(UIntIndexer.create((IntPointer) pointer));
 
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == DataType.UINT64) {
-            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asLongPointer().retainReference();
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asLongPointer();
 
             setIndexer(LongIndexer.create((LongPointer) pointer));
 
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == DataType.BOOL) {
-            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asBoolPointer().retainReference();
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asBoolPointer();
 
             setIndexer(BooleanIndexer.create((BooleanPointer) pointer));
 
@@ -385,7 +385,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         } else if (dataType() == DataType.UTF8) {
             // we are allocating buffer as INT8 intentionally
             ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length(), INT8, false);
-            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length()).asBytePointer().retainReference();
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length()).asBytePointer();
 
             setIndexer(ByteIndexer.create((BytePointer) pointer));
 
@@ -461,38 +461,38 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         // we're fetching actual pointer right from C++
         PagedPointer tempPtr = new PagedPointer(ptrDataBuffer.primaryBuffer());
-        tempPtr = (PagedPointer) tempPtr.retainReference();
+        tempPtr = (PagedPointer) tempPtr;
 
         switch (this.type) {
             case DOUBLE:
-                addressPointer = tempPtr.asDoublePointer().retainReference();
+                addressPointer = tempPtr.asDoublePointer();
                 break;
             case FLOAT:
-                addressPointer = tempPtr.asFloatPointer().retainReference();
+                addressPointer = tempPtr.asFloatPointer();
                 break;
             case UINT16:
             case SHORT:
             case BFLOAT16:
             case HALF:
-                addressPointer = tempPtr.asShortPointer().retainReference();
+                addressPointer = tempPtr.asShortPointer();
                 break;
             case UINT32:
             case INT:
-                addressPointer = tempPtr.asIntPointer().retainReference();
+                addressPointer = tempPtr.asIntPointer();
                 break;
             case UBYTE:
             case BYTE:
-                addressPointer = tempPtr.asBytePointer().retainReference();
+                addressPointer = tempPtr.asBytePointer();
                 break;
             case UINT64:
             case LONG:
-                addressPointer = tempPtr.asLongPointer().retainReference();
+                addressPointer = tempPtr.asLongPointer();
                 break;
             case BOOL:
-                addressPointer = tempPtr.asBoolPointer().retainReference();
+                addressPointer = tempPtr.asBoolPointer();
                 break;
             default:
-                addressPointer = tempPtr.asBytePointer().retainReference();
+                addressPointer = tempPtr.asBytePointer();
                 break;
         }
 

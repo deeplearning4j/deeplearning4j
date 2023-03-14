@@ -232,7 +232,9 @@ public class FlatBuffersMapper {
                 return name2.getHash();
             }
 
-        } else {
+        } else if(type == Type.UDF) {
+            return -1;
+        }  else {
             try {
                 DifferentialFunction op = DifferentialFunctionClassHolder.getInstance().getInstance(name);
                 return op.opNum();
@@ -796,10 +798,9 @@ public class FlatBuffersMapper {
                                  Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter, Integer id) {
         val opName = node.opName();
         val hash = FlatBuffersMapper.getOpNum(node.opName(), node.opType());
-        //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
 
         double[] extras;
-        if (node.opType() == Type.CUSTOM) {
+        if (node.opType() == Type.CUSTOM || node.opType() == Type.UDF) {
             CustomOp op = (CustomOp) node;
             extras = op.tArgs();
         } else {
@@ -816,7 +817,7 @@ public class FlatBuffersMapper {
         long[] extraBits = null;
         int[] extraStringIds = null;
         String[] sArgs = null;
-        if (node.opType() == Type.CUSTOM) {
+        if (node.opType() == Type.CUSTOM || node.opType() == Type.UDF) {
             val dynamicCustomOp = (DynamicCustomOp) node;
             extraBits = dynamicCustomOp.iArgs();
             boolArgs = dynamicCustomOp.bArgs();
