@@ -32,6 +32,7 @@ import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dimensionalityreduction.PCA;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -43,6 +44,30 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @NativeTag
 public class BlasTests extends BaseNd4jTestWithBackends {
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void pcaTest(Nd4jBackend backend) {
+        double[][] inputArray = { { 1.0, 2.0, 3.0 }, { 11.0, 12.0, 13.0 }, { 21.0, 22.0, 23.0 }, { 31.0, 32.0, 33.0 } };
+        INDArray inputMatrix = Nd4j.create( inputArray );
+        int nColumns = inputMatrix.columns();
+        System.out.println();
+        System.out.println( "Test results for backend: " + Nd4j.backend.toString() );
+        System.out.println();
+        System.out.println( "inputMatrix before PCA.pca_factor call:" );
+        System.out.println( inputMatrix.toString() );
+        System.out.println();
+        INDArray factor = PCA.pca_factor( inputMatrix, nColumns, false );
+        System.out.println( "inputMatrix after PCA.pca_factor call:" );
+        System.out.println( inputMatrix.toString() );
+        System.out.println();
+        System.out.println( "factor matrix as returned by PCA.pca_factor call:" );
+        System.out.println( factor.toString() );
+        System.out.println();
+        System.out.println( "Current Backend: " + Nd4j.backend.toString() );
+
+    }
 
 
     @ParameterizedTest
