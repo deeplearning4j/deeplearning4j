@@ -193,10 +193,10 @@ public class DeallocatorService {
                     } else {
                         // invoking deallocator
                         if (reference != null) {
-                            reference.deallocate();
                             if(referenceTypes.containsKey(reference.getId())) {
                                 deallocated.incrementCount(referenceTypes.get(reference.getId()), 1.0);
                                 referenceTypes.remove(reference.getId());
+                                reference.deallocate();
                             }
 
                             if(referenceMap.containsKey(reference.getId()))
@@ -210,12 +210,14 @@ public class DeallocatorService {
                             continue;
 
 
-                        // invoking deallocator
-                        reference.deallocate();
+
                         if(referenceTypes.containsKey(reference.getId())) {
                             deallocated.incrementCount(referenceTypes.get(reference.getId()), 1.0);
                             referenceTypes.remove(reference.getId());
+                            // invoking deallocator
+                            reference.deallocate();
                         }
+
                         if(referenceMap.containsKey(reference.getId()))
                             referenceMap.remove(reference.getId());
                     } catch (InterruptedException e) {
