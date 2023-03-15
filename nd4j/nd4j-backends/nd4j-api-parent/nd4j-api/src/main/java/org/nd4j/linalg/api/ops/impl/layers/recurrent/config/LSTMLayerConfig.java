@@ -91,6 +91,8 @@ public class LSTMLayerConfig {
      */
     private boolean retLastC;            // B_ARG(7)
 
+
+
     /**
      * Cell clipping value, if it = 0 then do not apply clipping
      */

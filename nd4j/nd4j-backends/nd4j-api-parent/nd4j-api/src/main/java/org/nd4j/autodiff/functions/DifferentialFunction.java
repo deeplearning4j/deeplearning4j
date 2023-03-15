@@ -635,11 +635,21 @@ public abstract class DifferentialFunction {
     }
 
     /**
+     * Return the variables expecting
+     * gradients. This is usually {@link #args()}
+     * but may vary depending on the function.
+     * @return the variables expecting a gradient.
+     */
+    public  SDVariable[] variablesExpectingGrads() {
+        return args();
+    }
+
+    /**
      * Return the specified argument for this function
      * @param num Number of the argument. Must be in range 0 to numArgs - 1 inclusive
      * @return Specified argument
      */
-    public SDVariable arg(int num){
+    public SDVariable arg(int num) {
         SDVariable[] args = args();
         Preconditions.checkNotNull(args, "Arguments are null for function %s", this.getOwnName());
         Preconditions.checkArgument(num >= 0 && num < args.length, "Invalid index: must be 0 to numArgs (0 <= idx < %s), got %s", args.length, num);
@@ -679,7 +689,7 @@ public abstract class DifferentialFunction {
             throw new IllegalStateException("Error executing diff operation: doDiff returned null for op: " + this.opName());
         }
 
-        val outputVars = args();
+        val outputVars = variablesExpectingGrads();
         boolean copied = false;
         for(int i = 0; i < vals.size(); i++) {
             SDVariable var = outputVars[i];

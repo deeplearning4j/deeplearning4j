@@ -58,15 +58,19 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
     public CudaWorkspace(@NonNull WorkspaceConfiguration configuration) {
         super(configuration);
+        Nd4j.getDeallocatorService().pickObject(this);
+
     }
 
     public CudaWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String workspaceId) {
         super(configuration, workspaceId);
+        Nd4j.getDeallocatorService().pickObject(this);
     }
 
     public CudaWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String workspaceId, Integer deviceId) {
         super(configuration, workspaceId);
         this.deviceId = deviceId;
+        Nd4j.getDeallocatorService().pickObject(this);
     }
 
     @Override

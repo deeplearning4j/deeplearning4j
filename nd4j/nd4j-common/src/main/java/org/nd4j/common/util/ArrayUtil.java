@@ -43,6 +43,494 @@ public class ArrayUtil {
 
 
     /**
+     * Converts a byte array to a boolean array.
+     * @param input the input byte array
+     * @return a boolean array with true values for nonzero bytes and false values for zero bytes
+     */
+    public static boolean[] toBooleanArray(byte[] input) {
+        boolean[] output = new boolean[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i] != 0;
+        }
+        return output;
+    }
+
+    /**
+     * Converts a short array to a boolean array.
+     * @param input the input short array
+     * @return a boolean array with true values for nonzero shorts and false values for zero shorts
+     */
+    public static boolean[] toBooleanArray(short[] input) {
+        boolean[] output = new boolean[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i] != 0;
+        }
+        return output;
+    }
+
+    /**
+     * Converts an int array to a boolean array.
+     * @param input the input int array
+     * @return a boolean array with true values for nonzero integers and false values for zero integers
+     */
+    public static boolean[] toBooleanArray(int[] input) {
+        boolean[] output = new boolean[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i] != 0;
+        }
+        return output;
+    }
+
+    /**
+     * Converts a long array to a boolean array.
+     * @param input the input long array
+     * @return a boolean array with true values for nonzero longs and false values for zero longs
+     */
+    public static boolean[] toBooleanArray(long[] input) {
+        boolean[] output = new boolean[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i] != 0L;
+        }
+        return output;
+    }
+
+    /**
+     * Converts a float array to a boolean array.
+     * @param input the input float array
+     * @return a boolean array with true values for nonzero floats and false values for zero floats
+     */
+    public static boolean[] toBooleanArray(float[] input) {
+        boolean[] output = new boolean[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i] != 0.0f;
+        }
+        return output;
+    }
+
+    /**
+     * Converts a double array to a boolean array.
+     * @param input the input double array
+     * @return a boolean array with true values for nonzero doubles and false values for zero doubles
+     */
+    public static boolean[] toBooleanArray(double[] input) {
+        boolean[] output = new boolean[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i] != 0.0;
+        }
+        return output;
+    }
+
+
+    /**
+     * Create a boolean array from a float array.
+     * @param elements the elements to create
+     * @return the returned float array
+     */
+    public static boolean[] fromFloat(float[] elements) {
+        boolean[] ret = new boolean[elements.length];
+        for(int i = 0; i < elements.length; i++) {
+            ret[i] = elements[i] == 0.0f ? false : true;
+        }
+
+        return ret;
+    }
+
+    /**
+     * Generate an array with n elements of the same specified value.
+     * @param element the element to create n copies of
+     * @param n the number of elements
+     * @return the created array
+     */
+    public static boolean[] nTimes(boolean element,int n) {
+        boolean[] ret = new boolean[n];
+        //boolean values  default to false. Only need to iterate when true.
+        if(element) {
+            for (int i = 0; i < n; i++) {
+                ret[i] = element;
+            }
+        }
+        return ret;
+    }
+
+
+
+
+    /**
+     * Converts a short array to an int array.
+     * @param input the input short array
+     * @return an int array with each element equal to the corresponding short value
+     */
+    public static int[] toIntArray(short[] input) {
+        int[] output = new int[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts a short array to an int array.
+     * @param input the input short array
+     * @return an int array with each element equal to the corresponding int value
+     */
+    public static int[] toIntArray(boolean[] input) {
+        int[] output = new int[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i] ? 1 : 0;
+        }
+        return output;
+    }
+
+
+
+    /**
+     * Converts a char array to an int array.
+     * @param input the input char array
+     * @return an int array with each element equal to the corresponding char value
+     */
+    public static int[] toIntArray(char[] input) {
+        int[] output = new int[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts an int array to an int array (i.e., returns a copy of the input array).
+     * @param input the input int array
+     * @return a new int array with the same values as the input array
+     */
+    public static int[] toIntArray(int[] input) {
+        int[] output = new int[input.length];
+        System.arraycopy(input, 0, output, 0, input.length);
+        return output;
+    }
+
+    /**
+     * Converts a long array to an int array.
+     * @param input the input long array
+     * @return an int array with each element equal to the corresponding long value cast to an int
+     */
+    public static int[] toIntArray(long[] input) {
+        int[] output = new int[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = (int) input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts a float array to an int array.
+     * @param input the input float array
+     * @return an int array with each element equal to the corresponding float value cast to an int
+     */
+    public static int[] toIntArray(float[] input) {
+        int[] output = new int[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = (int) input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts a double array to an int array.
+     * @param input the input double array
+     * @return an int array with each element equal to the corresponding double value cast to an int
+     */
+    public static int[] toIntArray(double[] input) {
+        int[] output = new int[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = (int) input[i];
+        }
+        return output;
+    }
+
+
+
+    /**
+     * Converts a short array to a double array.
+     * @param input the input short array
+     * @return a double array with each element equal to the corresponding short value
+     */
+    public static double[] toDoubleArray(short[] input) {
+        double[] output = new double[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts a char array to a double array.
+     * @param input the input char array
+     * @return a double array with each element equal to the corresponding char value
+     */
+    public static double[] toDoubleArray(char[] input) {
+        double[] output = new double[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts a boolean array to a double array.
+     * @param input the input boolean array
+     * @return a double array with each element equal to the corresponding double value
+     */
+    public static double[] toDoubleArray(boolean[] input) {
+        double[] output = new double[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i] ? 1.0 : 0.0;
+        }
+        return output;
+    }
+
+
+    /**
+     * Converts an int array to a double array.
+     * @param input the input int array
+     * @return a double array with each element equal to the corresponding int value
+     */
+    public static double[] toDoubleArray(int[] input) {
+        double[] output = new double[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts a long array to a double array.
+     * @param input the input long array
+     * @return a double array with each element equal to the corresponding long value
+     */
+    public static double[] toDoubleArray(long[] input) {
+        double[] output = new double[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts a float array to a double array.
+     * @param input the input float array
+     * @return a double array with each element equal to the corresponding float value
+     */
+    public static double[] toDoubleArray(float[] input) {
+        double[] output = new double[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts a double array to a double array (i.e., returns a copy of the input array).
+     * @param input the input double array
+     * @return a new double array with the same values as the input array
+     */
+    public static double[] toDoubleArray(double[] input) {
+        double[] output = new double[input.length];
+        System.arraycopy(input, 0, output, 0, input.length);
+        return output;
+    }
+
+    /**
+     * Converts a byte array to a long array.
+     * @param input the input byte array
+     * @return a long array with each element equal to the corresponding byte value
+     */
+    public static long[] toLongArray(byte[] input) {
+        long[] output = new long[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts a byte array to a long array.
+     * @param input the input boolean array
+     * @return a long array with each element equal to the corresponding long value
+     */
+    public static long[] toLongArray(boolean[] input) {
+        long[] output = new long[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i] ? 1 : 0;
+        }
+        return output;
+    }
+
+    /**
+     * Converts a short array to a long array.
+     * @param input the input short array
+     * @return a long array with each element equal to the corresponding short value
+     */
+    public static long[] toLongArray(short[] input) {
+        long[] output = new long[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts a char array to a long array.
+     * @param input the input char array
+     * @return a long array with each element equal to the corresponding char value
+     */
+    public static long[] toLongArray(char[] input) {
+        long[] output = new long[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts an int array to a long array.
+     * @param input the input int array
+     * @return a long array with each element equal to the corresponding int value
+     */
+    public static long[] toLongArrayInt(int[] input) {
+        long[] output = new long[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts a float array to a long array.
+     * @param input the input float array
+     * @return a long array with each element equal to the corresponding float value
+     */
+    public static long[] toLongArrayFloat(float[] input) {
+        long[] output = new long[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = (long) input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts a double array to a long array.
+     * @param input the input double array
+     * @return a long array with each element equal to the corresponding double value
+     */
+    public static long[] toLongArray(double[] input) {
+        long[] output = new long[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = (long) input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts a long array to a long array (i.e., returns a copy of the input array).
+     * @param input the input long array
+     * @return a new long array with the same values as the input array
+     */
+    public static long[] toLongArray(long[] input) {
+        long[] output = new long[input.length];
+        System.arraycopy(input, 0, output, 0, input.length);
+        return output;
+    }
+
+
+    /**
+     * Converts a short array to a float array.
+     * @param input the input short array
+     * @return a float array with each element equal to the corresponding short value
+     */
+    public static float[] toFloatArray(short[] input) {
+        float[] output = new float[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts a boolean array to a float array.
+     * @param input the input boolean array
+     * @return a float array with each element equal to the corresponding boolean value
+     */
+    public static float[] toFloatArray(boolean[] input) {
+        float[] output = new float[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i] ? 1.0f : 0.0f;
+        }
+        return output;
+    }
+
+    /**
+     * Converts a char array to a float array.
+     * @param input the input char array
+     * @return a float array with each element equal to the corresponding char value
+     */
+    public static float[] toFloatArray(char[] input) {
+        float[] output = new float[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts an int array to a float array.
+     * @param input the input int array
+     * @return a float array with each element equal to the corresponding int value
+     */
+    public static float[] toFloatArray(int[] input) {
+        float[] output = new float[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts a long array to a float array.
+     * @param input the input long array
+     * @return a float array with each element equal to the corresponding long value
+     */
+    public static float[] toFloatArray(long[] input) {
+        float[] output = new float[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts a double array to a float array.
+     * @param input the input double array
+     * @return a float array with each element equal to the corresponding double value
+     */
+    public static float[] toFloatArray(double[] input) {
+        float[] output = new float[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = (float) input[i];
+        }
+        return output;
+    }
+
+    /**
+     * Converts a float array to a float array (i.e., returns a copy of the input array).
+     * @param input the input float array
+     * @return a new float array with the same values as the input array
+     */
+    public static float[] toFloatArray(float[] input) {
+        float[] output = new float[input.length];
+        System.arraycopy(input, 0, output, 0, input.length);
+        return output;
+    }
+
+    /**
      * Concat all the elements
      * @param arrs the input arrays
      * @return
@@ -392,7 +880,7 @@ public class ArrayUtil {
         final int f = Float.floatToIntBits(v);
 
         return (short) (((f >> 16) & 0x8000) | ((((f & 0x7f800000) - 0x38000000) >> 13) & 0x7c00)
-                        | ((f >> 13) & 0x03ff));
+                | ((f >> 13) & 0x03ff));
     }
 
     public static int[] toInts(float[] data) {
@@ -413,6 +901,22 @@ public class ArrayUtil {
         val retVal = new byte[array.length];
         for (int i = 0; i < array.length; i++) {
             retVal[i] = (byte) array[i];
+        }
+        return retVal;
+    }
+
+    public static byte[] toBytes(short[] array) {
+        val retVal = new byte[array.length];
+        for (int i = 0; i < array.length; i++) {
+            retVal[i] = (byte) array[i];
+        }
+        return retVal;
+    }
+
+    public static byte[] toBytes(boolean[] array) {
+        val retVal = new byte[array.length];
+        for (int i = 0; i < array.length; i++) {
+            retVal[i] = (byte)  (array[i] ? 1 : 0);
         }
         return retVal;
     }
@@ -1152,10 +1656,26 @@ public class ArrayUtil {
         return toDoubles(Ints.concat(ints));
     }
 
+
     public static short[] toShorts(long[] ints) {
         val ret = new short[ints.length];
         for (int i = 0; i < ints.length; i++)
             ret[i] = (short) ints[i];
+        return ret;
+    }
+
+    public static short[] toShorts(byte[] ints) {
+        val ret = new short[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (short) ints[i];
+        return ret;
+    }
+
+
+    public static short[] toShorts(boolean[] ints) {
+        val ret = new short[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (short) (ints[i] ? 1 : 0);
         return ret;
     }
 
@@ -1373,7 +1893,7 @@ public class ArrayUtil {
         for (int i = 0; i < validationLength; i++) {
             if (aShape[axes[0][i]] != bShape[axes[1][i]])
                 throw new IllegalArgumentException(
-                                "Size of the given axes a" + " t each dimension must be the same size.");
+                        "Size of the given axes a" + " t each dimension must be the same size.");
             if (axes[0][i] < 0)
                 axes[0][i] += aShape.length;
             if (axes[1][i] < 0)
@@ -1550,6 +2070,21 @@ public class ArrayUtil {
         return bytes;
     }
 
+
+    /**
+     *
+     * @param longArray
+     * @return
+     */
+    public static byte[] toByteArray(long[] longArray) {
+        int times = Long.SIZE / Byte.SIZE;
+        byte[] bytes = new byte[longArray.length * times];
+        for (int i = 0; i < longArray.length; i++) {
+            ByteBuffer.wrap(bytes, i * times, times).putLong(longArray[i]);
+        }
+        return bytes;
+    }
+
     /**
      *
      * @param byteArray
@@ -1636,6 +2171,8 @@ public class ArrayUtil {
         }
         return ints;
     }
+
+
 
 
     /**

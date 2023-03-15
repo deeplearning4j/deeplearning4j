@@ -134,8 +134,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         save.deleteOnExit();
         sd.save(save,true);
         SameDiff sd2 = SameDiff.load(save,true);
-        assertEquals(sd,sd2);
         System.out.println(sd.summary());
+        assertEquals(sd,sd2);
         sdVariables[0].eval();
 
     }

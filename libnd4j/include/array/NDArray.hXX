@@ -1306,7 +1306,7 @@ namespace sd {
         auto constantBuff = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
         auto recastShapeInfo = const_cast<sd::LongType *>(constantBuff->primary());
         auto result = new NDArray(newBuffer,recastShapeInfo,getContext());
-
+        delete desc;
         result->assign(*this);
 
         return result;
@@ -2357,7 +2357,7 @@ namespace sd {
             auto data = res.bufferAsT<int8_t>() + offsetsLength;
             const auto inData = bufferAsT<int8_t>() + offsetsLength;
             memcpy(data, inData, nInputoffsets[lengthOf()]);
-
+            delete shapeDesc;
             registerPrimaryUse({&res}, {this});
             return res;
         }
@@ -5243,6 +5243,7 @@ namespace sd {
             _shapeInfoD = shapeBuffer->special();
 #endif
 
+            delete descriptor;
             if (ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
                 _length = 0;
             else

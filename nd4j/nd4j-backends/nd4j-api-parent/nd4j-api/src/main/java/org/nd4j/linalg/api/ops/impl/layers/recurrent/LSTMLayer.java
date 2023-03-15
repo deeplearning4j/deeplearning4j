@@ -119,6 +119,35 @@ public class LSTMLayer extends DynamicCustomOp {
                 this.weights, this.configuration, grad0, grad1,grad2).outputVariables());
     }
 
+    @Override
+    public SDVariable[] variablesExpectingGrads() {
+        List<SDVariable> ret = new ArrayList<>();
+        ret.add(arg(0));
+        ret.add(arg(1));
+        ret.add((arg(2)));
+        if(weights.hasBias()) {
+            ret.add(weights.getBias());
+        }
+
+
+        if(maxTSLength != null) {
+            ret.add(maxTSLength);
+        }
+
+        if(cLast != null) {
+            ret.add(cLast);
+        }
+
+        if(yLast != null) {
+            ret.add(yLast);
+        }
+
+        if(weights.hasPH()) {
+            ret.add(weights.getPeepholeWeights());
+        }
+
+        return ret.toArray(new SDVariable[ret.size()]);
+    }
 
     @Override
     public String opName() {
@@ -129,10 +158,10 @@ public class LSTMLayer extends DynamicCustomOp {
     public Map<String, Object> propertiesForFunction() {
         Map<String,Object> base =  configuration.toProperties(true, true);
         if(cLast != null) {
-            base.put("cLast",cLast);
+            base.put("cLastName",cLast);
         }
         if(yLast != null) {
-            base.put("yLast",yLast);
+            base.put("yLastName",yLast);
         }
 
         return base;
@@ -266,12 +295,12 @@ public class LSTMLayer extends DynamicCustomOp {
                 builder.lstmdataformat(LSTMDataFormat.valueOf(LSTMDataFormat.class,lstmdataformat));
 
             //note we can't set the property directly due to not having samediff access here yet
-            String cLast = getStringFromProperty("cLast",properties);
+            String cLast = getStringFromProperty("cLastName",properties);
             if(cLast != null) {
                 this.cLastName = cLast;
             }
 
-            String yLast = getStringFromProperty("cLast",properties);
+            String yLast = getStringFromProperty("yLastName",properties);
             if(yLast != null) {
                 this.yLastName = yLast;
             }
@@ -294,7 +323,7 @@ public class LSTMLayer extends DynamicCustomOp {
     }
 
     @Override
-    public int getNumOutputs(){
+    public int getNumOutputs() {
 
         return Booleans.countTrue(
                 configuration.isRetFullSequence(), //retFullSequence: B_ARG(5)

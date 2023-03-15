@@ -17,22 +17,18 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.nd4j.linalg.api.ops.impl.layers.recurrent.config;
+package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
-    public enum LSTMActivations {
-        //Note: ordinal (order) here matters for C++ level. Any new formats should be added at end
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-        TANH,
-        RELU,
-        SIGMOID,
-        AFFINE,
-        LEAKY_RELU,
-        THRESHHOLD_RELU,
-        SCALED_TAHN,
-        HARD_SIGMOID,
-        ELU,
-        SOFTSIGN,
-        SOFTPLUS
-
-
+@Data
+@AllArgsConstructor
+@Builder
+@NoArgsConstructor
+public class IterationArraysKey {
+    private int itemSize;
+    private int maxCols;
 }

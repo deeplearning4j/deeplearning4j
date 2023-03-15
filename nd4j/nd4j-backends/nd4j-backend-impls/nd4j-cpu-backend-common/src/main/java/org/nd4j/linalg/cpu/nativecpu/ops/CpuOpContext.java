@@ -58,6 +58,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
         if(OpContextTracker.getInstance().isEnabled()) {
             OpContextTracker.getInstance().allocateOpContext(this);
         }
+
     }
 
     @Override
@@ -206,7 +207,6 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             DataBuffer dataBuffer = array.shapeInfoDataBuffer();
             shapeInfoReferences.add(dataBuffer);
             Pointer addressPointer = dataBuffer.pointer();
-            addressPointer.retainReference();
             shapeInfoBuffer.put(i,addressPointer);
             fastpath_in.put(i,array.isEmpty() ? null : array);
             if(OpContextTracker.getInstance().isEnabled()) {
@@ -215,7 +215,6 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
         }
 
         buffers.retainReference();
-        shapeInfoBuffer.retainReference();
         nativeOps.setGraphContextInputBuffers(context,arrays.size(),buffers,shapeInfoBuffer,null);
 
     }
@@ -237,8 +236,6 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
         PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(buffers1);
         PointerPointer<LongPointer> shapeInfoBuffer = new PointerPointer<>(shapeInfoBufers2);
-        buffers.retainReference();
-        shapeInfoBuffer.retainReference();
         nativeOps.setGraphContextOutputBuffers(context,arrays.size(),buffers,shapeInfoBuffer,null);
 
     }
@@ -256,8 +253,6 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
         PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(buffers1);
         PointerPointer<LongPointer> shapeInfoBuffer = new PointerPointer<>(shapeInfoBufers2);
-        buffers.retainReference();
-        shapeInfoBuffer.retainReference();
         nativeOps.setGraphContextInputBuffers(context,arrays.length,buffers,shapeInfoBuffer,null);
         super.setInputArrays(arrays);
     }
@@ -275,8 +270,6 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
         PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(buffers1);
         PointerPointer<LongPointer> shapeInfoBuffer = new PointerPointer<>(shapeInfoBufers2);
-        buffers.retainReference();
-        shapeInfoBuffer.retainReference();
         nativeOps.setGraphContextOutputBuffers(context,arrays.length,buffers,shapeInfoBuffer,null);
         super.setOutputArrays(arrays);
     }

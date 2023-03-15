@@ -33,7 +33,6 @@ import org.nd4j.common.primitives.Triple;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
@@ -353,51 +352,38 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void setData(int[] data) {
-        for (int i = 0; i < data.length; i++) {
-            put(i, data[i]);
-        }
+        put(data);
     }
 
     @Override
     public void setData(float[] data) {
-        for (int i = 0; i < data.length; i++) {
-            put(i, data[i]);
-        }
+        put(data);
     }
 
     @Override
     public void setData(double[] data) {
-        for (int i = 0; i < data.length; i++) {
-            put(i, data[i]);
-        }
+        put(data);
     }
 
     @Override
     public void setData(long[] data) {
-        for (int i = 0; i < data.length; i++) {
-            put(i, data[i]);
-        }
+        put(data);
     }
 
     @Override
     public void setData(byte[] data) {
-        for (int i = 0; i < data.length; i++) {
-            put(i, data[i]);
-        }
+        put(data);
     }
 
     @Override
     public void setData(short[] data) {
-        for (int i = 0; i < data.length; i++) {
-            put(i, data[i]);
-        }
+        put(data);
     }
+
 
     @Override
     public void setData(boolean[] data) {
-        for (int i = 0; i < data.length; i++) {
-            put(i, data[i]);
-        }
+        put(data);
     }
 
     @Override
@@ -1199,7 +1185,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     @Override
-    public void put(long i, long element) {
+    public void put(long i,long element) {
         if (released)
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
@@ -1247,6 +1233,352 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 throw new UnsupportedOperationException("Unsupported data type: " + dataType());
         }
     }
+
+    @Override
+    public void put(float[] element) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
+        switch (dataType()) {
+            case BOOL:
+
+                ((BooleanIndexer) indexer).put(0,ArrayUtil.fromFloat(element));
+                break;
+            case BYTE:
+                ((ByteIndexer) indexer).put(0,ArrayUtil.toBytes(element));
+                break;
+            case UBYTE:
+                ((UByteIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case UINT16:
+                ((UShortIndexer) indexer).put(0,ArrayUtil.toInts(element));
+                break;
+            case SHORT:
+                ((ShortIndexer) indexer).put(0,ArrayUtil.toShorts(element));
+                break;
+            case UINT32:
+                ((UIntIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
+                break;
+            case INT:
+                ((IntIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case UINT64:
+                ((LongIndexer) indexer).put(0,ArrayUtil.toLongs(element));
+                break;
+            case LONG:
+                ((LongIndexer) indexer).put(0,ArrayUtil.toLongs(element));
+                break;
+            case BFLOAT16:
+                ((Bfloat16Indexer) indexer).put(0,element);
+                break;
+            case HALF:
+                ((HalfIndexer) indexer).put(0,element);
+                break;
+            case FLOAT:
+                ((FloatIndexer) indexer).put(0,element);
+                break;
+            case DOUBLE:
+                ((DoubleIndexer) indexer).put(0,ArrayUtil.toDoubleArray(element));
+                break;
+            default:
+                throw new IllegalStateException("Unsupported type: " + dataType());
+        }
+    }
+
+    @Override
+    public void put(double[] element) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
+        switch (dataType()) {
+            case BOOL:
+                ((BooleanIndexer) indexer).put(0,ArrayUtil.toBooleanArray(element));
+                break;
+            case BYTE:
+                ((ByteIndexer) indexer).put(0,ArrayUtil.toBytes(element));
+                break;
+            case UBYTE:
+                ((UByteIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case UINT16:
+                ((UShortIndexer) indexer).put(0,ArrayUtil.toInts(element));
+                break;
+            case SHORT:
+                ((ShortIndexer) indexer).put(0,ArrayUtil.toShorts(element));
+                break;
+            case UINT32:
+                ((UIntIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
+                break;
+            case INT:
+                ((IntIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case UINT64:
+                ((LongIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
+                break;
+            case LONG:
+                ((LongIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
+                break;
+            case BFLOAT16:
+                ((Bfloat16Indexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                break;
+            case HALF:
+                ((HalfIndexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                break;
+            case FLOAT:
+                ((FloatIndexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                break;
+            case DOUBLE:
+                ((DoubleIndexer) indexer).put(0,ArrayUtil.toDoubleArray(element));
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
+        }
+    }
+
+    @Override
+    public void put(int[] element) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
+        switch (dataType()) {
+            case BOOL:
+                ((BooleanIndexer) indexer).put(0,ArrayUtil.toBooleanArray(element));
+                break;
+            case BYTE:
+                ((ByteIndexer) indexer).put(0,ArrayUtil.toBytes(element));
+                break;
+            case UBYTE:
+                ((UByteIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case UINT16:
+                ((UShortIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case SHORT:
+                ((ShortIndexer) indexer).put(0,ArrayUtil.toShorts(element));
+                break;
+            case UINT32:
+                ((UIntIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
+                break;
+            case INT:
+                ((IntIndexer) indexer).put(0, element);
+                break;
+            case UINT64: //Fall through
+            case LONG:
+                ((LongIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
+                break;
+            case BFLOAT16:
+                ((Bfloat16Indexer) indexer).put(0, ArrayUtil.toFloatArray(element));
+                break;
+            case HALF:
+                ((HalfIndexer) indexer).put(0, ArrayUtil.toFloatArray(element));
+                break;
+            case FLOAT:
+                ((FloatIndexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                break;
+            case DOUBLE:
+                ((DoubleIndexer) indexer).put(0,ArrayUtil.toDouble(element));
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
+        }
+    }
+
+    @Override
+    public void put(boolean[] element) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
+        switch (dataType()) {
+            case BOOL:
+                ((BooleanIndexer) indexer).put(0, element);
+                break;
+            case BYTE:
+                ((ByteIndexer) indexer).put(0,ArrayUtil.toBytes(element));
+                break;
+            case UBYTE:
+                ((UByteIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case UINT16:
+                ((UShortIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case SHORT:
+                ((ShortIndexer) indexer).put(0,ArrayUtil.toShorts(element));
+                break;
+            case UINT32:
+                ((UIntIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
+                break;
+            case INT:
+                ((IntIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case UINT64:
+            case LONG:
+                ((LongIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
+                break;
+            case BFLOAT16:
+                ((Bfloat16Indexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                break;
+            case HALF:
+                ((HalfIndexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                break;
+            case FLOAT:
+                ((FloatIndexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                break;
+            case DOUBLE:
+                ((DoubleIndexer) indexer).put(0,ArrayUtil.toDoubleArray(element));
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
+        }
+    }
+
+
+    @Override
+    public void put(short[] element) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
+        switch (dataType()) {
+            case BOOL:
+                ((BooleanIndexer) indexer).put(0, ArrayUtil.toBooleanArray(element));
+                break;
+            case BYTE:
+                ((ByteIndexer) indexer).put(0,ArrayUtil.toBytes(element));
+                break;
+            case UBYTE:
+                ((UByteIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case UINT16:
+                ((UShortIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case SHORT:
+                ((ShortIndexer) indexer).put(0,element);
+                break;
+            case UINT32:
+                ((UIntIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
+                break;
+            case INT:
+                ((IntIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case UINT64:
+            case LONG:
+                ((LongIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
+                break;
+            case BFLOAT16:
+                ((Bfloat16Indexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                break;
+            case HALF:
+                ((HalfIndexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                break;
+            case FLOAT:
+                ((FloatIndexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                break;
+            case DOUBLE:
+                ((DoubleIndexer) indexer).put(0,ArrayUtil.toDoubleArray(element));
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
+        }
+    }
+
+
+    @Override
+    public void put(byte[] element) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
+        switch (dataType()) {
+            case BOOL:
+                ((BooleanIndexer) indexer).put(0, ArrayUtil.toBooleanArray(element));
+                break;
+            case BYTE:
+                ((ByteIndexer) indexer).put(0,element);
+                break;
+            case UBYTE:
+                ((UByteIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case UINT16:
+                ((UShortIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case SHORT:
+                ((ShortIndexer) indexer).put(0,ArrayUtil.toShorts(element));
+                break;
+            case UINT32:
+                ((UIntIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
+                break;
+            case INT:
+                ((IntIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case UINT64:
+            case LONG:
+                ((LongIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
+                break;
+            case BFLOAT16:
+                ((Bfloat16Indexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                break;
+            case HALF:
+                ((HalfIndexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                break;
+            case FLOAT:
+                ((FloatIndexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                break;
+            case DOUBLE:
+                ((DoubleIndexer) indexer).put(0,ArrayUtil.toDoubleArray(element));
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
+        }
+    }
+
+    @Override
+    public void put(long[] element) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
+        switch (dataType()) {
+            case BOOL:
+                ((BooleanIndexer) indexer).put(0,ArrayUtil.toBooleanArray(element));
+                break;
+            case BYTE:
+                ((ByteIndexer) indexer).put(0,ArrayUtil.toByteArray(element));
+                break;
+            case UBYTE:
+                ((UByteIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case UINT16:
+                ((UShortIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case SHORT:
+                ((ShortIndexer) indexer).put(0,ArrayUtil.toShorts(element));
+                break;
+            case UINT32:
+                ((UIntIndexer) indexer).put(0,element);
+                break;
+            case INT:
+                ((IntIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                break;
+            case UINT64:
+                ((LongIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
+                break;
+            case LONG:
+                ((LongIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
+                break;
+            case BFLOAT16:
+                ((Bfloat16Indexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                break;
+            case HALF:
+                ((HalfIndexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                break;
+            case FLOAT:
+                ((FloatIndexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                break;
+            case DOUBLE:
+                ((DoubleIndexer) indexer).put(0,ArrayUtil.toDoubles(element));
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
+        }
+    }
+
 
     @Override
     @Deprecated

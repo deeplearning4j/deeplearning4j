@@ -32,7 +32,6 @@ namespace ops {
 
 CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
   auto output = OUTPUT_VARIABLE(0);
-
   const int numInArrs = block.width();
   const int numTArgs = block.getTArguments()->size();
   const int numIArgs = block.getIArguments()->size();
@@ -48,7 +47,6 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
 
   if (numInArrs > 0) {
     if (numInArrs == 1) {
-      // limit = (*INPUT_VARIABLE(0))(0.);
       if (output->isR()) {
         s = NDArrayFactory::create_(0.0f, block.launchContext());
         d = NDArrayFactory::create_(1.0f, block.launchContext());
@@ -60,7 +58,6 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
       localD = true;
     } else if (numInArrs == 2) {
       s = INPUT_VARIABLE(0);
-      // limit = (*INPUT_VARIABLE(1))(0.);
       if (output->isR()) {
         d = NDArrayFactory::create_(1.0f, block.launchContext());
       } else {
@@ -69,19 +66,15 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
       localD = true;
     } else {
       s = INPUT_VARIABLE(0);
-      // limit = (*INPUT_VARIABLE(1))(0.);
       d = INPUT_VARIABLE(2);
     }
   } else if (numIArgs > 0) {
     if (numIArgs == 1) {
-      //  limit = INT_ARG(0);
     } else if (numIArgs == 2) {
       s = NDArrayFactory::create_(INT_ARG(0), block.launchContext());
-      // limit = INT_ARG(1);
       d = NDArrayFactory::create_(1, block.launchContext());
     } else {
       s = NDArrayFactory::create_(INT_ARG(0), block.launchContext());
-      // limit = INT_ARG(1);
       d = NDArrayFactory::create_(INT_ARG(2), block.launchContext());
     }
 
@@ -89,16 +82,13 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
     localD = true;
   } else if (numTArgs > 0) {
     if (numTArgs == 1) {
-      // limit = T_ARG(0);
       s = NDArrayFactory::create_(0.0f, block.launchContext());
       d = NDArrayFactory::create_(1.0f, block.launchContext());
     } else if (numTArgs == 2) {
       s = NDArrayFactory::create_(T_ARG(0), block.launchContext());
-      // limit = T_ARG(1);
       d = NDArrayFactory::create_(1.0f, block.launchContext());
     } else {
       s = NDArrayFactory::create_(T_ARG(0), block.launchContext());
-      // limit = T_ARG(1);
       d = NDArrayFactory::create_(T_ARG(2), block.launchContext());
     }
 
@@ -115,7 +105,6 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
   if (localS) delete s;
 
   if (localD) delete d;
-
   return sd::Status::OK;
 }
 

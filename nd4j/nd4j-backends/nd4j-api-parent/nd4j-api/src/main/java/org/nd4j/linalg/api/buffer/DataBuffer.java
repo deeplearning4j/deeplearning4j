@@ -146,6 +146,20 @@ public interface DataBuffer extends Serializable, AutoCloseable, Deallocatable {
      */
     ByteBuffer asNio();
 
+    void put(float[] element);
+
+    void put(double[] element);
+
+    void put(int[] element);
+
+    void put(boolean[] element);
+
+    void put(short[] element);
+
+    void put(byte[] element);
+
+    void put(long[] element);
+
     /**
      * Whether the buffer is dirty:
      * aka has been updated

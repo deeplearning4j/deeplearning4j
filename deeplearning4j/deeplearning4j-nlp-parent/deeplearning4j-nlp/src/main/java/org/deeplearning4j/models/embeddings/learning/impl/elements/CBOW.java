@@ -20,9 +20,7 @@
 
 package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import lombok.*;
 import org.apache.commons.lang3.RandomUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -39,11 +37,15 @@ import org.nd4j.linalg.api.ops.impl.nlp.CbowInference;
 import org.nd4j.linalg.api.ops.impl.nlp.CbowRound;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
+import org.nd4j.shade.guava.cache.Cache;
+import org.nd4j.shade.guava.cache.CacheBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorithm<T> {
@@ -60,6 +62,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     protected double sampling;
     protected int[] variableWindows;
     protected int workers = Runtime.getRuntime().availableProcessors();
+    private Cache<IterationArraysKey, Queue<IterationArrays>> iterationArrays = CacheBuilder.newBuilder().build();
 
     public int getWorkers() {
         return workers;
@@ -186,11 +189,18 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
         return false;
     }
 
-
+    @Data
+    @AllArgsConstructor
+    @Builder
+    @NoArgsConstructor
+    public static class IterationArraysKey {
+        private int itemSize;
+        private int maxCols;
+    }
 
 
     public double doExec(List<BatchItem<T>> items, INDArray inferenceVector) {
-        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfig(),"cbow-exec-" + Thread.currentThread().getName())) {
+        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             boolean useHS = configuration.isUseHierarchicSoftmax();
             boolean useNegative = configuration.getNegative() > 0;
             boolean useInference = inferenceVector != null;
@@ -212,38 +222,72 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                         maxWinWordsCols = curr;
                 }
 
-                INDArray inputWindowWords = Nd4j.create(DataType.INT32, items.size(), maxWinWordsCols);
-                INDArray inputWordsStatuses = Nd4j.create(DataType.INT32, items.size(), maxWinWordsCols);
-                INDArray randoms = Nd4j.create(DataType.INT64, items.size());
-                INDArray alphas = Nd4j.create(DataType.DOUBLE, items.size());
-                INDArray currentWindowIndexes = Nd4j.create(DataType.INT32, items.size());
-                INDArray codes = Nd4j.create(DataType.INT8, items.size(), maxCols);
-                INDArray indices = Nd4j.create(DataType.INT32, items.size(), maxCols);
-                INDArray numLabelsArray = Nd4j.create(DataType.INT32, items.size());
+
+
+
+
+                INDArray inputWindowWords;
+                INDArray inputWordsStatuses;
+                INDArray randoms;
+                INDArray alphas;
+                INDArray currentWindowIndexes;
+                INDArray codes;
+                INDArray indices;
+                INDArray numLabelsArray;
+
+
+                IterationArraysKey key = IterationArraysKey.builder()
+                        .itemSize(items.size())
+                        .maxCols(maxCols).build();
+                Queue<IterationArrays> iterationArraysQueue = iterationArrays.getIfPresent(key);
+                IterationArrays iterationArrays1;
+                if(iterationArraysQueue == null) {
+                    iterationArraysQueue = new ConcurrentLinkedQueue<>();
+                    iterationArrays.put(key,iterationArraysQueue);
+                    iterationArrays1 = new IterationArrays(items.size(),maxCols);
+                } else {
+                    if(iterationArraysQueue.isEmpty()) {
+                        iterationArrays1 = new IterationArrays(items.size(),maxCols);
+
+                    }else {
+                        iterationArrays1 = iterationArraysQueue.remove();
+                        iterationArrays1.initCodes();
+                    }
+                }
+
+                int[][] inputWindowWordsArr = iterationArrays1.inputWindowWordsArr;
+                int[][] inputWindowWordStatuses = iterationArrays1.inputWindowWordStatuses;
+                int[]  currentWindowIndexesArr = iterationArrays1.currentWindowIndexes;
+                double[] alphasArr = iterationArrays1.alphas;
+                int[][] indicesArr = iterationArrays1.indicesArr;
+                int[][]  codesArr = iterationArrays1.codesArr;
+                long[] randomValues = iterationArrays1.randomValues;
+                int[] numLabelsArr = iterationArrays1.numLabels;
+                currentWindowIndexes = Nd4j.createFromArray(currentWindowIndexesArr);
 
                 for (int cnt = 0; cnt < items.size(); cnt++) {
                     T currentWord = items.get(cnt).getWord();
                     currentWindowIndexes.putScalar(0, currentWord.getIndex());
-
+                    currentWindowIndexesArr[0] = currentWord.getIndex();
                     int[] windowWords = items.get(cnt).getWindowWords().clone();
                     boolean[] windowStatuses = items.get(cnt).getWordStatuses().clone();
 
                     for (int i = 0; i < maxWinWordsCols; i++) {
                         if (i < windowWords.length) {
-                            inputWindowWords.putScalar(cnt, i, windowWords[i]);
-                            inputWordsStatuses.putScalar(cnt, i, windowStatuses[i] ? 1 : 0);
+                            inputWindowWordsArr[cnt][i] = windowWords[i];
+                            inputWindowWordStatuses[cnt][i] = windowStatuses[i] ? 1 : 0;
+
                         } else {
-                            inputWindowWords.putScalar(cnt, i, -1);
-                            inputWordsStatuses.putScalar(cnt, i, -1);
+                            inputWindowWordsArr[cnt][i] = -1;
+                            inputWindowWordStatuses[cnt][i] = -1;
                         }
                     }
 
                     long randomValue = items.get(cnt).getRandomValue();
                     double alpha = items.get(cnt).getAlpha();
-                    alphas.putScalar(cnt, alpha);
-
-                    randoms.putScalar(cnt, randomValue);
-                    numLabelsArray.putScalar(cnt, items.get(cnt).getNumLabel());
+                    alphasArr[cnt] = alpha;
+                    randomValues[cnt] = randomValue;
+                    numLabelsArr[cnt] = items.get(cnt).getNumLabel();
                     if (items.get(cnt).getNumLabel() > 0)
                         hasNumLabels = true;
 
@@ -253,8 +297,8 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                                 continue;
 
 
-                            codes.putScalar(cnt, p, currentWord.getCodes().get(p));
-                            indices.putScalar(cnt, p, currentWord.getPoints().get(p));
+                            codesArr[cnt][p] = currentWord.getCodes().get(p);
+                            indicesArr[cnt][p] =  currentWord.getPoints().get(p);
                         }
 
                     }
@@ -269,6 +313,13 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                 }
 
 
+                inputWindowWords = Nd4j.createFromArray(inputWindowWordsArr);
+                inputWordsStatuses = Nd4j.createFromArray(inputWindowWordStatuses);
+                numLabelsArray = Nd4j.createFromArray(numLabelsArr);
+                indices = Nd4j.createFromArray(indicesArr);
+                codes = Nd4j.createFromArray(codesArr);
+                alphas = Nd4j.createFromArray(alphasArr);
+                randoms = Nd4j.createFromArray(randomValues);
                 CbowRound cbow = CbowRound.builder()
                         .target(currentWindowIndexes)
                         .context(inputWindowWords)
@@ -296,6 +347,7 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
 
                 Nd4j.close(currentWindowIndexes,inputWindowWords,alphas,randoms,codes,numLabelsArray,indices);
+                iterationArraysQueue.add(iterationArrays1);
 
                 batches.get().clear();
                 return 0.0;

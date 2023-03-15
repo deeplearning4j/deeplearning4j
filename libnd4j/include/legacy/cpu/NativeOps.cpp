@@ -2596,6 +2596,7 @@ OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::Long
     auto desc = new  ShapeDescriptor(dtype, order, shape, strides, rank, ews, extras);
     auto buffer = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(
         desc);
+    delete desc;
     return buffer;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);

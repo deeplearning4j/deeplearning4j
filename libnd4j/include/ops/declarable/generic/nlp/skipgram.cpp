@@ -131,6 +131,9 @@ CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
   delete indices;
   delete indicesArr;
   delete codesArr;
+  delete indicesSize;
+  delete codesSize;
+
 
   return sd::Status::OK;
 }

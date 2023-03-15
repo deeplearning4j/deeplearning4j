@@ -63,7 +63,6 @@ public class NDArray extends BaseNDArray {
     public NDArray(DataBuffer buffer, LongBuffer shapeInfo, long[] javaShapeInfo) {
         this.jvmShapeInfo = new JvmShapeInfo(javaShapeInfo);
         this.data = buffer;
-        this.addressShapeInfoPointer = shapeInfo;
     }
 
     public NDArray(DataBuffer buffer) {

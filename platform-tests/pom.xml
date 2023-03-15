@@ -80,8 +80,12 @@
         <surefire.threads>8</surefire.threads>
         <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
         <excludedTests>large-resources,downloads,long-running-test</excludedTests>
-        <!--   <preload>/usr/local/lib/libjemalloc.so.2</preload>-->
+        <preload></preload>
+        <jemalloc.path>/usr/local/lib/libjemalloc.so.2</jemalloc.path>
+        <jemalloc.mallocconf></jemalloc.mallocconf>
     </properties>
+
+
 
     <dependencyManagement>
         <dependencies>
@@ -476,7 +480,14 @@
 
     </dependencies>
     <profiles>
+        <profile>
+            <id>jemalloc</id>
+            <properties>
+                <preload>${jemalloc.path}</preload>
+                <jemalloc.mallocconf>prof:true,lg_prof_interval:31,lg_prof_sample:17,prof_prefix:jeprof.out</jemalloc.mallocconf>
+            </properties>
 
+        </profile>
         <profile>
             <id>javacpp-platform-default</id>
             <activation>
@@ -823,7 +834,7 @@
                     <environmentVariables>
                         <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                         <LD_PRELOAD>${preload}</LD_PRELOAD>
-                        <MALLOC_CONF>tcache:false</MALLOC_CONF>
+                        <MALLOC_CONF>${jemalloc.mallocconf}</MALLOC_CONF>
                     </environmentVariables>
                     <shutdown>kill</shutdown>
                     <classpathDependencyExcludes>
@@ -832,7 +843,7 @@
                         </classpathDependencyExclude>
                     </classpathDependencyExcludes>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
-                    <argLine>${jdk9.exports} -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                    <argLine>${jdk9.exports} -Dorg.nd4j.linalg.api.ops.udf.packages=org.nd4j.linalg.api.ops -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
                     <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
                     <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
                     <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
