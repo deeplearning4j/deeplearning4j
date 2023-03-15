@@ -222,15 +222,6 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                         maxWinWordsCols = curr;
                 }
 
-            /*    INDArray inputWindowWords = Nd4j.createUninitializedDetached(DataType.INT32, items.size(), maxWinWordsCols);
-                INDArray inputWordsStatuses = Nd4j.createUninitializedDetached(DataType.INT32, items.size(), maxWinWordsCols);
-                INDArray randoms = Nd4j.createUninitializedDetached(DataType.INT64, items.size());
-                INDArray alphas = Nd4j.createUninitializedDetached(DataType.DOUBLE, items.size());
-                INDArray currentWindowIndexes = Nd4j.createUninitializedDetached(DataType.INT32, items.size());
-                INDArray codes = Nd4j.createUninitializedDetached(DataType.INT8, items.size(), maxCols);
-                INDArray indices = Nd4j.createUninitializedDetached(DataType.INT32, items.size(), maxCols);
-                INDArray numLabelsArray = Nd4j.createUninitializedDetached(DataType.INT32, items.size());
-*/
 
 
 
