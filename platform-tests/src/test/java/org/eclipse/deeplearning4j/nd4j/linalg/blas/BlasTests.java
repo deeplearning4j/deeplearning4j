@@ -24,7 +24,6 @@ package org.eclipse.deeplearning4j.nd4j.linalg.blas;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -48,7 +47,7 @@ public class BlasTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void pcaTest(Nd4jBackend backend) {
+    public void pcaFactorTest(Nd4jBackend backend) {
         double[][] inputArray = { { 1.0, 2.0, 3.0 }, { 11.0, 12.0, 13.0 }, { 21.0, 22.0, 23.0 }, { 31.0, 32.0, 33.0 } };
         double[][] assertion = new double[][]{
                 {-0.55332, -0.72606, 0.40825},
@@ -64,6 +63,25 @@ public class BlasTests extends BaseNd4jTestWithBackends {
 
     }
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void pcaTest(Nd4jBackend backend) {
+        double[][] inputArray = { { 1.0, 2.0, 3.0 }, { 11.0, 12.0, 13.0 }, { 21.0, 22.0, 23.0 }, { 31.0, 32.0, 33.0 } };
+        double[][] assertion = new double[][]{
+                {-0.55332, -0.72606, 0.40825},
+                {      -0.57703 ,-0.01936 ,-0.81650},
+                {-0.60073, 0.68735, 0.40825 }
+        };
+        INDArray assertArr = Nd4j.create(assertion);
+        INDArray inputMatrix = Nd4j.create( inputArray );
+        int nColumns = inputMatrix.columns();
+        INDArray ret = PCA.pca(inputMatrix,nColumns,true);
+        INDArray factor = PCA.pca_factor( inputMatrix, nColumns, false );
+        assertEquals(assertArr,factor);
+
+
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

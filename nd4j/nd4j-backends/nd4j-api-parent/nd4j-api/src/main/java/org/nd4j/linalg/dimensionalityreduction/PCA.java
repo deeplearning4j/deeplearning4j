@@ -150,7 +150,7 @@ public class PCA {
      * @return the reduced parameters of A
      */
     public static INDArray pca(INDArray A, int nDims, boolean normalize) {
-        INDArray factor = pca_factor(A, nDims, normalize);
+        INDArray factor = pca_factor(A.dup(), nDims, normalize);
         return A.mmul(factor);
     }
 
