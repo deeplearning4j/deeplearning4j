@@ -140,7 +140,7 @@ public class PCA {
      *
      * INDArray Areduced = A.mmul( factor ) ;
      * INDArray Aoriginal = Areduced.mmul( factor.transpose() ) ;
-     * 
+     *
      * }
      * </pre>
      *
@@ -150,7 +150,7 @@ public class PCA {
      * @return the reduced parameters of A
      */
     public static INDArray pca(INDArray A, int nDims, boolean normalize) {
-        INDArray factor = pca_factor(A.dup(), nDims, normalize);
+        INDArray factor = pca_factor(A, nDims, normalize);
         return A.mmul(factor);
     }
 
@@ -169,7 +169,7 @@ public class PCA {
      * @return the reduced feature set
      */
     public static INDArray pca_factor(INDArray A, int nDims, boolean normalize) {
-
+        A = A.dup();
         if (normalize) {
             // Normalize to mean 0 for each feature ( each column has 0 mean )
             INDArray mean = A.mean(0);
@@ -231,7 +231,7 @@ public class PCA {
      * To use the returned factor: multiply feature(s) by the factor to get a reduced dimension
      *
      * INDArray Areduced = A.mmul( factor ) ;
-     * 
+     *
      * The array Areduced is a projection of A onto principal components
      *
      * @see pca(INDArray, double, boolean)
@@ -242,6 +242,7 @@ public class PCA {
      * @return the matrix to mulitiply a feature by to get a reduced feature set
      */
     public static INDArray pca_factor(INDArray A, double variance, boolean normalize) {
+        A = A.dup();
         if (normalize) {
             // Normalize to mean 0 for each feature ( each column has 0 mean )
             INDArray mean = A.mean(0);
