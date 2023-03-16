@@ -304,7 +304,6 @@ void AttentionHelper::additiveAttentionBpHelper(sd::NDArray *query, sd::NDArray 
   //begin dldw
   NDArray dLdw(weightInput.shapeInfo());
 
-  matMulBp.execute({&weights,values,eps},{&dLdw,dLdv},{},{});
 
   NDArray dLds(preSoftmax.shapeInfo());
   sd::ops::softmax_bp softmax_bp;
@@ -328,43 +327,25 @@ void AttentionHelper::additiveAttentionBpHelper(sd::NDArray *query, sd::NDArray 
   auto kReshaped = expandDims.evaluate({key},{},{-3}).at(0);
 
   auto qPlusK = *qReshaped + *kReshaped;
-  qPlusK.printShapeInfo("Q plus k shape:");
-  /*
- *
-   * input: key,query,dlds
-   * outputs: dldk,dldq
- * sd::ops::expand_dims expandDims;
-  sd::ops::reduce_sum reduceSum;
-  sd::ops::tanh tanh1;
-  auto qReshaped = expandDims.evaluate({query},{},{-2}).at(0);
-  auto kReshaped = expandDims.evaluate({key},{},{-3}).at(0);
-  auto scaled =  scale > 0 ? ( scale * (*qReshaped + *kReshaped)) : ((*qReshaped + *kReshaped));
-  auto qPlusK = tanh1.evaluate({&scaled});
-  reduceSum.execute({qPlusK.at(0)},{attentionScoresOut},{},{-1});
-  if(concatWeights != nullptr)
-    *attentionScoresOut *= *concatWeights;
- * */
 
-  sd_printf("About to compute dscores\n",0);
+
   //reduce sum bp
   //first input: the input reduced on
   //second input: the eps which is already the reduced shape
-  sd_printf("Completed computing dscores\n",0);
   auto scaled =  scale > 0 ? ( scale * (qPlusK)) : ((qPlusK));
   auto dsScores = reduceSumBp.evaluate({&qPlusK,&dLds},{},{-1},{});
 
   auto dtanh = tanhBp.evaluate({&scaled,dsScores.at(0)});
-  dtanh.at(0)->printShapeInfo("DTanh shape info");
-  query->printShapeInfo("Query shape info");
-  key->printShapeInfo("Key shape info");
-  dLdq->printShapeInfo("DLDQ shape info");
-  dLdk->printShapeInfo("DLDK shape info");
   reduceSum.execute({dtanh.at(0)},{dLdq},{},{-2},{});
   reduceSum.execute({dtanh.at(0)},{dLdk},{},{-3});
+  dLdv->assign(dLdw.permute({0,2,1}));
   sd_printf("After both  reduce_sum compute\n",0);
 
 
   dLdk->transposei();
+
+
+
 
 
   if(vMask != nullptr) {

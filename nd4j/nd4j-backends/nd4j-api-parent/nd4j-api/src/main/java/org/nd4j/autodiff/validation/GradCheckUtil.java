@@ -92,7 +92,6 @@ public class GradCheckUtil {
             sd.enableDebugMode();
         }
 
-        sd.setEnableCache(false);
         //Validation sanity checks:
         if(!skipValidation) {
             validateInternalState(sd, true);
@@ -150,7 +149,7 @@ public class GradCheckUtil {
                 //This is not an input to the graph
                 continue;
             }
-            if(!v.hasGradient()){
+            if(!v.hasGradient()) {
                 //Skip non-fp variables, or variables that don't impact loss function value
                 continue;
             }
@@ -193,7 +192,7 @@ public class GradCheckUtil {
             String name = s.name();
             INDArray a = s.getArr();
             long n = a.length();
-            if(print){
+            if(print) {
                 log.info("Starting test for variable \"{}\" with {} values", s.name(), n);
             }
 
@@ -202,7 +201,7 @@ public class GradCheckUtil {
                 //Subset case
                 long[] shape = a.shape();
                 List<long[]> l = new ArrayList<>();
-                if(subset == Subset.RANDOM){
+                if(subset == Subset.RANDOM) {
                     Set<Integer> set = new HashSet<>();
                     while(set.size() < maxPerParam){
                         int next = r.nextInt((int)a.length());
@@ -233,7 +232,7 @@ public class GradCheckUtil {
 
             INDArray varMask = (gradCheckMask == null ? null : gradCheckMask.get(s.name()));
 
-            if(varMask != null){
+            if(varMask != null) {
                 Preconditions.checkState(a.equalShapes(varMask), "Variable \"%s\": Gradient check mask and array shapes must be equal: got %s vs. mask shape %s", s.name(), a.shape(), varMask.shape());
                 Preconditions.checkState(varMask.dataType() == DataType.BOOL, "Variable \"%s\": Gradient check mask must be BOOLEAN datatype, got %s", s.name(), varMask.dataType());
             }
@@ -247,7 +246,7 @@ public class GradCheckUtil {
                 }
 
                 boolean maskValue = (varMask == null || (varMask.getDouble(idx) != 0));
-                if(!maskValue){
+                if(!maskValue) {
                     //Skip this specific entry (masked out)
                     continue;
                 }

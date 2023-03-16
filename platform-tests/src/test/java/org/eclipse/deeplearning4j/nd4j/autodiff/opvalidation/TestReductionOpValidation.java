@@ -1239,6 +1239,8 @@ public class TestReductionOpValidation extends BaseOpValidation {
         t.norm1("out");
 
         String err = OpValidation.validate(new TestCase(sd)
+                .gradCheckDebugMode(true)
+                .gradCheckPrint(true)
                 .gradientCheck(true));
         assertNull(err);
     }
