@@ -239,16 +239,12 @@ void AttentionHelper::additiveAttentionBpHelper(sd::NDArray *query, sd::NDArray 
   sd::ops::matmul matMul;
   sd::ops::matmul_bp matMulBp;
   sd::ops::reduce_sum reduceSum;
+  sd::ops::tanh_bp tanh1;
   sd::ops::add_bp addBp;
-  sd::ops::tanh tanh1;
-  /**
-   * Each bp needs the original inputs + the backwards pass.
-   */
-  sd::ops::reduce_sum reduceSum1;
-  sd::ops::reduce_sum_bp reduceSumBp1;
+  sd::ops::reduce_sum_bp reduceSumBp;
   sd::ops::tanh_bp tanhBp;
+  sd::ops::expand_dims expandDims;
   sd::ops::squeeze squeeze;
-
   //A: value, B: weights
   //note we permute already and do not need to do so again here
   auto weightShapeInfo = ShapeUtils::evalShapeForMatmul(
@@ -265,17 +261,10 @@ void AttentionHelper::additiveAttentionBpHelper(sd::NDArray *query, sd::NDArray 
 
 
   NDArray preSoftmax( weightShapeInfoInput);
-  preSoftmax.printShapeInfo("Pre softmax shape info");
-  sd::ops::expand_dims expandDims;
 
-  auto qReshaped = expandDims.evaluate({query},{},{-2}).at(0);
-  auto kReshaped = expandDims.evaluate({key},{},{-3}).at(0);
-  auto scaled =  scale > 0 ? ( scale * (*qReshaped + *kReshaped)) : ((*qReshaped + *kReshaped));
-  auto qPlusK = tanh1.evaluate({&scaled}).at(0);
-  reduceSum.execute({qPlusK},{&preSoftmax},{},{-1});
-  if(concatWeights != nullptr)
-    preSoftmax *= *concatWeights;
-
+  int transA = 0;
+  int transB = 1;
+  matMul.execute({query,key},{&preSoftmax},{transA,transB});
 
 
   auto mask = AttentionHelper::computeAttentionMask(query, values, qMask, vMask, nullptr, useCausalMask);
@@ -314,59 +303,8 @@ void AttentionHelper::additiveAttentionBpHelper(sd::NDArray *query, sd::NDArray 
   auto weightInput = weights;
   //begin dldw
   NDArray dLdw(weightInput.shapeInfo());
-  weights.printShapeInfo("Weights shape info");
 
   matMulBp.execute({&weights,values,eps},{&dLdw,dLdv},{},{});
-
-  dLdv->printShapeInfo("DLDV shape info");
-  dLdk->printShapeInfo("DLDK shape info");
-  dLdw.printShapeInfo("DLDW shape info");
-  qPlusK->printShapeInfo("QPLUS k shape info");
-  auto expandDimsDLDW = expandDims.evaluate({dLdk},{},{1},{}).at(0);
-  expandDimsDLDW->printShapeInfo("Expand dims dldw shape");
-  auto dTanh = (*expandDimsDLDW * scale);
-  sd_printf("After dtanh\n",0);
-
-  //TODO: need to figure out correct output shape here. The dout could be eps or another thing.
-  //TODO: see if numpy can do some extra  broadcasting we can't here.
-  //TODO: theoretically d_out shoul dbe the same as the output from calculate scores: 10,3,4?
-  //ideally this should be 10,1,4 with expand dims is 10,1,1,4
-  //TODO: q plus k ends up being 10,1,3,4
-  tanhBp.execute({qPlusK,expandDimsDLDW},{&dTanh},{},{});
-
-
-  /**
-   * sd::ops::tanh tanh1;
-   * 10,1,1,4
-auto qReshaped = expandDims.evaluate({query},{},{-2}).at(0);
-   10,1,3,4
-auto kReshaped = expandDims.evaluate({key},{},{-3}).at(0);
-   10,1,3,4
-auto scaled =  scale > 0 ? ( scale * (*qReshaped + *kReshaped)) : ((*qReshaped + *kReshaped));
-auto qPlusK = tanh1.evaluate({&scaled});
-reduceSum.execute({qPlusK.at(0)},{attentionScoresOut},{},{-1});
-
-
-   */
-  sd_printf("End  tanhbp\n",0);
-  qReshaped->printShapeInfo("Q reshaped");
-  kReshaped->printShapeInfo("K reshaped");
-  dTanh.printShapeInfo("Dtanh shape info");
-
-  auto squeezedQReshaped = expandDims.evaluate({qReshaped},{},{-1},{}).at(0);
-  auto squeezedKReshaped = expandDims.evaluate({kReshaped},{},{-2},{}).at(0);
-  sd_printf("Before execution eval test\n",0);
-  //TODO: tanh tries to reshape to a 40 length array. Assuming 10,3,4 but elements are only 40 in length?
-  auto reduceSumQBpOutput = reduceSumBp1.evaluate({squeezedQReshaped,&dTanh},{},{-1});
-  auto reduceSumKBpOutput = reduceSumBp1.evaluate({squeezedKReshaped,&dTanh},{},{-1},{});
-  sd_printf("After execution eval test\n",0);
-  reduceSumBp1.execute({squeezedQReshaped,&dTanh},{dLdq},{},{-1},{});
-  reduceSumBp1.execute({squeezedKReshaped,&dTanh},{dLdk},{},{-1},{});
-  sd_printf("End  reduce sum bp\n",0);
-
-  sd_printf("End  squeeze\n",0);
-
-
 
   NDArray dLds(preSoftmax.shapeInfo());
   sd::ops::softmax_bp softmax_bp;
@@ -386,14 +324,44 @@ reduceSum.execute({qPlusK.at(0)},{attentionScoresOut},{},{-1});
   //inputs: values, weights, eps
   //output is dldv, dldw
 
+  auto qReshaped = expandDims.evaluate({query},{},{-2}).at(0);
+  auto kReshaped = expandDims.evaluate({key},{},{-3}).at(0);
 
-  //inputs: keys,queries,dlds
-  //outputs: dldk, dldq
+  auto qPlusK = *qReshaped + *kReshaped;
+  qPlusK.printShapeInfo("Q plus k shape:");
+  /*
+ *
+   * input: key,query,dlds
+   * outputs: dldk,dldq
+ * sd::ops::expand_dims expandDims;
+  sd::ops::reduce_sum reduceSum;
+  sd::ops::tanh tanh1;
+  auto qReshaped = expandDims.evaluate({query},{},{-2}).at(0);
+  auto kReshaped = expandDims.evaluate({key},{},{-3}).at(0);
+  auto scaled =  scale > 0 ? ( scale * (*qReshaped + *kReshaped)) : ((*qReshaped + *kReshaped));
+  auto qPlusK = tanh1.evaluate({&scaled});
+  reduceSum.execute({qPlusK.at(0)},{attentionScoresOut},{},{-1});
+  if(concatWeights != nullptr)
+    *attentionScoresOut *= *concatWeights;
+ * */
 
+  sd_printf("About to compute dscores\n",0);
+  //reduce sum bp
+  //first input: the input reduced on
+  //second input: the eps which is already the reduced shape
+  sd_printf("Completed computing dscores\n",0);
+  auto scaled =  scale > 0 ? ( scale * (qPlusK)) : ((qPlusK));
+  auto dsScores = reduceSumBp.evaluate({&qPlusK,&dLds},{},{-1},{});
 
-
-
-
+  auto dtanh = tanhBp.evaluate({&scaled,dsScores.at(0)});
+  dtanh.at(0)->printShapeInfo("DTanh shape info");
+  query->printShapeInfo("Query shape info");
+  key->printShapeInfo("Key shape info");
+  dLdq->printShapeInfo("DLDQ shape info");
+  dLdk->printShapeInfo("DLDK shape info");
+  reduceSum.execute({dtanh.at(0)},{dLdq},{},{-2},{});
+  reduceSum.execute({dtanh.at(0)},{dLdk},{},{-3});
+  sd_printf("After both  reduce_sum compute\n",0);
 
 
   dLdk->transposei();
@@ -406,6 +374,7 @@ reduceSum.execute({qPlusK.at(0)},{attentionScoresOut},{},{-1});
   if(qMask != nullptr) {
     *dLdq *= *qMask;
   }
+
 
 }
 
