@@ -218,8 +218,8 @@ public abstract class BaseLapack implements Lapack {
         if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
-        int m = (int) A.rows();
-        int n = (int) A.columns();
+        int m = A.rows();
+        int n = A.columns();
 
         byte jobu = (byte) (U == null ? 'N' : 'A');
         byte jobvt = (byte) (VT == null ? 'N' : 'A');
