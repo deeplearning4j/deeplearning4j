@@ -109,19 +109,17 @@ DECLARE_SHAPE_FN(dot_product_attention_v2) {
   int tv = values->sizeAt(-2);
   int dim = values->sizeAt(-1);
 
-  int attentionType = block.numI() > 0 ? I_ARG(0) : ATTENTION_SCORE_MODE_DOT;
+  int attentionType = block.numI() > 0 ? I_ARG(0) : ATTENTION_TYPE_DOT_PRODUCT;
 
   auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
   auto returnAttentionScores = block.numB() > 1 ? B_ARG(1) : false;
 
-  if(attentionType == ATTENTION_SCORE_MODE_DOT) {
-    sd_printf("COMPUTE OUTPUT SHAPE: batch size %d tq %d dim %d\n",batchSize,tq,dim);
+  if(attentionType == ATTENTION_TYPE_DOT_PRODUCT) {
     //inputs: batchSize,Tq,dim batchSize,Tq,Tv
     //outputs: batchSize,Tq, dim batchSize,Tq,Tv
     ShapeDescriptor *descriptor = new ShapeDescriptor(firstInputType,'c',{batchSize,tq,dim});
     auto constOutputScores = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
     if(returnAttentionScores) {
-      sd_printf("Returning scores\n",0);
       ShapeDescriptor *scoresShape = new ShapeDescriptor(firstInputType,'c',{batchSize,tq,tv});
       auto attentionScoresShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
       delete descriptor;
@@ -133,10 +131,9 @@ DECLARE_SHAPE_FN(dot_product_attention_v2) {
     return SHAPELIST(constOutputScores);
 
 
-  } else if(attentionType == ATTENTION_SCORE_MODE_CONCAT) {
+  } else if(attentionType == ATTENTION_TYPE_ADDITIVE) {
     //inputs: batchSize,Tq,dim batchSize,Tq,Tv
     //outputs: batchSize,Tq,Tv
-    sd_printf("Performing concat attention shape output\n",0);
     ShapeDescriptor *descriptor = new ShapeDescriptor(firstInputType,'c',{batchSize,tq,dim});
     auto constOutputScores = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
     if(returnAttentionScores) {

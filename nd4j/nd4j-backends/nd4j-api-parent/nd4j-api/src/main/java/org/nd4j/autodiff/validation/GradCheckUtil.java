@@ -256,20 +256,20 @@ public class GradCheckUtil {
                 a.putScalar(idx, orig + eps);
                 double scorePlus = 0.0;
                 Map<String,INDArray> m = sd.output(placeholderValues, lossFnVariables);//.get(outName).sumNumber().doubleValue();
-                for(INDArray arr : m.values()){
+                for(INDArray arr : m.values()) {
                     scorePlus += arr.sumNumber().doubleValue();
                 }
                 a.putScalar(idx, orig-eps);
                 m = sd.output(placeholderValues, lossFnVariables);
                 double scoreMinus = 0.0;
-                for(INDArray arr : m.values()){
+                for(INDArray arr : m.values()) {
                     scoreMinus += arr.sumNumber().doubleValue();
                 }
                 a.putScalar(idx, orig);
 
                 double numericalGrad = (scorePlus - scoreMinus) / (2 * eps);
                 INDArray aGrad = grad.get(s.name());
-                if(aGrad == null){
+                if(aGrad == null) {
                     log.warn("No gradient array for variable \"{}\" was found, skipping variable...", s.name());
                     continue;
                 }

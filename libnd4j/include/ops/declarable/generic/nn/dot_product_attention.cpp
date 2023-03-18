@@ -99,8 +99,9 @@ CUSTOM_OP_IMPL(dot_product_attention, 3, -1, false, 0, 2) {
     *weights -= applyMask;
   }
 
+  int softmaxDim = -1;
   sd::ops::softmax softmax;
-  softmax.execute({weights}, std::vector<NDArray *>{weights}, {}, {-2}, {}, {}, true);
+  softmax.execute({weights}, std::vector<NDArray *>{weights}, {}, {softmaxDim}, {}, {}, true);
 
   mmul.execute({values, weights}, {output}, {}, {}, {});
 
@@ -185,7 +186,7 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
 
   if (normalization) preSoftmax /= factor;
   NDArray reshapedMask;
-  if (mask != nullptr) {
+  if (mask != nullptr && !mask->isEmpty()) {
     if (preSoftmax.rankOf() == 4) {
       reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), 1, mask->sizeAt(1), 1});
     } else {
@@ -196,16 +197,18 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
     preSoftmax -= reshapedMask;
   }
 
+  int softmaxDim = -1;
+
   NDArray weights('c', weightShape, values->dataType(), block.launchContext());
   sd::ops::softmax softmax;
-  softmax.execute({&preSoftmax}, {&weights}, {}, {-2}, {});
+  softmax.execute({&preSoftmax}, {&weights}, {}, {softmaxDim}, {});
   sd::ops::matmul_bp mmul_bp;
   NDArray dLdw(weights.shapeInfo(), block.workspace());
   mmul_bp.execute({values, &weights, eps}, std::vector<NDArray *>{dLdv, &dLdw}, {}, {}, {});
 
   NDArray dLds(preSoftmax.shapeInfo(), block.workspace());
   sd::ops::softmax_bp softmax_bp;
-  softmax_bp.execute({&preSoftmax, &dLdw}, {&dLds}, {}, {-2}, {});
+  softmax_bp.execute({&preSoftmax, &dLdw}, {&dLds}, {}, {softmaxDim}, {});
 
   if (normalization) dLds /= factor;
   if(mask != nullptr) {

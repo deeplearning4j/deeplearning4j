@@ -1123,7 +1123,66 @@ public class TestReductionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void test3dSoftmax(Nd4jBackend backend) {
+        INDArray arr = Nd4j.linspace(1,8,8).reshape(2,2,2);
+        INDArray assertion = Nd4j.create(new double[][]{
+                {0.11920292,0.11920292},
+                {0.88079708, 0.88079708},
+                {0.11920292,0.11920292},
+                {0.88079708, 0.88079708}
+        }).reshape(2,2,2);
+
+        INDArray softmaxOutput = Nd4j.nn().softmax(arr,-2);
+        assertEquals(assertion,softmaxOutput);
+
+        System.out.println();
+        SameDiff sameDiff = SameDiff.create();
+        SDVariable input = sameDiff.var(arr);
+        SDVariable softmax = sameDiff.nn().softmax(input,-2);
+        SDVariable output = softmax.norm1("out");
+        output.markAsLoss();
+
+
+        String err = OpValidation.validate(new TestCase(sameDiff)
+                .gradientCheck(true));
+        assertNull(err);
+
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDotProductAttention(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
+        final INDArray values = Nd4j.rand(new int[]{10, 4, 3});
+        final INDArray query = Nd4j.rand(new int[]{10, 4, 1});
+
+        final INDArray exec = Nd4j.matmul(keys, query, true, false, false)
+                .divi(Math.sqrt(keys.size(1)));
+        Nd4j.exec(new SoftMax(exec, exec, -2));
+        final INDArray finalOut = Nd4j.matmul(values, exec).norm1();
+
+        SameDiff sd = SameDiff.create();
+        SDVariable sdQ = sd.var("q", query);
+        SDVariable sdK = sd.var("k", keys);
+        SDVariable sdV = sd.var("v", values);
+
+        //matmul,softmax,matmul,reduce_norm1_bp,matmul,softmax,matmul_bp,matmul,matmul,softmax_bp,matmul_bp,matmul,matmul //working
+        //matmul,softmax,matmul,reduce_norm1_bp,matmul_bp,matmul,matul,softmax_bp,matmul_bp,matmul,matmul,matmul,softmax,matmul,matmul,softmax, //broken
+        SDVariable t = sd.nn.dotProductAttention(sdQ, sdK, sdV, null, true);
+        t.norm1("out");
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+        assertNull(err);
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDotProductAttentionManual(Nd4jBackend backend) {
         Nd4j.getExecutioner().enableVerboseMode(true);
         Nd4j.getExecutioner().enableDebugMode(true);
         final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
@@ -1140,13 +1199,17 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable sdK = sd.var("k", keys);
         SDVariable sdV = sd.var("v", values);
 
-        SDVariable t = sd.nn.dotProductAttention(sdQ, sdK, sdV, null, true);
-        t.norm1("out");
-
+        SDVariable t = sd.linalg().matmul(sdK,sdQ,1.0,0.0,true,false);
+        SDVariable d = t.div(sd.constant(Math.sqrt(keys.size(1))));
+        SDVariable softmax = sd.nn().softmax(d,-1);
+        SDVariable out = sd.linalg().matmul(sdV,softmax);
+        SDVariable loss = out.norm1("out");
+        loss.markAsLoss();
         String err = OpValidation.validate(new TestCase(sd)
                 .gradientCheck(true));
         assertNull(err);
     }
+
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -1163,13 +1226,50 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable sdK = sd.var("k", keys);
         SDVariable sdV = sd.var("v", values);
 
-        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,null,null,1.0,0.0,0,false,false,true);
+        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,null,null,0.0,0.0,0,false,false,true);
         t.norm1("out");
 
         String err = OpValidation.validate(new TestCase(sd)
                 .gradientCheck(true));
         assertNull(err);
     }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDotProductAttentionV2Manual(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        final INDArray keys = Nd4j.rand(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
+        final INDArray values = Nd4j.rand(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
+        final INDArray query = Nd4j.rand(new int[]{10, 1,4}).castTo(DataType.DOUBLE);
+
+
+        //broken
+        //matmul,softmax,matmul,reduce_norm1_bp,matmul,softmax,matmul_bp,matmul,matmul,softmax_bp,matmul_bp,matmul,matmul,
+
+
+
+        //broken
+        //matmul,softmax,matmul,reduce_norm1_bp,matmul_bp,matmul,matmul,softmax_bp,matmul_bp,matmul,matmul,
+
+        //working:
+        //matmul,softmax,matmul,reduce_norm1_bp,matmul_bp,matmul,matmul,softmax_bp,matmul_bp,matmul,matmul
+        SameDiff sd = SameDiff.create();
+        SDVariable sdQ = sd.var("q", query);
+        SDVariable sdK = sd.var("k", keys);
+        SDVariable sdV = sd.var("v", values);
+
+        SDVariable attentionScores = sd.linalg().matmul(sdQ,sdK,1.0,0.0,false,true);
+        SDVariable softmax = sd.nn().softmax(attentionScores,-2);
+        SDVariable out = sd.linalg().matmul(softmax,sdV);
+        SDVariable loss = out.norm1("out");
+        loss.markAsLoss();
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+        assertNull(err);
+    }
+
+
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

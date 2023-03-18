@@ -81,6 +81,7 @@ class SD_LIB_EXPORT OpRegistrator {
 #endif
   };
 
+  
   SD_MAP_IMPL<sd::LongType, std::string> _msvc;
 
   // pointers to our operations

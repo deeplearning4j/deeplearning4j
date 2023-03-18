@@ -38,15 +38,20 @@ CONFIGURABLE_OP_IMPL(softmax, 1, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  const int rank = input->rankOf();
-  const int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
-
+  int rank = input->rankOf();
+  int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
+  if(dim < 0) {
+    dim += rank;
+  }
   REQUIRE_TRUE(dim < rank, 0,
                "SOFTMAX OP: the value of input integer parameter (dimension) must be less than input array rank %i, "
                "but got dimension = %i instead !",
                rank, dim);
 
+
+  //run softmax only along last dimension
   helpers::softmax(block.launchContext(), *input, *output, dim);
+
 
   return sd::Status::OK;
 }
@@ -56,19 +61,26 @@ CONFIGURABLE_OP_IMPL(softmax_bp, 2, 1, true, 0, 0) {
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
 
-  const int rank = input->rankOf();
-  const int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
+  int rank = input->rankOf();
+  int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
 
+  if(dim < 0) {
+    dim += rank;
+  }
   REQUIRE_TRUE(dim < rank, 0,
                "SOFTMAX_BP OP: the value of input integer parameter (dimension) must be less than input array rank %i, "
                "but got dimension = %i instead !",
                rank, dim);
 
+
+
+
   helpers::softmax(block.launchContext(), *input, *gradI, dim);
-
-  auto sumAlongDim = (*gradI * *gradO).reduceAlongDimension(reduce::Sum, {dim}, true);
-  gradI->assign(*gradI * (*gradO - (sumAlongDim + SD_EPSILON)));
-
+  auto gradITimesgradZero = *gradI * *gradO;
+  auto sumAlongDim = gradITimesgradZero.reduceAlongDimension(reduce::Sum, {dim}, true);
+  auto grad0MinusSumAlongDim = *gradO - sumAlongDim;
+  auto gradITimesGrad0MinusSumAlongDim = *gradI * (grad0MinusSumAlongDim);
+  gradI->assign(gradITimesGrad0MinusSumAlongDim);
   return sd::Status::OK;
 }
 

@@ -1698,7 +1698,7 @@ namespace sd {
         if (this->isR()) {
             for (sd::LongType e = 0; e < limit; e++) {
                 if (e) printf(", ");
-                printf("%f", this->e<float>(e));
+                printf("%E", this->e<float>(e));
             }
         } else if (this->isZ()) {
             for (sd::LongType e = 0; e < limit; e++) {
@@ -1741,9 +1741,9 @@ namespace sd {
         } else if (this->dataType() == sd::DataType::INT64) {
             for (sd::LongType e = 0; e < len; e++) printf("%lld, ", this->bufferAsT<sd::LongType>()[e * ews]);
         } else if (this->dataType() == sd::DataType::FLOAT32) {
-            for (sd::LongType e = 0; e < len; e++) printf("%.8f, ", this->bufferAsT<float>()[e * ews]);
+            for (sd::LongType e = 0; e < len; e++) printf("%E, ", this->bufferAsT<float>()[e * ews]);
         } else if (this->dataType() == sd::DataType::DOUBLE) {
-            for (sd::LongType e = 0; e < len; e++) printf("%.8f, ", this->bufferAsT<double>()[e * ews]);
+            for (sd::LongType e = 0; e < len; e++) printf("%E, ", this->bufferAsT<double>()[e * ews]);
         } else
             throw std::invalid_argument("NDArray::printLinearBuffer: not implemented yet for this data type !");
 
@@ -1756,7 +1756,7 @@ namespace sd {
             printf("[ ");
             for (sd::LongType i = 0; i < arr->lengthOf(); ++i) {
                 if (arr->isR())
-                    printf("%f, ", arr->e<float>(i));
+                    printf("%E, ", arr->e<double>(i));
                 else if (arr->isZ())
                     printf("%lld, ", arr->e<sd::LongType>(i));
                 else if (arr->isB())
@@ -1780,7 +1780,7 @@ namespace sd {
                 for (sd::LongType col = 0; col < colLimit; ++col) {
                     if (col) printf(", ");
                     if (arr->isR())
-                        printf("%f", arr->e<float>(row, col));
+                        printf("%E", arr->e<double>(row, col));
                     else if (arr->isZ())
                         printf("%lld", arr->e<sd::LongType>(row, col));
                     else if (arr->isB())
@@ -1828,7 +1828,7 @@ namespace sd {
             if (this->isZ())
                 printf("%lld\n", this->e<sd::LongType>(0));
             else if (this->isR())
-                printf("%.8f\n", this->e<float>(0));
+                printf("%E\n", this->e<double>(0));
             else if (this->isB()) {
                 printf("%s\n", this->e<bool>(0) ? "true" : "false");
             } else if (this->isS()) {
