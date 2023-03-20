@@ -25,34 +25,34 @@ namespace ops {
 namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-void argMax_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
+void argMax_(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions);
 
 template <typename X, typename Z>
-void argMin_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
+void argMin_(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions);
 
 template <typename X, typename Z>
-void argAbsMax_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
+void argAbsMax_(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions);
 
 template <typename X, typename Z>
-void argAbsMin_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
+void argAbsMin_(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions);
 
 //////////////////////////////////////////////////////////////////////////
-void argMax(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+void argMax(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), argMax_, (input, output, dimensions), SD_COMMON_TYPES,
                         SD_INDEXING_TYPES);
 }
 
-void argMin(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+void argMin(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), argMin_, (input, output, dimensions), SD_COMMON_TYPES,
                         SD_INDEXING_TYPES);
 }
 
-void argAbsMax(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+void argAbsMax(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), argAbsMax_, (input, output, dimensions), SD_COMMON_TYPES,
                         SD_INDEXING_TYPES);
 }
 
-void argAbsMin(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+void argAbsMin(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), argAbsMin_, (input, output, dimensions), SD_COMMON_TYPES,
                         SD_INDEXING_TYPES);
 }

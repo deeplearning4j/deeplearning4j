@@ -82,9 +82,9 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
   const bool areSameOffsets = shape::haveSameShapeAndStrides(shapeInfo(), target.shapeInfo());
 
   auto func = PRAGMA_THREADS_FOR {
-    int coords[SD_MAX_RANK], temp;
+    sd::LongType coords[SD_MAX_RANK], temp;
     //track input vector coordinates, only used in specific cases
-    int vectorCoord[1];
+    sd::LongType vectorCoord[1];
     vectorCoord[0] = 0;
     int targetRank = target.rankOf();
     int thisRank = this->rankOf();
@@ -481,7 +481,7 @@ void NDArray::tile(NDArray& target) const {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-static void repeat_(const NDArray& input, NDArray& output, const std::vector<int>& repeats, const int axis) {
+static void repeat_(const NDArray& input, NDArray& output, const std::vector<LongType>& repeats, const int axis) {
   const X* x = input.bufferAsT<X>();
   Z* z = output.bufferAsT<Z>();
 
@@ -491,7 +491,7 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<int
 
   // loop through input array
   auto func = PRAGMA_THREADS_FOR {
-    int coords[SD_MAX_RANK], temp;
+    sd::LongType coords[SD_MAX_RANK], temp;
 
     for (auto i = start; i < stop; i++) {
       shape::index2coordsCPU(start, i, output.shapeInfo(), coords);
@@ -521,7 +521,7 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<int
 
 //////////////////////////////////////////////////////////////////////////
 // create new array by repeating it the number of times given by repeats
-NDArray NDArray::repeat(const int axis, const std::vector<int>& repeats) const {
+NDArray NDArray::repeat(const int axis, const std::vector<LongType>& repeats) const {
   NDArray output('c', ShapeUtils::evalRepeatShape(axis, repeats, *this), dataType(), getContext());
 
   BUILD_SINGLE_SELECTOR_TWICE(dataType(), repeat_, (*this, output, repeats, axis), SD_COMMON_TYPES);
@@ -531,7 +531,7 @@ NDArray NDArray::repeat(const int axis, const std::vector<int>& repeats) const {
 
 //////////////////////////////////////////////////////////////////////////
 // fill array by repeating it the number of times given by reps
-void NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& target) const {
+void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArray& target) const {
   if (!target.isSameShape(ShapeUtils::evalRepeatShape(axis, repeats, *this)))
     throw std::invalid_argument(
         "NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& target) method: wrong shape of "

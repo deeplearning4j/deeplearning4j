@@ -60,7 +60,7 @@ CUSTOM_OP_IMPL(percentile, 1, 1, false, 1, -2) {
                  i, dim, inputArrRank);
   }
 
-  std::vector<int> axises = *block.getIArguments();
+  std::vector<sd::LongType> axises = *block.getIArguments();
   helpers::percentile(block.launchContext(), *input, *output, axises, q, interpolation);
 
   return sd::Status::OK;
@@ -95,7 +95,7 @@ DECLARE_SHAPE_FN(percentile) {
                  i, dim, inputArrRank);
   }
 
-  std::vector<int> axises = *block.getIArguments();
+  std::vector<sd::LongType> axises = *block.getIArguments();
   auto outputShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShapeInfo), axises, inputShapeInfo, keepDims,
                                                          false, block.getWorkspace());
 

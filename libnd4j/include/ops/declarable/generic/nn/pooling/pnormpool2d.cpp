@@ -94,7 +94,7 @@ DECLARE_SHAPE_FN(pnormpool2d) {
 
   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same
   // mode;
-  std::vector<int> argI = *(block.getIArguments());
+  std::vector<sd::LongType> argI = *(block.getIArguments());
   int kH = INT_ARG(0);
   int kW = INT_ARG(1);
   int sH = INT_ARG(2);

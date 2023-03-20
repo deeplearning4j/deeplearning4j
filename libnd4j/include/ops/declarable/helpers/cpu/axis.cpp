@@ -25,7 +25,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-void adjustAxis(sd::LongType rank, NDArray* axisVector, std::vector<int>& output) {
+void adjustAxis(sd::LongType rank, NDArray* axisVector, std::vector<LongType>& output) {
   output.resize(axisVector->lengthOf());
   for (sd::LongType e = 0; e < axisVector->lengthOf(); e++) {
     auto ca = axisVector->e<int>(e);
@@ -35,7 +35,7 @@ void adjustAxis(sd::LongType rank, NDArray* axisVector, std::vector<int>& output
   }
 }
 
-void adjustAxis(sd::LongType rank, std::vector<int>& axisVector) {
+void adjustAxis(sd::LongType rank, std::vector<LongType>& axisVector) {
   for (size_t e = 0; e < axisVector.size(); e++) {
     auto a = axisVector[e];
     if (a < 0) axisVector[e] = a + rank;

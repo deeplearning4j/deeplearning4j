@@ -55,10 +55,10 @@ SD_LIB_HIDDEN void gather(sd::LaunchContext* context, NDArray* input, const NDAr
 SD_LIB_HIDDEN void eye(sd::LaunchContext* context, NDArray& output);
 
 SD_LIB_HIDDEN void scatterUpdate(sd::LaunchContext* context, NDArray& operand, NDArray& updates,
-                                 const std::vector<int>* intArgs);
+                                 const std::vector<LongType>* intArgs);
 
 SD_LIB_HIDDEN void scatterSimple(sd::LaunchContext* context, const int opId, NDArray& input, const NDArray& updates,
-                                 const NDArray& indices, const std::vector<int>& dimensions);
+                                 const NDArray& indices, const std::vector<LongType>& dimensions);
 
 SD_LIB_HIDDEN void mergeMaxIndex(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs,
                                  NDArray& output);
@@ -74,18 +74,18 @@ SD_LIB_HIDDEN void mergeAdd(sd::LaunchContext* context, const std::vector<const 
 SD_LIB_HIDDEN void mergeAddBp(sd::LaunchContext* context, const NDArray& gradient, std::vector<NDArray*>& outArrs);
 
 SD_LIB_HIDDEN void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output,
-                              const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace,
+                              const std::vector<LongType>& dimensions, const NDArray& clipNorm, const bool isInplace,
                               const bool useAverage);
 
 SD_LIB_HIDDEN void clipByGlobalNorm(sd::LaunchContext* context, std::vector<NDArray*> const& inputs, double clipNorm,
                                     sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace);
 
 SD_LIB_HIDDEN void clipByNormBp(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO,
-                                NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm,
+                                NDArray& gradI /*output*/, const std::vector<LongType>& dimensions, const NDArray& clipNorm,
                                 const bool useAverage);
 
 SD_LIB_HIDDEN void clipByAveragedNorm(sd::LaunchContext* context, NDArray& input, NDArray& output,
-                                      const std::vector<int>& dimensions, const NDArray& clipNorm,
+                                      const std::vector<sd::LongType>& dimensions, const NDArray& clipNorm,
                                       const bool isInplace);
 
 SD_LIB_HIDDEN void mirrorPad(sd::LaunchContext* context, const NDArray& input, const NDArray& paddings, NDArray& output,

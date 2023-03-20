@@ -58,7 +58,7 @@ void Reduce3<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, v
 
   Z extraParamsVals[3] = {(Z)0.0f, (Z)0.0f, (Z)0.0f};
 
-  sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+  sd::LongType xShapeInfoCast[SD_MAX_RANK];
   const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
   Z startingVal = OpType::startingValue(x);
@@ -105,7 +105,7 @@ void Reduce3<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, v
 
     maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
   } else {
-    sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
+    sd::LongType yShapeInfoCast[SD_MAX_RANK];
     const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
     auto func = PRAGMA_THREADS_FOR {
@@ -143,7 +143,8 @@ void Reduce3<X, Y>::execScalar(const int opNum, const void *vx, const sd::LongTy
 template <typename X, typename Z>
 template <typename OpType>
 void Reduce3<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, const void *vy,
-                         const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo, int *dimension,
+                         const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
+                         long long int *dimension,
                          int dimensionLength, int64_t start, int64_t stop) {
   auto x = reinterpret_cast<const X *>(vx);
   auto y = reinterpret_cast<const X *>(vy);
@@ -167,7 +168,8 @@ void Reduce3<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, void *v
 template <typename X, typename Z>
 template <typename OpType>
 void Reduce3<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, const void *vy,
-                         const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo, int *dimension,
+                         const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
+                         long long int *dimension,
                          int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                          int64_t start, int64_t stop) {
   auto x = reinterpret_cast<const X *>(vx);
@@ -187,7 +189,8 @@ void Reduce3<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, void *v
 template <typename X, typename Z>
 template <typename OpType>
 void Reduce3<X, Z>::execAll(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, const void *vy,
-                            const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo, int *dimension,
+                            const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
+                            long long int *dimension,
                             int dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xOffsets,
                             const sd::LongType *yTadShapeInfo, const sd::LongType *yOffsets, int64_t start,
                             int64_t stop) {
@@ -209,9 +212,9 @@ void Reduce3<X, Z>::execAll(const void *vx, const sd::LongType *xShapeInfo, void
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void Reduce3<X, Y>::exec(const int opNum, const void *vx, const sd::LongType *xShapeInfo, void *extraParamsVals,
+void Reduce3<X, Y>::exec(int opNum, const void *vx, const sd::LongType *xShapeInfo, void *extraParamsVals,
                          const void *vy, const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                         int *dimension, int dimensionLength, int64_t start, int64_t stop) {
+                         long long int *dimension, int dimensionLength, int64_t start, int64_t stop) {
   DISPATCH_BY_OPNUM_TT(
       exec,
       PARAMS(vx, xShapeInfo, extraParamsVals, vy, yShapeInfo, vz, zShapeInfo, dimension, dimensionLength, start, stop),
@@ -220,9 +223,9 @@ void Reduce3<X, Y>::exec(const int opNum, const void *vx, const sd::LongType *xS
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void Reduce3<X, Y>::exec(const int opNum, const void *vx, const sd::LongType *xShapeInfo, void *extraParamsVals,
+void Reduce3<X, Y>::exec(int opNum, const void *vx, const sd::LongType *xShapeInfo, void *extraParamsVals,
                          const void *vy, const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                         int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
+                         long long int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
                          const sd::LongType *tadOffsets, int64_t start, int64_t stop) {
   DISPATCH_BY_OPNUM_TT(exec,
                        PARAMS(vx, xShapeInfo, extraParamsVals, vy, yShapeInfo, vz, zShapeInfo, dimension,
@@ -232,9 +235,9 @@ void Reduce3<X, Y>::exec(const int opNum, const void *vx, const sd::LongType *xS
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void Reduce3<X, Y>::execAll(const int opNum, const void *vx, const sd::LongType *xShapeInfo, void *extraParamsVals,
+void Reduce3<X, Y>::execAll(int opNum, const void *vx, const sd::LongType *xShapeInfo, void *extraParamsVals,
                             const void *vy, const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                            int *dimension, int dimensionLength, const sd::LongType *xTadShapeInfo,
+                            long long int *dimension, int dimensionLength, const sd::LongType *xTadShapeInfo,
                             const sd::LongType *xOffsets, const sd::LongType *yTadShapeInfo,
                             const sd::LongType *yOffsets, int64_t start, int64_t stop) {
   DISPATCH_BY_OPNUM_TT(execAll,

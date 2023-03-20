@@ -33,29 +33,29 @@ class SD_LIB_EXPORT ShapeUtils {
   // evaluate shape for array resulting from tensorDot operation, also evaluate shapes and permutation dimensions for
   // transposition of two input arrays
   static std::vector<sd::LongType> evalShapeForTensorDot(const sd::LongType* aShapeInfo, const sd::LongType* bShapeInfo,
-                                                         std::vector<int> axesA, std::vector<int> axesB,
-                                                         std::vector<int>& permutAt, std::vector<int>& permutBt,
+                                                         std::vector<sd::LongType> axesA, std::vector<sd::LongType> axesB,
+                                                         std::vector<sd::LongType>& permutAt, std::vector<sd::LongType>& permutBt,
                                                          std::vector<sd::LongType>& shapeAt,
                                                          std::vector<sd::LongType>& shapeBt);
   static std::vector<sd::LongType> evalShapeForTensorDot(const NDArray* a, const NDArray* b,
-                                                         const std::vector<int>& axesA, const std::vector<int>& axesB,
-                                                         std::vector<int>& permutAt, std::vector<int>& permutBt,
+                                                         const std::vector<sd::LongType>& axesA, const std::vector<sd::LongType>& axesB,
+                                                         std::vector<sd::LongType>& permutAt, std::vector<sd::LongType>& permutBt,
                                                          std::vector<sd::LongType>& shapeAt,
                                                          std::vector<sd::LongType>& shapeBt);
 
   // evaluate resulting shape after reduce operation
-  static const sd::LongType* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray& arr,
+  static const sd::LongType* evalReduceShapeInfo(const char order, std::vector<sd::LongType>& dimensions, const NDArray& arr,
                                                  const sd::DataType dataType, const bool keepDims = false,
                                                  const bool supportOldShapes = false,
                                                  sd::memory::Workspace* workspace = nullptr);
-  static const sd::LongType* evalReduceShapeInfo(const char order, std::vector<int>& dimensions,
+  static const sd::LongType* evalReduceShapeInfo(const char order, std::vector<sd::LongType>& dimensions,
                                                  const sd::LongType* shapeInfo, const sd::DataType dataType,
                                                  const bool keepDims = false, const bool supportOldShapes = false,
                                                  sd::memory::Workspace* workspace = nullptr);
-  static const sd::LongType* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray& arr,
+  static const sd::LongType* evalReduceShapeInfo(const char order, std::vector<sd::LongType>& dimensions, const NDArray& arr,
                                                  const bool keepDims = false, const bool supportOldShapes = false,
                                                  sd::memory::Workspace* workspace = nullptr);
-  static const sd::LongType* evalReduceShapeInfo(const char order, std::vector<int>& dimensions,
+  static const sd::LongType* evalReduceShapeInfo(const char order, std::vector<sd::LongType>& dimensions,
                                                  const sd::LongType* shapeInfo, const bool keepDims = false,
                                                  const bool supportOldShapes = false,
                                                  sd::memory::Workspace* workspace = nullptr);
@@ -64,36 +64,35 @@ class SD_LIB_EXPORT ShapeUtils {
   // if rank = 3 and dimsToExclude = {0,2} then output = {1,0,2},   if rank = 3 and dimsToExclude = {2} then output =
   // {0,1,2} if rank = 3 and dimsToExclude = {0} then output = {1,2,0},     if rank = 4 and dimsToExclude = {0,3} then
   // output = {1,2,0,3}
-  static std::vector<int> evalDimsForReduceOp(const int rank, const std::vector<int>& dimsToExclude);
+  static std::vector<sd::LongType> evalDimsForReduceOp(const int rank, const std::vector<sd::LongType>& dimsToExclude);
 
   /**
    * evaluate output shape for reduce operation when input shape is empty
    * behavior is analogous to tf
    */
-  static const sd::LongType* evalReduceShapeInfoEmpty(const char order, std::vector<int>& dimensions,
+  static const sd::LongType* evalReduceShapeInfoEmpty(const char order, std::vector<sd::LongType>& dimensions,
                                                       const sd::LongType* shapeInfo, const sd::DataType dataType,
                                                       const bool keepDims, sd::memory::Workspace* workspace);
 
   // evaluate shape for array which is result of repeat operation applied to arr
-  static std::vector<sd::LongType> evalRepeatShape(int axis, const std::vector<int>& repeats, const NDArray& arr);
+  static std::vector<sd::LongType> evalRepeatShape(int axis, const std::vector<LongType>& repeats, const NDArray& arr);
 
   // evaluate shapeInfo of permuted array
   // if setContigStrides = true, then set contiguous strides in output shapeInfo in accordance with arr order
-  static const sd::LongType* evalPermShapeInfo(const int* dimensions, const int rank, const NDArray& arr,
+  static const sd::LongType* evalPermShapeInfo(const LongType* dimensions, const int rank, const NDArray& arr,
                                                sd::memory::Workspace* workspace, const bool setContigStrides = false);
-  static const sd::LongType* evalPermShapeInfo(const sd::LongType* dimensions, const int rank, const NDArray& arr,
-                                               sd::memory::Workspace* workspace);
+
 
   // evaluate shapeInfo of transposed array
   // if setContigStrides = true, then set contiguous strides in output shapeInfo in accordance with arr order
   static const sd::LongType* evalTranspShapeInfo(const NDArray& arr, sd::memory::Workspace* workspace,
                                                  const bool setContigStrides = false);
 
-  static bool copyVectorPart(std::vector<int>& target, std::vector<int>& source, int rank, int offset);
+  static bool copyVectorPart(std::vector<sd::LongType>& target, std::vector<sd::LongType>& source, int rank, int offset);
 
   // return new (shorter) sorted dimensions array without dimensions that are present in input vector
-  static std::vector<int> evalDimsToExclude(const int rank, const int dimsLen, const int* dimensions);
-  static std::vector<int> evalDimsToExclude(const int rank, const std::vector<int>& dimensions);
+  static std::vector<sd::LongType> evalDimsToExclude(const int rank, const int dimsLen, const sd::LongType* dimensions);
+  static std::vector<sd::LongType> evalDimsToExclude(const int rank, const std::vector<sd::LongType>& dimensions);
 
   // check whether 2 arrays have mutually broadcastable shapes
   // shape comparison starts from the end
@@ -141,7 +140,7 @@ class SD_LIB_EXPORT ShapeUtils {
   // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal
   static const sd::LongType* evalDiagShapeInfo(const sd::LongType* shapeInfo, sd::memory::Workspace* workspace);
 
-  static std::vector<int> evalBroadcastBackwardAxis(const sd::LongType* operand, const sd::LongType* result);
+  static std::vector<sd::LongType> evalBroadcastBackwardAxis(const sd::LongType* operand, const sd::LongType* result);
 
   // utility to calculate matrix product shape with give source shapes and additional params
   // returns ShapeList pointer with result shape
@@ -154,7 +153,7 @@ class SD_LIB_EXPORT ShapeUtils {
    *  if shapeFrom is identical to shapeTo (permutation is unnecessary) then empty vector is returned
    *  in case of permutation is impossible an exception is thrown
    */
-  static std::vector<int> evalPermutFromTo(const std::vector<sd::LongType>& shapeFrom,
+  static std::vector<sd::LongType> evalPermutFromTo(const std::vector<sd::LongType>& shapeFrom,
                                            const std::vector<sd::LongType>& shapeTo);
 
   /**
@@ -176,7 +175,7 @@ class SD_LIB_EXPORT ShapeUtils {
    *  evaluate number of sub-arrays along dimensions stored in dimsToExclude
    *  i.e. if shape is [2,3,4,5] and dimsToExclude={0,2}, then number of sub-arrays = 8
    */
-  static sd::LongType getNumOfSubArrs(const sd::LongType* shapeInfo, const std::vector<int>& dimsToExclude);
+  static sd::LongType getNumOfSubArrs(const sd::LongType* shapeInfo, const std::vector<LongType>& dimsToExclude);
 
   /**
    *   return shape without unities, for example if shape is [1,2,1,3] then [2,3] will be returned
@@ -220,7 +219,7 @@ class SD_LIB_EXPORT ShapeUtils {
    * @return
    */
   static void copyCertainStridesFromShapeInfo(const sd::LongType* inShapeInfo, const int nRank, const int dimsSize,
-                                              const int* dims, sd::LongType* outStrides);
+                                              const sd::LongType* dims, sd::LongType* outStrides);
 
   /*
   * check whether arr1/arr2 is sub-array of arr2/arr1,

@@ -30,7 +30,7 @@ template <typename X, typename Z>
 template <typename OpType>
 SD_LIB_HIDDEN void Reduction3Loops<X, Z>::innerloopReduce3(const X* x, const sd::LongType* xShapeInfo, const X* y,
                                                            const sd::LongType* yShapeInfo, Z* z,
-                                                           const sd::LongType* zShapeInfo, int* dims, int dimsLen,
+                                                           const sd::LongType* zShapeInfo, LongType* dims, int dimsLen,
                                                            Z* extraParams, int64_t start, int64_t stop) {
 #ifndef SD_LOOPS_INLINED
   Reduction3Loops<X, Z>::template loopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dims, dimsLen,
@@ -52,9 +52,10 @@ SD_LIB_HIDDEN void Reduction3Loops<X, Z>::innerloopReduce3All(
 }
 
 template <typename X, typename Y>
-SD_LIB_HIDDEN void Reduction3Loops<X, Y>::wrapper(const int opNum, const X* x, const sd::LongType* xShapeInfo,
+SD_LIB_HIDDEN void Reduction3Loops<X, Y>::wrapper(int opNum, const X* x, const sd::LongType* xShapeInfo,
                                                   const X* y, const sd::LongType* yShapeInfo, Y* z,
-                                                  const sd::LongType* zShapeInfo, int* dims, int dimsLen,
+                                                  const sd::LongType* zShapeInfo,
+                                                  LongType* dims, int dimsLen,
                                                   Y* extraParams, int64_t start, int64_t stop) {
 #ifndef SD_LOOPS_INLINED
   DISPATCH_BY_OPNUM_TT(innerloopReduce3,

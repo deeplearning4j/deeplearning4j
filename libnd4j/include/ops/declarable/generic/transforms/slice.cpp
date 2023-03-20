@@ -33,15 +33,15 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
 
   int x_rank = input->rankOf();
 
-  std::vector<int> begin;
-  std::vector<int> sz;
+  std::vector<sd::LongType> begin;
+  std::vector<sd::LongType> sz;
 
   if (block.width() == 3) {
     auto b = INPUT_VARIABLE(1);
     auto e = INPUT_VARIABLE(2);
 
-    begin = b->template asVectorT<int>();
-    sz = e->template asVectorT<int>();
+    begin = b->template asVectorT<sd::LongType>();
+    sz = e->template asVectorT<sd::LongType>();
   } else {
     REQUIRE_TRUE(block.numI() >= x_rank * 2, 0, "Number of IArgs should be equal to [%i] but got [%i] instead",
                  x_rank * 2, block.numI());
@@ -118,15 +118,15 @@ DECLARE_SHAPE_FN(slice) {
   auto inShape = inputShape->at(0);
   auto x_rank = shape::rank(inShape);
 
-  std::vector<int> begin;
-  std::vector<int> sz;
+  std::vector<sd::LongType> begin;
+  std::vector<sd::LongType> sz;
 
   if (block.width() == 3) {
     auto b = INPUT_VARIABLE(1);
     auto e = INPUT_VARIABLE(2);
 
-    begin = b->template asVectorT<int>();
-    sz = e->template asVectorT<int>();
+    begin = b->template asVectorT<sd::LongType>();
+    sz = e->template asVectorT<sd::LongType>();
   } else {
     REQUIRE_TRUE(block.numI() >= x_rank * 2, 0, "Number of IArgs should be equal to [%i] but got [%i] instead",
                  x_rank * 2, block.numI());
@@ -187,15 +187,15 @@ CUSTOM_OP_IMPL(slice_bp, 2, 1, false, 0, -2) {
   output->assign(0.);
   int x_rank = input->rankOf();
 
-  std::vector<int> begin;
-  std::vector<int> end;
+  std::vector<sd::LongType> begin;
+  std::vector<sd::LongType> end;
 
   if (block.width() == 4) {
     auto b = INPUT_VARIABLE(1);
     auto e = INPUT_VARIABLE(2);
 
-    begin = b->template asVectorT<int>();
-    end = e->template asVectorT<int>();
+    begin = b->template asVectorT<sd::LongType>();
+    end = e->template asVectorT<sd::LongType>();
   } else {
     REQUIRE_TRUE(block.numI() >= x_rank * 2, 0, "Number of IArgs should be equal to [%i] but got [%i] instead",
                  x_rank * 2, block.numI());

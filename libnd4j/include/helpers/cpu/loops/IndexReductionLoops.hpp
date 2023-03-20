@@ -220,8 +220,8 @@ SD_LIB_HIDDEN void sd::IndexReductionLoops<X, Z>::loopIndexReduce(const X* x, co
 
       //*********************************************//
     case sd::LoopKind::X_EWSNONZERO: {
-      sd::Unsigned castZShapeInfo[SD_MAX_RANK];
-      const bool canCastZ = sd::DataTypeUtils::castShapeInfo<sd::Unsigned>(zShapeInfo, castZShapeInfo);
+      sd::LongType castZShapeInfo[SD_MAX_RANK];
+      const bool canCastZ = sd::DataTypeUtils::castShapeInfo<sd::LongType>(zShapeInfo, castZShapeInfo);
 
       auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i++) {
@@ -243,8 +243,8 @@ SD_LIB_HIDDEN void sd::IndexReductionLoops<X, Z>::loopIndexReduce(const X* x, co
 
       //*********************************************//
     case sd::LoopKind::Z_EWSNONZERO: {
-      sd::Unsigned castTadShapeInfo[SD_MAX_RANK];
-      const bool canCastTad = sd::DataTypeUtils::castShapeInfo<sd::Unsigned>(tadShapeInfo, castTadShapeInfo);
+      sd::LongType castTadShapeInfo[SD_MAX_RANK];
+      const bool canCastTad = sd::DataTypeUtils::castShapeInfo<sd::LongType>(tadShapeInfo, castTadShapeInfo);
 
       auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i++) {
@@ -266,10 +266,10 @@ SD_LIB_HIDDEN void sd::IndexReductionLoops<X, Z>::loopIndexReduce(const X* x, co
 
       //*********************************************//
     default: {
-      sd::Unsigned castTadShapeInfo[SD_MAX_RANK];
-      sd::Unsigned castZShapeInfo[SD_MAX_RANK];
-      const bool canCastTad = sd::DataTypeUtils::castShapeInfo<sd::Unsigned>(tadShapeInfo, castTadShapeInfo);
-      const bool canCastZ = sd::DataTypeUtils::castShapeInfo<sd::Unsigned>(zShapeInfo, castZShapeInfo);
+      sd::LongType castTadShapeInfo[SD_MAX_RANK];
+      sd::LongType castZShapeInfo[SD_MAX_RANK];
+      const bool canCastTad = sd::DataTypeUtils::castShapeInfo<sd::LongType>(tadShapeInfo, castTadShapeInfo);
+      const bool canCastZ = sd::DataTypeUtils::castShapeInfo<sd::LongType>(zShapeInfo, castZShapeInfo);
 
       auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i++) {

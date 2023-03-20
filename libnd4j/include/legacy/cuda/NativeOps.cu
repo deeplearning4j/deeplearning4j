@@ -68,6 +68,13 @@ void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long 
 }
 
 
+void toggleOpTrace(bool opTrace) {
+  sd::ops::OpRegistrator::getInstance().toggleTraceOps(opTrace);
+}
+
+void purgeOpTrace() {
+  sd::ops::OpRegistrator::getInstance().purgeOpExecs();
+}
 
 // this method just does type conversion in fancy way
 int getDeviceId(sd::Pointer ptrToDeviceId) { return (int)(sd::LongType)ptrToDeviceId; }
@@ -1378,10 +1385,10 @@ void saveNpy(std::string fname, const InteropDataBuffer *data, const unsigned in
 /**
  * This method saves
  */
-sd::TadPack *tadOnlyShapeInfo(sd::LongType const *dXShapeInfo, int *dimension, int dimensionLength) {
+sd::TadPack *tadOnlyShapeInfo(const long long int *hXShapeInfo, long long int *dimension, int dimensionLength) {
   try {
     auto pack = new TadPack();
-    *pack = sd::ConstantTadHelper::getInstance().tadForDimensions(dXShapeInfo, dimension, dimensionLength);
+    *pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
     return pack;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);

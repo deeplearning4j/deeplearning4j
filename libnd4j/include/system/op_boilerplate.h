@@ -2385,6 +2385,7 @@
     return sd::ops::LogicOp::validateAndExecute(block);                     \
   };
 
+//TODO: each op implementation needs a new op registrator register call. It needs to be defined in this template.
 #define OP_IMPL(NAME, NIN, NOUT, INPLACEABLE)                                                                         \
   NAME::NAME() : sd::ops::DeclarableOp(NIN, NOUT, #NAME, INPLACEABLE){};                                              \
   REGISTER_C(NAME)                                                                                                    \

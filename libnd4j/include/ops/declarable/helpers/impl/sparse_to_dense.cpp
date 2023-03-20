@@ -39,7 +39,7 @@ static void fill_(const void *vvalues, const void *vindices, void *voutput, cons
   auto indices = reinterpret_cast<const I *>(vindices);
   auto output = reinterpret_cast<X *>(voutput);
 
-  int coords[SD_MAX_RANK];
+  sd::LongType coords[SD_MAX_RANK];
   uint64_t pos = 0;
   for (uint64_t e = 0L; e < length; e++) {
     // indices come in blocks

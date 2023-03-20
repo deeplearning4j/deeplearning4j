@@ -79,7 +79,7 @@ CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
     int width = condition->rankOf();
     if (z->isEmpty()) return sd::Status::OK;
 
-    std::vector<int> dims = ShapeUtils::evalDimsToExclude(width, {0});
+    std::vector<sd::LongType> dims = ShapeUtils::evalDimsToExclude(width, {0});
 
     helpers::_where(block.launchContext(), *condition, *output, block.workspace());
   }

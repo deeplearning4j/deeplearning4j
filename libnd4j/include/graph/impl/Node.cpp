@@ -177,7 +177,7 @@ void sd::graph::Node::pickOutput(int outputId) {
 
 int* sd::graph::Node::getDimensionsPtr() { return _dim; }
 
-std::vector<int>* sd::graph::Node::getDimensions() { return &_dimensions; }
+std::vector<sd::LongType>* sd::graph::Node::getDimensions() { return &_dimensions; }
 
 int sd::graph::Node::getLayer() { return _layer; }
 

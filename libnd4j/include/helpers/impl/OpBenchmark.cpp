@@ -37,23 +37,23 @@ OpBenchmark::OpBenchmark(std::string name, NDArray *x, NDArray *z) {
   _z = z;
 }
 
-OpBenchmark::OpBenchmark(std::string name, NDArray *x, NDArray *z, std::initializer_list<int> axis)
+OpBenchmark::OpBenchmark(std::string name, NDArray *x, NDArray *z, std::initializer_list<sd::LongType> axis)
     : OpBenchmark(name, x, nullptr, z, axis) {}
 
-OpBenchmark::OpBenchmark(std::string name, NDArray *x, NDArray *y, NDArray *z, std::initializer_list<int> axis) {
+OpBenchmark::OpBenchmark(std::string name, NDArray *x, NDArray *y, NDArray *z, std::initializer_list<sd::LongType> axis) {
   _testName = name;
   _x = x;
   _y = y;
   _z = z;
-  _axis = std::vector<int>(axis);
+  _axis = std::vector<sd::LongType>(axis);
 
   if (_axis.size() > 1) std::sort(_axis.begin(), _axis.end());
 }
 
-OpBenchmark::OpBenchmark(std::string name, NDArray *x, NDArray *z, std::vector<int> axis)
+OpBenchmark::OpBenchmark(std::string name, NDArray *x, NDArray *z, std::vector<sd::LongType> axis)
     : OpBenchmark(name, x, nullptr, z, axis) {}
 
-OpBenchmark::OpBenchmark(std::string name, NDArray *x, NDArray *y, NDArray *z, std::vector<int> axis) {
+OpBenchmark::OpBenchmark(std::string name, NDArray *x, NDArray *y, NDArray *z, std::vector<sd::LongType> axis) {
   _testName = name;
   _x = x;
   _y = y;
@@ -78,11 +78,11 @@ void OpBenchmark::setY(NDArray *array) { _y = array; }
 
 void OpBenchmark::setZ(NDArray *array) { _z = array; }
 
-void OpBenchmark::setAxis(std::vector<int> axis) { _axis = axis; }
+void OpBenchmark::setAxis(std::vector<sd::LongType> axis) { _axis = axis; }
 
-void OpBenchmark::setAxis(std::initializer_list<int> axis) { _axis = axis; }
+void OpBenchmark::setAxis(std::initializer_list<sd::LongType> axis) { _axis = axis; }
 
-std::vector<int> OpBenchmark::getAxis() { return _axis; }
+std::vector<sd::LongType> OpBenchmark::getAxis() { return _axis; }
 
 std::string OpBenchmark::extra() { return "N/A"; }
 

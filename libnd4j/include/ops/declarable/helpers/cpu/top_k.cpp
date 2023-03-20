@@ -40,7 +40,7 @@ static sd::Status topKFunctor_(const NDArray* input, NDArray* values, NDArray* i
   //                values->lengthOf(), k * lastDimList->size());
   //        }
   // ----------------------------------------------------------------------------------------------- //
-  std::vector<int> dimsToExclude(input->rankOf() - 1);
+  std::vector<sd::LongType> dimsToExclude(input->rankOf() - 1);
   for (size_t d = 0; d < dimsToExclude.size(); ++d) dimsToExclude[d] = d;
 
   const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(input->shapeInfo(), dimsToExclude);

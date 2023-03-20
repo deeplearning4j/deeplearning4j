@@ -64,7 +64,7 @@ class SD_LIB_EXPORT ShapeBuilders {
   /**
    * allocates memory for sub-array shapeInfo and copy shape and strides at axes(positions) stored in dims
    */
-  static sd::LongType* createSubArrShapeInfo(const sd::LongType* inShapeInfo, const int* dims, const int dimsSize,
+  static sd::LongType* createSubArrShapeInfo(const sd::LongType* inShapeInfo, const LongType* dims, const int dimsSize,
                                              memory::Workspace* workspace = nullptr);
 
   static sd::LongType* emptyShapeInfo(const sd::DataType dataType, memory::Workspace* workspace = nullptr);

@@ -41,7 +41,7 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
   delim->syncToHost();
 
   // output rank N+1 wrt input rank
-  std::vector<int> icoords(input->rankOf());
+  std::vector<sd::LongType> icoords(input->rankOf());
 
   // getting buffer lengths
   // FIXME: it'll be bigger, since it'll include delimiters,

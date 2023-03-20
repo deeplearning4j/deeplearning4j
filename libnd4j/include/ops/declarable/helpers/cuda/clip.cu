@@ -226,12 +226,12 @@ void clipByNormBp_(sd::LaunchContext* context, const NDArray& input, const NDArr
 }
 BUILD_SINGLE_TEMPLATE(template void clipByNormBp_,
                       (sd::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
-                       const std::vector<int>& dimensions, const NDArray& clipNorm, const bool useAverage),
+                       const std::vector<sd::LongType>& dimensions, const NDArray& clipNorm, const bool useAverage),
                       SD_FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void clipByNormBp(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
-                  const std::vector<int>& dimensions, const NDArray& clipNorm, const bool useAverage) {
+                  const std::vector<sd::LongType>& dimensions, const NDArray& clipNorm, const bool useAverage) {
   const NDArray& castedInput = gradI.dataType() == input.dataType() ? input : input.cast(gradI.dataType());
   BUILD_SINGLE_SELECTOR(gradI.dataType(), clipByNormBp_,
                         (context, castedInput, gradO, gradI, dimensions, clipNorm, useAverage), SD_FLOAT_TYPES);

@@ -440,7 +440,7 @@ class SD_LIB_EXPORT NDArray {
    *  axis - axis along which to repeat elements
    *  repeats - number of repetitions
    */
-  NDArray repeat(const int axis, const std::vector<int> &repeats) const;
+  NDArray repeat(const int axis, const std::vector<LongType> &repeats) const;
 
   /**
    * This method fills this array with zeros
@@ -460,7 +460,7 @@ class SD_LIB_EXPORT NDArray {
    *  axis - axis along which to repeat elements
    *  repeats - vector containing numbers of repetition for elements at given axis
    */
-  void repeat(const int axis, const std::vector<int> &repeats, NDArray &target) const;
+  void repeat(const int axis, const std::vector<LongType> &repeats, NDArray &target) const;
 
   /**
    *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
@@ -548,13 +548,10 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  permutes (in-place) the dimensions in array according to "dimensions" array
    */
-  bool permutei(const std::initializer_list<int> &dimensions);
-  bool permutei(const std::vector<int> &dimensions);
-  bool permutei(const int *dimensions, const int rank);
+  bool permutei(const std::initializer_list<LongType> &dimensions);
+  bool permutei(const std::vector<LongType> &dimensions);
+  bool permutei(const LongType *dimensions, const int rank);
 
-  bool permutei(const std::initializer_list<sd::LongType> &dimensions);
-  bool permutei(const std::vector<sd::LongType> &dimensions);
-  bool permutei(const sd::LongType *dimensions, const int rank);
 
   bool isFinite();
   bool hasNaNs();
@@ -566,25 +563,17 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
    */
-  NDArray permute(const std::initializer_list<int> &dimensions) const &;
-  NDArray permute(const std::vector<int> &dimensions) const &;
-  NDArray permute(const int *dimensions, const int rank) const &;
-  NDArray permute(const std::initializer_list<int> &dimensions) &&;
-  NDArray permute(const std::vector<int> &dimensions) &&;
-  NDArray permute(const int *dimensions, const int rank) &&;
+  NDArray permute(const std::initializer_list<LongType> &dimensions) const &;
+  NDArray permute(const std::vector<LongType> &dimensions) const &;
+  NDArray permute(const LongType *dimensions, const int rank) const &;
+  NDArray permute(const std::initializer_list<LongType> &dimensions) &&;
+  NDArray permute(const std::vector<LongType> &dimensions) &&;
+  NDArray permute(const LongType *dimensions, const int rank) &&;
 
-  void permute(const int *dimensions, const int rank, NDArray &target) const;
-  void permute(const std::vector<int> &dimensions, NDArray &target) const;
+  void permute(const LongType *dimensions, const int rank, NDArray &target) const;
+  void permute(const std::vector<LongType> &dimensions, NDArray &target) const;
 
-  NDArray permute(const std::initializer_list<sd::LongType> &dimensions) const &;
-  NDArray permute(const std::vector<sd::LongType> &dimensions) const &;
-  NDArray permute(const sd::LongType *dimensions, const int rank) const &;
-  NDArray permute(const std::initializer_list<sd::LongType> &dimensions) &&;
-  NDArray permute(const std::vector<sd::LongType> &dimensions) &&;
-  NDArray permute(const sd::LongType *dimensions, const int rank) &&;
 
-  void permute(const sd::LongType *dimensions, const int rank, NDArray &target) const;
-  void permute(const std::vector<sd::LongType> &dimensions, NDArray &target) const;
 
   /**
    * This method streamlines given view or permuted array, and reallocates buffer
@@ -681,24 +670,24 @@ class SD_LIB_EXPORT NDArray {
    * place of reduced dimensions
    */
 
-  NDArray reduceAlongDimension(sd::reduce::FloatOps op, const std::vector<int> &dimensions,
+  NDArray reduceAlongDimension(sd::reduce::FloatOps op, const std::vector<LongType> &dimensions,
                                const bool keepDims = false) const;
-  NDArray reduceAlongDimension(sd::reduce::FloatOps op, const std::initializer_list<int> &dimensions,
-                               const bool keepDims = false) const;
-
-  NDArray reduceAlongDimension(sd::reduce::SameOps op, const std::vector<int> &dimensions,
-                               const bool keepDims = false) const;
-  NDArray reduceAlongDimension(sd::reduce::SameOps op, const std::initializer_list<int> &dimensions,
+  NDArray reduceAlongDimension(sd::reduce::FloatOps op, const std::initializer_list<LongType> &dimensions,
                                const bool keepDims = false) const;
 
-  NDArray reduceAlongDimension(sd::reduce::BoolOps op, const std::vector<int> &dimensions,
+  NDArray reduceAlongDimension(sd::reduce::SameOps op, const std::vector<LongType> &dimensions,
                                const bool keepDims = false) const;
-  NDArray reduceAlongDimension(sd::reduce::BoolOps op, const std::initializer_list<int> &dimensions,
+  NDArray reduceAlongDimension(sd::reduce::SameOps op, const std::initializer_list<LongType> &dimensions,
                                const bool keepDims = false) const;
 
-  NDArray reduceAlongDimension(sd::reduce::LongOps op, const std::vector<int> &dimensions,
+  NDArray reduceAlongDimension(sd::reduce::BoolOps op, const std::vector<LongType> &dimensions,
                                const bool keepDims = false) const;
-  NDArray reduceAlongDimension(sd::reduce::LongOps op, const std::initializer_list<int> &dimensions,
+  NDArray reduceAlongDimension(sd::reduce::BoolOps op, const std::initializer_list<LongType> &dimensions,
+                               const bool keepDims = false) const;
+
+  NDArray reduceAlongDimension(sd::reduce::LongOps op, const std::vector<LongType> &dimensions,
+                               const bool keepDims = false) const;
+  NDArray reduceAlongDimension(sd::reduce::LongOps op, const std::initializer_list<LongType> &dimensions,
                                const bool keepDims = false) const;
 
   /**
@@ -708,13 +697,13 @@ class SD_LIB_EXPORT NDArray {
    *  keepDims - if true then put unities in place of reduced dimensions
    *  extras - extra parameters
    */
-  void reduceAlongDimension(sd::reduce::FloatOps op, NDArray &target, const std::vector<int> &dimensions,
+  void reduceAlongDimension(sd::reduce::FloatOps op, NDArray &target, const std::vector<LongType> &dimensions,
                             const bool keepDims = false, const bool checkTargetShape = true) const;
-  void reduceAlongDimension(sd::reduce::SameOps op, NDArray &target, const std::vector<int> &dimensions,
+  void reduceAlongDimension(sd::reduce::SameOps op, NDArray &target, const std::vector<LongType> &dimensions,
                             const bool keepDims = false, const bool checkTargetShape = true) const;
-  void reduceAlongDimension(sd::reduce::BoolOps op, NDArray &target, const std::vector<int> &dimensions,
+  void reduceAlongDimension(sd::reduce::BoolOps op, NDArray &target, const std::vector<LongType> &dimensions,
                             const bool keepDims = false, const bool checkTargetShape = true) const;
-  void reduceAlongDimension(sd::reduce::LongOps op, NDArray &target, const std::vector<int> &dimensions,
+  void reduceAlongDimension(sd::reduce::LongOps op, NDArray &target, const std::vector<LongType> &dimensions,
                             const bool keepDims = false, const bool checkTargetShape = true) const;
 
   /**
@@ -804,16 +793,16 @@ class SD_LIB_EXPORT NDArray {
    *  target - where to store result
    *  extraParams - extra parameters for operation
    */
-  void applyBroadcast(sd::broadcast::Ops op, const std::initializer_list<int> dimensions, const NDArray &tad,
+  void applyBroadcast(sd::broadcast::Ops op, const std::initializer_list<LongType> dimensions, const NDArray &tad,
                       NDArray &target, ExtraArguments *extraArgs = nullptr);
 
-  void applyBroadcast(sd::broadcast::Ops op, const std::vector<int> &dimensions, const NDArray &tad, NDArray &target,
+  void applyBroadcast(sd::broadcast::Ops op, const std::vector<LongType> &dimensions, const NDArray &tad, NDArray &target,
                       ExtraArguments *extraArgs = nullptr);
 
-  void applyBroadcast(sd::broadcast::BoolOps op, const std::vector<int> &dimensions, const NDArray &tad,
+  void applyBroadcast(sd::broadcast::BoolOps op, const std::vector<LongType> &dimensions, const NDArray &tad,
                       NDArray &target, ExtraArguments *extraArgs = nullptr);
 
-  void applyBroadcast(sd::broadcast::IntOps op, const std::vector<int> &dimensions, const NDArray &tad, NDArray &target,
+  void applyBroadcast(sd::broadcast::IntOps op, const std::vector<LongType> &dimensions, const NDArray &tad, NDArray &target,
                       ExtraArguments *extraArgs = nullptr);
 
   /**
@@ -920,7 +909,7 @@ class SD_LIB_EXPORT NDArray {
    *  dimensions - vector of dimensions to reduce along
    *  extraArgs - extra parameters for operation
    */
-  NDArray applyIndexReduce(sd::indexreduce::Ops op, const std::vector<int> &dimensions,
+  NDArray applyIndexReduce(sd::indexreduce::Ops op, const std::vector<LongType> &dimensions,
                            const ExtraArguments *extraParams = nullptr) const;
 
   /**
@@ -929,7 +918,7 @@ class SD_LIB_EXPORT NDArray {
    *  dimensions - vector of dimensions to reduce along
    *  extraArgs - extra parameters for operation
    */
-  void applyIndexReduce(sd::indexreduce::Ops op, NDArray &target, const std::vector<int> &dimensions,
+  void applyIndexReduce(sd::indexreduce::Ops op, NDArray &target, const std::vector<LongType> &dimensions,
                         const ExtraArguments *extraParams = nullptr) const;
 
   /**
@@ -945,7 +934,7 @@ class SD_LIB_EXPORT NDArray {
    *  dimensions - vector of dimensions to reduce along (tads not axis)
    *  extraArgs - extra parameters for operation
    */
-  NDArray applyAllReduce3(sd::reduce3::Ops op, const NDArray &other, const std::vector<int> &dimensions,
+  NDArray applyAllReduce3(sd::reduce3::Ops op, const NDArray &other, const std::vector<LongType> &dimensions,
                           const ExtraArguments *extraParams = nullptr) const;
 
   /**
@@ -954,7 +943,7 @@ class SD_LIB_EXPORT NDArray {
    *  dimensions - vector of dimensions to reduce along (same as reduceAlongDimension)
    *  extraArgs - extra parameters for operation
    */
-  NDArray applyReduce3(sd::reduce3::Ops op, const NDArray &other, const std::vector<int> &dimensions,
+  NDArray applyReduce3(sd::reduce3::Ops op, const NDArray &other, const std::vector<LongType> &dimensions,
                        const ExtraArguments *extraParams = nullptr) const;
 
   /**
@@ -963,14 +952,14 @@ class SD_LIB_EXPORT NDArray {
    *  dimensions - vector of dimensions to calculate variance along
    */
   NDArray varianceAlongDimension(sd::variance::Ops op, const bool biasCorrected,
-                                 const std::vector<int> &dimensions) const;
+                                 const std::vector<LongType> &dimensions) const;
   NDArray varianceAlongDimension(sd::variance::Ops op, const bool biasCorrected,
-                                 const std::initializer_list<int> &dimensions) const;
+                                 const std::initializer_list<LongType> &dimensions) const;
 
   void varianceAlongDimension(sd::variance::Ops op, NDArray &target, const bool biasCorrected,
-                              const std::vector<int> &dimensions) const;
+                              const std::vector<LongType> &dimensions) const;
   void varianceAlongDimension(sd::variance::Ops op, NDArray &target, const bool biasCorrected,
-                              const std::initializer_list<int> &dimensions) const;
+                              const std::initializer_list<LongType> &dimensions) const;
 
 #endif
 
@@ -995,8 +984,8 @@ class SD_LIB_EXPORT NDArray {
    *  returns the number of arrays pointing on specified dimension(s)
    *  dimensions - array of dimensions to point on
    */
-  sd::LongType tensorsAlongDimension(const std::initializer_list<int> dimensions) const;
-  sd::LongType tensorsAlongDimension(const std::vector<int> &dimensions) const;
+  sd::LongType tensorsAlongDimension(std::initializer_list<LongType> dimensions) const;
+  sd::LongType tensorsAlongDimension(const std::vector<LongType> &dimensions) const;
 
   /**
    *  returns true if elements of two arrays are equal to within given epsilon value
@@ -1159,7 +1148,7 @@ class SD_LIB_EXPORT NDArray {
    * zeros (means whole array) will be returned. keepUnitiesInShape - if false then eliminate unities from resulting
    * array shape, for example {1,a,1,b} -> {a,b}
    */
-  NDArray operator()(const sd::LongType subArrIdx, const std::vector<int> &dimsToExclude,
+  NDArray operator()(const sd::LongType subArrIdx, const std::vector<sd::LongType> &dimsToExclude,
                      bool keepUnitiesInShape = false) const;
 
   /**
@@ -1172,7 +1161,7 @@ class SD_LIB_EXPORT NDArray {
    * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
    * keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
    */
-  void getSubArrShapeAndOffsets(const std::vector<int> &dimsToExclude, sd::LongType *&subArrShapeInfo,
+  void getSubArrShapeAndOffsets(const std::vector<LongType> &dimsToExclude, sd::LongType *&subArrShapeInfo,
                                 sd::LongType *&subArrOffsets, bool keepUnitiesInShape = false) const;
 
   /**
@@ -1301,11 +1290,12 @@ class SD_LIB_EXPORT NDArray {
    */
   double getTrace() const;
 
-  ResultSet multipleTensorsAlongDimension(const std::vector<int> &indices, const std::vector<int> &dimensions) const;
+  ResultSet multipleTensorsAlongDimension(const std::vector<LongType> &indices,
+                                          const std::vector<LongType> &dimensions) const;
 
-  ResultSet allTensorsAlongDimension(const std::initializer_list<int> &dimensions) const;
+  ResultSet allTensorsAlongDimension(const std::initializer_list<LongType> &dimensions) const;
 
-  ResultSet allTensorsAlongDimension(const std::vector<int> &dimensions) const;
+  ResultSet allTensorsAlongDimension(const std::vector<LongType> &dimensions) const;
 
   ResultSet allExamples() const;
 

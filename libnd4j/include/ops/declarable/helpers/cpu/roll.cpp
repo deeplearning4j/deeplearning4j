@@ -84,8 +84,8 @@ static void rollFunctorLinear_(NDArray* input, NDArray* output, int shift, bool 
   }
 }
 
-void rollFunctorFull(sd::LaunchContext* context, NDArray* input, NDArray* output, std::vector<int> const& shifts,
-                     std::vector<int> const& axes, bool inplace) {
+void rollFunctorFull(sd::LaunchContext* context, NDArray* input, NDArray* output, const std::vector<LongType>& shifts,
+                     const std::vector<LongType>& axes, bool inplace) {
   if (!inplace) output->assign(input);
 
   auto source = output;  // input;

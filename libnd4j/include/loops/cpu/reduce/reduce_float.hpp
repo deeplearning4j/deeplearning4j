@@ -68,7 +68,7 @@ void SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::Lon
     z[0] = execScalar<OpType>(x, xEws, length, extraParams);
   } else {
     auto startingValue = OpType::startingValue(x);
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
     const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
     int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
     Y intermediate[64];
@@ -107,7 +107,7 @@ Z SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::LongTy
     return execScalar<OpType>(x, xEws, length, extraParams);
   } else {
     auto startingValue = OpType::startingValue(x);
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
     for (sd::LongType i = 0; i < length; i++)
@@ -177,7 +177,7 @@ template <typename X, typename Z>
 template <typename OpType>
 void SD_HOST ReduceFloatFunction<X, Z>::exec(sd::memory::Workspace *workspace, const void *vx,
                                              const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                             const sd::LongType *zShapeInfo, const int *dims) {
+                                             const sd::LongType *zShapeInfo, const long long int *dims) {
   const X *x = reinterpret_cast<const X *>(vx);
   Z *z = reinterpret_cast<Z *>(vz);
   Z *extraParams = reinterpret_cast<Z *>(vextraParams);
@@ -201,7 +201,7 @@ void SD_HOST ReduceFloatFunction<X, Z>::exec(sd::memory::Workspace *workspace, c
   }
 
   if (OpType::requiresSpecialAccumulation) {
-    OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, const_cast<int *>(dims) + zRank, xRank - zRank,
+    OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, const_cast<sd::LongType *>(dims) + zRank, xRank - zRank,
                         nullptr, nullptr);
     return;
   }
@@ -216,9 +216,9 @@ void SD_HOST ReduceFloatFunction<X, Z>::exec(sd::memory::Workspace *workspace, c
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void ReduceFloatFunction<X, Y>::exec(const int opNum, sd::memory::Workspace *workspace, const void *vx,
+void ReduceFloatFunction<X, Y>::exec(int opNum, sd::memory::Workspace *workspace, const void *vx,
                                      const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                     const sd::LongType *zShapeInfo, const int *dims) {
+                                     const sd::LongType *zShapeInfo, const long long int *dims) {
   DISPATCH_BY_OPNUM_TT(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_FLOAT_OPS);
 }
 

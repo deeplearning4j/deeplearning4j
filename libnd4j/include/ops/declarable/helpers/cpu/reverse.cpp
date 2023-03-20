@@ -148,7 +148,7 @@ static void reverseSequence_(sd::LaunchContext* context, const NDArray* input, c
   } else {
     if (seqDim > batchDim) --seqDim;
 
-    std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {batchDim});
+    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {batchDim});
 
     auto inSubArrsSet = input->allTensorsAlongDimension(dimensions);
     auto outSubArrsSet = output->allTensorsAlongDimension(dimensions);
@@ -176,7 +176,7 @@ void reverseSequence(sd::LaunchContext* context, const NDArray* input, const NDA
 }
 
 //////////////////////////////////////////////////////////////////////////
-void reverse(sd::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs) {
+void reverse(sd::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<LongType>* intArgs) {
   auto listOut = output->allTensorsAlongDimension(*intArgs);
   auto listIn = input->allTensorsAlongDimension(*intArgs);
 

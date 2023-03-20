@@ -22,6 +22,8 @@
 #include <array/NDArrayFactory.h>
 #include <ops/declarable/LegacyScalarOp.h>
 
+#include <ops/declarable/OpRegistrator.h>
+
 namespace sd {
 namespace ops {
 LegacyScalarOp::LegacyScalarOp() : LegacyOp::LegacyOp(1) { this->getOpDescriptor()->allowInplace(true); }
@@ -69,11 +71,6 @@ sd::Status LegacyScalarOp::validateAndExecute(Context &block) {
     auto y = NDArrayFactory::create(x->dataType(), T_ARG(0), block.launchContext());
 
     x->applyScalarArr(static_cast<sd::scalar::Ops>(opNum), y, *z);
-    // NDArray::prepareSpecialUse({z}, {x, &y});
-    // NativeOpExecutioner::execScalar(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
-    // x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), y.buffer(),
-    // y.shapeInfo(), y.specialBuffer(), y.special(), extras.argumentsAsT(z->dataType(), 1));
-
     manager.synchronize();
   } else {
     NDArray::prepareSpecialUse({z}, {x, _scalar});
@@ -84,6 +81,21 @@ sd::Status LegacyScalarOp::validateAndExecute(Context &block) {
         _scalar->specialBuffer(), _scalar->specialShapeInfo(), extras.argumentsAsT(z->dataType()));
 
     NDArray::registerSpecialUse({z}, {x, _scalar});
+  }
+
+
+  if(OpRegistrator::getInstance().traceOps()) {
+    std::vector<const sd::LongType *> *inputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block.width(); i++) {
+      inputShapeBuffers->push_back(block.variable(i)->getNDArray()->shapeInfo());
+    }
+    std::vector<const sd::LongType *> *outputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block.outputWidth(); i++) {
+      outputShapeBuffers->push_back(block.fastpath_out()[i]->shapeInfo());
+    }
+
+    OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers,this->getOpName());
+    OpRegistrator::getInstance().registerOpExec(opExecTrace);
   }
 
   return sd::Status::OK;

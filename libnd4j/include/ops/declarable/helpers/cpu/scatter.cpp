@@ -43,7 +43,7 @@ sd::LongType checkIndices_(const NDArray& indices, const NDArray& output, const 
   const auto xRank = indices.rankOf();
 
   auto func = PRAGMA_THREADS_FOR {
-    int xCoords[SD_MAX_RANK];
+    sd::LongType  xCoords[SD_MAX_RANK];
 
     for (auto i = start; i < stop; i++) {
       shape::index2coordsCPU(start, i, xShapeInfo, xCoords);
@@ -91,12 +91,12 @@ void scatter(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indice
     int sizeOfDims = indRank;
     if (outRank == updRank && indices.isVector()) sizeOfDims = 1;
 
-    std::vector<int> dimsToExcludeUpd(sizeOfDims);
+    std::vector<sd::LongType > dimsToExcludeUpd(sizeOfDims);
     std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
-        NDArray outSubArr = output(indices.e<sd::LongType>(i), std::vector<int>({0}));
+        NDArray outSubArr = output(indices.e<sd::LongType>(i), std::vector<sd::LongType >({0}));
         NDArray updSubArr = updates(i, dimsToExcludeUpd);
         outSubArr.applyPairwiseTransform(op, updSubArr);
       }
@@ -126,8 +126,8 @@ void scatterND(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indi
 
     samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance().maxThreads());
   } else {
-    std::vector<int> dimsToExcludeInd = ShapeUtils::evalDimsToExclude(indRank, {indRank - 1});
-    std::vector<int> dimsToExcludeUpd(indRank - 1);
+    std::vector<sd::LongType > dimsToExcludeInd = ShapeUtils::evalDimsToExclude(indRank, {indRank - 1});
+    std::vector<sd::LongType > dimsToExcludeUpd(indRank - 1);
     std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
 
     auto func = PRAGMA_THREADS_FOR {
@@ -161,7 +161,7 @@ void scatterForLoss(sd::LaunchContext* context, const NDArray& indices, NDArray&
 
   const sd::LongType indicesLen = indices.lengthOf();
 
-  std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(updates.rankOf(), {-1});
+  std::vector<sd::LongType > dimsToExclude = ShapeUtils::evalDimsToExclude(updates.rankOf(), {-1});
 
   if (!calcGrad) {
     auto func = PRAGMA_THREADS_FOR {

@@ -25,6 +25,8 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/LegacyReduceLongOp.h>
 
+#include <ops/declarable/OpRegistrator.h>
+
 namespace sd {
 namespace ops {
 LegacyReduceLongOp::LegacyReduceLongOp() : LegacyOp::LegacyOp(1) {
@@ -63,7 +65,7 @@ sd::Status LegacyReduceLongOp::validateAndExecute(Context& block) {
           extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
     } else {
       // TAD
-      std::vector<int> dims(axis);
+      std::vector<sd::LongType> dims(axis);
 
       for (int e = 0; e < dims.size(); e++)
         if (dims[e] < 0) dims[e] += x->rankOf();
@@ -82,7 +84,7 @@ sd::Status LegacyReduceLongOp::validateAndExecute(Context& block) {
         zShapeInfoD = reinterpret_cast<sd::LongType const*>(zPack->special());
       }
 
-      std::vector<int> dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), dims);
+      std::vector<sd::LongType> dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), dims);
       NativeOpExecutioner::execReduceLong(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                           x->specialShapeInfo(), nullptr, z->buffer(), zShapeInfoH, z->specialBuffer(),
                                           zShapeInfoD, dims2.data(), dims2.size());
@@ -95,7 +97,7 @@ sd::Status LegacyReduceLongOp::validateAndExecute(Context& block) {
     if (indices->lengthOf() == x->rankOf()) allAxes = true;
 
 
-    std::vector<int> dims(indices->lengthOf());
+    std::vector<sd::LongType> dims(indices->lengthOf());
     for (int e = 0; e < indices->lengthOf(); e++) {
       // segfault on macOS if not like this
       int f = indices->e<int>(e);
@@ -121,7 +123,7 @@ sd::Status LegacyReduceLongOp::validateAndExecute(Context& block) {
         zShapeInfoD = reinterpret_cast<sd::LongType const*>(zPack->special());
       }
 
-      std::vector<int> dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), dims);
+      std::vector<sd::LongType> dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), dims);
       NativeOpExecutioner::execReduceLong(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                           x->specialShapeInfo(), nullptr, z->buffer(), zShapeInfoH, z->specialBuffer(),
                                           zShapeInfoD, dims2.data(), dims2.size());
@@ -130,6 +132,22 @@ sd::Status LegacyReduceLongOp::validateAndExecute(Context& block) {
   }
 
   manager.synchronize();
+
+
+  if(OpRegistrator::getInstance().traceOps()) {
+    std::vector<const sd::LongType *> *inputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block.width(); i++) {
+      inputShapeBuffers->push_back(block.variable(i)->getNDArray()->shapeInfo());
+    }
+    std::vector<const sd::LongType *> *outputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block.outputWidth(); i++) {
+      outputShapeBuffers->push_back(block.fastpath_out()[i]->shapeInfo());
+    }
+
+    OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers,this->getOpName());
+    OpRegistrator::getInstance().registerOpExec(opExecTrace);
+  }
+
   return sd::Status::OK;
 }
 
@@ -147,7 +165,7 @@ ShapeList* LegacyReduceLongOp::calculateOutputShape(ShapeList* inputShape, sd::g
   auto keepDims = block.numB() > 0 ? B_ARG(0) : false;
   auto newFormat = block.numB() > 1 ? B_ARG(1) : true;
 
-  auto axis = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<int>() : *block.getAxis();
+  auto axis = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<sd::LongType>() : *block.getAxis();
 
   if (axis.size() == shape::rank(inShape)) allAxes = true;
 

@@ -21,6 +21,7 @@
 //
 #include <legacy/NativeOpExecutioner.h>
 #include <ops/declarable/LegacyTransformFloatOp.h>
+#include <ops/declarable/OpRegistrator.h>
 
 namespace sd {
 namespace ops {
@@ -52,7 +53,19 @@ sd::Status LegacyTransformFloatOp::validateAndExecute(Context &block) {
 
   manager.synchronize();
   STORE_RESULT(*z);
+  if(OpRegistrator::getInstance().traceOps()) {
+    std::vector<const sd::LongType *> *inputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block.width(); i++) {
+      inputShapeBuffers->push_back(block.variable(i)->getNDArray()->shapeInfo());
+    }
+    std::vector<const sd::LongType *> *outputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block.outputWidth(); i++) {
+      outputShapeBuffers->push_back(getZ(block,i)->shapeInfo());
+    }
 
+    OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers,this->getOpName());
+    OpRegistrator::getInstance().registerOpExec(opExecTrace);
+  }
   return sd::Status::OK;
 }
 

@@ -146,6 +146,26 @@ bool OpRegistrator::registerOperation(const char* name, sd::ops::DeclarableOp* o
   return true;
 }
 
+void OpRegistrator::registerOpExec(OpExecTrace *opExecTrace) {
+  this->opexecTrace.push_back(opExecTrace);
+}
+
+bool OpRegistrator::traceOps() {
+  return this->isTrace;
+}
+
+void OpRegistrator::toggleTraceOps(bool traceOps) {
+  this->isTrace = traceOps;
+}
+
+void OpRegistrator::purgeOpExecs() {
+  this->opexecTrace.clear();
+}
+
+std::vector<OpExecTrace *> OpRegistrator::execTrace() {
+  return this->opexecTrace;
+}
+
 /**
  * This method registers operation
  *

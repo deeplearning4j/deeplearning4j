@@ -161,7 +161,7 @@ DECLARE_SHAPE_FN(cosine_distance_loss) {
     outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
   else {  // in this case output has the same shape as labels reduced  by dim axis
 
-    std::vector<int> dimensions = {dim};
+    std::vector<LongType> dimensions = {dim};
     outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(predictionsShapeInfo), dimensions, predictionsShapeInfo,
                                                    outType, true, false, block.getWorkspace());
 
@@ -199,7 +199,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss_grad, 3, 3, false, 0, 2) {
   int dim = INT_ARG(1);  // axis along which sum will be made
   if (dim < 0) dim += labels->rankOf();
 
-  std::vector<int> dimensions = {dim};
+  std::vector<LongType> dimensions = {dim};
 
   // input validation
   REQUIRE_TRUE(labels->isSameShape(predictions), 0,
@@ -248,7 +248,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss_grad, 3, 3, false, 0, 2) {
         dLdw->assign(E.reduceNumber(reduce::Sum));
       } else {
         if (weights != weightsBroad) {
-          std::vector<int> axesToReduceAlong =
+          std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
           E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
         } else
@@ -278,7 +278,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss_grad, 3, 3, false, 0, 2) {
           *dLdw = 0.;
         } else {
           if (weights != weightsBroad) {
-            std::vector<int> axesToReduceAlong =
+            std::vector<LongType> axesToReduceAlong =
                 ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
             ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum))
                 .reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
@@ -309,7 +309,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss_grad, 3, 3, false, 0, 2) {
           dLdw->assign(E.reduceNumber(reduce::Sum) / numOfNonZeroWeights);
         } else {
           if (weights != weightsBroad) {
-            std::vector<int> axesToReduceAlong =
+            std::vector<LongType> axesToReduceAlong =
                 ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
             E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
             *dLdw /= numOfNonZeroWeights;
@@ -341,7 +341,7 @@ DECLARE_SHAPE_FN(cosine_distance_loss_grad) {
   int dim = INT_ARG(1);
   if (dim < 0) dim += labelsShapeInfo[0];
 
-  std::vector<int> dimensions = {dim};
+  std::vector<LongType> dimensions = {dim};
 
   // labels and predictions must have the same shapes
   REQUIRE_TRUE(shape::shapeEquals(labelsShapeInfo, predictionsShapeInfo), 0,

@@ -50,7 +50,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
   const bool bEqual = yLastDim == xRank;
 
   auto func = PRAGMA_THREADS_FOR {
-    int xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK], temp;
+    sd::LongType xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK], temp;
 
     for (auto i = start; i < stop; i++) {
       shape::index2coordsCPU(start, i, output.shapeInfo(), zCoords);
@@ -128,7 +128,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
 
       samediff::Threads::parallel_for(func, 0, indices->lengthOf());
     } else {
-      std::vector<int> dimsOut(indices->rankOf());
+      std::vector<sd::LongType> dimsOut(indices->rankOf());
       std::iota(dimsOut.begin(), dimsOut.end(), axis);  // fill with axis, axis+1, ... indices->rankOf()-1
       const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->shapeInfo(), dimsOut);
 

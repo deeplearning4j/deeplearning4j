@@ -31,7 +31,7 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<int>& dimensions,
+void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<LongType>& dimensions,
                 const NDArray& clipNorm, const bool isInplace, const bool useAverage) {
   NDArray* z = nullptr;
 
@@ -65,7 +65,7 @@ void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, con
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void clipByNormBp_(const NDArray& input, const NDArray& gradO, NDArray& gradI,
-                          const std::vector<int>& dimensions, const NDArray& clipNorm, const bool useAverage) {
+                          const std::vector<LongType>& dimensions, const NDArray& clipNorm, const bool useAverage) {
   const int rank = input.rankOf();
 
   auto norm2 = input.reduceAlongDimension(reduce::Norm2, dimensions);
@@ -122,13 +122,13 @@ static void clipByNormBp_(const NDArray& input, const NDArray& gradO, NDArray& g
   }
 }
 BUILD_SINGLE_TEMPLATE(template void clipByNormBp_,
-                      (const NDArray& input, const NDArray& gradO, NDArray& gradI, const std::vector<int>& dimensions,
+                      (const NDArray& input, const NDArray& gradO, NDArray& gradI, const std::vector<sd::LongType>& dimensions,
                        const NDArray& clipNorm, const bool useAverage),
                       SD_FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void clipByNormBp(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
-                  const std::vector<int>& dimensions, const NDArray& clipNorm, const bool useAverage) {
+                  const std::vector<LongType>& dimensions, const NDArray& clipNorm, const bool useAverage) {
   const NDArray& castedInput = gradI.dataType() == input.dataType() ? input : input.cast(gradI.dataType());
 
   BUILD_SINGLE_SELECTOR(gradI.dataType(), clipByNormBp_, (castedInput, gradO, gradI, dimensions, clipNorm, useAverage),

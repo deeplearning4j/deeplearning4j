@@ -79,6 +79,7 @@ bool experimentalSupport = false;
 #if defined(HAVE_VEDA)
 #include <ops/declarable/PlatformHelperLegacy.h>
 #endif
+#include <ops/declarable/OpRegistrator.h>
 
 using namespace sd;
 
@@ -135,6 +136,45 @@ static bool execHelperScalar(int opNum, OpaqueDataBuffer *dbX, const sd::LongTyp
 
 #endif
 
+void printOpTrace() {
+  auto execTrace = sd::ops::OpRegistrator::getInstance().execTrace();
+  for(int i = 0; i < execTrace.size(); i++) {
+    auto curr = execTrace[i];
+    if(curr->opName != nullptr) {
+      sd_printf("Op name: %s\n",curr->opName->c_str());
+    } else {
+      sd_printf("Op number: %d\n",curr->opNum);
+    }
+
+    sd_printf(" Input buffers:\n",0);
+    auto currInputShapeBuffers = *(curr->inputShapeBuffers);
+    for(int j = 0; j < currInputShapeBuffers.size(); j++) {
+      auto buff = currInputShapeBuffers[j];
+        shape::printShapeInfo(buff);
+      sd_printf("\n",0);
+    }
+
+    sd_printf(" Output  buffers:\n",0);
+    //TODO: debug output buffer crash. Suspected bug in printShapeInfo  with 0 length arrays *or* there's an issue
+    //with scope and references being deallocated.
+    auto currOutputShapeBuffers = *(curr->outputShapeBuffers);
+    for(int j = 0; j < curr->outputShapeBuffers->size(); j++) {
+        shape::printShapeInfo(currOutputShapeBuffers[j]);
+      sd_printf("\n",0);
+    }
+
+
+  }
+
+}
+
+void toggleOpTrace(bool opTrace) {
+  sd::ops::OpRegistrator::getInstance().toggleTraceOps(opTrace);
+}
+
+void purgeOpTrace() {
+  sd::ops::OpRegistrator::getInstance().purgeOpExecs();
+}
 
 void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long fromOffset, long targetOffset) {
   OpaqueDataBuffer *copyFrom = dbCreateView(from,n,fromOffset);
@@ -182,7 +222,7 @@ void execIndexReduce(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
                      const sd::LongType *hDimensionShape, const sd::LongType *dDimensionShape) {
   try {
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
@@ -221,7 +261,7 @@ void execBroadcast(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
                    const sd::LongType *dDimensionShape) {
   try {
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     auto dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
@@ -250,7 +290,7 @@ void execBroadcastBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *
                        const sd::LongType *hDimensionShape, const sd::LongType *dDimensionShape) {
   try {
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX, dbY});
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     auto dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
@@ -453,7 +493,7 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *d
 
     const auto zLen = shape::length(hZShapeInfo);
 
-    std::vector<int> dimensions(dimension, dimension + dimensionLength);
+    std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
 
     const sd::LongType *zShapeInfoH = hZShapeInfo;
     const sd::LongType *zShapeInfoD = dZShapeInfo;
@@ -464,8 +504,8 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *d
       zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
-    std::vector<int> dims =
-        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
+    std::vector<sd::LongType> dims =
+        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<sd::LongType>();
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execReduceFloat(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                          extraParams, dbZ->primary(), zShapeInfoH, dbZ->special(), zShapeInfoD,
@@ -486,7 +526,7 @@ void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
     auto dimension = reinterpret_cast<int *>(dbDimension->primary());
     auto dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    std::vector<int> dimensions(dimension, dimension + dimensionLength);
+    std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
 
     const auto zLen = shape::length(hZShapeInfo);
 
@@ -499,8 +539,8 @@ void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
       zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
-    std::vector<int> dims =
-        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
+    std::vector<sd::LongType> dims =
+        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<sd::LongType>();
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execReduceBool(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                         extraParams, dbZ->primary(), zShapeInfoH, dbZ->special(), zShapeInfoD,
@@ -521,7 +561,7 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
     auto dimension = reinterpret_cast<int *>(dbDimension->primary());
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    std::vector<int> dimensions(dimension, dimension + dimensionLength);
+    std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
 
     const auto zLen = shape::length(hZShapeInfo);
 
@@ -534,8 +574,8 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
       zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
-    std::vector<int> dims =
-        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
+    std::vector<sd::LongType> dims =
+        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<sd::LongType>();
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execReduceSame(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                         extraParams, dbZ->primary(), zShapeInfoH, dbZ->special(), zShapeInfoD,
@@ -556,7 +596,7 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
     auto dimension = reinterpret_cast<int *>(dbDimension->primary());
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    std::vector<int> dimensions(dimension, dimension + dimensionLength);
+    std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
 
     const auto zLen = shape::length(hZShapeInfo);
 
@@ -569,8 +609,8 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
       zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
-    std::vector<int> dims =
-        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
+    std::vector<sd::LongType> dims =
+        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<sd::LongType>();
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execReduceLong(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                         extraParams, dbZ->primary(), zShapeInfoH, dbZ->special(), zShapeInfoD,
@@ -655,7 +695,7 @@ void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
                     const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
                     const sd::LongType *yTadOnlyShapeInfo, const sd::LongType *yTadOffsets) {
   try {
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     auto dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     if (extraPointers == nullptr || extraPointers[2] == 0) {
@@ -801,7 +841,7 @@ void execSummaryStatsTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer
                          const sd::LongType *dDimensionShape, bool biasCorrected, const sd::LongType *tadShapeInfo,
                          const sd::LongType *tadOffsets) {
   try {
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
@@ -915,7 +955,7 @@ void execReduce3All(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
                     const sd::LongType *xTadShapeInfo, const sd::LongType *xOffsets, const sd::LongType *yTadShapeInfo,
                     const sd::LongType *yOffsets) {
   try {
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     auto dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX, dbY});
@@ -1074,7 +1114,7 @@ void setGridLimit(int gridSize) {
   // no-op
 }
 
-sd::TadPack *tadOnlyShapeInfo(sd::LongType const *hXShapeInfo, int *dimension, int dimensionLength) {
+sd::TadPack *tadOnlyShapeInfo(sd::LongType const *hXShapeInfo, LongType *dimension, int dimensionLength) {
   auto pack = new TadPack();
   try {
     *pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
@@ -1384,7 +1424,7 @@ void execScalarTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
                    sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets, sd::LongType const *tadShapeInfoZ,
                    sd::LongType const *tadOffsetsZ) {
   try {
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
@@ -1409,7 +1449,7 @@ void execScalarBoolTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *
                        const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ,
                        const sd::LongType *tadOffsetsZ) {
   try {
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
@@ -1561,7 +1601,7 @@ void sort(sd::Pointer *extraPointers, void *hX, const sd::LongType *hXShapeInfo,
 }
 
 void sortTad(sd::Pointer *extraPointers, void *hX, const sd::LongType *hXShapeInfo, void *dX,
-             const sd::LongType *dXShapeInfo, int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
+             const sd::LongType *dXShapeInfo, LongType *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
              const sd::LongType *tadOffsets, bool descending) {
   try {
     NativeOpExecutioner::execSort(hX, hXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
@@ -1583,6 +1623,8 @@ void sortCooIndices(sd::Pointer *extraPointers, sd::LongType *indices, void *x, 
   }
 }
 
+
+
 void ravelMultiIndex(sd::Pointer *extraPointers, sd::LongType *indices, sd::LongType *flatIndices, sd::LongType length,
                      sd::LongType *shapeInfo, int mode) {
   NativeOpExecutioner::execRavelMultiIndex(indices, flatIndices, length, shapeInfo, mode);
@@ -1594,7 +1636,7 @@ void unravelIndex(sd::Pointer *extraPointers, sd::LongType *indices, sd::LongTyp
 }
 
 sd::LongType encodeBitmap(sd::Pointer *extraPointers, void *hX, sd::LongType const *hXShapeInfo, sd::LongType N,
-                          int *dz, float threshold) {
+                          LongType *dz, float threshold) {
   return NativeOpExecutioner::encodeBitmap(hX, hXShapeInfo, N, dz, threshold);
 }
 
@@ -2606,8 +2648,8 @@ OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::Long
 }
 
 void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) {
- //implemented in cuda backend: used there only
- //constant buffers otherwise should stick around
+  //implemented in cuda backend: used there only
+  //constant buffers otherwise should stick around
 }
 
 void deleteConstantDataBuffer(sd::ConstantDataBuffer *ptr) {
@@ -2852,7 +2894,7 @@ void sortByValue(sd::Pointer *extraPointers, void *x, const sd::LongType *xShape
 
 void sortTadByKey(sd::Pointer *extraPointers, void *x, const sd::LongType *xShapeInfo, void *dx,
                   const sd::LongType *dxShapeInfo, void *y, const sd::LongType *yShapeInfo, void *dy,
-                  const sd::LongType *dyShapeInfo, int *dimension, int dimensionLength, bool descending) {
+                  const sd::LongType *dyShapeInfo, LongType *dimension, int dimensionLength, bool descending) {
   try {
     auto xType = ArrayOptions::dataType(xShapeInfo);
     auto yType = ArrayOptions::dataType(yShapeInfo);
@@ -2868,7 +2910,7 @@ void sortTadByKey(sd::Pointer *extraPointers, void *x, const sd::LongType *xShap
 
 void sortTadByValue(sd::Pointer *extraPointers, void *x, const sd::LongType *xShapeInfo, void *dx,
                     const sd::LongType *dxShapeInfo, void *y, const sd::LongType *yShapeInfo, void *dy,
-                    const sd::LongType *dyShapeInfo, int *dimension, int dimensionLength, bool descending) {
+                    const sd::LongType *dyShapeInfo, LongType *dimension, int dimensionLength, bool descending) {
   try {
     auto xType = ArrayOptions::dataType(xShapeInfo);
     auto yType = ArrayOptions::dataType(yShapeInfo);

@@ -30,7 +30,7 @@ namespace ops {
 namespace helpers {
 
 SD_LIB_HIDDEN void maxPoolingFunctor(sd::LaunchContext* context, sd::graph::Context& block, NDArray* input,
-                                     NDArray* values, std::vector<int> const& params, NDArray* indices);
+                                     NDArray* values, const std::vector<LongType>& params, NDArray* indices);
 }
 }  // namespace ops
 }  // namespace sd

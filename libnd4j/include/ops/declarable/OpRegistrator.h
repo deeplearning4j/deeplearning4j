@@ -105,11 +105,15 @@ class SD_LIB_EXPORT OpRegistrator {
 
   std::mutex _locker;
   std::string _opsList;
+  std::vector<OpExecTrace *> opexecTrace;
   bool isInit = false;
-
+  bool isTrace = false;
  public:
   ~OpRegistrator();
 
+  void registerOpExec(OpExecTrace *opExecTrace);
+  void purgeOpExecs();
+  std::vector<OpExecTrace *> execTrace();
   static OpRegistrator& getInstance();
 
   static void exitHandler();
@@ -129,8 +133,10 @@ class SD_LIB_EXPORT OpRegistrator {
    */
   bool registerOperation(const char* name, sd::ops::DeclarableOp* op);
   bool registerOperation(sd::ops::DeclarableOp* op);
-
+  bool traceOps();
+  void toggleTraceOps(bool traceOps);
   void registerHelper(sd::ops::platforms::PlatformHelper* op);
+
 
   bool hasHelper(sd::LongType hash, samediff::Engine engine);
 

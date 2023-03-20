@@ -100,14 +100,16 @@ class SD_LIB_EXPORT NativeOpExecutioner {
   static void execReduce3(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                           const void *dX, const sd::LongType *dXShapeInfo, void *extraParamsVals, const void *hY,
                           const sd::LongType *hYShapeInfo, const void *dY, const sd::LongType *dYShapeInfo, void *hZ,
-                          const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo, int *dimension,
+                          const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
+                          long long int *dimension,
                           int dimensionLength, const sd::LongType *xTadOnlyShapeInfo, const sd::LongType *xTadOffsets,
                           const sd::LongType *yTadOnlyShapeInfo, const sd::LongType *yTadOffsets);
 
   static void execReduce3All(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                              const void *dX, const sd::LongType *dXShapeInfo, void *extraParamsVals, const void *hY,
                              const sd::LongType *hYShapeInfo, const void *dY, const sd::LongType *dYShapeInfo, void *hZ,
-                             const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo, int *dimension,
+                             const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
+                             long long int *dimension,
                              int dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xOffsets,
                              const sd::LongType *yTadShapeInfo, const sd::LongType *yOffsets);
 
@@ -125,7 +127,7 @@ class SD_LIB_EXPORT NativeOpExecutioner {
   static void execIndexReduce(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                               const void *dX, const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
                               const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                              int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
+                              long long int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
                               const sd::LongType *tadOffsets);
 
   /**
@@ -161,7 +163,7 @@ class SD_LIB_EXPORT NativeOpExecutioner {
                          void const *dX, sd::LongType const *dXShapeInfo, void *extraParams, void *hZ,
                          sd::LongType const *hZShapeInfo, void *dZ, sd::LongType const *dZShapeInfo,
                          void const *hScalars, sd::LongType const *hScalarShapeInfo, void const *dScalars,
-                         sd::LongType const *dScalarShapeInfo, int *dimension, int dimensionLength,
+                         sd::LongType const *dScalarShapeInfo, long long int *dimension, int dimensionLength,
                          sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets,
                          sd::LongType const *tadShapeInfoZ, sd::LongType const *tadOffsetsZ);
 
@@ -169,7 +171,7 @@ class SD_LIB_EXPORT NativeOpExecutioner {
                              const void *dX, const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
                              const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
                              const void *hScalars, const sd::LongType *hScalarShapeInfo, const void *dScalars,
-                             const sd::LongType *dScalarShapeInfo, int *dimension, int dimensionLength,
+                             const sd::LongType *dScalarShapeInfo, long long int *dimension, int dimensionLength,
                              const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                              const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ);
 
@@ -177,7 +179,7 @@ class SD_LIB_EXPORT NativeOpExecutioner {
                             const void *dX, const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
                             const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
                             const void *hScalars, const sd::LongType *hScalarShapeInfo, const void *dScalars,
-                            const sd::LongType *dScalarShapeInfo, int *dimension, int dimensionLength,
+                            const sd::LongType *dScalarShapeInfo, long long int *dimension, int dimensionLength,
                             const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                             const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ);
 
@@ -196,7 +198,8 @@ class SD_LIB_EXPORT NativeOpExecutioner {
   static void execBroadcast(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                             const void *dX, const sd::LongType *dXShapeInfo, const void *hY,
                             const sd::LongType *hYShapeInfo, const void *dY, const sd::LongType *dYShapeInfo, void *hZ,
-                            const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo, int *dimension,
+                            const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
+                            long long int *dimension,
                             int dimensionLength, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
                             const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);
 
@@ -205,11 +208,12 @@ class SD_LIB_EXPORT NativeOpExecutioner {
                             const sd::LongType *hYShapeInfo, const void *dY, const sd::LongType *dYShapeInfo, void *hZ,
                             const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo);
 
-  static void execInverseBroadcast(sd::LaunchContext *lc, int opNum, const void *x, const sd::LongType *xShapeInfo,
-                                   const void *dX, const sd::LongType *dXShapeInfo, const void *y,
-                                   const sd::LongType *yShapeInfo, const void *dY, const sd::LongType *dYShapeInfo,
-                                   void *result, const sd::LongType *resultShapeInfo, void *dZ,
-                                   const sd::LongType *dZShapeInfo, int *dimension, int dimensionLength,
+  static void execInverseBroadcast(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
+                                   const void *dX, const sd::LongType *dXShapeInfo, const void *hY,
+                                   const sd::LongType *hYShapeInfo, const void *dY, const sd::LongType *dYShapeInfo,
+                                   void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
+                                   const sd::LongType *dZShapeInfo,
+                                   long long int *dimension, int dimensionLength,
                                    const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
                                    const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);
 
@@ -217,7 +221,7 @@ class SD_LIB_EXPORT NativeOpExecutioner {
                                 const void *dX, const sd::LongType *dXShapeInfo, const void *hY,
                                 const sd::LongType *hYShapeInfo, const void *dY, const sd::LongType *dYShapeInfo,
                                 void *hZ, const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                                void *extraParams, int *dimension, int dimensionLength,
+                                void *extraParams, long long int *dimension, int dimensionLength,
                                 const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
                                 const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);
 
@@ -227,11 +231,12 @@ class SD_LIB_EXPORT NativeOpExecutioner {
                                 void *hZ, const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
                                 void *extraParams);
 
-  static void execInverseBroadcastBool(sd::LaunchContext *lc, int opNum, const void *x, const sd::LongType *xShapeInfo,
-                                       const void *dX, const sd::LongType *dXShapeInfo, const void *y,
-                                       const sd::LongType *yShapeInfo, const void *dY, const sd::LongType *dYShapeInfo,
-                                       void *result, const sd::LongType *resultShapeInfo, void *dZ,
-                                       const sd::LongType *dZShapeInfo, void *extraParams, int *dimension,
+  static void execInverseBroadcastBool(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
+                                       const void *dX, const sd::LongType *dXShapeInfo, const void *hY,
+                                       const sd::LongType *hYShapeInfo, const void *dY, const sd::LongType *dYShapeInfo,
+                                       void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
+                                       const sd::LongType *dZShapeInfo, void *extraParams,
+                                       long long int *dimension,
                                        int dimensionLength, const sd::LongType *tadOnlyShapeInfo,
                                        const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ,
                                        const sd::LongType *tadOffsetsZ);
@@ -240,7 +245,7 @@ class SD_LIB_EXPORT NativeOpExecutioner {
                                const void *dX, const sd::LongType *dXShapeInfo, const void *hY,
                                const sd::LongType *hYShapeInfo, const void *dY, const sd::LongType *dYShapeInfo,
                                void *hZ, const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                               int *dimension, int dimensionLength, const sd::LongType *tadOnlyShapeInfo,
+                               long long int *dimension, int dimensionLength, const sd::LongType *tadOnlyShapeInfo,
                                const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ,
                                const sd::LongType *tadOffsetsZ);
 
@@ -249,11 +254,11 @@ class SD_LIB_EXPORT NativeOpExecutioner {
                                const sd::LongType *hYShapeInfo, const void *dY, const sd::LongType *dYShapeInfo,
                                void *hZ, const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo);
 
-  static void execInverseBroadcastInt(sd::LaunchContext *lc, int opNum, const void *x, const sd::LongType *xShapeInfo,
-                                      const void *dX, const sd::LongType *dXShapeInfo, const void *y,
-                                      const sd::LongType *yShapeInfo, const void *dY, const sd::LongType *dYShapeInfo,
-                                      void *result, const sd::LongType *resultShapeInfo, void *dZ,
-                                      const sd::LongType *dZShapeInfo, int *dimension, int dimensionLength,
+  static void execInverseBroadcastInt(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
+                                      const void *dX, const sd::LongType *dXShapeInfo, const void *hY,
+                                      const sd::LongType *hYShapeInfo, const void *dY, const sd::LongType *dYShapeInfo,
+                                      void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
+                                      const sd::LongType *dZShapeInfo, long long int *dimension, int dimensionLength,
                                       const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
                                       const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);
 
@@ -335,21 +340,24 @@ class SD_LIB_EXPORT NativeOpExecutioner {
   static void execReduceFloat(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                               const void *dX, const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
                               const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                              int *dimension, int dimensionLength);
+                              long long int *dimension, int dimensionLength);
 
   static void execReduceSame(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                              const void *dX, const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
-                             const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo, int *dimension,
+                             const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
+                             long long int *dimension,
                              int dimensionLength);
 
   static void execReduceBool(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                              const void *dX, const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
-                             const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo, int *dimension,
+                             const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
+                             long long int *dimension,
                              int dimensionLength);
 
   static void execReduceLong(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                              const void *dX, const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
-                             const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo, int *dimension,
+                             const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
+                             long long int *dimension,
                              int dimensionLength);
 
   /**
@@ -379,7 +387,8 @@ class SD_LIB_EXPORT NativeOpExecutioner {
   static void execReduce3TAD(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                              const void *dX, const sd::LongType *dXShapeInfo, void *extraParamsVals, const void *hY,
                              const sd::LongType *hYShapeInfo, const void *dY, const sd::LongType *dYShapeInfo, void *hZ,
-                             const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo, int *dimension,
+                             const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
+                             long long int *dimension,
                              int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                              const sd::LongType *yTadShapeInfo, const sd::LongType *yTadOffsets);
 
@@ -397,7 +406,7 @@ class SD_LIB_EXPORT NativeOpExecutioner {
   static void execSummaryStats(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                                const void *dX, const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
                                const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                               int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
+                               long long int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
                                const sd::LongType *tadOffsets, bool biasCorrected);
 
   /**
@@ -449,7 +458,7 @@ class SD_LIB_EXPORT NativeOpExecutioner {
     BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::sortGeneric(x, xShapeInfo, descending), SD_COMMON_TYPES);
   }
 
-  static void execSort(void *x, const sd::LongType *xShapeInfo, int *dimension, int dimensionLength,
+  static void execSort(void *x, const sd::LongType *xShapeInfo, long long int *dimension, int dimensionLength,
                        const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, bool descending) {
     auto xType = sd::ArrayOptions::dataType(xShapeInfo);
 
@@ -478,7 +487,7 @@ class SD_LIB_EXPORT NativeOpExecutioner {
     sd::sparse::IndexUtils::unravelIndex(indices, flatIndices, length, shapeInfo);
   }
 
-  inline static sd::LongType encodeBitmap(void *dx, const sd::LongType *xShapeInfo, sd::LongType N, int *dz,
+  inline static sd::LongType encodeBitmap(void *dx, const sd::LongType *xShapeInfo, sd::LongType N, long long int *dz,
                                           float threshold) {
     auto xType = sd::ArrayOptions::dataType(xShapeInfo);
 

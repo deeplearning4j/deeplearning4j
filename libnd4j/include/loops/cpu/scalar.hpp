@@ -24,6 +24,8 @@
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
+#include <cstdint>
+
 #include "../legacy_ops.h"
 #include "../scalar.h"
 
@@ -36,10 +38,10 @@ namespace scalar {
 template <typename X, typename Y, typename Z>
 template <typename OpType>
 void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                         const sd::LongType *zShapeInfo, const void *vscalars, int *dimension,
+                                         const sd::LongType *zShapeInfo, const void *vscalars, long long int *dimension,
                                          int dimensionLength, const sd::LongType *xTadShapeInfo,
                                          const sd::LongType *xTadOffsets, const sd::LongType *zTadShapeInfo,
-                                         const sd::LongType *zTadOffsets, const uint64_t start, const uint64_t stop) {
+                                         const sd::LongType *zTadOffsets, uint64_t start, uint64_t stop) {
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
   auto scalars = reinterpret_cast<const Y *>(vscalars);
@@ -86,10 +88,12 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z>
 void ScalarTransform<X, Y, Z>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams,
-                                         void *z, const sd::LongType *zShapeInfo, const void *scalars, int *dimension,
+                                         void *z, const sd::LongType *zShapeInfo, const void *scalars,
+                                         long long int *dimension,
                                          int dimensionLength, const sd::LongType *xTadShapeInfo,
                                          const sd::LongType *xTadOffsets, const sd::LongType *zTadShapeInfo,
-                                         const sd::LongType *zTadOffsets, const uint64_t start, const uint64_t stop) {
+                                         const sd::LongType *zTadOffsets,
+                                         uint64_t start, uint64_t stop) {
   DISPATCH_BY_OPNUM_TTT(transform,
                         PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength,
                                xTadShapeInfo, xTadOffsets, zTadShapeInfo, zTadOffsets, start, stop),
@@ -132,8 +136,8 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
   if (kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) {
     transform<OpType>(x, xEws, z, zEws, vscalar, extraParams, len, start, stop);
   } else {
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
-    const bool canCastX = sd::DataTypeUtils::castShapeInfo<sd::Unsigned>(xShapeInfo, xShapeInfoCast);
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
+    const bool canCastX = sd::DataTypeUtils::castShapeInfo<sd::LongType>(xShapeInfo, xShapeInfoCast);
 
     if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
       PRAGMA_OMP_SIMD
@@ -142,8 +146,8 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
         z[offset] = OpType::op(x[offset], scalar, extraParams);
       };
     } else {
-      sd::Unsigned zShapeInfoCast[SD_MAX_RANK];
-      const bool canCastZ = sd::DataTypeUtils::castShapeInfo<sd::Unsigned>(zShapeInfo, zShapeInfoCast);
+      sd::LongType zShapeInfoCast[SD_MAX_RANK];
+      const bool canCastZ = sd::DataTypeUtils::castShapeInfo<sd::LongType>(zShapeInfo, zShapeInfoCast);
 
       PRAGMA_OMP_SIMD
       for (auto i = start; i < stop; i++) {

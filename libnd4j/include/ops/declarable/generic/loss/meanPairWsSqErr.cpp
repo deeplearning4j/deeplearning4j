@@ -117,7 +117,7 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 1) {
     return sd::Status::OK;
   }
 
-  std::vector<int> reductionIdx = ShapeUtils::evalDimsToExclude(labels->rankOf(), {0});
+  std::vector<LongType> reductionIdx = ShapeUtils::evalDimsToExclude(labels->rankOf(), {0});
 
   auto n = double(labels->sizeAt(1));
   auto diffs = *predictions - *labels;
@@ -214,7 +214,7 @@ DECLARE_SHAPE_FN(mean_pairwssqerr_loss) {
   if (INT_ARG(0) != 0)  // in this case output is scalar
     outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
   else {  // in this case output has the shape as labels and logits minus last dimension
-    std::vector<int> dimensions = {-1};
+    std::vector<LongType> dimensions = {-1};
     outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(predictionsShapeInfo), dimensions, predictionsShapeInfo,
                                                    false, true, block.getWorkspace());
 
@@ -263,7 +263,7 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss_grad, 3, 3, false, 0, 1) {
   auto n = double(labels->sizeAt(1));
   auto diffs = *predictions - *labels;
 
-  std::vector<int> reductionIdx = ShapeUtils::evalDimsToExclude(labels->rankOf(), {0});
+  std::vector<LongType> reductionIdx = ShapeUtils::evalDimsToExclude(labels->rankOf(), {0});
   auto sumOfSquares = (diffs * diffs).reduceAlongDimension(reduce::Sum, reductionIdx, true);
 
   auto squareOfSum = diffs.reduceAlongDimension(reduce::Sum, reductionIdx, true);
@@ -299,7 +299,7 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss_grad, 3, 3, false, 0, 1) {
       if (weights->isScalar())
         dLdw->assign(E.reduceNumber(reduce::Sum));
       else if (weights != weightsBroad) {
-        std::vector<int> axesToReduceAlong =
+        std::vector<LongType> axesToReduceAlong =
             ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
         E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
       } else
@@ -325,7 +325,7 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss_grad, 3, 3, false, 0, 1) {
         if (weights->isScalar())
           *dLdw = 0.;
         else if (weights != weightsBroad) {
-          std::vector<int> axesToReduceAlong =
+          std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
           ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum))
               .reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
@@ -353,7 +353,7 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss_grad, 3, 3, false, 0, 1) {
         if (weights->isScalar())
           dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
         else if (weights != weightsBroad) {
-          std::vector<int> axesToReduceAlong =
+          std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
           E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
           *dLdw /= numOfNonZeroWeightsScalar;

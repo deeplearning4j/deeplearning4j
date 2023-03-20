@@ -33,9 +33,9 @@ namespace sd {
 // evaluate shape for array resulting from tensorDot operation, also evaluate shapes and dimensions permutations for
 // transposition of two input arrays
 std::vector<sd::LongType> ShapeUtils::evalShapeForTensorDot(const sd::LongType* aShapeInfo,
-                                                            const sd::LongType* bShapeInfo, std::vector<int> axesA,
-                                                            std::vector<int> axesB, std::vector<int>& permutAt,
-                                                            std::vector<int>& permutBt,
+                                                            const sd::LongType* bShapeInfo, std::vector<sd::LongType> axesA,
+                                                            std::vector<sd::LongType> axesB, std::vector<sd::LongType>& permutAt,
+                                                            std::vector<sd::LongType>& permutBt,
                                                             std::vector<sd::LongType>& shapeAt,
                                                             std::vector<sd::LongType>& shapeBt) {
   int axeAsize = (int)axesA.size();
@@ -70,7 +70,7 @@ std::vector<sd::LongType> ShapeUtils::evalShapeForTensorDot(const sd::LongType* 
   if ((int)uniqueElems.size() != axeBsize)
     throw std::runtime_error("ShapeUtils::evalShapeForTensorDot method: the vector of b axes contains duplicates !");
 
-  std::vector<int> list_A, list_B;
+  std::vector<sd::LongType> list_A, list_B;
   for (int i = 0; i < aRank; i++)
     if (std::find(axesA.begin(), axesA.end(), i) == axesA.end()) list_A.emplace_back(i);
   for (int i = 0; i < bRank; i++)
@@ -115,9 +115,9 @@ std::vector<sd::LongType> ShapeUtils::evalShapeForTensorDot(const sd::LongType* 
 
 //////////////////////////////////////////////////////////////////////////
 std::vector<sd::LongType> ShapeUtils::evalShapeForTensorDot(const NDArray* a, const NDArray* b,
-                                                            const std::vector<int>& axesA,
-                                                            const std::vector<int>& axesB, std::vector<int>& permutAt,
-                                                            std::vector<int>& permutBt,
+                                                            const std::vector<sd::LongType>& axesA,
+                                                            const std::vector<sd::LongType>& axesB, std::vector<sd::LongType>& permutAt,
+                                                            std::vector<sd::LongType>& permutBt,
                                                             std::vector<sd::LongType>& shapeAt,
                                                             std::vector<sd::LongType>& shapeBt) {
   return evalShapeForTensorDot(a->shapeInfo(), b->shapeInfo(), axesA, axesB, permutAt, permutBt, shapeAt, shapeBt);
@@ -125,7 +125,7 @@ std::vector<sd::LongType> ShapeUtils::evalShapeForTensorDot(const NDArray* a, co
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate output shape for reduce operation when input shape is empty
-const sd::LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::vector<int>& dimsToExclude,
+const sd::LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::vector<sd::LongType>& dimsToExclude,
                                                          const sd::LongType* shapeInfo, const sd::DataType dataType,
                                                          const bool keepDims, sd::memory::Workspace* workspace) {
   if (dimsToExclude.size() == 0) {  // return copy of input shape
@@ -173,13 +173,13 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::
   return ret;
 }
 
-const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimsToExclude,
+const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<sd::LongType>& dimsToExclude,
                                                     const NDArray& arr, const bool keepDims,
                                                     const bool supportOldShapes, sd::memory::Workspace* workspace) {
   return evalReduceShapeInfo(order, dimsToExclude, arr, arr.dataType(), keepDims, supportOldShapes, workspace);
 }
 
-const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimsToExclude,
+const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<sd::LongType>& dimsToExclude,
                                                     const sd::LongType* shapeInfo, const bool keepDims,
                                                     const bool supportOldShapes, sd::memory::Workspace* workspace) {
   return evalReduceShapeInfo(order, dimsToExclude, shapeInfo, ArrayOptions::dataType(shapeInfo), keepDims,
@@ -187,7 +187,7 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vecto
 }
 
 //////////////////////////////////////////////////////////////////////////
-const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimsToExclude,
+const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<sd::LongType>& dimsToExclude,
                                                     const NDArray& arr, const sd::DataType dataType,
                                                     const bool keepDims, const bool supportOldShapes,
                                                     sd::memory::Workspace* workspace) {
@@ -196,7 +196,7 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vecto
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shape resulting from reduce operation
-const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimsToExclude,
+const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<sd::LongType>& dimsToExclude,
                                                     const sd::LongType* shapeInfo, const sd::DataType dataType,
                                                     const bool keepDims, const bool supportOldShapes,
                                                     sd::memory::Workspace* workspace) {
@@ -317,7 +317,7 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vecto
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shape for array which is result of repeat operation applied to arr
-std::vector<sd::LongType> ShapeUtils::evalRepeatShape(int axis, const std::vector<int>& repeats, const NDArray& arr) {
+std::vector<sd::LongType> ShapeUtils::evalRepeatShape(int axis, const std::vector<LongType>& repeats, const NDArray& arr) {
   if (axis < 0) axis += arr.rankOf();
 
   if (repeats.size() != 1 && repeats.size() != arr.sizeAt(axis))
@@ -336,7 +336,7 @@ std::vector<sd::LongType> ShapeUtils::evalRepeatShape(int axis, const std::vecto
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo of permuted array
-const sd::LongType* ShapeUtils::evalPermShapeInfo(const int* dimensions, const int rank, const NDArray& arr,
+const sd::LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, const int rank, const NDArray& arr,
                                                   sd::memory::Workspace* workspace, const bool setContigStrides) {
   if (!arr.nonNull())
     throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments: array is nullptr!");
@@ -369,25 +369,20 @@ const sd::LongType* ShapeUtils::evalPermShapeInfo(const int* dimensions, const i
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo of permuted array
-const sd::LongType* ShapeUtils::evalPermShapeInfo(const sd::LongType* dimensions, const int rank, const NDArray& arr,
-                                                  sd::memory::Workspace* workspace) {
-  std::vector<int> dims(dimensions, dimensions + rank);
-  return evalPermShapeInfo(dims.data(), rank, arr, workspace);
-}
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo of transposed array
 const sd::LongType* ShapeUtils::evalTranspShapeInfo(const NDArray& arr, sd::memory::Workspace* workspace,
                                                     const bool setContigStrides) {
   int rank = arr.rankOf();
-  std::vector<int> dimensions(rank);
+  std::vector<sd::LongType> dimensions(rank);
   for (int i = 0; i < rank; ++i) dimensions[i] = rank - 1 - i;
 
   return evalPermShapeInfo(dimensions.data(), dimensions.size(), arr, workspace, setContigStrides);
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool ShapeUtils::copyVectorPart(std::vector<int>& target, std::vector<int>& source, int rank, int offset) {
+bool ShapeUtils::copyVectorPart(std::vector<sd::LongType>& target, std::vector<sd::LongType>& source, int rank, int offset) {
   if (source.size() < offset + rank) return false;
 
   for (int e = offset; e < offset + rank; e++) target.push_back(source[e]);
@@ -397,8 +392,8 @@ bool ShapeUtils::copyVectorPart(std::vector<int>& target, std::vector<int>& sour
 
 //////////////////////////////////////////////////////////////////////////
 // return new (shorter) sorted dimensions array without dimensions that are present in input vector
-std::vector<int> ShapeUtils::evalDimsToExclude(const int rank, const int dimsLen, const int* dimensions) {
-  std::vector<int> newDimensions;
+std::vector<sd::LongType> ShapeUtils::evalDimsToExclude(const int rank, const int dimsLen, const sd::LongType* dimensions) {
+  std::vector<sd::LongType> newDimensions;
   if (dimsLen == 0) {  // if input vector is empty then return whole shape range
     newDimensions.resize(rank);
     std::iota(newDimensions.begin(), newDimensions.end(), 0);  // fill with 0, 1, ... rank-1
@@ -421,7 +416,7 @@ std::vector<int> ShapeUtils::evalDimsToExclude(const int rank, const int dimsLen
 }
 
 //////////////////////////////////////////////////////////////////////////
-std::vector<int> ShapeUtils::evalDimsToExclude(const int rank, const std::vector<int>& dimensions) {
+std::vector<sd::LongType> ShapeUtils::evalDimsToExclude(const int rank, const std::vector<sd::LongType>& dimensions) {
   return ShapeUtils::evalDimsToExclude(rank, dimensions.size(), dimensions.data());
 }
 
@@ -751,16 +746,16 @@ const sd::LongType* ShapeUtils::evalDiagShapeInfo(const sd::LongType* shapeInfoC
   return result->primary();
 }
 
-std::vector<int> ShapeUtils::evalBroadcastBackwardAxis(const sd::LongType* operandShapeInfo,
-                                                       const sd::LongType* resultShapeInfo) {
+std::vector<sd::LongType> ShapeUtils::evalBroadcastBackwardAxis(const sd::LongType* operand,
+                                                       const sd::LongType* result) {
   // rRank >= oRank always  !!
-  const auto oRank = shape::rank(operandShapeInfo);
-  const auto rRank = shape::rank(resultShapeInfo);
+  const auto oRank = shape::rank(operand);
+  const auto rRank = shape::rank(result);
   const auto diff = rRank - oRank;
-  std::vector<int> axis;
+  std::vector<sd::LongType> axis;
 
   for (int i = 0; i < rRank; ++i)
-    if (i < diff || shape::sizeAt(operandShapeInfo, i - diff) != shape::sizeAt(resultShapeInfo, i)) axis.push_back(i);
+    if (i < diff || shape::sizeAt(operand, i - diff) != shape::sizeAt(result, i)) axis.push_back(i);
 
   return axis;
 }
@@ -841,7 +836,7 @@ const sd::LongType* ShapeUtils::matrixProductShape(const sd::LongType* theFirstS
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-std::vector<int> ShapeUtils::evalPermutFromTo(const std::vector<sd::LongType>& shapeFrom,
+std::vector<sd::LongType> ShapeUtils::evalPermutFromTo(const std::vector<sd::LongType>& shapeFrom,
                                               const std::vector<sd::LongType>& shapeTo) {
   auto rank = shapeFrom.size();
   if (rank != shapeTo.size())
@@ -850,9 +845,9 @@ std::vector<int> ShapeUtils::evalPermutFromTo(const std::vector<sd::LongType>& s
 
   if (std::equal(begin(shapeFrom), end(shapeFrom),
                  begin(shapeTo)))  // if shapes are identical (permutation is unnecessary) then return empty vector
-    return std::vector<int>();
+    return std::vector<sd::LongType>();
 
-  std::vector<int> permutation(rank, -2);       // vector to be returned
+  std::vector<sd::LongType> permutation(rank, -2);       // vector to be returned
   std::vector<sd::LongType> shapeTo2(shapeTo);  // make copy of const vector since we will change the content of shapeTo
 
   for (int i = 0; i < rank; ++i)
@@ -972,7 +967,7 @@ std::vector<sd::LongType> ShapeUtils::evalShapeForMatmul(const sd::LongType* xSh
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-sd::LongType ShapeUtils::getNumOfSubArrs(const sd::LongType* shapeInfo, const std::vector<int>& dimsToExclude) {
+sd::LongType ShapeUtils::getNumOfSubArrs(const sd::LongType* shapeInfo, const std::vector<LongType>& dimsToExclude) {
   sd::LongType numOfSubArrs = 1;
 
   if (dimsToExclude.size() == shape::rank(shapeInfo) ||
@@ -1034,7 +1029,7 @@ std::vector<int> ShapeUtils::tadAxesForSimpleBroadcast(const NDArray& max, const
 }
 
 void ShapeUtils::copyCertainStridesFromShapeInfo(const sd::LongType* inShapeInfo, const int nRank, const int dimsSize,
-                                                 const int* dims, sd::LongType* outStrides) {
+                                                 const sd::LongType* dims, sd::LongType* outStrides) {
   int yRank = shape::rank(inShapeInfo);
   auto yOrigStride = shape::stride(inShapeInfo);
 
@@ -1064,8 +1059,8 @@ bool ShapeUtils::areShapesEqual(const sd::LongType* shapeInfo, const std::vector
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-std::vector<int> ShapeUtils::evalDimsForReduceOp(const int rank, const std::vector<int>& dimsToExclude) {
-  std::vector<int> output = ShapeUtils::evalDimsToExclude(rank, dimsToExclude);
+std::vector<sd::LongType> ShapeUtils::evalDimsForReduceOp(const int rank, const std::vector<sd::LongType>& dimsToExclude) {
+  std::vector<sd::LongType> output = ShapeUtils::evalDimsToExclude(rank, dimsToExclude);
 
   for (sd::Unsigned j = 0; j < dimsToExclude.size(); ++j) output.emplace_back(dimsToExclude[j]);
 

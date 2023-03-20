@@ -35,7 +35,7 @@ class ParametersSpace {
 
   std::string name() { return _name; }
 
-  virtual std::vector<int> evaluate() = 0;
+  virtual std::vector<sd::LongType> evaluate() = 0;
 };
 }  // namespace sd
 

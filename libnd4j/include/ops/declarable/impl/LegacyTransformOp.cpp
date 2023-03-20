@@ -21,6 +21,7 @@
 //
 #include <legacy/NativeOpExecutioner.h>
 #include <ops/declarable/LegacyTransformOp.h>
+#include <ops/declarable/OpRegistrator.h>
 
 #ifdef ONLY_SAME_TRANSFORM
 namespace sd {
@@ -45,7 +46,19 @@ sd::Status LegacyTransformOp::validateAndExecute(Context &block) {
                                         block.getTArguments()->data(), nullptr, nullptr);
 
   STORE_RESULT(*z);
+  if(OpRegistrator::getInstance().traceOps()) {
+    std::vector<const sd::LongType *> *inputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block.width(); i++) {
+      inputShapeBuffers.push_back(block.variable(i)->getNDArray()->shapeInfo());
+    }
+    std::vector<const sd::LongType *> *outputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block.outputWidth(); i++) {
+      outputShapeBuffers.push_back(getZ(block,i)->shapeInfo());
+    }
 
+    OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers,this->getOpName());
+    OpRegistrator::getInstance().registerOpExec(opExecTrace);
+  }
   return sd::Status::OK;
 }
 

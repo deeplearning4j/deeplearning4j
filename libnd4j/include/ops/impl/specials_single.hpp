@@ -271,7 +271,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
   // TODO: optimize the other cases to be NEC friendly as well
   // general case
   auto func = PRAGMA_THREADS_FOR {
-    int coords[SD_MAX_RANK], temp;
+    sd::LongType coords[SD_MAX_RANK], temp;
 
     for (auto i = start; i < stop; i += increment) {
       shape::index2coordsCPU(start, i, output.shapeInfo(), coords);
@@ -391,7 +391,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray &input, const std::vector<
   // general case
 
   auto func = PRAGMA_THREADS_FOR {
-    int coords[SD_MAX_RANK], temp;
+    sd::LongType coords[SD_MAX_RANK], temp;
 
     for (auto i = start; i < stop; i += increment) {
       shape::index2coordsCPU(start, i, input.shapeInfo(), coords);
@@ -606,7 +606,7 @@ void SpecialMethods<T>::sortGeneric(void *vx, sd::LongType const *xShapeInfo, bo
 }
 
 template <typename T>
-void SpecialMethods<T>::sortTadGeneric(void *vx, sd::LongType const *xShapeInfo, int *dimension, int dimensionLength,
+void SpecialMethods<T>::sortTadGeneric(void *vx, sd::LongType const *xShapeInfo, LongType *dimension, int dimensionLength,
                                        sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets,
                                        bool descending) {
   auto x = reinterpret_cast<T *>(vx);
@@ -664,7 +664,8 @@ void SpecialMethods<T>::decodeBitmapGeneric(const void *dx, sd::LongType N, void
 }
 
 template <typename T>
-sd::LongType SpecialMethods<T>::encodeBitmapGeneric(void *vx, sd::LongType const *xShapeInfo, sd::LongType N, int *dz,
+sd::LongType SpecialMethods<T>::encodeBitmapGeneric(void *vx, sd::LongType const *xShapeInfo, sd::LongType N,
+                                                    LongType *dz,
                                                     float threshold) {
   auto dx = reinterpret_cast<T *>(vx);
   const T two(2.0f);

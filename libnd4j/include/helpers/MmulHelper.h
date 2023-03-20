@@ -49,14 +49,15 @@ class SD_LIB_EXPORT MmulHelper {
   static sd::NDArray* mmul(const sd::NDArray* A, const sd::NDArray* B, sd::NDArray* C = nullptr,
                            const double alpha = 1.0, const double beta = 0.0, const char outOrder = 'f');
 
-  static sd::NDArray* tensorDot(const sd::NDArray* A, const sd::NDArray* B, const std::initializer_list<int>& axesA,
-                                const std::initializer_list<int>& axesB = {});
+  static sd::NDArray* tensorDot(const sd::NDArray* A, const sd::NDArray* B,
+                                const std::initializer_list<LongType>& axesA,
+                                const std::initializer_list<LongType>& axesB = {});
 
-  static sd::NDArray* tensorDot(const sd::NDArray* A, const sd::NDArray* B, const std::vector<int>& axesA,
-                                const std::vector<int>& axesB);
+  static sd::NDArray* tensorDot(const sd::NDArray* A, const sd::NDArray* B, const std::vector<LongType>& axesA,
+                                const std::vector<LongType>& axesB);
 
-  static void tensorDot(const sd::NDArray* a, const sd::NDArray* b, sd::NDArray* c, const std::vector<int>& axes_a,
-                        const std::vector<int>& axes_b, const std::vector<int>& permutForC = {});
+  static void tensorDot(const sd::NDArray* a, const sd::NDArray* b, sd::NDArray* c, const std::vector<LongType>& axes_a,
+                        const std::vector<LongType>& axes_b, const std::vector<LongType>& permutForC = {});
 
 #ifndef __JAVACPP_HACK__
   /**

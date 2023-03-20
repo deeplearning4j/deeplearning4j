@@ -68,6 +68,7 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.util.ArrayList;
@@ -1210,6 +1211,23 @@ public class TestReductionOpValidation extends BaseOpValidation {
     }
 
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testOpExecTrace(Nd4jBackend backend) {
+        NativeOpsHolder.getInstance().getDeviceNativeOps().toggleOpTrace(true);
+        final INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable input2 = sd.var("input", input);
+
+
+        SDVariable t = sd.nn.softmax(input2,1);
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+        assertNull(err);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().printOpTrace();
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

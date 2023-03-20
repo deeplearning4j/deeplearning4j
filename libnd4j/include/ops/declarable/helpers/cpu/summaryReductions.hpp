@@ -1076,7 +1076,7 @@ static void reductionCaseNonScalar(const int& first_rank, const int& output_rank
 }
 
 template <typename X, typename Z, typename DeviationOp>
-static void reduction_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
+static void reduction_(const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions, bool biasCorrected) {
   // sd_printf("___%s_________%d+\n", __PRETTY_FUNCTION__, 0);
   char input_order = input.ordering();
   bool try_squash_outer = (input_order == output.ordering()) && output.ews() != 0;
@@ -1089,7 +1089,7 @@ static void reduction_(const NDArray& input, NDArray& output, const std::vector<
   const sd::LongType* output_strides = &(output_shapeInfo[output_rank + 1]);
   sd::LongType new_bases[SD_MAX_RANK];
   sd::LongType new_strides[SD_MAX_RANK];
-  int first_begin, first_end, second_begin, second_end;
+  sd::LongType first_begin, first_end, second_begin, second_end;
   // rePartition into two parts based on the selection
   rePartition(input_order, dimensions, rank, input_bases, input_strides, new_bases, new_strides, first_begin, first_end,
               second_begin, second_end, try_squash_outer, true);
@@ -1125,13 +1125,13 @@ static void reduction_(const NDArray& input, NDArray& output, const std::vector<
 }
 
 template <typename X, typename Z>
-SD_LIB_HIDDEN void variance_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions,
+SD_LIB_HIDDEN void variance_(const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions,
                              bool biasCorrected) {
   return reduction_<X, Z, Deviation<X, Z>>(input, output, dimensions, biasCorrected);
 }
 
 template <typename X, typename Z>
-SD_LIB_HIDDEN void standardDeviation_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions,
+SD_LIB_HIDDEN void standardDeviation_(const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions,
                                       bool biasCorrected) {
   return reduction_<X, Z, Deviation<X, Z, true>>(input, output, dimensions, biasCorrected);
 }

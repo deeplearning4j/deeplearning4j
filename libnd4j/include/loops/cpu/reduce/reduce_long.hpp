@@ -60,7 +60,7 @@ void SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::Long
     z[0] = execScalar<OpType>(x, xEws, length, extraParams);
   } else {
     auto startingValue = OpType::startingValue(x);
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
     const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
     int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
     Z intermediate[64];
@@ -99,7 +99,7 @@ Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::LongTyp
     return execScalar<OpType>(x, xEws, length, extraParams);
   } else {
     auto startingValue = OpType::startingValue(x);
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
     for (sd::LongType i = 0; i < length; i++)
@@ -168,7 +168,7 @@ template <typename X, typename Z>
 template <typename OpType>
 void SD_HOST ReduceLongFunction<X, Z>::exec(sd::memory::Workspace *workspace, const void *vx,
                                             const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                            const sd::LongType *zShapeInfo, const int *dims) {
+                                            const sd::LongType *zShapeInfo, const long long int *dims) {
   const X *x = reinterpret_cast<const X *>(vx);
   Z *z = reinterpret_cast<Z *>(vz);
   X *extraParams = reinterpret_cast<X *>(vextraParams);
@@ -190,7 +190,7 @@ void SD_HOST ReduceLongFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
   }
 
   if (OpType::requiresSpecialAccumulation) {
-    OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, const_cast<int *>(dims) + zRank, xRank - zRank,
+    OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, const_cast<sd::LongType *>(dims) + zRank, xRank - zRank,
                         nullptr, nullptr);
     return;
   }
@@ -207,7 +207,7 @@ void SD_HOST ReduceLongFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
 template <typename X, typename Y>
 void ReduceLongFunction<X, Y>::exec(const int opNum, sd::memory::Workspace *workspace, const void *vx,
                                     const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                    const sd::LongType *zShapeInfo, const int *dims) {
+                                    const sd::LongType *zShapeInfo, const long long int *dims) {
   DISPATCH_BY_OPNUM_TT(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_LONG_OPS);
 }
 

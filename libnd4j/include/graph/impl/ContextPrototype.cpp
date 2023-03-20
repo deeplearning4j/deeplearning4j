@@ -59,12 +59,13 @@ bool ContextPrototype::isInplace() { return this->_isInplace; }
 
 std::vector<double>* ContextPrototype::getTArguments() { return &(this->_tArgs); }
 
-std::vector<int>* ContextPrototype::getIArguments() { return &(this->_iArgs); }
+std::vector<sd::LongType>* ContextPrototype::getIArguments() { return &(this->_iArgs); }
 
 std::vector<bool>* ContextPrototype::getBArguments() { return &(this->_bArgs); }
 
-std::vector<int>* ContextPrototype::getAxis() { return &(this->_axis); }
+std::vector<sd::LongType>* ContextPrototype::getAxis() { return &(this->_axis); }
 
+std::vector<std::string> * ContextPrototype::getSArguments() {return &(this->_sArgs);}
 void ContextPrototype::pickInput(int input) {
   std::pair<int, int> pair(input, 0);
   this->_inputs.emplace_back(pair);

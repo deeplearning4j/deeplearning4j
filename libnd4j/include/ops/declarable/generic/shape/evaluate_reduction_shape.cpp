@@ -29,7 +29,7 @@ namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(evaluate_reduction_shape, 2, 1, false, 0, 0) {
   auto inputShape = INPUT_VARIABLE(0);
-  auto axis = INPUT_VARIABLE(1)->asVectorT<int>();
+  auto axis = INPUT_VARIABLE(1)->asVectorT<sd::LongType>();
   auto keepDims = block.numB() > 0 ? B_ARG(0) : false;
   auto oldFormat = block.numB() > 1 ? B_ARG(1) : false;
   auto output = OUTPUT_VARIABLE(0);

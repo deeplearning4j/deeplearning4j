@@ -33,7 +33,7 @@ static void __where(NDArray &condition, NDArray &output, memory::Workspace *work
   NDArrayList list(0, true);
   int cnt = 0;
 
-  int idx[SD_MAX_RANK];
+  sd::LongType idx[SD_MAX_RANK];
 
   for (sd::LongType e = 0; e < condition.lengthOf(); e++) {
     shape::index2coordsCPU(0, e, condition.shapeInfo(), idx);

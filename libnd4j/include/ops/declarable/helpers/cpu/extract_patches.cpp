@@ -29,7 +29,7 @@ namespace helpers {
 template <typename T>
 static void _extractPatches(NDArray* images, NDArray* output, int sizeRow, int sizeCol, int strideRow, int strideCol,
                             int rateRow, int rateCol, bool theSame) {
-  std::vector<int> restDims({1, 2, 3});  // the first and the last dims
+  std::vector<sd::LongType> restDims({1, 2, 3});  // the first and the last dims
   ResultSet listOfMatricies = images->allTensorsAlongDimension(restDims);
   ResultSet listOfOutputs = output->allTensorsAlongDimension(restDims);
   // 3D matricies - 2D matricies of vectors (if last dim is greater than 1)

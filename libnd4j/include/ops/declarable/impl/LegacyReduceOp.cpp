@@ -22,6 +22,8 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <ops/declarable/LegacyReduceOp.h>
+#include <ops/declarable/OpRegistrator.h>
+
 #ifdef LEGACY_REDUCE_SAME_ONLY
 namespace sd {
 namespace ops {
@@ -126,6 +128,20 @@ sd::Status LegacyReduceOp::validateAndExecute(Context &block) {
 
       OVERWRITE_RESULT(z);
     }
+  }
+
+  if(OpRegistrator::getInstance().traceOps()) {
+    std::vector<const sd::LongType *> *inputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block.width(); i++) {
+      inputShapeBuffers.push_back(block.variable(i)->getNDArray()->shapeInfo());
+    }
+    std::vector<const sd::LongType *> *outputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block.outputWidth(); i++) {
+      outputShapeBuffers.push_back(getZ(block,i)->shapeInfo());
+    }
+
+    OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers,this->getOpName());
+    OpRegistrator::getInstance().registerOpExec(opExecTrace);
   }
 
   return sd::Status::OK;

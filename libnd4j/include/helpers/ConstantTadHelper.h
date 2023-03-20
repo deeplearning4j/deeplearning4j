@@ -54,12 +54,12 @@ class SD_LIB_EXPORT ConstantTadHelper {
    * @param keepUnitiesInShape
    * @return
    */
-  TadPack tadForDimensions(const sd::LongType *originalShape, const std::vector<int> &dimensions,
+  TadPack tadForDimensions(const sd::LongType *originalShape, const std::vector<LongType> &dimensions,
                            const bool keepUnitiesInShape = false);
-  TadPack tadForDimensions(const sd::LongType *originalShape, int *dimensions, int dimLength,
+  TadPack tadForDimensions(const sd::LongType *originalShape, LongType *dimensions, int dimLength,
                            const bool keepUnitiesInShape = false);
-  TadPack tadForDimensions(const sd::LongType *originalShape, int dimensions, const bool keepUnitiesInShape = false);
-  TadPack tadForDimensions(ShapeDescriptor &descriptor, std::vector<int> &dimensions,
+  TadPack tadForDimensions(const sd::LongType *originalShape, LongType dimension, const bool keepUnitiesInShape = false);
+  TadPack tadForDimensions(ShapeDescriptor &descriptor, std::vector<LongType> &dimensions,
                            const bool keepUnitiesInShape = false);
   TadPack tadForDimensions(TadDescriptor &descriptor);
 

@@ -33,7 +33,7 @@ CUSTOM_OP_IMPL(moments, 1, 2, false, 0, -2) {
   auto means = OUTPUT_VARIABLE(0);
   auto variances = OUTPUT_VARIABLE(1);
 
-  std::vector<int> axis = *block.getIArguments();
+  std::vector<LongType> axis = *block.getIArguments();
   const bool keepDims = block.getBArguments()->size() > 0 ? (bool)B_ARG(0) : false;
   sd::ops::reduce_variance varianceOp;
 
@@ -43,7 +43,7 @@ CUSTOM_OP_IMPL(moments, 1, 2, false, 0, -2) {
     helpers::adjustAxis(input->rankOf(), axisVector, axis);
     varianceOp.execute({input, axisVector}, {variances}, {}, {}, {keepDims}, {}, false);
   } else {
-    std::vector<int>& dims = axis;
+    std::vector<LongType>& dims = axis;
     std::vector<sd::LongType> axes;
     for (int i = 0; i < dims.size(); i++) {
       axes.push_back(dims[i]);

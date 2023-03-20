@@ -34,7 +34,7 @@ namespace ops {
 template <typename X, typename Y>
 static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias,
                       const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW,
-                      const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode,
+                      const int sH, const int sW, LongType pH, LongType pW, const int dH, const int dW, const int paddingMode,
                       const int isNCHW, const int wFormat) {
   // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
   // weights [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
@@ -66,7 +66,7 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
 
   sd_debug("MKL-DNN is not used for conv2d_bp!\n", 0);
 
-  std::vector<int> gradOaxesForDot;
+  std::vector<sd::LongType > gradOaxesForDot;
 
   if (!isNCHW) {
     gradOaxesForDot = {0, 1, 2};                        // bS, oH, oW
@@ -76,7 +76,7 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
     gradOaxesForDot = {0, 2, 3};  // bS, oH, oW
   }
 
-  std::vector<int> wPermut, colPermut;
+  std::vector<sd::LongType> wPermut, colPermut;
 
   if (0 == wFormat) {
     wPermut = {2, 0, 1, 3};

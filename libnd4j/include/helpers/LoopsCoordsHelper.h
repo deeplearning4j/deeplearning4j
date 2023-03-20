@@ -550,11 +550,11 @@ the first part will contain output part,the second tail part will be used for re
 if squash is True then  it will attempt to minimize the output ( for both orders) and the tail
 */
 
-SD_INLINE SD_HOST_DEVICE void rePartition(char order, const std::vector<int>& dimensions, const size_t rank,
+SD_INLINE SD_HOST_DEVICE void rePartition(char order, const std::vector<sd::LongType> dimensions, const size_t rank,
                                           const sd::LongType* bases, const sd::LongType* strides,
                                           sd::LongType (&new_bases)[SD_MAX_RANK],
-                                          sd::LongType (&new_strides)[SD_MAX_RANK], int& first_begin, int& first_end,
-                                          int& second_begin, int& second_end, bool first_squash = false,
+                                          sd::LongType (&new_strides)[SD_MAX_RANK], LongType& first_begin,
+                                          LongType& first_end, LongType& second_begin, LongType& second_end, bool first_squash = false,
                                           bool second_squash = true) {
   bool indices[SD_MAX_RANK] = {};
   int ind = 0;

@@ -24,6 +24,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <ops/declarable/LegacyStatsOp.h>
+#include <ops/declarable/OpRegistrator.h>
 
 namespace sd {
 namespace ops {
@@ -53,7 +54,7 @@ sd::Status LegacyStatsOp::validateAndExecute(Context &block) {
   } else {
     // dimensions for TAD
     // we should skip first argument here, because it's addressing bias correction
-    std::vector<int> dims(*block.getIArguments());
+    std::vector<sd::LongType> dims(*block.getIArguments());
     for (int e = 0; e < dims.size(); e++)
       if (dims[e] < 0) dims[e] += x->rankOf();
 
@@ -78,7 +79,19 @@ sd::Status LegacyStatsOp::validateAndExecute(Context &block) {
 
   manager.synchronize();
   STORE_RESULT(*z);
+  if(OpRegistrator::getInstance().traceOps()) {
+    std::vector<const sd::LongType *> *inputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block.width(); i++) {
+      inputShapeBuffers->push_back(block.variable(i)->getNDArray()->shapeInfo());
+    }
+    std::vector<const sd::LongType *> *outputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block.outputWidth(); i++) {
+      outputShapeBuffers->push_back(block.fastpath_out()[i]->shapeInfo());
+    }
 
+    OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers,this->getOpName());
+    OpRegistrator::getInstance().registerOpExec(opExecTrace);
+  }
   return sd::Status::OK;
 }
 

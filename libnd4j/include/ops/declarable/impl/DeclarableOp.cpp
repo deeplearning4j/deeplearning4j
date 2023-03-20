@@ -789,6 +789,36 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     }
   }
 
+  if(OpRegistrator::getInstance().traceOps()) {
+    std::vector<const sd::LongType *> *inputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block->width(); i++) {
+      auto input = block->array(i);
+      if(input != nullptr && input->shapeInfo() != nullptr) {
+        auto constShape = ConstantShapeHelper::getInstance().createFromExisting(
+            const_cast<sd::LongType *>(input->shapeInfo()), false);
+        inputShapeBuffers->push_back(constShape);
+
+      }
+    }
+
+    std::vector<const sd::LongType *> *outputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block->outputWidth(); i++) {
+      auto input = getZ(*block,i);
+      if(input != nullptr && input->shapeInfo() != nullptr) {
+        auto constShape = ConstantShapeHelper::getInstance().createFromExisting(
+            const_cast<sd::LongType *>(input->shapeInfo()), false);
+        outputShapeBuffers->push_back(constShape);
+
+      }
+
+    }
+
+    auto iArgs = block->getIArguments();
+    OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers,this->getOpName(),block->getIArguments(),block->getTArguments(),block->getBArguments(),block->getSArguments());
+    OpRegistrator::getInstance().registerOpExec(opExecTrace);
+  }
+
+
   return status;
 }
 

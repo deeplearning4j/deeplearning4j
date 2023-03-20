@@ -34,6 +34,64 @@
 namespace sd {
 namespace ops {
 
+class SD_LIB_EXPORT OpExecTrace {
+ public:
+  std::vector<const sd::LongType *> *inputShapeBuffers;
+  std::vector<const sd::LongType *> *outputShapeBuffers;
+  const std::string *opName;
+  std::vector<int> iArgs;
+  std::vector<double> tArgs;
+  std::vector<sd::DataType> dArgs;
+  std::vector<bool> bArgs;
+  std::vector<std::string> sArguments;
+  int opNum = -1;
+
+  OpExecTrace(std::vector<const sd::LongType *> *inputShapeBuffers,
+              std::vector<const sd::LongType *> *outputShapeBuffers,
+              const std::string *opName) {
+    this->inputShapeBuffers = inputShapeBuffers;
+    this->outputShapeBuffers = outputShapeBuffers;
+    this->opName = opName;
+
+  }
+
+  OpExecTrace(std::vector<const sd::LongType *> *inputShapeBuffers,
+              std::vector<const sd::LongType *> *outputShapeBuffers,
+              const std::string *opName,
+              std::vector<sd::LongType> *iArgs,
+              std::vector<double> *tArgs,
+              std::vector<bool> *bArgs,
+              std::vector<std::string> *sArgs) {
+    this->inputShapeBuffers = inputShapeBuffers;
+    this->outputShapeBuffers = outputShapeBuffers;
+    this->opName = opName;
+    for(int i = 0; i < tArgs->size(); i++) {
+      this->tArgs.push_back(tArgs->at(i));
+    }
+
+    for(int i = 0; i < bArgs->size(); i++) {
+      this->bArgs.push_back(bArgs->at(i));
+    }
+
+    for(int i = 0; i < iArgs->size(); i++) {
+      this->iArgs.push_back(iArgs->at(i));
+    }
+
+    for(int i = 0; i < sArgs->size(); i++) {
+      this->sArguments.push_back(sArgs->at(i));
+    }
+
+  }
+
+  ~OpExecTrace();
+
+  //TODO: add op exec trace factory methods like fromContext to create traces from existing contexts.
+  //TODO: in various op types (more than declarable op) ensure we use the op registrator to register traces
+  //TODO: add flag for enabling tracing
+  //TODO: figure out opregistrator entry point from java to discover traces.
+  //TODO: figure out interop type to return in java.
+
+};
 /**
  *   This class is very basic info holder for ops. bean/pojo pretty much.
  *

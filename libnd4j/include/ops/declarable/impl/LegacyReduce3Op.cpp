@@ -24,6 +24,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <ops/declarable/LegacyReduce3Op.h>
+#include <ops/declarable/OpRegistrator.h>
 
 namespace sd {
 namespace ops {
@@ -49,7 +50,7 @@ sd::Status LegacyReduce3Op::validateAndExecute(Context &block) {
         extras.argumentsAsT(z->dataType()), y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
   } else {
-    std::vector<int> dims(*block.getAxis());
+    std::vector<sd::LongType> dims(*block.getAxis());
     for (int e = 0; e < dims.size(); e++)
       if (dims[e] < 0) dims[e] += x->rankOf();
 
@@ -81,7 +82,19 @@ sd::Status LegacyReduce3Op::validateAndExecute(Context &block) {
 
   manager.synchronize();
   STORE_RESULT(*z);
+  if(OpRegistrator::getInstance().traceOps()) {
+    std::vector<const sd::LongType *> *inputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block.width(); i++) {
+      inputShapeBuffers->push_back(block.variable(i)->getNDArray()->shapeInfo());
+    }
+    std::vector<const sd::LongType *> *outputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block.outputWidth(); i++) {
+      outputShapeBuffers->push_back(block.fastpath_out()[i]->shapeInfo());
+    }
 
+    OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers,this->getOpName());
+    OpRegistrator::getInstance().registerOpExec(opExecTrace);
+  }
   return sd::Status::OK;
 }
 

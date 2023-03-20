@@ -84,14 +84,14 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
 
   sd_debug("MKL-DNN is not used for conv3dnew!\n", 0);
 
-  std::vector<int> permutForOutput;
+  std::vector<LongType> permutForOutput;
 
   if (isNCDHW)
     permutForOutput = {0, 2, 3, 4, 1};  // [bS, oC, oD, oH, oW] -> [bS, oD, oH, oW, oC]
   else
     input = new NDArray(input->permute({0, 4, 1, 2, 3}));
 
-  std::vector<int> wAxes;
+  std::vector<LongType> wAxes;
   if (0 == wFormat)
     wAxes = {3, 0, 1, 2};
   else if (1 == wFormat)
@@ -282,7 +282,7 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
 
   sd_debug("MKL-DNN is not used for conv3dnew_bp!\n", 0);
 
-  std::vector<int> gradOaxesForDot;
+  std::vector<LongType> gradOaxesForDot;
 
   if (!isNCDHW) {
     gradOaxesForDot = {0, 1, 2, 3};                        // bS, oD, oH, oW
@@ -292,7 +292,7 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
     gradOaxesForDot = {0, 2, 3, 4};  // bS, oD, oH, oW
   }
 
-  std::vector<int> wPermut, colPermut;
+  std::vector<LongType> wPermut, colPermut;
 
   if (0 == wFormat) {
     wPermut = {3, 0, 1, 2, 4};

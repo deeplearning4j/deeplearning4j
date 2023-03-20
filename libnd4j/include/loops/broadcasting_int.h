@@ -110,7 +110,8 @@ class BroadcastInt {
 #else
 
   static void exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
-                   const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, int *dimension,
+                   const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo,
+                   long long int *dimension,
                    int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset,
                    const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, uint64_t start, uint64_t stop);
 
@@ -119,7 +120,7 @@ class BroadcastInt {
 
   static void execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                           const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo,
-                          int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
+                          long long int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
                           const sd::LongType *tadOffset, const sd::LongType *tadShapeInfoZ,
                           const sd::LongType *tadOffsetZ, uint64_t start, uint64_t stop);
 
@@ -136,7 +137,7 @@ class BroadcastInt {
    */
   template <typename OpType>
   static void exec(const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo,
-                   void *result, const sd::LongType *resultShapeInfo, int *dimension, int dimensionLength,
+                   void *result, const sd::LongType *resultShapeInfo, long long int *dimension, int dimensionLength,
                    const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset, const sd::LongType *tadShapeInfoZ,
                    const sd::LongType *tadOffsetZ, uint64_t start, uint64_t stop);
 
@@ -146,7 +147,7 @@ class BroadcastInt {
 
   template <typename OpType>
   static void execInverse(const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo,
-                          void *result, const sd::LongType *resultShapeInfo, int *dimension, int dimensionLength,
+                          void *result, const sd::LongType *resultShapeInfo, long long int *dimension, int dimensionLength,
                           const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset,
                           const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, uint64_t start,
                           uint64_t stop);

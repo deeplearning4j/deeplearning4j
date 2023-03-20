@@ -38,13 +38,13 @@ class SD_LIB_EXPORT ReductionBenchmark : public OpBenchmark {
     //
   }
 
-  ReductionBenchmark(reduce::FloatOps op, std::string testName, NDArray *x, NDArray *z, std::initializer_list<int> axis)
+  ReductionBenchmark(reduce::FloatOps op, std::string testName, NDArray *x, NDArray *z, std::initializer_list<sd::LongType> axis)
       : OpBenchmark(testName, x, z, axis) {
     _opNum = (int)op;
     _opType = 0;
   }
 
-  ReductionBenchmark(reduce::SameOps op, std::string testName, NDArray *x, NDArray *z, std::initializer_list<int> axis)
+  ReductionBenchmark(reduce::SameOps op, std::string testName, NDArray *x, NDArray *z, std::initializer_list<sd::LongType> axis)
       : OpBenchmark(testName, x, z, axis) {
     _opNum = (int)op;
     _opType = 1;
@@ -72,13 +72,13 @@ class SD_LIB_EXPORT ReductionBenchmark : public OpBenchmark {
     _testName = testName;
   }
 
-  ReductionBenchmark(reduce::FloatOps op, std::string testName, NDArray *x, NDArray *z, std::vector<int> axis)
+  ReductionBenchmark(reduce::FloatOps op, std::string testName, NDArray *x, NDArray *z, std::vector<sd::LongType> axis)
       : OpBenchmark(testName, x, z, axis) {
     _opNum = (int)op;
     _opType = 0;
   }
 
-  ReductionBenchmark(reduce::SameOps op, std::string testName, NDArray *x, NDArray *z, std::vector<int> axis)
+  ReductionBenchmark(reduce::SameOps op, std::string testName, NDArray *x, NDArray *z, std::vector<sd::LongType> axis)
       : OpBenchmark(testName, x, z, axis) {
     _opNum = (int)op;
     _opType = 1;

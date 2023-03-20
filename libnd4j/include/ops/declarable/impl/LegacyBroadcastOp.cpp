@@ -24,6 +24,7 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/LegacyBroadcastOp.h>
 #include <ops/declarable/helpers/axis.h>
+#include <ops/declarable/OpRegistrator.h>
 
 namespace sd {
 namespace ops {
@@ -35,7 +36,7 @@ sd::Status LegacyBroadcastOp::validateAndExecute(Context &block) {
 
   NDArray::prepareSpecialUse({z}, {x, y});
 
-  std::vector<int> dims(*block.getAxis());
+  std::vector<sd::LongType> dims(*block.getAxis());
   if (dims.size() == 0 && block.width() > 2) {
     auto axis = INPUT_VARIABLE(2);
     helpers::adjustAxis(x->rankOf(), axis, dims);
@@ -90,6 +91,20 @@ sd::Status LegacyBroadcastOp::validateAndExecute(Context &block) {
   }
 
   manager.synchronize();
+
+  if(OpRegistrator::getInstance().traceOps()) {
+    std::vector<const sd::LongType *> *inputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block.width(); i++) {
+      inputShapeBuffers->push_back(block.variable(i)->getNDArray()->shapeInfo());
+    }
+    std::vector<const sd::LongType *> *outputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block.outputWidth(); i++) {
+      outputShapeBuffers->push_back(block.fastpath_out()[i]->shapeInfo());
+    }
+
+    OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers,this->getOpName());
+    OpRegistrator::getInstance().registerOpExec(opExecTrace);
+  }
   STORE_RESULT(*z);
 
   return sd::Status::OK;

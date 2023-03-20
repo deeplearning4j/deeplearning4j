@@ -194,11 +194,11 @@ Example:
 Suppose we have such function:
 
         template<typename X, typename Z>
-        void  argMin_(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
+        void  argMin_(const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions);
 
 We should write this to explicitly instantiate it.
 
-    BUILD_DOUBLE_TEMPLATE(template void argMin_, (const NDArray& input, NDArray& output, const std::vector<int>& dimensions),
+    BUILD_DOUBLE_TEMPLATE(template void argMin_, (const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions),
                    SD_COMMON_TYPES, SD_INDEXING_TYPES);
  
  Here:
@@ -226,7 +226,7 @@ Here how the complete cpp.in file will look like:
     namespace sd {
         namespace ops {
             namespace helpers {
-                BUILD_DOUBLE_TEMPLATE(template void argMax_, (const NDArray& input, NDArray& output, const std::vector<int>& dimensions), 
+                BUILD_DOUBLE_TEMPLATE(template void argMax_, (const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions), 
                    SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_INDEXING_TYPES);
             }
         }
