@@ -22,7 +22,7 @@
 #include "ops/declarable/BooleanOp.h"
 
 #include <array/NDArrayFactory.h>
-
+#include <ops/declarable/OpRegistrator.h>
 #include <initializer_list>
 #include <vector>
 
@@ -112,6 +112,23 @@ sd::Status sd::ops::BooleanOp::execute(Context *block) {
 
   sd_printf("%s: node_%i got unexpected result instead of boolean: [%i]\n", this->getOpName()->c_str(), block->nodeId(),
             status);
+
+
+  if(OpRegistrator::getInstance().traceOps()) {
+    std::vector<const sd::LongType *> *inputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block->width(); i++) {
+      inputShapeBuffers->push_back(block->variable(i)->getNDArray()->shapeInfo());
+    }
+    std::vector<const sd::LongType *> *outputShapeBuffers = new std::vector<const sd::LongType *>();
+    for(int i = 0; i < block->outputWidth(); i++) {
+      outputShapeBuffers->push_back(getZ(*block,i)->shapeInfo());
+    }
+
+    OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers,this->getOpName());
+    OpRegistrator::getInstance().registerOpExec(opExecTrace);
+  }
+
+
   return sd::Status::KERNEL_FAILURE;
 }
 

@@ -93,13 +93,13 @@ SD_KERNEL static void fillAsTriangularCuda(const void* vx, const sd::LongType* x
   const auto x = reinterpret_cast<const T*>(vx);
   auto z = reinterpret_cast<T*>(vz);
 
-  __shared__ int zRank, xRank, areSameOffsets,
+  __shared__ sd::LongType zRank, xRank, areSameOffsets,
       *sharedMem;                              // xRank == zRank always, except when xRank = 1, in this case zRank = 2
   __shared__ sd::LongType zLen, totalThreads;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<int*>(shmem);
+    sharedMem = reinterpret_cast<sd::LongType *>(shmem);
     areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
     xRank = shape::rank(xShapeInfo);
     zRank = shape::rank(zShapeInfo);
@@ -164,12 +164,12 @@ template <typename T>
 SD_KERNEL static void identityMatrixCuda(void* vx, const sd::LongType* xShapeInfo, const T val) {
   auto x = reinterpret_cast<T*>(vx);
 
-  __shared__ int rank, *sharedMem;
+  __shared__ sd::LongType rank, *sharedMem;
   __shared__ sd::LongType len, totalThreads;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<int*>(shmem);
+    sharedMem = reinterpret_cast<sd::LongType *>(shmem);
     rank = shape::rank(xShapeInfo);
     len = shape::length(xShapeInfo);
     totalThreads = gridDim.x * blockDim.x;
@@ -425,12 +425,12 @@ SD_KERNEL static void repeatCuda(const void* vx, const sd::LongType* xShapeInfo,
   const X* x = reinterpret_cast<const X*>(vx);
   Z* z = reinterpret_cast<Z*>(vz);
 
-  __shared__ int rank, *sharedMem;
+  __shared__ sd::LongType rank, *sharedMem;
   __shared__ sd::LongType zLen, totalThreads;  // xLen = zLen
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<int*>(shmem);
+    sharedMem = reinterpret_cast<sd::LongType *>(shmem);
 
     rank = shape::rank(zShapeInfo);    // xRank = zRank
     zLen = shape::length(zShapeInfo);  // xLen <= zLen
@@ -480,7 +480,7 @@ BUILD_DOUBLE_TEMPLATE(template void repeatCudaLauncher,
 
 //////////////////////////////////////////////////////////////////////////
 // create new array by repeating it the number of times given by repeats
-NDArray NDArray::repeat(const int axis, const std::vector<int>& repeats) const {
+NDArray NDArray::repeat(const int axis, const std::vector<sd::LongType>& repeats) const {
   NDArray output('c', ShapeUtils::evalRepeatShape(axis, repeats, *this), dataType(), getContext());
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
@@ -506,7 +506,7 @@ NDArray NDArray::repeat(const int axis, const std::vector<int>& repeats) const {
 
 //////////////////////////////////////////////////////////////////////////
 // fill array by repeating it the number of times given by repeats
-void NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& target) const {
+void NDArray::repeat(const int axis, const std::vector<sd::LongType>& repeats, NDArray& target) const {
   if (!target.isSameShape(ShapeUtils::evalRepeatShape(axis, repeats, *this)))
     throw std::invalid_argument(
         "NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& target) method: wrong shape of "
