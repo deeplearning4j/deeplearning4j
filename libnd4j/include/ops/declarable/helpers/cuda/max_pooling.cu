@@ -46,8 +46,8 @@ static void maxPoolingFunctor_(sd::graph::Context& block, NDArray* input, NDArra
   int sY = params[2];
   int sX = params[3];
 
-  int pY = params[4];
-  int pX = params[5];
+  sd::LongType pY = params[4];
+  sd::LongType pX = params[5];
 
   int dY = params[6];
   int dX = params[7];

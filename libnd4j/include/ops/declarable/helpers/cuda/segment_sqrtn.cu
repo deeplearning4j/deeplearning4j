@@ -113,7 +113,7 @@ static void unsortedSegmentSqrtNFunctor_(sd::LaunchContext* context, NDArray* in
         output->specialShapeInfo());
   } else {
     output->nullify();
-    std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto inputTads = packX.specialShapeInfo();
@@ -239,11 +239,9 @@ static sd::Status unsortedSegmentSqrtNFunctorBP_(sd::LaunchContext* context, NDA
         indices->specialBuffer(), indices->specialShapeInfo(), lengths, output->specialBuffer(),
         output->specialShapeInfo());
   } else {
-    std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    //            auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(),
-    //            dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
     auto inputTads = packX.specialShapeInfo();
     auto inputTadOffsets = packX.specialOffsets();

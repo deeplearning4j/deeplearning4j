@@ -2488,10 +2488,10 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType subArrayIndex(const sd::Long
                                                                   const sd::LongType *maxShapeInfo,
                                                                   const sd::LongType *minShapeInfo,
                                                                   const sd::LongType *dimsToExclude, const int dimsLen) {
-  int maxIdxs[SD_MAX_RANK];
+  sd::LongType maxIdxs[SD_MAX_RANK];
   shape::index2coords(const_cast<sd::LongType &>(maxIdx), maxShapeInfo, maxIdxs);
 
-  int minIdxs[SD_MAX_RANK];
+  sd::LongType minIdxs[SD_MAX_RANK];
   maxIndToMinInd(maxIdxs, minIdxs, maxShapeInfo, minShapeInfo, dimsToExclude, dimsLen);
 
   return shape::coords2index(minShapeInfo, minIdxs);
@@ -2578,10 +2578,10 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType subArrayOffset(const sd::Lon
                                                                    const sd::LongType *maxShapeInfo,
                                                                    const sd::LongType *minShapeInfo,
                                                                    const sd::LongType *dimsToExclude, const int dimsLen) {
-  int maxIdxs[SD_MAX_RANK];
+  sd::LongType maxIdxs[SD_MAX_RANK];
   shape::index2coords(const_cast<sd::LongType &>(maxIdx), maxShapeInfo, maxIdxs);
 
-  int minIdxs[SD_MAX_RANK];
+  sd::LongType minIdxs[SD_MAX_RANK];
   maxIndToMinInd(maxIdxs, minIdxs, maxShapeInfo, minShapeInfo, dimsToExclude, dimsLen);
 
   return getOffset(minShapeInfo, minIdxs);
@@ -2596,8 +2596,8 @@ SD_LIB_EXPORT SD_INLINE SD_DEVICE SD_HOST int outerArrayOffsets(sd::LongType *ma
 
   const auto diff = rankMax - rankMin;  // the size of dimsToExclude is equal to diff
 
-  int *indices = memBuff;
-  int *increment = memBuff + rankMax;
+  sd::LongType *indices = memBuff;
+  sd::LongType *increment = memBuff + rankMax;
 
   int N, minI, maxI;
 

@@ -56,7 +56,7 @@ SD_KERNEL static void splitCuda(const void* vx, const sd::LongType* xShapeInfo, 
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  int coords[SD_MAX_RANK];
+  sd::LongType coords[SD_MAX_RANK];
 
   for (uint64_t i = tid; i < xLen; i += totalThreads) {
     shape::index2coords(i, xShapeInfo, coords);

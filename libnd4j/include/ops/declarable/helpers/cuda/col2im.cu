@@ -36,12 +36,12 @@ static SD_KERNEL void col2imCuda(const void* columns, const sd::LongType* colSha
   const T* col = reinterpret_cast<const T*>(columns);
   T* im = reinterpret_cast<T*>(image);
 
-  __shared__ sd::Unsigned kH, kW, oH, oW, *sharedMem;
+  __shared__ sd::LongType kH, kW, oH, oW, *sharedMem;
   __shared__ sd::LongType imLen;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<sd::Unsigned*>(shmem);
+    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
 
     kH = dH * (colShapeInfo[3] - 1) + 1;
     kW = dW * (colShapeInfo[4] - 1) + 1;

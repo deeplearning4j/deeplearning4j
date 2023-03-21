@@ -52,7 +52,7 @@ void SD_KERNEL preluCuda(const void *vx, const sd::LongType *xShapeInfo, const v
   __syncthreads();
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  int coords[SD_MAX_RANK];
+  sd::LongType coords[SD_MAX_RANK];
 
   for (int i = tid; i < xzLen; i += blockDim.x * gridDim.x) {
     shape::index2coords(i, xShapeInfo, coords);
@@ -125,7 +125,7 @@ void SD_KERNEL preluBPCuda(const void *vIn, const sd::LongType *inShapeInfo, con
   __syncthreads();
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  int coords[SD_MAX_RANK];
+  sd::LongType coords[SD_MAX_RANK];
 
   for (int i = tid; i < inLen; i += totalThreads) {
     shape::index2coords(i, inShapeInfo, coords);
