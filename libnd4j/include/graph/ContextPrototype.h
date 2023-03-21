@@ -48,8 +48,9 @@ class SD_LIB_EXPORT ContextPrototype {
   std::vector<bool> _bArgs;
   std::vector<sd::LongType> _axis;
   std::vector<sd::DataType> _dArgs;
+#ifndef __JAVACPP_HACK__
   std::vector<std::string> _sArgs;
-
+#endif
   // TODO: remove this field
   sd::DataType _dataType = sd::DataType::FLOAT32;
   bool _isInplace;
@@ -99,7 +100,9 @@ class SD_LIB_EXPORT ContextPrototype {
   std::vector<sd::LongType>* getIArguments();
   std::vector<bool>* getBArguments();
   std::vector<sd::DataType>* getDArguments();
+#ifndef __JAVACPP_HACK__
   std::vector<std::string>* getSArguments();
+#endif
   std::vector<sd::LongType>* getAxis();
 
   samediff::Engine engine();

@@ -1005,7 +1005,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE void maxIndToMinInd(long long int *maxIdxs, long lo
 
 // calculate indexes of max-array, these output indexes correspond to one minIdx index of min-array which is sub-array
 // of max-array dimsToExclude - should be sorted in increasing order
-SD_LIB_EXPORT SD_HOST int outerArrayIndexes(int *maxIdxs, const sd::LongType minIdx, const sd::LongType *maxShapeInfo,
+SD_LIB_EXPORT SD_HOST int outerArrayIndexes(sd::LongType *maxIdxs, const sd::LongType minIdx, const sd::LongType *maxShapeInfo,
                                             const sd::LongType *minShapeInfo, const int *dimsToExclude = nullptr);
 
 // calculate offsets of max-array, these offsets correspond to one minIdx index of min-array which is sub-array of
@@ -1022,10 +1022,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE int outerArrayOffsets(sd::LongType *maxOffsets, con
 SD_LIB_EXPORT void calcOffsets(const int rank, const sd::LongType *shape, const sd::LongType *strides,
                                sd::LongType *offsets, const char order = 'c');
 SD_LIB_EXPORT void calcOffsets(const sd::LongType *shapeInfo, sd::LongType *offsets, const char order = 'c');
-// SD_LIB_EXPORT void calcOffsets(const sd::LongType *xShapeInfo, sd::LongType*& xOffsets, const sd::LongType
-// *yShapeInfo, sd::LongType*& yOffsets, const char order = 'c'); SD_LIB_EXPORT void calcOffsets(const sd::LongType
-// *xShapeInfo, sd::LongType*& xOffsets, const sd::LongType *yShapeInfo, sd::LongType*& yOffsets, const sd::LongType*
-// zShapeInfo, sd::LongType*& zOffsets, const char order = 'c');
+
 SD_LIB_EXPORT SD_HOST_DEVICE void shapeOldScalar(sd::DataType dtype, sd::LongType *const buffer, const char order);
 
 // deduce order and element-wise stride
@@ -2471,7 +2468,7 @@ SD_INLINE SD_HOST_DEVICE void printArray(void *varr, int length, const char *mes
  * Length of a tad given
  * the shape information
  */
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType tadLength(const sd::LongType *shapeInfo, int *dimension,
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType tadLength(const sd::LongType *shapeInfo, sd::LongType *dimension,
                                                               int dimensionLength) {
   if (dimensionLength == 1) {
     return shape::shapeOf(shapeInfo)[dimension[0]];
@@ -2490,7 +2487,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType tadLength(const sd::LongType
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType subArrayIndex(const sd::LongType maxIdx,
                                                                   const sd::LongType *maxShapeInfo,
                                                                   const sd::LongType *minShapeInfo,
-                                                                  const int *dimsToExclude, const int dimsLen) {
+                                                                  const sd::LongType *dimsToExclude, const int dimsLen) {
   int maxIdxs[SD_MAX_RANK];
   shape::index2coords(const_cast<sd::LongType &>(maxIdx), maxShapeInfo, maxIdxs);
 
@@ -2507,15 +2504,12 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isEmpty(const sd::LongType *shapeInf
 // max array is outer for min array, min array is sub-array of max array
 // function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array
 // (already stored in maxIdxs)
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void maxIndToMinInd(int *maxIdxs, int *minIdxs, const sd::LongType *maxShapeInfo,
-                                                           const sd::LongType *minShapeInfo, const int *dimsToExclude,
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void maxIndToMinInd(sd::LongType *maxIdxs, sd::LongType *minIdxs, const sd::LongType *maxShapeInfo,
+                                                           const sd::LongType *minShapeInfo, const sd::LongType *dimsToExclude,
                                                            int dimsLen) {
   const auto maxRank = shape::rank(maxShapeInfo);
   const auto minRank = shape::rank(minShapeInfo);
 
-  // if(minRank >= maxRank)
-  //     throw std::runtime_error("shape::maxIndToMinInd method: rank of min array should be smaller then rank of max
-  //     array!");
 
   if (dimsLen == -1) dimsLen = maxRank - minRank;  // if size is not given (= -1) then it is equal to ranks difference
 
@@ -2583,7 +2577,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void maxIndToMinInd(int *maxIdxs, int *mi
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType subArrayOffset(const sd::LongType maxIdx,
                                                                    const sd::LongType *maxShapeInfo,
                                                                    const sd::LongType *minShapeInfo,
-                                                                   const int *dimsToExclude, const int dimsLen) {
+                                                                   const sd::LongType *dimsToExclude, const int dimsLen) {
   int maxIdxs[SD_MAX_RANK];
   shape::index2coords(const_cast<sd::LongType &>(maxIdx), maxShapeInfo, maxIdxs);
 
@@ -2595,8 +2589,8 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType subArrayOffset(const sd::Lon
 
 SD_LIB_EXPORT SD_INLINE SD_DEVICE SD_HOST int outerArrayOffsets(sd::LongType *maxOffsets, const sd::LongType minIdx,
                                                                 const sd::LongType *maxShapeInfo,
-                                                                const sd::LongType *minShapeInfo, int *memBuff,
-                                                                const int *dimsToExclude) {
+                                                                const sd::LongType *minShapeInfo, sd::LongType *memBuff,
+                                                                const sd::LongType *dimsToExclude) {
   const auto rankMin = shape::rank(minShapeInfo);
   const auto rankMax = shape::rank(maxShapeInfo);
 
@@ -2685,7 +2679,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int tadElementWiseStride(sd::LongType *sh
 }
 
 //////////////////////////////////////////////////////////////////////
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int outerArrayIndexes(int *maxIdxs, const sd::LongType minIdx,
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int outerArrayIndexes(sd::LongType *maxIdxs, const sd::LongType minIdx,
                                                              const sd::LongType *maxShapeInfo,
                                                              const sd::LongType *minShapeInfo,
                                                              const int *dimsToExclude) {
@@ -2694,7 +2688,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int outerArrayIndexes(int *maxIdxs, const
 
   const auto diff = rankMax - rankMin;  // the size of dimsToExclude is equal to diff
 
-  int indices[SD_MAX_RANK], increment[SD_MAX_RANK];
+  sd::LongType indices[SD_MAX_RANK], increment[SD_MAX_RANK];
 
   int N, minI, maxI;
 

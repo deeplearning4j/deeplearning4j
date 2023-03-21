@@ -46,13 +46,17 @@ A user can save a graph with
 
 ```
 
+We use op scopes triggered in c++ to delineate when an op executed is part of a main parent op.
+
 
 ## Consequences
 
 ### Advantages
 
 * Allows easier reproduction of a given graph
-* Allows decomposiiton of nested op execution like with attention
+* Allows decomposition of nested op execution like with attention
+* Adds complexity when implementing ops since we need to remember to trigger
+   notify the tracer we are currently in a parent op.
 
 ### Disadvantages
 * Graph generated may be missing names or other metadata

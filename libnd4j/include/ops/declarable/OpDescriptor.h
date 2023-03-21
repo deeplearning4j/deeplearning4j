@@ -33,7 +33,7 @@
 
 namespace sd {
 namespace ops {
-
+#ifndef __JAVACPP_HACK__
 class SD_LIB_EXPORT OpExecTrace {
  public:
   std::vector<const sd::LongType *> *inputShapeBuffers;
@@ -92,6 +92,8 @@ class SD_LIB_EXPORT OpExecTrace {
   //TODO: figure out interop type to return in java.
 
 };
+
+#endif
 /**
  *   This class is very basic info holder for ops. bean/pojo pretty much.
  *

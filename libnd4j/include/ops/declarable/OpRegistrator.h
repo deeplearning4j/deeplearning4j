@@ -105,15 +105,20 @@ class SD_LIB_EXPORT OpRegistrator {
 
   std::mutex _locker;
   std::string _opsList;
+#ifndef __JAVACPP_HACK__
   std::vector<OpExecTrace *> opexecTrace;
+#endif
   bool isInit = false;
   bool isTrace = false;
  public:
   ~OpRegistrator();
 
-  void registerOpExec(OpExecTrace *opExecTrace);
   void purgeOpExecs();
+#ifndef __JAVACPP_HACK__
+  void registerOpExec(OpExecTrace *opExecTrace);
   std::vector<OpExecTrace *> execTrace();
+#endif
+
   static OpRegistrator& getInstance();
 
   static void exitHandler();
