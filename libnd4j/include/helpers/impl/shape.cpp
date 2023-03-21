@@ -2082,7 +2082,7 @@ SD_HOST int excludeUnitiesFromShapeInfo(const sd::LongType *inShapeInfo, sd::Lon
 }
 
 //////////////////////////////////////////////////////////////////////
-SD_HOST void excludeUnitiesFromShapeInfo(const sd::LongType *inShapeInfo, const int *dimsToExclude,
+SD_HOST void excludeUnitiesFromShapeInfo(const sd::LongType *inShapeInfo, const sd::LongType *dimsToExclude,
                                          const int dimsSize, sd::LongType *outShapeInfo) {
   outShapeInfo[0] = inShapeInfo[0] - dimsSize;
 

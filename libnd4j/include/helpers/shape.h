@@ -1094,7 +1094,6 @@ SD_LIB_EXPORT SD_HOST void excludeUnitiesFromShapeInfo(const sd::LongType *inSha
  * for example when inShapeInfo is {4, 2,5,4,3,  60,1,5,20, 16384,0,99} then output is 5 (that is smallest stride in
  * inShapeInfo except those equal to 1)
  */
-// SD_INLINE SD_HOST_DEVICE sd::LongType strideOverContigAxis(const int axis, const sd::LongType* inShapeInfo);
 
 // END HEADERS
 
