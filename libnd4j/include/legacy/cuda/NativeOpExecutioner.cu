@@ -1486,8 +1486,7 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
 
   dim3 launchDims = dim3(512, 512, 32768);
   auto xType = sd::ArrayOptions::dataType(hZShapeInfo);
-  // functions::random::RandomFunction<float>::executeCudaDouble(launchDims, extraPointers, opNum, stateHost, dX,
-  // dXShapeInfo, dZ, dZShapeInfo, extraArguments);
+
   BUILD_SINGLE_SELECTOR(
       xType, functions::random::RandomFunction,
       ::executeCudaDouble(launchDims, stream, opNum, stateDevice, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments),
@@ -1519,8 +1518,7 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
 
   dim3 launchDims = dim3(512, 512, 32768);
   auto xType = sd::ArrayOptions::dataType(hZShapeInfo);
-  // functions::random::RandomFunction<float>::executeCudaTriple(launchDims, extraPointers, opNum, stateHost, dX,
-  // dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments);
+
   BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction,
                         ::executeCudaTriple(launchDims, stream, opNum, stateDevice, dX, dXShapeInfo, dY, dYShapeInfo,
                                             dZ, dZShapeInfo, extraArguments),
