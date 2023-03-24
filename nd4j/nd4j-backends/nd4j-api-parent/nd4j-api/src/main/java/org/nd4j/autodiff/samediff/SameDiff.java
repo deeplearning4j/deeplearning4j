@@ -258,9 +258,10 @@ public class SameDiff extends SDBaseOps {
 
             LongPointer iArgsPointer = deviceNativeOps.iArgs(opExecTrace);
             List<Long> iArgs = new ArrayList<>();
-            for(int j = 0; j < iArgsPointer.capacity(); j++) {
-                iArgs.add(iArgsPointer.get(j));
-            }
+            if(iArgsPointer != null)
+                for(int j = 0; j < iArgsPointer.capacity(); j++) {
+                    iArgs.add(iArgsPointer.get(j));
+                }
 
             DoublePointer tArgsPointer = deviceNativeOps.tArgs(opExecTrace);
             List<Double> tArgs = new ArrayList<>();
