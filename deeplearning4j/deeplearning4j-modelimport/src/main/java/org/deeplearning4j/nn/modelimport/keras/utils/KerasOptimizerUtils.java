@@ -55,6 +55,10 @@ public class KerasOptimizerUtils {
             throw new InvalidKerasConfigurationException("Optimizer config does not contain a name field.");
         }
         String optimizerName = (String) optimizerConfig.get("class_name");
+        //newer keras versions
+        if(optimizerName != null && optimizerName.startsWith("Custom>")) {
+            optimizerName = optimizerName.replace("Custom>","");
+        }
 
         if (!optimizerConfig.containsKey("config"))
             throw new InvalidKerasConfigurationException("Field config missing from layer config");
@@ -69,7 +73,7 @@ public class KerasOptimizerUtils {
                 double beta1 = (double) optimizerParameters.get(BETA_1);
                 double beta2 = (double) optimizerParameters.get(BETA_2);
                 double epsilon = (double) optimizerParameters.get(EPSILON);
-                double decay = (double) optimizerParameters.get(DECAY);
+                double decay = (double) (optimizerParameters.containsKey(DECAY) ? optimizerParameters.get(DECAY) : 1e-3);
 
                 dl4jOptimizer = new Adam.Builder()
                         .beta1(beta1).beta2(beta2)
@@ -81,7 +85,6 @@ public class KerasOptimizerUtils {
             case "adadelta": {
                 double rho = (double) optimizerParameters.get(RHO);
                 double epsilon = (double) optimizerParameters.get(EPSILON);
-                // double decay = (double) optimizerParameters.get(DECAY); No decay in DL4J Adadelta
 
                 dl4jOptimizer = new AdaDelta.Builder()
                         .epsilon(epsilon).rho(rho)
