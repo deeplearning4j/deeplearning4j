@@ -24,6 +24,7 @@ package org.nd4j.linalg.api.ndarray;
 import lombok.Getter;
 import lombok.Setter;
 import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
+import org.nd4j.linalg.api.ops.impl.shape.Reshape;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -3727,89 +3728,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray reshape(char order, boolean enforceView, long... newShape){
-        Nd4j.getCompressor().autoDecompress(this);
-
-        // special case for empty reshape
-        if (this.length() == 1 && (newShape == null || newShape.length == 0) && this.elementWiseStride() == 1) {
-            return Nd4j.create(this.data(), new int[0], new int[0], 0);
-        }
-
-        if (newShape == null || newShape.length < 1)
-            throw new ND4JIllegalStateException(
-                    "Can't reshape(long...) without shape arguments. Got empty shape instead.");
-
-        // TODO: maybe toFlatten() makes more sense here?
-        // reshape(-1) special case
-        if (newShape.length == 1 && newShape[0] == -1)
-            newShape[0] = this.length();
-
-        int numberNegativesOnes = 0;
-        long[] shape = ArrayUtil.copy(newShape);
-
-
-        for (int i = 0; i < shape.length; i++) {
-            if (shape[i] < 0) {
-                if (numberNegativesOnes >= 1)
-                    throw new IllegalArgumentException("Only one dimension can be negative ones. Got shape "
-                            + Arrays.toString(newShape));
-
-                numberNegativesOnes++;
-
-                int shapeLength = 1;
-                for (int j = 0; j < shape.length; j++)
-                    if (shape[j] >= 1)
-                        shapeLength *= shape[j];
-                long realShape = Math.abs(length() / shapeLength);
-                long[] thisNewShape = new long[shape.length];
-                for (int j = 0; j < shape.length; j++) {
-                    if (i != j) {
-                        thisNewShape[j] = shape[j];
-                    } else
-                        thisNewShape[j] = realShape;
-                }
-
-                shape = thisNewShape;
-                break;
-
-            }
-        }
-
-        long prod = ArrayUtil.prodLong(shape);
-
-        if (prod != this.length()) {
-            throw new ND4JIllegalStateException("New shape length doesn't match original length: [" + prod + "] vs [" + this.length() + "]. Original shape: "+Arrays.toString(this.shape())+" New Shape: "+Arrays.toString(newShape));
-        }
-
-
-
-
-        INDArray reshapeAttempt = Shape.newShapeNoCopy(this, shape, order == 'f');
-
-        if (reshapeAttempt != null) {
-            return reshapeAttempt;
-        }
-
-        if(enforceView){
-            throw new ND4JIllegalStateException("Unable to reshape array as view, called with enforceView=true. " +
-                    "Use enforceView=false to return a copy instead, or call reshape on a non-strided array. Array shape info: " + this.shapeInfoToString().replaceAll("\n",""));
-        }
-
-
-        if (order != ordering()) {
-            INDArray ret = Nd4j.createUninitialized(this.dataType(), shape, order);
-            ret.setData(dup(order).data());
-            return ret;
-        } else if (this.isEmpty()) {
-            INDArray ret = Nd4j.create(this.dataType(), shape);
-            return ret;
-
-        } else {
-            INDArray ret = this.dup(order);
-            INDArray ret2 =  Nd4j.create(ret.data(), shape);
-            return ret2;
-
-        }
+    public INDArray reshape(char order, boolean enforceView, long... newShape) {
+        Reshape reshape = new Reshape(this, order,newShape);
+        return Nd4j.getExecutioner().exec(reshape)[0];
     }
 
     @Override

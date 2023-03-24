@@ -34,11 +34,23 @@ import java.nio.LongBuffer;
  */
 public interface NativeOps {
 
+
+    int numInputs(Pointer execTrace);
+    int numOutputs(Pointer execTrace);
+    BooleanPointer bArgs(Pointer execTrace);
+    PointerPointer sArgs(Pointer execTrace);
+    DoublePointer tArgs(Pointer execTrace);
+    LongPointer iArgs(Pointer execTrace);
+    PointerPointer inputShapeBuffers(Pointer execTrace);
+    PointerPointer outputShapeBuffers(Pointer execTrace);
+    BytePointer opName(Pointer execTrace);
+    PointerPointer listOpTraces();
+
     void printOpTrace();
 
     void purgeOpTrace();
 
-    void toggleOpTrace(@Cast("bool") boolean opTrace);
+    void toggleOpTrace(boolean opTrace);
     /**
      * Prints device buffers.
      * @param buffer

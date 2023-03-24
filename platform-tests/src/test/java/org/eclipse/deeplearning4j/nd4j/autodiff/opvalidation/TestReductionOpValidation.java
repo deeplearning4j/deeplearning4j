@@ -68,6 +68,7 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import javax.annotation.concurrent.NotThreadSafe;
@@ -1214,7 +1215,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOpExecTrace(Nd4jBackend backend) {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().toggleOpTrace(true);
+        Nd4j.toggleTrace(true);
         final INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
 
         SameDiff sd = SameDiff.create();
@@ -1223,10 +1224,11 @@ public class TestReductionOpValidation extends BaseOpValidation {
 
         SDVariable t = sd.nn.softmax(input2,1);
 
-        String err = OpValidation.validate(new TestCase(sd)
-                .gradientCheck(true));
-        assertNull(err);
-        NativeOpsHolder.getInstance().getDeviceNativeOps().printOpTrace();
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        sd.calculateGradients(Collections.emptyMap(), Collections.singleton("input"));
+        SameDiff traced  = SameDiff.collectTrace();
+        System.out.println(traced.summary());
     }
 
     @ParameterizedTest

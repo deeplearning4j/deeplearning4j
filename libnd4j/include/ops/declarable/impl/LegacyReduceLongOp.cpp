@@ -34,7 +34,6 @@ LegacyReduceLongOp::LegacyReduceLongOp() : LegacyOp::LegacyOp(1) {
 }
 
 LegacyReduceLongOp::LegacyReduceLongOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
-  // this->_opNum = opNum;
 }
 
 LegacyOp* LegacyReduceLongOp::clone() { return new LegacyReduceLongOp(this->_opNum); }

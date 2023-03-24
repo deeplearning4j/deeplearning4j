@@ -37,19 +37,6 @@ public class ShapeDescriptor {
     @Getter private long extras;
 
     public ShapeDescriptor(int[] shape, int[] stride, long offset, int ews, char order, long extras) {
-        /*
-        if (shape != null) {
-            hashShape = shape[0];
-            for (int i = 1; i < shape.length; i++)
-                hashShape = 31 * hashShape + shape[i];
-        }
-        
-        if (stride != null) {
-            hashStride = stride[0];
-            for (int i = 1; i < stride.length; i++)
-                hashStride = 31 * hashStride + stride[i];
-        }
-        */
         this.shape = Arrays.copyOf(shape, shape.length);
         this.stride = Arrays.copyOf(stride, stride.length);
 

@@ -814,7 +814,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     }
 
     auto iArgs = block->getIArguments();
-    OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers,this->getOpName(),block->getIArguments(),block->getTArguments(),block->getBArguments(),block->getSArguments());
+    OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers,this->getOpName(),block->getIArguments(),block->getTArguments(),block->getBArguments(),block->getSArguments(),this->getOpDescriptor()->getOpNum());
     OpRegistrator::getInstance().registerOpExec(opExecTrace);
   }
 

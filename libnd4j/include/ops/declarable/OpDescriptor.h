@@ -33,19 +33,20 @@
 
 namespace sd {
 namespace ops {
-#ifndef __JAVACPP_HACK__
 class SD_LIB_EXPORT OpExecTrace {
  public:
   std::vector<const sd::LongType *> *inputShapeBuffers;
   std::vector<const sd::LongType *> *outputShapeBuffers;
   const std::string *opName;
-  std::vector<int> iArgs;
+  std::vector<sd::LongType> iArgs;
   std::vector<double> tArgs;
   std::vector<sd::DataType> dArgs;
   std::vector<bool> bArgs;
   std::vector<std::string> sArguments;
-  int opNum = -1;
+  int opType = -1;
 
+
+#ifndef __JAVACPP_HACK__
   OpExecTrace(std::vector<const sd::LongType *> *inputShapeBuffers,
               std::vector<const sd::LongType *> *outputShapeBuffers,
               const std::string *opName) {
@@ -61,10 +62,12 @@ class SD_LIB_EXPORT OpExecTrace {
               std::vector<sd::LongType> *iArgs,
               std::vector<double> *tArgs,
               std::vector<bool> *bArgs,
-              std::vector<std::string> *sArgs) {
+              std::vector<std::string> *sArgs,
+              int opType) {
     this->inputShapeBuffers = inputShapeBuffers;
     this->outputShapeBuffers = outputShapeBuffers;
     this->opName = opName;
+    this->opType = opType;
     for(int i = 0; i < tArgs->size(); i++) {
       this->tArgs.push_back(tArgs->at(i));
     }
@@ -82,25 +85,43 @@ class SD_LIB_EXPORT OpExecTrace {
     }
 
   }
+#endif
+
+  OpExecTrace() = default;
 
   ~OpExecTrace();
 
-  //TODO: add op exec trace factory methods like fromContext to create traces from existing contexts.
-  //TODO: in various op types (more than declarable op) ensure we use the op registrator to register traces
-  //TODO: add flag for enabling tracing
-  //TODO: figure out opregistrator entry point from java to discover traces.
-  //TODO: figure out interop type to return in java.
-
+  std::vector<const sd::LongType*>* getInputShapeBuffers() const { return inputShapeBuffers; }
+  void setInputShapeBuffers(std::vector<const LongType*>* inputShapeBuffers) {
+    OpExecTrace::inputShapeBuffers = inputShapeBuffers;
+  }
+  std::vector<const sd::LongType*>* getOutputShapeBuffers() const { return outputShapeBuffers; }
+  void setOutputShapeBuffers(std::vector<const LongType*>* outputShapeBuffers) {
+    OpExecTrace::outputShapeBuffers = outputShapeBuffers;
+  }
+  const std::string* getOpName() const { return opName; }
+  void setOpName(const std::string* opName) { OpExecTrace::opName = opName; }
+  const std::vector<sd::LongType>& getIArgs() const { return iArgs; }
+  void setIArgs(const std::vector<LongType>& iArgs) { OpExecTrace::iArgs = iArgs; }
+  const std::vector<double>& getTArgs() const { return tArgs; }
+  void setTArgs(const std::vector<double>& tArgs) { OpExecTrace::tArgs = tArgs; }
+  const std::vector<sd::DataType>& getDArgs() const { return dArgs; }
+  void setDArgs(const std::vector<sd::DataType>& dArgs) { OpExecTrace::dArgs = dArgs; }
+  const std::vector<bool>& getBArgs() const { return bArgs; }
+  void setBArgs(const std::vector<bool>& bArgs) { OpExecTrace::bArgs = bArgs; }
+  const std::vector<std::string>& getSArguments() const { return sArguments; }
+  void setSArguments(const std::vector<std::string>& sArguments) { OpExecTrace::sArguments = sArguments; }
+  int getOpType() const { return opType; }
+  void setOpType(int opType) { OpExecTrace::opType = opType; }
 };
 
-#endif
 /**
  *   This class is very basic info holder for ops. bean/pojo pretty much.
  *
  */
 class SD_LIB_EXPORT OpDescriptor {
  protected:
-  // opNum for legacy XYZ ops
+  // opType for legacy XYZ ops
   int _opNum = 0;
 
   // opName for CustomOp
@@ -211,10 +232,10 @@ class SD_LIB_EXPORT OpDescriptor {
   // this method allows you to enable/disable inplace call for a given op
   void allowInplace(bool reallyAllow);
 
-  // this method returns opNum (applicable for legacy XYZ ops only)
+  // this method returns opType (applicable for legacy XYZ ops only)
   int getOpNum();
 
-  // this method allows to set specific opNum
+  // this method allows to set specific opType
   void setOpNum(int opNum);
 
   void setHash(sd::LongType hash);

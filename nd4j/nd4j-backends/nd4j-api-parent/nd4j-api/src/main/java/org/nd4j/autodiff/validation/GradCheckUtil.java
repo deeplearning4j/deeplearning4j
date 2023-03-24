@@ -92,7 +92,6 @@ public class GradCheckUtil {
             sd.enableDebugMode();
         }
 
-        sd.setEnableCache(false);
         //Validation sanity checks:
         if(!skipValidation) {
             validateInternalState(sd, true);

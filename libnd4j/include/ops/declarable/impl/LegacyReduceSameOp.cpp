@@ -34,7 +34,6 @@ LegacyReduceSameOp::LegacyReduceSameOp() : LegacyOp::LegacyOp(1) {
 }
 
 LegacyReduceSameOp::LegacyReduceSameOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
-  // this->_opNum = opNum;
 }
 
 LegacyOp* LegacyReduceSameOp::clone() { return new LegacyReduceSameOp(this->_opNum); }

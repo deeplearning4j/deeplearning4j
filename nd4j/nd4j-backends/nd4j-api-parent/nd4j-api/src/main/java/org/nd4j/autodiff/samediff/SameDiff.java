@@ -29,6 +29,7 @@ import lombok.val;
 import org.apache.commons.collections4.trie.PatriciaTrie;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.bytedeco.javacpp.*;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -48,14 +49,15 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.ArrayUtil;
-import org.nd4j.common.util.MultiValueMap;
 import org.nd4j.common.util.ND4JFileUtils;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.graph.*;
 import org.nd4j.graph.ExecutionMode;
+import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -82,7 +84,11 @@ import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
-import org.nd4j.shade.guava.collect.Sets;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.OpExecTraceVector;
+import org.nd4j.shade.guava.primitives.Booleans;
+import org.nd4j.shade.guava.primitives.Doubles;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.NDArraySupplierInitScheme;
@@ -209,6 +215,80 @@ public class SameDiff extends SDBaseOps {
 
     public final static String INFERENCE_FACTORY_CLASS = "inferencefactory.class";
     private static InferenceFactory INFERENCE_FACTORY;
+
+
+    /**
+     * Collect a trace of executed ops.
+     * This will create a samediff graph that emulates
+     * the ops executed during the time that
+     * {@link Nd4j#toggleTrace(boolean)}
+     *  was toggled to true.
+     */
+    public static SameDiff collectTrace() {
+        NativeOps deviceNativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        PointerPointer opExecTraceVector = deviceNativeOps.listOpTraces();
+        OpExecTraceVector opExecTraceVector1 = new OpExecTraceVector(opExecTraceVector);
+        SameDiff sameDiff = create();
+
+
+        boolean inCycle = false;
+        for(int i = 0; i < opExecTraceVector1.capacity(); i++) {
+            List<SDVariable> variables = new ArrayList<>();
+            Pointer opExecTrace = opExecTraceVector1.get(i);
+            String opName = deviceNativeOps.opName(opExecTrace).getString();
+
+            PointerPointer<LongPointer> inputShapeBuffers = deviceNativeOps.inputShapeBuffers(opExecTrace);
+            int numInputs = deviceNativeOps.numInputs(opExecTrace);
+            inputShapeBuffers.capacity(numInputs);
+
+            for(int j = 0; j < numInputs; j++) {
+                LongPointer longPointer = inputShapeBuffers.get(LongPointer.class,j);
+                longPointer.capacity(Shape.shapeInfoLength(longPointer.get(0)));
+                DataBuffer dataBuffer = Nd4j.createBuffer(longPointer, longPointer.capacity(),DataType.LONG);
+
+
+                SDVariable create = sameDiff.create(sameDiff.constant(Nd4j.createFromArray(Shape.shape(dataBuffer))),Shape.dataType(dataBuffer));
+                variables.add(create);
+            }
+
+            if(inCycle) {
+                break;
+            }
+
+
+            LongPointer iArgsPointer = deviceNativeOps.iArgs(opExecTrace);
+            List<Long> iArgs = new ArrayList<>();
+            for(int j = 0; j < iArgsPointer.capacity(); j++) {
+                iArgs.add(iArgsPointer.get(j));
+            }
+
+            DoublePointer tArgsPointer = deviceNativeOps.tArgs(opExecTrace);
+            List<Double> tArgs = new ArrayList<>();
+            if(tArgsPointer != null)
+                for(int j = 0; j < tArgsPointer.capacity(); j++) {
+                    tArgs.add(tArgsPointer.get(j));
+                }
+
+            List<String> sArgs = new ArrayList<>();
+
+            PointerPointer<BytePointer> stringVector = deviceNativeOps.sArgs(opExecTrace);
+            if(stringVector != null)
+                for(int j = 0; j < stringVector.capacity(); j++) {
+                    BytePointer bytePointer = stringVector.get(BytePointer.class,j);
+                    sArgs.add(bytePointer.getString());
+                }
+
+            BooleanPointer bArgsPointer = deviceNativeOps.bArgs(opExecTrace);
+            List<Boolean> bArgs = new ArrayList<>();
+            if(bArgsPointer != null)
+                for(int j = 0; j < bArgsPointer.capacity(); j++) {
+                    bArgs.add(bArgsPointer.get(j));
+                }
+            sameDiff.dynamic(opName,variables,iArgs,tArgs,Collections.emptyList(),bArgs,sArgs);
+        }
+
+        return sameDiff;
+    }
 
     /**
      * Op creator object for math operations
@@ -1344,6 +1424,24 @@ public class SameDiff extends SDBaseOps {
         }
         addArgsFor(varNames, function);
     }
+
+    /**
+     * Adds incoming arguments for the specified differential function to the graph
+     *
+     * @param variables variables that are arguments (inputs) to the specified function
+     * @param function  Function
+     */
+    public void addArgsFor(List<SDVariable> variables, DifferentialFunction function) {
+
+        String[] varNames = new String[variables.size()];
+        for (int i = 0; i < varNames.length; i++) {
+            if (variables.get(i) == null)
+                throw new ND4JIllegalStateException("Found null variable at index " + i);
+            varNames[i] = variables.get(i).name();
+        }
+        addArgsFor(varNames, function);
+    }
+
 
     /**
      * Replaces the argument at i with newArg for function
@@ -4298,6 +4396,59 @@ public class SameDiff extends SDBaseOps {
         SameDiff grad = getFunction(GRAD_FN_KEY);
         SDVariable var = grad.getVariable(varName);
         return getFunction(GRAD_FN_KEY).getGradForVariable(var.name());
+    }
+
+
+    public SDVariable[] dynamic(String name,
+                                List<SDVariable> inputs,
+                                List<Long> iArgs,
+                                List<Double> tArgs,
+                                List<DataType> dArgs,
+                                List<Boolean> bArgs,
+                                List<String> sArgs) {
+        try {
+            DifferentialFunction out = DifferentialFunctionClassHolder.getInstance().getInstance(name).getClass().newInstance();
+            out.setSameDiff(this);
+            out.setInstanceId();
+
+            addArgsFor(inputs,out);
+            if(out instanceof CustomOp) {
+                CustomOp customOp = (CustomOp) out;
+                if(bArgs != null && !bArgs.isEmpty()) {
+                    customOp.addBArgument(Booleans.toArray(bArgs));
+                }
+
+                if(tArgs != null && !tArgs.isEmpty()) {
+                    customOp.addTArgument(Doubles.toArray(tArgs));
+                }
+
+                if(iArgs != null && !iArgs.isEmpty()) {
+                    customOp.addIArgument(Ints.toArray(iArgs));
+                }
+
+                if(sArgs != null && !sArgs.isEmpty()) {
+                    customOp.addSArgument(sArgs.toArray(new String[sArgs.size()]));
+                }
+
+                if(dArgs != null && !dArgs.isEmpty()) {
+                    customOp.addDArgument(dArgs.toArray(new DataType[dArgs.size()]));
+                }
+
+
+
+            }
+
+            return out.outputVariables();
+
+
+        } catch (InstantiationException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+
+
+
     }
 
 

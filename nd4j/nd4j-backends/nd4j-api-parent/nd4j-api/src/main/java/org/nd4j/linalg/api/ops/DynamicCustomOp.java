@@ -955,7 +955,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
          * @param iargs
          * @return
          */
-        public DynamicCustomOpsBuilder addIntegerArguments(List<Integer> iargs) {
+        public DynamicCustomOpsBuilder addIntegerArguments(List<Long> iargs) {
             if (numIArguments >= 0) {
                 if (iargs == null)
                     throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numIArguments + " integer arguments. Null was passed instead.");
@@ -1097,6 +1097,22 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         }
 
         /**
+         * This method takes arbitrary number of Integer arguments for op,
+         * Note that this ACCUMULATES arguments. You are able to call this method
+         * multiple times and it will add arguments to a list.
+         * PLEASE NOTE: this method does NOT validate values.
+         *
+         * @param bargs
+         * @return
+         */
+        public DynamicCustomOpsBuilder addBooleanArguments(List<Boolean> bargs) {
+            for (val in : bargs)
+                bArguments.add(in);
+
+            return this;
+        }
+
+        /**
          * This method takes arbitrary number of Double arguments for op,
          * Note that this ACCUMULATES arguments. You are able to call this method
          * multiple times and it will add arguments to a list.
@@ -1121,22 +1137,36 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
 
         /**
+         * This method takes arbitrary number of Double arguments for op,
+         * Note that this ACCUMULATES arguments. You are able to call this method
+         * multiple times and it will add arguments to a list.
+         * PLEASE NOTE: this method does NOT validate values.
+         *
+         * @return
+         */
+        public DynamicCustomOpsBuilder addFloatingPointArguments(List<Double> targs) {
+            if (numTArguments >= 0) {
+                if (targs == null)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numTArguments + " integer arguments. Null was passed instead.");
+
+                if (numTArguments > targs.size())
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numTArguments + " integer arguments, but " + targs.size() + " was passed to constructor");
+            }
+
+            for (val in : targs)
+                tArguments.add(in);
+
+            return this;
+        }
+
+
+        /**
          * Adds an oup
          *
          * @param shape
          * @return
          */
-        /*
-        public DynamicCustomOpsBuilder addOutputShape(int[] shape) {
-            this.outputShapes.add(ArrayUtil.toLongArray(shape));
-            return this;
-        }
 
-        public DynamicCustomOpsBuilder addOutputShape(long[] shape) {
-            this.outputShapes.add(shape);
-            return this;
-        }
-*/
 
         public DynamicCustomOpsBuilder addOutputShape(LongShapeDescriptor shape) {
             this.outputShapes.add(shape);
@@ -1146,9 +1176,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
         public DynamicCustomOp build() {
             // Eventually we probably will lift this restriction
-            //if (!inplaceCall && outputArguments.size() == 0)
-            //    throw new ND4JIllegalStateException("If operation is not-inplace, it must have outputs defined");
-
             val result = new DynamicCustomOp(opName);
             result.inputArguments = inputArguments;
             result.outputArguments = outputArguments;

@@ -8,45 +8,44 @@ Proposed by: Adam Gibson (20 Mar 2023)
 
 Discussed with: Paul Dubs
 
-Finalized by: Adam Gibson (2nd Feb 2023)
+Finalized by: Adam Gibson (24 Mar 2023)
 
 
 ## Context
 
-Due to having different apis,  samediff 
-and dl4j it can be hard to reproduce what a given graph 
-executes from one api to another. 
+It can be challenging to reproduce a specific graph execution between the different APIs, SameDiff and DL4J, as they both use the underlying
+libnd4j operations to execute code. By enabling verbose or debug mode in the op executioner,
+we can observe the executed operations.
 
-All of these use the underlying libnd4j ops to execute code.
-We can see what ops are being executed by enabling verbose/debug mode
-in the ope executioner.
+We often need to compare the execution of a graph between the two APIs. This is currently
+done by enabling verbose mode and observing the output. This is not ideal since it requires
+the user to manually compare the output of the two APIs.
 
 
 
 
 ## Proposal
+We can now save execution traces in a format that can be used to generate a SameDiff graph that emulates the executed steps.
+Once enabled, operation executions are collected in a vector. These executions only store metadata, such as input and output shapes and arguments for each operation. The executions are stored in a vector in sequence.
 
-Execution traces are now savable as a format and can be used to generate a samediff graph
-that emulates the steps executed.
 
-A user can enable this with:
+For example, if we have a graph with a convolution operation, we can trigger the scope in C++ to indicate that we are currently in
+a convolution operation.
+This allows us to track the execution of the convolution operation and its nested operations, such as the im2col operation.
+
+Using this vector of executions, we can reproduce a graph. To save the graph, use:
+
 ```java
-        NativeOpsHolder.getInstance().getDeviceNativeOps().toggleOpTrace(true);
-
+SameDiff sd = SameDiff.collectTrace();
+sd.save(new File("mygraph.fb"));
 ```
 
-Once enabled, op executions are collected in a vector. These executions
-purely save metadata including input and output shapes as well as arguments for each op.
-It's stored in a vector in order. 
 
-We can then use this vector of executions to reproduce a graph.
-A user can save a graph with 
+Once we are done, purge the trace to avoid memory leaks:
+
 ```java
-        NativeOpsHolder.getInstance().getDeviceNativeOps().saveOpTrace("path");
-
+Nd4j.purgeTrace();
 ```
-
-We use op scopes triggered in c++ to delineate when an op executed is part of a main parent op.
 
 
 ## Consequences

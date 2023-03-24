@@ -42,14 +42,13 @@ class SD_LIB_EXPORT DebugHelper {
  public:
   // cuda-specific debug functions
 #ifdef __CUDACC__
-  static SD_INLINE void checkErrorCode(cudaStream_t* stream, int opNum = 0) {
+  static SD_INLINE void checkErrorCode(cudaStream_t* stream, int opType = 0) {
     if (Environment::getInstance().isDebug()) {
       cudaError_t res = cudaStreamSynchronize(*stream);
 
       if (res != 0) {
-        // PRINT_FIRST("Kernel OpNum failed: [%i]\n", opNum);
         std::string op = "Kernel OpNum failed: [";
-        op += StringUtils::valueToString<int>(opNum);
+        op += StringUtils::valueToString<int>(opType);
         op += "]";
 
         throw std::runtime_error(op);

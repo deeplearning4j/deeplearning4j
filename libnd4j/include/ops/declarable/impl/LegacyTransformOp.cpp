@@ -30,7 +30,7 @@ LegacyTransformOp::LegacyTransformOp() : LegacyOp::LegacyOp(1) {
   // just a no-op
 }
 
-LegacyTransformOp::LegacyTransformOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
+LegacyTransformOp::LegacyTransformOp(int opType) : LegacyOp::LegacyOp(1, opType) {
   // just a no-op
 }
 
@@ -40,9 +40,9 @@ sd::Status LegacyTransformOp::validateAndExecute(Context &block) {
   auto input = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
-  int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
+  int opType = block.opType() < 0 ? this->_opNum : block.opType();
 
-  NativeOpExcutioner::execTransformSame(opNum, input->buffer(), input->shapeInfo(), z->buffer(), z->shapeInfo(),
+  NativeOpExcutioner::execTransformSame(opType, input->buffer(), input->shapeInfo(), z->buffer(), z->shapeInfo(),
                                         block.getTArguments()->data(), nullptr, nullptr);
 
   STORE_RESULT(*z);

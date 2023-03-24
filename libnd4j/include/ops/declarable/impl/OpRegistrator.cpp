@@ -162,8 +162,8 @@ void OpRegistrator::purgeOpExecs() {
   this->opexecTrace.clear();
 }
 
-std::vector<OpExecTrace *> OpRegistrator::execTrace() {
-  return this->opexecTrace;
+std::vector<OpExecTrace *>  * OpRegistrator::execTrace() {
+  return &(this->opexecTrace);
 }
 
 /**
@@ -199,7 +199,7 @@ void OpRegistrator::registerHelperLegacy(sd::ops::platforms::PlatformHelperLegac
 
   _uniqueHLegacy.emplace_back(op);
 
-  sd_debug("Adding legacy helper  for op prefix\"%s\" opNum: %d engine: [%i]\n", entry.prefix, entry.opNum,
+  sd_debug("Adding legacy helper  for op prefix\"%s\" opType: %d engine: [%i]\n", entry.prefix, entry.opType,
            entry.engine);
 
   _helpersHLegacy.emplace(entry, op);

@@ -270,7 +270,6 @@ void Graph::addNode(Node *node) {
   _built.store(false);
 
   if (node->opType() == OpType_LOGIC) {
-    // sd_debug("Adding LogicOp [%i]\n", node->opNum());
     // SCOPE
     if (node->opNum() == logic::Scope) {
       auto scope = new Scope(node->id(), node->getName() != nullptr ? node->getName()->c_str() : "");
@@ -445,7 +444,7 @@ void Graph::addNode(Node *node) {
 
         return;
       }
-    } /*else if (node->opType() == OpType_LOGIC && node->opNum() == 10) {
+    } /*else if (node->opType() == OpType_LOGIC && node->opType() == 10) {
         // Scopes are just being added. They won't be executed on their own anyway.
 
         int nLayer = _onion->size();

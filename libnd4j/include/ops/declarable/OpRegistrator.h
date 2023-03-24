@@ -114,10 +114,8 @@ class SD_LIB_EXPORT OpRegistrator {
   ~OpRegistrator();
 
   void purgeOpExecs();
-#ifndef __JAVACPP_HACK__
   void registerOpExec(OpExecTrace *opExecTrace);
-  std::vector<OpExecTrace *> execTrace();
-#endif
+  std::vector<OpExecTrace *> * execTrace();
 
   static OpRegistrator& getInstance();
 

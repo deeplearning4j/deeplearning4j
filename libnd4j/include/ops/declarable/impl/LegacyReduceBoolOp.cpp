@@ -33,7 +33,6 @@ LegacyReduceBoolOp::LegacyReduceBoolOp() : LegacyOp::LegacyOp(1) {
 }
 
 LegacyReduceBoolOp::LegacyReduceBoolOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
-  // this->_opNum = opNum;
 }
 
 LegacyOp* LegacyReduceBoolOp::clone() { return new LegacyReduceBoolOp(this->_opNum); }

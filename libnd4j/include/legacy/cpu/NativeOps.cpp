@@ -83,6 +83,47 @@ bool experimentalSupport = false;
 
 using namespace sd;
 
+SD_LIB_EXPORT int numInputs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return trace->inputShapeBuffers->size();
+}
+
+SD_LIB_EXPORT int numOutputs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return trace->outputShapeBuffers->size();
+}
+
+std::vector<bool> * bArgs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return &trace->bArgs;
+}
+
+std::vector<std::string> * sArgs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return (&trace->sArguments);
+}
+std::vector<double> * tArgs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return (&trace->tArgs);
+
+}
+std::vector<sd::LongType> * iArgs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return &(trace->iArgs);
+}
+std::vector<const sd::LongType *> *inputShapeBuffers(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return trace->inputShapeBuffers;
+}
+std::vector<const sd::LongType *> *outputShapeBuffers(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return trace->outputShapeBuffers;
+}
+char *opName(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return const_cast<char *>(trace->opName->c_str());
+}
+
 void setElementThreshold(int num) {
   if (num > 0) sd::Environment::getInstance().setElementwiseThreshold(num);
 }
@@ -137,20 +178,17 @@ static bool execHelperScalar(int opNum, OpaqueDataBuffer *dbX, const sd::LongTyp
 #endif
 
 void printOpTrace() {
-  auto execTrace = sd::ops::OpRegistrator::getInstance().execTrace();
+  auto execTrace = *sd::ops::OpRegistrator::getInstance().execTrace();
   for(int i = 0; i < execTrace.size(); i++) {
     auto curr = execTrace[i];
     if(curr->opName != nullptr) {
-      sd_printf("Op name: %s\n",curr->opName->c_str());
-    } else {
-      sd_printf("Op number: %d\n",curr->opNum);
+      sd_printf("Op name: %s\n", curr->opName->c_str());
     }
-
     sd_printf(" Input buffers:\n",0);
     auto currInputShapeBuffers = *(curr->inputShapeBuffers);
     for(int j = 0; j < currInputShapeBuffers.size(); j++) {
       auto buff = currInputShapeBuffers[j];
-        shape::printShapeInfo(buff);
+      shape::printShapeInfo(buff);
       sd_printf("\n",0);
     }
 
@@ -159,13 +197,17 @@ void printOpTrace() {
     //with scope and references being deallocated.
     auto currOutputShapeBuffers = *(curr->outputShapeBuffers);
     for(int j = 0; j < curr->outputShapeBuffers->size(); j++) {
-        shape::printShapeInfo(currOutputShapeBuffers[j]);
+      shape::printShapeInfo(currOutputShapeBuffers[j]);
       sd_printf("\n",0);
     }
 
 
   }
 
+}
+
+std::vector<ExecTrace*> * listOpTraces() {
+  return sd::ops::OpRegistrator::getInstance().execTrace();
 }
 
 void toggleOpTrace(bool opTrace) {

@@ -31,8 +31,7 @@ LegacyReduceOp::LegacyReduceOp() : LegacyOp::LegacyOp(1) {
   //
 }
 
-LegacyReduceOp::LegacyReduceOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
-  // this->_opNum = opNum;
+LegacyReduceOp::LegacyReduceOp(int opType) : LegacyOp::LegacyOp(1, opType) {
 }
 
 LegacyOp *LegacyReduceOp::clone() { return new LegacyReduceOp(this->_opNum); }
@@ -40,8 +39,8 @@ LegacyOp *LegacyReduceOp::clone() { return new LegacyReduceOp(this->_opNum); }
 sd::Status LegacyReduceOp::validateAndExecute(Context &block) {
   auto x = INPUT_VARIABLE(0);
 
-  int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
-  sd_debug("Executing LegacyReduceOp: [%i]\n", opNum);
+  int opType = block.opType() < 0 ? this->_opNum : block.opType();
+  sd_debug("Executing LegacyReduceOp: [%i]\n", opType);
 
   bool allAxes = false;
 
@@ -53,7 +52,7 @@ sd::Status LegacyReduceOp::validateAndExecute(Context &block) {
     if ((block.getIArguments()->size() == 0) || (block.getIArguments()->size() == 1 && INT_ARG(0) == SD_MAX_INT) ||
         allAxes) {
       // scalar
-      NativeOpExcutioner::execReduceFloatScalar(opNum, x->buffer(), x->shapeInfo(), block.getTArguments()->data(),
+      NativeOpExcutioner::execReduceFloatScalar(opType, x->buffer(), x->shapeInfo(), block.getTArguments()->data(),
                                                 z->buffer(), z->shapeInfo());
     } else {
       // TAD
@@ -70,7 +69,7 @@ sd::Status LegacyReduceOp::validateAndExecute(Context &block) {
       tad.createTadOnlyShapeInfo();
       tad.createOffsets();
 
-      NativeOpExcutioner::execReduceFloat(opNum, x->buffer(), x->shapeInfo(), block.getTArguments()->data(),
+      NativeOpExcutioner::execReduceFloat(opType, x->buffer(), x->shapeInfo(), block.getTArguments()->data(),
                                           z->buffer(), z->shapeInfo(), dims.data(), (int)dims.size(),
                                           tad.tadOnlyShapeInfo, tad.tadOffsets);
     }
@@ -96,7 +95,7 @@ sd::Status LegacyReduceOp::validateAndExecute(Context &block) {
 
 
       // scalar
-      NativeOpExcutioner::execReduceFloatScalar(opNum, b, s, e, z->buffer(), z->shapeInfo());
+      NativeOpExcutioner::execReduceFloatScalar(opType, b, s, e, z->buffer(), z->shapeInfo());
     } else {
       // TAD
       if (indices->lengthOf() > 1) std::sort(axis.begin(), axis.end());
@@ -110,7 +109,7 @@ sd::Status LegacyReduceOp::validateAndExecute(Context &block) {
       auto newShape = ShapeUtils::evalReduceShapeInfo(x->ordering(), axis, *x);
       auto z = new NDArray(newShape, x->getWorkspace());
 
-      NativeOpExcutioner::execReduceFloat(opNum, x->buffer(), x->shapeInfo(), block.getTArguments()->data(),
+      NativeOpExcutioner::execReduceFloat(opType, x->buffer(), x->shapeInfo(), block.getTArguments()->data(),
                                           z->buffer(), z->shapeInfo(), axis.data(), (int)axis.size(),
                                           tad.tadOnlyShapeInfo, tad.tadOffsets);
 
