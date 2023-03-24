@@ -194,15 +194,7 @@ public class ImageTransformProcess {
             return this;
         }
 
-        public Builder filterImageTransform(String filters, int width, int height) {
-            transformList.add(new FilterImageTransform(filters, width, height));
-            return this;
-        }
 
-        public Builder filterImageTransform(String filters, int width, int height, int channels) {
-            transformList.add(new FilterImageTransform(filters, width, height, channels));
-            return this;
-        }
 
         public Builder flipImageTransform(int flipMode) {
             transformList.add(new FlipImageTransform(flipMode));
