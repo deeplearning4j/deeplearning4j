@@ -73,7 +73,7 @@ public class KerasOptimizerUtils {
                 double beta1 = (double) optimizerParameters.get(BETA_1);
                 double beta2 = (double) optimizerParameters.get(BETA_2);
                 double epsilon = (double) optimizerParameters.get(EPSILON);
-                double decay = (double) (optimizerParameters.containsKey(DECAY) ? optimizerParameters.get(DECAY) : 1e-3);
+                double decay = (double) (optimizerParameters.containsKey(DECAY) ? optimizerParameters.get(DECAY) : Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY);
 
                 dl4jOptimizer = new Adam.Builder()
                         .beta1(beta1).beta2(beta2)
