@@ -42,6 +42,7 @@
 
 using namespace sd;
 #include <loops/special_kernels.h>
+#include <ops/declarable/OpRegistrator.h>
 
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[64];
@@ -68,12 +69,45 @@ void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long 
 }
 
 
-void toggleOpTrace(bool opTrace) {
-  sd::ops::OpRegistrator::getInstance().toggleTraceOps(opTrace);
+SD_LIB_EXPORT int numInputs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return trace->inputShapeBuffers->size();
 }
 
-void purgeOpTrace() {
-  sd::ops::OpRegistrator::getInstance().purgeOpExecs();
+SD_LIB_EXPORT int numOutputs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return trace->outputShapeBuffers->size();
+}
+
+std::vector<bool> * bArgs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return &trace->bArgs;
+}
+
+std::vector<std::string> * sArgs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return (&trace->sArguments);
+}
+std::vector<double> * tArgs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return (&trace->tArgs);
+
+}
+std::vector<sd::LongType> * iArgs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return &(trace->iArgs);
+}
+std::vector<const sd::LongType *> *inputShapeBuffers(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return trace->inputShapeBuffers;
+}
+std::vector<const sd::LongType *> *outputShapeBuffers(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return trace->outputShapeBuffers;
+}
+char *opName(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return const_cast<char *>(trace->opName->c_str());
 }
 
 // this method just does type conversion in fancy way
@@ -1819,7 +1853,7 @@ void execScalarTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
 #ifdef SD_EXPERIMENTAL_ENABLED
     BUILD_PAIRWISE_SELECTOR(
         xType, yType, zType, functions::scalar::ScalarTransform,
-        ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams,
+        ::executeCudaAlongDimension(launchDims, stream, opType, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams,
                                     dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
         SD_COMMON_TYPES, SD_COMMON_TYPES);
 #else
