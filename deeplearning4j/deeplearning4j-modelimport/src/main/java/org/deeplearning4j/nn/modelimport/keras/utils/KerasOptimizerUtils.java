@@ -63,8 +63,8 @@ public class KerasOptimizerUtils {
         IUpdater dl4jOptimizer;
 
 
-        switch (optimizerName) {
-            case "Adam": {
+        switch (optimizerName.toLowerCase()) {
+            case "adam": {
                 double lr = (double) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2));
                 double beta1 = (double) optimizerParameters.get(BETA_1);
                 double beta2 = (double) optimizerParameters.get(BETA_2);
@@ -78,7 +78,7 @@ public class KerasOptimizerUtils {
                         .build();
                 break;
             }
-            case "Adadelta": {
+            case "adadelta": {
                 double rho = (double) optimizerParameters.get(RHO);
                 double epsilon = (double) optimizerParameters.get(EPSILON);
                 // double decay = (double) optimizerParameters.get(DECAY); No decay in DL4J Adadelta
@@ -88,7 +88,7 @@ public class KerasOptimizerUtils {
                         .build();
                 break;
             }
-            case "Adgrad": {
+            case "adagrad": {
                 double lr = (double) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2));
                 double epsilon = (double) optimizerParameters.get(EPSILON);
                 double decay = (double) optimizerParameters.get(DECAY);
@@ -99,7 +99,7 @@ public class KerasOptimizerUtils {
                         .build();
                 break;
             }
-            case "Adamax": {
+            case "adamax": {
                 double lr = (double) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2));
                 double beta1 = (double) optimizerParameters.get(BETA_1);
                 double beta2 = (double) optimizerParameters.get(BETA_2);
@@ -108,7 +108,7 @@ public class KerasOptimizerUtils {
                 dl4jOptimizer = new AdaMax(lr, beta1, beta2, epsilon);
                 break;
             }
-            case "Nadam": {
+            case "nadam": {
                 double lr = (double) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2));
                 double beta1 = (double) optimizerParameters.get(BETA_1);
                 double beta2 = (double) optimizerParameters.get(BETA_2);
@@ -123,7 +123,7 @@ public class KerasOptimizerUtils {
                         .build();
                 break;
             }
-            case "SGD": {
+            case "sgd": {
                 double lr = (double) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2));
                 double momentum = (double) (optimizerParameters.containsKey(EPSILON) ? optimizerParameters.get(EPSILON) : optimizerParameters.get(MOMENTUM));
 
@@ -135,7 +135,7 @@ public class KerasOptimizerUtils {
                         .build();
                 break;
             }
-            case "RMSprop": {
+            case "rmsprop": {
                 double lr = (double) (optimizerParameters.containsKey(LR) ? optimizerParameters.get(LR) : optimizerParameters.get(LR2));
                 double rho = (double) optimizerParameters.get(RHO);
                 double epsilon = (double) optimizerParameters.get(EPSILON);
