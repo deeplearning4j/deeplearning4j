@@ -135,9 +135,11 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().enableVerboseMode(true);
         sd.calculateGradients(Collections.emptyMap(), Collections.singleton("input"));
         SameDiff traced  = SameDiff.collectTrace();
+        assertTrue(traced.ops().length > 0);
         System.out.println(traced.summary());
         Nd4j.purgeTrace();
         Nd4j.toggleTrace(false);
+        assertTrue(NativeOpsHolder.getInstance().getDeviceNativeOps().listOpTraces() == null);
     }
 
     @ParameterizedTest
