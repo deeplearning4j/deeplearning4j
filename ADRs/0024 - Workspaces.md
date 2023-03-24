@@ -1,4 +1,4 @@
-# UDFs
+# Workspaces
 
 ## Status
 
@@ -17,7 +17,29 @@ To improve performance and manage memory usage, we can take advantage of the fac
 Since most workloads repeatedly allocate the same ndarrays, we create a memory abstraction known as "workspaces" to avoid redundant memory allocation.
 This approach helps to optimize memory usage and enhance overall performance.
 
-## Proposal 
+## Proposal
+
+This architecture decision record discusses the implementation of the workspaces concept using ringbuffers within a
+namespace-like abstraction and Java's try/with resources for memory allocation and garbage collection. 
+Workspaces require a configuration with several parameters for controlling memory allocation. (See the description section for more details.)
+
+A MemoryManager is used to allocate an INDArray, and an operation (element-wise multiplication) is performed. 
+The workspace and INDArray are automatically closed and released when the try blocks are exited.
+
+The workspace tracks different types of memory, including:
+1. allocated memory
+2. external memory
+3. unreferenced memory
+4. workspace memory
+5. gradient memory. 
+
+We reduce memory usage by reusing the ring buffers described above. The key trick in reducing allocations is to reuse the same memory for the same operations
+learned through the learning policy. This is done by using a ring buffer to store the memory for each operation.
+In doing this, the user can reuse existing memory for training/inference increasing performance and reducing memory usage.
+
+
+
+## Description 
 
 To create a named scope that reuses memory instead of allocating it again, you can use ringbuffers within a namespace-like abstraction, 
 and combine it with java's try/with resources to indicate a scope of memory as well as to automatically garbage collect relevant memory.
@@ -122,7 +144,7 @@ Not closing the workspace properly: If a workspace is not properly closed after 
 This can happen when a user forgets to close the workspace or when an exception occurs and the workspace is not closed in the catch block.
 
 Using a workspace for too long: If a workspace is used for too long, it can cause a memory leak. 
-\This can happen if the workspace is reused too many times or if it is not cleared after each use.
+This can happen if the workspace is reused too many times or if it is not cleared after each use.
 
 Holding onto references: If references to objects created within a workspace are held onto for too long, it can cause a memory leak. 
 This can happen if objects are not released from the workspace after they are no longer needed.
