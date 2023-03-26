@@ -303,7 +303,7 @@ void AttentionHelper::dotProductAttentionBpHelper(sd::NDArray *query, sd::NDArra
   //begin dldw
   NDArray dLdw(weights.shapeInfo());
 
-  matMulBp.execute({&weights,values,eps},{&dLdw,dLdv},{},{});
+  matMulBp.execute({&weights,values,eps},{&dLdw,dLdv},{},{0,0,0});
 
   NDArray dLds(preSoftmax.shapeInfo());
   sd::ops::softmax_bp softmax_bp;
@@ -326,7 +326,7 @@ void AttentionHelper::dotProductAttentionBpHelper(sd::NDArray *query, sd::NDArra
 
   //inputs: keys,queries,dlds
   //outputs: dldk, dldq
-  matMulBp.execute({key,query,&dLds},{dLdk,dLdq},{},{0,1,1});
+  matMulBp.execute({query,key,&dLds},{dLdq,dLdk},{},{0,1,0});
 
 
 
