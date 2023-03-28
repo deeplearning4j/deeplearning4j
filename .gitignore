@@ -67,6 +67,7 @@ nd4j/samediff-import/samediff-import-onnx/*.txt
 nd4j/samediff-import/samediff-import-onnx/*.pbtxt
 nd4j/samediff-import/samediff-import-tensorflow/*.txt
 nd4j/samediff-import/samediff-import-tensorflow/*.pbtxt
+nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/src/main/java/org/nd4j/linalg/cpu/nativecpu/bindings/Nd4jCpu.java
 *.pom.xml.tmp
 libnd4j/tests_cpu/surefire-reports
 
