@@ -22,6 +22,8 @@
 #include <array/NDArrayFactory.h>
 #include <ops/declarable/LegacyScalarBoolOp.h>
 
+#include <ops/declarable/OpRegistrator.h>
+
 namespace sd {
 namespace ops {
 LegacyScalarBoolOp::LegacyScalarBoolOp() : LegacyOp::LegacyOp(1) {
@@ -86,6 +88,7 @@ sd::Status LegacyScalarBoolOp::validateAndExecute(Context &block) {
   }
   manager.synchronize();
   STORE_RESULT(*z);
+  traceExecIfNeeded(block);
 
   return sd::Status::OK;
 }

@@ -47,8 +47,8 @@ int BitwiseUtils::valueBit(int holder) {
   return -1;
 }
 
-std::vector<int> BitwiseUtils::valueBits(int holder) {
-  std::vector<int> bits;
+std::vector<sd::LongType> BitwiseUtils::valueBits(int holder) {
+  std::vector<sd::LongType> bits;
   if (holder == 0) {
     for (int e = 0; e < 32; e++) bits.emplace_back(0);
 

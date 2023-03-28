@@ -63,7 +63,7 @@ void SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongTyp
     z[0] = execScalar<OpType>(x, xEws, length, extraParams);
   } else {
     auto startingValue = OpType::startingValue(x);
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
     const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
     int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
     X intermediate[64];
@@ -102,7 +102,7 @@ X SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongType *
     return execScalar<OpType>(x, xEws, length, extraParams);
   } else {
     auto startingValue = OpType::startingValue(x);
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
     for (sd::LongType i = 0; i < length; i++)
@@ -170,7 +170,7 @@ template <typename X>
 template <typename OpType>
 void SD_HOST ReduceSameFunction<X>::exec(sd::memory::Workspace *workspace, const void *vx,
                                          const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                         const sd::LongType *zShapeInfo, const int *dims) {
+                                         const sd::LongType *zShapeInfo, const long long int *dims) {
   const X *x = reinterpret_cast<const X *>(vx);
   X *z = reinterpret_cast<X *>(vz);
   X *extraParams = reinterpret_cast<X *>(vextraParams);
@@ -192,7 +192,7 @@ void SD_HOST ReduceSameFunction<X>::exec(sd::memory::Workspace *workspace, const
   }
 
   if (OpType::requiresSpecialAccumulation) {
-    OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, const_cast<int *>(dims) + zRank, xRank - zRank,
+    OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, const_cast<sd::LongType *>(dims) + zRank, xRank - zRank,
                         nullptr, nullptr);
     return;
   }
@@ -207,9 +207,9 @@ void SD_HOST ReduceSameFunction<X>::exec(sd::memory::Workspace *workspace, const
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
-void ReduceSameFunction<X>::exec(const int opNum, sd::memory::Workspace *workspace, const void *vx,
+void ReduceSameFunction<X>::exec(int opNum, sd::memory::Workspace *workspace, const void *vx,
                                  const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                 const sd::LongType *zShapeInfo, const int *dims) {
+                                 const sd::LongType *zShapeInfo, const long long int *dims) {
   DISPATCH_BY_OPNUM_T(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_SAME_OPS);
 }
 

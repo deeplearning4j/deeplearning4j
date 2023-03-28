@@ -33,7 +33,7 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma,
-                       const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
+                       const NDArray* beta, NDArray* output, const std::vector<LongType>& axes, const double epsilon) {
   // formula: output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
 
   const T* x = input->bufferAsT<T>();
@@ -55,14 +55,14 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
   const sd::LongType lenSmall = mean->lengthOf();
 
   const sd::LongType steps = lenBig / lenSmall;
-  std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), axes);
+  std::vector<sd::LongType> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), axes);
 
   OmpLaunchHelper info(lenBig, lenSmall);
 
   auto func = PRAGMA_THREADS_DO {
     sd::LongType* xOffsets = new sd::LongType[steps];
     sd::LongType* zOffsets = xzSameOffset ? xOffsets : new sd::LongType[steps];
-    int* auxBuff = new int[2 * input->rankOf()];
+    sd::LongType * auxBuff = new sd::LongType [2 * input->rankOf()];
 
     for (sd::LongType j = 0; j < lenSmall; ++j) {
       const bool isOwner = (j < info._numThreads) ? thread_id == j : thread_id == (j % info._numThreads);
@@ -130,7 +130,7 @@ static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray
     paramSameOffset &= shape::haveSameShapeAndStrides(mean->shapeInfo(), beta->shapeInfo());
 
   auto func = PRAGMA_THREADS_FOR {
-    int xzCoords[SD_MAX_RANK], minCoords[SD_MAX_RANK];
+    sd::LongType xzCoords[SD_MAX_RANK], minCoords[SD_MAX_RANK];
 
     for (sd::Unsigned i = 0, j = 0; i < xRank; ++i)
       if (j < numAxes && i != axes[j])
@@ -173,7 +173,7 @@ static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray
 
 //////////////////////////////////////////////////////////////////////////
 void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma,
-               const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
+               const NDArray* beta, NDArray* output, const std::vector<LongType>& axes, const double epsilon) {
   // batchnorm2_ is still slower ?
   BUILD_SINGLE_SELECTOR(input->dataType(), batchnorm_, (input, mean, variance, gamma, beta, output, axes, epsilon),
                         SD_FLOAT_TYPES);
@@ -181,7 +181,7 @@ void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* varianc
 
 BUILD_SINGLE_TEMPLATE(template void batchnorm_,
                       (const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma,
-                       const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon),
+                       const NDArray* beta, NDArray* output, const std::vector<sd::LongType>& axes, const double epsilon),
                       SD_FLOAT_TYPES);
 
 }  // namespace helpers

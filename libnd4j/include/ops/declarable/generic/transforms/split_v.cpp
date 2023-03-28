@@ -42,7 +42,7 @@ CUSTOM_OP_IMPL(split_v, 2, -1, false, 0, -2) {
 
   if (axis < 0) axis += input->rankOf();
 
-  std::vector<int> dims = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
+  std::vector<sd::LongType> dims = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
 
   int pos = 0;
   std::vector<sd::LongType> indices(2 * input->rankOf());

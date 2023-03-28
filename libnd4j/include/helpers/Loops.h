@@ -41,51 +41,51 @@ class SD_LIB_HIDDEN ReductionLoops {
  public:
   template <typename OpType>
   static SD_INLINE void loopReduce(sd::memory::Workspace* workspace, const X* x, const sd::LongType* xShapeInfo, Z* z,
-                                   const sd::LongType* zShapeInfo, const int* dims, E* extraParams);
+                                   const sd::LongType* zShapeInfo, const LongType* dims, E* extraParams);
 };
 
 template <typename X, typename Z>
 class SD_LIB_HIDDEN ReductionFloatLoops : public ReductionLoops<X, Z, Z> {
  public:
   static void wrapper(int opNum, sd::memory::Workspace* workspace, const X* x, const sd::LongType* xShapeInfo, Z* z,
-                      const sd::LongType* zShapeInfo, const int* dims, Z* extraParams);
+                      const sd::LongType* zShapeInfo, const LongType* dims, Z* extraParams);
 
   template <typename OpType>
   static void innerloopReduce(sd::memory::Workspace* workspace, const X* x, const sd::LongType* xShapeInfo, Z* z,
-                              const sd::LongType* zShapeInfo, const int* dims, Z* extraParams);
+                              const sd::LongType* zShapeInfo, const LongType* dims, Z* extraParams);
 };
 
 template <typename X, typename Z>
 class SD_LIB_HIDDEN ReductionBoolLoops : public ReductionLoops<X, Z, X> {
  public:
   static void wrapper(int opNum, sd::memory::Workspace* workspace, const X* x, const sd::LongType* xShapeInfo, Z* z,
-                      const sd::LongType* zShapeInfo, const int* dims, X* extraParams);
+                      const sd::LongType* zShapeInfo, const LongType* dims, X* extraParams);
 
   template <typename OpType>
   static void innerloopReduce(sd::memory::Workspace* workspace, const X* x, const sd::LongType* xShapeInfo, Z* z,
-                              const sd::LongType* zShapeInfo, const int* dims, X* extraParams);
+                              const sd::LongType* zShapeInfo, const LongType* dims, X* extraParams);
 };
 
 template <typename X, typename Z>
 class SD_LIB_HIDDEN ReductionLongLoops : public ReductionLoops<X, Z, X> {
  public:
   static void wrapper(int opNum, sd::memory::Workspace* workspace, const X* x, const sd::LongType* xShapeInfo, Z* z,
-                      const sd::LongType* zShapeInfo, const int* dims, X* extraParams);
+                      const sd::LongType* zShapeInfo, const LongType* dims, X* extraParams);
 
   template <typename OpType>
   static void innerloopReduce(sd::memory::Workspace* workspace, const X* x, const sd::LongType* xShapeInfo, Z* z,
-                              const sd::LongType* zShapeInfo, const int* dims, X* extraParams);
+                              const sd::LongType* zShapeInfo, const LongType* dims, X* extraParams);
 };
 
 template <typename X>
 class SD_LIB_HIDDEN ReductionSameLoops : public ReductionLoops<X, X, X> {
  public:
   static void wrapper(int opNum, sd::memory::Workspace* workspace, const X* x, const sd::LongType* xShapeInfo, X* z,
-                      const sd::LongType* zShapeInfo, const int* dims, X* extraParams);
+                      const sd::LongType* zShapeInfo, const LongType* dims, X* extraParams);
 
   template <typename OpType>
   static void innerloopReduce(sd::memory::Workspace* workspace, const X* x, const sd::LongType* xShapeInfo, X* z,
-                              const sd::LongType* zShapeInfo, const int* dims, X* extraParams);
+                              const sd::LongType* zShapeInfo, const LongType* dims, X* extraParams);
 };
 
 template <typename X, typename Z>
@@ -114,7 +114,8 @@ class SD_LIB_HIDDEN Reduction3Loops {
  public:
   template <typename OpType>
   static SD_INLINE void loopReduce3(const X* x, const sd::LongType* xShapeInfo, const X* y,
-                                    const sd::LongType* yShapeInfo, Z* z, const sd::LongType* zShapeInfo, int* dims,
+                                    const sd::LongType* yShapeInfo, Z* z, const sd::LongType* zShapeInfo,
+                                    LongType* dims,
                                     int dimsLen, Z* extraParams, int64_t start, int64_t stop);
 
   template <typename OpType>
@@ -125,7 +126,7 @@ class SD_LIB_HIDDEN Reduction3Loops {
                                        Z* extraParams, int64_t start, int64_t stop);
 
   static void wrapper(int opNum, const X* x, const sd::LongType* xShapeInfo, const X* y, const sd::LongType* yShapeInfo,
-                      Z* z, const sd::LongType* zShapeInfo, int* dims, int dimsLen, Z* extraParams, int64_t start,
+                      Z* z, const sd::LongType* zShapeInfo, LongType* dims, int dimsLen, Z* extraParams, int64_t start,
                       int64_t stop);
 
   static void wrapperAll(int opNum, const X* x, const sd::LongType* xShapeInfo, const X* y,
@@ -136,7 +137,7 @@ class SD_LIB_HIDDEN Reduction3Loops {
 
   template <typename OpType>
   static void innerloopReduce3(const X* x, const sd::LongType* xShapeInfo, const X* y, const sd::LongType* yShapeInfo,
-                               Z* z, const sd::LongType* zShapeInfo, int* dims, int dimsLen, Z* extraParams,
+                               Z* z, const sd::LongType* zShapeInfo, LongType* dims, int dimsLen, Z* extraParams,
                                int64_t start, int64_t stop);
 
   template <typename OpType>
@@ -150,7 +151,7 @@ class SD_LIB_HIDDEN Reduction3Loops {
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
 static void reduceExec21(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
-                         const int* dims, E* extraParams) {
+                         const LongType* dims, E* extraParams) {
   const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, dims[0]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, dims[0]);
   const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, 0);
@@ -182,7 +183,7 @@ static void reduceExec21(const X* x, const sd::LongType* xShapeInfo, Z* z, const
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
 static void reduceExec31(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
-                         const int* dims, E* extraParams) {
+                         const LongType* dims, E* extraParams) {
   const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, dims[0]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, dims[0]);
   const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, 0);
@@ -225,7 +226,7 @@ static void reduceExec31(const X* x, const sd::LongType* xShapeInfo, Z* z, const
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceExec32(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
-                                const int* dims, E* extraParams) {
+                                const LongType* dims, E* extraParams) {
   const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
   const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 1);
@@ -263,7 +264,7 @@ SD_LIB_HIDDEN void reduceExec32(const X* x, const sd::LongType* xShapeInfo, Z* z
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceExec41(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
-                                const int* dims, E* extraParams) {
+                                const LongType* dims, E* extraParams) {
   const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, dims[0]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, dims[0]);
   const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, 0);
@@ -317,7 +318,7 @@ SD_LIB_HIDDEN void reduceExec41(const X* x, const sd::LongType* xShapeInfo, Z* z
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceExec42(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
-                                const int* dims, E* extraParams) {
+                                const LongType* dims, E* extraParams) {
   const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
   const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 1);
@@ -366,7 +367,7 @@ SD_LIB_HIDDEN void reduceExec42(const X* x, const sd::LongType* xShapeInfo, Z* z
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceExec43(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
-                                const int* dims, E* extraParams) {
+                                const LongType* dims, E* extraParams) {
   const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[2]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[2]);
   const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 2);
@@ -410,7 +411,7 @@ SD_LIB_HIDDEN void reduceExec43(const X* x, const sd::LongType* xShapeInfo, Z* z
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceExec51(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
-                                const int* dims, E* extraParams) {
+                                const LongType* dims, E* extraParams) {
   const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, dims[0]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, dims[0]);
   const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, 0);
@@ -482,7 +483,7 @@ SD_LIB_HIDDEN void reduceExec51(const X* x, const sd::LongType* xShapeInfo, Z* z
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceExec52(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
-                                const int* dims, E* extraParams) {
+                                const LongType* dims, E* extraParams) {
   const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
   const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 1);
@@ -543,7 +544,7 @@ SD_LIB_HIDDEN void reduceExec52(const X* x, const sd::LongType* xShapeInfo, Z* z
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceExec53(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
-                                const int* dims, E* extraParams) {
+                                const LongType* dims, E* extraParams) {
   const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[2]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[2]);
   const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 2);
@@ -598,7 +599,7 @@ SD_LIB_HIDDEN void reduceExec53(const X* x, const sd::LongType* xShapeInfo, Z* z
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceExec54(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
-                                const int* dims, E* extraParams) {
+                                const LongType* dims, E* extraParams) {
   const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[3]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[3]);
   const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 3);
@@ -648,7 +649,7 @@ SD_LIB_HIDDEN void reduceExec54(const X* x, const sd::LongType* xShapeInfo, Z* z
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceDefault(sd::memory::Workspace* workspace, const X* x, const sd::LongType* xShapeInfo, Z* z,
-                                 const sd::LongType* zShapeInfo, const int* dims, E* extraParams) {
+                                 const sd::LongType* zShapeInfo, const LongType* dims, E* extraParams) {
   const int zRank = shape::rank(zShapeInfo);
   const int tadRank = shape::rank(xShapeInfo) - zRank;
 
@@ -703,7 +704,7 @@ template <typename X, typename Z, typename E>
 template <typename OpType>
 SD_LIB_HIDDEN void sd::ReductionLoops<X, Z, E>::loopReduce(sd::memory::Workspace* workspace, const X* x,
                                                            const sd::LongType* xShapeInfo, Z* z,
-                                                           const sd::LongType* zShapeInfo, const int* dims,
+                                                           const sd::LongType* zShapeInfo, const LongType* dims,
                                                            E* extraParams) {
   const int xRank = shape::rank(xShapeInfo);
   const int zRank = shape::rank(zShapeInfo);
@@ -794,9 +795,9 @@ SD_LIB_HIDDEN void sd::TransformLoops<X, Z, E>::loopTransform(const X* x, const 
       //*********************************************//
     case LoopKind::Z_EWSNONZERO: {
 
-      const sd::Unsigned zEws = shape::elementWiseStride(zShapeInfo);
-      sd::Unsigned castXShapeInfo[SD_MAX_RANK];
-      const bool canCastX = sd::DataTypeUtils::castShapeInfo<sd::Unsigned>(xShapeInfo, castXShapeInfo);
+      const sd::LongType zEws = shape::elementWiseStride(zShapeInfo);
+      sd::LongType castXShapeInfo[SD_MAX_RANK];
+      const bool canCastX = sd::DataTypeUtils::castShapeInfo<sd::LongType>(xShapeInfo, castXShapeInfo);
 
       auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
       int64_t start = span.startX(), stop = span.stopX();
@@ -919,8 +920,8 @@ SD_LIB_HIDDEN void sd::TransformLoops<X, Z, E>::loopTransform(const X* x, const 
       //*********************************************//
     default: {
 
-      sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
-      sd::Unsigned zShapeInfoCast[SD_MAX_RANK];
+      sd::LongType xShapeInfoCast[SD_MAX_RANK];
+      sd::LongType zShapeInfoCast[SD_MAX_RANK];
 
       bool canCastX = DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
       bool canCastZ = DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
@@ -943,7 +944,7 @@ template <typename X, typename Z>
 template <typename OpType>
 void sd::Reduction3Loops<X, Z>::loopReduce3(const X* x, const sd::LongType* xShapeInfo, const X* y,
                                             const sd::LongType* yShapeInfo, Z* z, const sd::LongType* zShapeInfo,
-                                            int* dims, int dimsLen, Z* extraParameters, int64_t start, int64_t stop) {
+                                            LongType* dims, int dimsLen, Z* extraParameters, int64_t start, int64_t stop) {
   // both tads have same shape, however strides and ews may differ
 
   Z param0(OpType::startingValue(x)), param1(OpType::startingValue(x)),
@@ -1161,8 +1162,8 @@ void sd::Reduction3Loops<X, Z>::loopReduce3(const X* x, const sd::LongType* xSha
 
       //*********************************************//
     default: {
-      sd::Unsigned castXTadShapeInfo[SD_MAX_RANK];
-      const bool canCastXTad = sd::DataTypeUtils::castShapeInfo<sd::Unsigned>(xTadShapeInfo, castXTadShapeInfo);
+      sd::LongType castXTadShapeInfo[SD_MAX_RANK];
+      const bool canCastXTad = sd::DataTypeUtils::castShapeInfo<sd::LongType>(xTadShapeInfo, castXTadShapeInfo);
 
       if (shape::haveSameShapeAndStrides(xTadShapeInfo, yTadShapeInfo)) {
         Z extraParams[3];
@@ -1183,8 +1184,8 @@ void sd::Reduction3Loops<X, Z>::loopReduce3(const X* x, const sd::LongType* xSha
           z[i * zEws] = OpType::postProcess(s, tadLen, extraParams);
         };
       } else {
-        sd::Unsigned castYTadShapeInfo[SD_MAX_RANK];
-        const bool canCastYTad = sd::DataTypeUtils::castShapeInfo<sd::Unsigned>(yTadShapeInfo, castYTadShapeInfo);
+        sd::LongType castYTadShapeInfo[SD_MAX_RANK];
+        const bool canCastYTad = sd::DataTypeUtils::castShapeInfo<sd::LongType>(yTadShapeInfo, castYTadShapeInfo);
 
         Z extraParams[3];
         for (auto i = start; i < stop; i++) {
@@ -1432,8 +1433,8 @@ void sd::Reduction3Loops<X, Z>::loopReduce3All(const X* x, const sd::LongType* x
 
       //*********************************************//
     default: {
-      sd::Unsigned castXTadShapeInfo[SD_MAX_RANK];
-      const bool canCastXTad = sd::DataTypeUtils::castShapeInfo<sd::Unsigned>(xTadShapeInfo, castXTadShapeInfo);
+      sd::LongType castXTadShapeInfo[SD_MAX_RANK];
+      const bool canCastXTad = sd::DataTypeUtils::castShapeInfo<sd::LongType>(xTadShapeInfo, castXTadShapeInfo);
 
       if (shape::haveSameShapeAndStrides(xTadShapeInfo, yTadShapeInfo)) {
         Z extraParams[3];
@@ -1456,8 +1457,8 @@ void sd::Reduction3Loops<X, Z>::loopReduce3All(const X* x, const sd::LongType* x
           }
         };
       } else {
-        sd::Unsigned castYTadShapeInfo[SD_MAX_RANK];
-        const bool canCastYTad = sd::DataTypeUtils::castShapeInfo<sd::Unsigned>(yTadShapeInfo, castYTadShapeInfo);
+        sd::LongType castYTadShapeInfo[SD_MAX_RANK];
+        const bool canCastYTad = sd::DataTypeUtils::castShapeInfo<sd::LongType>(yTadShapeInfo, castYTadShapeInfo);
 
         Z extraParams[3];
         for (sd::LongType ix = 0; ix < numXTads; ix++) {

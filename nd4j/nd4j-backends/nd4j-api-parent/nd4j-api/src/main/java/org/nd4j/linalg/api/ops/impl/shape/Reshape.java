@@ -27,6 +27,7 @@ import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -61,6 +62,18 @@ public class Reshape extends DynamicCustomOp {
         addIArgument(shape);
     }
 
+    public Reshape(SameDiff sameDiff, SDVariable i_v, long[] shape,char c) {
+        super(null, sameDiff, new SDVariable[]{i_v});
+        Preconditions.checkState(c == 'c' || c == 'f', "Invalid order: must be 'c' or 'f', got %s", c);
+        this.shape = shape;
+        //c ordering: see (char) 99 for c ordering and (char) 'f' is 102
+        //note it has to be negative for the long array case only
+        //to flag the difference between an ordering being specified
+        //and a dimension.
+        addIArgument(-c);
+        addIArgument(shape);
+    }
+
     public Reshape(SameDiff sameDiff, SDVariable i_v, SDVariable shape) {
         super(null, sameDiff, new SDVariable[]{i_v, shape});
         if(iArguments.isEmpty())
@@ -76,6 +89,19 @@ public class Reshape extends DynamicCustomOp {
         //and a dimension.
         if(iArguments.isEmpty())
             addIArgument(C_ORDER);
+        addIArgument(shape);
+    }
+
+
+    public Reshape(INDArray in, char order,long... shape) {
+        super(new INDArray[]{in}, null);
+        Preconditions.checkState(order == 'c' || order == 'f', "Invalid order: must be 'c' or 'f', got %s", order);
+        this.shape = shape;
+        //c ordering: see (char) 99 for c ordering and (char) 'f' is 102
+        //note it has to be negative for the long array case only
+        //to flag the difference between an ordering being specified
+        //and a dimension.
+        addIArgument(-order);
         addIArgument(shape);
     }
 

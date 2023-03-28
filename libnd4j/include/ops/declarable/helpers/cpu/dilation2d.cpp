@@ -45,42 +45,42 @@ static void dilation2d_(NDArray* input, NDArray* weights, NDArray* output, const
   const sd::LongType* yShapeInfo = weights->shapeInfo();
   const sd::LongType* zShapeInfo = output->shapeInfo();
 
-  const sd::Unsigned bS = input->sizeAt(0);
-  const sd::Unsigned iH = input->sizeAt(1);
-  const sd::Unsigned iW = input->sizeAt(2);
-  const sd::Unsigned iC = input->sizeAt(3);
+  const sd::LongType bS = input->sizeAt(0);
+  const sd::LongType iH = input->sizeAt(1);
+  const sd::LongType iW = input->sizeAt(2);
+  const sd::LongType iC = input->sizeAt(3);
 
-  const sd::Unsigned kH = weights->sizeAt(0);
-  const sd::Unsigned kW = weights->sizeAt(1);
+  const sd::LongType kH = weights->sizeAt(0);
+  const sd::LongType kW = weights->sizeAt(1);
 
-  const sd::Unsigned oH = output->sizeAt(1);
-  const sd::Unsigned oW = output->sizeAt(2);
+  const sd::LongType oH = output->sizeAt(1);
+  const sd::LongType oW = output->sizeAt(2);
 
   auto func = PRAGMA_THREADS_FOR_2D {
     for (auto b = start_x; b < stop_x; b += inc_x) {
       for (auto oh = start_y; oh < stop_y; oh += inc_y) {
-        for (sd::Unsigned ow = 0; ow < oW; ++ow) {
-          for (sd::Unsigned c = 0; c < iC; ++c) {
+        for (sd::LongType ow = 0; ow < oW; ++ow) {
+          for (sd::LongType c = 0; c < iC; ++c) {
             X max = -DataTypeUtils::max<X>();
 
-            for (sd::Unsigned kh = 0; kh < kH; ++kh) {
+            for (sd::LongType kh = 0; kh < kH; ++kh) {
               const int ih = oh * sH - pH + kh * dH;
               if (ih < 0 || ih >= iH) continue;
 
-              for (sd::Unsigned kw = 0; kw < kW; ++kw) {
+              for (sd::LongType kw = 0; kw < kW; ++kw) {
                 const int iw = ow * sW - pW + kw * dW;
                 if (iw < 0 || iw >= iW) continue;
 
-                sd::Unsigned xCoords[4] = {static_cast<sd::Unsigned>(b), static_cast<sd::Unsigned>(ih),
-                                           static_cast<sd::Unsigned>(iw), c};
-                sd::Unsigned yCoords[3] = {kh, kw, c};
+                sd::LongType  xCoords[4] = {static_cast<sd::LongType >(b), static_cast<sd::LongType >(ih),
+                                           static_cast<sd::LongType >(iw), c};
+                sd::LongType  yCoords[3] = {kh, kw, c};
 
                 const X val = x[shape::getOffset(xShapeInfo, xCoords)] + y[shape::getOffset(yShapeInfo, yCoords)];
                 if (val > max) max = val;
               }
             }
 
-            sd::Unsigned zCoords[4] = {static_cast<sd::Unsigned>(b), static_cast<sd::Unsigned>(oh), ow, c};
+            sd::LongType  zCoords[4] = {static_cast<sd::LongType >(b), static_cast<sd::LongType >(oh), ow, c};
             z[shape::getOffset(zShapeInfo, zCoords)] = static_cast<Z>(max);
           }
         }

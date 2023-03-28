@@ -62,7 +62,7 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
       };
       samediff::Threads::parallel_for(func, 0, length, 1);
     } else {
-      sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+      sd::LongType xShapeInfoCast[SD_MAX_RANK];
       const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
       auto func = PRAGMA_THREADS_FOR {
@@ -76,8 +76,8 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
       samediff::Threads::parallel_for(func, 0, length, 1);
     }
   } else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned zShapeInfoCast[SD_MAX_RANK];
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
+    sd::LongType zShapeInfoCast[SD_MAX_RANK];
     const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
     const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
@@ -92,8 +92,8 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
 
     samediff::Threads::parallel_for(func, 0, length, 1);
   } else if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
+    sd::LongType yShapeInfoCast[SD_MAX_RANK];
     const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
     const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
@@ -108,8 +108,8 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
 
     samediff::Threads::parallel_for(func, 0, length, 1);
   } else if (shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)) {
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
+    sd::LongType yShapeInfoCast[SD_MAX_RANK];
     const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
     const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
@@ -124,9 +124,9 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
 
     samediff::Threads::parallel_for(func, 0, length, 1);
   } else {
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned zShapeInfoCast[SD_MAX_RANK];
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
+    sd::LongType yShapeInfoCast[SD_MAX_RANK];
+    sd::LongType zShapeInfoCast[SD_MAX_RANK];
     const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
     const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
     const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
@@ -155,7 +155,7 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
 
   auto length = shape::length(zShapeInfo);
 
-  sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+  sd::LongType xShapeInfoCast[SD_MAX_RANK];
   const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
   sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
@@ -182,7 +182,7 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
       samediff::Threads::parallel_for(func, 0, length, 1);
     }
   } else {
-    sd::Unsigned zShapeInfoCast[SD_MAX_RANK];
+    sd::LongType zShapeInfoCast[SD_MAX_RANK];
     const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
     auto func = PRAGMA_THREADS_FOR {
@@ -221,7 +221,7 @@ void RandomFunction<X>::execTransform(sd::Pointer state, void *vz, const sd::Lon
   } else {
     sd::OmpLaunchHelper info(length);
 
-    sd::Unsigned zShapeInfoCast[SD_MAX_RANK];
+    sd::LongType zShapeInfoCast[SD_MAX_RANK];
     const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
     auto func = PRAGMA_THREADS_FOR {

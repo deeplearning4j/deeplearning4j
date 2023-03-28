@@ -1827,7 +1827,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension) {
-        OpaqueTadPack pack = loop.tadOnlyShapeInfo((LongPointer) array.shapeInfoDataBuffer().addressPointer(), new IntPointer(dimension), dimension.length);
+        long[] inputDimensions = new long[dimension.length];
+        for(int i = 0; i < inputDimensions.length; i++) {
+            inputDimensions[i] = dimension[i];
+        }
+        OpaqueTadPack pack = loop.tadOnlyShapeInfo((LongPointer) array.shapeInfoDataBuffer().addressPointer(), new LongPointer(inputDimensions), dimension.length);
 
         if (loop.lastErrorCode() != 0)
             throw new RuntimeException(loop.lastErrorMessage());

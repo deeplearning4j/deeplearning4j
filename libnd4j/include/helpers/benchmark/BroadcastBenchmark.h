@@ -32,24 +32,24 @@ class SD_LIB_EXPORT BroadcastBenchmark : public OpBenchmark {
     //
   }
 
-  BroadcastBenchmark(broadcast::Ops op, std::string testName, NDArray *x, NDArray *y, NDArray *z, std::vector<int> axis)
+  BroadcastBenchmark(broadcast::Ops op, std::string testName, NDArray *x, NDArray *y, NDArray *z, std::vector<sd::LongType> axis)
       : OpBenchmark(testName, x, y, z, axis) {
     _opNum = (int)op;
   }
 
   BroadcastBenchmark(broadcast::Ops op, std::string testName, NDArray *x, NDArray *y, NDArray *z,
-                     std::initializer_list<int> axis)
+                     std::initializer_list<sd::LongType> axis)
       : OpBenchmark(testName, x, y, z, axis) {
     _opNum = (int)op;
   }
 
-  BroadcastBenchmark(broadcast::Ops op, std::string name, std::vector<int> axis) : OpBenchmark() {
+  BroadcastBenchmark(broadcast::Ops op, std::string name, std::vector<sd::LongType> axis) : OpBenchmark() {
     _opNum = (int)op;
     _testName = name;
     _axis = axis;
   }
 
-  BroadcastBenchmark(broadcast::Ops op, std::string name, std::initializer_list<int> axis) : OpBenchmark() {
+  BroadcastBenchmark(broadcast::Ops op, std::string name, std::initializer_list<sd::LongType> axis) : OpBenchmark() {
     _opNum = (int)op;
     _testName = name;
     _axis = axis;

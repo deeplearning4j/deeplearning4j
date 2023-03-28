@@ -41,8 +41,8 @@ sd::LongType IndexReduce<X, Y>::execScalar(const int opNum, const void *x, const
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void IndexReduce<X, Y>::exec(const int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z,
-                             const sd::LongType *zShapeInfo, int *dimension, int dimensionLength,
+void IndexReduce<X, Y>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z,
+                             const sd::LongType *zShapeInfo, long long int *dimension, int dimensionLength,
                              const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {
   DISPATCH_BY_OPNUM_TT(
       exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset),
@@ -62,7 +62,7 @@ sd::LongType IndexReduce<X, Y>::execScalar(const void *vx, const sd::LongType *x
   auto xEws = shape::elementWiseStride(xShapeInfo);
   sd::OmpLaunchHelper info(len);
 
-  sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+  sd::LongType xShapeInfoCast[SD_MAX_RANK];
   bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
   int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
   IndexValue<X> intermediatery[64];
@@ -104,7 +104,7 @@ sd::LongType IndexReduce<X, Y>::execScalar(const void *vx, const sd::LongType *x
 template <typename X, typename Z>
 template <typename OpType>
 void IndexReduce<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                             const sd::LongType *zShapeInfo, int *dimension, int dimensionLength,
+                             const sd::LongType *zShapeInfo, long long int *dimension, int dimensionLength,
                              const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);

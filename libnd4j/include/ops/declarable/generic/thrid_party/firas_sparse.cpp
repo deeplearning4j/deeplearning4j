@@ -55,7 +55,7 @@ CUSTOM_OP_IMPL(firas_sparse, 1, 1, false, 0, -1) {
   int batchSize = x->sizeAt(0);
   int numColumns = x->sizeAt(1);
 
-  std::vector<int> indices(*block.getIArguments());
+  std::vector<sd::LongType> indices(*block.getIArguments());
   std::map<int, int> sparse2dense;
 
   int cnt = 0;

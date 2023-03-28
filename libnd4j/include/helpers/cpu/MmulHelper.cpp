@@ -318,8 +318,6 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
 
   if (!typeDouble && !typeFloat) {
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemv, (A, X, Y, incx, incy, 0, alpha, beta), SD_NUMERIC_TYPES);
-    // BUILD_TRIPLE_SELECTOR(aType, xType, yType, usualGemv, (A, X, Y, incx, incy, 0, alpha, beta), SD_COMMON_TYPES,
-    // SD_FLOAT_TYPES, SD_FLOAT_TYPES);
   } else {
     NDArray* pA(const_cast<NDArray*>(A));
 
@@ -394,8 +392,8 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
 //    [M,K] x [bS,K,N] = [bS,M,N]
 // bS could stand for several axes
 template <typename T1, typename T2, typename T3>
-static void batchedGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const int* aBatchDims, const int* bBatchDims,
-                        const int* cBatchDims, const int aMaxis, const int aKaxis, const int bKaxis, const int bNaxis,
+static void batchedGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const LongType* aBatchDims,
+                        const LongType* bBatchDims, const LongType* cBatchDims, const int aMaxis, const int aKaxis, const int bKaxis, const int bNaxis,
                         const int cMaxis, const int cNaxis, const double alpha, const double beta) {
   const T1* A = vA->bufferAsT<T1>();
   const T2* B = vB->bufferAsT<T2>();
@@ -410,16 +408,16 @@ static void batchedGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const
   const sd::LongType* bShapeInfo = vB->shapeInfo();
   const sd::LongType* cShapeInfo = vC->shapeInfo();
 
-  const int aRank = vA->rankOf();
-  const int bRank = vB->rankOf();
-  const int cRank = vC->rankOf();
+  const sd::LongType aRank = vA->rankOf();
+  const sd::LongType bRank = vB->rankOf();
+  const sd::LongType cRank = vC->rankOf();
 
   const sd::LongType cLen = vC->lengthOf();
 
-  const int K = vA->sizeAt(aKaxis);
+  const sd::LongType K = vA->sizeAt(aKaxis);
 
   auto func = PRAGMA_THREADS_FOR {
-    std::vector<int> aCoords(aRank), bCoords(bRank), cCoords(cRank);
+    std::vector<sd::LongType> aCoords(aRank), bCoords(bRank), cCoords(cRank);
 
     for (auto i = start; i < stop; ++i) {
       // evaluate C coordinates
@@ -507,7 +505,7 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
   const int aMaxis(aRank - 2), aKaxis(aRank - 1), bKaxis(bRank - 2), bNaxis(bRank - 1), cMaxis(cRank - 2),
       cNaxis(cRank - 1);
 
-  std::vector<int> aBatchDims, bBatchDims, cBatchDims;
+  std::vector<sd::LongType> aBatchDims, bBatchDims, cBatchDims;
 
   if (aRank > 2) aBatchDims = ShapeUtils::evalDimsToExclude(aRank, {aMaxis, aKaxis});
   if (bRank > 2) bBatchDims = ShapeUtils::evalDimsToExclude(bRank, {bKaxis, bNaxis});

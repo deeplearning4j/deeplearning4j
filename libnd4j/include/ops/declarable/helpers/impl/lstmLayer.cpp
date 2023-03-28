@@ -633,7 +633,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
   if (!h && !hL) ht = new NDArray(x->ordering(), shapeOut, type, x->getContext());
 
   // create sets of required (depends on seqLen presence) sub-arrays
-  std::vector<int> dims;
+  std::vector<sd::LongType> dims;
   ResultSet *xSet(nullptr), *hSet(nullptr), *h0Set(nullptr), *c0Set(nullptr), *htSet(nullptr), *ctSet(nullptr);
 
   if (!seqLen) {
@@ -643,7 +643,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
     xSet = new ResultSet(x->allTensorsAlongDimension(dims));         // sub-arrays with shape [bS, nIn]
     if (h) hSet = new ResultSet(h->allTensorsAlongDimension(dims));  // sub-arrays with shape [bS, nOut]
   } else {
-    dims = dataFormat == 2 ? std::vector<int>({1}) : std::vector<int>({2});  // points on nIn/nOut axis
+    dims = dataFormat == 2 ? std::vector<sd::LongType>({1}) : std::vector<sd::LongType>({2});  // points on nIn/nOut axis
 
     xSet = new ResultSet(x->allTensorsAlongDimension(dims));           //  sub-arrays with shape [nIn]
     h0Set = new ResultSet(h0->allTensorsAlongDimension({1}));          //  sub-arrays with shape [nOut]
@@ -925,7 +925,7 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
   NDArray c = h.ulike();
 
   // create sets of required (depends on seqLen presence) sub-arrays
-  std::vector<int> dims;
+  std::vector<sd::LongType> dims;
   ResultSet *xSet(nullptr), *dLdxSet(nullptr), *hSet(nullptr), *cSet(nullptr), *zSet(nullptr), *aSet(nullptr),
       *dLdhSet(nullptr), *dLdh0Set(nullptr), *dLdc0Set(nullptr), *dLdhLSet(nullptr), *dLdcLSet(nullptr),
       *hISet(nullptr), *cISet(nullptr);
@@ -941,7 +941,7 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
     aSet = new ResultSet(a.allTensorsAlongDimension({1, 2}));                 // sub-arrays with shape [bS, 4*nOut]
     if (dLdh) dLdhSet = new ResultSet(dLdh->allTensorsAlongDimension(dims));  // sub-arrays with shape [bS, nOut]
   } else {
-    dims = dataFormat == 2 ? std::vector<int>({1}) : std::vector<int>({2});  // points on nIn/nOut axis
+    dims = dataFormat == 2 ? std::vector<sd::LongType>({1}) : std::vector<sd::LongType>({2});  // points on nIn/nOut axis
 
     xSet = new ResultSet(x->allTensorsAlongDimension(dims));        // sub-arrays with shape [nIn]
     dLdxSet = new ResultSet(dLdx->allTensorsAlongDimension(dims));  // sub-arrays with shape [nIn]

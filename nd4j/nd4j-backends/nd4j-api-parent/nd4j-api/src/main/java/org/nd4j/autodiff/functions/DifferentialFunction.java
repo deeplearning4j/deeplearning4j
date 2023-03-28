@@ -722,7 +722,12 @@ public abstract class DifferentialFunction {
     }
 
 
-    protected void setInstanceId() {
+    /**
+     * Note: DO NOT USE THIS METHOD UNLESS YOU KNOW WHAT YOU ARE DOING.
+     * This is only for usage in {@link SameDiff#dynamic(String, List, List, List, List, List, List)}
+     *
+     */
+    public void setInstanceId() {
         if(ownName == null) {
             ownNameSetWithDefault = true;
             if(sameDiff == null)

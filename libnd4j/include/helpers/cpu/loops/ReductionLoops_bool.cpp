@@ -29,16 +29,16 @@ template <typename X, typename Z>
 template <typename OpType>
 void ReductionBoolLoops<X, Z>::innerloopReduce(sd::memory::Workspace* workspace, const X* x,
                                                const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
-                                               const int* dims, X* extraParams) {
+                                               const LongType* dims, X* extraParams) {
 #ifndef SD_LOOPS_INLINED
   ReductionLoops<X, Z, X>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
 #endif
 }
 
 template <typename X, typename Y>
-void ReductionBoolLoops<X, Y>::wrapper(const int opNum, sd::memory::Workspace* workspace, const X* x,
+void ReductionBoolLoops<X, Y>::wrapper(int opNum, sd::memory::Workspace* workspace, const X* x,
                                        const sd::LongType* xShapeInfo, Y* z, const sd::LongType* zShapeInfo,
-                                       const int* dims, X* extraParams) {
+                                       const LongType* dims, X* extraParams) {
 #ifndef SD_LOOPS_INLINED
   DISPATCH_BY_OPNUM_TT(innerloopReduce, PARAMS(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams),
                        REDUCE_BOOL_OPS);

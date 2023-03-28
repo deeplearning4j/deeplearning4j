@@ -35,8 +35,7 @@ DeclarableReductionOp::DeclarableReductionOp(int numInputs, int numOutputs, cons
 }
 
 sd::ShapeList* DeclarableReductionOp::calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block) {
-  // int numDims = INT_ARG(0);
-  std::vector<int> dims;
+  std::vector<sd::LongType> dims;
   if (inputShape->size() > 1) {
     // the second argument is axis
     auto axis = INPUT_VARIABLE(1);
@@ -44,7 +43,7 @@ sd::ShapeList* DeclarableReductionOp::calculateOutputShape(sd::ShapeList* inputS
   } else if (block.getIArguments()->size())
     for (int e = 0; e < block.getIArguments()->size(); e++) dims.push_back(INT_ARG(e));
   else if (block.getAxis()->size()) {
-    dims = *block.getAxis();  //.push_back(axis->e<int>(e));
+    dims = *block.getAxis();
   }
 
   if (dims.size() > 1) std::sort(dims.begin(), dims.end());

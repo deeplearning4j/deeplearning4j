@@ -47,7 +47,7 @@ class SD_LIB_EXPORT Node {
   int _id;
   std::vector<std::pair<int, int>> _input;
   std::vector<std::pair<int, int>> _output;
-  std::vector<int> _dimensions;
+  std::vector<sd::LongType> _dimensions;
 
   std::vector<int> _referencedBy;
 
@@ -143,7 +143,7 @@ class SD_LIB_EXPORT Node {
 
   double scalar();
 
-  std::vector<int> *getDimensions();
+  std::vector<sd::LongType> *getDimensions();
   int *getDimensionsPtr();
 
   void pickOutputOnce(int outputId);

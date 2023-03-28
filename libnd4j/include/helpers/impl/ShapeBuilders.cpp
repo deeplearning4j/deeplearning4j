@@ -151,7 +151,7 @@ sd::LongType* ShapeBuilders::copyShapeInfoAndType(const sd::LongType* inShapeInf
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-sd::LongType* ShapeBuilders::createSubArrShapeInfo(const sd::LongType* inShapeInfo, const int* dims, const int dimsSize,
+sd::LongType* ShapeBuilders::createSubArrShapeInfo(const sd::LongType* inShapeInfo, const LongType* dims, const int dimsSize,
                                                    memory::Workspace* workspace) {
   sd::LongType* subArrShapeInfo = nullptr;
   ALLOCATE(subArrShapeInfo, workspace, shape::shapeInfoLength(dimsSize), sd::LongType);

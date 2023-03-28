@@ -22,6 +22,8 @@
 #include <legacy/NativeOpExecutioner.h>
 #include <ops/declarable/LegacyTransformBoolOp.h>
 
+#include <ops/declarable/OpRegistrator.h>
+
 namespace sd {
 namespace ops {
 LegacyTransformBoolOp::LegacyTransformBoolOp() : LegacyOp::LegacyOp(1) {
@@ -52,6 +54,7 @@ sd::Status LegacyTransformBoolOp::validateAndExecute(Context &block) {
 
   manager.synchronize();
   STORE_RESULT(*z);
+  traceExecIfNeeded(block);
 
   return sd::Status::OK;
 }

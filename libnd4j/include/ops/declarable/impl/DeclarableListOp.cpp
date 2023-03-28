@@ -32,12 +32,7 @@ DeclarableListOp::DeclarableListOp(int numInputs, int numOutputs, const char* op
   // This kind of operations work with sets: NDArrayList
   this->getOpDescriptor()->setInputType(InputType_NUMERIC_SET);
 }
-/*
-        template <typename T>
-        void DeclarableListOp::execute(Block& block)  {
-            //
-        }
-*/
+
 /**
  * This method just outputs scalar buffer
  *
@@ -91,6 +86,7 @@ sd::Status DeclarableListOp::execute(Context* block) {
   auto timeEnd = std::chrono::system_clock::now();
   auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
   block->setInnerTime(outerTime);
+  traceExecIfNeeded(*block);
 
   return status;
 }

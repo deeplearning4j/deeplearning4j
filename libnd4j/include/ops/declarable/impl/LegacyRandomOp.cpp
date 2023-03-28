@@ -24,6 +24,7 @@
 #include <legacy/NativeOpExecutioner.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/LegacyRandomOp.h>
+#include <ops/declarable/OpRegistrator.h>
 
 namespace sd {
 namespace ops {
@@ -299,6 +300,9 @@ sd::Status LegacyRandomOp::validateAndExecute_(Context& block) {
       return sd::Status::KERNEL_FAILURE;
     }
   }
+
+  traceExecIfNeeded(block);
+
 
   return sd::Status::OK;
 }

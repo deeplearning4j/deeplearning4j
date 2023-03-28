@@ -38,10 +38,10 @@ CONFIGURABLE_OP_IMPL(reverse, 1, 1, true, 0, -2) {
     return sd::Status::OK;
   }
 
-  std::vector<int> axis;
+  std::vector<sd::LongType> axis;
 
   if (block.width() > 1)
-    axis = INPUT_VARIABLE(1)->template asVectorT<int>();
+    axis = INPUT_VARIABLE(1)->template asVectorT<sd::LongType>();
   else if (block.numI() > 0)
     axis = *block.getIArguments();
 
@@ -69,10 +69,10 @@ CUSTOM_OP_IMPL(reverse_bp, 2, 1, false, 0, -2) {
   auto eps = block.width() == 3 ? INPUT_VARIABLE(2) : INPUT_VARIABLE(1);
 
   auto output = OUTPUT_VARIABLE(0);
-  std::vector<int> axis;
+  std::vector<sd::LongType> axis;
 
   if (block.width() == 3)
-    axis = INPUT_VARIABLE(1)->template asVectorT<int>();
+    axis = INPUT_VARIABLE(1)->template asVectorT<sd::LongType>();
   else if (block.numI() > 0)
     axis = *block.getIArguments();
 

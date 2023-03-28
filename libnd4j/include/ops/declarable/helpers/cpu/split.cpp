@@ -94,7 +94,7 @@ static void split_(const NDArray& input, const std::vector<NDArray*>& outArrs, c
   // general case
 
   auto func = PRAGMA_THREADS_FOR {
-    int coords[SD_MAX_RANK], temp;
+    sd::LongType coords[SD_MAX_RANK], temp;
 
     for (auto i = start; i < stop; i += increment) {
       shape::index2coordsCPU(start, i, input.shapeInfo(), coords);

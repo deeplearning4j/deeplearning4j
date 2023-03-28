@@ -53,17 +53,17 @@
 #define no_op_exec_special_accumulation                                                                   \
   static const bool requiresSpecialAccumulation = false;                                                  \
   static void execSpecial(const X *x, const sd::LongType *xShapeInfo, Z *extraParams, Z *result,          \
-                          const sd::LongType *resultShapeInfoBuffer, int *dimension, int dimensionLength, \
+                          const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, int dimensionLength, \
                           const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {}
 #define no_op_exec_special_accumulation_long                                                              \
   static const bool requiresSpecialAccumulation = false;                                                  \
   static void execSpecial(const X *x, const sd::LongType *xShapeInfo, X *extraParams, Z *result,          \
-                          const sd::LongType *resultShapeInfoBuffer, int *dimension, int dimensionLength, \
+                          const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, int dimensionLength, \
                           const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {}
 #define no_op_exec_special_accumulation_same                                                              \
   static const bool requiresSpecialAccumulation = false;                                                  \
   static void execSpecial(const X *x, const sd::LongType *xShapeInfo, X *extraParams, X *result,          \
-                          const sd::LongType *resultShapeInfoBuffer, int *dimension, int dimensionLength, \
+                          const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, int dimensionLength, \
                           const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {}
 #ifdef __CUDACC__
 #define no_op_exec_special_any_cuda                                                                                    \
@@ -89,17 +89,17 @@
 #define no_op_exec_special_accumulation_same_cuda                                                                  \
   static SD_INLINE SD_DEVICE void execSpecialCuda(                                                                 \
       const X *dx, const sd::LongType *xShapeInfo, X *extraParams, X *result, const sd::LongType *resultShapeInfo, \
-      int *dimension, int dimensionLength, X *reductionBuffer, const sd::LongType *tadOnlyShapeInfo,               \
+      sd::LongType *dimension, int dimensionLength, X *reductionBuffer, const sd::LongType *tadOnlyShapeInfo,               \
       const sd::LongType *tadOffsets) {}
 #define no_op_exec_special_accumulation_long_cuda                                                                  \
   static SD_INLINE SD_DEVICE void execSpecialCuda(                                                                 \
       const X *dx, const sd::LongType *xShapeInfo, X *extraParams, Z *result, const sd::LongType *resultShapeInfo, \
-      int *dimension, int dimensionLength, Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo,               \
+      sd::LongType *dimension, int dimensionLength, Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo,               \
       const sd::LongType *tadOffsets) {}
 #define no_op_exec_special_accumulation_cuda                                                                       \
   static SD_INLINE SD_DEVICE void execSpecialCuda(                                                                 \
       const X *dx, const sd::LongType *xShapeInfo, Z *extraParams, Z *result, const sd::LongType *resultShapeInfo, \
-      int *dimension, int dimensionLength, Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo,               \
+      sd::LongType *dimension, int dimensionLength, Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo,               \
       const sd::LongType *tadOffsets) {}
 
 #else

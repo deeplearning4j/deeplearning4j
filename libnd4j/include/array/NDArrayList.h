@@ -75,8 +75,8 @@ class SD_LIB_EXPORT NDArrayList {
   NDArray *readRaw(int idx);
   sd::Status write(int idx, NDArray *array);
 
-  NDArray *pick(std::initializer_list<int> indices);
-  NDArray *pick(std::vector<int> &indices);
+  NDArray *pick(std::initializer_list<LongType> indices);
+  NDArray *pick(std::vector<LongType> &indices);
   bool isWritten(int index);
 
   std::vector<sd::LongType> &shape();

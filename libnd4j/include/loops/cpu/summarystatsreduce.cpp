@@ -46,9 +46,10 @@ void SummaryStatsReduce<X, Y>::execScalar(const int opNum, const bool biasCorrec
 }
 
 template <typename X, typename Y>
-void SummaryStatsReduce<X, Y>::exec(const int opNum, const bool biasCorrected, const void *x,
+void SummaryStatsReduce<X, Y>::exec(int opNum, bool biasCorrected, const void *x,
                                     const sd::LongType *xShapeInfo, void *extraParams, void *z,
-                                    const sd::LongType *zShapeInfo, int *dimension, int dimensionLength) {
+                                    const sd::LongType *zShapeInfo,
+                                    long long int *dimension, int dimensionLength) {
   DISPATCH_BY_OPNUM_TT(exec,
                        PARAMS(biasCorrected, x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength),
                        SUMMARY_STATS_OPS);
@@ -73,8 +74,8 @@ Z SummaryStatsReduce<X, Z>::execScalar(const bool biasCorrected, const void *vx,
   startingIndex.initialize();
   auto length = shape::length(xShapeInfo);
 
-  sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
-  const bool canCast = sd::DataTypeUtils::castShapeInfo<sd::Unsigned>(xShapeInfo, xShapeInfoCast);
+  sd::LongType xShapeInfoCast[SD_MAX_RANK];
+  const bool canCast = sd::DataTypeUtils::castShapeInfo<sd::LongType>(xShapeInfo, xShapeInfoCast);
 
   for (sd::LongType i = 0; i < length; i++) {
     auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCast);
@@ -89,8 +90,9 @@ Z SummaryStatsReduce<X, Z>::execScalar(const bool biasCorrected, const void *vx,
 
 template <typename X, typename Z>
 template <typename OpType>
-void SummaryStatsReduce<X, Z>::exec(const bool biasCorrected, const void *vx, const sd::LongType *xShapeInfo,
-                                    void *vextraParams, void *vz, const sd::LongType *zShapeInfo, int *dimension,
+void SummaryStatsReduce<X, Z>::exec(bool biasCorrected, const void *vx, const sd::LongType *xShapeInfo,
+                                    void *vextraParams, void *vz, const sd::LongType *zShapeInfo,
+                                    long long int *dimension,
                                     int dimensionLength) {
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
@@ -130,10 +132,10 @@ void SummaryStatsReduce<X, Z>::exec(const bool biasCorrected, const void *vx, co
   auto tadEWS = shape::elementWiseStride(tadPack.primaryShapeInfo());
   auto tadOrder = shape::order(tadPack.primaryShapeInfo());
 
-  sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
+  sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
   const bool canCast = tadEWS == 1 && tadOrder == 'c'
                            ? false
-                           : sd::DataTypeUtils::castShapeInfo<sd::Unsigned>(tadShapeShapeInfo, tadShapeShapeInfoCast);
+                           : sd::DataTypeUtils::castShapeInfo<sd::LongType>(tadShapeShapeInfo, tadShapeShapeInfoCast);
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto r = start; r < stop; r++) {

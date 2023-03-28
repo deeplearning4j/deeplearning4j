@@ -30,7 +30,7 @@ SD_LIB_HIDDEN void rollFunctorLinear(sd::LaunchContext* context, NDArray* input,
                                      bool inplace = false);
 
 SD_LIB_HIDDEN void rollFunctorFull(sd::LaunchContext* context, NDArray* input, NDArray* output,
-                                   std::vector<int> const& shifts, std::vector<int> const& axes, bool inplace = false);
+                                   const std::vector<LongType>& shifts, const std::vector<LongType>& axes, bool inplace = false);
 
 }  // namespace helpers
 }  // namespace ops

@@ -55,7 +55,7 @@ DECLARE_TYPES(reshape) {
   getOpDescriptor()->setAllowedInputTypes(0, sd::DataType::ANY)->setAllowedInputTypes(1, {ALL_INTS})->setSameMode(true);
 }
 
-bool handleOptionalOrder(std::vector<int> &reshapeArgs, char &ordering) {
+bool handleOptionalOrder(std::vector<LongType> &reshapeArgs, char &ordering) {
   if (reshapeArgs.size() > 0) {
     // check if any optional negative ordering value is passed
     auto optional = reshapeArgs[0];
@@ -79,7 +79,7 @@ bool handleOptionalOrder(std::vector<int> &reshapeArgs, char &ordering) {
 DECLARE_SHAPE_FN(reshape) {
   const auto x = INPUT_VARIABLE(0);
 
-  std::vector<int> reshapeArgs;
+  std::vector<sd::LongType> reshapeArgs;
   std::vector<sd::LongType> shapeNew;
   char orderNew = 'c';
   /**
@@ -101,7 +101,7 @@ DECLARE_SHAPE_FN(reshape) {
           "being specified.");
     };
   } else {
-    reshapeArgs = INPUT_VARIABLE(1)->getBufferAsVector<int>();
+    reshapeArgs = INPUT_VARIABLE(1)->getBufferAsVector<sd::LongType>();
     if (block.numI() > 0) {
       // Note here that the ordering for this case can not be negative.
       // Negative is used in the long array case to be used as a flag to

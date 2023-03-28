@@ -265,6 +265,29 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
     }
 
     auto outSha = this->calculateOutputShape(&inSha, ctx);
+    if (sd::Environment::getInstance().isDebugAndVerbose()) {
+        sd_printf("Node_%i: %s\n", ctx.nodeId(), this->getOpDescriptor()->getOpName()->c_str());
+        sd_printf("Input shapes:\n",0);
+        for (int e = 0; e < inSha.size(); e++) {
+          if (inSha.at(e) != nullptr) {
+            sd_printf("Shape_%i: ", e);
+            shape::printShapeInfoLinear(inSha.at(e));
+          } else {
+            sd_printf("Shape_%i: nullptr\n", e);
+          }
+        }
+        sd_printf("Output shapes:\n",0);
+        for (int e = 0; e < outSha->size(); e++) {
+          if (outSha->at(e) != nullptr) {
+            sd_printf("Shape_%i: ", e);
+            shape::printShapeInfoLinear(outSha->at(e));
+          } else {
+            sd_printf("Shape_%i: nullptr\n", e);
+          }
+        }
+    }
+
+
     results = outSha->size();
 
     // optionally saving shapeTime
@@ -418,6 +441,23 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, sd::LongType *shape) 
   }
 
   return true;
+}
+
+
+void sd::ops::DeclarableOp::DeclarableOp::traceExecIfNeeded(Context &block) {
+  if(OpRegistrator::getInstance().traceOps()) {
+    std::vector<const LongType *> *inputShapeBuffers = new std::vector<const LongType *>();
+    for(int i = 0; i < block.width(); i++) {
+      inputShapeBuffers->push_back(block.variable(i)->getNDArray()->shapeInfo());
+    }
+    std::vector<const LongType *> *outputShapeBuffers = new std::vector<const LongType *>();
+    for(int i = 0; i < block.outputWidth(); i++) {
+      outputShapeBuffers->push_back(block.fastpath_out()[i]->shapeInfo());
+    }
+
+    OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers, getOpName());
+    OpRegistrator::getInstance().registerOpExec(opExecTrace);
+  }
 }
 
 bool sd::ops::DeclarableOp::allocateResult(Context &block, std::initializer_list<sd::LongType> &shape, char order) {
@@ -762,6 +802,19 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   // now we print out all outputs for this node
   if (sd::Environment::getInstance().isDebugAndVerbose()) {
     auto vs = block->getVariableSpace();
+    sd_printf("Op with name %s and num inputs %i \n", this->getOpName()->c_str(), block->width());
+    int numInputs = block->width();
+    for (int e = 0; e < numInputs; e++) {
+      auto array = block->isFastPath() ?  block->fastpath_in()[e]
+                                       : vs->getVariable(block->nodeId(), e)->getNDArray();
+
+      auto shape = ShapeUtils::shapeAsString(array);
+      auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(32);
+      auto type = DataTypeUtils::asString(array->dataType());
+
+      sd_printf("node_%i:%i input  shape: %s; dtype: %s; first values %s\n", block->nodeId(), e, shape.c_str(),
+                type.c_str(), first.c_str());
+    }
 
     for (int e = 0; e < numOutputs; e++) {
       // if given output index doesn't exist - we're done
@@ -788,6 +841,9 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
                 type.c_str(), first.c_str());
     }
   }
+
+  traceExecIfNeeded(*block);
+
 
   return status;
 }

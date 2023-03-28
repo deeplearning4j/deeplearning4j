@@ -28,15 +28,15 @@ namespace helpers {
 
 template <typename T>
 static void maxPoolingFunctor_(sd::graph::Context& block, NDArray* input, NDArray* values,
-                               std::vector<int> const& params, NDArray* indices) {
+                               const std::vector<LongType>& params, NDArray* indices) {
   int kY = params[0];
   int kX = params[1];
 
   int sY = params[2];
   int sX = params[3];
 
-  int pY = params[4];
-  int pX = params[5];
+  sd::LongType  pY = params[4];
+  sd::LongType  pX = params[5];
 
   int dY = params[6];
   int dX = params[7];
@@ -74,7 +74,7 @@ static void maxPoolingFunctor_(sd::graph::Context& block, NDArray* input, NDArra
 }
 
 void maxPoolingFunctor(sd::LaunchContext* context, sd::graph::Context& block, NDArray* input, NDArray* values,
-                       std::vector<int> const& params, NDArray* indices) {
+                       const std::vector<LongType>& params, NDArray* indices) {
   BUILD_SINGLE_SELECTOR(input->dataType(), maxPoolingFunctor_, (block, input, values, params, indices),
                         SD_COMMON_TYPES);
 }

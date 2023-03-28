@@ -69,8 +69,8 @@ DECLARE_SHAPE_FN(im2col) {
   int kX = INT_ARG(1);
   int sY = INT_ARG(2);
   int sX = INT_ARG(3);
-  int pY = INT_ARG(4);
-  int pX = INT_ARG(5);
+  sd::LongType pY = INT_ARG(4);
+  sd::LongType pX = INT_ARG(5);
   int dY = INT_ARG(6);  // Dilation, height/y dimension
   int dX = INT_ARG(7);  // Dilation, width/x dimension
   bool isSameMode = INT_ARG(8) > 0;

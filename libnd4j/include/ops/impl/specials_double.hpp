@@ -223,7 +223,7 @@ void DoubleMethods<X, Y>::sortByValue(void *vx, sd::LongType const *xShapeInfo, 
 
 template <typename X, typename Y>
 void DoubleMethods<X, Y>::sortTadByKey(void *vx, sd::LongType const *xShapeInfo, void *vy,
-                                       sd::LongType const *yShapeInfo, int *dimension, int dimensionLength,
+                                       sd::LongType const *yShapeInfo, LongType *dimension, int dimensionLength,
                                        bool descending) {
   auto x = reinterpret_cast<X *>(vx);
   auto y = reinterpret_cast<Y *>(vy);
@@ -250,7 +250,7 @@ void DoubleMethods<X, Y>::sortTadByKey(void *vx, sd::LongType const *xShapeInfo,
 
 template <typename X, typename Y>
 void DoubleMethods<X, Y>::sortTadByValue(void *vx, sd::LongType const *xShapeInfo, void *vy,
-                                         sd::LongType const *yShapeInfo, int *dimension, int dimensionLength,
+                                         sd::LongType const *yShapeInfo, LongType *dimension, int dimensionLength,
                                          bool descending) {
   auto x = reinterpret_cast<X *>(vx);
   auto y = reinterpret_cast<Y *>(vy);

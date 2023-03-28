@@ -21,6 +21,7 @@
 //
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/LegacyPairwiseTransformOp.h>
+#include <ops/declarable/OpRegistrator.h>
 
 namespace sd {
 namespace ops {

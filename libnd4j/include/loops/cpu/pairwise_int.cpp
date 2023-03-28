@@ -80,7 +80,7 @@ void PairWiseIntTransform<X>::exec(const void *vx, const sd::LongType *xShapeInf
   auto zEws = shape::elementWiseStride(zShapeInfo);
 
   if (shape::isScalar(yShapeInfo)) {
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
     const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
     if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
@@ -90,7 +90,7 @@ void PairWiseIntTransform<X>::exec(const void *vx, const sd::LongType *xShapeInf
         z[offset] = OpType::op(x[offset], y[0], extraParams);
       };
     } else {
-      sd::Unsigned zShapeInfoCast[SD_MAX_RANK];
+      sd::LongType zShapeInfoCast[SD_MAX_RANK];
       const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
       PRAGMA_OMP_SIMD
@@ -114,7 +114,7 @@ void PairWiseIntTransform<X>::exec(const void *vx, const sd::LongType *xShapeInf
   } else {
     if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) &&
         shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-      sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+      sd::LongType xShapeInfoCast[SD_MAX_RANK];
       const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
       PRAGMA_OMP_SIMD
@@ -123,8 +123,8 @@ void PairWiseIntTransform<X>::exec(const void *vx, const sd::LongType *xShapeInf
         z[offset] = OpType::op(x[offset], y[offset], extraParams);
       };
     } else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
-      sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
-      sd::Unsigned zShapeInfoCast[SD_MAX_RANK];
+      sd::LongType xShapeInfoCast[SD_MAX_RANK];
+      sd::LongType zShapeInfoCast[SD_MAX_RANK];
       const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
       const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
@@ -135,8 +135,8 @@ void PairWiseIntTransform<X>::exec(const void *vx, const sd::LongType *xShapeInf
         z[zOffset] = OpType::op(x[offset], y[offset], extraParams);
       };
     } else if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-      sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
-      sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
+      sd::LongType xShapeInfoCast[SD_MAX_RANK];
+      sd::LongType yShapeInfoCast[SD_MAX_RANK];
       const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
       const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
@@ -147,8 +147,8 @@ void PairWiseIntTransform<X>::exec(const void *vx, const sd::LongType *xShapeInf
         z[offset] = OpType::op(x[offset], y[yOffset], extraParams);
       };
     } else if (shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)) {
-      sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
-      sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
+      sd::LongType xShapeInfoCast[SD_MAX_RANK];
+      sd::LongType yShapeInfoCast[SD_MAX_RANK];
       const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
       const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
@@ -159,9 +159,9 @@ void PairWiseIntTransform<X>::exec(const void *vx, const sd::LongType *xShapeInf
         z[offset] = OpType::op(x[xOffset], y[offset], extraParams);
       };
     } else {
-      sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
-      sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
-      sd::Unsigned zShapeInfoCast[SD_MAX_RANK];
+      sd::LongType xShapeInfoCast[SD_MAX_RANK];
+      sd::LongType yShapeInfoCast[SD_MAX_RANK];
+      sd::LongType zShapeInfoCast[SD_MAX_RANK];
       const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
       const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
       const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);

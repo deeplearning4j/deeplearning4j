@@ -50,7 +50,7 @@ SD_KERNEL static void clipByNormCuda(const void* vClipNorm, const void* vNorm, c
 
   __syncthreads();
 
-  int zCoords[SD_MAX_RANK], normCoords[SD_MAX_RANK];
+  sd::LongType zCoords[SD_MAX_RANK], normCoords[SD_MAX_RANK];
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -78,7 +78,7 @@ SD_HOST static void clipByNormCudaLauncher(const int blocksPerGrid, const int th
 }
 
 //////////////////////////////////////////////////////////////////////////
-void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<int>& dims,
+void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<sd::LongType>& dims,
                 const NDArray& clipNorm, const bool isInplace, const bool useAverage) {
   NDArray* z = nullptr;
 
@@ -97,7 +97,7 @@ void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, con
   } else {
     const NDArray actualNorms = z->reduceAlongDimension(reduce::Norm2, dims);
 
-    std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(z->rankOf(), dims);
+    std::vector<sd::LongType> dimsToExclude = ShapeUtils::evalDimsToExclude(z->rankOf(), dims);
 
     const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (z->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -147,7 +147,7 @@ SD_KERNEL static void clipByNormBpCuda(const void* vClipNorm, const void* vx, co
 
   __syncthreads();
 
-  int zCoords[SD_MAX_RANK], normCoords[SD_MAX_RANK];
+  sd::LongType zCoords[SD_MAX_RANK], normCoords[SD_MAX_RANK];
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -177,7 +177,7 @@ SD_KERNEL static void clipByNormBpCuda(const void* vClipNorm, const void* vx, co
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void clipByNormBp_(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
-                   const std::vector<int>& dims, const NDArray& clipNorm, const bool useAverage) {
+                   const std::vector<sd::LongType>& dims, const NDArray& clipNorm, const bool useAverage) {
   const int rank = input.rankOf();
 
   auto actualNorms = input.reduceAlongDimension(reduce::Norm2, dims);
@@ -203,7 +203,7 @@ void clipByNormBp_(sd::LaunchContext* context, const NDArray& input, const NDArr
     const NDArray actualNorms = input.reduceAlongDimension(reduce::Norm2, dims);
     const NDArray sums = input.reduceAlongDimension(reduce::Sum, dims);
 
-    std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(gradI.rankOf(), dims);
+    std::vector<sd::LongType> dimsToExclude = ShapeUtils::evalDimsToExclude(gradI.rankOf(), dims);
 
     const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (gradI.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -226,12 +226,12 @@ void clipByNormBp_(sd::LaunchContext* context, const NDArray& input, const NDArr
 }
 BUILD_SINGLE_TEMPLATE(template void clipByNormBp_,
                       (sd::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
-                       const std::vector<int>& dimensions, const NDArray& clipNorm, const bool useAverage),
+                       const std::vector<sd::LongType>& dimensions, const NDArray& clipNorm, const bool useAverage),
                       SD_FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void clipByNormBp(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
-                  const std::vector<int>& dimensions, const NDArray& clipNorm, const bool useAverage) {
+                  const std::vector<sd::LongType>& dimensions, const NDArray& clipNorm, const bool useAverage) {
   const NDArray& castedInput = gradI.dataType() == input.dataType() ? input : input.cast(gradI.dataType());
   BUILD_SINGLE_SELECTOR(gradI.dataType(), clipByNormBp_,
                         (context, castedInput, gradO, gradI, dimensions, clipNorm, useAverage), SD_FLOAT_TYPES);

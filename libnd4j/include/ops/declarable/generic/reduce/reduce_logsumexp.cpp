@@ -29,7 +29,7 @@ namespace ops {
 CUSTOM_OP_IMPL(reduce_logsumexp, -1, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-  std::vector<int> axes;  // = *block.getIArguments();
+  std::vector<sd::LongType> axes;  // = *block.getIArguments();
   if (block.width() > 1) {
     auto axisVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axisVector, axes);
@@ -62,7 +62,7 @@ DECLARE_SHAPE_FN(reduce_logsumexp) {
   const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
   auto input = INPUT_VARIABLE(0);
 
-  std::vector<int> axes;  // = *block.getIArguments();
+  std::vector<sd::LongType> axes;  // = *block.getIArguments();
   if (block.width() > 1) {
     auto axisVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axisVector, axes);

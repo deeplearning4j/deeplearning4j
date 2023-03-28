@@ -30,13 +30,13 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void argMax(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
-SD_LIB_HIDDEN void argAbsMax(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
-SD_LIB_HIDDEN void argMin(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
-SD_LIB_HIDDEN void argAbsMin(const NDArray& input, NDArray& output, const std::vector<int>& dimensions);
-SD_LIB_HIDDEN void variance(const NDArray& input, NDArray& output, const std::vector<int>& dimensions,
+SD_LIB_HIDDEN void argMax(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions);
+SD_LIB_HIDDEN void argAbsMax(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions);
+SD_LIB_HIDDEN void argMin(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions);
+SD_LIB_HIDDEN void argAbsMin(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions);
+SD_LIB_HIDDEN void variance(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions,
                             bool biasCorrected);
-SD_LIB_HIDDEN void standardDeviation(const NDArray& input, NDArray& output, const std::vector<int>& dimensions,
+SD_LIB_HIDDEN void standardDeviation(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions,
                                      bool biasCorrected);
 
 }  // namespace helpers

@@ -85,13 +85,13 @@ class ScalarTransform {
 #else
   template <typename OpType>
   static void transform(const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z,
-                        const sd::LongType *zShapeInfo, const void *scalars, int *dimension, int dimensionLength,
+                        const sd::LongType *zShapeInfo, const void *scalars, long long int *dimension, int dimensionLength,
                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                         const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ, uint64_t start,
                         uint64_t stop);
 
   static void transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z,
-                        const sd::LongType *zShapeInfo, const void *scalars, int *dimension, int dimensionLength,
+                        const sd::LongType *zShapeInfo, const void *scalars, long long int *dimension, int dimensionLength,
                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                         const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ, uint64_t start,
                         uint64_t stop);

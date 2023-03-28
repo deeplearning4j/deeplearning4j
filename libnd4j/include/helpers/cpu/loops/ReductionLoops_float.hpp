@@ -31,7 +31,7 @@ template <typename X, typename Z>
 template <typename OpType>
 SD_LIB_HIDDEN void ReductionFloatLoops<X, Z>::innerloopReduce(sd::memory::Workspace* workspace, const X* x,
                                                               const sd::LongType* xShapeInfo, Z* z,
-                                                              const sd::LongType* zShapeInfo, const int* dims,
+                                                              const sd::LongType* zShapeInfo, const LongType* dims,
                                                               Z* extraParams) {
 #ifndef SD_LOOPS_INLINED
   ReductionLoops<X, Z, Z>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
@@ -39,9 +39,9 @@ SD_LIB_HIDDEN void ReductionFloatLoops<X, Z>::innerloopReduce(sd::memory::Worksp
 }
 
 template <typename X, typename Y>
-SD_LIB_HIDDEN void ReductionFloatLoops<X, Y>::wrapper(const int opNum, sd::memory::Workspace* workspace, const X* x,
+SD_LIB_HIDDEN void ReductionFloatLoops<X, Y>::wrapper(int opNum, sd::memory::Workspace* workspace, const X* x,
                                                       const sd::LongType* xShapeInfo, Y* z,
-                                                      const sd::LongType* zShapeInfo, const int* dims, Y* extraParams) {
+                                                      const sd::LongType* zShapeInfo, const LongType* dims, Y* extraParams) {
 #ifndef SD_LOOPS_INLINED
   DISPATCH_BY_OPNUM_TT(innerloopReduce, PARAMS(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams),
                        REDUCE_FLOAT_OPS);

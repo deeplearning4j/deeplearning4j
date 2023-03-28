@@ -79,9 +79,9 @@ DECLARE_SHAPE_FN(unstack) {
     return result;
   }
 
-  std::vector<int> dims = ShapeUtils::evalDimsToExclude(inShapeInfo[0], {dim});
+  std::vector<sd::LongType> dims = ShapeUtils::evalDimsToExclude(inShapeInfo[0], {dim});
 
-  if (dims.size() == 0 && shape::rank(inShapeInfo) == 1) {  // split vector into lenthOf scalars
+  if (dims.size() == 0 && shape::rank(inShapeInfo) == 1) {  // split vector into lengthOf scalars
 
     auto result = SHAPELIST();
     for (sd::LongType e = 0; e < shape::length(inShapeInfo); e++)

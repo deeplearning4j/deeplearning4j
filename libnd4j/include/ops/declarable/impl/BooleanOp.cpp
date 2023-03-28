@@ -22,7 +22,7 @@
 #include "ops/declarable/BooleanOp.h"
 
 #include <array/NDArrayFactory.h>
-
+#include <ops/declarable/OpRegistrator.h>
 #include <initializer_list>
 #include <vector>
 
@@ -112,6 +112,11 @@ sd::Status sd::ops::BooleanOp::execute(Context *block) {
 
   sd_printf("%s: node_%i got unexpected result instead of boolean: [%i]\n", this->getOpName()->c_str(), block->nodeId(),
             status);
+
+
+  traceExecIfNeeded(*block);
+
+
   return sd::Status::KERNEL_FAILURE;
 }
 

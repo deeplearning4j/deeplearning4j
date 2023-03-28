@@ -28,15 +28,15 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates, const std::vector<int>* intArgs) {
+void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates, const std::vector<LongType>* intArgs) {
   int opCode = (*intArgs)[0];
   int dimSize = (*intArgs)[1];
   sd::LongType e;
   sd::LongType limg = 2 + dimSize;
-  std::vector<int> tadDimensions(dimSize);
+  std::vector<sd::LongType> tadDimensions(dimSize);
   for (e = 2; e < limg; e++) tadDimensions[e - 2] = (*intArgs)[e];
 
-  std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input.rankOf(), tadDimensions);
+  std::vector<sd::LongType> dimsToExclude = ShapeUtils::evalDimsToExclude(input.rankOf(), tadDimensions);
 
   // increasing counter to skip numIndices
   e++;
@@ -84,7 +84,7 @@ void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates,
 
 //////////////////////////////////////////////////////////////////////////
 void scatterSimple(sd::LaunchContext* context, const int opId, NDArray& input, const NDArray& updates,
-                   const NDArray& indices, const std::vector<int>& dimensions) {
+                   const NDArray& indices, const std::vector<LongType>& dimensions) {
   // updates and indices have same length
   const sd::LongType len = indices.lengthOf();
 

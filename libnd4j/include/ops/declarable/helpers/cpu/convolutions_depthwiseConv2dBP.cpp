@@ -33,7 +33,7 @@ namespace ops {
 template <typename X, typename Y>
 static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO,
                                NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH,
-                               const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode,
+                               const int sW, LongType pH, LongType pW, const int dH, const int dW, const int paddingMode,
                                const int isNCHW, const int wFormat) {
   // input    [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
   // weights  [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]

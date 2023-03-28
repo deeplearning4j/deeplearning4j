@@ -33,19 +33,11 @@ template <typename T>
 void nthElementFunctor_(NDArray* input, sd::LongType n, NDArray* output, bool reverse) {
   NDArray sortedVals(*input);
   if (input->isVector()) {
-    // std::vector<float> data(input->lengthOf());
-    // memcpy(&data[0], input->buffer(), sizeof(T) * data.size());
-    // size_t l = 0;
-    // for (size_t l = 0; l < data.size(); ++l)
-    //    data[l] = input->e<float>(l);
-    // auto nthPos = data.begin();
-    // nthPos += n;
-    // std::nth_element(data.begin(), nthPos, data.end());
     SpecialMethods<T>::sortGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), reverse);
     output->p(0, sortedVals.e<T>(n));
   } else {  // rank greater than 1
-    std::vector<int> lastDims(
-        {input->rankOf() - 1});  // = ShapeUtils::evalDimsToExclude(input->rankOf(), {input->rankOf() - 1});
+    std::vector<sd::LongType> lastDims(
+        {input->rankOf() - 1});
 
     auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(sortedVals.shapeInfo(), lastDims);
 

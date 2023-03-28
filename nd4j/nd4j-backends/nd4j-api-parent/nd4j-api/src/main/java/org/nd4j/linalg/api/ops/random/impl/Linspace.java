@@ -45,7 +45,7 @@ public class Linspace extends BaseRandomOp {
         // no-op
     }
 
-    public Linspace(double from, long length, double step, DataType dataType){
+    public Linspace(double from, long length, double step, DataType dataType) {
         this(Nd4j.createUninitialized(dataType, new long[] {length}, Nd4j.order()), from, from, step);
     }
 

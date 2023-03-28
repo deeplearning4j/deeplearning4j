@@ -134,7 +134,7 @@ static void mergeMaxBp_(const std::vector<const NDArray*>& inArrs, std::vector<N
   }
 
   auto func = PRAGMA_THREADS_FOR {
-    int coords[SD_MAX_RANK];
+    sd::LongType  coords[SD_MAX_RANK];
     for (auto e = start; e < stop; e++) {
       shape::index2coordsCPU(start, e, gradShape, coords);
 

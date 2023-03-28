@@ -250,7 +250,7 @@ SD_KERNEL static void tileBPCuda(const void* vx, const sd::LongType* xShapeInfo,
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  int memBuff[SD_MAX_RANK * 2];
+  sd::LongType memBuff[SD_MAX_RANK * 2];
   auto xOffsets = globMem + tid * numOfXOffsets;
 
   for (sd::LongType i = tid; i < zLen; i += totalThreads) {

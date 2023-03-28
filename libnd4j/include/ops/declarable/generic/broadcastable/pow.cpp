@@ -84,7 +84,7 @@ CUSTOM_OP_IMPL(Pow_bp, 3, 2, false, 0, 0) {
   if (dLdy->isSameShape(*dLdz)) {
     dLdy->assign(temp);
   } else {
-    std::vector<int> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
+    std::vector<sd::LongType> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
     dLdy->assign(temp.reduceAlongDimension(reduce::Sum, axesForY));  // dL/dy = sum(c * dL/dz)
   }
 
@@ -95,7 +95,7 @@ CUSTOM_OP_IMPL(Pow_bp, 3, 2, false, 0, 0) {
   if (dLdx->isSameShape(*dLdz)) {
     dLdx->assign(temp);  // dLdx = a*dL/dz
   } else {
-    std::vector<int> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
+    std::vector<sd::LongType> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
     dLdx->assign(temp.reduceAlongDimension(reduce::Sum, axesForX));  // dLdx = a*dL/dz
   }
 

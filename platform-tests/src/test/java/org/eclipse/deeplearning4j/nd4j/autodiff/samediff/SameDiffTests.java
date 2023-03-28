@@ -119,6 +119,28 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testOpExecTrace(Nd4jBackend backend) {
+        Nd4j.toggleTrace(true);
+        final INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable input2 = sd.var("input", input);
+
+
+        SDVariable t = sd.nn.softmax(input2,1);
+
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        sd.calculateGradients(Collections.emptyMap(), Collections.singleton("input"));
+        SameDiff traced  = SameDiff.collectTrace();
+        assertTrue(traced.ops().length > 0);
+        System.out.println(traced.summary());
+        Nd4j.purgeTrace();
+        Nd4j.toggleTrace(false);
+        assertTrue(NativeOpsHolder.getInstance().getDeviceNativeOps().listOpTraces() == null);
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

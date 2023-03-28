@@ -91,7 +91,7 @@ static void amsGradUpdater_(const NDArray& gradient, const NDArray& initStateV, 
   bool bXStHSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateH.shapeInfo());
 
   auto func = PRAGMA_THREADS_FOR {
-    int coords[SD_MAX_RANK];
+    sd::LongType coords[SD_MAX_RANK];
     for (auto i = start; i < stop; i++) {
       shape::index2coordsCPU(start, i, gradient.shapeInfo(), coords);
       const auto xOffset = shape::getOffset(gradient.shapeInfo(), coords);

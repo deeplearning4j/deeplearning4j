@@ -264,7 +264,7 @@ class SummaryStatsReduce {
                          void *extraParams, void *vz, const sd::LongType *resultShapeInfoBuffer);
 
   static void exec(int opNum, bool biasCorrected, const void *x, const sd::LongType *xShapeInfo, void *extraParams,
-                   void *vz, const sd::LongType *resultShapeInfoBuffer, int *dimension, int dimensionLength);
+                   void *vz, const sd::LongType *resultShapeInfoBuffer, long long int *dimension, int dimensionLength);
 
   template <typename OpType>
   static Z execScalar(bool biasCorrected, const void *x, const sd::LongType *xShapeInfo, void *extraParams);
@@ -275,7 +275,7 @@ class SummaryStatsReduce {
 
   template <typename OpType>
   static void exec(bool biasCorrected, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *vz,
-                   const sd::LongType *resultShapeInfoBuffer, int *dimension, int dimensionLength);
+                   const sd::LongType *resultShapeInfoBuffer, long long int *dimension, int dimensionLength);
 #endif
 };
 }  // namespace summarystats

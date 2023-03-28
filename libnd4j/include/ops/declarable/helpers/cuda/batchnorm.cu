@@ -119,7 +119,7 @@ SD_KERNEL static void batchnormCuda2(const void* vx, const sd::LongType* xShapeI
   }
   __syncthreads();
 
-  int coords[SD_MAX_RANK];
+  sd::LongType coords[SD_MAX_RANK];
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 

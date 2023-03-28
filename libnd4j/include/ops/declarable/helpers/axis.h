@@ -31,8 +31,8 @@ namespace helpers {
 /*
  * adjustAxis routines: adjust data with output to non-negative values.
  * */
-SD_LIB_HIDDEN void adjustAxis(sd::LongType rank, NDArray* axisVector, std::vector<int>& output);
-SD_LIB_HIDDEN void adjustAxis(sd::LongType rank, std::vector<int>& output);
+SD_LIB_HIDDEN void adjustAxis(sd::LongType rank, NDArray* axisVector, std::vector<LongType>& output);
+SD_LIB_HIDDEN void adjustAxis(sd::LongType rank, std::vector<LongType>& output);
 
 }  // namespace helpers
 }  // namespace ops

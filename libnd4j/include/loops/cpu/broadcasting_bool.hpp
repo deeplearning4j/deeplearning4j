@@ -33,9 +33,9 @@ namespace functions {
 namespace broadcast {
 
 template <typename X, typename Y>
-void BroadcastBool<X, Y>::exec(const int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+void BroadcastBool<X, Y>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                                const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
-                               void *extraParams, int *dimension, int dimensionLength,
+                               void *extraParams, long long int *dimension, int dimensionLength,
                                const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
                                const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset, uint64_t start,
                                uint64_t stop) {
@@ -53,9 +53,9 @@ void BroadcastBool<X, Y>::exec(const int opNum, const void *x, const sd::LongTyp
 }
 
 template <typename X, typename Y>
-void BroadcastBool<X, Y>::execInverse(const int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+void BroadcastBool<X, Y>::execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                                       const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
-                                      void *extraParams, int *dimension, int dimensionLength,
+                                      void *extraParams, long long int *dimension, int dimensionLength,
                                       const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
                                       const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset, uint64_t start,
                                       uint64_t stop) {
@@ -69,7 +69,7 @@ template <typename X, typename Z>
 template <typename OpType>
 void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                                const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                               void *vextraParams, int *dimension, int dimensionLength,
+                               void *vextraParams, long long int *dimension, int dimensionLength,
                                const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
                                const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset, uint64_t start,
                                uint64_t stop) {
@@ -133,7 +133,7 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
     };
   } else if (shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo) &&
              shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
 
     for (auto i = start; i < stop; i++) {
@@ -147,8 +147,8 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
       }
     };
   } else if (shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo)) {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned tadShapeInfoZCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeInfoZCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
     bool canCastZ = sd::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
 
@@ -164,8 +164,8 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
       }
     };
   } else if (shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType yShapeInfoCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
     bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
@@ -182,8 +182,8 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
     };
 
   } else if (shape::haveSameShapeAndStrides(yShapeInfo, zTadShapeInfo)) {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType yShapeInfoCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
     bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
@@ -199,9 +199,9 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
       }
     };
   } else {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned tadShapeInfoZCast[SD_MAX_RANK];
-    sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeInfoZCast[SD_MAX_RANK];
+    sd::LongType yShapeInfoCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
     bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
     bool canCastZ = sd::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
@@ -225,7 +225,7 @@ template <typename X, typename Z>
 template <typename OpType>
 void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                                       const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                                      void *vextraParams, int *dimension, int dimensionLength,
+                                      void *vextraParams, long long int *dimension, int dimensionLength,
                                       const sd::LongType *yTadShapeInfo, const sd::LongType *yTadOffset,
                                       const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset, uint64_t start,
                                       uint64_t stop) {
@@ -289,7 +289,7 @@ void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShape
     }
   } else if (shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo) &&
              shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
     bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
 
     for (auto i = start; i < stop; i++) {
@@ -303,8 +303,8 @@ void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShape
       }
     }
   } else if (shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo)) {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned tadShapeInfoZCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeInfoZCast[SD_MAX_RANK];
     bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
     bool canCastZ = sd::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
 
@@ -320,8 +320,8 @@ void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShape
       }
     }
   } else if (shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
     bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
 
@@ -337,8 +337,8 @@ void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShape
       }
     }
   } else if (shape::haveSameShapeAndStrides(xShapeInfo, zTadShapeInfo)) {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
     bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
 
@@ -354,9 +354,9 @@ void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShape
       }
     }
   } else {
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned tadShapeInfoZCast[SD_MAX_RANK];
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeInfoZCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
     bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
     bool canCastZ = sd::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
@@ -589,7 +589,7 @@ static void execDefault(const X *x, const sd::LongType *xShapeInfo, const X *y, 
   const bool yzSameOffsets = shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo);
 
   auto func = PRAGMA_THREADS_FOR {
-    int coords[SD_MAX_RANK];
+    sd::LongType coords[SD_MAX_RANK];
     sd::LongType xOffset, yOffset, zOffset;
 
     for (auto i = start; i < stop; ++i) {

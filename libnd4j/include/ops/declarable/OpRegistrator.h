@@ -106,10 +106,17 @@ class SD_LIB_EXPORT OpRegistrator {
 
   std::mutex _locker;
   std::string _opsList;
+#ifndef __JAVACPP_HACK__
+  std::vector<OpExecTrace *> opexecTrace;
+#endif
   bool isInit = false;
-
+  bool isTrace = false;
  public:
   ~OpRegistrator();
+
+  void purgeOpExecs();
+  void registerOpExec(OpExecTrace *opExecTrace);
+  std::vector<OpExecTrace *> * execTrace();
 
   static OpRegistrator& getInstance();
 
@@ -130,8 +137,10 @@ class SD_LIB_EXPORT OpRegistrator {
    */
   bool registerOperation(const char* name, sd::ops::DeclarableOp* op);
   bool registerOperation(sd::ops::DeclarableOp* op);
-
+  bool traceOps();
+  void toggleTraceOps(bool traceOps);
   void registerHelper(sd::ops::platforms::PlatformHelper* op);
+
 
   bool hasHelper(sd::LongType hash, samediff::Engine engine);
 

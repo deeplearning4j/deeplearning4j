@@ -161,7 +161,7 @@ const sd::LongType * ConstantShapeHelper::createFromExisting(sd::LongType* shape
 ConstantShapeBuffer * ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast(const sd::LongType* maxShapeInfo,
                                                                                  const sd::LongType* minShapeInfo,
                                                                                  sd::memory::Workspace* workspace,
-                                                                                 const std::vector<int>& dimensions) {
+                                                                                 const std::vector<sd::LongType>& dimensions) {
   sd::LongType* newShapeInfo = nullptr;
   ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(maxShapeInfo)), sd::LongType);
 

@@ -42,6 +42,7 @@
 
 using namespace sd;
 #include <loops/special_kernels.h>
+#include <ops/declarable/OpRegistrator.h>
 
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[64];
@@ -68,6 +69,46 @@ void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long 
 }
 
 
+SD_LIB_EXPORT int numInputs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return trace->inputShapeBuffers->size();
+}
+
+SD_LIB_EXPORT int numOutputs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return trace->outputShapeBuffers->size();
+}
+
+std::vector<bool> * bArgs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return &trace->bArgs;
+}
+
+std::vector<std::string> * sArgs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return (&trace->sArguments);
+}
+std::vector<double> * tArgs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return (&trace->tArgs);
+
+}
+std::vector<sd::LongType> * iArgs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return &(trace->iArgs);
+}
+std::vector<const sd::LongType *> *inputShapeBuffers(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return trace->inputShapeBuffers;
+}
+std::vector<const sd::LongType *> *outputShapeBuffers(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return trace->outputShapeBuffers;
+}
+char *opName(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  return const_cast<char *>(trace->opName->c_str());
+}
 
 // this method just does type conversion in fancy way
 int getDeviceId(sd::Pointer ptrToDeviceId) { return (int)(sd::LongType)ptrToDeviceId; }
@@ -343,7 +384,7 @@ void execBroadcastBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbY});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     auto hTADShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers[9]);
@@ -388,7 +429,7 @@ void execBroadcast(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbY});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
@@ -481,7 +522,7 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
 
     const auto zLen = shape::length(hZShapeInfo);
 
-    std::vector<int> dimensions(dimension, dimension + dimensionLength);
+    std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
 
     const sd::LongType *zShapeInfoH = hZShapeInfo;
 
@@ -490,8 +531,8 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
     }
 
-    std::vector<int> dims =
-        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
+    std::vector<sd::LongType> dims =
+        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<sd::LongType>();
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceSame(&lc, opNum, dbX->primary(), hXShapeInfo, dbX->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
@@ -520,7 +561,7 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
 
     const auto zLen = shape::length(hZShapeInfo);
 
-    std::vector<int> dimensions(dimension, dimension + dimensionLength);
+    std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
 
     const sd::LongType *zShapeInfoH = hZShapeInfo;
 
@@ -529,8 +570,8 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
     }
 
-    std::vector<int> dims =
-        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
+    std::vector<sd::LongType> dims =
+        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<sd::LongType>();
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceLong(&lc, opNum, dbX->primary(), hXShapeInfo, dbX->special(),
@@ -602,7 +643,7 @@ void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
 
     const auto zLen = shape::length(hZShapeInfo);
 
-    std::vector<int> dimensions(dimension, dimension + dimensionLength);
+    std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
 
     const sd::LongType *zShapeInfoH = hZShapeInfo;
 
@@ -611,8 +652,8 @@ void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
     }
 
-    std::vector<int> dims =
-        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
+    std::vector<sd::LongType> dims =
+        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<sd::LongType>();
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceBool(&lc, opNum, dbX->primary(), hXShapeInfo, dbX->special(),
@@ -689,7 +730,7 @@ void execIndexReduce(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     auto tadPack =
@@ -700,7 +741,7 @@ void execIndexReduce(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
         &lc, opNum, dbX->primary(), hXShapeInfo, dbX->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), extraParams, dbZ->primary(),
         hZShapeInfo, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
-        (int *)dbDimension->special(), dimensionLength, tadPack.specialShapeInfo(), tadPack.specialOffsets());
+        (sd::LongType *)dbDimension->special(), dimensionLength, tadPack.specialShapeInfo(), tadPack.specialOffsets());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
@@ -732,7 +773,7 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *d
 
     const auto zLen = shape::length(hZShapeInfo);
 
-    std::vector<int> dimensions(dimension, dimension + dimensionLength);
+    std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
 
     const sd::LongType *zShapeInfoH = hZShapeInfo;
 
@@ -742,8 +783,8 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *d
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
     }
 
-    std::vector<int> dims =
-        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
+    std::vector<sd::LongType> dims =
+        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<sd::LongType>();
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceFloat(&lc, opNum, dbX->primary(), hXShapeInfo, dbX->special(),
@@ -1378,10 +1419,10 @@ void saveNpy(std::string fname, const InteropDataBuffer *data, const unsigned in
 /**
  * This method saves
  */
-sd::TadPack *tadOnlyShapeInfo(sd::LongType const *dXShapeInfo, int *dimension, int dimensionLength) {
+sd::TadPack *tadOnlyShapeInfo(const long long int *hXShapeInfo, long long int *dimension, int dimensionLength) {
   try {
     auto pack = new TadPack();
-    *pack = sd::ConstantTadHelper::getInstance().tadForDimensions(dXShapeInfo, dimension, dimensionLength);
+    *pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
     return pack;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1595,7 +1636,7 @@ void execSummaryStatsTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbDimension});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
@@ -1603,7 +1644,7 @@ void execSummaryStatsTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer
         &lc, opNum, dbX->primary(), hXShapeInfo, dbX->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), extraParams, dbZ->primary(),
         hZShapeInfo, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
-        reinterpret_cast<int *>(dbDimension->special()), dimensionLength, tadShapeInfo, tadOffsets, biasCorrected);
+        reinterpret_cast<sd::LongType *>(dbDimension->special()), dimensionLength, tadShapeInfo, tadOffsets, biasCorrected);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbDimension});
   } catch (std::exception &e) {
@@ -1647,7 +1688,7 @@ void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbY});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     auto tadPack =
@@ -1741,7 +1782,7 @@ void execScalarBoolTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbScalars});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
@@ -1812,7 +1853,7 @@ void execScalarTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
 #ifdef SD_EXPERIMENTAL_ENABLED
     BUILD_PAIRWISE_SELECTOR(
         xType, yType, zType, functions::scalar::ScalarTransform,
-        ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams,
+        ::executeCudaAlongDimension(launchDims, stream, opType, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams,
                                     dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
         SD_COMMON_TYPES, SD_COMMON_TYPES);
 #else
@@ -2110,7 +2151,7 @@ void execReduce3All(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbY, dbDimension});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
@@ -2120,7 +2161,7 @@ void execReduce3All(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hYShapeInfo)->special(),
                                         dbZ->primary(), hZShapeInfo, dbZ->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
-                                        reinterpret_cast<int *>(dbDimension->special()), dimensionLength, xTadShapeInfo,
+                                        reinterpret_cast<sd::LongType *>(dbDimension->special()), dimensionLength, xTadShapeInfo,
                                         xOffsets, yTadShapeInfo, yOffsets);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbY});
@@ -2321,7 +2362,7 @@ void sortByValue(sd::Pointer *extraPointers, void *x, sd::LongType const *xShape
 
 void sortTadByKey(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo, void *dX,
                   sd::LongType const *dXShapeInfo, void *y, sd::LongType const *yShapeInfo, void *dy,
-                  sd::LongType const *dyShapeInfo, int *dimension, int dimensionLength, bool descending) {
+                  sd::LongType const *dyShapeInfo, sd::LongType *dimension, int dimensionLength, bool descending) {
   try {
     auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
     auto context =
@@ -2344,7 +2385,7 @@ void sortTadByKey(sd::Pointer *extraPointers, void *x, sd::LongType const *xShap
 
 void sortTadByValue(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo, void *dX,
                     sd::LongType const *dXShapeInfo, void *y, sd::LongType const *yShapeInfo, void *dy,
-                    sd::LongType const *dyShapeInfo, int *dimension, int dimensionLength, bool descending) {
+                    sd::LongType const *dyShapeInfo, sd::LongType *dimension, int dimensionLength, bool descending) {
   try {
     auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
     auto context =
@@ -2367,7 +2408,7 @@ void sortTadByValue(sd::Pointer *extraPointers, void *x, sd::LongType const *xSh
 }
 
 void sortTad(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo, void *dX,
-             sd::LongType const *dXShapeInfo, int *dimension, int dimensionLength, sd::LongType const *tadShapeInfo,
+             sd::LongType const *dXShapeInfo, sd::LongType *dimension, int dimensionLength, sd::LongType const *tadShapeInfo,
              sd::LongType const *tadOffsets, bool descending) {
   try {
     // to be implemented

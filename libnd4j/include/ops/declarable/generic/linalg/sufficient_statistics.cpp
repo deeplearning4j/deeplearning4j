@@ -35,7 +35,7 @@ CUSTOM_OP_IMPL(sufficient_statistics, 2, 3, false, 0, 0) {
   auto sum = OUTPUT_VARIABLE(1);
   auto squares = OUTPUT_VARIABLE(2);
 
-  std::vector<int> axis(axisVector->lengthOf());  //*block.getIArguments();
+  std::vector<LongType> axis(axisVector->lengthOf());  //*block.getIArguments();
 
   // axis might be dynamic (i.e. tf mode)
   helpers::adjustAxis(input->rankOf(), axisVector, axis);
@@ -62,7 +62,7 @@ DECLARE_TYPES(sufficient_statistics) {
 
 DECLARE_SHAPE_FN(sufficient_statistics) {
   auto axisVector = INPUT_VARIABLE(1);
-  std::vector<int> axis(axisVector->lengthOf());
+  std::vector<LongType> axis(axisVector->lengthOf());
 
   auto input = INPUT_VARIABLE(0);
   helpers::adjustAxis(input->rankOf(), axisVector, axis);

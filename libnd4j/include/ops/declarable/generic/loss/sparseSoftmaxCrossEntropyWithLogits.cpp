@@ -56,7 +56,7 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0)
       "logits shape with last dimension excluded, however got labels_shape = %s and logits_shape = %s instead !",
       ShapeUtils::shapeAsString(labelsShape).c_str(), ShapeUtils::shapeAsString(logitsShape).c_str());
 
-  std::vector<int> dimension = {-1};
+  std::vector<LongType> dimension = {-1};
 
   auto maxAlongDim = logits->reduceAlongDimension(reduce::Max, dimension, true);
   auto logitsExp = (*logits - maxAlongDim).transform(transform::Exp, nullptr);
@@ -132,7 +132,7 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits_grad, 2, 1, false, 
                "logits_shape = %s instead !",
                ShapeUtils::shapeAsString(labelsShape).c_str(), ShapeUtils::shapeAsString(logitsShape).c_str());
 
-  std::vector<int> dimension = {-1};
+  std::vector<LongType> dimension = {-1};
 
   NDArray softmax = (*logits - logits->reduceAlongDimension(reduce::Max, dimension, true)).transform(transform::Exp);
   softmax /= softmax.reduceAlongDimension(reduce::Sum, dimension, true);

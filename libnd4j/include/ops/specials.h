@@ -66,11 +66,11 @@ class SD_LIB_EXPORT SpecialMethods {
   static int lastPowerOf2(int number);
 
   static void sortGeneric(void *x, const sd::LongType *xShapeInfo, bool descending);
-  static void sortTadGeneric(void *x, const sd::LongType *xShapeInfo, int *dimension, int dimensionLength,
+  static void sortTadGeneric(void *x, const sd::LongType *xShapeInfo, sd::LongType  *dimension, int dimensionLength,
                              const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, bool descending);
 
   static void decodeBitmapGeneric(const void *dx, sd::LongType N, void *dz, const sd::LongType *zShapeInfo);
-  static sd::LongType encodeBitmapGeneric(void *dx, const sd::LongType *zShapeInfo, sd::LongType N, int *dz,
+  static sd::LongType encodeBitmapGeneric(void *dx, const sd::LongType *zShapeInfo, sd::LongType N, sd::LongType  *dz,
                                           float threshold);
 };
 
@@ -83,9 +83,9 @@ class SD_LIB_EXPORT DoubleMethods {
                           bool descending);
 
   static void sortTadByKey(void *vx, sd::LongType const *xShapeInfo, void *vy, sd::LongType const *yShapeInfo,
-                           int *dimension, int dimensionLength, bool descending);
+                           sd::LongType  *dimension, int dimensionLength, bool descending);
   static void sortTadByValue(void *vx, sd::LongType const *xShapeInfo, void *vy, sd::LongType const *yShapeInfo,
-                             int *dimension, int dimensionLength, bool descending);
+                             sd::LongType  *dimension, int dimensionLength, bool descending);
 };
 }  // namespace sd
 

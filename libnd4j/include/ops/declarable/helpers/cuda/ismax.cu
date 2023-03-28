@@ -35,7 +35,7 @@ namespace helpers {
 
 template <typename T>
 static void ismax_(sd::LaunchContext* context, const NDArray* input, NDArray* output,
-                   const std::vector<int>& dimensions) {
+                   const std::vector<sd::LongType>& dimensions) {
   auto stream = context->getCudaStream();
 
   auto xRank = input->rankOf();
@@ -84,7 +84,7 @@ static void ismax_(sd::LaunchContext* context, const NDArray* input, NDArray* ou
   }
 }
 
-void ismax(sd::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<int>& dimensions) {
+void ismax(sd::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<sd::LongType>& dimensions) {
   NDArray::prepareSpecialUse({output}, {input});
 
   BUILD_SINGLE_SELECTOR(input->dataType(), ismax_, (context, input, output, dimensions), SD_COMMON_TYPES);
@@ -94,7 +94,7 @@ void ismax(sd::LaunchContext* context, const NDArray* input, NDArray* output, co
 
 BUILD_SINGLE_TEMPLATE(template void ismax_,
                       (sd::LaunchContext * context, const NDArray* input, NDArray* output,
-                       const std::vector<int>& dimensions),
+                       const std::vector<sd::LongType>& dimensions),
                       SD_COMMON_TYPES);
 
 }  // namespace helpers

@@ -27,7 +27,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 //////////////////////////////////////////////////////////////////////////
-void argMax(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+void argMax(const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions) {
   NDArray::prepareSpecialUse({&output}, {&input});
   if (output.isScalar()) {
     NativeOpExecutioner::execIndexReduceScalar(LaunchContext::defaultContext(), indexreduce::Ops::IndexMax,
@@ -47,7 +47,7 @@ void argMax(const NDArray& input, NDArray& output, const std::vector<int>& dimen
   NDArray::registerSpecialUse({&output}, {&input});
 }
 
-void argMin(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+void argMin(const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions) {
   NDArray::prepareSpecialUse({&output}, {&input});
   if (output.isScalar()) {
     NativeOpExecutioner::execIndexReduceScalar(LaunchContext::defaultContext(), indexreduce::Ops::IndexMin,
@@ -67,7 +67,7 @@ void argMin(const NDArray& input, NDArray& output, const std::vector<int>& dimen
   NDArray::registerSpecialUse({&output}, {&input});
 }
 
-void argAbsMax(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+void argAbsMax(const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions) {
   NDArray::prepareSpecialUse({&output}, {&input});
   if (output.isScalar()) {
     NativeOpExecutioner::execIndexReduceScalar(LaunchContext::defaultContext(), indexreduce::Ops::IndexAbsoluteMax,
@@ -87,7 +87,7 @@ void argAbsMax(const NDArray& input, NDArray& output, const std::vector<int>& di
   NDArray::registerSpecialUse({&output}, {&input});
 }
 
-void argAbsMin(const NDArray& input, NDArray& output, const std::vector<int>& dimensions) {
+void argAbsMin(const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions) {
   NDArray::prepareSpecialUse({&output}, {&input});
   if (output.isScalar()) {
     NativeOpExecutioner::execIndexReduceScalar(LaunchContext::defaultContext(), indexreduce::Ops::IndexAbsoluteMin,

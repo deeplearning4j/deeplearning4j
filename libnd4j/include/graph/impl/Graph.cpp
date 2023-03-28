@@ -66,10 +66,6 @@ sd::LongType Graph::estimateRequiredMemory() {
        * 4) Op is multiplicator (i.e. im2col)
        */
       if (node->hasCustomOp()) {
-        // if (node->isInplace()) {
-        //    continue;
-        //}
-
         sd_debug("Trying estimation [%i] on [%s]\n", node->id(), node->getCustomOp()->getOpName()->c_str());
 
         auto op = node->getCustomOp();
@@ -148,16 +144,6 @@ sd::LongType Graph::estimateRequiredMemory() {
         // if that's scalar output - we don't care about previous node
         if (node->getDimensions()->size() == 0 ||
             (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == sd::DataTypeUtils::max<int>())) {
-          //                            auto aNewShape = new sd::LongType[8];
-          //
-          //                            aNewShape[0] = 2;
-          //                            aNewShape[1] = 1;
-          //                            aNewShape[2] = 1;
-          //                            aNewShape[3] = 1;
-          //                            aNewShape[4] = 1;
-          //                            aNewShape[5] = 8192; // set type as FLOAT32 by default
-          //                            aNewShape[6] = 1;
-          //                            aNewShape[7] = 99;
           newShape = ConstantShapeHelper::getInstance().createShapeInfo(DataType::FLOAT32, 'c', {1, 1});
         } else {
           auto in = node->input()->at(0);
@@ -284,7 +270,6 @@ void Graph::addNode(Node *node) {
   _built.store(false);
 
   if (node->opType() == OpType_LOGIC) {
-    // sd_debug("Adding LogicOp [%i]\n", node->opNum());
     // SCOPE
     if (node->opNum() == logic::Scope) {
       auto scope = new Scope(node->id(), node->getName() != nullptr ? node->getName()->c_str() : "");
@@ -459,7 +444,7 @@ void Graph::addNode(Node *node) {
 
         return;
       }
-    } /*else if (node->opType() == OpType_LOGIC && node->opNum() == 10) {
+    } /*else if (node->opType() == OpType_LOGIC && node->opType() == 10) {
         // Scopes are just being added. They won't be executed on their own anyway.
 
         int nLayer = _onion->size();
