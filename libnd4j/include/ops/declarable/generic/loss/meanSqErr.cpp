@@ -217,7 +217,7 @@ CUSTOM_OP_IMPL(mean_sqerr_loss_grad, 3, 3, false, 0, 1) {
       if (weights->isScalar())
         dLdw->assign(E.reduceNumber(reduce::Sum));
       else if (weights != weightsBroad) {
-        std::vector<int> axesToReduceAlong =
+        std::vector<LongType> axesToReduceAlong =
             ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
         E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
       } else
@@ -243,7 +243,7 @@ CUSTOM_OP_IMPL(mean_sqerr_loss_grad, 3, 3, false, 0, 1) {
         if (weights->isScalar())
           *dLdw = 0.;
         else if (weights != weightsBroad) {
-          std::vector<int> axesToReduceAlong =
+          std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
           ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum))
               .reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
@@ -271,7 +271,7 @@ CUSTOM_OP_IMPL(mean_sqerr_loss_grad, 3, 3, false, 0, 1) {
         if (weights->isScalar())
           dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
         else if (weights != weightsBroad) {
-          std::vector<int> axesToReduceAlong =
+          std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
           E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
           *dLdw /= numOfNonZeroWeightsScalar;

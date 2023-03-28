@@ -40,7 +40,7 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
 
   if (block.width() > 2) {  // multiple input
     indices = INPUT_VARIABLE(block.width() - 1);
-    std::vector<int> dims(input->rankOf());
+    std::vector<sd::LongType> dims(input->rankOf());
     int i = output->rankOf() - input->rankOf();
     for (auto& v : dims) {
       v = i++;

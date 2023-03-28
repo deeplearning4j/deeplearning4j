@@ -74,7 +74,7 @@ class SD_LIB_HIDDEN ConvolutionUtils {
     }
   }
 
-  static inline void calcPadding2D(int& pH, int& pW, int oH, int oW, int iH, int iW, int kH, int kW, int sH, int sW,
+  static inline void calcPadding2D(LongType& pH, LongType& pW, int oH, int oW, int iH, int iW, int kH, int kW, int sH, int sW,
                                    int dH, int dW, const int paddingMode = 1 /* default is same mode*/) {
     if (paddingMode == 0)  // valid
       return;

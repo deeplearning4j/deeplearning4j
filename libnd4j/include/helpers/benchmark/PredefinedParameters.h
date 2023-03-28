@@ -26,20 +26,20 @@
 
 namespace sd {
 class PredefinedParameters : public ParametersSpace {
-  std::vector<int> _params;
+  std::vector<sd::LongType> _params;
 
  public:
-  PredefinedParameters(std::string name, std::initializer_list<int> parameters) : ParametersSpace() {
+  PredefinedParameters(std::string name, std::initializer_list<sd::LongType> parameters) : ParametersSpace() {
     _name = name;
     _params = parameters;
   }
 
-  PredefinedParameters(std::string name, std::vector<int> parameters) : ParametersSpace() {
+  PredefinedParameters(std::string name, std::vector<sd::LongType> parameters) : ParametersSpace() {
     _name = name;
     _params = parameters;
   }
 
-  std::vector<int> evaluate() override { return _params; }
+  std::vector<sd::LongType> evaluate() override { return _params; }
 };
 }  // namespace sd
 

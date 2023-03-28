@@ -31,7 +31,7 @@ static void _dynamicPartitionFunctor(NDArray const* input, NDArray const* indice
   std::vector<std::pair<NDArray*, int>> outputs(outputList.size());
   int sourceDimsLen = input->rankOf() - indices->rankOf();
   if (sourceDimsLen) {
-    std::vector<int> sourceDims(sourceDimsLen);
+    std::vector<sd::LongType> sourceDims(sourceDimsLen);
 
     for (int i = sourceDimsLen; i > 0; i--) sourceDims[sourceDimsLen - i] = input->rankOf() - i;
 
@@ -42,7 +42,7 @@ static void _dynamicPartitionFunctor(NDArray const* input, NDArray const* indice
     // PRAGMA_OMP_PARALLEL_FOR_IF(outSize > Environment::getInstance().tadThreshold())
     for (unsigned int i = 0; i < outSize; i++) {
       outputs[i].first = outputList[i];
-      std::vector<int> outDims(outputs[i].first->rankOf() - 1);
+      std::vector<sd::LongType > outDims(outputs[i].first->rankOf() - 1);
 
       int r = outputs[i].first->rankOf();
 
@@ -95,7 +95,7 @@ static sd::Status _dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std
       }
     }
   } else {
-    std::vector<int> restDims(output->rankOf() - 1);
+    std::vector<sd::LongType > restDims(output->rankOf() - 1);
     for (auto i = restDims.size(); i > 0; i--) restDims[restDims.size() - i] = output->rankOf() - i;
 
     ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
@@ -103,7 +103,7 @@ static sd::Status _dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std
     for (int e = 0; e < numOfData; e++) {
       auto data = inputs[e];
       auto index = indices[e];
-      std::vector<int> sourceDims(data->rankOf() - index->rankOf());
+      std::vector<sd::LongType > sourceDims(data->rankOf() - index->rankOf());
       for (auto i = sourceDims.size(); i > 0; i--) sourceDims[sourceDims.size() - i] = data->rankOf() - i;
 
       ResultSet listOfTensors = data->allTensorsAlongDimension(sourceDims);
@@ -134,7 +134,7 @@ static void _dynamicPartitionFunctorBP(NDArray const* input, NDArray const* indi
 
   int sourceDimsLen = input->rankOf() - indices->rankOf();
   if (sourceDimsLen) {  // multidimensional case
-    std::vector<int> sourceDims(sourceDimsLen);
+    std::vector<sd::LongType > sourceDims(sourceDimsLen);
 
     for (int i = sourceDimsLen; i > 0; i--) sourceDims[sourceDimsLen - i] = input->rankOf() - i;
 
@@ -143,7 +143,7 @@ static void _dynamicPartitionFunctorBP(NDArray const* input, NDArray const* indi
     for (auto i = 0; i < inputGradientList.size(); i++) {
       outputs[i].first = inputGradientList[i];
       if (outputs[i].first->rankOf() < 1) continue;  // skip empty gradient outs
-      std::vector<int> outDims(outputs[i].first->rankOf() - 1);
+      std::vector<sd::LongType > outDims(outputs[i].first->rankOf() - 1);
 
       for (int k = 1; k < outputs[i].first->rankOf(); k++) outDims[k - 1] = k;
 

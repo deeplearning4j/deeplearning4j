@@ -24,6 +24,7 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/LegacyBroadcastOp.h>
 #include <ops/declarable/helpers/axis.h>
+#include <ops/declarable/OpRegistrator.h>
 
 namespace sd {
 namespace ops {
@@ -35,7 +36,7 @@ sd::Status LegacyBroadcastOp::validateAndExecute(Context &block) {
 
   NDArray::prepareSpecialUse({z}, {x, y});
 
-  std::vector<int> dims(*block.getAxis());
+  std::vector<sd::LongType> dims(*block.getAxis());
   if (dims.size() == 0 && block.width() > 2) {
     auto axis = INPUT_VARIABLE(2);
     helpers::adjustAxis(x->rankOf(), axis, dims);
@@ -90,6 +91,9 @@ sd::Status LegacyBroadcastOp::validateAndExecute(Context &block) {
   }
 
   manager.synchronize();
+
+  traceExecIfNeeded(block);
+
   STORE_RESULT(*z);
 
   return sd::Status::OK;

@@ -122,7 +122,7 @@ static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& 
 
   // loop through input array
   auto func = PRAGMA_THREADS_FOR {
-    int zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
+    sd::LongType zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
 
     for (auto i = start; i < stop; i++) {
       shape::index2coordsCPU(start, i, output.shapeInfo(), zCoords);
@@ -300,7 +300,7 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
 
   // loop through output array
   auto func = PRAGMA_THREADS_FOR {
-    int zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
+    sd::LongType zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
 
     for (auto i = start; i < stop; i++) {
       shape::index2coordsCPU(start, i, output.shapeInfo(), zCoords);

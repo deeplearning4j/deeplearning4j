@@ -36,7 +36,7 @@ class SD_LIB_EXPORT LegacyTransformOp : public LegacyOp {
 
  public:
   LegacyTransformOp();
-  LegacyTransformOp(int opNum);
+  LegacyTransformOp(int opType);
 
   ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block);
   virtual LegacyOp* clone();

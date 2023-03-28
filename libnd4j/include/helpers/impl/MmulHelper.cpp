@@ -32,24 +32,24 @@ namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
 sd::NDArray* sd::MmulHelper::tensorDot(const sd::NDArray* A, const sd::NDArray* B,
-                                       const std::initializer_list<int>& axesA,
-                                       const std::initializer_list<int>& axesB) {
-  std::vector<int> aA(axesA);
-  std::vector<int> aB(axesB);
+                                       const std::initializer_list<LongType>& axesA,
+                                       const std::initializer_list<LongType>& axesB) {
+  std::vector<sd::LongType> aA(axesA);
+  std::vector<sd::LongType> aB(axesB);
   return tensorDot(A, B, aA, aB);
 }
 
 //////////////////////////////////////////////////////////////////////////
-sd::NDArray* sd::MmulHelper::tensorDot(const sd::NDArray* a, const sd::NDArray* b, const std::vector<int>& axes_0,
-                                       const std::vector<int>& axes_1) {
-  std::vector<int> permutAt, permutBt;
+sd::NDArray* sd::MmulHelper::tensorDot(const sd::NDArray* A, const sd::NDArray* B, const std::vector<LongType>& axesA,
+                                       const std::vector<LongType>& axesB) {
+  std::vector<sd::LongType> permutAt, permutBt;
   std::vector<sd::LongType> shapeAt, shapeBt;
 
-  auto outShape = ShapeUtils::evalShapeForTensorDot(a, b, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
+  auto outShape = ShapeUtils::evalShapeForTensorDot(A, B, axesA, axesB, permutAt, permutBt, shapeAt, shapeBt);
 
   // check whether permutation is necessary
-  const NDArray* aP = permutAt.empty() ? a : new NDArray(a->permute(permutAt));
-  const NDArray* bP = permutBt.empty() ? b : new NDArray(b->permute(permutBt));
+  const NDArray* aP = permutAt.empty() ? A : new NDArray(A->permute(permutAt));
+  const NDArray* bP = permutBt.empty() ? B : new NDArray(B->permute(permutBt));
 
   // check whether reshape is necessary
   const NDArray* aPR = aP->isSameShape(shapeAt) ? aP : new NDArray(aP->reshape(aP->ordering(), shapeAt));
@@ -61,17 +61,17 @@ sd::NDArray* sd::MmulHelper::tensorDot(const sd::NDArray* a, const sd::NDArray* 
 
   if (aP != aPR) delete aPR;
   if (bP != bPR) delete bPR;
-  if (a != aP) delete aP;
-  if (b != bP) delete bP;
+  if (A != aP) delete aP;
+  if (B != bP) delete bP;
 
   return c;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void sd::MmulHelper::tensorDot(const sd::NDArray* a, const sd::NDArray* b, sd::NDArray* c,
-                               const std::vector<int>& axes_a, const std::vector<int>& axes_b,
-                               const std::vector<int>& permutForC) {
-  std::vector<int> permutAt, permutBt;
+                               const std::vector<LongType>& axes_a, const std::vector<LongType>& axes_b,
+                               const std::vector<LongType>& permutForC) {
+  std::vector<sd::LongType> permutAt, permutBt;
   std::vector<sd::LongType> shapeAt, shapeBt;
   ShapeUtils::evalShapeForTensorDot(a, b, axes_a, axes_b, permutAt, permutBt, shapeAt, shapeBt);
 
@@ -287,7 +287,7 @@ void MmulHelper::matmul(const sd::NDArray* x, const sd::NDArray* y, sd::NDArray*
 
   if ((transX && xRank > 1) || (transY && yRank > 1)) {
     const int rank = xRank >= yRank ? xRank : yRank;
-    std::vector<int> permut(rank);
+    std::vector<sd::LongType> permut(rank);
     for (int i = 0; i < rank - 2; ++i) permut[i] = i;
     permut[rank - 2] = rank - 1;
     permut[rank - 1] = rank - 2;
@@ -310,7 +310,7 @@ void MmulHelper::matmul(const sd::NDArray* x, const sd::NDArray* y, sd::NDArray*
   } else {  // rest cases -  batched mmul
 
     const int batchRank = xRank - 2;
-    std::vector<int> dimsToExclude(batchRank);
+    std::vector<sd::LongType> dimsToExclude(batchRank);
     for (int i = 0; i < batchRank; ++i) dimsToExclude[i] = i;
 
     const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT->shapeInfo(), dimsToExclude);
@@ -329,14 +329,7 @@ void MmulHelper::matmul(const sd::NDArray* x, const sd::NDArray* y, sd::NDArray*
   if (zT != z) delete zT;
 }
 
-// BUILD_TRIPLE_TEMPLATE(template void usualGemm, (const char cOrder, const bool transA, const bool transB, const int M,
-// const int N, const int K, const double alpha, const void* A, const int lda, const void* B, const int ldb, const double
-// beta, void* C, const int ldc), SD_COMMON_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES); BUILD_TRIPLE_TEMPLATE(template void
-// usualGemv, (const char aOrder, const int M, const int N, const double alpha, const void* A, const int lda, const void*
-// B, const int incx, const double beta, void* C, const int incy), SD_COMMON_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
-// BUILD_TRIPLE_TEMPLATE(template void usualDot,  (const sd::LongType length, const double alpha, const void* vX, const
-// sd::LongType incx, const void* vY, const sd::LongType incy, const double beta, void* vZ), SD_COMMON_TYPES,
-// SD_FLOAT_TYPES, SD_FLOAT_TYPES);
+
 
 }  // namespace sd
 

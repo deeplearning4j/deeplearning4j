@@ -31,7 +31,7 @@ namespace ops {
 namespace helpers {
 
 template <typename X, typename Z>
-static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>& dimensions) {
+static void ismax_(const NDArray* input, NDArray* output, const std::vector<LongType>& dimensions) {
   if (input->isVector()) {
     int dimensionsLength = dimensions.size();
     int length = input->lengthOf();
@@ -114,9 +114,9 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
     // to the back.
     // permuted version of the input shape info for setting up the tad problem
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(
-        input->shapeInfo(), const_cast<int*>(dimensions.data()), dimensionsLength);
+        input->shapeInfo(), const_cast<sd::LongType *>(dimensions.data()), dimensionsLength);
     auto tadPackZ = sd::ConstantTadHelper::getInstance().tadForDimensions(
-        output->shapeInfo(), const_cast<int*>(dimensions.data()), dimensionsLength);
+        output->shapeInfo(), const_cast<sd::LongType *>(dimensions.data()), dimensionsLength);
 
     auto tadShapeShapeInfo = tadPack.primaryShapeInfo();
     auto tadOffsets = tadPack.primaryOffsets();
@@ -187,7 +187,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
   }
 }
 
-void ismax(sd::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<int>& dimensions) {
+void ismax(sd::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<LongType>& dimensions) {
   BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), ismax_, (input, output, dimensions), SD_COMMON_TYPES,
                         SD_COMMON_TYPES);
 }

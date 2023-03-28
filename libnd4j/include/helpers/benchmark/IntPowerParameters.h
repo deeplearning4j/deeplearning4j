@@ -46,8 +46,8 @@ class IntPowerParameters : public ParametersSpace {
     _name = name;
   }
 
-  std::vector<int> evaluate() override {
-    std::vector<int> result;
+  std::vector<sd::LongType> evaluate() override {
+    std::vector<sd::LongType> result;
     for (int e = _start; e <= _stop; e += _step) {
       result.emplace_back(sd::math::sd_pow<double, double, int>(_base, e));
     }

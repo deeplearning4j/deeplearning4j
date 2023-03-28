@@ -33,6 +33,87 @@
 
 namespace sd {
 namespace ops {
+class SD_LIB_EXPORT OpExecTrace {
+ public:
+  std::vector<const sd::LongType *> *inputShapeBuffers;
+  std::vector<const sd::LongType *> *outputShapeBuffers;
+  const std::string *opName;
+  std::vector<sd::LongType> iArgs;
+  std::vector<double> tArgs;
+  std::vector<sd::DataType> dArgs;
+  std::vector<bool> bArgs;
+  std::vector<std::string> sArguments;
+  int opType = -1;
+
+
+#ifndef __JAVACPP_HACK__
+  OpExecTrace(std::vector<const sd::LongType *> *inputShapeBuffers,
+              std::vector<const sd::LongType *> *outputShapeBuffers,
+              const std::string *opName) {
+    this->inputShapeBuffers = inputShapeBuffers;
+    this->outputShapeBuffers = outputShapeBuffers;
+    this->opName = opName;
+
+  }
+
+  OpExecTrace(std::vector<const sd::LongType *> *inputShapeBuffers,
+              std::vector<const sd::LongType *> *outputShapeBuffers,
+              const std::string *opName,
+              std::vector<sd::LongType> *iArgs,
+              std::vector<double> *tArgs,
+              std::vector<bool> *bArgs,
+              std::vector<std::string> *sArgs,
+              int opType) {
+    this->inputShapeBuffers = inputShapeBuffers;
+    this->outputShapeBuffers = outputShapeBuffers;
+    this->opName = opName;
+    this->opType = opType;
+    for(int i = 0; i < tArgs->size(); i++) {
+      this->tArgs.push_back(tArgs->at(i));
+    }
+
+    for(int i = 0; i < bArgs->size(); i++) {
+      this->bArgs.push_back(bArgs->at(i));
+    }
+
+    for(int i = 0; i < iArgs->size(); i++) {
+      this->iArgs.push_back(iArgs->at(i));
+    }
+
+    for(int i = 0; i < sArgs->size(); i++) {
+      this->sArguments.push_back(sArgs->at(i));
+    }
+
+  }
+#endif
+
+  OpExecTrace() = default;
+
+  ~OpExecTrace();
+
+  std::vector<const sd::LongType*>* getInputShapeBuffers() const { return inputShapeBuffers; }
+  void setInputShapeBuffers(std::vector<const LongType*>* inputShapeBuffers) {
+    OpExecTrace::inputShapeBuffers = inputShapeBuffers;
+  }
+  std::vector<const sd::LongType*>* getOutputShapeBuffers() const { return outputShapeBuffers; }
+  void setOutputShapeBuffers(std::vector<const LongType*>* outputShapeBuffers) {
+    OpExecTrace::outputShapeBuffers = outputShapeBuffers;
+  }
+  const std::string* getOpName() const { return opName; }
+  void setOpName(const std::string* opName) { OpExecTrace::opName = opName; }
+  const std::vector<sd::LongType>& getIArgs() const { return iArgs; }
+  void setIArgs(const std::vector<LongType>& iArgs) { OpExecTrace::iArgs = iArgs; }
+  const std::vector<double>& getTArgs() const { return tArgs; }
+  void setTArgs(const std::vector<double>& tArgs) { OpExecTrace::tArgs = tArgs; }
+  const std::vector<sd::DataType>& getDArgs() const { return dArgs; }
+  void setDArgs(const std::vector<sd::DataType>& dArgs) { OpExecTrace::dArgs = dArgs; }
+  const std::vector<bool>& getBArgs() const { return bArgs; }
+  void setBArgs(const std::vector<bool>& bArgs) { OpExecTrace::bArgs = bArgs; }
+  const std::vector<std::string>& getSArguments() const { return sArguments; }
+  void setSArguments(const std::vector<std::string>& sArguments) { OpExecTrace::sArguments = sArguments; }
+  int getOpType() const { return opType; }
+  void setOpType(int opType) { OpExecTrace::opType = opType; }
+};
 
 /**
  *   This class is very basic info holder for ops. bean/pojo pretty much.
@@ -40,7 +121,7 @@ namespace ops {
  */
 class SD_LIB_EXPORT OpDescriptor {
  protected:
-  // opNum for legacy XYZ ops
+  // opType for legacy XYZ ops
   int _opNum = 0;
 
   // opName for CustomOp
@@ -151,7 +232,7 @@ class SD_LIB_EXPORT OpDescriptor {
   // this method allows you to enable/disable inplace call for a given op
   void allowInplace(bool reallyAllow);
 
-  // this method returns opNum (applicable for legacy XYZ ops only)
+  // this method returns opType (applicable for legacy XYZ ops only)
   int getOpNum();
 
   // this method allows to set specific opNum

@@ -314,6 +314,28 @@ public class Nd4j {
         nd4j.initContext();
     }
 
+
+    /**
+     * Toggle tracing. Ops executed will be stored in a list
+     * as trace objects. This will contain shape info and associated
+     * arguments/op names.
+     * Tracing is disabled by default.
+     * @param trace whether to trace or not.
+     */
+    public static void toggleTrace(boolean trace) {
+        NativeOpsHolder.getInstance().getDeviceNativeOps().toggleOpTrace(trace);
+    }
+
+
+    /**
+     * Purge trace.  This will clear the list of ops executed.
+     *
+     */
+    public static void purgeTrace() {
+        NativeOpsHolder.getInstance().getDeviceNativeOps().purgeOpTrace();
+    }
+
+
     /**
      * See {@link #pad(INDArray, INDArray)}.  Uses 0 padding.
      */
@@ -1433,7 +1455,7 @@ public class Nd4j {
     // used by createBufferDetached(long[] DataType) and createBufferDetached(int[] , DataType)
     private static DataBuffer createBufferDetachedImpl(long length, DataType type){
 
-       logAllocationIfNeeded(dataType(),length * type.width());
+        logAllocationIfNeeded(dataType(),length * type.width());
         switch (type) {
             case DOUBLE:
                 return DATA_BUFFER_FACTORY_INSTANCE.createDouble(length);
@@ -2107,21 +2129,7 @@ public class Nd4j {
      * @return the linearly spaced vector
      */
     public static INDArray linspace(long lower, long upper, long num, @NonNull DataType dtype) {
-        // for now we'll temporarily keep original impl
-        if(lower == upper && num == 1) {
-            return Nd4j.scalar(dtype, lower);
-        }
-        if (num == 1) {
-            return Nd4j.scalar(dtype, lower);
-        }
-        if (dtype.isIntType()) {
-            return linspaceWithCustomOp(lower, upper, (int)num, dtype);
-        } else if (dtype.isFPType()) {
-            return linspace((double) lower, (double)upper, (int) num, dtype);
-        }
-        else {
-            throw new IllegalStateException("Illegal data type for linspace: " + dtype.toString());
-        }
+        return linspace(dtype, (double) lower,(double) upper,  num);
     }
 
     /**
@@ -2133,7 +2141,6 @@ public class Nd4j {
      * @return the linearly spaced vector
      */
     public static INDArray linspace(@NonNull DataType dataType, double lower, double step, long num) {
-        Preconditions.checkState(dataType.isFPType(), "Datatype must be a floating point type for linspace, got %s", dataType);
         if (num == 1)
             return Nd4j.scalar(dataType, lower);
         return Nd4j.getExecutioner().exec(new Linspace(lower, num, step, dataType));

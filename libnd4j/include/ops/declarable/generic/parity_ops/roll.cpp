@@ -36,8 +36,8 @@ CONFIGURABLE_OP_IMPL(roll, 1, 1, true, 0, 0) {
   int inputLen = input->lengthOf();
 
   bool shiftIsLinear = block.width() == 1;
-  std::vector<int> axes;
-  std::vector<int> shifts;
+  std::vector<sd::LongType> axes;
+  std::vector<sd::LongType> shifts;
   if (block.width() > 1) {
     REQUIRE_TRUE(block.width() == 3, 0, "roll: 3 arguments required for roll - input, shifts and axes. But %i given.",
                  block.width());

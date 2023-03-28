@@ -51,7 +51,7 @@ static void segmentMaxFunctor_(NDArray* input, NDArray* indices, NDArray* output
       output->r<T>(idx) = val;
     }
   } else {
-    std::vector<int> restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    std::vector<sd::LongType> restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto listOfTensors = input->allTensorsAlongDimension(restDims);
     auto listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
@@ -628,7 +628,7 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
     };
     samediff::Threads::parallel_for(func, 0, loop_size);
   } else {
-    std::vector<int> restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    std::vector<sd::LongType> restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
     ResultSet listOfBPTensors = tempRes.allTensorsAlongDimension(restDims);
     ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(restDims);

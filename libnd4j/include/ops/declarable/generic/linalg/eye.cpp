@@ -41,7 +41,7 @@ DECLARE_TYPES(eye) {
 }
 
 DECLARE_SHAPE_FN(eye) {
-  std::vector<int> params;
+  std::vector<LongType> params;
 
   sd::DataType dtype = block.getTArguments()->empty() ? sd::DataType::FLOAT32 : sd::DataTypeUtils::fromInt(T_ARG(0));
 

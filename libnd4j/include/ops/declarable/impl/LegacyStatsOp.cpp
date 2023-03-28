@@ -24,6 +24,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <ops/declarable/LegacyStatsOp.h>
+#include <ops/declarable/OpRegistrator.h>
 
 namespace sd {
 namespace ops {
@@ -53,7 +54,7 @@ sd::Status LegacyStatsOp::validateAndExecute(Context &block) {
   } else {
     // dimensions for TAD
     // we should skip first argument here, because it's addressing bias correction
-    std::vector<int> dims(*block.getIArguments());
+    std::vector<sd::LongType> dims(*block.getIArguments());
     for (int e = 0; e < dims.size(); e++)
       if (dims[e] < 0) dims[e] += x->rankOf();
 
@@ -78,6 +79,7 @@ sd::Status LegacyStatsOp::validateAndExecute(Context &block) {
 
   manager.synchronize();
   STORE_RESULT(*z);
+  traceExecIfNeeded(block);
 
   return sd::Status::OK;
 }

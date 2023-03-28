@@ -68,6 +68,8 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.util.ArrayList;

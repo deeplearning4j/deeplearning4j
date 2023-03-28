@@ -41,13 +41,13 @@ CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
 
   NDArray *weights = nullptr;
 
-  int maxLength = -1;
-  int minLength = 0;
-  int maxIndex = values->argMax();
-  maxLength = values->e<int>(maxIndex) + 1;
+  sd::LongType  maxLength = -1;
+  sd::LongType  minLength = 0;
+  sd::LongType  maxIndex = values->argMax();
+  maxLength = values->e< sd::LongType >(maxIndex) + 1;
 
   if (block.numI() > 0) {
-    minLength = sd::math::sd_max(INT_ARG(0), 0);
+    minLength = sd::math::sd_max(INT_ARG(0), (sd::LongType ) 0L);
     if (block.numI() == 2) maxLength = sd::math::sd_min(maxLength, INT_ARG(1));
   }
 
@@ -69,8 +69,8 @@ CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
     if (INPUT_VARIABLE(2)->lengthOf() > 0) {
       max = INPUT_VARIABLE(2);
     }
-    minLength = min->e<int>(0);
-    maxLength = max->e<int>(0);
+    minLength = min->e< sd::LongType >(0);
+    maxLength = max->e< sd::LongType >(0);
   } else if (block.width() > 3) {
     auto min = INPUT_VARIABLE(2);
     auto max = INPUT_VARIABLE(3);
@@ -91,8 +91,8 @@ CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
     REQUIRE_TRUE(values->isSameShape(weights), 0, "bincount: the input and weights shapes should be equals");
   }
 
-  minLength = sd::math::sd_max(minLength, 0);
-  maxLength = sd::math::sd_min(maxLength, values->e<int>(maxIndex) + 1);
+  minLength = sd::math::sd_max(minLength, (sd::LongType) 0);
+  maxLength = sd::math::sd_min(maxLength, values->e<sd::LongType>(maxIndex) + 1);
 
   auto result = OUTPUT_VARIABLE(0);
   result->assign(0.0f);
@@ -111,16 +111,16 @@ DECLARE_SHAPE_FN(bincount) {
   else if (block.numI() > 2)
     dtype = (sd::DataType)INT_ARG(2);
 
-  int maxIndex = in->argMax();
-  int maxLength = in->e<int>(maxIndex) + 1;
-  int outLength = maxLength;
+  sd::LongType maxIndex = in->argMax();
+  sd::LongType maxLength = in->e<sd::LongType>(maxIndex) + 1;
+  sd::LongType outLength = maxLength;
 
   if (block.numI() > 0) outLength = sd::math::sd_max(maxLength, INT_ARG(0));
 
   if (block.numI() > 1) outLength = sd::math::sd_min(outLength, INT_ARG(1));
 
   if (block.width() == 3) {  // the second argument is min and the third is max
-    auto min = INPUT_VARIABLE(1)->e<int>(0);
+    auto min = INPUT_VARIABLE(1)->e<sd::LongType>(0);
     auto max = min;
     if (INPUT_VARIABLE(2)->lengthOf() > 0) {
       max = INPUT_VARIABLE(2)->e<int>(0);
@@ -134,8 +134,8 @@ DECLARE_SHAPE_FN(bincount) {
     if (INPUT_VARIABLE(3)->lengthOf() > 0) {
       max = INPUT_VARIABLE(3);
     }
-    outLength = sd::math::sd_max(maxLength, min->e<int>(0));
-    outLength = sd::math::sd_min(outLength, max->e<int>(0));
+    outLength = sd::math::sd_max(maxLength, min->e<sd::LongType>(0));
+    outLength = sd::math::sd_min(outLength, max->e<sd::LongType>(0));
   }
 
   auto newshape = ConstantShapeHelper::getInstance().vectorShapeInfo(outLength, dtype);

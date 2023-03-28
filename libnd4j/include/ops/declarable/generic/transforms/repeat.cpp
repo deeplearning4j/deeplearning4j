@@ -34,7 +34,7 @@ CUSTOM_OP_IMPL(repeat, 1, 1, true, 0, -1) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  std::vector<int> repeats = *block.getIArguments();
+  std::vector<sd::LongType> repeats = *block.getIArguments();
 
   const int axis = repeats.back() < 0 ? repeats.back() + input->rankOf() : repeats.back();
 
@@ -59,7 +59,7 @@ DECLARE_TYPES(repeat) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::AN
 DECLARE_SHAPE_FN(repeat) {
   auto input = INPUT_VARIABLE(0);
 
-  std::vector<int> repeats = *block.getIArguments();
+  std::vector<sd::LongType> repeats = *block.getIArguments();
 
   const int axis = repeats.back() < 0 ? repeats.back() + input->rankOf() : repeats.back();
 

@@ -22,7 +22,7 @@ package org.nd4j.linalg.api.ops.executioner;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.*;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -88,6 +88,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         context.setTArguments(op.tArgs());
         context.setDArguments(op.dArgs());
     }
+
 
     protected void checkForCompression(Op op) {
         if (op.x() != null && op.x().isCompressed())

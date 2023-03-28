@@ -52,7 +52,7 @@ SD_KERNEL static void concatCuda(void* pVx, void* pxShapeInfo, void* vz, const s
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  int coords[SD_MAX_RANK];
+  sd::LongType coords[SD_MAX_RANK];
 
   for (sd::LongType i = tid; i < zLen; i += totalThreads) {
     shape::index2coords(i, zShapeInfo, coords);

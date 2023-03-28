@@ -116,7 +116,7 @@ class BroadcastBool {
 
   static void exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                    const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, void *extraParams,
-                   int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset,
+                   long long int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset,
                    const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, uint64_t start, uint64_t stop);
 
   static void exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
@@ -124,7 +124,7 @@ class BroadcastBool {
 
   static void execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                           const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo,
-                          void *extraParams, int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
+                          void *extraParams, long long int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
                           const sd::LongType *tadOffset, const sd::LongType *tadShapeInfoZ,
                           const sd::LongType *tadOffsetZ, uint64_t start, uint64_t stop);
 
@@ -141,7 +141,7 @@ class BroadcastBool {
    */
   template <typename OpType>
   static void exec(const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo,
-                   void *result, const sd::LongType *resultShapeInfo, void *extraParams, int *dimension,
+                   void *result, const sd::LongType *resultShapeInfo, void *extraParams, long long int *dimension,
                    int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset,
                    const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, uint64_t start, uint64_t stop);
 
@@ -151,7 +151,8 @@ class BroadcastBool {
 
   template <typename OpType>
   static void execInverse(const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo,
-                          void *result, const sd::LongType *resultShapeInfo, void *extraParams, int *dimension,
+                          void *result, const sd::LongType *resultShapeInfo, void *extraParams,
+                          long long int *dimension,
                           int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset,
                           const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, uint64_t start,
                           uint64_t stop);

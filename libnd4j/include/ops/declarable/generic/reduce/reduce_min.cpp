@@ -35,7 +35,7 @@ CUSTOM_OP_IMPL(reduce_min, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  std::vector<int> dimensions = *block.getIArguments();
+  std::vector<sd::LongType> dimensions = *block.getIArguments();
 
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
@@ -101,7 +101,7 @@ CUSTOM_OP_IMPL(reduce_min_bp, -1, 1, false, 0, 0) {
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
 
-  std::vector<int> dimensions = *block.getIArguments();
+  std::vector<sd::LongType> dimensions = *block.getIArguments();
 
   if (block.width() > 2) {
     auto axesVector = INPUT_VARIABLE(2);
@@ -137,7 +137,7 @@ CUSTOM_OP_IMPL(reduce_min_bp, -1, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(reduce_min_bp) {
-  std::vector<int> dimensions = *block.getIArguments();
+  std::vector<sd::LongType> dimensions = *block.getIArguments();
 
   if (block.width() > 2) {
     auto axesVector = INPUT_VARIABLE(2);

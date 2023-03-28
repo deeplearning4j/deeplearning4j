@@ -176,10 +176,8 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 
     @Override
     public void map(InfoMap infoMap) {
-
-
         infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_INLINE", "CUBLASWINAPI",
-                "SD_HOST", "SD_DEVICE", "SD_KERNEL", "SD_HOST_DEVICE", "SD_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
+                        "SD_HOST", "SD_DEVICE", "SD_KERNEL", "SD_HOST_DEVICE", "SD_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
                 .put(new Info("openblas_config.h", "cblas.h", "lapacke_config.h", "lapacke_mangling.h", "lapack.h", "lapacke.h", "lapacke_utils.h").skip())
                 .put(new Info("NativeOps.h", "build_info.h").objectify())
                 .put(new Info("OpaqueTadPack").pointerTypes("org.nd4j.nativeblas.OpaqueTadPack"))
@@ -194,6 +192,10 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("OpaqueContext").pointerTypes("org.nd4j.nativeblas.OpaqueContext"))
                 .put(new Info("OpaqueRandomGenerator").pointerTypes("org.nd4j.nativeblas.OpaqueRandomGenerator"))
                 .put(new Info("OpaqueLaunchContext").pointerTypes("org.nd4j.nativeblas.OpaqueLaunchContext"))
+                .put (new Info("std::vector<std::string>","std::vector<std::string>*").cast().pointerTypes("PointerPointer"))
+                .put(new Info("ExecTrace").pointerTypes("Pointer"))
+                .put(new Info("std::vector<sd::ops::ExecTrace*>","OpExecTrace**")
+                        .pointerTypes("org.nd4j.nativeblas.OpExecTraceVector"))
                 .put(new Info("const char").valueTypes("byte").pointerTypes("@Cast(\"char*\") String",
                         "@Cast(\"char*\") BytePointer"))
                 .put(new Info("char").valueTypes("char").pointerTypes("@Cast(\"char*\") BytePointer",
@@ -204,7 +206,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("sd::Status").cast().valueTypes("int").pointerTypes("IntPointer", "IntBuffer",
                         "int[]"))
                 .put(new Info("sd::Unsigned").cast()
-                .valueTypes("int").pointerTypes("IntPointer", "IntBuffer", "int[]"))
+                        .valueTypes("int").pointerTypes("IntPointer", "IntBuffer", "int[]"))
                 .put(new Info("float16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer",
                         "short[]"))
                 .put(new Info("bfloat16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer",

@@ -61,11 +61,11 @@ void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* ind
         samediff::Threads::parallel_for(func, 0, output->lengthOf());
 
       } else {
-        std::vector<int> dimsOut;
+        std::vector<sd::LongType> dimsOut;
         for (int i = 0; i < axis; ++i) dimsOut.push_back(i);
         for (int i = axis + indices->rankOf(); i < output->rankOf(); ++i) dimsOut.push_back(i);
 
-        std::vector<int> dimsIn = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
+        std::vector<sd::LongType> dimsIn = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
 
         const sd::LongType numOfSubArrs = indices->lengthOf();
 
@@ -113,7 +113,7 @@ void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* ind
 
       const sd::LongType numOfSubArrs = intArgs.size() - 1;
 
-      std::vector<int> dims = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
+      std::vector<sd::LongType> dims = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
 
       auto inTadPack = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dims);
       auto outTadPack = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dims);

@@ -166,7 +166,7 @@ static SD_KERNEL void mergeMaxBpCudaLauncher(void** inArrs, void** inShapes, con
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
 
-  int coords[SD_MAX_RANK];
+  sd::LongType coords[SD_MAX_RANK];
 
   for (sd::LongType e = tid; e < length; e += step) {
     T mVal = -DataTypeUtils::max<T>();
@@ -330,7 +330,7 @@ static SD_KERNEL void mergeAvgBpCudaLauncher(const void* vgradient, const sd::Lo
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
 
-  int coords[SD_MAX_RANK];
+  sd::LongType coords[SD_MAX_RANK];
 
   for (sd::LongType e = tid; e < length; e += step) {
     auto zOffset = e, gradOffset = e;
@@ -472,7 +472,7 @@ static SD_KERNEL void mergeAddBpCudaLauncher(const void* vgradient, const sd::Lo
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
 
-  int coords[SD_MAX_RANK];
+  sd::LongType coords[SD_MAX_RANK];
 
   for (sd::LongType e = tid; e < length; e += step) {
     auto zOffset = e, gradOffset = e;

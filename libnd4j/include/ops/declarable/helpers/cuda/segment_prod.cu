@@ -142,7 +142,7 @@ static void segmentProdFunctor_(sd::LaunchContext* context, NDArray* input, NDAr
                                                               lengths, numClasses, output->specialBuffer(),
                                                               output->specialShapeInfo());
   } else {
-    std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto inputTads = packX.specialShapeInfo();
@@ -188,7 +188,7 @@ static void unsortedSegmentProdFunctor_(sd::LaunchContext* context, NDArray* inp
         indices->specialShapeInfo(), begins, lengths, numOfClasses, output->dataBuffer()->specialAsT<T>(),
         output->specialShapeInfo());
   } else {
-    std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto inputTads = packX.specialShapeInfo();
@@ -311,7 +311,7 @@ sd::Status segmentProdFunctorBP_(sd::LaunchContext* context, NDArray* input, NDA
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         output->specialBuffer(), output->specialShapeInfo());
   } else {
-    std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);
@@ -364,7 +364,7 @@ static sd::Status unsortedSegmentProdFunctorBP_(sd::LaunchContext* context, NDAr
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         output->specialBuffer(), output->specialShapeInfo());
   } else {
-    std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);

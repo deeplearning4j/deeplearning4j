@@ -53,7 +53,7 @@ class TAD {
  public:
   sd::LongType tadIndex = 0;
   int dimensionLength;
-  int *dimension = nullptr;
+  sd::LongType *dimension = nullptr;
   sd::LongType const *shapeInfo = nullptr;
   sd::LongType *tadOnlyShapeInfo = nullptr;
   sd::LongType numTads = 0;
@@ -66,7 +66,7 @@ class TAD {
   int numOnes = 0;
   // pointers to original
   int originalDimensionLength;
-  int const *originalDimension = nullptr;
+  sd::LongType const *originalDimension = nullptr;
   sd::LongType const *originalShapeInfo = nullptr;
   bool squeezed = false;
   bool newSqueezeDimensions = false;
@@ -80,7 +80,7 @@ class TAD {
   void *ptrManager = nullptr;
   int *ptrOutput = nullptr;
 
-  SD_INLINE bool dimensionsDescending(int rank, int const *dimensions, int length);
+  SD_INLINE bool dimensionsDescending(int rank, const long long int *dimensions, int length);
 
   SD_INLINE SD_HOST_DEVICE TAD() {}
 
@@ -92,20 +92,21 @@ class TAD {
    * This method is for GPU mostly, it allows to initialize TAD instance with precalculated tadOnlyShapeInfo
    */
   SD_INLINE SD_HOST_DEVICE void initWithExternalTAD(sd::LongType *existingTAD, sd::LongType *originalShape,
-                                                    int *dimension, int dimensionLength);
+                                                    long long int *dimension, int dimensionLength);
 
-  SD_INLINE SD_HOST_DEVICE void init(sd::LongType const *shapeInfo, int const *dimension, int dimensionLength);
+  SD_INLINE SD_HOST_DEVICE void init(sd::LongType const *shapeInfo, const long long int *dimension, int dimensionLength);
 
-  SD_INLINE SD_HOST_DEVICE void init(int index, sd::LongType const *shapeInfo, int const *dimension,
+  SD_INLINE SD_HOST_DEVICE void init(int tadIndex, sd::LongType const *shapeInfo, const long long int *dimension,
                                      int dimensionLength);
 
   template <typename T>
   SD_INLINE SD_HOST_DEVICE void printTADsND(T *x);
 
-  SD_INLINE SD_HOST_DEVICE void permuteShapeBufferInPlace(sd::LongType const *shapeBuffer, int const *rearrange,
+  SD_INLINE SD_HOST_DEVICE void permuteShapeBufferInPlace(sd::LongType const *shapeBuffer,
+                                                          const long long int *rearrange,
                                                           sd::LongType *out);
 
-  SD_INLINE SD_HOST_DEVICE sd::LongType *permuteShapeBuffer(sd::LongType const *shapeBuffer, int *rearrange);
+  SD_INLINE SD_HOST_DEVICE sd::LongType *permuteShapeBuffer(sd::LongType const *shapeBuffer, long long int *rearrange);
 
   SD_INLINE SD_HOST_DEVICE void createTadOnlyShapeInfo();
 
@@ -172,7 +173,7 @@ class TAD {
    * Length of a tad given
    * the shape information
    */
-  SD_INLINE SD_HOST_DEVICE sd::LongType tadLength(sd::LongType const *shapeInfo, int const *dimension,
+  SD_INLINE SD_HOST_DEVICE sd::LongType tadLength(sd::LongType const *shapeInfo, const long long int *dimension,
                                                   int dimensionLength);
 
   /**
@@ -180,7 +181,8 @@ class TAD {
    * of tensors along
    * a given dimension
    */
-  SD_INLINE SD_HOST_DEVICE sd::LongType tensorsAlongDimension(sd::LongType const *shapeInfo, int const *dimension,
+  SD_INLINE SD_HOST_DEVICE sd::LongType tensorsAlongDimension(sd::LongType const *shapeInfo,
+                                                              const long long int *dimension,
                                                               int dimensionLength);
 
 #ifdef __CUDACC__
@@ -196,7 +198,8 @@ SD_INLINE void TAD::setExternalBuffers(void *ptrManager) { this->ptrManager = pt
 
 SD_INLINE void TAD::setOutputBuffer(int *ptrOutput) { this->ptrOutput = ptrOutput; }
 
-SD_INLINE void TAD::initWithExternalTAD(sd::LongType *existingTAD, sd::LongType *originalShape, int *dimension,
+SD_INLINE void TAD::initWithExternalTAD(sd::LongType *existingTAD, sd::LongType *originalShape,
+                                        long long int *dimension,
                                         int dimensionLength) {
   this->tadOnlyShapeInfo = existingTAD;
   this->rank = shape::rank(originalShape);
@@ -224,19 +227,19 @@ SD_INLINE void TAD::initWithExternalTAD(sd::LongType *existingTAD, sd::LongType 
       ((this->dimensionLength == this->rank || this->numTads == shape::length(this->shapeInfo)) && ews == 1);
 }
 
-SD_INLINE void TAD::init(int tadIndex, sd::LongType const *shapeInfo, int const *dimension, int dimensionLength) {
+SD_INLINE void TAD::init(int tadIndex, sd::LongType const *shapeInfo, const long long int *dimension, int dimensionLength) {
   this->tadIndex = tadIndex;
   this->init(shapeInfo, dimension, dimensionLength);
 }
 
-SD_INLINE void TAD::init(sd::LongType const *shapeInfo, int const *dimension, int dimensionLength) {
+SD_INLINE void TAD::init(sd::LongType const *shapeInfo, const long long int *dimension, int dimensionLength) {
   this->originalShapeInfo = shapeInfo;
   this->originalDimension = dimension;
   this->originalDimensionLength = dimensionLength;
   // start off as original references
   this->shapeInfo = shapeInfo;
   this->dimensionLength = dimensionLength;
-  this->dimension = const_cast<int *>(dimension);
+  this->dimension = const_cast<sd::LongType *>(dimension);
   this->rank = shape::rank(shapeInfo);
   this->numTads =
       dimensionLength == 0 ? 1 : this->tensorsAlongDimension(this->shapeInfo, this->dimension, this->dimensionLength);
@@ -300,20 +303,20 @@ SD_INLINE void TAD::printTADsND(T *x) {
   }
 }
 
-SD_INLINE void TAD::permuteShapeBufferInPlace(sd::LongType const *shapeBuffer, int const *rearrange,
+SD_INLINE void TAD::permuteShapeBufferInPlace(sd::LongType const *shapeBuffer, const long long int *rearrange,
                                               sd::LongType *out) {
   memcpy(out, shapeBuffer, sizeof(sd::LongType) * shape::shapeInfoLength(this->rank));
   doPermuteShapeInfo(out, rearrange);
 }
 
-SD_INLINE sd::LongType *TAD::permuteShapeBuffer(sd::LongType const *shapeBuffer, int *rearrange) {
+SD_INLINE sd::LongType *TAD::permuteShapeBuffer(sd::LongType const *shapeBuffer, long long int *rearrange) {
   int len = shape::shapeInfoLength(this->rank);
   sd::LongType *copy = shape::copyOf(len, shapeBuffer);
   doPermuteShapeInfo(copy, rearrange);
   return copy;
 }
 
-SD_INLINE bool TAD::dimensionsDescending(int rank, int const *dimensions, int length) {
+SD_INLINE bool TAD::dimensionsDescending(int rank, const long long int *dimensions, int length) {
   int desired = rank - 1;
   for (int e = length - 1; e >= 0; e--) {
     if (dimensions[e] != desired--) return false;
@@ -585,8 +588,6 @@ SD_INLINE void TAD::createOffsets() {
 }
 
 SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
-  // if(wholeThing || (dimensionLength == 1 && dimension[0] == SD_MAX_DIMENSION) || shape::isScalar(shapeInfo))
-  //    return shape::createScalarShapeInfo();
 
   // ensure tad shapes get setup right for vectors
   if (dimensionLength > 1 && shape::isVector(shapeInfo))
@@ -597,7 +598,7 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
       ((shape::rank(originalShapeInfo) == originalDimensionLength) || originalDimensionLength == 0)) {
     // we might have special case here: skipped dimensions might be just full of ones
     sd::LongType *ret = shape::copyOf(shape::shapeInfoLength(shape::rank(shapeInfo)), shapeInfo);
-    if (shape::isDimPermuted<int>(dimension, (sd::LongType)dimensionLength))  // check whether we need permutation
+    if (shape::isDimPermuted<sd::LongType >(dimension, (sd::LongType)dimensionLength))  // check whether we need permutation
       doPermuteShapeInfo(ret, dimension);
 
     return ret;
@@ -608,7 +609,7 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
 
   if (dimensionLength == 1) {
     if (dimension[0] == 0 && shape::isVector(shapeInfo) && theShape[1] == 1) {
-      int permuted[2] = {1, 0};
+      sd::LongType permuted[2] = {1, 0};
       sd::LongType *permutedRet2 = shape::permuteShapeBuffer(shapeInfo, permuted);
       return permutedRet2;
     } else if (dimension[0] == 1 && shape::isVector(shapeInfo) && theShape[0] == 1) {
@@ -622,11 +623,11 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
   }
 
   sd::LongType *tensorShape = this->tensorShape();
-  int *reverseDimensions = shape::reverseCopy(dimension, dimensionLength);
-  int *rankRange = shape::range<int>(0, rank);
-  int *remove = shape::removeIndex<int>(rankRange, dimension, (sd::LongType)rank, (sd::LongType)dimensionLength);
+  sd::LongType *reverseDimensions = shape::reverseCopy(dimension, dimensionLength);
+  sd::LongType  *rankRange = shape::range<sd::LongType >(0, rank);
+  sd::LongType  *remove = shape::removeIndex<sd::LongType >(rankRange, dimension, (sd::LongType)rank, (sd::LongType)dimensionLength);
   // concat is wrong here with the length
-  int *newPermuteDims = shape::concat(remove, rank - dimensionLength, reverseDimensions, dimensionLength);
+  sd::LongType *newPermuteDims = shape::concat(remove, rank - dimensionLength, reverseDimensions, dimensionLength);
 
   sd::LongType *permuted = shape::permuteShapeBuffer(shapeInfo, newPermuteDims);
 
@@ -638,17 +639,13 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
   sd::LongType tensorLength = shape::prodLong(tensorShape, tadRank);
 
   sd::LongType compLength = shape::isVector(ret2) ? shape::length(ret2) : shape::prodLong(tensorShape, tadRank);
-  // int temp;
-  // const bool isLikeVector = shape::isLikeVector(ret2, temp);
-
-  // if(dimensionLength == tadRank && compLength == shape::length(ret2) && !isLikeVector) {
   if (dimensionLength == tadRank && compLength == shape::length(ret2)) {
     if (dimensionLength == 1 && shape::isVector(ret2) && shape::shapeOf(ret2)[0] == 1) {
       // go to the bottom and return ret2 after proper freeing of pointers
       // basic idea; we *don't* permute row vectors
     } else if (dimensionLength > 1) {
       // permute *then* return ret2
-      int *finalPermuteDims = new int[shape::rank(ret2)];
+      sd::LongType  *finalPermuteDims = new sd::LongType [shape::rank(ret2)];
       int forward = 0;
       for (int i = shape::rank(ret2) - 1; i >= 0; i--) {
         finalPermuteDims[forward++] = i;
@@ -669,7 +666,7 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
       sd::LongType *newRet2 = shape::sliceOfShapeBuffer(offset, ret2);
       delete[] ret2;
       ret2 = newRet2;
-      int *finalPermuteDims = new int[shape::rank(ret2)];
+      sd::LongType  *finalPermuteDims = new sd::LongType [shape::rank(ret2)];
       int forward = 0;
       for (int i = shape::rank(ret2) - 1; i >= 0; i--) {
         finalPermuteDims[forward++] = i;
@@ -691,7 +688,7 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
         // go to the bottom and return ret2 after proper freeing of pointers
         // basic idea; we *don't* permute row vectors
       } else {
-        int *finalPermuteDims = new int[shape::rank(ret2)];
+        sd::LongType *finalPermuteDims = new sd::LongType [shape::rank(ret2)];
         int forward = 0;
         for (int i = shape::rank(ret2) - 1; i >= 0; i--) {
           finalPermuteDims[forward++] = i;
@@ -720,7 +717,7 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
         // basic idea; we *don't* permute row vectors
       } else if (dimensionLength > 1) {
         // permute *then* return ret
-        int *finalPermuteDims = new int[shape::rank(ret2)];
+        sd::LongType *finalPermuteDims = new sd::LongType[shape::rank(ret2)];
         int forward = 0;
         for (int i = shape::rank(ret2) - 1; i >= 0; i--) {
           finalPermuteDims[forward++] = i;
@@ -741,7 +738,7 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
   return ret2;
 }
 
-SD_INLINE sd::LongType TAD::tadLength(sd::LongType const *shapeInfo, int const *dimension, int dimensionLength) {
+SD_INLINE sd::LongType TAD::tadLength(sd::LongType const *shapeInfo, const long long int *dimension, int dimensionLength) {
   if (dimensionLength == 1) {
     return shape::shapeOf(shapeInfo)[dimension[0]];
   } else {
@@ -755,7 +752,7 @@ SD_INLINE sd::LongType TAD::tadLength(sd::LongType const *shapeInfo, int const *
   }
 }
 
-SD_INLINE sd::LongType TAD::tensorsAlongDimension(sd::LongType const *shapeInfo, int const *dimension,
+SD_INLINE sd::LongType TAD::tensorsAlongDimension(sd::LongType const *shapeInfo, const long long int *dimension,
                                                   int dimensionLength) {
   return shape::length(shapeInfo) / this->tadLength(shapeInfo, dimension, dimensionLength);
 }
@@ -767,7 +764,7 @@ SD_INLINE void TAD::collapse() {
     if ((dimension)[i] < 0) (dimension)[i] += shape::rank(this->shapeInfo);
   }
 
-  this->dimension = new int[dimensionLength];
+  this->dimension = new sd::LongType[dimensionLength];
   memcpy(this->dimension, this->originalDimension, sizeof(int) * dimensionLength);
 
   // we can drop trailing dimensions where it's all singular for example:

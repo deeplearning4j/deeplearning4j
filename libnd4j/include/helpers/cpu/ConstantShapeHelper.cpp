@@ -156,7 +156,7 @@ const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeI
 ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast(const sd::LongType* maxShapeInfo,
                                                                                  const sd::LongType* minShapeInfo,
                                                                                  sd::memory::Workspace* workspace,
-                                                                                 const std::vector<int>& dimensions) {
+    const std::vector<LongType>& dimensions) {
   sd::LongType* newShapeInfo = nullptr;
   ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(maxShapeInfo)), sd::LongType);
 
@@ -202,7 +202,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast
 
 ////////////////////////////////////////////////////////////////////////
 ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(const sd::LongType* inShapeInfo,
-                                                                                const std::vector<int>& dimsWithUnities,
+                                                                                const std::vector<sd::LongType>& dimsWithUnities,
                                                                                 sd::memory::Workspace* workspace) {
   sd::LongType* newShapeInfo = nullptr;
   ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(inShapeInfo) - dimsWithUnities.size()),
@@ -226,7 +226,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(
 }
 
 ////////////////////////////////////////////////////////////////////////
-ConstantShapeBuffer* ConstantShapeHelper::createSubArrShapeInfo(const sd::LongType* inShapeInfo, const int* dims,
+ConstantShapeBuffer* ConstantShapeHelper::createSubArrShapeInfo(const sd::LongType* inShapeInfo, const LongType* dims,
                                                                 const int dimsSize, sd::memory::Workspace* workspace) {
   sd::LongType* newShapeInfo = ShapeBuilders::createSubArrShapeInfo(inShapeInfo, dims, dimsSize, workspace);
 

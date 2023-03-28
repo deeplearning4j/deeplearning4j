@@ -28,7 +28,7 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-void variance(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
+void variance(const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions, bool biasCorrected) {
   // informs and prepares (syncs) specialBuffer of which NDArrays will be used as read, write.
   NDArray::prepareSpecialUse({&output}, {&input});
   if (output.isScalar()) {
@@ -50,7 +50,7 @@ void variance(const NDArray& input, NDArray& output, const std::vector<int>& dim
 }
 
 //////////////////////////////////////////////////////////////////////////
-void standardDeviation(const NDArray& input, NDArray& output, const std::vector<int>& dimensions, bool biasCorrected) {
+void standardDeviation(const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions, bool biasCorrected) {
   // informs and prepares (syncs) of which NDArrays will be used as read, write
   NDArray::prepareSpecialUse({&output}, {&input});
   if (output.isScalar()) {

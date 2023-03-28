@@ -53,7 +53,7 @@ LIST_OP_IMPL(scatter_list, 1, 1, 0, -2) {
                "ScatterList: Indices length should be equal number of TADs along dim0, but got %i instead",
                indices->lengthOf());
 
-  std::vector<int> axis = ShapeUtils::evalDimsToExclude(array->rankOf(), {0});
+  std::vector<LongType> axis = ShapeUtils::evalDimsToExclude(array->rankOf(), {0});
   auto tads = array->allTensorsAlongDimension(axis);
   for (int e = 0; e < tads.size(); e++) {
     auto idx = indices->e<int>(e);

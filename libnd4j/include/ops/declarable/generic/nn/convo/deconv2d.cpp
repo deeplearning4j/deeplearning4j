@@ -50,8 +50,8 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
   int kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));  // filter(kernel) width
   int sH = INT_ARG(2);                                                          // strides height
   int sW = INT_ARG(3);                                                          // strides width
-  int pH = INT_ARG(4);                                                          // paddings height
-  int pW = INT_ARG(5);                                                          // paddings width
+  sd::LongType pH = INT_ARG(4);                                                          // paddings height
+  sd::LongType  pW = INT_ARG(5);                                                          // paddings width
   int dH = INT_ARG(6);                                                          // dilations height
   int dW = INT_ARG(7);                                                          // dilations width
   int isSameMode = INT_ARG(8);                                                  // 0-VALID, 1-SAME
@@ -78,7 +78,7 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
 
   if (!isNCHW) output = new NDArray(output->permute({0, 3, 1, 2}));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
 
-  std::vector<int> colPermut;
+  std::vector<LongType> colPermut;
   if (1 == wFormat)
     colPermut = {1, 2, 3, 0, 4, 5};
   else
@@ -217,8 +217,8 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
   int kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));  // filter(kernel) width
   int sH = INT_ARG(2);                                                          // strides height
   int sW = INT_ARG(3);                                                          // strides width
-  int pH = INT_ARG(4);                                                          // paddings height
-  int pW = INT_ARG(5);                                                          // paddings width
+  sd::LongType pH = INT_ARG(4);                                                          // paddings height
+  sd::LongType pW = INT_ARG(5);                                                          // paddings width
   int dH = INT_ARG(6);                                                          // dilations height
   int dW = INT_ARG(7);                                                          // dilations width
   int isSameMode = INT_ARG(8);                                                  // 0-VALID, 1-SAME
@@ -266,7 +266,7 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
   if (status != sd::Status::OK) return status;
 
   // -----prepare permutation arrays and axes for dot product ----- //
-  std::vector<int> inputAxes;
+  std::vector<LongType> inputAxes;
 
   if (!isNCHW) {
     gradO = new NDArray(gradO->permute({0, 3, 1, 2}));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
@@ -274,7 +274,7 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
   } else
     inputAxes = {0, 2, 3};  // bS, iH, iW
 
-  std::vector<int> gradWAxes;  // empty for wFormat = 1
+  std::vector<LongType> gradWAxes;  // empty for wFormat = 1
   if (0 == wFormat)
     gradWAxes = {3, 2, 0, 1};
   else if (2 == wFormat)

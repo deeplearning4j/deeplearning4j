@@ -53,7 +53,7 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
   const int inRank = input->rankOf();
 
   // get axes args to normalize input array over
-  std::vector<int> axes;
+  std::vector<sd::LongType> axes;
   if (numOfIntArgs > 2)
     for (int i = 2; i < numOfIntArgs; ++i) axes.push_back(INT_ARG(i));
   else
@@ -99,27 +99,9 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
   sd_debug("MKL-DNN is not used for batchnorm!\n", 0);
 
   // formula: output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
-  // auto v = input->varianceAlongDimension(variance::SummaryStatsVariance, false,
-  // ShapeUtils::evalDimsToExclude(input->rankOf(), axes)); auto m = input->reduceAlongDimension(sd::reduce::Mean,
-  // ShapeUtils::evalDimsToExclude(input->rankOf(), axes));
-
   helpers::batchnorm(input, mean, variance, gamma, beta, output, axes, epsilon);
 
-  // NDArray stdInv = *v + epsilon;
-  // stdInv.applyTransform(transform::Reciprocal);               // 1 / (variance + epsilon)
-  // stdInv.applyTransform(transform::Sqrt);                     // 1 / (variance + epsilon)^0.5
-  // if(applyScale)
-  //     stdInv *= *gamma;
 
-  //  // empty array with same shape as input
-  // input->applyBroadcast(sd::broadcast::Subtract, axes, m, output);
-  // output->applyBroadcast(sd::broadcast::Multiply, axes, &stdInv);
-
-  // if(applyOffset)
-  //     output->applyBroadcast(sd::broadcast::Add, axes, beta);
-
-  // delete v;
-  // delete m;
 
   return sd::Status::OK;
 }
@@ -168,7 +150,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   const int inRank = input->rankOf();
 
   // get axes args to normalize input array over
-  std::vector<int> axes;
+  std::vector<LongType> axes;
   if (numOfIntArgs > 2)
     for (int i = 2; i < numOfIntArgs; ++i) axes.push_back(INT_ARG(i));
   else
@@ -239,8 +221,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   // dLdB = g_sum
 
   // variance = input->varianceAlongDimension(variance::SummaryStatsVariance, false,
-  // ShapeUtils::evalDimsToExclude(input->rankOf(), axes)); mean = input->reduceAlongDimension(sd::reduce::Mean,
-  // ShapeUtils::evalDimsToExclude(input->rankOf(), axes));
+
 
   const auto excludedAxes = ShapeUtils::evalDimsToExclude(inRank, axes);
   const bool keepUnitiesInShape = inRank == mean->rankOf();

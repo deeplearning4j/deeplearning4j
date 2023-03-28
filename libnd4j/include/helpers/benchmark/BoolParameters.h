@@ -35,8 +35,8 @@ class BoolParameters : public ParametersSpace {
  public:
   BoolParameters(std::string name) : ParametersSpace() { _name = name; }
 
-  std::vector<int> evaluate() override {
-    std::vector<int> result;
+  std::vector<sd::LongType> evaluate() override {
+    std::vector<sd::LongType> result;
     result.emplace_back(0);
     result.emplace_back(1);
     return result;

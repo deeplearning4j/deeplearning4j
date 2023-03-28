@@ -32,7 +32,7 @@ SD_LIB_HIDDEN void reverseSequence(sd::LaunchContext* context, const NDArray* in
                                    NDArray* output, int seqDim, const int batchDim);
 
 SD_LIB_HIDDEN void reverse(sd::LaunchContext* context, const NDArray* input, NDArray* output,
-                           const std::vector<int>* intArgs);
+                           const std::vector<LongType>* intArgs);
 
 }  // namespace helpers
 }  // namespace ops

@@ -471,7 +471,7 @@ std::string BenchmarkHelper::runOperationSuit(
       clone->setZ(z_);
 
       if (y_ != nullptr) {
-        clone->setAxis(y_->asVectorT<int>());
+        clone->setAxis(y_->asVectorT<sd::LongType>());
         delete y_;
       }
 
@@ -516,7 +516,7 @@ std::string BenchmarkHelper::runOperationSuit(ReductionBenchmark *op,
     clone->setZ(z_);
 
     if (y_ != nullptr) {
-      clone->setAxis(y_->asVectorT<int>());
+      clone->setAxis(y_->asVectorT<sd::LongType>());
       delete y_;
     }
     result.emplace_back(clone);

@@ -40,13 +40,13 @@ class ParametersBatch {
 
   std::vector<Parameters> parameters() {
     std::vector<Parameters> result;
-    std::vector<std::vector<int>> vectors;
+    std::vector<std::vector<sd::LongType>> vectors;
     int totalIterations = 1;
 
     // hehe
-    int xCoords[SD_MAX_RANK];
+    sd::LongType xCoords[SD_MAX_RANK];
     sd::LongType xShape[SD_MAX_RANK];
-    int xRank = _spaces.size();
+    sd::LongType xRank = _spaces.size();
 
     for (int e = 0; e < _spaces.size(); e++) {
       auto space = _spaces[e];

@@ -154,8 +154,8 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
   int kW = INT_ARG(1);          // filter(kernel) width
   int sH = INT_ARG(2);          // strides height
   int sW = INT_ARG(3);          // strides width
-  int pH = INT_ARG(4);          // paddings height
-  int pW = INT_ARG(5);          // paddings width
+  sd::LongType pH = INT_ARG(4);          // paddings height
+  sd::LongType pW = INT_ARG(5);          // paddings width
   int dH = INT_ARG(6);          // dilations height
   int dW = INT_ARG(7);          // dilations width
   int isSameMode = INT_ARG(8);  // 0-VALID, 1-SAME
@@ -193,18 +193,6 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
 
   if (isSameMode)  // SAME
     ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
-
-  // NDArray<T> columnsWrongShape(input->ordering(), {bS, iC, oH, oW, kH, kW}, input->getWorkspace());
-  // NDArray<T>* columns = columnsWrongShape.permute({0, 1, 4, 5, 2, 3});                                // [bS, iC, oH,
-  // oW, kH, kW] -> [bS, iC, kH, kW, oH, oW] NDArray<T>* gradOVector = gradO->reshape('c', {(int) gradO->lengthOf(),
-  // 1}); NDArray<T>* columns2d = columnsWrongShape.reshape('c', {bS*iC*oH*oW, kH*kW});
-
-  // columns2d->addiColumnVector(gradOVector);
-
-  // columns->template applyTransform<simdOps::Col2Im<T>>(gradI, std::vector<T>({(T)sH, (T)sW, (T)pH, (T)pW, (T)iH,
-  // (T)iW, (T)dH, (T)dW}).data());
-
-  // *gradI /= kH*kW;
 
   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 -
   // poolingMode; 9 - divisor;

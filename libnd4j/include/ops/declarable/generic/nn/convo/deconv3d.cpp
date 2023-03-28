@@ -79,7 +79,7 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
 
   if (!isNCDHW) output = new NDArray(output->permute({0, 4, 1, 2, 3}));  // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
 
-  std::vector<int> colPermut;
+  std::vector<LongType> colPermut;
   if (1 == wFormat)
     colPermut = {1, 2, 3, 4, 0, 5, 6, 7};
   else
@@ -283,7 +283,7 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
   if (status != sd::Status::OK) return status;
 
   // -----prepare permutation arrays and axes for dot product ----- //
-  std::vector<int> inputAxesForDot;
+  std::vector<LongType> inputAxesForDot;
 
   if (!isNCDHW) {
     gradO = new NDArray(gradO->permute({0, 4, 1, 2, 3}));  // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
@@ -291,7 +291,7 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
   } else
     inputAxesForDot = {0, 2, 3, 4};  // bS, iD, iH, iW
 
-  std::vector<int> gradWAxes;  // empty for wFormat = 1
+  std::vector<LongType> gradWAxes;  // empty for wFormat = 1
   if (0 == wFormat)
     gradWAxes = {4, 3, 0, 1, 2};
   else if (2 == wFormat)

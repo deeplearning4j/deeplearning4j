@@ -43,7 +43,7 @@ class SD_LIB_EXPORT BitwiseUtils {
    *
    *  PLEASE NOTE: Result is ALWAYS left-to-right
    */
-  static std::vector<int> valueBits(int holder);
+  static std::vector<sd::LongType> valueBits(int holder);
 
   /**
    *  This method returns TRUE if it's called on Big-Endian system, and false otherwise

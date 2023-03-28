@@ -117,7 +117,7 @@ class SD_LIB_EXPORT DeclarableBenchmark : public OpBenchmark {
 
   std::string extra() override {
     if (_context != nullptr) {
-      std::vector<int>* iargs = _context->getIArguments();
+      std::vector<sd::LongType>* iargs = _context->getIArguments();
       std::vector<double>* targs = _context->getTArguments();
       std::vector<bool>* bargs = _context->getBArguments();
       std::string e;

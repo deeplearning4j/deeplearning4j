@@ -59,13 +59,13 @@ CUSTOM_OP_IMPL(argmax, 1, 1, false, 0, -2) {
 }
 
 DECLARE_SHAPE_FN(argmax) {
-  std::vector<int> dims;
+  std::vector<sd::LongType> dims;
 
   if (block.width() == 1) {
     dims = *block.getIArguments();
   } else {
     auto y = INPUT_VARIABLE(1);
-    dims = y->template asVectorT<int>();
+    dims = y->template asVectorT<sd::LongType>();
   }
 
   auto keepDims = block.numB() ? B_ARG(0) : false;

@@ -111,7 +111,7 @@ class SD_LIB_HIDDEN ReduceSameFunction {
                          const sd::LongType *zShapeInfo);
 
   static void exec(int opNum, sd::memory::Workspace *workspace, const void *vx, const sd::LongType *xShapeInfo,
-                   void *vextraParams, void *vz, const sd::LongType *zShapeInfo, const int *dims);
+                   void *vextraParams, void *vz, const sd::LongType *zShapeInfo, const long long int *dims);
 
   /**
    * Execute on the cpu
@@ -127,7 +127,7 @@ class SD_LIB_HIDDEN ReduceSameFunction {
 
   template <typename OpType>
   static void SD_HOST exec(sd::memory::Workspace *workspace, const void *vx, const sd::LongType *xShapeInfo,
-                           void *vextraParams, void *vz, const sd::LongType *zShapeInfo, const int *dims);
+                           void *vextraParams, void *vz, const sd::LongType *zShapeInfo, const long long int *dims);
 
   /**
    * CPU implementation

@@ -49,7 +49,7 @@ void matrixSetDiag_(const NDArray& input, const NDArray& diagonal, NDArray& outp
   const auto xLen = input.lengthOf();
 
   auto func = PRAGMA_THREADS_FOR {
-    int coords[SD_MAX_RANK];
+    sd::LongType coords[SD_MAX_RANK];
 
     for (sd::LongType i = 0; i < xLen; ++i) {
       shape::index2coordsCPU(start, i, xShapeInfo, coords);

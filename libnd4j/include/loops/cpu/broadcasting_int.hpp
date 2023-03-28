@@ -33,8 +33,9 @@ namespace functions {
 namespace broadcast {
 
 template <typename X>
-void BroadcastInt<X>::exec(const int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
-                           const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo, int *dimension,
+void BroadcastInt<X>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+                           const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
+                           long long int *dimension,
                            int dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
                            const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset, uint64_t start,
                            uint64_t stop) {
@@ -51,9 +52,9 @@ void BroadcastInt<X>::exec(const int opNum, const void *x, const sd::LongType *x
 }
 
 template <typename X>
-void BroadcastInt<X>::execInverse(const int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+void BroadcastInt<X>::execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                                   const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
-                                  int *dimension, int dimensionLength, const sd::LongType *xTadShapeInfo,
+                                  long long int *dimension, int dimensionLength, const sd::LongType *xTadShapeInfo,
                                   const sd::LongType *xTadOffset, const sd::LongType *zTadShapeInfo,
                                   const sd::LongType *zTadOffset, uint64_t start, uint64_t stop) {
   DISPATCH_BY_OPNUM_T(execInverse,
@@ -65,7 +66,8 @@ void BroadcastInt<X>::execInverse(const int opNum, const void *x, const sd::Long
 template <typename X>
 template <typename OpType>
 void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
-                           const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo, int *dimension,
+                           const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
+                           long long int *dimension,
                            int dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
                            const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset, uint64_t start,
                            uint64_t stop) {
@@ -128,7 +130,7 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
     };
   } else if (shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo) &&
              shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
 
     for (auto i = start; i < stop; i++) {
@@ -142,8 +144,8 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       }
     };
   } else if (shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo)) {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned tadShapeInfoZCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeInfoZCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
     bool canCastZ = sd::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
 
@@ -159,8 +161,8 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       }
     };
   } else if (shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType yShapeInfoCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
     bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
@@ -176,8 +178,8 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       }
     };
   } else if (shape::haveSameShapeAndStrides(yShapeInfo, zTadShapeInfo)) {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType yShapeInfoCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
     bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
@@ -193,9 +195,9 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       }
     };
   } else {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned tadShapeInfoZCast[SD_MAX_RANK];
-    sd::Unsigned yShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeInfoZCast[SD_MAX_RANK];
+    sd::LongType yShapeInfoCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
     bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
     bool canCastZ = sd::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
@@ -219,7 +221,7 @@ template <typename X>
 template <typename OpType>
 void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                                   const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                                  int *dimension, const int dimensionLength, const sd::LongType *yTadShapeInfo,
+                                  long long int *dimension, int dimensionLength, const sd::LongType *yTadShapeInfo,
                                   const sd::LongType *yTadOffset, const sd::LongType *zTadShapeInfo,
                                   const sd::LongType *zTadOffset, uint64_t start, uint64_t stop) {
   auto x = reinterpret_cast<const X *>(vx);
@@ -281,7 +283,7 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
     };
   } else if (shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo) &&
              shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
     bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
 
     for (auto i = start; i < stop; i++) {
@@ -295,8 +297,8 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
       }
     };
   } else if (shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo)) {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned tadShapeInfoZCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeInfoZCast[SD_MAX_RANK];
     bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
     bool canCastZ = sd::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
 
@@ -311,8 +313,8 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
       }
     };
   } else if (shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
     bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
 
@@ -328,8 +330,8 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
       }
     };
   } else if (shape::haveSameShapeAndStrides(xShapeInfo, zTadShapeInfo)) {
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
     bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
 
@@ -345,9 +347,9 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
       }
     };
   } else {
-    sd::Unsigned xShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned tadShapeShapeInfoCast[SD_MAX_RANK];
-    sd::Unsigned tadShapeInfoZCast[SD_MAX_RANK];
+    sd::LongType xShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
+    sd::LongType tadShapeInfoZCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
     bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
     bool canCastZ = sd::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
@@ -371,7 +373,7 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
 template <typename X, typename OpType>
 static void execRank1(const X *x, const sd::LongType *xShapeInfo, const X *y, const sd::LongType *yShapeInfo, X *z,
                       const sd::LongType *zShapeInfo) {
-  sd::Unsigned zAxis0 = shape::sizeAt(zShapeInfo, 0);
+  sd::LongType zAxis0 = shape::sizeAt(zShapeInfo, 0);
   sd::LongType xStrd0 = shape::strideAt(xShapeInfo, 0);
   sd::LongType yStrd0 = shape::strideAt(yShapeInfo, 0);
   sd::LongType zStrd0 = shape::strideAt(zShapeInfo, 0);
@@ -577,7 +579,7 @@ static void execDefault(const X *x, const sd::LongType *xShapeInfo, const X *y, 
   const bool yzSameOffsets = shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo);
 
   auto func = PRAGMA_THREADS_FOR {
-    int coords[SD_MAX_RANK];
+    sd::LongType coords[SD_MAX_RANK];
     sd::LongType xOffset, yOffset, zOffset;
 
     for (auto i = start; i < stop; ++i) {

@@ -37,12 +37,12 @@ static SD_KERNEL void col2volCuda(const void* columns, const sd::LongType* colSh
   const T* col = reinterpret_cast<const T*>(columns);
   T* vol = reinterpret_cast<T*>(volume);
 
-  __shared__ sd::Unsigned kD, kH, kW, oD, oH, oW, *sharedMem;
+  __shared__ sd::LongType kD, kH, kW, oD, oH, oW, *sharedMem;
   __shared__ sd::LongType volLen;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<sd::Unsigned*>(shmem);
+    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
 
     oD = colShapeInfo[6];
     oH = colShapeInfo[7];

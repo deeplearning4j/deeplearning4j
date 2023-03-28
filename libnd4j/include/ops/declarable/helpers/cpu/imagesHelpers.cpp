@@ -50,7 +50,7 @@ static void rgbToGrs_(const NDArray& input, NDArray& output, const int dimC) {
   }
 
   auto func = PRAGMA_THREADS_FOR {
-    int coords[SD_MAX_RANK];
+    sd::LongType  coords[SD_MAX_RANK];
     for (auto i = start; i < stop; i++) {
       shape::index2coordsCPU(start, i, output.shapeInfo(), coords);
       const auto zOffset = shape::getOffset(output.shapeInfo(), coords);

@@ -21,6 +21,7 @@
 //
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/LegacyPairwiseTransformBoolOp.h>
+#include <ops/declarable/OpRegistrator.h>
 
 namespace sd {
 namespace ops {
@@ -58,6 +59,7 @@ sd::Status LegacyPairwiseTransformBoolOp::validateAndExecute(Context &block) {
 
   manager.synchronize();
   STORE_RESULT(*z);
+  traceExecIfNeeded(block);
 
   return sd::Status::OK;
 }

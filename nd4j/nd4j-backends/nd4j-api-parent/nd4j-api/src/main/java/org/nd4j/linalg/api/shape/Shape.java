@@ -3053,13 +3053,19 @@ public class Shape {
      */
     @Deprecated
     public static int offset(DataBuffer buffer) {
-        //throw new UnsupportedOperationException("offset() method should NOT be used");
         return 0;
     }
 
     public static long options(long[] buffer) {
         int length = shapeInfoLength(rank(buffer));
         long ret = buffer[length - 3];
+        return ret;
+    }
+
+
+    public static long options(DataBuffer buffer) {
+        int length = shapeInfoLength(rank(buffer));
+        long ret = buffer.getLong(buffer.length() - 3);
         return ret;
     }
 
@@ -3858,4 +3864,8 @@ public class Shape {
         return true;
     }
 
+    public static DataType dataType(DataBuffer dataBuffer) {
+        long options = Shape.options(dataBuffer);
+        return ArrayOptionsHelper.dataType(options);
+    }
 }

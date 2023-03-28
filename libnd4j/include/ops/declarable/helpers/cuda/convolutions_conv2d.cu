@@ -34,7 +34,7 @@ namespace ops {
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias,
-                    NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW,
+                    NDArray* output, const int kH, const int kW, const int sH, const int sW, LongType pH, LongType pW,
                     const int dH, const int dW, const int paddingMode, const int isNCHW, const int wFormat) {
   // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
   // weights [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
@@ -60,14 +60,14 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
 
   ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);
 
-  std::vector<int> permutForOutput;
+  std::vector<sd::LongType> permutForOutput;
 
   if (isNCHW)
     permutForOutput = {0, 3, 1, 2};  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
   else
     input = new NDArray(input->permute({0, 3, 1, 2}));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW] if NHWC
 
-  std::vector<int> wAxes;
+  std::vector<sd::LongType> wAxes;
   if (0 == wFormat)
     wAxes = {0, 1, 2};
   else if (1 == wFormat)

@@ -35,7 +35,7 @@ CUSTOM_OP_IMPL(reduce_norm_max, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  std::vector<int> dimensions;
+  std::vector<sd::LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
@@ -72,7 +72,7 @@ DECLARE_SHAPE_FN(reduce_norm_max) {
   else if (block.getTArguments()->size())
     keepDims = (bool)T_ARG(0);
 
-  std::vector<int> dimensions;
+  std::vector<sd::LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
@@ -104,7 +104,7 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, -1, 1, false, 0, 0) {
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
 
-  std::vector<int> dimensions = *block.getIArguments();
+  std::vector<sd::LongType> dimensions = *block.getIArguments();
 
   if (block.width() > 2) {
     auto axesVector = INPUT_VARIABLE(2);

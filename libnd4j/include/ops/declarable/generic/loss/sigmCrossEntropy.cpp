@@ -241,7 +241,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
       if (weights->isScalar())
         dLdw->assign(E.reduceNumber(reduce::Sum));
       else if (weights != weightsBroad) {
-        std::vector<int> axesToReduceAlong =
+        std::vector<LongType> axesToReduceAlong =
             ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
         E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
       } else
@@ -269,7 +269,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
         if (weights->isScalar())
           *dLdw = 0.;
         else if (weights != weightsBroad) {
-          std::vector<int> axesToReduceAlong =
+          std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
           ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum))
               .reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
@@ -297,7 +297,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
         if (weights->isScalar())
           dLdw->assign(E.reduceNumber(reduce::Sum) / numOfNonZeroWeightsScalar);
         else if (weights != weightsBroad) {
-          std::vector<int> axesToReduceAlong =
+          std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
           E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
           *dLdw /= numOfNonZeroWeightsScalar;

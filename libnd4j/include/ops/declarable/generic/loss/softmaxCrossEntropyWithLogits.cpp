@@ -46,7 +46,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0) {
                "got %i and %i correspondingly !",
                classesDim, logits->rankOf());
 
-  std::vector<int> dimension = {classesDim};
+  std::vector<LongType> dimension = {classesDim};
 
   auto maxAlongDim = logits->reduceAlongDimension(reduce::Max, {classesDim}, true);
   auto logExp = (*logits - maxAlongDim).transform(transform::Exp);
@@ -68,7 +68,7 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss_with_logits) {
   auto labelsShapeInfo = inputShape->at(1);
 
   const int classesDim = block.getIArguments()->size() > 0 ? INT_ARG(0) : -1;
-  std::vector<int> dimensions = {classesDim};
+  std::vector<LongType> dimensions = {classesDim};
 
   // labels and logits must have the same shapes
   REQUIRE_TRUE(shape::shapeEquals(logitsShapeInfo, labelsShapeInfo), 0,
@@ -105,7 +105,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
                classesDim, logits->rankOf());
 
 
-  std::vector<int> dimension = {classesDim};
+  std::vector<LongType> dimension = {classesDim};
 
   NDArray softmax = (*logits - logits->reduceAlongDimension(reduce::Max, dimension, true)).transform(transform::Exp);
   softmax /= softmax.reduceAlongDimension(reduce::Sum, dimension, true);

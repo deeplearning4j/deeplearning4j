@@ -161,7 +161,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
     const sd::LongType shift2 = mode == 1 ? 2 : 1;  // REFLECT : SYMMETRIC
 
     auto func = PRAGMA_THREADS_FOR {
-      int zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
+      sd::LongType  zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
 
       for (auto i = start; i < stop; i++) {
         shape::index2coordsCPU(start, i, output.shapeInfo(), zCoords);
@@ -356,7 +356,7 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
     }
   } else {
     auto func = PRAGMA_THREADS_FOR {
-      int inIdx[SD_MAX_RANK], outIdx[SD_MAX_RANK];
+      sd::LongType  inIdx[SD_MAX_RANK], outIdx[SD_MAX_RANK];
 
       for (auto i = start; i < stop; i++) {
         shape::index2coordsCPU(start, i, output.shapeInfo(), outIdx);

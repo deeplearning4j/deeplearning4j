@@ -23,6 +23,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <ops/declarable/LegacyIndexReduceOp.h>
+#include <ops/declarable/OpRegistrator.h>
 
 namespace sd {
 namespace ops {
@@ -69,7 +70,7 @@ ShapeList *LegacyIndexReduceOp::calculateOutputShape(ShapeList *inputShape, sd::
     sd::LongType rank = shape::rank(inShape);
     if (indices->lengthOf() == rank) allAxes = true;
 
-    std::vector<int> axis(indices->lengthOf());
+    std::vector<sd::LongType> axis(indices->lengthOf());
     for (int e = 0; e < indices->lengthOf(); e++) {
       // lol otherwise we segfault on macOS
       int f = indices->e<int>(e);
@@ -130,7 +131,7 @@ sd::Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
           extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
     } else {
       // TAD
-      std::vector<int> dims(block.getAxis()->size());
+      std::vector<sd::LongType> dims(block.getAxis()->size());
       for (size_t e = 0; e < dims.size(); e++) {
         auto axe = block.getAxis()->at(e);
         dims[e] = axe < 0 ? axe + x->rankOf() : axe;
@@ -151,7 +152,7 @@ sd::Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
     auto indices = INPUT_VARIABLE(1);
     if (indices->lengthOf() == x->rankOf()) allAxes = true;
 
-    std::vector<int> axis(indices->lengthOf());
+    std::vector<sd::LongType> axis(indices->lengthOf());
     for (int e = 0; e < indices->lengthOf(); e++) {
       // lol otherwise we segfault on macOS
       int f = indices->e<int>(e);
@@ -181,6 +182,8 @@ sd::Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
 
   manager.synchronize();
   STORE_RESULT(*z);
+  traceExecIfNeeded(block);
+
 
   return sd::Status::OK;
 }

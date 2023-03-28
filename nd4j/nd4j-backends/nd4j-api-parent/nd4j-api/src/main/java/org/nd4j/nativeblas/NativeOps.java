@@ -22,9 +22,6 @@ package org.nd4j.nativeblas;
 
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.annotation.Cast;
-import org.bytedeco.javacpp.annotation.Const;
-import org.bytedeco.javacpp.annotation.StdString;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
@@ -38,6 +35,22 @@ import java.nio.LongBuffer;
 public interface NativeOps {
 
 
+    int numInputs(Pointer execTrace);
+    int numOutputs(Pointer execTrace);
+    BooleanPointer bArgs(Pointer execTrace);
+    PointerPointer sArgs(Pointer execTrace);
+    DoublePointer tArgs(Pointer execTrace);
+    LongPointer iArgs(Pointer execTrace);
+    PointerPointer inputShapeBuffers(Pointer execTrace);
+    PointerPointer outputShapeBuffers(Pointer execTrace);
+    BytePointer opName(Pointer execTrace);
+    PointerPointer listOpTraces();
+
+    void printOpTrace();
+
+    void purgeOpTrace();
+
+    void toggleOpTrace(boolean opTrace);
     /**
      * Prints device buffers.
      * @param buffer
@@ -48,22 +61,22 @@ public interface NativeOps {
 
 
     void saveNpy( BytePointer fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  IntPointer shape,  int ndims,
-                                BytePointer mode/*="w"*/);
+                  BytePointer mode/*="w"*/);
     void saveNpy( BytePointer fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  IntPointer shape,  int ndims);
     void saveNpy( String fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  IntBuffer shape,  int ndims,
-                                String mode/*="w"*/);
+                  String mode/*="w"*/);
     void saveNpy( String fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  IntBuffer shape,  int ndims);
     void saveNpy( BytePointer fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  int[] shape,  int ndims,
-                                BytePointer mode/*="w"*/);
+                  BytePointer mode/*="w"*/);
     void saveNpy( BytePointer fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  int[] shape,  int ndims);
     void saveNpy( String fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  IntPointer shape,  int ndims,
-                                String mode/*="w"*/);
+                  String mode/*="w"*/);
     void saveNpy( String fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  IntPointer shape,  int ndims);
     void saveNpy( BytePointer fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  IntBuffer shape,  int ndims,
-                                BytePointer mode/*="w"*/);
+                  BytePointer mode/*="w"*/);
     void saveNpy( BytePointer fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  IntBuffer shape,  int ndims);
     void saveNpy( String fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  int[] shape,  int ndims,
-                                String mode/*="w"*/);
+                  String mode/*="w"*/);
     void saveNpy( String fname, org.nd4j.nativeblas.OpaqueDataBuffer data,  int[] shape,  int ndims);
 
 
@@ -770,7 +783,7 @@ public interface NativeOps {
 
     void setGridLimit(int gridSize);
 
-    OpaqueTadPack tadOnlyShapeInfo(LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
+    OpaqueTadPack tadOnlyShapeInfo(LongPointer shapeInfo, LongPointer dimension, int dimensionLength);
 
     LongPointer getPrimaryShapeInfo(OpaqueTadPack pack);
     LongPointer getPrimaryOffsets(OpaqueTadPack pack);
@@ -936,20 +949,20 @@ public interface NativeOps {
      * @param wordSize the word size
      * @return
      */
-      long numpyHeaderLengthWordSize( Pointer shapeBuffer,long wordSize);
+    long numpyHeaderLengthWordSize( Pointer shapeBuffer,long wordSize);
 
     /**
      *
      * Length in bytes of a numpy header + buffer
      */
 
-     long numpyHeaderLength(org.nd4j.nativeblas.OpaqueDataBuffer opaqueDataBuffer, Pointer shapeBuffer);
+    long numpyHeaderLength(org.nd4j.nativeblas.OpaqueDataBuffer opaqueDataBuffer, Pointer shapeBuffer);
     /**
      *
      * Length in bytes of the opaque buffer
      */
 
-     long lengthInBytes(org.nd4j.nativeblas.OpaqueDataBuffer buffer);
+    long lengthInBytes(org.nd4j.nativeblas.OpaqueDataBuffer buffer);
 
     /**
      * Create a numpy array from an nd4j
@@ -1108,27 +1121,28 @@ public interface NativeOps {
 
     void tear(PointerPointer extras,
               OpaqueDataBuffer tensor,
-              @Cast("sd::LongType *") LongPointer xShapeInfo,
-              @Cast("sd::LongType *") LongPointer dxShapeInfo,
+              LongPointer xShapeInfo,
+              LongPointer dxShapeInfo,
               PointerPointer targets,
-              @Cast("sd::LongType *") LongPointer zShapeInfo,
-              @Cast("sd::LongType *") LongPointer tadShapeInfo,
-              @Cast("sd::LongType *") LongPointer tadOffsets);
+              LongPointer zShapeInfo,
+              LongPointer tadShapeInfo,
+              LongPointer tadOffsets);
 
     void sort(PointerPointer extraPointers,
-              Pointer x, @Cast("sd::LongType *") LongPointer xShapeInfo,
-              Pointer dx, @Cast("sd::LongType *") LongPointer dxShapeInfo,
+              Pointer x, LongPointer xShapeInfo,
+              Pointer dx, LongPointer dxShapeInfo,
               boolean descending);
 
 
-    void sortTad(PointerPointer extraPointers,
-                 Pointer x, @Cast("sd::LongType *") LongPointer xShapeInfo,
-                 Pointer dx, @Cast("sd::LongType *") LongPointer dxShapeInfo,
-                 IntPointer dimension,
-                 int dimensionLength,
-                 @Cast("sd::LongType *") LongPointer tadShapeInfo,
-                 @Cast("sd::LongType *") LongPointer tadOffsets,
-                 boolean descending);
+    void sortTad(PointerPointer extraPointers, Pointer hX, LongPointer hXShapeInfo, Pointer dX,
+                 LongPointer dXShapeInfo, LongPointer dimension, int dimensionLength,
+                 LongPointer tadShapeInfo, LongPointer tadOffsets, boolean descending);
+    void sortTad(@Cast("sd::Pointer*") PointerPointer extraPointers, Pointer hX,  LongBuffer hXShapeInfo, Pointer dX,
+                 @Cast("const sd::LongType*") LongBuffer dXShapeInfo, LongBuffer dimension, int dimensionLength,
+                 @Cast("const sd::LongType*") LongBuffer tadShapeInfo,  LongBuffer tadOffsets, @Cast("bool") boolean descending);
+    void sortTad( PointerPointer extraPointers, Pointer hX, long[] hXShapeInfo, Pointer dX,
+                  long[] dXShapeInfo, long[] dimension, int dimensionLength,
+                  long[] tadShapeInfo, long[] tadOffsets,  boolean descending);
 
 
     void sortCooIndices(PointerPointer extraPointers, @Cast("sd::LongType *") LongPointer indices, Pointer x, long length, @Cast("sd::LongType *") LongPointer shapeInfo);
@@ -1299,12 +1313,12 @@ public interface NativeOps {
                                       PointerPointer specialShapeInfo);
 
 
-     void setShapeBuffer( LongPointer inputShapeData, int dt, LongPointer bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/, boolean isEmpty/*=false*/);
-     void setShapeBuffer( LongPointer inputShapeData, int dt, LongPointer bufferToSet);
-     void setShapeBuffer( LongBuffer inputShapeData, int dt, LongBuffer bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/, boolean isEmpty/*=false*/);
-     void setShapeBuffer( LongBuffer inputShapeData, int dt, LongBuffer bufferToSet);
-     void setShapeBuffer( long[] inputShapeData, int dt, long[] bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/, boolean isEmpty/*=false*/);
-     void setShapeBuffer( long[] inputShapeData, int dt, long[] bufferToSet);
+    void setShapeBuffer( LongPointer inputShapeData, int dt, LongPointer bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/, boolean isEmpty/*=false*/);
+    void setShapeBuffer( LongPointer inputShapeData, int dt, LongPointer bufferToSet);
+    void setShapeBuffer( LongBuffer inputShapeData, int dt, LongBuffer bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/, boolean isEmpty/*=false*/);
+    void setShapeBuffer( LongBuffer inputShapeData, int dt, LongBuffer bufferToSet);
+    void setShapeBuffer( long[] inputShapeData, int dt, long[] bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/, boolean isEmpty/*=false*/);
+    void setShapeBuffer( long[] inputShapeData, int dt, long[] bufferToSet);
 
 
     void setGraphContextTArguments(OpaqueContext ptr, DoublePointer arguments, int numberOfArguments);

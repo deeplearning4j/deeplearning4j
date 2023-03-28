@@ -109,7 +109,7 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext* lc, int opNum
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(
       xType, yType, zType, functions::pairwise_transforms::PairWiseTransform,
-      ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraParams),
+      ::executeCudaShaped(launchDims, stream, opType, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraParams),
       SD_COMMON_TYPES, SD_COMMON_TYPES)
 #else
   BUILD_SINGLE_SELECTOR_THRICE(
@@ -227,7 +227,7 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext* lc, int opNum, vo
                                             sd::LongType const* hYShapeInfo, void const* dY,
                                             sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo,
                                             void* dZ, sd::LongType const* dZShapeInfo, void* extraParams,
-                                            int* dimension, int dimensionLength, sd::LongType const* tadOnlyShapeInfo,
+                                            sd::LongType* dimension, int dimensionLength, sd::LongType const* tadOnlyShapeInfo,
                                             sd::LongType const* tadOffsets, sd::LongType const* tadOnlyShapeInfoZ,
                                             sd::LongType const* tadOffsetsZ) {
   auto stream = lc->getCudaStream();
@@ -244,7 +244,7 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext* lc, int opNum, vo
   if (yType != xType)
     throw std::runtime_error("NativeOpExecutioner::execBroadcastBool requires both X & Y operands to have same type");
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("F3B opNum:[%i]\n", opNum);
+  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("F3B opType:[%i]\n", opNum);
 
   dim3 launchDims(256, 256, 1024);
 
@@ -293,7 +293,7 @@ void NativeOpExecutioner::execInverseBroadcastBool(
     sd::LaunchContext* lc, int opNum, void const* hX, sd::LongType const* hXShapeInfo, void const* dX,
     sd::LongType const* dXShapeInfo, void const* hY, sd::LongType const* hYShapeInfo, void const* dY,
     sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo, void* dZ,
-    sd::LongType const* dZShapeInfo, void* extraParams, int* dimension, int dimensionLength,
+    sd::LongType const* dZShapeInfo, void* extraParams, sd::LongType* dimension, int dimensionLength,
     sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* tadOnlyShapeInfoZ,
     sd::LongType const* tadOffsetsZ) {
   auto stream = lc->getCudaStream();
@@ -328,7 +328,7 @@ void NativeOpExecutioner::execBroadcastInt(
     sd::LaunchContext* lc, int opNum, void const* hX, sd::LongType const* hXShapeInfo, void const* dX,
     sd::LongType const* dXShapeInfo, void const* hY, sd::LongType const* hYShapeInfo, void const* dY,
     sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo, void* dZ,
-    sd::LongType const* dZShapeInfo, int* dimension, int dimensionLength, sd::LongType const* tadOnlyShapeInfo,
+    sd::LongType const* dZShapeInfo, sd::LongType* dimension, int dimensionLength, sd::LongType const* tadOnlyShapeInfo,
     sd::LongType const* tadOffsets, sd::LongType const* tadOnlyShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   auto stream = lc->getCudaStream();
 
@@ -397,7 +397,7 @@ void NativeOpExecutioner::execInverseBroadcastInt(
     sd::LaunchContext* lc, int opNum, void const* hX, sd::LongType const* hXShapeInfo, void const* dX,
     sd::LongType const* dXShapeInfo, void const* hY, sd::LongType const* hYShapeInfo, void const* dY,
     sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo, void* dZ,
-    sd::LongType const* dZShapeInfo, int* dimension, int dimensionLength, sd::LongType const* tadOnlyShapeInfo,
+    sd::LongType const* dZShapeInfo, sd::LongType* dimension, int dimensionLength, sd::LongType const* tadOnlyShapeInfo,
     sd::LongType const* tadOffsets, sd::LongType const* tadOnlyShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   auto stream = lc->getCudaStream();
 
@@ -413,7 +413,7 @@ void NativeOpExecutioner::execInverseBroadcastInt(
   if (yType != xType || zType != xType)
     throw std::runtime_error("NativeOpExecutioner::execBroadcastInt requires both X & Y operands to have same type");
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("F3BI opNum:[%i]\n", opNum);
+  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("F3BI opType:[%i]\n", opNum);
 
   dim3 launchDims(256, 256, 1024);
 
@@ -446,7 +446,7 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext* lc, int opNum, void c
                                         sd::LongType const* dXShapeInfo, void const* hY,
                                         sd::LongType const* hYShapeInfo, void const* dY,
                                         sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo,
-                                        void* dZ, sd::LongType const* dZShapeInfo, int* dimension, int dimensionLength,
+                                        void* dZ, sd::LongType const* dZShapeInfo, sd::LongType* dimension, int dimensionLength,
                                         sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
                                         sd::LongType const* tadOnlyShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   auto stream = lc->getCudaStream();
@@ -462,7 +462,7 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext* lc, int opNum, void c
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(
       xType, yType, zType, functions::broadcast::Broadcast,
-      ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension,
+      ::execBroadcast(launchDims, stream, opType, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension,
                       dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
       SD_COMMON_TYPES, SD_COMMON_TYPES);
 #else
@@ -501,7 +501,7 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext* lc, const int opNum, 
 
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast,
-                          ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo),
+                          ::execBroadcast(launchDims, stream, opType, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo),
                           SD_COMMON_TYPES, SD_COMMON_TYPES);
 #else
   BUILD_SINGLE_SELECTOR_THRICE(
@@ -518,7 +518,7 @@ void NativeOpExecutioner::execInverseBroadcast(
     sd::LaunchContext* lc, int opNum, void const* hX, sd::LongType const* hXShapeInfo, void const* dX,
     sd::LongType const* dXShapeInfo, void const* hY, sd::LongType const* hYShapeInfo, void const* dY,
     sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo, void* dZ,
-    sd::LongType const* dZShapeInfo, int* dimension, int dimensionLength, sd::LongType const* tadOnlyShapeInfo,
+    sd::LongType const* dZShapeInfo, sd::LongType* dimension, int dimensionLength, sd::LongType const* tadOnlyShapeInfo,
     sd::LongType const* tadOffsets, sd::LongType const* tadOnlyShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   auto stream = lc->getCudaStream();
 
@@ -533,7 +533,7 @@ void NativeOpExecutioner::execInverseBroadcast(
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(
       xType, yType, zType, functions::broadcast::Broadcast,
-      ::execInverseBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension,
+      ::execInverseBroadcast(launchDims, stream, opType, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension,
                              dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
       SD_COMMON_TYPES, SD_COMMON_TYPES);
 #else
@@ -554,11 +554,11 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext* lc, int opNum, void 
                                          sd::LongType const* hXShapeInfo, void const* dX,
                                          sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
                                          sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo,
-                                         int* dimension, int dimensionLength) {
+                                         sd::LongType* dimension, int dimensionLength) {
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("SF7 opNum:[%i]\n", opNum);
+  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("SF7 opType:[%i]\n", opNum);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -585,11 +585,11 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext* lc, int opNum, void 
                                          sd::LongType const* hXShapeInfo, void const* dX,
                                          sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
                                          sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo,
-                                         int* dimension, int dimensionLength) {
+                                         sd::LongType* dimension, int dimensionLength) {
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("LF7 opNum:[%i]\n", opNum);
+  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("LF7 opType:[%i]\n", opNum);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -616,11 +616,11 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext* lc, int opNum, void 
                                          sd::LongType const* hXShapeInfo, void const* dX,
                                          sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
                                          sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo,
-                                         int* dimension, int dimensionLength) {
+                                         sd::LongType* dimension, int dimensionLength) {
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("BF7 opNum:[%i]\n", opNum);
+  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("BF7 opType:[%i]\n", opNum);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -655,11 +655,11 @@ void NativeOpExecutioner::execReduceFloat(sd::LaunchContext* lc, int opNum, cons
                                           const sd::LongType* hXShapeInfo, const void* dX,
                                           const sd::LongType* dXShapeInfo, void* extraParams, void* hZ,
                                           const sd::LongType* hZShapeInfo, void* dZ, const sd::LongType* dZShapeInfo,
-                                          int* dimension, int dimensionLength) {
+                                          sd::LongType* dimension, int dimensionLength) {
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("F8 opNum:[%i]\n", opNum);
+  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("F8 opType:[%i]\n", opNum);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -693,13 +693,13 @@ void NativeOpExecutioner::execIndexReduce(sd::LaunchContext* lc, int opNum, void
                                           sd::LongType const* hXShapeInfo, void const* dX,
                                           sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
                                           sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo,
-                                          int* dimension, int dimensionLength, sd::LongType const* tadShapeInfo,
+                                          sd::LongType* dimension, int dimensionLength, sd::LongType const* tadShapeInfo,
                                           sd::LongType const* tadOffsets) {
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
   auto allocationPointer = lc->getAllocationPointer();
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("F2 opNum:[%i]\n", opNum);
+  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("F2 opType:[%i]\n", opNum);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -739,7 +739,7 @@ void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext* lc, int opNum
                                                 sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
                                                 sd::LongType const* hZShapeInfo, void* dZ,
                                                 sd::LongType const* dZShapeInfo) {
-  if (sd::Environment::getInstance().isDebug()) printf("F1 opNum:[%i]\n", opNum);
+  if (sd::Environment::getInstance().isDebug()) printf("F1 opType:[%i]\n", opNum);
 
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
@@ -750,7 +750,7 @@ void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext* lc, int opNum
   auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
   dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, SD_CUDA_BLOCK_SIZE, 1024);
 
-  if (sd::Environment::getInstance().isDebugAndVerbose() && launchDims.x == 1) printf("AF1 opNum:[%i]\n", opNum);
+  if (sd::Environment::getInstance().isDebugAndVerbose() && launchDims.x == 1) printf("AF1 opType:[%i]\n", opNum);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -1091,7 +1091,7 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext* lc, int opNum, voi
                                            sd::LongType const* hXShapeInfo, void const* dX,
                                            sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
                                            sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo,
-                                           int* dimension, int dimensionLength, sd::LongType const* tadShapeInfo,
+                                           sd::LongType* dimension, int dimensionLength, sd::LongType const* tadShapeInfo,
                                            sd::LongType const* tadOffsets, bool biasCorrected) {
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
@@ -1157,7 +1157,7 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext* lc, int opNum, void con
                                       void const* dX, sd::LongType const* dXShapeInfo, void* extraParams,
                                       void const* hY, sd::LongType const* hYShapeInfo, void const* dY,
                                       sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo,
-                                      void* dZ, sd::LongType const* dZShapeInfo, int* dimension, int dimensionLength,
+                                      void* dZ, sd::LongType const* dZShapeInfo, sd::LongType* dimension, int dimensionLength,
                                       sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
                                       sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets) {
   if (shape::isScalar(hZShapeInfo)) {
@@ -1271,7 +1271,7 @@ void NativeOpExecutioner::execScalarBool(
     sd::LaunchContext* lc, int opNum, void const* hX, sd::LongType const* hXShapeInfo, void const* dX,
     sd::LongType const* dXShapeInfo, void* extraParams, void* hZ, sd::LongType const* hZShapeInfo, void* dZ,
     sd::LongType const* dZShapeInfo, void const* hScalars, sd::LongType const* hScalarShapeInfo, void const* dScalars,
-    sd::LongType const* dScalarShapeInfo, int* dimension, int dimensionLength, sd::LongType const* tadShapeInfo,
+    sd::LongType const* dScalarShapeInfo, sd::LongType* dimension, int dimensionLength, sd::LongType const* tadShapeInfo,
     sd::LongType const* tadOffsets, sd::LongType const* tadShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   auto stream = lc->getCudaStream();
 
@@ -1338,7 +1338,7 @@ void NativeOpExecutioner::execScalarInt(
     sd::LaunchContext* lc, int opNum, void const* hX, sd::LongType const* hXShapeInfo, void const* dX,
     sd::LongType const* dXShapeInfo, void* extraParams, void* hZ, sd::LongType const* hZShapeInfo, void* dZ,
     sd::LongType const* dZShapeInfo, void const* hScalars, sd::LongType const* hScalarShapeInfo, void const* dScalars,
-    sd::LongType const* dScalarShapeInfo, int* dimension, int dimensionLength, sd::LongType const* tadShapeInfo,
+    sd::LongType const* dScalarShapeInfo, sd::LongType* dimension, int dimensionLength, sd::LongType const* tadShapeInfo,
     sd::LongType const* tadOffsets, sd::LongType const* tadShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   auto stream = lc->getCudaStream();
 
@@ -1385,7 +1385,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext* lc, int opNum, void cons
 
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform,
-                          ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, dZ, dZShapeInfo,
+                          ::executeCudaShaped(launchDims, stream, opType, dX, dXShapeInfo, hXShapeInfo, dZ, dZShapeInfo,
                                               hZShapeInfo, dScalar, extraParams),
                           SD_COMMON_TYPES, SD_COMMON_TYPES);
 #else
@@ -1405,7 +1405,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext* lc, int opNum, void cons
                                      void const* dX, sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
                                      sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo,
                                      void const* hScalars, sd::LongType const* hScalarShapeInfo, void const* dScalars,
-                                     sd::LongType const* dScalarShapeInfo, int* dimension, int dimensionLength,
+                                     sd::LongType const* dScalarShapeInfo, sd::LongType* dimension, int dimensionLength,
                                      sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets,
                                      sd::LongType const* tadShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   auto stream = lc->getCudaStream();
@@ -1421,7 +1421,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext* lc, int opNum, void cons
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(
       xType, yType, zType, functions::scalar::ScalarTransform,
-      ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams,
+      ::executeCudaAlongDimension(launchDims, stream, opType, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams,
                                   dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
       SD_COMMON_TYPES, SD_COMMON_TYPES);
 #else
@@ -1454,7 +1454,7 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
 
   auto rng = reinterpret_cast<sd::graph::RandomGenerator*>(stateHost);
 
-  // functions::random::RandomFunction<float>::executeCudaSingle(launchDims, extraPointers, opNum, stateHost, dZ,
+  // functions::random::RandomFunction<float>::executeCudaSingle(launchDims, extraPointers, opType, stateHost, dZ,
   // dZShapeInfo, extraArguments),
   BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction,
                         ::executeCudaSingle(launchDims, stream, opNum, stateDevice, dZ, dZShapeInfo, extraArguments),
@@ -1486,8 +1486,7 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
 
   dim3 launchDims = dim3(512, 512, 32768);
   auto xType = sd::ArrayOptions::dataType(hZShapeInfo);
-  // functions::random::RandomFunction<float>::executeCudaDouble(launchDims, extraPointers, opNum, stateHost, dX,
-  // dXShapeInfo, dZ, dZShapeInfo, extraArguments);
+
   BUILD_SINGLE_SELECTOR(
       xType, functions::random::RandomFunction,
       ::executeCudaDouble(launchDims, stream, opNum, stateDevice, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments),
@@ -1519,8 +1518,7 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
 
   dim3 launchDims = dim3(512, 512, 32768);
   auto xType = sd::ArrayOptions::dataType(hZShapeInfo);
-  // functions::random::RandomFunction<float>::executeCudaTriple(launchDims, extraPointers, opNum, stateHost, dX,
-  // dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments);
+
   BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction,
                         ::executeCudaTriple(launchDims, stream, opNum, stateDevice, dX, dXShapeInfo, dY, dYShapeInfo,
                                             dZ, dZShapeInfo, extraArguments),
@@ -1540,18 +1538,18 @@ void NativeOpExecutioner::execReduce3All(sd::LaunchContext* lc, int opNum, void 
                                          sd::LongType const* dXShapeInfo, void* extraParamsVals, void const* hY,
                                          sd::LongType const* hYShapeInfo, void const* dY,
                                          sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo,
-                                         void* dZ, sd::LongType const* dZShapeInfo, int* dimension, int dimensionLength,
+                                         void* dZ, sd::LongType const* dZShapeInfo, sd::LongType* dimension, int dimensionLength,
                                          sd::LongType const* xTadShapeInfo, sd::LongType const* xOffsets,
                                          sd::LongType const* yTadShapeInfo, sd::LongType const* yOffsets) {
   auto stream = lc->getCudaStream();
   auto allocationPointer = lc->getAllocationPointer();
   auto reductionPointer = lc->getReductionPointer();
 
-  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("D119 opNum:[%i]\n", opNum);
+  if (sd::Environment::getInstance().isDebugAndVerbose()) printf("D119 opType:[%i]\n", opNum);
 
   dim3 launchDims(shape::length(hZShapeInfo), SD_CUDA_BLOCK_SIZE / 2, 1024);
 
-  if (sd::Environment::getInstance().isVerbose() && launchDims.x == 1) printf("AD119 opNum:[%i]\n", opNum);
+  if (sd::Environment::getInstance().isVerbose() && launchDims.x == 1) printf("AD119 opType:[%i]\n", opNum);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
@@ -1578,7 +1576,7 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext* lc, int opNum, void 
                                          sd::LongType const* dXShapeInfo, void* extraParams, void const* hY,
                                          sd::LongType const* hYShapeInfo, void const* dY,
                                          sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo,
-                                         void* dZ, sd::LongType const* dZShapeInfo, int* dimension, int dimensionLength,
+                                         void* dZ, sd::LongType const* dZShapeInfo, sd::LongType* dimension, int dimensionLength,
                                          sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets,
                                          sd::LongType const* yTadShapeInfo, sd::LongType const* yTadOffsets) {
   if (shape::isScalar(hZShapeInfo)) {

@@ -33,7 +33,7 @@ void decodeBitmap(sd::LaunchContext* context, const NDArray* input, NDArray* out
 
 sd::LongType encodeBitmap(sd::LaunchContext* context, NDArray* input, NDArray* output, float threshold) {
   return NativeOpExecutioner::encodeBitmap(input->buffer(), input->shapeInfo(), input->lengthOf(),
-                                           output->bufferAsT<int>(), threshold);
+                                           output->bufferAsT<sd::LongType>(), threshold);
 }
 }  // namespace helpers
 }  // namespace ops

@@ -159,7 +159,7 @@ void logSumExp_(NDArray* input, NDArray* axis, NDArray* output) {
   // reduce along axis with
   NDArray tempInput = input->dup();
   input->applyTransform(transform::Exp, tempInput);
-  std::vector<int> axisVector;
+  std::vector<sd::LongType> axisVector;
   if (axis != nullptr) {
     axisVector.resize(axis->lengthOf());
     for (size_t i = 0; i < axisVector.size(); ++i) axisVector[i] = axis->e<int>(i);
@@ -175,7 +175,7 @@ void logSumExp_(NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output
   input->applyPairwiseTransform(pairwise::Subtract, *subtrah, tempInput);
   tempInput.applyTransform(transform::Exp, tempInput);
 
-  std::vector<int> axisVector;
+  std::vector<sd::LongType> axisVector;
   if (axis != nullptr) {
     axisVector.resize(axis->lengthOf());
     for (size_t i = 0; i < axisVector.size(); ++i) axisVector[i] = axis->e<int>(i);

@@ -130,12 +130,12 @@ SD_KERNEL static void sruBICuda(const void* vx, const sd::LongType* xShapeInfo, 
 
   const int rank = 3;
 
-  __shared__ int time, K, *sharedMem;
+  __shared__ sd::LongType time, K, *sharedMem;
   __shared__ sd::LongType len, totalThreads;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<int*>(shmem);
+    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
 
     time = xShapeInfo[1];
     K = xShapeInfo[3] / 2;
@@ -293,12 +293,12 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const sd::LongType* xShapeInfo
 
   const int rank = 3;
 
-  __shared__ int time, K, *sharedMem;
+  __shared__ sd::LongType time, K, *sharedMem;
   __shared__ sd::LongType len, totalThreads;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<int*>(shmem);
+    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
 
     time = xShapeInfo[1];
     K = xShapeInfo[3] / 2;

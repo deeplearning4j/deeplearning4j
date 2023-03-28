@@ -24,6 +24,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <ops/declarable/LegacyReduce3Op.h>
+#include <ops/declarable/OpRegistrator.h>
 
 namespace sd {
 namespace ops {
@@ -49,7 +50,7 @@ sd::Status LegacyReduce3Op::validateAndExecute(Context &block) {
         extras.argumentsAsT(z->dataType()), y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
   } else {
-    std::vector<int> dims(*block.getAxis());
+    std::vector<sd::LongType> dims(*block.getAxis());
     for (int e = 0; e < dims.size(); e++)
       if (dims[e] < 0) dims[e] += x->rankOf();
 
@@ -81,9 +82,10 @@ sd::Status LegacyReduce3Op::validateAndExecute(Context &block) {
 
   manager.synchronize();
   STORE_RESULT(*z);
-
+  traceExecIfNeeded(block);
   return sd::Status::OK;
 }
+
 
 LegacyReduce3Op::LegacyReduce3Op() : LegacyOp::LegacyOp(2) {
   //

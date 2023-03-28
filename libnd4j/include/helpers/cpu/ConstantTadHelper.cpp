@@ -40,23 +40,23 @@ ConstantTadHelper &ConstantTadHelper::getInstance() {
   return instance;
 }
 
-TadPack ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, int dimension,
+TadPack ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, LongType dimension,
                                             const bool keepUnitiesInShape) {
   return tadForDimensions(originalShape, &dimension, 1, keepUnitiesInShape);
 }
 
-TadPack ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, const std::vector<int> &dimensions,
+TadPack ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, const std::vector<LongType> &dimensions,
                                             const bool keepUnitiesInShape) {
-  return tadForDimensions(originalShape, const_cast<int *>(dimensions.data()), dimensions.size(), keepUnitiesInShape);
+  return tadForDimensions(originalShape, const_cast<sd::LongType *>(dimensions.data()), dimensions.size(), keepUnitiesInShape);
 }
 
-TadPack ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, int *dimensions, int dimLength,
+TadPack ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, LongType *dimensions, int dimLength,
                                             const bool keepUnitiesInShape) {
   TadDescriptor tadDescriptor(originalShape, dimensions, dimLength, keepUnitiesInShape);
   return tadForDimensions(tadDescriptor);
 }
 
-TadPack ConstantTadHelper::tadForDimensions(ShapeDescriptor &descriptor, std::vector<int> &dimensions,
+TadPack ConstantTadHelper::tadForDimensions(ShapeDescriptor &descriptor, std::vector<LongType> &dimensions,
                                             const bool keepUnitiesInShape) {
   TadDescriptor tadDescriptor(descriptor, dimensions, keepUnitiesInShape);
   return tadForDimensions(tadDescriptor);
@@ -70,7 +70,7 @@ TadPack ConstantTadHelper::tadForDimensions(TadDescriptor &descriptor) {
     // if there's no TadPack matching this descriptor - create one
     const auto shapeInfo = descriptor.originalShape().toShapeInfo();
     const int rank = shape::rank(shapeInfo);
-    const std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, descriptor.axis());
+    const std::vector<sd::LongType> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, descriptor.axis());
     const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(shapeInfo, dimsToExclude);
     const int subArrRank =
         (rank == dimsToExclude.size() || descriptor.areUnitiesinShape()) ? rank : rank - dimsToExclude.size();

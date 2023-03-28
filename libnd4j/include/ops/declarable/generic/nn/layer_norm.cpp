@@ -37,7 +37,7 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
   auto gain = INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);
 
-  std::vector<int> axis = *block.getIArguments();
+  std::vector<sd::LongType> axis = *block.getIArguments();
 
   const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;  // 0-NCHW,  1-NHWC
   const int dimC = isNCHW ? 1 : input->rankOf() - 1;
@@ -93,7 +93,7 @@ CUSTOM_OP_IMPL(layer_norm_bp, 3, -1, false, 0, -1) {
                "LAYER_NORM_BP OP: wrong shape of gain array, expected is {%i}, but got %s instead !",
                input->sizeAt(dimC), ShapeUtils::shapeAsString(gain).c_str());
 
-  std::vector<int> axis = *block.getIArguments();
+  std::vector<sd::LongType> axis = *block.getIArguments();
 
   std::vector<sd::LongType> longAxis = ArrayUtils::toLongVector(axis);
 

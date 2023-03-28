@@ -1430,9 +1430,9 @@ namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
 // eventually method reduces array by excluding its shapes along axes present in dimensions vector
-    NDArray NDArray::reduceAlongDimension(sd::reduce::FloatOps op, const std::vector<int> &dimensions,
+    NDArray NDArray::reduceAlongDimension(sd::reduce::FloatOps op, const std::vector<LongType> &dimensions,
                                           const bool keepDims) const {
-        std::vector<int> copy(dimensions);
+        std::vector<sd::LongType> copy(dimensions);
 
         auto newShape = ShapeUtils::evalReduceShapeInfo(
                 'c', copy, *this, isR() ? dataType() : Environment::getInstance().defaultFloatDataType(), keepDims, false,
@@ -1446,9 +1446,9 @@ namespace sd {
     }
 
 //////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::reduceAlongDimension(sd::reduce::SameOps op, const std::vector<int> &dimensions,
+    NDArray NDArray::reduceAlongDimension(sd::reduce::SameOps op, const std::vector<LongType> &dimensions,
                                           const bool keepDims) const {
-        std::vector<int> copy(dimensions);
+        std::vector<sd::LongType> copy(dimensions);
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, keepDims, false, getContext()->getWorkspace());
 
@@ -1460,9 +1460,9 @@ namespace sd {
     }
 
 //////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::reduceAlongDimension(sd::reduce::BoolOps op, const std::vector<int> &dimensions,
+    NDArray NDArray::reduceAlongDimension(sd::reduce::BoolOps op, const std::vector<LongType> &dimensions,
                                           const bool keepDims) const {
-        std::vector<int> copy(dimensions);
+        std::vector<sd::LongType> copy(dimensions);
 
         auto newShape =
                 ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataType::BOOL, keepDims, false, getContext()->getWorkspace());
@@ -1475,9 +1475,9 @@ namespace sd {
     }
 
 //////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::reduceAlongDimension(sd::reduce::LongOps op, const std::vector<int> &dimensions,
+    NDArray NDArray::reduceAlongDimension(sd::reduce::LongOps op, const std::vector<LongType> &dimensions,
                                           const bool keepDims) const {
-        std::vector<int> copy(dimensions);
+        std::vector<sd::LongType> copy(dimensions);
 
         auto newShape =
                 ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataType::INT64, keepDims, false, getContext()->getWorkspace());
@@ -1491,27 +1491,27 @@ namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
 // method reduces array by excluding its shapes along axes present in dimensions vector
-    NDArray NDArray::reduceAlongDimension(sd::reduce::FloatOps op, const std::initializer_list<int> &dimensions,
+    NDArray NDArray::reduceAlongDimension(sd::reduce::FloatOps op, const std::initializer_list<LongType> &dimensions,
                                           const bool keepDims) const {
-        return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims);
+        return reduceAlongDimension(op, std::vector<sd::LongType>(dimensions), keepDims);
     }
 
 //////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::reduceAlongDimension(sd::reduce::SameOps op, const std::initializer_list<int> &dimensions,
+    NDArray NDArray::reduceAlongDimension(sd::reduce::SameOps op, const std::initializer_list<LongType> &dimensions,
                                           const bool keepDims) const {
-        return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims);
+        return reduceAlongDimension(op, std::vector<sd::LongType>(dimensions), keepDims);
     }
 
 //////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::reduceAlongDimension(sd::reduce::BoolOps op, const std::initializer_list<int> &dimensions,
+    NDArray NDArray::reduceAlongDimension(sd::reduce::BoolOps op, const std::initializer_list<LongType> &dimensions,
                                           const bool keepDims) const {
-        return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims);
+        return reduceAlongDimension(op, std::vector<sd::LongType>(dimensions), keepDims);
     }
 
 //////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::reduceAlongDimension(sd::reduce::LongOps op, const std::initializer_list<int> &dimensions,
+    NDArray NDArray::reduceAlongDimension(sd::reduce::LongOps op, const std::initializer_list<LongType> &dimensions,
                                           const bool keepDims) const {
-        return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims);
+        return reduceAlongDimension(op, std::vector<sd::LongType>(dimensions), keepDims);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1648,13 +1648,13 @@ namespace sd {
     }
 
 //////////////////////////////////////////////////////////////////////////
-    sd::LongType NDArray::tensorsAlongDimension(std::initializer_list<int> dimensions) const {
-        return tensorsAlongDimension(std::vector<int>(dimensions));
+    sd::LongType NDArray::tensorsAlongDimension(std::initializer_list<LongType> dimensions) const {
+        return tensorsAlongDimension(std::vector<sd::LongType>(dimensions));
     }
 
 //////////////////////////////////////////////////////////////////////////
-    sd::LongType NDArray::tensorsAlongDimension(const std::vector<int> &dimensions) const {
-        std::vector<int> copy(dimensions);
+    sd::LongType NDArray::tensorsAlongDimension(const std::vector<LongType> &dimensions) const {
+        std::vector<sd::LongType> copy(dimensions);
         shape::checkDimensions(rankOf(), copy);
 
         sd::LongType tadLength = shape::tadLength(this->_shapeInfo, copy.data(), copy.size());
@@ -1884,7 +1884,7 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
 // This method applies in-place transpose to this array, so this array becomes transposed
     void NDArray::transposei() {
-        std::vector<int> perm;
+        std::vector<sd::LongType > perm;
         for (int e = this->rankOf() - 1; e >= 0; e--) perm.emplace_back(e);
 
         this->permutei(perm);
@@ -2004,35 +2004,19 @@ namespace sd {
     }
 
 //////////////////////////////////////////////////////////////////////////
-    bool NDArray::permutei(const std::initializer_list<int> &dimensions) {
-        std::vector<int> vec(dimensions);
+    bool NDArray::permutei(const std::initializer_list<LongType> &dimensions) {
+        std::vector<sd::LongType > vec(dimensions);
         return permutei(vec);
     }
 
 //////////////////////////////////////////////////////////////////////////
-    bool NDArray::permutei(const std::vector<int> &dimensions) { return permutei(dimensions.data(), rankOf()); }
+    bool NDArray::permutei(const std::vector<LongType> &dimensions) { return permutei(dimensions.data(), rankOf()); }
 
 //////////////////////////////////////////////////////////////////////////
-    bool NDArray::permutei(const std::initializer_list<sd::LongType> &dimensions) {
-        std::vector<sd::LongType> vec(dimensions);
-        std::vector<int> ivec(dimensions.size());
 
-        for (int e = 0; e < vec.size(); e++) ivec[e] = static_cast<int>(vec[e]);
-
-        return permutei(ivec);
-    }
 
 //////////////////////////////////////////////////////////////////////////
-    bool NDArray::permutei(const std::vector<sd::LongType> &dimensions) {
-        std::vector<int> ivec(dimensions.size());
-
-        for (int e = 0; e < dimensions.size(); e++) ivec[e] = dimensions[e];
-
-        return permutei(ivec.data(), rankOf());
-    }
-
-//////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::permute(const int *dimensions, const int rank) const & {
+    NDArray NDArray::permute(const LongType *dimensions, const int rank) const & {
         // evaluate shapeInfo for output (permuted) array ret
         auto shapeInfoPermuted = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, getContext()->getWorkspace());
         auto buff =  ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoPermuted);
@@ -2042,70 +2026,38 @@ namespace sd {
     }
 
 //////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::permute(const int *dimensions, const int rank) && {
+    NDArray NDArray::permute(const LongType *dimensions, const int rank) && {
         this->permutei(dimensions, rank);
         return std::move(*this);
     }
 
-/////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::permute(const sd::LongType *dimensions, const int rank) const & {
-        int tempDims[SD_MAX_RANK];
-        shape::convertT<sd::LongType, int>(const_cast<sd::LongType *>(dimensions), tempDims, rank);
-        return permute(tempDims, rank);
-    }
-
-/////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::permute(const sd::LongType *dimensions, const int rank) && {
-        this->permutei(dimensions, rank);
-        return std::move(*this);
-    }
 
 //////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::permute(const std::vector<int> &dimensions) const & { return permute(dimensions.data(), rankOf()); }
+    NDArray NDArray::permute(const std::vector<LongType> &dimensions) const & { return permute(dimensions.data(), rankOf()); }
 
 //////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::permute(const std::vector<int> &dimensions) && {
+    NDArray NDArray::permute(const std::vector<LongType> &dimensions) && {
         this->permutei(dimensions);
         return std::move(*this);
     }
 
-//////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::permute(const std::vector<sd::LongType> &dimensions) const & {
-        return permute(dimensions.data(), rankOf());
-    }
 
 //////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::permute(const std::vector<sd::LongType> &dimensions) && {
-        this->permutei(dimensions);
-        return std::move(*this);
-    }
-
-//////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::permute(const std::initializer_list<int> &dimensions) const & {
-        std::vector<int> vec(dimensions);
+    NDArray NDArray::permute(const std::initializer_list<LongType> &dimensions) const & {
+        std::vector<sd::LongType > vec(dimensions);
         return permute(vec);
     }
 
 //////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::permute(const std::initializer_list<int> &dimensions) && {
+    NDArray NDArray::permute(const std::initializer_list<LongType> &dimensions) && {
         this->permutei(dimensions);
         return std::move(*this);
     }
 
-//////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::permute(const std::initializer_list<sd::LongType> &dimensions) const & {
-        std::vector<sd::LongType> vec(dimensions);
-        return permute(vec);
-    }
+
 
 //////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::permute(const std::initializer_list<sd::LongType> &dimensions) && {
-        this->permutei(dimensions);
-        return std::move(*this);
-    }
-
-//////////////////////////////////////////////////////////////////////////
-    void NDArray::permute(const int *dimensions, const int rank, NDArray &target) const {
+    void NDArray::permute(const LongType *dimensions, const int rank, NDArray &target) const {
         if (!nonNull() || !target.nonNull() || rank != rankOf() || rank != target.rankOf())
             throw std::runtime_error("NDArray<T>::permute method: either arrays are nullptr or ranks are not suitable!");
 
@@ -2116,27 +2068,13 @@ namespace sd {
         target._offset = _offset;
     }
 
-//////////////////////////////////////////////////////////////////////////
-    void NDArray::permute(const sd::LongType *dimensions, const int rank, NDArray &target) const {
-        if (!nonNull() || !target.nonNull() || rank != rankOf() || rank != target.rankOf())
-            throw std::runtime_error("NDArray<T>::permute method: either arrays are nullptr or ranks are not suitable!");
 
-        auto shapeInfoNew = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, target.getContext()->getWorkspace());
-
-        target.setShapeInfo(shapeInfoNew);
-        target._buffer = _buffer;
-        target._offset = _offset;
-    }
 
 //////////////////////////////////////////////////////////////////////////
-    void NDArray::permute(const std::vector<int> &dimensions, NDArray &target) const {
+    void NDArray::permute(const std::vector<LongType> &dimensions, NDArray &target) const {
         permute(dimensions.data(), rankOf(), target);
     }
 
-//////////////////////////////////////////////////////////////////////////
-    void NDArray::permute(const std::vector<sd::LongType> &dimensions, NDArray &target) const {
-        permute(dimensions.data(), rankOf(), target);
-    }
 
 //////////////////////////////////////////////////////////////////////////
 // check whether array is identity matrix
@@ -3120,15 +3058,15 @@ namespace sd {
     }
 
 //////////////////////////////////////////////////////////////////////////
-    void NDArray::applyBroadcast(sd::broadcast::Ops op, const std::vector<int> &dimensions, const NDArray &other,
+    void NDArray::applyBroadcast(sd::broadcast::Ops op, const std::vector<LongType> &dimensions, const NDArray &tad,
                                  NDArray &target, ExtraArguments *extraArgs) {
         if (dimensions.size() == 0) return;
 
         if (isS()) throw std::runtime_error("NDArray::applyBroadcast: you can't use this method on String array!");
-        if (((op == broadcast::Divide || op == broadcast::FloorDiv || op == broadcast::FloorMod) && other.isB()) ||
+        if (((op == broadcast::Divide || op == broadcast::FloorDiv || op == broadcast::FloorMod) && tad.isB()) ||
             (op == broadcast::ReverseDivide && this->isB()))
             throw std::runtime_error("NDArray::applyBroadcast: you can't divide by array!");
-        if (isEmpty() || other.isEmpty()) {
+        if (isEmpty() || tad.isEmpty()) {
             if (!target.isEmpty())
                 throw std::runtime_error(
                         "NDArray::applyBroadcast method: when some of input arrays (or both) is empty, target array must be empty as "
@@ -3137,21 +3075,21 @@ namespace sd {
         }
 
 
-        if (target.dataType() != DataTypeUtils::pickPairwiseResultType(shapeInfo(), other.shapeInfo()))
+        if (target.dataType() != DataTypeUtils::pickPairwiseResultType(shapeInfo(), tad.shapeInfo()))
             throw std::invalid_argument("NDArray::applyBroadcast method: wrong type of target array !");
-        if (!target.isSameShape(this) && !target.isSameShape(other))
+        if (!target.isSameShape(this) && !target.isSameShape(tad))
             throw std::invalid_argument(
                     "NDArray::applyBroadcast method: one of of two input arrays (this or other) should has the same shape as "
                     "target array!");
 
-        std::vector<int> copy(dimensions);
+        std::vector<LongType> copy(dimensions);
 
         if (dimensions.size() > 1) std::sort(copy.begin(), copy.end());
 
         sd::LongType const *xShapeInfoH = shapeInfo();
-        sd::LongType const *yShapeInfoH = other.shapeInfo();
+        sd::LongType const *yShapeInfoH = tad.shapeInfo();
         sd::LongType const *xShapeInfoD = specialShapeInfo();
-        sd::LongType const *yShapeInfoD = other.specialShapeInfo();
+        sd::LongType const *yShapeInfoD = tad.specialShapeInfo();
 
         if (!isSameShape(target)) {
             auto xPack = ConstantShapeHelper::getInstance().createShapeInfoWithUnitiesForBroadcast(
@@ -3159,27 +3097,27 @@ namespace sd {
             xShapeInfoH = reinterpret_cast<sd::LongType const *>(xPack->primary());
             xShapeInfoD = reinterpret_cast<sd::LongType const *>(xPack->special());
         }
-        if (!other.isSameShape(target)) {
+        if (!tad.isSameShape(target)) {
             auto yPack = ConstantShapeHelper::getInstance().createShapeInfoWithUnitiesForBroadcast(
-                    target.shapeInfo(), other.shapeInfo(), other.getContext()->getWorkspace(), copy);
+                    target.shapeInfo(), tad.shapeInfo(), tad.getContext()->getWorkspace(), copy);
             yShapeInfoH = reinterpret_cast<sd::LongType const *>(yPack->primary());
             yShapeInfoD = reinterpret_cast<sd::LongType const *>(yPack->special());
         }
 
-        prepareUse({&target}, {this, &other});
+        prepareUse({&target}, {this, &tad});
         NativeOpExecutioner::execBroadcast(getContext(), op, buffer(), xShapeInfoH, specialBuffer(), xShapeInfoD,
-                                           other.buffer(), yShapeInfoH, other.specialBuffer(), yShapeInfoD, target.buffer(),
+                                           tad.buffer(), yShapeInfoH, tad.specialBuffer(), yShapeInfoD, target.buffer(),
                                            target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
-        registerUse({&target}, {this, &other});
+        registerUse({&target}, {this, &tad});
     }
 
 //////////////////////////////////////////////////////////////////////////
-    void NDArray::applyBroadcast(sd::broadcast::BoolOps op, const std::vector<int> &dimensions, const NDArray &other,
+    void NDArray::applyBroadcast(sd::broadcast::BoolOps op, const std::vector<LongType> &dimensions, const NDArray &tad,
                                  NDArray &target, ExtraArguments *extraArgs) {
         if (dimensions.size() == 0) return;
 
         if (isS()) throw std::runtime_error("NDArray::applyBroadcast BoolOps: you can't use this method on String array!");
-        if (isEmpty() || other.isEmpty()) {
+        if (isEmpty() || tad.isEmpty()) {
             if (!target.isEmpty())
                 throw std::runtime_error(
                         "NDArray::applyBroadcast BoolOps: when some of input arrays (or both) is empty, target array must be empty "
@@ -3197,21 +3135,21 @@ namespace sd {
 
         if (target.dataType() != DataType::BOOL)
             throw std::invalid_argument("NDArray::applyBroadcast bool method: type of target array must be BOOL!");
-        if (!target.isSameShape(this) && !target.isSameShape(other))
+        if (!target.isSameShape(this) && !target.isSameShape(tad))
             throw std::invalid_argument(
                     "NDArray::applyBroadcast bool method: one of of two input arrays (this or other) should has the same shape as "
                     "target array!");
-        if (_dataType != other._dataType)
+        if (_dataType != tad._dataType)
             throw std::invalid_argument("NDArray::applyBroadcast bool method: this and other arrays must have the same type !");
 
-        std::vector<int> copy(dimensions);
+        std::vector<LongType> copy(dimensions);
 
         if (dimensions.size() > 1) std::sort(copy.begin(), copy.end());
 
         sd::LongType const *xShapeInfoH = shapeInfo();
-        sd::LongType const *yShapeInfoH = other.shapeInfo();
+        sd::LongType const *yShapeInfoH = tad.shapeInfo();
         sd::LongType const *xShapeInfoD = specialShapeInfo();
-        sd::LongType const *yShapeInfoD = other.specialShapeInfo();
+        sd::LongType const *yShapeInfoD = tad.specialShapeInfo();
 
         if (!isSameShape(target)) {
             auto xPack = ConstantShapeHelper::getInstance().createShapeInfoWithUnitiesForBroadcast(
@@ -3219,29 +3157,29 @@ namespace sd {
             xShapeInfoH = reinterpret_cast<sd::LongType const *>(xPack->primary());
             xShapeInfoD = reinterpret_cast<sd::LongType const *>(xPack->special());
         }
-        if (!other.isSameShape(target)) {
+        if (!tad.isSameShape(target)) {
             auto yPack = ConstantShapeHelper::getInstance().createShapeInfoWithUnitiesForBroadcast(
-                    target.shapeInfo(), other.shapeInfo(), other.getContext()->getWorkspace(), copy);
+                    target.shapeInfo(), tad.shapeInfo(), tad.getContext()->getWorkspace(), copy);
             yShapeInfoH = reinterpret_cast<sd::LongType const *>(yPack->primary());
             yShapeInfoD = reinterpret_cast<sd::LongType const *>(yPack->special());
         }
 
-        prepareUse({&target}, {this, &other});
+        prepareUse({&target}, {this, &tad});
         NativeOpExecutioner::execBroadcastBool(getContext(), op, buffer(), xShapeInfoH, specialBuffer(), xShapeInfoD,
-                                               other.buffer(), yShapeInfoH, other.specialBuffer(), yShapeInfoD,
+                                               tad.buffer(), yShapeInfoH, tad.specialBuffer(), yShapeInfoD,
                                                target.buffer(), target.shapeInfo(), target.specialBuffer(),
                                                target.specialShapeInfo(), nullptr);
-        registerUse({&target}, {this, &other});
+        registerUse({&target}, {this, &tad});
     }
 
 //////////////////////////////////////////////////////////////////////////
-    void NDArray::applyBroadcast(sd::broadcast::IntOps op, const std::vector<int> &dimensions, const NDArray &other,
+    void NDArray::applyBroadcast(sd::broadcast::IntOps op, const std::vector<LongType> &dimensions, const NDArray &tad,
                                  NDArray &target, ExtraArguments *extraArgs) {
         if (dimensions.empty()) return;
 
         if (!isZ())
             throw std::runtime_error("NDArray::applyBroadcast IntOps: you can't use this method on non-Integer array!");
-        if (isEmpty() || other.isEmpty()) {
+        if (isEmpty() || tad.isEmpty()) {
             if (!target.isEmpty())
                 throw std::runtime_error(
                         "NDArray::applyBroadcast IntOps: when some of input arrays (or both) is empty, target array must be empty as "
@@ -3249,31 +3187,24 @@ namespace sd {
             return;
         }
 
-        // if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
-        //     prepareUse({&target}, {this, &other});
-        //     NativeOpExecutioner::execPairwiseIntTransform(getContext(), fromBroadcastToPairwiseInt(op), buffer(),
-        //     shapeInfo(), specialBuffer(), specialShapeInfo(), other.buffer(), other.shapeInfo(), other.specialBuffer(),
-        //     other.specialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.special(),
-        //     nullptr); registerUse({&target}, {this, &other}); return;
-        // }
 
         if (target.dataType() != dataType())
             throw std::invalid_argument("NDArray::applyBroadcast int method: type of target array must be the same as input!");
-        if (!target.isSameShape(this) && !target.isSameShape(other))
+        if (!target.isSameShape(this) && !target.isSameShape(tad))
             throw std::invalid_argument(
                     "NDArray::applyBroadcast int method: one of of two input arrays (this or other) should has the same shape as "
                     "target array!");
-        if (_dataType != other._dataType)
+        if (_dataType != tad._dataType)
             throw std::invalid_argument("NDArray::applyBroadcast int method: this and other arrays must have the same type !");
 
-        std::vector<int> copy(dimensions);
+        std::vector<LongType> copy(dimensions);
 
         if (dimensions.size() > 1) std::sort(copy.begin(), copy.end());
 
         sd::LongType const *xShapeInfoH = shapeInfo();
-        sd::LongType const *yShapeInfoH = other.shapeInfo();
+        sd::LongType const *yShapeInfoH = tad.shapeInfo();
         sd::LongType const *xShapeInfoD = specialShapeInfo();
-        sd::LongType const *yShapeInfoD = other.specialShapeInfo();
+        sd::LongType const *yShapeInfoD = tad.specialShapeInfo();
 
         if (!isSameShape(target)) {
             auto xPack = ConstantShapeHelper::getInstance().createShapeInfoWithUnitiesForBroadcast(
@@ -3281,26 +3212,26 @@ namespace sd {
             xShapeInfoH = reinterpret_cast<sd::LongType const *>(xPack->primary());
             xShapeInfoD = reinterpret_cast<sd::LongType const *>(xPack->special());
         }
-        if (!other.isSameShape(target)) {
+        if (!tad.isSameShape(target)) {
             auto yPack = ConstantShapeHelper::getInstance().createShapeInfoWithUnitiesForBroadcast(
-                    target.shapeInfo(), other.shapeInfo(), other.getContext()->getWorkspace(), copy);
+                    target.shapeInfo(), tad.shapeInfo(), tad.getContext()->getWorkspace(), copy);
             yShapeInfoH = reinterpret_cast<sd::LongType const *>(yPack->primary());
             yShapeInfoD = reinterpret_cast<sd::LongType const *>(yPack->special());
         }
 
-        prepareUse({&target}, {this, &other});
+        prepareUse({&target}, {this, &tad});
         NativeOpExecutioner::execBroadcastInt(getContext(), op, buffer(), xShapeInfoH, specialBuffer(), xShapeInfoD,
-                                              other.buffer(), yShapeInfoH, other.specialBuffer(), yShapeInfoD,
+                                              tad.buffer(), yShapeInfoH, tad.specialBuffer(), yShapeInfoD,
                                               target.buffer(), target.shapeInfo(), target.specialBuffer(),
                                               target.specialShapeInfo());
-        registerUse({&target}, {this, &other});
+        registerUse({&target}, {this, &tad});
     }
 
 //////////////////////////////////////////////////////////////////////////
-    void NDArray::applyBroadcast(sd::broadcast::Ops op, const std::initializer_list<int> dimensions,
-                                 const NDArray &tadArray, NDArray &target, ExtraArguments *extraArgs) {
-        std::vector<int> vec(dimensions);
-        applyBroadcast(op, vec, tadArray, target, extraArgs);
+    void NDArray::applyBroadcast(sd::broadcast::Ops op, const std::initializer_list<LongType> dimensions,
+                                 const NDArray &tad, NDArray &target, ExtraArguments *extraArgs) {
+        std::vector<LongType> vec(dimensions);
+        applyBroadcast(op, vec, tad, target, extraArgs);
     }
 
 ////////////////////////////////////////////////////////////////////////
@@ -3515,7 +3446,7 @@ namespace sd {
 
 ////////////////////////////////////////////////////////////////////////
     void NDArray::varianceAlongDimension(sd::variance::Ops op, NDArray &target, const bool biasCorrected,
-                                         const std::vector<int> &dimensions) const {
+                                         const std::vector<LongType> &dimensions) const {
         if (isS()) throw std::runtime_error("NDArray::varianceAlongDimension: you can't use this method on String array!");
 
         if (!target.isR()) throw std::runtime_error("NDArray::varianceAlongDimension: target array must have FLOAT type");
@@ -3527,7 +3458,7 @@ namespace sd {
                                                         specialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(),
                                                         target.specialBuffer(), target.specialShapeInfo(), biasCorrected);
         else {
-            std::vector<int> copy(dimensions);
+            std::vector<sd::LongType> copy(dimensions);
             auto pDims = sd::Environment::getInstance().isCPU() ? copy.data() : nullptr;
             auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimensions);
             NativeOpExecutioner::execSummaryStats(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
@@ -3542,10 +3473,10 @@ namespace sd {
 
 ////////////////////////////////////////////////////////////////////////
     NDArray NDArray::varianceAlongDimension(sd::variance::Ops op, const bool biasCorrected,
-                                            const std::vector<int> &dimensions) const {
+                                            const std::vector<LongType> &dimensions) const {
         if (isS()) throw std::runtime_error("NDArray::varianceAlongDimension: you can't use this method on String array!");
 
-        std::vector<int> copy(dimensions);
+        std::vector<sd::LongType> copy(dimensions);
         if (copy.size() > 1) std::sort(copy.begin(), copy.end());
 
         auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataTypeUtils::pickFloatingType(dataType()), false,
@@ -3559,14 +3490,14 @@ namespace sd {
 
 ////////////////////////////////////////////////////////////////////////
     NDArray NDArray::varianceAlongDimension(sd::variance::Ops op, const bool biasCorrected,
-                                            const std::initializer_list<int> &dimensions) const {
-        return varianceAlongDimension(op, biasCorrected, std::vector<int>(dimensions));
+                                            const std::initializer_list<LongType> &dimensions) const {
+        return varianceAlongDimension(op, biasCorrected, std::vector<sd::LongType>(dimensions));
     }
 
 ////////////////////////////////////////////////////////////////////////
     void NDArray::varianceAlongDimension(sd::variance::Ops op, NDArray &target, const bool biasCorrected,
-                                         const std::initializer_list<int> &dimensions) const {
-        varianceAlongDimension(op, target, biasCorrected, std::vector<int>(dimensions));
+                                         const std::initializer_list<LongType> &dimensions) const {
+        varianceAlongDimension(op, target, biasCorrected, std::vector<sd::LongType>(dimensions));
     }
 
 ////////////////////////////////////////////////////////////////////////
@@ -4234,7 +4165,7 @@ namespace sd {
                                                            ExtraArguments *extraParams) const;
 
 ////////////////////////////////////////////////////////////////////////
-    void NDArray::applyIndexReduce(sd::indexreduce::Ops op, NDArray &target, const std::vector<int> &dimensions,
+    void NDArray::applyIndexReduce(sd::indexreduce::Ops op, NDArray &target, const std::vector<LongType> &dimensions,
                                    const ExtraArguments *extraParams) const {
         if (isS()) throw std::runtime_error("NDArray::applyIndexReduce: you can't use this method on String array!");
 
@@ -4251,7 +4182,7 @@ namespace sd {
                                                        specialShapeInfo(), params, target.buffer(), target.shapeInfo(),
                                                        target.specialBuffer(), target.specialShapeInfo());
         } else {
-            std::vector<int> copy = dimensions;
+            std::vector<sd::LongType> copy = dimensions;
             shape::checkDimensions(rankOf(), copy);
             auto pDims = sd::Environment::getInstance().isCPU() ? copy.data() : nullptr;
             auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(shapeInfo(), copy);
@@ -4267,9 +4198,9 @@ namespace sd {
 
 ////////////////////////////////////////////////////////////////////////
 // reduce dimensions in this array relying on index operations
-    NDArray NDArray::applyIndexReduce(sd::indexreduce::Ops op, const std::vector<int> &dimensions,
+    NDArray NDArray::applyIndexReduce(sd::indexreduce::Ops op, const std::vector<LongType> &dimensions,
                                       const ExtraArguments *extraParams) const {
-        std::vector<int> copy = dimensions;
+        std::vector<sd::LongType> copy = dimensions;
         auto newShape =
                 ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataType::INT64, false, false, getContext()->getWorkspace());
         NDArray result(newShape, true, getContext());
@@ -4309,13 +4240,13 @@ namespace sd {
 
 ////////////////////////////////////////////////////////////////////////
 // apply reduce3 (exec) operations to this and other array, return result in new output array
-    NDArray NDArray::applyReduce3(sd::reduce3::Ops op, const NDArray &other, const std::vector<int> &dimensions,
+    NDArray NDArray::applyReduce3(sd::reduce3::Ops op, const NDArray &other, const std::vector<LongType> &dimensions,
                                   const ExtraArguments *extraParams) const {
         if (isS()) throw std::runtime_error("NDArray::applyReduce3: you can't use this method on String array!");
         if (dataType() != other.dataType())
             throw std::runtime_error("NDArray::applyReduce3 method: the types of this and other arrays must be the same !");
 
-        std::vector<int> copy(dimensions);
+        std::vector<sd::LongType> copy(dimensions);
         shape::checkDimensions(rankOf(), copy);
         shape::checkDimensions(other.rankOf(), copy);
 
@@ -4357,7 +4288,7 @@ namespace sd {
 
 ////////////////////////////////////////////////////////////////////////
 // apply reduce3 (execAll) operations to this and other array, return result in new output array
-    NDArray NDArray::applyAllReduce3(sd::reduce3::Ops op, const NDArray &other, const std::vector<int> &dimensions,
+    NDArray NDArray::applyAllReduce3(sd::reduce3::Ops op, const NDArray &other, const std::vector<LongType> &dimensions,
                                      const ExtraArguments *extraParams) const {
         if (isS()) throw std::runtime_error("NDArray::applyAllReduce3: you can't use this method on String array!");
         if (dataType() != other.dataType())
@@ -4365,7 +4296,7 @@ namespace sd {
 
         // be careful, copy array may undergo changes (sort, transformation of negative dimensions to positive, duplicates
         // removing )
-        std::vector<int> copy(dimensions);
+        std::vector<sd::LongType> copy(dimensions);
         shape::checkDimensions(rankOf(), copy);
         shape::checkDimensions(other.rankOf(), copy);
 
@@ -4401,7 +4332,8 @@ namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
 // method reduces array by excluding its shapes along axes present in dimensions vector
-    void NDArray::reduceAlongDimension(sd::reduce::FloatOps op, NDArray &target, const std::vector<int> &dimensions,
+    void NDArray::reduceAlongDimension(sd::reduce::FloatOps op, NDArray &target,
+                                       const std::vector<LongType> &dimensions,
                                        const bool keepDims, const bool checkTargetShape) const {
         if (isS())
             throw std::runtime_error("NDArray::reduceAlongDimension FloatOps: you can't use this method on String array!");
@@ -4409,7 +4341,7 @@ namespace sd {
             throw std::invalid_argument(
                     "NDArray::reduceAlongDimension FloatOps: requires target array to be present and have type form real space!");
 
-        std::vector<int> copy(dimensions);
+        std::vector<sd::LongType> copy(dimensions);
 
         if (checkTargetShape) {
             auto newShape =
@@ -4435,7 +4367,7 @@ namespace sd {
                 zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
             }
 
-            std::vector<int> dims = ShapeUtils::evalDimsForReduceOp(rankOf(), copy);
+            std::vector<sd::LongType> dims = ShapeUtils::evalDimsForReduceOp(rankOf(), copy);
             NativeOpExecutioner::execReduceFloat(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                                  nullptr, target.buffer(), zShapeInfoH, target.specialBuffer(), zShapeInfoD,
                                                  dims.data(), dims.size());
@@ -4447,7 +4379,7 @@ namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
 // method reduces array by excluding its shapes along axes present in dimensions vector
-    void NDArray::reduceAlongDimension(sd::reduce::SameOps op, NDArray &target, const std::vector<int> &dimensions,
+    void NDArray::reduceAlongDimension(sd::reduce::SameOps op, NDArray &target, const std::vector<LongType> &dimensions,
                                        const bool keepDims, const bool checkTargetShape) const {
         if (isS())
             throw std::runtime_error("NDArray::reduceAlongDimension SameOps: you can't use this method on String array!");
@@ -4455,7 +4387,7 @@ namespace sd {
             throw std::runtime_error(
                     "NDArray::reduceAlongDimension SameOps: requires target array to be present and have same dtype as input");
 
-        std::vector<int> copy(dimensions);
+        std::vector<sd::LongType> copy(dimensions);
 
         if (checkTargetShape) {
             auto newShape =
@@ -4481,7 +4413,7 @@ namespace sd {
                 zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
             }
 
-            std::vector<int> dims = ShapeUtils::evalDimsForReduceOp(rankOf(), copy);
+            std::vector<sd::LongType> dims = ShapeUtils::evalDimsForReduceOp(rankOf(), copy);
             NativeOpExecutioner::execReduceSame(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                                 nullptr, target.buffer(), zShapeInfoH, target.specialBuffer(), zShapeInfoD,
                                                 dims.data(), dims.size());
@@ -4493,7 +4425,7 @@ namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
 // method reduces array by excluding its shapes along axes present in dimensions vector
-    void NDArray::reduceAlongDimension(sd::reduce::LongOps op, NDArray &target, const std::vector<int> &dimensions,
+    void NDArray::reduceAlongDimension(sd::reduce::LongOps op, NDArray &target, const std::vector<LongType> &dimensions,
                                        const bool keepDims, const bool checkTargetShape) const {
         if (isS())
             throw std::runtime_error("NDArray::reduceAlongDimension LongOps: you can't use this method on String array!");
@@ -4501,7 +4433,7 @@ namespace sd {
             throw std::runtime_error(
                     "NDArray::reduceAlongDimension LongOps: requires target array to be present and have type of INT64");
 
-        std::vector<int> copy(dimensions);
+        std::vector<sd::LongType> copy(dimensions);
 
         if (checkTargetShape) {
             auto newShape =
@@ -4527,7 +4459,7 @@ namespace sd {
                 zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
             }
 
-            std::vector<int> dims = ShapeUtils::evalDimsForReduceOp(rankOf(), copy);
+            std::vector<sd::LongType> dims = ShapeUtils::evalDimsForReduceOp(rankOf(), copy);
             NativeOpExecutioner::execReduceLong(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                                 nullptr, target.buffer(), zShapeInfoH, target.specialBuffer(), zShapeInfoD,
                                                 dims.data(), dims.size());
@@ -4539,7 +4471,7 @@ namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
 // method reduces array by excluding its shapes along axes present in dimensions vector
-    void NDArray::reduceAlongDimension(sd::reduce::BoolOps op, NDArray &target, const std::vector<int> &dimensions,
+    void NDArray::reduceAlongDimension(sd::reduce::BoolOps op, NDArray &target, const std::vector<LongType> &dimensions,
                                        const bool keepDims, const bool checkTargetShape) const {
         if (isS())
             throw std::runtime_error("NDArray::reduceAlongDimension BoolOps cuda: you can't use this method on String array!");
@@ -4547,7 +4479,7 @@ namespace sd {
             throw std::invalid_argument(
                     "NDArray::reduceAlongDimension BoolOps cuda: requires target array to be present and have BOOL type!");
 
-        std::vector<int> copy(dimensions);
+        std::vector<sd::LongType> copy(dimensions);
 
         if (checkTargetShape) {
             auto newShape =
@@ -4573,7 +4505,7 @@ namespace sd {
                 zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
             }
 
-            std::vector<int> dims = ShapeUtils::evalDimsForReduceOp(rankOf(), copy);
+            std::vector<sd::LongType> dims = ShapeUtils::evalDimsForReduceOp(rankOf(), copy);
             NativeOpExecutioner::execReduceBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                                 nullptr, target.buffer(), zShapeInfoH, target.specialBuffer(), zShapeInfoD,
                                                 dims.data(), dims.size());
@@ -4788,7 +4720,7 @@ namespace sd {
             !(isR() && row.isR() && target.isR()))
             throw std::invalid_argument("NDArray::addRowVector: wrong type of target array !");
 
-        int dimension = 1;
+        sd::LongType dimension = 1;
 
         auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
 
@@ -4951,12 +4883,6 @@ namespace sd {
                           SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-    bool NDArray::permutei(const int *dimensions, const int rank) {
-        auto shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, getContext()->getWorkspace());
-        setShapeInfo(shapeInfo);
-
-        return true;
-    }
 
 //////////////////////////////////////////////////////////////////////////
     bool NDArray::permutei(const sd::LongType *dimensions, const int rank) {
@@ -4967,13 +4893,13 @@ namespace sd {
     }
 
 ////////////////////////////////////////////////////////////////////////
-    ResultSet NDArray::multipleTensorsAlongDimension(const std::vector<int> &indices,
-                                                     const std::vector<int> &dimensions) const {
+    ResultSet NDArray::multipleTensorsAlongDimension(const std::vector<LongType> &indices,
+                                                     const std::vector<LongType> &dimensions) const {
         ResultSet result;
 
         if (indices.size() == 0) return result;
 
-        auto pack = ConstantTadHelper::getInstance().tadForDimensions(shapeInfo(), const_cast<int *>(dimensions.data()),
+        auto pack = ConstantTadHelper::getInstance().tadForDimensions(shapeInfo(), const_cast<sd::LongType *>(dimensions.data()),
                                                                       dimensions.size());
 
         auto tadLength = shape::length(pack.primaryShapeInfo());
@@ -4995,13 +4921,13 @@ namespace sd {
     }
 
 ////////////////////////////////////////////////////////////////////////
-    ResultSet NDArray::allTensorsAlongDimension(const std::initializer_list<int> &dimensions) const {
-        return allTensorsAlongDimension(std::vector<int>(dimensions));
+    ResultSet NDArray::allTensorsAlongDimension(const std::initializer_list<LongType> &dimensions) const {
+        return allTensorsAlongDimension(std::vector<sd::LongType>(dimensions));
     }
 
 ////////////////////////////////////////////////////////////////////////
     ResultSet NDArray::allExamples() const {
-        std::vector<int> dimensions(rankOf() - 1);
+        std::vector<sd::LongType> dimensions(rankOf() - 1);
         for (int e = 1; e < rankOf(); e++) dimensions[e - 1] = e;
 
         return allTensorsAlongDimension(dimensions);
@@ -5073,7 +4999,7 @@ namespace sd {
     }
 
 ////////////////////////////////////////////////////////////////////////
-    ResultSet NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions) const {
+    ResultSet NDArray::allTensorsAlongDimension(const std::vector<LongType> &dimensions) const {
         ResultSet result;
         if (dimensions.size() == 0) {
             return result;
@@ -5095,7 +5021,7 @@ namespace sd {
                     "array !");
         }
 
-        auto pack = ConstantTadHelper::getInstance().tadForDimensions(_shapeInfo, const_cast<int *>(dimensions.data()),
+        auto pack = ConstantTadHelper::getInstance().tadForDimensions(_shapeInfo, const_cast<sd::LongType *>(dimensions.data()),
                                                                       dimensions.size());
         auto numTads = pack.numberOfTads();
         auto newShapeInfoCast = const_cast<sd::LongType *>(pack.primaryShapeInfo());
@@ -5151,7 +5077,7 @@ namespace sd {
     }
 
 ////////////////////////////////////////////////////////////////////////
-    NDArray NDArray::operator()(const sd::LongType subArrIdx, const std::vector<int> &dimsToExclude,
+    NDArray NDArray::operator()(const sd::LongType subArrIdx, const std::vector<sd::LongType> &dimsToExclude,
                                 bool keepUnitiesInShape) const {
         std::vector<sd::LongType> idxRanges(2 * rankOf());
 
@@ -5184,7 +5110,7 @@ namespace sd {
     }
 
 ////////////////////////////////////////////////////////////////////////
-    void NDArray::getSubArrShapeAndOffsets(const std::vector<int> &dimsToExclude, sd::LongType *&subArrShapeInfo,
+    void NDArray::getSubArrShapeAndOffsets(const std::vector<LongType> &dimsToExclude, sd::LongType *&subArrShapeInfo,
                                            sd::LongType *&subArrOffsets, bool keepUnitiesInShape) const {
         if (isEmpty()) throw std::invalid_argument("NDArray::getSubArrShapeAndOffsets: array is empty !");
 

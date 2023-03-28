@@ -142,7 +142,7 @@ int NDArrayList::counter() { return _counter++; }
 
 void NDArrayList::unstack(NDArray* array, int axis) {
   _axis = axis;
-  std::vector<int> args({axis});
+  std::vector<sd::LongType> args({axis});
   auto newAxis = ShapeUtils::evalDimsToExclude(array->rankOf(), args);
   auto result = array->allTensorsAlongDimension(newAxis);
   for (int e = 0; e < result.size(); e++) {
@@ -215,18 +215,18 @@ bool NDArrayList::isWritten(int index) {
     return false;
 }
 
-NDArray* NDArrayList::pick(std::initializer_list<int> indices) {
-  std::vector<int> idcs(indices);
+NDArray* NDArrayList::pick(std::initializer_list<LongType> indices) {
+  std::vector<LongType> idcs(indices);
   return pick(idcs);
 }
 
-NDArray* NDArrayList::pick(std::vector<int>& indices) {
+NDArray* NDArrayList::pick(std::vector<LongType>& indices) {
   std::vector<sd::LongType> shape(_shape);
 
   shape[_axis] = indices.size();
   // do we have to enforce C order here?
   auto array = new NDArray('c', shape, _chunks[0]->dataType(), _context);
-  std::vector<int> axis = ShapeUtils::evalDimsToExclude(shape.size(), {_axis});
+  std::vector<sd::LongType> axis = ShapeUtils::evalDimsToExclude(shape.size(), {_axis});
   auto tads = array->allTensorsAlongDimension(axis);
   int indicesSize = indices.size();
 

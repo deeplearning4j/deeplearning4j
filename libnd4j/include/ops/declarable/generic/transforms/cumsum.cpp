@@ -47,13 +47,13 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
     // all at once case
     sd::ops::helpers::prefix(block.launchContext(), scalar::Add, input, output, exclusive, reverse);
   } else {
-    std::vector<int> dims(block.numI() - 2);
+    std::vector<sd::LongType> dims(block.numI() - 2);
 
     if (block.width() == 1) {
       for (int e = 0; e < block.numI() - 2; e++) dims[e] = INT_ARG(e + 2);
     } else {
       auto ax = INPUT_VARIABLE(1);
-      dims = ax->template asVectorT<int>();
+      dims = ax->template asVectorT<sd::LongType>();
     }
 
     for (int e = 0; e < dims.size(); e++)
@@ -77,14 +77,13 @@ CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
   auto axis = block.width() == 3 ? INPUT_VARIABLE(1) : nullptr;
   auto gradOut = block.width() == 3 ? INPUT_VARIABLE(2) : INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);
-  //    output->assign(gradOut);
   const bool exclusive = INT_ARG(0) == 1;
   const bool reverse = INT_ARG(1) == 1;
 
-  std::vector<int> dims;
+  std::vector<sd::LongType> dims;
 
   if (block.width() > 2) {
-    dims = axis->template asVectorT<int>();
+    dims = axis->template asVectorT<sd::LongType>();
     OUTPUT_VARIABLE(1)->assign(1.0f);
   } else if (int newSize = (block.numI() - 2)) {
     dims.resize(newSize);
