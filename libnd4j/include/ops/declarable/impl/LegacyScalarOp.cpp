@@ -84,19 +84,7 @@ sd::Status LegacyScalarOp::validateAndExecute(Context &block) {
   }
 
 
-  if(OpRegistrator::getInstance().traceOps()) {
-    std::vector<const sd::LongType *> *inputShapeBuffers = new std::vector<const sd::LongType *>();
-    for(int i = 0; i < block.width(); i++) {
-      inputShapeBuffers->push_back(block.variable(i)->getNDArray()->shapeInfo());
-    }
-    std::vector<const sd::LongType *> *outputShapeBuffers = new std::vector<const sd::LongType *>();
-    for(int i = 0; i < block.outputWidth(); i++) {
-      outputShapeBuffers->push_back(block.fastpath_out()[i]->shapeInfo());
-    }
-
-    OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers,this->getOpName());
-    OpRegistrator::getInstance().registerOpExec(opExecTrace);
-  }
+  traceExecIfNeeded(block);
 
   return sd::Status::OK;
 }

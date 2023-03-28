@@ -70,12 +70,10 @@ sd::Status LegacyBroadcastBoolOp::validateAndExecute(Context &block) {
 
     auto zTadShape = Environment::getInstance().isCPU()
                      ? packZ.primaryShapeInfo()
-                     : packZ.specialShapeInfo();  //(sd::LongType *) manager.replicatePointer(tadZ.tadOnlyShapeInfo,
-    //shape::shapeInfoByteLength(tadZ.tadOnlyShapeInfo));
+                     : packZ.specialShapeInfo();
     auto zTadOffsets = Environment::getInstance().isCPU()
                        ? packZ.primaryOffsets()
                        : packZ.specialOffsets();  //(sd::LongType *) manager.replicatePointer(tadZ.tadOffsets,
-    //tadZ.numTads * sizeof(sd::LongType));
 
     NativeOpExecutioner::execBroadcast(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                        x->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(),
@@ -86,16 +84,8 @@ sd::Status LegacyBroadcastBoolOp::validateAndExecute(Context &block) {
 
   manager.synchronize();
   STORE_RESULT(*z);
-  if(OpRegistrator::getInstance().traceOps()) {
-    std::vector<const sd::LongType *> *inputShapeBuffers = new std::vector<const sd::LongType *>();
-    inputShapeBuffers->push_back(x->shapeInfo());
-    if(y != nullptr)
-      inputShapeBuffers->push_back(y->shapeInfo());
-    std::vector<const sd::LongType *> *outputShapeBuffers = new std::vector<const sd::LongType *>();
-    outputShapeBuffers->push_back(z->shapeInfo());
-    OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers,this->getOpName());
-    OpRegistrator::getInstance().registerOpExec(opExecTrace);
-  }
+  traceExecIfNeeded(block);
+
   return sd::Status::OK;
 }
 

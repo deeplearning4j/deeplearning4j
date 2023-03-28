@@ -1,7 +1,6 @@
-# UDFs
+# Graph Execution Trace Collection and Reproduction
 
 ## Status
-
 Implemented
 
 Proposed by: Adam Gibson (20 Mar 2023)
@@ -10,53 +9,59 @@ Discussed with: Paul Dubs
 
 Finalized by: Adam Gibson (24 Mar 2023)
 
-
 ## Context
 
-It can be challenging to reproduce a specific graph execution between the different APIs, SameDiff and DL4J, as they both use the underlying
-libnd4j operations to execute code. By enabling verbose or debug mode in the op executioner,
-we can observe the executed operations.
+Reproducing a specific graph execution between the SameDiff and DL4J APIs can be
+challenging, as both use the underlying libnd4j operations to execute code.
+Currently, users enable verbose or debug mode in the op executioner to observe
+executed operations and manually compare the output of the two APIs. This method is
+suboptimal and time-consuming.
 
-We often need to compare the execution of a graph between the two APIs. This is currently
-done by enabling verbose mode and observing the output. This is not ideal since it requires
-the user to manually compare the output of the two APIs.
+In the context of this proposal, the term "vector" refers to an `std::vector` in C++
+that stores the metadata of each operation execution. It does not refer to a
+mathematical vector or a tensor typically used in deep learning libraries. The
+`std::vector` is a dynamic array-like container provided by the C++ Standard Library,
+which is used here to store the sequence of operation executions.
 
+## Decision
 
+To improve the process, we will save execution traces in a format that can generate a
+SameDiff graph, emulating the executed steps. Once enabled, operation executions will
+be collected in a vector, storing only metadata such as input/output shapes and
+arguments for each operation. These executions will be stored in the vector
+sequentially.
 
+For instance, when executing a convolution operation, we can trigger the scope in C++
+to indicate the current operation. This enables tracking the execution of the
+convolution operation and its nested operations, like the im2col operation.
 
-## Proposal
-We can now save execution traces in a format that can be used to generate a SameDiff graph that emulates the executed steps.
-Once enabled, operation executions are collected in a vector. These executions only store metadata, such as input and output shapes and arguments for each operation. The executions are stored in a vector in sequence.
+Graph tracing can be enabled using the following command:
+```java
+Nd4j.toggleTrace(true);
+```
 
-
-For example, if we have a graph with a convolution operation, we can trigger the scope in C++ to indicate that we are currently in
-a convolution operation.
-This allows us to track the execution of the convolution operation and its nested operations, such as the im2col operation.
-
-Using this vector of executions, we can reproduce a graph. To save the graph, use:
-
+Using the vector of executions, we can reproduce a graph. To save the graph, use:
 ```java
 SameDiff sd = SameDiff.collectTrace();
 sd.save(new File("mygraph.fb"));
 ```
 
-
-Once we are done, purge the trace to avoid memory leaks:
-
+Afterward, purge the trace to prevent memory leaks:
 ```java
 Nd4j.purgeTrace();
 ```
 
+When purge is done you can disable trace with:
+```java 
+Nd4j.toggleTrace(false);
+```
 
 ## Consequences
-
 ### Advantages
-
-* Allows easier reproduction of a given graph
-* Allows decomposition of nested op execution like with attention
-* Adds complexity when implementing ops since we need to remember to trigger
-   notify the tracer we are currently in a parent op.
+* Simplifies graph reproduction
+* Enables decomposition of nested op execution, such as attention
+* Increases complexity when implementing ops, requiring the developer to notify the tracer of the current parent op
 
 ### Disadvantages
-* Graph generated may be missing names or other metadata
-* Execution tracing should only be done when executing one  op at a time.
+* Generated graph may lack names or other metadata
+* Execution tracing should be performed only when executing one op at a time

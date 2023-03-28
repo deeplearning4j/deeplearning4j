@@ -1161,7 +1161,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
 
         /**
-         * Adds an oup
+         * Adds an output shape
          *
          * @param shape
          * @return

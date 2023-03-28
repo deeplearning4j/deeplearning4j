@@ -420,6 +420,23 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, sd::LongType *shape) 
   return true;
 }
 
+
+void sd::ops::DeclarableOp::DeclarableOp::traceExecIfNeeded(Context &block) {
+  if(OpRegistrator::getInstance().traceOps()) {
+    std::vector<const LongType *> *inputShapeBuffers = new std::vector<const LongType *>();
+    for(int i = 0; i < block.width(); i++) {
+      inputShapeBuffers->push_back(block.variable(i)->getNDArray()->shapeInfo());
+    }
+    std::vector<const LongType *> *outputShapeBuffers = new std::vector<const LongType *>();
+    for(int i = 0; i < block.outputWidth(); i++) {
+      outputShapeBuffers->push_back(block.fastpath_out()[i]->shapeInfo());
+    }
+
+    OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers, getOpName());
+    OpRegistrator::getInstance().registerOpExec(opExecTrace);
+  }
+}
+
 bool sd::ops::DeclarableOp::allocateResult(Context &block, std::initializer_list<sd::LongType> &shape, char order) {
   auto var = block.variable(block.getNodeId(), 0);
   auto workspace = block.getWorkspace();
@@ -789,34 +806,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     }
   }
 
-  if(OpRegistrator::getInstance().traceOps()) {
-    std::vector<const sd::LongType *> *inputShapeBuffers = new std::vector<const sd::LongType *>();
-    for(int i = 0; i < block->width(); i++) {
-      auto input = block->array(i);
-      if(input != nullptr && input->shapeInfo() != nullptr) {
-        auto constShape = ConstantShapeHelper::getInstance().createFromExisting(
-            const_cast<sd::LongType *>(input->shapeInfo()), false);
-        inputShapeBuffers->push_back(constShape);
-
-      }
-    }
-
-    std::vector<const sd::LongType *> *outputShapeBuffers = new std::vector<const sd::LongType *>();
-    for(int i = 0; i < block->outputWidth(); i++) {
-      auto input = getZ(*block,i);
-      if(input != nullptr && input->shapeInfo() != nullptr) {
-        auto constShape = ConstantShapeHelper::getInstance().createFromExisting(
-            const_cast<sd::LongType *>(input->shapeInfo()), false);
-        outputShapeBuffers->push_back(constShape);
-
-      }
-
-    }
-
-    auto iArgs = block->getIArguments();
-    OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers,this->getOpName(),block->getIArguments(),block->getTArguments(),block->getBArguments(),block->getSArguments(),this->getOpDescriptor()->getOpNum());
-    OpRegistrator::getInstance().registerOpExec(opExecTrace);
-  }
+  traceExecIfNeeded(*block);
 
 
   return status;

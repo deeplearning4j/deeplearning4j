@@ -235,7 +235,7 @@ class SD_LIB_EXPORT OpDescriptor {
   // this method returns opType (applicable for legacy XYZ ops only)
   int getOpNum();
 
-  // this method allows to set specific opType
+  // this method allows to set specific opNum
   void setOpNum(int opNum);
 
   void setHash(sd::LongType hash);

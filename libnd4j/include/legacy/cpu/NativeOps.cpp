@@ -185,20 +185,29 @@ void printOpTrace() {
       sd_printf("Op name: %s\n", curr->opName->c_str());
     }
     sd_printf(" Input buffers:\n",0);
-    auto currInputShapeBuffers = *(curr->inputShapeBuffers);
-    for(int j = 0; j < currInputShapeBuffers.size(); j++) {
-      auto buff = currInputShapeBuffers[j];
-      shape::printShapeInfo(buff);
-      sd_printf("\n",0);
+   if(curr->inputShapeBuffers == nullptr || curr->inputShapeBuffers->size() == 0) {
+      sd_printf("No input buffers\n",0);
+      continue;
+    } else {
+      auto currInputShapeBuffers = *(curr->inputShapeBuffers);
+      for(int j = 0; j < currInputShapeBuffers.size(); j++) {
+        auto buff = currInputShapeBuffers[j];
+        shape::printShapeInfo(buff);
+        sd_printf("\n",0);
+      }
     }
 
     sd_printf(" Output  buffers:\n",0);
-    //TODO: debug output buffer crash. Suspected bug in printShapeInfo  with 0 length arrays *or* there's an issue
-    //with scope and references being deallocated.
-    auto currOutputShapeBuffers = *(curr->outputShapeBuffers);
-    for(int j = 0; j < curr->outputShapeBuffers->size(); j++) {
-      shape::printShapeInfo(currOutputShapeBuffers[j]);
-      sd_printf("\n",0);
+    if(curr->outputShapeBuffers == nullptr || curr->outputShapeBuffers->size() == 0) {
+      sd_printf("No output buffers\n",0);
+      continue;
+    } else {
+      auto currOutputShapeBuffers = *(curr->outputShapeBuffers);
+      for(int j = 0; j < curr->outputShapeBuffers->size(); j++) {
+        shape::printShapeInfo(currOutputShapeBuffers[j]);
+        sd_printf("\n",0);
+      }
+
     }
 
 
