@@ -429,57 +429,6 @@ public final class TensorNamespace {
     getUnknownFields() {
       return this.unknownFields;
     }
-    private StringStringEntryProto(
-        org.nd4j.shade.protobuf.CodedInputStream input,
-        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-      this();
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
-          org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 10: {
-              java.lang.String s = input.readStringRequireUtf8();
-
-              key_ = s;
-              break;
-            }
-            case 18: {
-              java.lang.String s = input.readStringRequireUtf8();
-
-              value_ = s;
-              break;
-            }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
-        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
     public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_StringStringEntryProto_descriptor;
@@ -589,7 +538,7 @@ public final class TensorNamespace {
       if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(value_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 2, value_);
       }
-      unknownFields.writeTo(output);
+      getUnknownFields().writeTo(output);
     }
 
     @java.lang.Override
@@ -604,7 +553,7 @@ public final class TensorNamespace {
       if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(value_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(2, value_);
       }
-      size += unknownFields.getSerializedSize();
+      size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
       return size;
     }
@@ -623,7 +572,7 @@ public final class TensorNamespace {
           .equals(other.getKey())) return false;
       if (!getValue()
           .equals(other.getValue())) return false;
-      if (!unknownFields.equals(other.unknownFields)) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
 
@@ -638,7 +587,7 @@ public final class TensorNamespace {
       hash = (53 * hash) + getKey().hashCode();
       hash = (37 * hash) + VALUE_FIELD_NUMBER;
       hash = (53 * hash) + getValue().hashCode();
-      hash = (29 * hash) + unknownFields.hashCode();
+      hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
@@ -760,18 +709,13 @@ public final class TensorNamespace {
 
       // Construct using org.nd4j.ir.TensorNamespace.StringStringEntryProto.newBuilder()
       private Builder() {
-        maybeForceBuilderInitialization();
+
       }
 
       private Builder(
           org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (org.nd4j.shade.protobuf.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-        }
+
       }
       @java.lang.Override
       public Builder clear() {
@@ -864,7 +808,7 @@ public final class TensorNamespace {
           value_ = other.value_;
           onChanged();
         }
-        this.mergeUnknownFields(other.unknownFields);
+        this.mergeUnknownFields(other.getUnknownFields());
         onChanged();
         return this;
       }
@@ -879,17 +823,40 @@ public final class TensorNamespace {
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        org.nd4j.ir.TensorNamespace.StringStringEntryProto parsedMessage = null;
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
         try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 10: {
+                key_ = input.readStringRequireUtf8();
+
+                break;
+              } // case 10
+              case 18: {
+                value_ = input.readStringRequireUtf8();
+
+                break;
+              } // case 18
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.nd4j.ir.TensorNamespace.StringStringEntryProto) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
+          onChanged();
+        } // finally
         return this;
       }
 
@@ -1077,7 +1044,18 @@ public final class TensorNamespace {
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-        return new StringStringEntryProto(input, extensionRegistry);
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
       }
     };
 
@@ -1161,59 +1139,6 @@ public final class TensorNamespace {
     getUnknownFields() {
       return this.unknownFields;
     }
-    private TypeProto(
-        org.nd4j.shade.protobuf.CodedInputStream input,
-        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-      this();
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
-          org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 10: {
-              org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.Builder subBuilder = null;
-              if (valueCase_ == 1) {
-                subBuilder = ((org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) value_).toBuilder();
-              }
-              value_ =
-                  input.readMessage(org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.parser(), extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom((org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) value_);
-                value_ = subBuilder.buildPartial();
-              }
-              valueCase_ = 1;
-              break;
-            }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
-        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
     public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TypeProto_descriptor;
@@ -1294,64 +1219,6 @@ public final class TensorNamespace {
       public final org.nd4j.shade.protobuf.UnknownFieldSet
       getUnknownFields() {
         return this.unknownFields;
-      }
-      private TensorDescriptor(
-          org.nd4j.shade.protobuf.CodedInputStream input,
-          org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-        this();
-        if (extensionRegistry == null) {
-          throw new java.lang.NullPointerException();
-        }
-        org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
-            org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
-        try {
-          boolean done = false;
-          while (!done) {
-            int tag = input.readTag();
-            switch (tag) {
-              case 0:
-                done = true;
-                break;
-              case 8: {
-                int rawValue = input.readEnum();
-
-                elemType_ = rawValue;
-                break;
-              }
-              case 18: {
-                org.nd4j.ir.TensorNamespace.TensorShapeProto.Builder subBuilder = null;
-                if (shape_ != null) {
-                  subBuilder = shape_.toBuilder();
-                }
-                shape_ = input.readMessage(org.nd4j.ir.TensorNamespace.TensorShapeProto.parser(), extensionRegistry);
-                if (subBuilder != null) {
-                  subBuilder.mergeFrom(shape_);
-                  shape_ = subBuilder.buildPartial();
-                }
-
-                break;
-              }
-              default: {
-                if (!parseUnknownField(
-                    input, unknownFields, extensionRegistry, tag)) {
-                  done = true;
-                }
-                break;
-              }
-            }
-          }
-        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-          throw e.setUnfinishedMessage(this);
-        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
-          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
-        } catch (java.io.IOException e) {
-          throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
-              e).setUnfinishedMessage(this);
-        } finally {
-          this.unknownFields = unknownFields.build();
-          makeExtensionsImmutable();
-        }
       }
       public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptor() {
@@ -1441,7 +1308,7 @@ public final class TensorNamespace {
         if (shape_ != null) {
           output.writeMessage(2, getShape());
         }
-        unknownFields.writeTo(output);
+        getUnknownFields().writeTo(output);
       }
 
       @java.lang.Override
@@ -1458,7 +1325,7 @@ public final class TensorNamespace {
           size += org.nd4j.shade.protobuf.CodedOutputStream
             .computeMessageSize(2, getShape());
         }
-        size += unknownFields.getSerializedSize();
+        size += getUnknownFields().getSerializedSize();
         memoizedSize = size;
         return size;
       }
@@ -1479,7 +1346,7 @@ public final class TensorNamespace {
           if (!getShape()
               .equals(other.getShape())) return false;
         }
-        if (!unknownFields.equals(other.unknownFields)) return false;
+        if (!getUnknownFields().equals(other.getUnknownFields())) return false;
         return true;
       }
 
@@ -1496,7 +1363,7 @@ public final class TensorNamespace {
           hash = (37 * hash) + SHAPE_FIELD_NUMBER;
           hash = (53 * hash) + getShape().hashCode();
         }
-        hash = (29 * hash) + unknownFields.hashCode();
+        hash = (29 * hash) + getUnknownFields().hashCode();
         memoizedHashCode = hash;
         return hash;
       }
@@ -1613,18 +1480,13 @@ public final class TensorNamespace {
 
         // Construct using org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor.newBuilder()
         private Builder() {
-          maybeForceBuilderInitialization();
+
         }
 
         private Builder(
             org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
           super(parent);
-          maybeForceBuilderInitialization();
-        }
-        private void maybeForceBuilderInitialization() {
-          if (org.nd4j.shade.protobuf.GeneratedMessageV3
-                  .alwaysUseFieldBuilders) {
-          }
+
         }
         @java.lang.Override
         public Builder clear() {
@@ -1723,7 +1585,7 @@ public final class TensorNamespace {
           if (other.hasShape()) {
             mergeShape(other.getShape());
           }
-          this.mergeUnknownFields(other.unknownFields);
+          this.mergeUnknownFields(other.getUnknownFields());
           onChanged();
           return this;
         }
@@ -1738,17 +1600,42 @@ public final class TensorNamespace {
             org.nd4j.shade.protobuf.CodedInputStream input,
             org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
             throws java.io.IOException {
-          org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor parsedMessage = null;
+          if (extensionRegistry == null) {
+            throw new java.lang.NullPointerException();
+          }
           try {
-            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+            boolean done = false;
+            while (!done) {
+              int tag = input.readTag();
+              switch (tag) {
+                case 0:
+                  done = true;
+                  break;
+                case 8: {
+                  elemType_ = input.readEnum();
+
+                  break;
+                } // case 8
+                case 18: {
+                  input.readMessage(
+                      getShapeFieldBuilder().getBuilder(),
+                      extensionRegistry);
+
+                  break;
+                } // case 18
+                default: {
+                  if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                    done = true; // was an endgroup tag
+                  }
+                  break;
+                } // default:
+              } // switch (tag)
+            } // while (!done)
           } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-            parsedMessage = (org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) e.getUnfinishedMessage();
             throw e.unwrapIOException();
           } finally {
-            if (parsedMessage != null) {
-              mergeFrom(parsedMessage);
-            }
-          }
+            onChanged();
+          } // finally
           return this;
         }
 
@@ -1982,7 +1869,18 @@ public final class TensorNamespace {
             org.nd4j.shade.protobuf.CodedInputStream input,
             org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
             throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-          return new TensorDescriptor(input, extensionRegistry);
+          Builder builder = newBuilder();
+          try {
+            builder.mergeFrom(input, extensionRegistry);
+          } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
+            throw e.setUnfinishedMessage(builder.buildPartial());
+          } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+            throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+          } catch (java.io.IOException e) {
+            throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(e)
+                .setUnfinishedMessage(builder.buildPartial());
+          }
+          return builder.buildPartial();
         }
       };
 
@@ -2101,7 +1999,7 @@ public final class TensorNamespace {
       if (valueCase_ == 1) {
         output.writeMessage(1, (org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) value_);
       }
-      unknownFields.writeTo(output);
+      getUnknownFields().writeTo(output);
     }
 
     @java.lang.Override
@@ -2114,7 +2012,7 @@ public final class TensorNamespace {
         size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeMessageSize(1, (org.nd4j.ir.TensorNamespace.TypeProto.TensorDescriptor) value_);
       }
-      size += unknownFields.getSerializedSize();
+      size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
       return size;
     }
@@ -2138,7 +2036,7 @@ public final class TensorNamespace {
         case 0:
         default:
       }
-      if (!unknownFields.equals(other.unknownFields)) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
 
@@ -2157,7 +2055,7 @@ public final class TensorNamespace {
         case 0:
         default:
       }
-      hash = (29 * hash) + unknownFields.hashCode();
+      hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
@@ -2278,22 +2176,20 @@ public final class TensorNamespace {
 
       // Construct using org.nd4j.ir.TensorNamespace.TypeProto.newBuilder()
       private Builder() {
-        maybeForceBuilderInitialization();
+
       }
 
       private Builder(
           org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (org.nd4j.shade.protobuf.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-        }
+
       }
       @java.lang.Override
       public Builder clear() {
         super.clear();
+        if (tensorTypeBuilder_ != null) {
+          tensorTypeBuilder_.clear();
+        }
         valueCase_ = 0;
         value_ = null;
         return this;
@@ -2387,7 +2283,7 @@ public final class TensorNamespace {
             break;
           }
         }
-        this.mergeUnknownFields(other.unknownFields);
+        this.mergeUnknownFields(other.getUnknownFields());
         onChanged();
         return this;
       }
@@ -2402,17 +2298,37 @@ public final class TensorNamespace {
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        org.nd4j.ir.TensorNamespace.TypeProto parsedMessage = null;
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
         try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 10: {
+                input.readMessage(
+                    getTensorTypeFieldBuilder().getBuilder(),
+                    extensionRegistry);
+                valueCase_ = 1;
+                break;
+              } // case 10
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.nd4j.ir.TensorNamespace.TypeProto) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
+          onChanged();
+        } // finally
         return this;
       }
       private int valueCase_ = 0;
@@ -2641,7 +2557,18 @@ public final class TensorNamespace {
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-        return new TypeProto(input, extensionRegistry);
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
       }
     };
 
@@ -2722,58 +2649,6 @@ public final class TensorNamespace {
     public final org.nd4j.shade.protobuf.UnknownFieldSet
     getUnknownFields() {
       return this.unknownFields;
-    }
-    private TensorShapeProto(
-        org.nd4j.shade.protobuf.CodedInputStream input,
-        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-      this();
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      int mutable_bitField0_ = 0;
-      org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
-          org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 10: {
-              if (!((mutable_bitField0_ & 0x00000001) != 0)) {
-                dim_ = new java.util.ArrayList<org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension>();
-                mutable_bitField0_ |= 0x00000001;
-              }
-              dim_.add(
-                  input.readMessage(org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.parser(), extensionRegistry));
-              break;
-            }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
-        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        if (((mutable_bitField0_ & 0x00000001) != 0)) {
-          dim_ = java.util.Collections.unmodifiableList(dim_);
-        }
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
     }
     public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
         getDescriptor() {
@@ -2860,56 +2735,6 @@ public final class TensorNamespace {
       public final org.nd4j.shade.protobuf.UnknownFieldSet
       getUnknownFields() {
         return this.unknownFields;
-      }
-      private Dimension(
-          org.nd4j.shade.protobuf.CodedInputStream input,
-          org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-        this();
-        if (extensionRegistry == null) {
-          throw new java.lang.NullPointerException();
-        }
-        org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
-            org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
-        try {
-          boolean done = false;
-          while (!done) {
-            int tag = input.readTag();
-            switch (tag) {
-              case 0:
-                done = true;
-                break;
-              case 8: {
-                value_ = input.readInt64();
-                valueCase_ = 1;
-                break;
-              }
-              case 18: {
-                java.lang.String s = input.readStringRequireUtf8();
-                valueCase_ = 2;
-                value_ = s;
-                break;
-              }
-              default: {
-                if (!parseUnknownField(
-                    input, unknownFields, extensionRegistry, tag)) {
-                  done = true;
-                }
-                break;
-              }
-            }
-          }
-        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-          throw e.setUnfinishedMessage(this);
-        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
-          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
-        } catch (java.io.IOException e) {
-          throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
-              e).setUnfinishedMessage(this);
-        } finally {
-          this.unknownFields = unknownFields.build();
-          makeExtensionsImmutable();
-        }
       }
       public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptor() {
@@ -3071,7 +2896,7 @@ public final class TensorNamespace {
         if (valueCase_ == 2) {
           org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 2, value_);
         }
-        unknownFields.writeTo(output);
+        getUnknownFields().writeTo(output);
       }
 
       @java.lang.Override
@@ -3088,7 +2913,7 @@ public final class TensorNamespace {
         if (valueCase_ == 2) {
           size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(2, value_);
         }
-        size += unknownFields.getSerializedSize();
+        size += getUnknownFields().getSerializedSize();
         memoizedSize = size;
         return size;
       }
@@ -3116,7 +2941,7 @@ public final class TensorNamespace {
           case 0:
           default:
         }
-        if (!unknownFields.equals(other.unknownFields)) return false;
+        if (!getUnknownFields().equals(other.getUnknownFields())) return false;
         return true;
       }
 
@@ -3140,7 +2965,7 @@ public final class TensorNamespace {
           case 0:
           default:
         }
-        hash = (29 * hash) + unknownFields.hashCode();
+        hash = (29 * hash) + getUnknownFields().hashCode();
         memoizedHashCode = hash;
         return hash;
       }
@@ -3257,18 +3082,13 @@ public final class TensorNamespace {
 
         // Construct using org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.newBuilder()
         private Builder() {
-          maybeForceBuilderInitialization();
+
         }
 
         private Builder(
             org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
           super(parent);
-          maybeForceBuilderInitialization();
-        }
-        private void maybeForceBuilderInitialization() {
-          if (org.nd4j.shade.protobuf.GeneratedMessageV3
-                  .alwaysUseFieldBuilders) {
-          }
+
         }
         @java.lang.Override
         public Builder clear() {
@@ -3371,7 +3191,7 @@ public final class TensorNamespace {
               break;
             }
           }
-          this.mergeUnknownFields(other.unknownFields);
+          this.mergeUnknownFields(other.getUnknownFields());
           onChanged();
           return this;
         }
@@ -3386,17 +3206,41 @@ public final class TensorNamespace {
             org.nd4j.shade.protobuf.CodedInputStream input,
             org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
             throws java.io.IOException {
-          org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension parsedMessage = null;
+          if (extensionRegistry == null) {
+            throw new java.lang.NullPointerException();
+          }
           try {
-            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+            boolean done = false;
+            while (!done) {
+              int tag = input.readTag();
+              switch (tag) {
+                case 0:
+                  done = true;
+                  break;
+                case 8: {
+                  value_ = input.readInt64();
+                  valueCase_ = 1;
+                  break;
+                } // case 8
+                case 18: {
+                  java.lang.String s = input.readStringRequireUtf8();
+                  valueCase_ = 2;
+                  value_ = s;
+                  break;
+                } // case 18
+                default: {
+                  if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                    done = true; // was an endgroup tag
+                  }
+                  break;
+                } // default:
+              } // switch (tag)
+            } // while (!done)
           } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-            parsedMessage = (org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension) e.getUnfinishedMessage();
             throw e.unwrapIOException();
           } finally {
-            if (parsedMessage != null) {
-              mergeFrom(parsedMessage);
-            }
-          }
+            onChanged();
+          } // finally
           return this;
         }
         private int valueCase_ = 0;
@@ -3609,7 +3453,18 @@ public final class TensorNamespace {
             org.nd4j.shade.protobuf.CodedInputStream input,
             org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
             throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-          return new Dimension(input, extensionRegistry);
+          Builder builder = newBuilder();
+          try {
+            builder.mergeFrom(input, extensionRegistry);
+          } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
+            throw e.setUnfinishedMessage(builder.buildPartial());
+          } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+            throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+          } catch (java.io.IOException e) {
+            throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(e)
+                .setUnfinishedMessage(builder.buildPartial());
+          }
+          return builder.buildPartial();
         }
       };
 
@@ -3686,7 +3541,7 @@ public final class TensorNamespace {
       for (int i = 0; i < dim_.size(); i++) {
         output.writeMessage(1, dim_.get(i));
       }
-      unknownFields.writeTo(output);
+      getUnknownFields().writeTo(output);
     }
 
     @java.lang.Override
@@ -3699,7 +3554,7 @@ public final class TensorNamespace {
         size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeMessageSize(1, dim_.get(i));
       }
-      size += unknownFields.getSerializedSize();
+      size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
       return size;
     }
@@ -3716,7 +3571,7 @@ public final class TensorNamespace {
 
       if (!getDimList()
           .equals(other.getDimList())) return false;
-      if (!unknownFields.equals(other.unknownFields)) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
 
@@ -3731,7 +3586,7 @@ public final class TensorNamespace {
         hash = (37 * hash) + DIM_FIELD_NUMBER;
         hash = (53 * hash) + getDimList().hashCode();
       }
-      hash = (29 * hash) + unknownFields.hashCode();
+      hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
@@ -3854,29 +3709,24 @@ public final class TensorNamespace {
 
       // Construct using org.nd4j.ir.TensorNamespace.TensorShapeProto.newBuilder()
       private Builder() {
-        maybeForceBuilderInitialization();
+
       }
 
       private Builder(
           org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (org.nd4j.shade.protobuf.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-          getDimFieldBuilder();
-        }
+
       }
       @java.lang.Override
       public Builder clear() {
         super.clear();
         if (dimBuilder_ == null) {
           dim_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000001);
         } else {
+          dim_ = null;
           dimBuilder_.clear();
         }
+        bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
 
@@ -3987,7 +3837,7 @@ public final class TensorNamespace {
             }
           }
         }
-        this.mergeUnknownFields(other.unknownFields);
+        this.mergeUnknownFields(other.getUnknownFields());
         onChanged();
         return this;
       }
@@ -4002,17 +3852,43 @@ public final class TensorNamespace {
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        org.nd4j.ir.TensorNamespace.TensorShapeProto parsedMessage = null;
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
         try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 10: {
+                org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension m =
+                    input.readMessage(
+                        org.nd4j.ir.TensorNamespace.TensorShapeProto.Dimension.parser(),
+                        extensionRegistry);
+                if (dimBuilder_ == null) {
+                  ensureDimIsMutable();
+                  dim_.add(m);
+                } else {
+                  dimBuilder_.addMessage(m);
+                }
+                break;
+              } // case 10
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.nd4j.ir.TensorNamespace.TensorShapeProto) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
+          onChanged();
+        } // finally
         return this;
       }
       private int bitField0_;
@@ -4289,7 +4165,18 @@ public final class TensorNamespace {
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-        return new TensorShapeProto(input, extensionRegistry);
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
       }
     };
 
@@ -4413,70 +4300,6 @@ public final class TensorNamespace {
     public final org.nd4j.shade.protobuf.UnknownFieldSet
     getUnknownFields() {
       return this.unknownFields;
-    }
-    private ValueInfoProto(
-        org.nd4j.shade.protobuf.CodedInputStream input,
-        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-      this();
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
-          org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 10: {
-              java.lang.String s = input.readStringRequireUtf8();
-
-              name_ = s;
-              break;
-            }
-            case 18: {
-              org.nd4j.ir.TensorNamespace.TypeProto.Builder subBuilder = null;
-              if (type_ != null) {
-                subBuilder = type_.toBuilder();
-              }
-              type_ = input.readMessage(org.nd4j.ir.TensorNamespace.TypeProto.parser(), extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(type_);
-                type_ = subBuilder.buildPartial();
-              }
-
-              break;
-            }
-            case 26: {
-              java.lang.String s = input.readStringRequireUtf8();
-
-              docString_ = s;
-              break;
-            }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
-        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
     }
     public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
         getDescriptor() {
@@ -4644,7 +4467,7 @@ public final class TensorNamespace {
       if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(docString_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 3, docString_);
       }
-      unknownFields.writeTo(output);
+      getUnknownFields().writeTo(output);
     }
 
     @java.lang.Override
@@ -4663,7 +4486,7 @@ public final class TensorNamespace {
       if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(docString_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(3, docString_);
       }
-      size += unknownFields.getSerializedSize();
+      size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
       return size;
     }
@@ -4687,7 +4510,7 @@ public final class TensorNamespace {
       }
       if (!getDocString()
           .equals(other.getDocString())) return false;
-      if (!unknownFields.equals(other.unknownFields)) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
 
@@ -4706,7 +4529,7 @@ public final class TensorNamespace {
       }
       hash = (37 * hash) + DOC_STRING_FIELD_NUMBER;
       hash = (53 * hash) + getDocString().hashCode();
-      hash = (29 * hash) + unknownFields.hashCode();
+      hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
@@ -4828,18 +4651,13 @@ public final class TensorNamespace {
 
       // Construct using org.nd4j.ir.TensorNamespace.ValueInfoProto.newBuilder()
       private Builder() {
-        maybeForceBuilderInitialization();
+
       }
 
       private Builder(
           org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (org.nd4j.shade.protobuf.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-        }
+
       }
       @java.lang.Override
       public Builder clear() {
@@ -4946,7 +4764,7 @@ public final class TensorNamespace {
           docString_ = other.docString_;
           onChanged();
         }
-        this.mergeUnknownFields(other.unknownFields);
+        this.mergeUnknownFields(other.getUnknownFields());
         onChanged();
         return this;
       }
@@ -4961,17 +4779,47 @@ public final class TensorNamespace {
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        org.nd4j.ir.TensorNamespace.ValueInfoProto parsedMessage = null;
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
         try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 10: {
+                name_ = input.readStringRequireUtf8();
+
+                break;
+              } // case 10
+              case 18: {
+                input.readMessage(
+                    getTypeFieldBuilder().getBuilder(),
+                    extensionRegistry);
+
+                break;
+              } // case 18
+              case 26: {
+                docString_ = input.readStringRequireUtf8();
+
+                break;
+              } // case 26
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.nd4j.ir.TensorNamespace.ValueInfoProto) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
+          onChanged();
+        } // finally
         return this;
       }
 
@@ -5354,7 +5202,18 @@ public final class TensorNamespace {
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-        return new ValueInfoProto(input, extensionRegistry);
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
       }
     };
 
@@ -5945,302 +5804,6 @@ public final class TensorNamespace {
     getUnknownFields() {
       return this.unknownFields;
     }
-    private TensorProto(
-        org.nd4j.shade.protobuf.CodedInputStream input,
-        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-      this();
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      int mutable_bitField0_ = 0;
-      org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
-          org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 8: {
-              if (!((mutable_bitField0_ & 0x00000001) != 0)) {
-                dims_ = newLongList();
-                mutable_bitField0_ |= 0x00000001;
-              }
-              dims_.addLong(input.readInt64());
-              break;
-            }
-            case 10: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x00000001) != 0) && input.getBytesUntilLimit() > 0) {
-                dims_ = newLongList();
-                mutable_bitField0_ |= 0x00000001;
-              }
-              while (input.getBytesUntilLimit() > 0) {
-                dims_.addLong(input.readInt64());
-              }
-              input.popLimit(limit);
-              break;
-            }
-            case 16: {
-
-              dataType_ = input.readInt32();
-              break;
-            }
-            case 26: {
-              org.nd4j.ir.TensorNamespace.TensorProto.Segment.Builder subBuilder = null;
-              if (segment_ != null) {
-                subBuilder = segment_.toBuilder();
-              }
-              segment_ = input.readMessage(org.nd4j.ir.TensorNamespace.TensorProto.Segment.parser(), extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(segment_);
-                segment_ = subBuilder.buildPartial();
-              }
-
-              break;
-            }
-            case 37: {
-              if (!((mutable_bitField0_ & 0x00000002) != 0)) {
-                floatData_ = newFloatList();
-                mutable_bitField0_ |= 0x00000002;
-              }
-              floatData_.addFloat(input.readFloat());
-              break;
-            }
-            case 34: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x00000002) != 0) && input.getBytesUntilLimit() > 0) {
-                floatData_ = newFloatList();
-                mutable_bitField0_ |= 0x00000002;
-              }
-              while (input.getBytesUntilLimit() > 0) {
-                floatData_.addFloat(input.readFloat());
-              }
-              input.popLimit(limit);
-              break;
-            }
-            case 40: {
-              if (!((mutable_bitField0_ & 0x00000004) != 0)) {
-                int32Data_ = newIntList();
-                mutable_bitField0_ |= 0x00000004;
-              }
-              int32Data_.addInt(input.readInt32());
-              break;
-            }
-            case 42: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x00000004) != 0) && input.getBytesUntilLimit() > 0) {
-                int32Data_ = newIntList();
-                mutable_bitField0_ |= 0x00000004;
-              }
-              while (input.getBytesUntilLimit() > 0) {
-                int32Data_.addInt(input.readInt32());
-              }
-              input.popLimit(limit);
-              break;
-            }
-            case 50: {
-              if (!((mutable_bitField0_ & 0x00000008) != 0)) {
-                stringData_ = new java.util.ArrayList<org.nd4j.shade.protobuf.ByteString>();
-                mutable_bitField0_ |= 0x00000008;
-              }
-              stringData_.add(input.readBytes());
-              break;
-            }
-            case 56: {
-              if (!((mutable_bitField0_ & 0x00000010) != 0)) {
-                int64Data_ = newLongList();
-                mutable_bitField0_ |= 0x00000010;
-              }
-              int64Data_.addLong(input.readInt64());
-              break;
-            }
-            case 58: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x00000010) != 0) && input.getBytesUntilLimit() > 0) {
-                int64Data_ = newLongList();
-                mutable_bitField0_ |= 0x00000010;
-              }
-              while (input.getBytesUntilLimit() > 0) {
-                int64Data_.addLong(input.readInt64());
-              }
-              input.popLimit(limit);
-              break;
-            }
-            case 66: {
-              java.lang.String s = input.readStringRequireUtf8();
-
-              name_ = s;
-              break;
-            }
-            case 74: {
-
-              rawData_ = input.readBytes();
-              break;
-            }
-            case 81: {
-              if (!((mutable_bitField0_ & 0x00000040) != 0)) {
-                doubleData_ = newDoubleList();
-                mutable_bitField0_ |= 0x00000040;
-              }
-              doubleData_.addDouble(input.readDouble());
-              break;
-            }
-            case 82: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x00000040) != 0) && input.getBytesUntilLimit() > 0) {
-                doubleData_ = newDoubleList();
-                mutable_bitField0_ |= 0x00000040;
-              }
-              while (input.getBytesUntilLimit() > 0) {
-                doubleData_.addDouble(input.readDouble());
-              }
-              input.popLimit(limit);
-              break;
-            }
-            case 88: {
-              if (!((mutable_bitField0_ & 0x00000080) != 0)) {
-                uint64Data_ = newLongList();
-                mutable_bitField0_ |= 0x00000080;
-              }
-              uint64Data_.addLong(input.readUInt64());
-              break;
-            }
-            case 90: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x00000080) != 0) && input.getBytesUntilLimit() > 0) {
-                uint64Data_ = newLongList();
-                mutable_bitField0_ |= 0x00000080;
-              }
-              while (input.getBytesUntilLimit() > 0) {
-                uint64Data_.addLong(input.readUInt64());
-              }
-              input.popLimit(limit);
-              break;
-            }
-            case 98: {
-              java.lang.String s = input.readStringRequireUtf8();
-
-              docString_ = s;
-              break;
-            }
-            case 106: {
-              if (!((mutable_bitField0_ & 0x00000020) != 0)) {
-                externalData_ = new java.util.ArrayList<org.nd4j.ir.TensorNamespace.StringStringEntryProto>();
-                mutable_bitField0_ |= 0x00000020;
-              }
-              externalData_.add(
-                  input.readMessage(org.nd4j.ir.TensorNamespace.StringStringEntryProto.parser(), extensionRegistry));
-              break;
-            }
-            case 112: {
-              int rawValue = input.readEnum();
-
-              dataLocation_ = rawValue;
-              break;
-            }
-            case 120: {
-              if (!((mutable_bitField0_ & 0x00000100) != 0)) {
-                halfVal_ = newIntList();
-                mutable_bitField0_ |= 0x00000100;
-              }
-              halfVal_.addInt(input.readInt32());
-              break;
-            }
-            case 122: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x00000100) != 0) && input.getBytesUntilLimit() > 0) {
-                halfVal_ = newIntList();
-                mutable_bitField0_ |= 0x00000100;
-              }
-              while (input.getBytesUntilLimit() > 0) {
-                halfVal_.addInt(input.readInt32());
-              }
-              input.popLimit(limit);
-              break;
-            }
-            case 128: {
-              if (!((mutable_bitField0_ & 0x00000200) != 0)) {
-                boolVal_ = newBooleanList();
-                mutable_bitField0_ |= 0x00000200;
-              }
-              boolVal_.addBoolean(input.readBool());
-              break;
-            }
-            case 130: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x00000200) != 0) && input.getBytesUntilLimit() > 0) {
-                boolVal_ = newBooleanList();
-                mutable_bitField0_ |= 0x00000200;
-              }
-              while (input.getBytesUntilLimit() > 0) {
-                boolVal_.addBoolean(input.readBool());
-              }
-              input.popLimit(limit);
-              break;
-            }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
-        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        if (((mutable_bitField0_ & 0x00000001) != 0)) {
-          dims_.makeImmutable(); // C
-        }
-        if (((mutable_bitField0_ & 0x00000002) != 0)) {
-          floatData_.makeImmutable(); // C
-        }
-        if (((mutable_bitField0_ & 0x00000004) != 0)) {
-          int32Data_.makeImmutable(); // C
-        }
-        if (((mutable_bitField0_ & 0x00000008) != 0)) {
-          stringData_ = java.util.Collections.unmodifiableList(stringData_); // C
-        }
-        if (((mutable_bitField0_ & 0x00000010) != 0)) {
-          int64Data_.makeImmutable(); // C
-        }
-        if (((mutable_bitField0_ & 0x00000040) != 0)) {
-          doubleData_.makeImmutable(); // C
-        }
-        if (((mutable_bitField0_ & 0x00000080) != 0)) {
-          uint64Data_.makeImmutable(); // C
-        }
-        if (((mutable_bitField0_ & 0x00000020) != 0)) {
-          externalData_ = java.util.Collections.unmodifiableList(externalData_);
-        }
-        if (((mutable_bitField0_ & 0x00000100) != 0)) {
-          halfVal_.makeImmutable(); // C
-        }
-        if (((mutable_bitField0_ & 0x00000200) != 0)) {
-          boolVal_.makeImmutable(); // C
-        }
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
     public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorProto_descriptor;
@@ -6417,55 +5980,6 @@ public final class TensorNamespace {
       getUnknownFields() {
         return this.unknownFields;
       }
-      private Segment(
-          org.nd4j.shade.protobuf.CodedInputStream input,
-          org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-        this();
-        if (extensionRegistry == null) {
-          throw new java.lang.NullPointerException();
-        }
-        org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
-            org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
-        try {
-          boolean done = false;
-          while (!done) {
-            int tag = input.readTag();
-            switch (tag) {
-              case 0:
-                done = true;
-                break;
-              case 8: {
-
-                begin_ = input.readInt64();
-                break;
-              }
-              case 16: {
-
-                end_ = input.readInt64();
-                break;
-              }
-              default: {
-                if (!parseUnknownField(
-                    input, unknownFields, extensionRegistry, tag)) {
-                  done = true;
-                }
-                break;
-              }
-            }
-          }
-        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-          throw e.setUnfinishedMessage(this);
-        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
-          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
-        } catch (java.io.IOException e) {
-          throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
-              e).setUnfinishedMessage(this);
-        } finally {
-          this.unknownFields = unknownFields.build();
-          makeExtensionsImmutable();
-        }
-      }
       public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return org.nd4j.ir.TensorNamespace.internal_static_org_nd4j_ir_TensorProto_Segment_descriptor;
@@ -6521,7 +6035,7 @@ public final class TensorNamespace {
         if (end_ != 0L) {
           output.writeInt64(2, end_);
         }
-        unknownFields.writeTo(output);
+        getUnknownFields().writeTo(output);
       }
 
       @java.lang.Override
@@ -6538,7 +6052,7 @@ public final class TensorNamespace {
           size += org.nd4j.shade.protobuf.CodedOutputStream
             .computeInt64Size(2, end_);
         }
-        size += unknownFields.getSerializedSize();
+        size += getUnknownFields().getSerializedSize();
         memoizedSize = size;
         return size;
       }
@@ -6557,7 +6071,7 @@ public final class TensorNamespace {
             != other.getBegin()) return false;
         if (getEnd()
             != other.getEnd()) return false;
-        if (!unknownFields.equals(other.unknownFields)) return false;
+        if (!getUnknownFields().equals(other.getUnknownFields())) return false;
         return true;
       }
 
@@ -6574,7 +6088,7 @@ public final class TensorNamespace {
         hash = (37 * hash) + END_FIELD_NUMBER;
         hash = (53 * hash) + org.nd4j.shade.protobuf.Internal.hashLong(
             getEnd());
-        hash = (29 * hash) + unknownFields.hashCode();
+        hash = (29 * hash) + getUnknownFields().hashCode();
         memoizedHashCode = hash;
         return hash;
       }
@@ -6697,18 +6211,13 @@ public final class TensorNamespace {
 
         // Construct using org.nd4j.ir.TensorNamespace.TensorProto.Segment.newBuilder()
         private Builder() {
-          maybeForceBuilderInitialization();
+
         }
 
         private Builder(
             org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
           super(parent);
-          maybeForceBuilderInitialization();
-        }
-        private void maybeForceBuilderInitialization() {
-          if (org.nd4j.shade.protobuf.GeneratedMessageV3
-                  .alwaysUseFieldBuilders) {
-          }
+
         }
         @java.lang.Override
         public Builder clear() {
@@ -6799,7 +6308,7 @@ public final class TensorNamespace {
           if (other.getEnd() != 0L) {
             setEnd(other.getEnd());
           }
-          this.mergeUnknownFields(other.unknownFields);
+          this.mergeUnknownFields(other.getUnknownFields());
           onChanged();
           return this;
         }
@@ -6814,17 +6323,40 @@ public final class TensorNamespace {
             org.nd4j.shade.protobuf.CodedInputStream input,
             org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
             throws java.io.IOException {
-          org.nd4j.ir.TensorNamespace.TensorProto.Segment parsedMessage = null;
+          if (extensionRegistry == null) {
+            throw new java.lang.NullPointerException();
+          }
           try {
-            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+            boolean done = false;
+            while (!done) {
+              int tag = input.readTag();
+              switch (tag) {
+                case 0:
+                  done = true;
+                  break;
+                case 8: {
+                  begin_ = input.readInt64();
+
+                  break;
+                } // case 8
+                case 16: {
+                  end_ = input.readInt64();
+
+                  break;
+                } // case 16
+                default: {
+                  if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                    done = true; // was an endgroup tag
+                  }
+                  break;
+                } // default:
+              } // switch (tag)
+            } // while (!done)
           } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-            parsedMessage = (org.nd4j.ir.TensorNamespace.TensorProto.Segment) e.getUnfinishedMessage();
             throw e.unwrapIOException();
           } finally {
-            if (parsedMessage != null) {
-              mergeFrom(parsedMessage);
-            }
-          }
+            onChanged();
+          } // finally
           return this;
         }
 
@@ -6922,7 +6454,18 @@ public final class TensorNamespace {
             org.nd4j.shade.protobuf.CodedInputStream input,
             org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
             throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-          return new Segment(input, extensionRegistry);
+          Builder builder = newBuilder();
+          try {
+            builder.mergeFrom(input, extensionRegistry);
+          } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
+            throw e.setUnfinishedMessage(builder.buildPartial());
+          } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+            throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+          } catch (java.io.IOException e) {
+            throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(e)
+                .setUnfinishedMessage(builder.buildPartial());
+          }
+          return builder.buildPartial();
         }
       };
 
@@ -7753,7 +7296,7 @@ public final class TensorNamespace {
       for (int i = 0; i < boolVal_.size(); i++) {
         output.writeBoolNoTag(boolVal_.getBoolean(i));
       }
-      unknownFields.writeTo(output);
+      getUnknownFields().writeTo(output);
     }
 
     @java.lang.Override
@@ -7900,7 +7443,7 @@ public final class TensorNamespace {
         }
         boolValMemoizedSerializedSize = dataSize;
       }
-      size += unknownFields.getSerializedSize();
+      size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
       return size;
     }
@@ -7949,7 +7492,7 @@ public final class TensorNamespace {
           .equals(other.getHalfValList())) return false;
       if (!getBoolValList()
           .equals(other.getBoolValList())) return false;
-      if (!unknownFields.equals(other.unknownFields)) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
 
@@ -8014,7 +7557,7 @@ public final class TensorNamespace {
         hash = (37 * hash) + BOOL_VAL_FIELD_NUMBER;
         hash = (53 * hash) + getBoolValList().hashCode();
       }
-      hash = (29 * hash) + unknownFields.hashCode();
+      hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
@@ -8136,19 +7679,13 @@ public final class TensorNamespace {
 
       // Construct using org.nd4j.ir.TensorNamespace.TensorProto.newBuilder()
       private Builder() {
-        maybeForceBuilderInitialization();
+
       }
 
       private Builder(
           org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (org.nd4j.shade.protobuf.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-          getExternalDataFieldBuilder();
-        }
+
       }
       @java.lang.Override
       public Builder clear() {
@@ -8179,10 +7716,11 @@ public final class TensorNamespace {
 
         if (externalDataBuilder_ == null) {
           externalData_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000020);
         } else {
+          externalData_ = null;
           externalDataBuilder_.clear();
         }
+        bitField0_ = (bitField0_ & ~0x00000020);
         dataLocation_ = 0;
 
         doubleData_ = emptyDoubleList();
@@ -8468,7 +8006,7 @@ public final class TensorNamespace {
           }
           onChanged();
         }
-        this.mergeUnknownFields(other.unknownFields);
+        this.mergeUnknownFields(other.getUnknownFields());
         onChanged();
         return this;
       }
@@ -8483,17 +8021,209 @@ public final class TensorNamespace {
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        org.nd4j.ir.TensorNamespace.TensorProto parsedMessage = null;
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
         try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 8: {
+                long v = input.readInt64();
+                ensureDimsIsMutable();
+                dims_.addLong(v);
+                break;
+              } // case 8
+              case 10: {
+                int length = input.readRawVarint32();
+                int limit = input.pushLimit(length);
+                ensureDimsIsMutable();
+                while (input.getBytesUntilLimit() > 0) {
+                  dims_.addLong(input.readInt64());
+                }
+                input.popLimit(limit);
+                break;
+              } // case 10
+              case 16: {
+                dataType_ = input.readInt32();
+
+                break;
+              } // case 16
+              case 26: {
+                input.readMessage(
+                    getSegmentFieldBuilder().getBuilder(),
+                    extensionRegistry);
+
+                break;
+              } // case 26
+              case 37: {
+                float v = input.readFloat();
+                ensureFloatDataIsMutable();
+                floatData_.addFloat(v);
+                break;
+              } // case 37
+              case 34: {
+                int length = input.readRawVarint32();
+                int limit = input.pushLimit(length);
+                ensureFloatDataIsMutable();
+                while (input.getBytesUntilLimit() > 0) {
+                  floatData_.addFloat(input.readFloat());
+                }
+                input.popLimit(limit);
+                break;
+              } // case 34
+              case 40: {
+                int v = input.readInt32();
+                ensureInt32DataIsMutable();
+                int32Data_.addInt(v);
+                break;
+              } // case 40
+              case 42: {
+                int length = input.readRawVarint32();
+                int limit = input.pushLimit(length);
+                ensureInt32DataIsMutable();
+                while (input.getBytesUntilLimit() > 0) {
+                  int32Data_.addInt(input.readInt32());
+                }
+                input.popLimit(limit);
+                break;
+              } // case 42
+              case 50: {
+                org.nd4j.shade.protobuf.ByteString v = input.readBytes();
+                ensureStringDataIsMutable();
+                stringData_.add(v);
+                break;
+              } // case 50
+              case 56: {
+                long v = input.readInt64();
+                ensureInt64DataIsMutable();
+                int64Data_.addLong(v);
+                break;
+              } // case 56
+              case 58: {
+                int length = input.readRawVarint32();
+                int limit = input.pushLimit(length);
+                ensureInt64DataIsMutable();
+                while (input.getBytesUntilLimit() > 0) {
+                  int64Data_.addLong(input.readInt64());
+                }
+                input.popLimit(limit);
+                break;
+              } // case 58
+              case 66: {
+                name_ = input.readStringRequireUtf8();
+
+                break;
+              } // case 66
+              case 74: {
+                rawData_ = input.readBytes();
+
+                break;
+              } // case 74
+              case 81: {
+                double v = input.readDouble();
+                ensureDoubleDataIsMutable();
+                doubleData_.addDouble(v);
+                break;
+              } // case 81
+              case 82: {
+                int length = input.readRawVarint32();
+                int limit = input.pushLimit(length);
+                ensureDoubleDataIsMutable();
+                while (input.getBytesUntilLimit() > 0) {
+                  doubleData_.addDouble(input.readDouble());
+                }
+                input.popLimit(limit);
+                break;
+              } // case 82
+              case 88: {
+                long v = input.readUInt64();
+                ensureUint64DataIsMutable();
+                uint64Data_.addLong(v);
+                break;
+              } // case 88
+              case 90: {
+                int length = input.readRawVarint32();
+                int limit = input.pushLimit(length);
+                ensureUint64DataIsMutable();
+                while (input.getBytesUntilLimit() > 0) {
+                  uint64Data_.addLong(input.readUInt64());
+                }
+                input.popLimit(limit);
+                break;
+              } // case 90
+              case 98: {
+                docString_ = input.readStringRequireUtf8();
+
+                break;
+              } // case 98
+              case 106: {
+                org.nd4j.ir.TensorNamespace.StringStringEntryProto m =
+                    input.readMessage(
+                        org.nd4j.ir.TensorNamespace.StringStringEntryProto.parser(),
+                        extensionRegistry);
+                if (externalDataBuilder_ == null) {
+                  ensureExternalDataIsMutable();
+                  externalData_.add(m);
+                } else {
+                  externalDataBuilder_.addMessage(m);
+                }
+                break;
+              } // case 106
+              case 112: {
+                dataLocation_ = input.readEnum();
+
+                break;
+              } // case 112
+              case 120: {
+                int v = input.readInt32();
+                ensureHalfValIsMutable();
+                halfVal_.addInt(v);
+                break;
+              } // case 120
+              case 122: {
+                int length = input.readRawVarint32();
+                int limit = input.pushLimit(length);
+                ensureHalfValIsMutable();
+                while (input.getBytesUntilLimit() > 0) {
+                  halfVal_.addInt(input.readInt32());
+                }
+                input.popLimit(limit);
+                break;
+              } // case 122
+              case 128: {
+                boolean v = input.readBool();
+                ensureBoolValIsMutable();
+                boolVal_.addBoolean(v);
+                break;
+              } // case 128
+              case 130: {
+                int length = input.readRawVarint32();
+                int limit = input.pushLimit(length);
+                ensureBoolValIsMutable();
+                while (input.getBytesUntilLimit() > 0) {
+                  boolVal_.addBoolean(input.readBool());
+                }
+                input.popLimit(limit);
+                break;
+              } // case 130
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.nd4j.ir.TensorNamespace.TensorProto) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
+          onChanged();
+        } // finally
         return this;
       }
       private int bitField0_;
@@ -10629,7 +10359,18 @@ public final class TensorNamespace {
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-        return new TensorProto(input, extensionRegistry);
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
       }
     };
 
