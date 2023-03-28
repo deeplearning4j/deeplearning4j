@@ -792,263 +792,6 @@ java.lang.String defaultValue);
     getUnknownFields() {
       return this.unknownFields;
     }
-    private MappingRule(
-        org.nd4j.shade.protobuf.CodedInputStream input,
-        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-      this();
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      int mutable_bitField0_ = 0;
-      org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
-          org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 10: {
-              java.lang.String s = input.readStringRequireUtf8();
-
-              ruleName_ = s;
-              break;
-            }
-            case 18: {
-              java.lang.String s = input.readStringRequireUtf8();
-
-              functionName_ = s;
-              break;
-            }
-            case 26: {
-              java.lang.String s = input.readStringRequireUtf8();
-              if (!((mutable_bitField0_ & 0x00000001) != 0)) {
-                inputStringAttrName_ = new org.nd4j.shade.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00000001;
-              }
-              inputStringAttrName_.add(s);
-              break;
-            }
-            case 34: {
-              java.lang.String s = input.readStringRequireUtf8();
-              if (!((mutable_bitField0_ & 0x00000002) != 0)) {
-                outputStringAttrName_ = new org.nd4j.shade.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00000002;
-              }
-              outputStringAttrName_.add(s);
-              break;
-            }
-            case 42: {
-              java.lang.String s = input.readStringRequireUtf8();
-              if (!((mutable_bitField0_ & 0x00000004) != 0)) {
-                inputIntName_ = new org.nd4j.shade.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00000004;
-              }
-              inputIntName_.add(s);
-              break;
-            }
-            case 50: {
-              java.lang.String s = input.readStringRequireUtf8();
-              if (!((mutable_bitField0_ & 0x00000008) != 0)) {
-                outputIntName_ = new org.nd4j.shade.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00000008;
-              }
-              outputIntName_.add(s);
-              break;
-            }
-            case 58: {
-              java.lang.String s = input.readStringRequireUtf8();
-              if (!((mutable_bitField0_ & 0x00000010) != 0)) {
-                inputFloatName_ = new org.nd4j.shade.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00000010;
-              }
-              inputFloatName_.add(s);
-              break;
-            }
-            case 66: {
-              java.lang.String s = input.readStringRequireUtf8();
-              if (!((mutable_bitField0_ & 0x00000020) != 0)) {
-                outputFloatName_ = new org.nd4j.shade.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00000020;
-              }
-              outputFloatName_.add(s);
-              break;
-            }
-            case 74: {
-              java.lang.String s = input.readStringRequireUtf8();
-              if (!((mutable_bitField0_ & 0x00000040) != 0)) {
-                inputDoubleName_ = new org.nd4j.shade.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00000040;
-              }
-              inputDoubleName_.add(s);
-              break;
-            }
-            case 82: {
-              java.lang.String s = input.readStringRequireUtf8();
-              if (!((mutable_bitField0_ & 0x00000080) != 0)) {
-                outputDoubleName_ = new org.nd4j.shade.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00000080;
-              }
-              outputDoubleName_.add(s);
-              break;
-            }
-            case 90: {
-              java.lang.String s = input.readStringRequireUtf8();
-              if (!((mutable_bitField0_ & 0x00000100) != 0)) {
-                inputBooleanName_ = new org.nd4j.shade.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00000100;
-              }
-              inputBooleanName_.add(s);
-              break;
-            }
-            case 98: {
-              java.lang.String s = input.readStringRequireUtf8();
-              if (!((mutable_bitField0_ & 0x00000200) != 0)) {
-                outputBooleanName_ = new org.nd4j.shade.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00000200;
-              }
-              outputBooleanName_.add(s);
-              break;
-            }
-            case 106: {
-              java.lang.String s = input.readStringRequireUtf8();
-              if (!((mutable_bitField0_ & 0x00000400) != 0)) {
-                inputTensorName_ = new org.nd4j.shade.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00000400;
-              }
-              inputTensorName_.add(s);
-              break;
-            }
-            case 114: {
-              java.lang.String s = input.readStringRequireUtf8();
-              if (!((mutable_bitField0_ & 0x00000800) != 0)) {
-                outputTensorName_ = new org.nd4j.shade.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00000800;
-              }
-              outputTensorName_.add(s);
-              break;
-            }
-            case 122: {
-              java.lang.String s = input.readStringRequireUtf8();
-              if (!((mutable_bitField0_ & 0x00001000) != 0)) {
-                inputDataTypeName_ = new org.nd4j.shade.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00001000;
-              }
-              inputDataTypeName_.add(s);
-              break;
-            }
-            case 130: {
-              java.lang.String s = input.readStringRequireUtf8();
-              if (!((mutable_bitField0_ & 0x00002000) != 0)) {
-                outputDataTypeName_ = new org.nd4j.shade.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00002000;
-              }
-              outputDataTypeName_.add(s);
-              break;
-            }
-            case 138: {
-              if (!((mutable_bitField0_ & 0x00004000) != 0)) {
-                inputToOutput_ = org.nd4j.shade.protobuf.MapField.newMapField(
-                    InputToOutputDefaultEntryHolder.defaultEntry);
-                mutable_bitField0_ |= 0x00004000;
-              }
-              org.nd4j.shade.protobuf.MapEntry<java.lang.String, java.lang.String>
-              inputToOutput__ = input.readMessage(
-                  InputToOutputDefaultEntryHolder.defaultEntry.getParserForType(), extensionRegistry);
-              inputToOutput_.getMutableMap().put(
-                  inputToOutput__.getKey(), inputToOutput__.getValue());
-              break;
-            }
-            case 146: {
-              java.lang.String s = input.readStringRequireUtf8();
-
-              ruleType_ = s;
-              break;
-            }
-            case 154: {
-              if (!((mutable_bitField0_ & 0x00008000) != 0)) {
-                transformerArgs_ = new java.util.ArrayList<org.nd4j.ir.MapperNamespace.TransformerArgs>();
-                mutable_bitField0_ |= 0x00008000;
-              }
-              transformerArgs_.add(
-                  input.readMessage(org.nd4j.ir.MapperNamespace.TransformerArgs.parser(), extensionRegistry));
-              break;
-            }
-            case 162: {
-              java.lang.String s = input.readStringRequireUtf8();
-
-              inputFrameworkOpName_ = s;
-              break;
-            }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
-        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        if (((mutable_bitField0_ & 0x00000001) != 0)) {
-          inputStringAttrName_ = inputStringAttrName_.getUnmodifiableView();
-        }
-        if (((mutable_bitField0_ & 0x00000002) != 0)) {
-          outputStringAttrName_ = outputStringAttrName_.getUnmodifiableView();
-        }
-        if (((mutable_bitField0_ & 0x00000004) != 0)) {
-          inputIntName_ = inputIntName_.getUnmodifiableView();
-        }
-        if (((mutable_bitField0_ & 0x00000008) != 0)) {
-          outputIntName_ = outputIntName_.getUnmodifiableView();
-        }
-        if (((mutable_bitField0_ & 0x00000010) != 0)) {
-          inputFloatName_ = inputFloatName_.getUnmodifiableView();
-        }
-        if (((mutable_bitField0_ & 0x00000020) != 0)) {
-          outputFloatName_ = outputFloatName_.getUnmodifiableView();
-        }
-        if (((mutable_bitField0_ & 0x00000040) != 0)) {
-          inputDoubleName_ = inputDoubleName_.getUnmodifiableView();
-        }
-        if (((mutable_bitField0_ & 0x00000080) != 0)) {
-          outputDoubleName_ = outputDoubleName_.getUnmodifiableView();
-        }
-        if (((mutable_bitField0_ & 0x00000100) != 0)) {
-          inputBooleanName_ = inputBooleanName_.getUnmodifiableView();
-        }
-        if (((mutable_bitField0_ & 0x00000200) != 0)) {
-          outputBooleanName_ = outputBooleanName_.getUnmodifiableView();
-        }
-        if (((mutable_bitField0_ & 0x00000400) != 0)) {
-          inputTensorName_ = inputTensorName_.getUnmodifiableView();
-        }
-        if (((mutable_bitField0_ & 0x00000800) != 0)) {
-          outputTensorName_ = outputTensorName_.getUnmodifiableView();
-        }
-        if (((mutable_bitField0_ & 0x00001000) != 0)) {
-          inputDataTypeName_ = inputDataTypeName_.getUnmodifiableView();
-        }
-        if (((mutable_bitField0_ & 0x00002000) != 0)) {
-          outputDataTypeName_ = outputDataTypeName_.getUnmodifiableView();
-        }
-        if (((mutable_bitField0_ & 0x00008000) != 0)) {
-          transformerArgs_ = java.util.Collections.unmodifiableList(transformerArgs_);
-        }
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
     public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return org.nd4j.ir.MapperNamespace.internal_static_org_nd4j_ir_MappingRule_descriptor;
@@ -1914,7 +1657,7 @@ java.lang.String defaultValue);
       if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(inputFrameworkOpName_)) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 20, inputFrameworkOpName_);
       }
-      unknownFields.writeTo(output);
+      getUnknownFields().writeTo(output);
     }
 
     @java.lang.Override
@@ -2061,7 +1804,7 @@ java.lang.String defaultValue);
       if (!org.nd4j.shade.protobuf.GeneratedMessageV3.isStringEmpty(inputFrameworkOpName_)) {
         size += org.nd4j.shade.protobuf.GeneratedMessageV3.computeStringSize(20, inputFrameworkOpName_);
       }
-      size += unknownFields.getSerializedSize();
+      size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
       return size;
     }
@@ -2116,7 +1859,7 @@ java.lang.String defaultValue);
           .equals(other.getTransformerArgsList())) return false;
       if (!getInputFrameworkOpName()
           .equals(other.getInputFrameworkOpName())) return false;
-      if (!unknownFields.equals(other.unknownFields)) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
 
@@ -2199,7 +1942,7 @@ java.lang.String defaultValue);
       }
       hash = (37 * hash) + INPUTFRAMEWORKOPNAME_FIELD_NUMBER;
       hash = (53 * hash) + getInputFrameworkOpName().hashCode();
-      hash = (29 * hash) + unknownFields.hashCode();
+      hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
@@ -2338,19 +2081,13 @@ java.lang.String defaultValue);
 
       // Construct using org.nd4j.ir.MapperNamespace.MappingRule.newBuilder()
       private Builder() {
-        maybeForceBuilderInitialization();
+
       }
 
       private Builder(
           org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (org.nd4j.shade.protobuf.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-          getTransformerArgsFieldBuilder();
-        }
+
       }
       @java.lang.Override
       public Builder clear() {
@@ -2392,10 +2129,11 @@ java.lang.String defaultValue);
 
         if (transformerArgsBuilder_ == null) {
           transformerArgs_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00008000);
         } else {
+          transformerArgs_ = null;
           transformerArgsBuilder_.clear();
         }
+        bitField0_ = (bitField0_ & ~0x00008000);
         inputFrameworkOpName_ = "";
 
         return this;
@@ -2742,7 +2480,7 @@ java.lang.String defaultValue);
           inputFrameworkOpName_ = other.inputFrameworkOpName_;
           onChanged();
         }
-        this.mergeUnknownFields(other.unknownFields);
+        this.mergeUnknownFields(other.getUnknownFields());
         onChanged();
         return this;
       }
@@ -2757,17 +2495,155 @@ java.lang.String defaultValue);
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        org.nd4j.ir.MapperNamespace.MappingRule parsedMessage = null;
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
         try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 10: {
+                ruleName_ = input.readStringRequireUtf8();
+
+                break;
+              } // case 10
+              case 18: {
+                functionName_ = input.readStringRequireUtf8();
+
+                break;
+              } // case 18
+              case 26: {
+                java.lang.String s = input.readStringRequireUtf8();
+                ensureInputStringAttrNameIsMutable();
+                inputStringAttrName_.add(s);
+                break;
+              } // case 26
+              case 34: {
+                java.lang.String s = input.readStringRequireUtf8();
+                ensureOutputStringAttrNameIsMutable();
+                outputStringAttrName_.add(s);
+                break;
+              } // case 34
+              case 42: {
+                java.lang.String s = input.readStringRequireUtf8();
+                ensureInputIntNameIsMutable();
+                inputIntName_.add(s);
+                break;
+              } // case 42
+              case 50: {
+                java.lang.String s = input.readStringRequireUtf8();
+                ensureOutputIntNameIsMutable();
+                outputIntName_.add(s);
+                break;
+              } // case 50
+              case 58: {
+                java.lang.String s = input.readStringRequireUtf8();
+                ensureInputFloatNameIsMutable();
+                inputFloatName_.add(s);
+                break;
+              } // case 58
+              case 66: {
+                java.lang.String s = input.readStringRequireUtf8();
+                ensureOutputFloatNameIsMutable();
+                outputFloatName_.add(s);
+                break;
+              } // case 66
+              case 74: {
+                java.lang.String s = input.readStringRequireUtf8();
+                ensureInputDoubleNameIsMutable();
+                inputDoubleName_.add(s);
+                break;
+              } // case 74
+              case 82: {
+                java.lang.String s = input.readStringRequireUtf8();
+                ensureOutputDoubleNameIsMutable();
+                outputDoubleName_.add(s);
+                break;
+              } // case 82
+              case 90: {
+                java.lang.String s = input.readStringRequireUtf8();
+                ensureInputBooleanNameIsMutable();
+                inputBooleanName_.add(s);
+                break;
+              } // case 90
+              case 98: {
+                java.lang.String s = input.readStringRequireUtf8();
+                ensureOutputBooleanNameIsMutable();
+                outputBooleanName_.add(s);
+                break;
+              } // case 98
+              case 106: {
+                java.lang.String s = input.readStringRequireUtf8();
+                ensureInputTensorNameIsMutable();
+                inputTensorName_.add(s);
+                break;
+              } // case 106
+              case 114: {
+                java.lang.String s = input.readStringRequireUtf8();
+                ensureOutputTensorNameIsMutable();
+                outputTensorName_.add(s);
+                break;
+              } // case 114
+              case 122: {
+                java.lang.String s = input.readStringRequireUtf8();
+                ensureInputDataTypeNameIsMutable();
+                inputDataTypeName_.add(s);
+                break;
+              } // case 122
+              case 130: {
+                java.lang.String s = input.readStringRequireUtf8();
+                ensureOutputDataTypeNameIsMutable();
+                outputDataTypeName_.add(s);
+                break;
+              } // case 130
+              case 138: {
+                org.nd4j.shade.protobuf.MapEntry<java.lang.String, java.lang.String>
+                inputToOutput__ = input.readMessage(
+                    InputToOutputDefaultEntryHolder.defaultEntry.getParserForType(), extensionRegistry);
+                internalGetMutableInputToOutput().getMutableMap().put(
+                    inputToOutput__.getKey(), inputToOutput__.getValue());
+                break;
+              } // case 138
+              case 146: {
+                ruleType_ = input.readStringRequireUtf8();
+
+                break;
+              } // case 146
+              case 154: {
+                org.nd4j.ir.MapperNamespace.TransformerArgs m =
+                    input.readMessage(
+                        org.nd4j.ir.MapperNamespace.TransformerArgs.parser(),
+                        extensionRegistry);
+                if (transformerArgsBuilder_ == null) {
+                  ensureTransformerArgsIsMutable();
+                  transformerArgs_.add(m);
+                } else {
+                  transformerArgsBuilder_.addMessage(m);
+                }
+                break;
+              } // case 154
+              case 162: {
+                inputFrameworkOpName_ = input.readStringRequireUtf8();
+
+                break;
+              } // case 162
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.nd4j.ir.MapperNamespace.MappingRule) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
+          onChanged();
+        } // finally
         return this;
       }
       private int bitField0_;
@@ -5019,7 +4895,18 @@ java.lang.String defaultValue);
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-        return new MappingRule(input, extensionRegistry);
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
       }
     };
 
@@ -5107,64 +4994,6 @@ java.lang.String defaultValue);
     public final org.nd4j.shade.protobuf.UnknownFieldSet
     getUnknownFields() {
       return this.unknownFields;
-    }
-    private TransformerArgs(
-        org.nd4j.shade.protobuf.CodedInputStream input,
-        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-      this();
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      int mutable_bitField0_ = 0;
-      org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
-          org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 10: {
-              java.lang.String s = input.readStringRequireUtf8();
-
-              key_ = s;
-              break;
-            }
-            case 18: {
-              if (!((mutable_bitField0_ & 0x00000001) != 0)) {
-                transformerArgs_ = new java.util.ArrayList<org.nd4j.ir.OpNamespace.ArgDescriptor>();
-                mutable_bitField0_ |= 0x00000001;
-              }
-              transformerArgs_.add(
-                  input.readMessage(org.nd4j.ir.OpNamespace.ArgDescriptor.parser(), extensionRegistry));
-              break;
-            }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
-        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        if (((mutable_bitField0_ & 0x00000001) != 0)) {
-          transformerArgs_ = java.util.Collections.unmodifiableList(transformerArgs_);
-        }
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
     }
     public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
         getDescriptor() {
@@ -5277,7 +5106,7 @@ java.lang.String defaultValue);
       for (int i = 0; i < transformerArgs_.size(); i++) {
         output.writeMessage(2, transformerArgs_.get(i));
       }
-      unknownFields.writeTo(output);
+      getUnknownFields().writeTo(output);
     }
 
     @java.lang.Override
@@ -5293,7 +5122,7 @@ java.lang.String defaultValue);
         size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeMessageSize(2, transformerArgs_.get(i));
       }
-      size += unknownFields.getSerializedSize();
+      size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
       return size;
     }
@@ -5312,7 +5141,7 @@ java.lang.String defaultValue);
           .equals(other.getKey())) return false;
       if (!getTransformerArgsList()
           .equals(other.getTransformerArgsList())) return false;
-      if (!unknownFields.equals(other.unknownFields)) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
 
@@ -5329,7 +5158,7 @@ java.lang.String defaultValue);
         hash = (37 * hash) + TRANSFORMERARGS_FIELD_NUMBER;
         hash = (53 * hash) + getTransformerArgsList().hashCode();
       }
-      hash = (29 * hash) + unknownFields.hashCode();
+      hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
@@ -5446,19 +5275,13 @@ java.lang.String defaultValue);
 
       // Construct using org.nd4j.ir.MapperNamespace.TransformerArgs.newBuilder()
       private Builder() {
-        maybeForceBuilderInitialization();
+
       }
 
       private Builder(
           org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (org.nd4j.shade.protobuf.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-          getTransformerArgsFieldBuilder();
-        }
+
       }
       @java.lang.Override
       public Builder clear() {
@@ -5467,10 +5290,11 @@ java.lang.String defaultValue);
 
         if (transformerArgsBuilder_ == null) {
           transformerArgs_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000001);
         } else {
+          transformerArgs_ = null;
           transformerArgsBuilder_.clear();
         }
+        bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
 
@@ -5586,7 +5410,7 @@ java.lang.String defaultValue);
             }
           }
         }
-        this.mergeUnknownFields(other.unknownFields);
+        this.mergeUnknownFields(other.getUnknownFields());
         onChanged();
         return this;
       }
@@ -5601,17 +5425,48 @@ java.lang.String defaultValue);
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        org.nd4j.ir.MapperNamespace.TransformerArgs parsedMessage = null;
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
         try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 10: {
+                key_ = input.readStringRequireUtf8();
+
+                break;
+              } // case 10
+              case 18: {
+                org.nd4j.ir.OpNamespace.ArgDescriptor m =
+                    input.readMessage(
+                        org.nd4j.ir.OpNamespace.ArgDescriptor.parser(),
+                        extensionRegistry);
+                if (transformerArgsBuilder_ == null) {
+                  ensureTransformerArgsIsMutable();
+                  transformerArgs_.add(m);
+                } else {
+                  transformerArgsBuilder_.addMessage(m);
+                }
+                break;
+              } // case 18
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.nd4j.ir.MapperNamespace.TransformerArgs) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
+          onChanged();
+        } // finally
         return this;
       }
       private int bitField0_;
@@ -5964,7 +5819,18 @@ java.lang.String defaultValue);
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-        return new TransformerArgs(input, extensionRegistry);
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
       }
     };
 
@@ -6065,70 +5931,6 @@ java.lang.String defaultValue);
     public final org.nd4j.shade.protobuf.UnknownFieldSet
     getUnknownFields() {
       return this.unknownFields;
-    }
-    private MappingDefinitionSet(
-        org.nd4j.shade.protobuf.CodedInputStream input,
-        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-      this();
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      int mutable_bitField0_ = 0;
-      org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
-          org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 10: {
-              if (!((mutable_bitField0_ & 0x00000001) != 0)) {
-                mappings_ = new java.util.ArrayList<org.nd4j.ir.MapperNamespace.MapperDeclaration>();
-                mutable_bitField0_ |= 0x00000001;
-              }
-              mappings_.add(
-                  input.readMessage(org.nd4j.ir.MapperNamespace.MapperDeclaration.parser(), extensionRegistry));
-              break;
-            }
-            case 18: {
-              java.lang.String s = input.readStringRequireUtf8();
-              if (!((mutable_bitField0_ & 0x00000002) != 0)) {
-                name_ = new org.nd4j.shade.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00000002;
-              }
-              name_.add(s);
-              break;
-            }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
-        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        if (((mutable_bitField0_ & 0x00000001) != 0)) {
-          mappings_ = java.util.Collections.unmodifiableList(mappings_);
-        }
-        if (((mutable_bitField0_ & 0x00000002) != 0)) {
-          name_ = name_.getUnmodifiableView();
-        }
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
     }
     public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
         getDescriptor() {
@@ -6238,7 +6040,7 @@ java.lang.String defaultValue);
       for (int i = 0; i < name_.size(); i++) {
         org.nd4j.shade.protobuf.GeneratedMessageV3.writeString(output, 2, name_.getRaw(i));
       }
-      unknownFields.writeTo(output);
+      getUnknownFields().writeTo(output);
     }
 
     @java.lang.Override
@@ -6259,7 +6061,7 @@ java.lang.String defaultValue);
         size += dataSize;
         size += 1 * getNameList().size();
       }
-      size += unknownFields.getSerializedSize();
+      size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
       return size;
     }
@@ -6278,7 +6080,7 @@ java.lang.String defaultValue);
           .equals(other.getMappingsList())) return false;
       if (!getNameList()
           .equals(other.getNameList())) return false;
-      if (!unknownFields.equals(other.unknownFields)) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
 
@@ -6297,7 +6099,7 @@ java.lang.String defaultValue);
         hash = (37 * hash) + NAME_FIELD_NUMBER;
         hash = (53 * hash) + getNameList().hashCode();
       }
-      hash = (29 * hash) + unknownFields.hashCode();
+      hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
@@ -6414,29 +6216,24 @@ java.lang.String defaultValue);
 
       // Construct using org.nd4j.ir.MapperNamespace.MappingDefinitionSet.newBuilder()
       private Builder() {
-        maybeForceBuilderInitialization();
+
       }
 
       private Builder(
           org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (org.nd4j.shade.protobuf.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-          getMappingsFieldBuilder();
-        }
+
       }
       @java.lang.Override
       public Builder clear() {
         super.clear();
         if (mappingsBuilder_ == null) {
           mappings_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000001);
         } else {
+          mappings_ = null;
           mappingsBuilder_.clear();
         }
+        bitField0_ = (bitField0_ & ~0x00000001);
         name_ = org.nd4j.shade.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000002);
         return this;
@@ -6564,7 +6361,7 @@ java.lang.String defaultValue);
           }
           onChanged();
         }
-        this.mergeUnknownFields(other.unknownFields);
+        this.mergeUnknownFields(other.getUnknownFields());
         onChanged();
         return this;
       }
@@ -6579,17 +6376,49 @@ java.lang.String defaultValue);
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        org.nd4j.ir.MapperNamespace.MappingDefinitionSet parsedMessage = null;
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
         try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 10: {
+                org.nd4j.ir.MapperNamespace.MapperDeclaration m =
+                    input.readMessage(
+                        org.nd4j.ir.MapperNamespace.MapperDeclaration.parser(),
+                        extensionRegistry);
+                if (mappingsBuilder_ == null) {
+                  ensureMappingsIsMutable();
+                  mappings_.add(m);
+                } else {
+                  mappingsBuilder_.addMessage(m);
+                }
+                break;
+              } // case 10
+              case 18: {
+                java.lang.String s = input.readStringRequireUtf8();
+                ensureNameIsMutable();
+                name_.add(s);
+                break;
+              } // case 18
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.nd4j.ir.MapperNamespace.MappingDefinitionSet) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
+          onChanged();
+        } // finally
         return this;
       }
       private int bitField0_;
@@ -6976,7 +6805,18 @@ java.lang.String defaultValue);
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-        return new MappingDefinitionSet(input, extensionRegistry);
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
       }
     };
 
@@ -7156,95 +6996,6 @@ java.lang.String defaultValue);
     public final org.nd4j.shade.protobuf.UnknownFieldSet
     getUnknownFields() {
       return this.unknownFields;
-    }
-    private MapperDeclaration(
-        org.nd4j.shade.protobuf.CodedInputStream input,
-        org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-      this();
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      int mutable_bitField0_ = 0;
-      org.nd4j.shade.protobuf.UnknownFieldSet.Builder unknownFields =
-          org.nd4j.shade.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 10: {
-              java.lang.String s = input.readStringRequireUtf8();
-
-              frameworkName_ = s;
-              break;
-            }
-            case 18: {
-              java.lang.String s = input.readStringRequireUtf8();
-
-              opName_ = s;
-              break;
-            }
-            case 26: {
-              java.lang.String s = input.readStringRequireUtf8();
-
-              inputFrameworkOpName_ = s;
-              break;
-            }
-            case 34: {
-              if (!((mutable_bitField0_ & 0x00000001) != 0)) {
-                rule_ = new java.util.ArrayList<org.nd4j.ir.MapperNamespace.MappingRule>();
-                mutable_bitField0_ |= 0x00000001;
-              }
-              rule_.add(
-                  input.readMessage(org.nd4j.ir.MapperNamespace.MappingRule.parser(), extensionRegistry));
-              break;
-            }
-            case 42: {
-              if (!((mutable_bitField0_ & 0x00000002) != 0)) {
-                indexOverrides_ = org.nd4j.shade.protobuf.MapField.newMapField(
-                    IndexOverridesDefaultEntryHolder.defaultEntry);
-                mutable_bitField0_ |= 0x00000002;
-              }
-              org.nd4j.shade.protobuf.MapEntry<java.lang.Long, java.lang.Long>
-              indexOverrides__ = input.readMessage(
-                  IndexOverridesDefaultEntryHolder.defaultEntry.getParserForType(), extensionRegistry);
-              indexOverrides_.getMutableMap().put(
-                  indexOverrides__.getKey(), indexOverrides__.getValue());
-              break;
-            }
-            case 48: {
-              int rawValue = input.readEnum();
-
-              variableResolutionType_ = rawValue;
-              break;
-            }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-          }
-        }
-      } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
-        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        if (((mutable_bitField0_ & 0x00000001) != 0)) {
-          rule_ = java.util.Collections.unmodifiableList(rule_);
-        }
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
     }
     public static final org.nd4j.shade.protobuf.Descriptors.Descriptor
         getDescriptor() {
@@ -7580,7 +7331,7 @@ java.lang.String defaultValue);
       if (variableResolutionType_ != org.nd4j.ir.MapperNamespace.VariableResolutionType.DIRECT.getNumber()) {
         output.writeEnum(6, variableResolutionType_);
       }
-      unknownFields.writeTo(output);
+      getUnknownFields().writeTo(output);
     }
 
     @java.lang.Override
@@ -7616,7 +7367,7 @@ java.lang.String defaultValue);
         size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeEnumSize(6, variableResolutionType_);
       }
-      size += unknownFields.getSerializedSize();
+      size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
       return size;
     }
@@ -7642,7 +7393,7 @@ java.lang.String defaultValue);
       if (!internalGetIndexOverrides().equals(
           other.internalGetIndexOverrides())) return false;
       if (variableResolutionType_ != other.variableResolutionType_) return false;
-      if (!unknownFields.equals(other.unknownFields)) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
 
@@ -7669,7 +7420,7 @@ java.lang.String defaultValue);
       }
       hash = (37 * hash) + VARIABLERESOLUTIONTYPE_FIELD_NUMBER;
       hash = (53 * hash) + variableResolutionType_;
-      hash = (29 * hash) + unknownFields.hashCode();
+      hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
     }
@@ -7808,19 +7559,13 @@ java.lang.String defaultValue);
 
       // Construct using org.nd4j.ir.MapperNamespace.MapperDeclaration.newBuilder()
       private Builder() {
-        maybeForceBuilderInitialization();
+
       }
 
       private Builder(
           org.nd4j.shade.protobuf.GeneratedMessageV3.BuilderParent parent) {
         super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (org.nd4j.shade.protobuf.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-          getRuleFieldBuilder();
-        }
+
       }
       @java.lang.Override
       public Builder clear() {
@@ -7833,10 +7578,11 @@ java.lang.String defaultValue);
 
         if (ruleBuilder_ == null) {
           rule_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000001);
         } else {
+          rule_ = null;
           ruleBuilder_.clear();
         }
+        bitField0_ = (bitField0_ & ~0x00000001);
         internalGetMutableIndexOverrides().clear();
         variableResolutionType_ = 0;
 
@@ -7973,7 +7719,7 @@ java.lang.String defaultValue);
         if (other.variableResolutionType_ != 0) {
           setVariableResolutionTypeValue(other.getVariableResolutionTypeValue());
         }
-        this.mergeUnknownFields(other.unknownFields);
+        this.mergeUnknownFields(other.getUnknownFields());
         onChanged();
         return this;
       }
@@ -7988,17 +7734,71 @@ java.lang.String defaultValue);
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        org.nd4j.ir.MapperNamespace.MapperDeclaration parsedMessage = null;
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
         try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 10: {
+                frameworkName_ = input.readStringRequireUtf8();
+
+                break;
+              } // case 10
+              case 18: {
+                opName_ = input.readStringRequireUtf8();
+
+                break;
+              } // case 18
+              case 26: {
+                inputFrameworkOpName_ = input.readStringRequireUtf8();
+
+                break;
+              } // case 26
+              case 34: {
+                org.nd4j.ir.MapperNamespace.MappingRule m =
+                    input.readMessage(
+                        org.nd4j.ir.MapperNamespace.MappingRule.parser(),
+                        extensionRegistry);
+                if (ruleBuilder_ == null) {
+                  ensureRuleIsMutable();
+                  rule_.add(m);
+                } else {
+                  ruleBuilder_.addMessage(m);
+                }
+                break;
+              } // case 34
+              case 42: {
+                org.nd4j.shade.protobuf.MapEntry<java.lang.Long, java.lang.Long>
+                indexOverrides__ = input.readMessage(
+                    IndexOverridesDefaultEntryHolder.defaultEntry.getParserForType(), extensionRegistry);
+                internalGetMutableIndexOverrides().getMutableMap().put(
+                    indexOverrides__.getKey(), indexOverrides__.getValue());
+                break;
+              } // case 42
+              case 48: {
+                variableResolutionType_ = input.readEnum();
+
+                break;
+              } // case 48
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (org.nd4j.ir.MapperNamespace.MapperDeclaration) e.getUnfinishedMessage();
           throw e.unwrapIOException();
         } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
+          onChanged();
+        } // finally
         return this;
       }
       private int bitField0_;
@@ -8757,7 +8557,18 @@ java.lang.String defaultValue);
           org.nd4j.shade.protobuf.CodedInputStream input,
           org.nd4j.shade.protobuf.ExtensionRegistryLite extensionRegistry)
           throws org.nd4j.shade.protobuf.InvalidProtocolBufferException {
-        return new MapperDeclaration(input, extensionRegistry);
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (org.nd4j.shade.protobuf.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new org.nd4j.shade.protobuf.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
       }
     };
 
