@@ -75,13 +75,6 @@ class JsonYamlTest {
                 assertTrue(img.getFrame().imageWidth == imgJson.getFrame().imageWidth);
                 assertTrue(img.getFrame().imageHeight == imgYaml.getFrame().imageHeight);
                 assertTrue(img.getFrame().imageWidth == imgYaml.getFrame().imageWidth);
-            } else if (it instanceof FilterImageTransform) {
-                assertEquals(img.getFrame().imageHeight, imgJson.getFrame().imageHeight);
-                assertEquals(img.getFrame().imageWidth, imgJson.getFrame().imageWidth);
-                assertEquals(img.getFrame().imageChannels, imgJson.getFrame().imageChannels);
-                assertEquals(img.getFrame().imageHeight, imgYaml.getFrame().imageHeight);
-                assertEquals(img.getFrame().imageWidth, imgYaml.getFrame().imageWidth);
-                assertEquals(img.getFrame().imageChannels, imgYaml.getFrame().imageChannels);
             } else {
                 assertEquals(img, imgJson);
                 assertEquals(img, imgYaml);
