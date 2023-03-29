@@ -2050,14 +2050,11 @@ public class Nd4j {
         ArrayList<Integer> list = new ArrayList<>(nCols);
         for (int i = 0; i < nCols; i++)
             list.add(i);
-        Collections.sort(list, new Comparator<Integer>() {
-            @Override
-            public int compare(Integer o1, Integer o2) {
-                if (ascending)
-                    return Double.compare(in.getDouble(rowIdx, o1), in.getDouble(rowIdx, o2));
-                else
-                    return -Double.compare(in.getDouble(rowIdx, o1), in.getDouble(rowIdx, o2));
-            }
+        Collections.sort(list, (o1, o2) -> {
+            if (ascending)
+                return Double.compare(in.getDouble(rowIdx, o1), in.getDouble(rowIdx, o2));
+            else
+                return -Double.compare(in.getDouble(rowIdx, o1), in.getDouble(rowIdx, o2));
         });
         for (int i = 0; i < nCols; i++) {
             out.putColumn(i, in.getColumn(list.get(i)));
@@ -2101,7 +2098,7 @@ public class Nd4j {
             long upper = lower + num * step;
             return linspaceWithCustomOpByRange( lower, upper, num, step, dtype);
         } else if (dtype.isFPType()) {
-            return Nd4j.getExecutioner().exec(new Linspace((double) lower, num, (double)step, dtype));
+            return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace((double)step, (double) lower, (long) num, dtype))[0];
         }
         else {
             throw new IllegalStateException("Illegal data type for linspace: " + dtype.toString());

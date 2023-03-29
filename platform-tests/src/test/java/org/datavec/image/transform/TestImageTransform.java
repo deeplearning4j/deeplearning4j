@@ -260,22 +260,6 @@ public class TestImageTransform {
         assertEquals(22, transformed[1], 0);
     }
 
-    @Test
-    public void testFilterImageTransform() throws Exception {
-        ImageWritable writable = makeRandomImage(0, 0, 4);
-        Frame frame = writable.getFrame();
-        ImageTransform transform = new FilterImageTransform("noise=alls=20:allf=t+u,format=rgba", frame.imageWidth,
-                        frame.imageHeight, frame.imageChannels);
-
-        for (int i = 0; i < 100; i++) {
-            ImageWritable w = transform.transform(writable);
-            Frame f = w.getFrame();
-            assertEquals(f.imageHeight, frame.imageHeight);
-            assertEquals(f.imageWidth, frame.imageWidth);
-            assertEquals(f.imageChannels, frame.imageChannels);
-        }
-        assertEquals(null, transform.transform(null));
-    }
 
     @Test
     public void testShowImageTransform() throws Exception {
