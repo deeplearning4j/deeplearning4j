@@ -1218,10 +1218,12 @@ public class TestReductionOpValidation extends BaseOpValidation {
     public void testDotProductAttentionV2(Nd4jBackend backend) {
         Nd4j.getExecutioner().enableVerboseMode(true);
         Nd4j.getExecutioner().enableDebugMode(true);
-        final INDArray keys = Nd4j.rand(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
-        final INDArray values = Nd4j.rand(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
-        final INDArray query = Nd4j.rand(new int[]{10, 1,4}).castTo(DataType.DOUBLE);
-
+        final INDArray keys = Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 3 * 4).reshape(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
+        final INDArray values =  Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 3 * 4).reshape(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
+        final INDArray query =  Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 1 * 4).reshape(new int[]{10, 1,4}).castTo(DataType.DOUBLE);
+        System.out.println(query);
+        System.out.println(keys);
+        System.out.println(values);
 
         SameDiff sd = SameDiff.create();
         SDVariable sdQ = sd.var("q", query);

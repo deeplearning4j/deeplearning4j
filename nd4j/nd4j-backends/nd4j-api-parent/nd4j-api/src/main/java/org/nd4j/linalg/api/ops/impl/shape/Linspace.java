@@ -83,6 +83,7 @@ public class Linspace extends DynamicCustomOp {
 
     public Linspace(){ }
 
+
     @Override
     public String opName(){
         return "lin_space";

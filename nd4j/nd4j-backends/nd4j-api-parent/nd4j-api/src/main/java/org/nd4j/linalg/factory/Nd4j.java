@@ -2101,7 +2101,7 @@ public class Nd4j {
             long upper = lower + num * step;
             return linspaceWithCustomOpByRange( lower, upper, num, step, dtype);
         } else if (dtype.isFPType()) {
-            return Nd4j.getExecutioner().exec(new Linspace((double) lower, num, (double)step, dtype));
+            return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace((double)step, (double) lower, (long) num, dtype))[0];
         }
         else {
             throw new IllegalStateException("Illegal data type for linspace: " + dtype.toString());
@@ -2143,7 +2143,7 @@ public class Nd4j {
     public static INDArray linspace(@NonNull DataType dataType, double lower, double step, long num) {
         if (num == 1)
             return Nd4j.scalar(dataType, lower);
-        return Nd4j.getExecutioner().exec(new Linspace(lower, num, step, dataType));
+        return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace(lower, step,num, dataType))[0];
     }
 
     /**
@@ -2158,7 +2158,7 @@ public class Nd4j {
         Preconditions.checkState(dataType.isFPType(), "Datatype must be a floating point type for linspace, got %s", dataType);
         if (num == 1)
             return Nd4j.scalar(dataType, lower);
-        return Nd4j.getExecutioner().exec(new Linspace(lower, upper, num, dataType));
+        return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace(lower, upper, num, dataType))[0];
     }
 
     private static INDArray linspaceWithCustomOp(long lower, long upper, int num, DataType dataType) {
