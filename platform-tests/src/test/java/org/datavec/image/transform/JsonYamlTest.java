@@ -75,7 +75,7 @@ class JsonYamlTest {
                 assertTrue(img.getFrame().imageWidth == imgJson.getFrame().imageWidth);
                 assertTrue(img.getFrame().imageHeight == imgYaml.getFrame().imageHeight);
                 assertTrue(img.getFrame().imageWidth == imgYaml.getFrame().imageWidth);
-            }  else {
+            } else {
                 assertEquals(img, imgJson);
                 assertEquals(img, imgYaml);
             }

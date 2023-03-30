@@ -261,7 +261,6 @@ public class TestImageTransform {
     }
 
 
-
     @Test
     public void testShowImageTransform() throws Exception {
         if (GraphicsEnvironment.isHeadless()) { return; }
@@ -284,15 +283,21 @@ public class TestImageTransform {
     @Test
     public void testConvertColorTransform() throws Exception {
         if (GraphicsEnvironment.isHeadless()) { return; }
+
+        //        Mat origImage = new Mat();
+        //        Mat transImage = new Mat();
+        //        OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
         ImageWritable writable = makeRandomImage(32, 32, 3);
         Frame frame = writable.getFrame();
         ImageTransform showOrig = new ShowImageTransform("Original Image", 50);
         showOrig.transform(writable);
+        //        origImage = converter.convert(writable.getFrame());
 
         ImageTransform transform = new ColorConversionTransform(new Random(42), COLOR_BGR2YCrCb);
         ImageWritable w = transform.transform(writable);
         ImageTransform showTrans = new ShowImageTransform("LUV Image", 50);
         showTrans.transform(writable);
+        //        transImage = converter.convert(writable.getFrame());
 
         Frame newframe = w.getFrame();
         assertNotEquals(frame, newframe);
