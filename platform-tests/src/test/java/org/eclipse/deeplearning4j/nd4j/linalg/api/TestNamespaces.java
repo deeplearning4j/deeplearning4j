@@ -80,9 +80,7 @@ public class TestNamespaces extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testNeuralNetworkSimple(Nd4jBackend backend){
         INDArray out = Nd4j.nn.elu(Nd4j.random.normal(0, 1, DataType.FLOAT, 10));
-//        System.out.println(out);
         INDArray out2 = Nd4j.nn.softmax(Nd4j.random.normal(0, 1, DataType.FLOAT, 4, 5), 1);
-//        System.out.println(out2);
     }
 
     @Override

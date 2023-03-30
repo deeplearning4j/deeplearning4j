@@ -189,8 +189,6 @@ static void softmaxBpMKLDNN(const NDArray* x, const NDArray* dLdz, NDArray* dLdx
   argsbp[DNNL_ARG_DIFF_SRC] = argsff[DNNL_ARG_DST];
   argsbp[DNNL_ARG_DST] = argsff[DNNL_ARG_DST];
 
-  // run calculations forward
-  dnnl::softmax_forward(op_ff_prim_desc).execute(stream, argsff);
 
   // run calculations backward
   dnnl::softmax_backward(op_bp_prim_desc).execute(stream, argsbp);
@@ -205,7 +203,9 @@ static void softmaxBpMKLDNN(const NDArray* x, const NDArray* dLdz, NDArray* dLdx
 PLATFORM_IMPL(softmax_bp, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
+  auto softmaxOutput = INPUT_VARIABLE(2);
   auto dLdx = OUTPUT_VARIABLE(0);
+  dLdx->assign(softmaxOutput);
 
   const int rank = input->rankOf();
   const int dLdzRank = dLdz->rankOf();
@@ -234,7 +234,9 @@ PLATFORM_IMPL(softmax_bp, ENGINE_CPU) {
 PLATFORM_CHECK(softmax_bp, ENGINE_CPU) {
   auto x = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
+  auto softmaxOutput = INPUT_VARIABLE(2);
   auto dLdx = OUTPUT_VARIABLE(0);
+  dLdx->assign(softmaxOutput);
 
   Requirements req("ONEDNN SOFTMAX_BP OP");
   req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&

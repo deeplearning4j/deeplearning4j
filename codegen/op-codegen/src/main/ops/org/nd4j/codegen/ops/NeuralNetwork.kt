@@ -380,21 +380,6 @@ fun NN() = Namespace("NN") {
         }
     }
 
-    Op("softmaxDerivative") {
-        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.gradient"
-        javaOpClass = "SoftmaxBp"
-        Input(NUMERIC, "x") { description = "Softmax input" }
-        Input(NUMERIC, "wrt") { description = "Gradient at output, dL/dx" }
-        Arg(INT, "dimension"){description = "Softmax dimension"}
-
-        Output(NUMERIC, "output") { description = "" }
-
-        Doc(Language.ANY, DocScope.ALL) {
-            """
-                Softmax derivative function
-            """.trimIndent()
-        }
-    }
 
     Op("softplus", transformStrict) {
         javaOpClass = "SoftPlus"

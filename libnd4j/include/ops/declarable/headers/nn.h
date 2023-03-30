@@ -29,7 +29,7 @@ namespace ops {
 
 #if NOT_EXCLUDED(OP_softmax)
 DECLARE_CONFIGURABLE_OP(softmax, 1, 1, true, 0, 0);
-DECLARE_CONFIGURABLE_OP(softmax_bp, 2, 1, true, 0, 0);
+DECLARE_CONFIGURABLE_OP(softmax_bp, 3, 1, true, 0, 0);
 #endif
 
 /**
@@ -155,7 +155,7 @@ DECLARE_CUSTOM_OP(fused_batch_norm, 3, 1, false, 0, 2);
 
 #if NOT_EXCLUDED(OP_log_softmax)
 DECLARE_CONFIGURABLE_OP(log_softmax, 1, 1, true, 0, 0);
-DECLARE_CONFIGURABLE_OP(log_softmax_bp, 2, 1, true, 0, 0);
+DECLARE_CONFIGURABLE_OP(log_softmax_bp, 3, 1, true, 0, 0);
 #endif
 
 /**
