@@ -55,11 +55,12 @@ DECLARE_TYPES(log_softmax_bp) {
       ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
-CONFIGURABLE_OP_IMPL(log_softmax_bp, 2, 1, true, 0, 0) {
+CONFIGURABLE_OP_IMPL(log_softmax_bp, 3, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto gradO = INPUT_VARIABLE(1);
+  auto softmaxOut = INPUT_VARIABLE(2);
   auto gradI = OUTPUT_VARIABLE(0);
-
+  gradI->assign(softmaxOut);
   const int rank = input->rankOf();
   const int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
 
@@ -69,7 +70,7 @@ CONFIGURABLE_OP_IMPL(log_softmax_bp, 2, 1, true, 0, 0) {
                rank, dim);
 
   helpers::softmax(block.launchContext(), *input, *gradI, dim);
- 
+
   auto sumGradOj = gradO->reduceAlongDimension(reduce::Sum, {dim}, true);
   //gradInputi = gradOutputi - softMax(xi) . sum_j( gradOutputj )
   //we stored softmax inside gradI

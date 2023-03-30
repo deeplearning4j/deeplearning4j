@@ -75,9 +75,9 @@ public class LogSoftMax extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         if(dimension == null) {
-            return new LogSoftMaxDerivative(sameDiff, arg(), i_v.get(0)).outputs();
+            return new LogSoftMaxDerivative(sameDiff, arg(), i_v.get(0), outputVariable()).outputs();
         } else {
-            return new LogSoftMaxDerivative(sameDiff, arg(), i_v.get(0), dimension).outputs();
+            return new LogSoftMaxDerivative(sameDiff, arg(), i_v.get(0),outputVariable() , dimension).outputs();
         }
     }
 

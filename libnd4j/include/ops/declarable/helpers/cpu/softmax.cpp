@@ -62,7 +62,7 @@ static void softMaxForVector_(void const* input, sd::LongType const* inShapeInfo
         sum += r;
       }
 
-      for (int i = 0; i < length; i++) outBuff[i * outEWS] /= (sum + SD_EPSILON);
+      for (int i = 0; i < length; i++) outBuff[i * outEWS] /= sum;
     }
   }
 }
@@ -154,7 +154,7 @@ SD_INLINE void softmax_loop(const T* input, T* output, const sd::LongType* offse
         sum += temp;
       }
 
-      for (sd::Unsigned j = 0; j < tadLen; ++j) outBuff[j] /= (sum + SD_EPSILON);
+      for (sd::Unsigned j = 0; j < tadLen; ++j) outBuff[j] /= sum;
     }
   };
 
@@ -206,11 +206,7 @@ static void softmax_(sd::LaunchContext* context, const NDArray& input, NDArray& 
             sum += temp;
           }
 
-          if(sum == 0.0) {
-             sum += SD_EPSILON;
-          }
-
-          for (sd::Unsigned j = 0; j < tadLen; ++j) outBuff[offsets[j]] /= (sum);
+          for (sd::Unsigned j = 0; j < tadLen; ++j) outBuff[offsets[j]] /= sum;
         }
       };
 
@@ -223,7 +219,7 @@ static void softmax_(sd::LaunchContext* context, const NDArray& input, NDArray& 
     input.applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), max, output, false);
     output.applyTransform(sd::transform::Exp, output);
     NDArray sum = output.reduceAlongDimension(sd::reduce::Sum, {dimension}, true);
-    output /= (sum);
+    output /= sum;
   }
 }
 
