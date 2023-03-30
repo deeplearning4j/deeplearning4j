@@ -1163,36 +1163,6 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Softmax derivative function<br>
-   *
-   * @param x Softmax input (NUMERIC type)
-   * @param wrt Gradient at output, dL/dx (NUMERIC type)
-   * @param dimension Softmax dimension
-   * @return output  (NUMERIC type)
-   */
-  public SDVariable softmaxDerivative(SDVariable x, SDVariable wrt, int dimension) {
-    SDValidation.validateNumerical("softmaxDerivative", "x", x);
-    SDValidation.validateNumerical("softmaxDerivative", "wrt", wrt);
-    return new org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftmaxBp(sd,x, wrt, dimension).outputVariable();
-  }
-
-  /**
-   * Softmax derivative function<br>
-   *
-   * @param name name May be null. Name for the output variable
-   * @param x Softmax input (NUMERIC type)
-   * @param wrt Gradient at output, dL/dx (NUMERIC type)
-   * @param dimension Softmax dimension
-   * @return output  (NUMERIC type)
-   */
-  public SDVariable softmaxDerivative(String name, SDVariable x, SDVariable wrt, int dimension) {
-    SDValidation.validateNumerical("softmaxDerivative", "x", x);
-    SDValidation.validateNumerical("softmaxDerivative", "wrt", wrt);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftmaxBp(sd,x, wrt, dimension).outputVariable();
-    return sd.updateVariableNameAndReference(out, name);
-  }
-
-  /**
    * Element-wise softplus function: out = log(exp(x) + 1)<br>
    *
    * @param x Input variable (NUMERIC type)

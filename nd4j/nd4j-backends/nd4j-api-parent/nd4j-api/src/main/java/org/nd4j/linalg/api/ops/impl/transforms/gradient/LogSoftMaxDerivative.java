@@ -36,19 +36,19 @@ import java.util.List;
  *
  */
 public class LogSoftMaxDerivative extends DynamicCustomOp {
-    public LogSoftMaxDerivative(SameDiff sameDiff, SDVariable in, SDVariable gradO) {
-        super(sameDiff, new SDVariable[]{in, gradO});
+    public LogSoftMaxDerivative(SameDiff sameDiff, SDVariable in, SDVariable gradO, SDVariable softmaxOut) {
+        super(sameDiff, new SDVariable[]{in, gradO,softmaxOut});
     }
 
     public LogSoftMaxDerivative() {
     }
 
-    public LogSoftMaxDerivative(INDArray in, INDArray gradO, INDArray out) {
-        super(null, new INDArray[]{in, gradO}, new INDArray[]{out});
+    public LogSoftMaxDerivative(INDArray in, INDArray gradO, INDArray out, INDArray softmaxOut) {
+        super(null, new INDArray[]{in, gradO,softmaxOut}, new INDArray[]{out});
     }
 
-    public LogSoftMaxDerivative(SameDiff sameDiff, SDVariable arg, SDVariable wrt, int dimension) {
-        this(sameDiff, arg, wrt);
+    public LogSoftMaxDerivative(SameDiff sameDiff, SDVariable arg, SDVariable wrt, SDVariable softmaxOut, int dimension) {
+        this(sameDiff, arg, wrt, softmaxOut);
         this.addIArgument(dimension);
     }
 

@@ -46,8 +46,9 @@ public class ActivationSoftmax extends BaseActivationFunction {
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
-
-        Nd4j.getExecutioner().execAndReturn(new SoftmaxBp(in, epsilon, in, -1));
+        //need to compute softmax of input here. Assign is then called on the output.
+        INDArray out = getActivation(in,true);
+        Nd4j.getExecutioner().execAndReturn(new SoftmaxBp(in, epsilon, in, out, -1));
 
         return new Pair<>(in, null);
     }

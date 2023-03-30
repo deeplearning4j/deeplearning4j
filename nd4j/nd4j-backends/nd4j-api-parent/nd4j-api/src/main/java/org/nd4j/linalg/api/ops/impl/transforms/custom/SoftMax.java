@@ -99,7 +99,7 @@ public class SoftMax extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return new SoftmaxBp(sameDiff, arg(), i_v.get(0), this.dimension).outputs();
+        return new SoftmaxBp(sameDiff, arg(), i_v.get(0), outputVariable(),this.dimension).outputs();
     }
 
     @Override
