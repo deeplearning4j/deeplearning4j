@@ -199,7 +199,7 @@ void AttentionHelper::applyAttentionScores(sd::NDArray *scores,
   sd::ops::dropout dropoutOp;
   sd::ops::matmul matmul;
 
-  int softmaxDim = -2;
+  int softmaxDim = -1;
   if (scoresMask != nullptr && !scoresMask->isEmpty()) {
     REQUIRE_TRUE(scoresMask->sizeAt(-2) == 1 || scoresMask->sizeAt(-2) == scores->sizeAt(-2),0,
                  "Scores mask must be either broadcastable or equal to scores shape. scores size at -2: was: %i scores size at -2 was: %i",scoresMask->sizeAt(-2),scores->sizeAt(-2));
@@ -228,6 +228,8 @@ void AttentionHelper::applyAttentionScores(sd::NDArray *scores,
   //output: batch size, tq dim
   matmul.execute({weights,value},{applyScoresOut});
 
+  applyScoresOut->printShapeInfo("Apply scores out shape");
+  applyScoresOut->printIndexedBuffer("Apply scores out");
 }
 
 
@@ -243,7 +245,7 @@ void AttentionHelper::dotProductAttentionBpHelper(sd::NDArray *query, sd::NDArra
   sd::ops::tanh_bp tanh1;
   sd::ops::add_bp addBp;
 
-  int softmaxDim = -2;
+  int softmaxDim = -1;
 
   //A: value, B: weights
   //note we permute already and do not need to do so again here
@@ -338,6 +340,10 @@ void AttentionHelper::dotProductAttentionBpHelper(sd::NDArray *query, sd::NDArra
   if(qMask != nullptr && !qMask->isEmpty()) {
     *dLdq *= *qMask;
   }
+
+  dLdk->printIndexedBuffer("DLDK:");
+  dLdq->printIndexedBuffer("DLDQ:");
+  dLdv->printIndexedBuffer("DLDV:");
 
 
 }

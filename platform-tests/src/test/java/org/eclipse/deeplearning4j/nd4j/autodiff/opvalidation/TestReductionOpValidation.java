@@ -1231,9 +1231,11 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable sdV = sd.var("v", values);
 
         SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,null,null,0.0,0.0,0,false,false,true);
+
         t.norm1("out");
 
         String err = OpValidation.validate(new TestCase(sd)
+                        .gradCheckEpsilon(1e-1)
                 .gradientCheck(true));
         assertNull(err);
     }
