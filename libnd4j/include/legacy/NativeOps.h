@@ -49,8 +49,9 @@
 typedef sd::InteropDataBuffer OpaqueDataBuffer;
 typedef sd::ops::OpExecTrace ExecTrace;
 extern "C" {
+SD_LIB_EXPORT int contextNumInputs(void *contextPointer);
 
-
+SD_LIB_EXPORT int contextNumOutputs(void *contextPointer);
 SD_LIB_EXPORT void printOpTrace();
 
 

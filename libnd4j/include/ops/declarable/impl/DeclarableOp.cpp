@@ -448,11 +448,15 @@ void sd::ops::DeclarableOp::DeclarableOp::traceExecIfNeeded(Context &block) {
   if(OpRegistrator::getInstance().traceOps()) {
     std::vector<const LongType *> *inputShapeBuffers = new std::vector<const LongType *>();
     for(int i = 0; i < block.width(); i++) {
-      inputShapeBuffers->push_back(block.variable(i)->getNDArray()->shapeInfo());
+      inputShapeBuffers->push_back(block.array(i)->shapeInfo());
     }
     std::vector<const LongType *> *outputShapeBuffers = new std::vector<const LongType *>();
     for(int i = 0; i < block.outputWidth(); i++) {
       outputShapeBuffers->push_back(block.fastpath_out()[i]->shapeInfo());
+    }
+
+    if(getOpName() == nullptr) {
+      throw std::runtime_error("Op name is null");
     }
 
     OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers, getOpName());

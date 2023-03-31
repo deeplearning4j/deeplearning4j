@@ -127,6 +127,7 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient) {
+        SDVariable[] outs = outputVariables();
         return Arrays.asList(new DotProductAttentionV2Bp(sameDiff,
                 arg(0),
                 arg(1),
@@ -134,6 +135,9 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
                 gradient.get(0),
                 queryMask,
                 valueMask,
+                outs[0],
+                outs[1],
+                outs[2],
                 scaleFactor,
                 dropout,
                 scoreMode,
@@ -151,19 +155,13 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
                 Preconditions.checkState(first == dataTypes.get(i), "All datatypes must be same type, got input datatypes %s", dataTypes);
             }
         }
-        if(withWeights) {
-            return Arrays.asList(first, first);
-        }else{
-            return Collections.singletonList(first);
-        }
+        return Arrays.asList(first, first,first);
+
     }
 
     @Override
     public int getNumOutputs() {
-        if(withWeights) {
-            return 2;
-        }else{
-            return 1;
-        }
+        return 3;
+
     }
 }

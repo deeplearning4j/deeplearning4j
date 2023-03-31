@@ -22,6 +22,7 @@ package org.eclipse.deeplearning4j.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.apache.hadoop.shaded.org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.Disabled;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,6 +36,7 @@ import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgAmax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgAmin;
@@ -1213,6 +1215,8 @@ public class TestReductionOpValidation extends BaseOpValidation {
     }
 
 
+
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDotProductAttentionV2(Nd4jBackend backend) {
@@ -1232,10 +1236,9 @@ public class TestReductionOpValidation extends BaseOpValidation {
 
         SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,null,null,0.0,0.0,0,false,false,true);
 
-        t.norm1("out");
-
+        SDVariable loss = t.norm1("out");
+        loss.markAsLoss();
         String err = OpValidation.validate(new TestCase(sd)
-                        .gradCheckEpsilon(1e-1)
                 .gradientCheck(true));
         assertNull(err);
     }
@@ -1245,34 +1248,36 @@ public class TestReductionOpValidation extends BaseOpValidation {
     public void testDotProductAttentionV2Manual(Nd4jBackend backend) {
         Nd4j.getExecutioner().enableVerboseMode(true);
         Nd4j.getExecutioner().enableDebugMode(true);
-        final INDArray keys = Nd4j.rand(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
-        final INDArray values = Nd4j.rand(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
-        final INDArray query = Nd4j.rand(new int[]{10, 1,4}).castTo(DataType.DOUBLE);
+        Nd4j.toggleTrace(true);
+        final INDArray keys = Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 3 * 4).reshape(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
+        final INDArray values =  Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 3 * 4).reshape(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
+        final INDArray query =  Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 1 * 4).reshape(new int[]{10, 1,4}).castTo(DataType.DOUBLE);
 
 
-        //broken
-        //matmul,softmax,matmul,reduce_norm1_bp,matmul,softmax,matmul_bp,matmul,matmul,softmax_bp,matmul_bp,matmul,matmul,
-
-
-
-        //broken
-        //matmul,softmax,matmul,reduce_norm1_bp,matmul_bp,matmul,matmul,softmax_bp,matmul_bp,matmul,matmul,
-
-        //working:
-        //matmul,softmax,matmul,reduce_norm1_bp,matmul_bp,matmul,matmul,softmax_bp,matmul_bp,matmul,matmul
         SameDiff sd = SameDiff.create();
         SDVariable sdQ = sd.var("q", query);
         SDVariable sdK = sd.var("k", keys);
         SDVariable sdV = sd.var("v", values);
 
-        SDVariable attentionScores = sd.linalg().matmul(sdQ,sdK,1.0,0.0,false,true);
-        SDVariable softmax = sd.nn().softmax(attentionScores,-2);
-        SDVariable out = sd.linalg().matmul(softmax,sdV);
+        SDVariable attentionScores = sd.linalg().matmul("attentionLogits",sdQ,sdK,1.0,0.0,false,true);
+        SDVariable softmax = sd.nn().softmax("attentionScores",attentionScores,-1);
+        SDVariable out = sd.linalg().matmul("weightsTimesValue",softmax,sdV);
         SDVariable loss = out.norm1("out");
         loss.markAsLoss();
         String err = OpValidation.validate(new TestCase(sd)
                 .gradientCheck(true));
         assertNull(err);
+
+        Arrays.stream(sd.getFunction("grad").ops()).forEach(op -> {
+            if(op instanceof CustomOp) {
+                CustomOp customOp = (CustomOp) op;
+                System.out.println(op.opName() + " : iArgs: " + Arrays.toString(customOp.iArgs()) + " tArgs: " + Arrays.toString(customOp.tArgs()) + "bArgs: " + Arrays.toString(customOp.bArgs()) + " Arg inputs: " + Arrays.toString(op.argNames()) + " Op outputs: " + Arrays.toString(op.outputVariablesNames()));
+            } else {
+                System.out.println(op.opName());
+            }
+        });
+
+
     }
 
 

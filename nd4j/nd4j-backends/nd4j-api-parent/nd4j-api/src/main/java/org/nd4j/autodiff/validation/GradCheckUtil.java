@@ -286,7 +286,7 @@ public class GradCheckUtil {
 
 
                 double relError;
-                if(numericalGrad == 0.0 || analyticGrad == 0.0){
+                if(numericalGrad == 0.0 || analyticGrad == 0.0) {
                     relError = 0.0;
                 } else {
                     relError = Math.abs(analyticGrad - numericalGrad) / (Math.abs(Math.abs(analyticGrad) + Math.abs(numericalGrad)));

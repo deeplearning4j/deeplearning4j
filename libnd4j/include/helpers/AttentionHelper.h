@@ -77,7 +77,7 @@ class SD_LIB_EXPORT AttentionHelper {
    * @return
    */
   static void applyAttentionScores(sd::NDArray *scores, sd::NDArray *value, sd::NDArray *scoresMask, double dropout,
-                                   int randomSeed, sd::NDArray *applyScoresOut);
+                                   int randomSeed, sd::NDArray *applyScoresOut, sd::NDArray *attentionLogits);
 
 
 
@@ -91,7 +91,7 @@ class SD_LIB_EXPORT AttentionHelper {
    * @return
    */
   static void attentionHelper(sd::NDArray *query, sd::NDArray *key, int scoreMode, double scale,
-                                     sd::NDArray *concatWeights, sd::NDArray *attentionScoresOut);
+                                     sd::NDArray *concatWeights, sd::NDArray *attentionLogits);
 
   /**
    *
@@ -105,7 +105,9 @@ class SD_LIB_EXPORT AttentionHelper {
   static void attentionBpHelper(sd::NDArray *query, sd::NDArray *key, sd::NDArray *values, double scale,
                                 sd::NDArray *concatWeights, int scoreMode, sd::NDArray *dLdq, sd::NDArray *dLdk,
                                 sd::NDArray *dLdv, sd::NDArray *eps, LongType dropoutSeed, sd::NDArray *qMask,
-                                sd::NDArray *vMask, bool useCausalMask, double dropout, bool training);
+                                sd::NDArray *vMask, bool useCausalMask, double dropout, bool training,
+                                NDArray *attentionScoresOut, NDArray *attentionScoresWeights,
+                                sd::NDArray *attentionScoresLogits);
 
 
 
@@ -135,7 +137,9 @@ class SD_LIB_EXPORT AttentionHelper {
   static void dotProductAttentionBpHelper(sd::NDArray *query, sd::NDArray *key, sd::NDArray *values, double scale,
                                           sd::NDArray *dLdq, sd::NDArray *dLdk, sd::NDArray *dLdv, sd::NDArray *eps,
                                           LongType dropoutSeed, sd::NDArray *qMask, sd::NDArray *vMask,
-                                          bool useCausalMask, double dropout, bool training);
+                                          bool useCausalMask, double dropout, bool training,
+                                          NDArray *attentionScoresOut, NDArray *attentionScoresWeights,
+                                          NDArray *attentionLogits);
 
 
 
@@ -149,7 +153,8 @@ class SD_LIB_EXPORT AttentionHelper {
    */
   static void doAttention(std::vector<NDArray *> &inputs, std::vector<sd::NDArray *> &masks, bool training,
                           bool returnAttentionScores, bool useCausalMask, double dropout, int attentionType,
-                          double scale, sd::NDArray *attentionScores, int dropoutSeed, sd::NDArray *applyScoresOut);
+                          double scale, sd::NDArray *attentionScores, int dropoutSeed, sd::NDArray *applyScoresOut,
+                          sd::NDArray *attentionLogits);
 
 
 

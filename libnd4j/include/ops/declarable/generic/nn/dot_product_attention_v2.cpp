@@ -84,10 +84,11 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
 
 
   auto applyScoresOut = OUTPUT_VARIABLE(0);
-  auto attentionScores = returnAttentionScores ? OUTPUT_VARIABLE(1) : new NDArray(queries->dataType(),{batchSize,tq,tv});
+  auto attentionScores = OUTPUT_VARIABLE(1);
+  auto attentionLogits = OUTPUT_VARIABLE(2);
 
   AttentionHelper::doAttention(inputs, masks2, training, returnAttentionScores, useCausalMask, dropout, attentionType,
-                               scale, attentionScores, block.randomSeed(), applyScoresOut);
+                               scale, attentionScores, block.randomSeed(), applyScoresOut,attentionLogits);
 
 
   return sd::Status::OK;
@@ -119,16 +120,13 @@ DECLARE_SHAPE_FN(dot_product_attention_v2) {
     //outputs: batchSize,Tq, dim batchSize,Tq,Tv
     ShapeDescriptor *descriptor = new ShapeDescriptor(firstInputType,'c',{batchSize,tq,dim});
     auto constOutputScores = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
-    if(returnAttentionScores) {
-      ShapeDescriptor *scoresShape = new ShapeDescriptor(firstInputType,'c',{batchSize,tq,tv});
-      auto attentionScoresShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
-      delete descriptor;
-      delete scoresShape;
-      return SHAPELIST(constOutputScores,attentionScoresShape);
-    }
-
+    ShapeDescriptor *scoresShape = new ShapeDescriptor(firstInputType,'c',{batchSize,tq,tv});
+    auto attentionScoresShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
+    auto attentionLogitsShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
     delete descriptor;
-    return SHAPELIST(constOutputScores);
+    delete scoresShape;
+    return SHAPELIST(constOutputScores,attentionScoresShape,attentionLogitsShape);
+
 
 
   } else if(attentionType == ATTENTION_TYPE_ADDITIVE) {
@@ -156,9 +154,13 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
   auto queries = INPUT_VARIABLE(0);
   auto values = INPUT_VARIABLE(1);
   auto keys = INPUT_VARIABLE(2);
-  auto eps = INPUT_VARIABLE(3);
-  auto qMask = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
-  auto vMask = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
+  auto attentionScoresOut = INPUT_VARIABLE(3);
+  auto attentionScoresWeights = INPUT_VARIABLE(4);
+  auto attentionScoreLogits = INPUT_VARIABLE(5);
+  auto eps = INPUT_VARIABLE(6);
+
+  auto qMask = block.width() > 7 ? INPUT_VARIABLE(7) : nullptr;
+  auto vMask = block.width() > 8 ? INPUT_VARIABLE(8) : nullptr;
 
 
   auto dLdq = OUTPUT_VARIABLE(0);
@@ -177,7 +179,7 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
 
 
 
-  std::vector<sd::NDArray*> inputs = {queries,values,keys,eps};
+  std::vector<sd::NDArray*> inputs = {queries,values,keys,attentionScoresOut,attentionScoresWeights,attentionScoreLogits,eps};
   std::vector<sd::NDArray *> masks2 = {qMask,vMask};
   std::vector<sd::NDArray *> outputs = {dLdq,dLdv,dLdk};
 

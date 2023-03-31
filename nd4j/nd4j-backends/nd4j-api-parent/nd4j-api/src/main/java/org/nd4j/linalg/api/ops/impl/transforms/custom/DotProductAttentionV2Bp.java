@@ -44,13 +44,16 @@ public class DotProductAttentionV2Bp extends DynamicCustomOp {
                                    SDVariable eps,
                                    SDVariable queryMask,
                                    SDVariable valueMask,
+                                   SDVariable attentionScoresOut,
+                                   SDVariable attentionScoreWeights,
+                                   SDVariable attentionScoresLogits,
                                    double scaleFactor,
                                    double dropout,
                                    int scoreMode,
                                    boolean useCausalMask,
                                    boolean withWeights,
                                    boolean training) {
-        super(null, sameDiff,inputs(sameDiff,queries,values,keys,eps,queryMask,valueMask), false);
+        super(null, sameDiff,inputs(sameDiff,queries,values,keys,attentionScoresOut,attentionScoreWeights,attentionScoresLogits,eps,queryMask,valueMask), false);
         addIArgument(scoreMode);
 
         addTArgument(scaleFactor);
@@ -64,6 +67,9 @@ public class DotProductAttentionV2Bp extends DynamicCustomOp {
                                        SDVariable queries,
                                        SDVariable values,
                                        SDVariable keys,
+                                       SDVariable attentionScoresOut,
+                                       SDVariable attentionScoreWeights,
+                                       SDVariable attentionScoresLogits,
                                        SDVariable eps,
                                        SDVariable queryMask,
                                        SDVariable valueMask) {
@@ -71,6 +77,9 @@ public class DotProductAttentionV2Bp extends DynamicCustomOp {
         inputs.add(queries);
         inputs.add(values);
         inputs.add(keys == null ? values : keys);
+        inputs.add(attentionScoresOut);
+        inputs.add(attentionScoreWeights);
+        inputs.add(attentionScoresLogits);
         inputs.add(eps);
         inputs.add(queryMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : queryMask);
         inputs.add(valueMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : valueMask);
@@ -90,7 +99,7 @@ public class DotProductAttentionV2Bp extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         DataType first = dataTypes.get(0);
         for( int i = 0; i < dataTypes.size(); i++) {
             Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);
