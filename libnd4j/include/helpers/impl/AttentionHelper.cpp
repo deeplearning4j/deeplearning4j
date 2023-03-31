@@ -232,105 +232,45 @@ void AttentionHelper::dotProductAttentionBpHelper(sd::NDArray *query, sd::NDArra
                                                   sd::NDArray *vMask, bool useCausalMask, double dropout, bool training,
                                                   NDArray *attentionScoresOut, NDArray *attentionScoresWeights,
                                                   NDArray *attentionLogits) {
-  sd::ops::matmul matMul;
   sd::ops::matmul_bp matMulBp;
-  sd::ops::reduce_sum reduceSum;
-  sd::ops::tanh_bp tanh1;
-  sd::ops::add_bp addBp;
   sd::ops::softmax_bp softmaxBp;
-  attentionScoresOut->printShapeInfo("Attention scores out shape\n");
-  attentionScoresWeights->printShapeInfo("Attention scores weights shape\n");
-  attentionScoresWeights->printIndexedBuffer("Attention scores weights");
-  sd_printf("Before matmul dscores first\n",0);
-
-
-  /**
-   *  Name -            - Variables -  - Functions -  - Fn Defs -
-Function of name
-grad-----------------------------------------------------------------
---- Summary ---
-Variables:               16                   (15 with arrays)
-Functions:               9
-SameDiff Function Defs:  0
-Loss function variables: []
-
-  --- Variables ---
-      - Name -       - Array Shape -     - Variable Type -   - Data Type-        - Output Of Function -            - Inputs To Functions -
-      cast           []                  ARRAY               DOUBLE              cast(cast)                        [reduce_norm1_bp]
-      grad           [1]                 VARIABLE            FLOAT               <none>
-          k              [10, 3, 4]          VARIABLE            DOUBLE              <none>                            [matmul, matmul_bp_1]
-      k-grad         [10, 3, 4]          ARRAY               DOUBLE              matmul_bp_1(matmul_bp)
-          matmul         [10, 1, 3]          ARRAY               DOUBLE              matmul(matmul)                    [softmax, softmax_bp]
-      matmul-grad    [10, 1, 3]          ARRAY               DOUBLE              softmax_bp(softmax_bp)            [matmul_bp_1]
-      matmul_1       [10, 1, 4]          ARRAY               DOUBLE              matmul_1(matmul)                  [reduce_norm1, reduce_norm1_bp]
-      matmul_1-grad  [10, 1, 4]          ARRAY               DOUBLE              reduce_norm1_bp(reduce_norm1_bp)  [matmul_bp]
-      one-var        []                  VARIABLE            FLOAT               <none>                            [cast]
-      out            -                   ARRAY               DOUBLE              reduce_norm1(reduce_norm1)
-          q              [10, 1, 4]          VARIABLE            DOUBLE              <none>                            [matmul, matmul_bp_1]
-      q-grad         [10, 1, 4]          ARRAY               DOUBLE              matmul_bp_1(matmul_bp)
-          softmax        [10, 1, 3]          ARRAY               DOUBLE              softmax(softmax)                  [matmul_1, matmul_bp, softmax_bp]
-      softmax-grad   [10, 1, 3]          ARRAY               DOUBLE              matmul_bp(matmul_bp)              [softmax_bp]
-      v              [10, 3, 4]          VARIABLE            DOUBLE              <none>                            [matmul_1, matmul_bp]
-      v-grad         [10, 3, 4]          ARRAY               DOUBLE              matmul_bp(matmul_bp)
-
-
-          --- Functions ---
-      - Function Name -  - Op -      - Inputs -                       - Outputs -
-      0    matmul             Mmul        [q, k]                           [matmul]
-      1    softmax            SoftMax     [matmul]                         [softmax]
-      2    matmul_1           Mmul        [softmax, v]                     [matmul_1]
-      3    reduce_norm1       Norm1       [matmul_1]                       [out]
-      4    cast               Cast        [one-var]                        [cast]
-      5    reduce_norm1_bp    Norm1Bp     [matmul_1, cast]                 [matmul_1-grad]
-      6    matmul_bp          MmulBp      [softmax, v, matmul_1-grad]      [softmax-grad, v-grad]
-      7    softmax_bp         SoftmaxBp   [matmul, softmax-grad, softmax]  [matmul-grad]
-      8    matmul_bp_1        MmulBp      [q, k, matmul-grad]              [q-grad, k-grad]
-
-
-      --- SameDiff Defined Functions ---
-      - Name -            - Variables -  - Functions -  - Fn Defs -
-
-      -----------------------------------------------------------------
-
-
-
-matmul : iArgs: [0, 1, 0] tArgs: [1.0, 0.0]bArgs: [] Arg inputs: [q, k] Op outputs: [matmul]
-softmax : iArgs: [-2] tArgs: []bArgs: [] Arg inputs: [matmul] Op outputs: [softmax]
-matmul : iArgs: [0, 0, 0] tArgs: [1.0, 1.0]bArgs: [] Arg inputs: [softmax, v] Op outputs: [matmul_1]
-reduce_norm1
-cast : iArgs: [6] tArgs: []bArgs: [] Arg inputs: [one-var] Op outputs: [cast]
-reduce_norm1_bp : iArgs: [] tArgs: []bArgs: [false] Arg inputs: [matmul_1, cast] Op outputs: [matmul_1-grad]
-matmul_bp : iArgs: [0, 0, 0] tArgs: []bArgs: [] Arg inputs: [softmax, v, matmul_1-grad] Op outputs: [softmax-grad, v-grad]
-softmax_bp : iArgs: [-2] tArgs: []bArgs: [] Arg inputs: [matmul, softmax-grad, softmax] Op outputs: [matmul-grad]
-matmul_bp : iArgs: [0, 1, 0] tArgs: []bArgs: [] Arg inputs: [q, k, matmul-grad] Op outputs: [q-grad, k-grad]
-
-
-   matmul : iArgs: [0, 1, 0] tArgs: [1.0, 0.0]bArgs: [] Arg inputs: [q, k] Op outputs: [matmul]
-softmax : iArgs: [-2] tArgs: []bArgs: [] Arg inputs: [matmul] Op outputs: [softmax]
-matmul : iArgs: [0, 0, 0] tArgs: [1.0, 1.0]bArgs: [] Arg inputs: [softmax, v] Op outputs: [matmul_1]
-reduce_norm1
-cast : iArgs: [6] tArgs: []bArgs: [] Arg inputs: [one-var] Op outputs: [cast]
-reduce_norm1_bp : iArgs: [] tArgs: []bArgs: [false] Arg inputs: [matmul_1, cast] Op outputs: [matmul_1-grad]
-matmul_bp : iArgs: [0, 0, 0] tArgs: []bArgs: [] Arg inputs: [softmax, v, matmul_1-grad] Op outputs: [softmax-grad, v-grad]
-softmax_bp : iArgs: [-2] tArgs: []bArgs: [] Arg inputs: [matmul, softmax-grad, softmax] Op outputs: [matmul-grad]
-matmul_bp : iArgs: [0, 1, 0] tArgs: []bArgs: [] Arg inputs: [q, k, matmul-grad] Op outputs: [q-grad, k-grad]
-
-
-   reduce_norm1_bp : iArgs: [] tArgs: []bArgs: [false] Arg inputs: [weightsTimesValue, cast] Op outputs: [weightsTimesValue-grad]
-matmul_bp : iArgs: [0, 0, 0] tArgs: []bArgs: [] Arg inputs: [attentionScores, v, weightsTimesValue-grad] Op outputs: [attentionScores-grad, v-grad]
-softmax_bp : iArgs: [-2] tArgs: []bArgs: [] Arg inputs: [attentionLogits, attentionScores-grad, attentionScores] Op outputs: [attentionLogits-grad]
-matmul_bp : iArgs: [0, 1, 0] tArgs: []bArgs: [] Arg inputs: [q, k, attentionLogits-grad] Op outputs: [q-grad, k-grad]
-
-
-
-                                                                                                      */
-
   NDArray dldW(attentionScoresWeights->shapeInfo());
   NDArray dldS(attentionScoresWeights->shapeInfo());
+  auto mask = AttentionHelper::computeAttentionMask(query, values, qMask, vMask, nullptr, useCausalMask);
+
+
   matMulBp.execute({attentionScoresWeights,values,eps},{&dldW,dLdv},{},{});
+
+
+  //first matrix multiply  backprop end
+  if(dropout > 0.0 && training) {
+    sd::ops::dropout_bp dropoutOp;
+    dropoutOp.execute({attentionScoresWeights,&dldW},{&dldW},{dropout},{dropoutSeed},{});
+  }
+
+
   softmaxBp.execute({attentionLogits,&dldW,attentionScoresWeights},{&dldS},{},{-1},{});
+
+  if(scale != 0.0 && scale != 1.0)
+    dldS /= scale;
+
+  NDArray times;
+  if(mask != nullptr && !mask->isEmpty()) {
+    auto maskCast = mask->cast(query->dataType());
+    if (attentionLogits->rankOf() == 4) {
+      maskCast = maskCast.reshape(mask->ordering(), {mask->sizeAt(0), 1,mask->sizeAt(-1), 1,});
+    } else {
+      maskCast = maskCast.reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(-1),1});
+    }
+
+    times = maskCast * 1e9;
+  }
+
+  if(mask != nullptr) {
+    dldS *= times;
+  }
+
   matMulBp.execute({query,key,&dldS},{dLdq,dLdk},{},{0,1,0});
-  dLdk->printIndexedBuffer("DLDK output:");
 }
 
 
