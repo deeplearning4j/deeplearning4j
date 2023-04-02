@@ -2050,14 +2050,11 @@ public class Nd4j {
         ArrayList<Integer> list = new ArrayList<>(nCols);
         for (int i = 0; i < nCols; i++)
             list.add(i);
-        Collections.sort(list, new Comparator<Integer>() {
-            @Override
-            public int compare(Integer o1, Integer o2) {
-                if (ascending)
-                    return Double.compare(in.getDouble(rowIdx, o1), in.getDouble(rowIdx, o2));
-                else
-                    return -Double.compare(in.getDouble(rowIdx, o1), in.getDouble(rowIdx, o2));
-            }
+        Collections.sort(list, (o1, o2) -> {
+            if (ascending)
+                return Double.compare(in.getDouble(rowIdx, o1), in.getDouble(rowIdx, o2));
+            else
+                return -Double.compare(in.getDouble(rowIdx, o1), in.getDouble(rowIdx, o2));
         });
         for (int i = 0; i < nCols; i++) {
             out.putColumn(i, in.getColumn(list.get(i)));

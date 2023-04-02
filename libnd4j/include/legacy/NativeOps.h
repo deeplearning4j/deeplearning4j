@@ -71,6 +71,25 @@ SD_LIB_EXPORT void purgeOpTrace();
 
 SD_LIB_EXPORT void toggleOpTrace(bool opTrace);
 
+SD_LIB_EXPORT void printOpTrace();
+
+
+SD_LIB_EXPORT std::vector<ExecTrace*> * listOpTraces();
+
+SD_LIB_EXPORT std::vector<bool> * bArgs(void *execTrace);
+SD_LIB_EXPORT std::vector<std::string> * sArgs(void *execTrace);
+SD_LIB_EXPORT std::vector<double> * tArgs(void *execTrace);
+SD_LIB_EXPORT std::vector<sd::LongType> * iArgs(void *execTrace);
+SD_LIB_EXPORT std::vector<const sd::LongType *> *inputShapeBuffers(void *execTrace);
+SD_LIB_EXPORT std::vector<const sd::LongType *> *outputShapeBuffers(void *execTrace);
+SD_LIB_EXPORT int numInputs(void *execTrace);
+SD_LIB_EXPORT int numOutputs(void *execTrace);
+SD_LIB_EXPORT char * opName(void *execTrace);
+
+SD_LIB_EXPORT void purgeOpTrace();
+
+SD_LIB_EXPORT void toggleOpTrace(bool opTrace);
+
 SD_LIB_EXPORT void saveNpy(std::string fname, const OpaqueDataBuffer *data, const unsigned int *shape, const unsigned int ndims,
                            std::string mode = "w");
 

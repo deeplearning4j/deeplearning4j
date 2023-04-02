@@ -33,8 +33,7 @@ import java.nio.LongBuffer;
  *
  */
 public interface NativeOps {
-    int contextNumInputs(Pointer execTrace);
-    int contextNumOutputs(Pointer execTrace);
+
 
     int numInputs(Pointer execTrace);
     int numOutputs(Pointer execTrace);

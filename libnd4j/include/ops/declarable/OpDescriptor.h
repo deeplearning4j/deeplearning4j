@@ -52,7 +52,7 @@ class SD_LIB_EXPORT OpExecTrace {
               const std::string *opName) {
     this->inputShapeBuffers = inputShapeBuffers;
     this->outputShapeBuffers = outputShapeBuffers;
-    this->opName = new std::string(*opName);
+    this->opName = opName;
 
   }
 
@@ -66,7 +66,7 @@ class SD_LIB_EXPORT OpExecTrace {
               int opType) {
     this->inputShapeBuffers = inputShapeBuffers;
     this->outputShapeBuffers = outputShapeBuffers;
-    this->opName = new std::string(*opName);
+    this->opName = opName;
     this->opType = opType;
     for(int i = 0; i < tArgs->size(); i++) {
       this->tArgs.push_back(tArgs->at(i));

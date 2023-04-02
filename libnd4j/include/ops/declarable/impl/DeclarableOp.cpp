@@ -264,9 +264,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
       shapeStart = std::chrono::system_clock::now();
     }
 
-    sd_printf("Before calculating output shape\n",0);
     auto outSha = this->calculateOutputShape(&inSha, ctx);
-    sd_printf("Output shape size of %d\n", outSha->size());
     if (sd::Environment::getInstance().isDebugAndVerbose()) {
         sd_printf("Node_%i: %s\n", ctx.nodeId(), this->getOpDescriptor()->getOpName()->c_str());
         sd_printf("Input shapes:\n",0);
@@ -450,15 +448,11 @@ void sd::ops::DeclarableOp::DeclarableOp::traceExecIfNeeded(Context &block) {
   if(OpRegistrator::getInstance().traceOps()) {
     std::vector<const LongType *> *inputShapeBuffers = new std::vector<const LongType *>();
     for(int i = 0; i < block.width(); i++) {
-      inputShapeBuffers->push_back(block.array(i)->shapeInfo());
+      inputShapeBuffers->push_back(block.variable(i)->getNDArray()->shapeInfo());
     }
     std::vector<const LongType *> *outputShapeBuffers = new std::vector<const LongType *>();
     for(int i = 0; i < block.outputWidth(); i++) {
       outputShapeBuffers->push_back(block.fastpath_out()[i]->shapeInfo());
-    }
-
-    if(getOpName() == nullptr) {
-      throw std::runtime_error("Op name is null");
     }
 
     OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers, getOpName());
@@ -680,7 +674,6 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   // validating data types for inputs and (optionally) outputs
   REQUIRE_OK(this->validateDataTypes(*block));
 
-  sd_debug("Op [%s] is going to be executed preparing outputs: with num outputs: %d\n", this->getOpName()->c_str(),this->getOpDescriptor()->getNumberOfOutputs());
   // this method will allocate output NDArrays for this op
   auto numOutputs = this->prepareOutputs(*block);
 
