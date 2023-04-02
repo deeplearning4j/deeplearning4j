@@ -240,6 +240,15 @@ void AttentionHelper::dotProductAttentionBpHelper(sd::NDArray *query, sd::NDArra
 
 
   matMulBp.execute({attentionScoresWeights,values,eps},{&dldW,dLdv},{},{});
+  if(dropout > 0.0 && training) {
+    sd::ops::dropout_bp dropoutOp;
+    sd::ops::zeros_as zerosAs;
+    auto zerosFor = zerosAs.evaluate({&dldW}).at(0);
+    dropoutOp.execute({attentionScoresWeights,&dldW,zerosFor},{&dldW},{dropout},{dropoutSeed},{});
+    delete zerosFor;
+  }
+
+
   softmaxBp.execute({attentionLogits,&dldW,attentionScoresWeights},{&dldS},{},{-1},{});
 
 

@@ -1708,14 +1708,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 return context.getOutputArrays().toArray(new INDArray[0]);
             }
 
-            if(context.numInputArguments() > 0 && loop.contextNumInputs(context.contextPointer()) != context.numInputArguments()) {
-                context.setInputArrays(context.getInputArrays());
-            }
-
-            if(context.getOutputArrays().size() > 0 && loop.contextNumOutputs(context.contextPointer()) != context.getOutputArrays().size()) {
-                context.setOutputArrays(context.getOutputArrays());
-
-            }
 
 
             val status = loop.execCustomOp2(null, op.opHash(), context.contextPointer());
