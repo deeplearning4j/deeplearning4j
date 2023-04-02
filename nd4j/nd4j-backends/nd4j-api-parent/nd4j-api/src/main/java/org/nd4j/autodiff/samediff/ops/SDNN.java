@@ -1163,9 +1163,6 @@ public class SDNN extends SDOps {
   }
 
 
-
-
-
   /**
    * Element-wise softplus function: out = log(exp(x) + 1)<br>
    *
