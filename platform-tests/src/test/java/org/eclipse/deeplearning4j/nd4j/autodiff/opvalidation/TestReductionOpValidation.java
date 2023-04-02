@@ -1212,18 +1212,37 @@ public class TestReductionOpValidation extends BaseOpValidation {
     }
 
 
-
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSoftmax(Nd4jBackend backend) {
+    public void testDropout(Nd4jBackend backend) {
         final INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
 
         SameDiff sd = SameDiff.create();
         SDVariable input2 = sd.var("input", input);
+        SDVariable dropout = sd.nn().dropout(input2, false,0.5);
 
+        SDVariable t = sd.nn.softmax(dropout,1);
+        SDVariable loss = sd.sum(t);
+        loss.markAsLoss();
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+        assertNull(err);
+    }
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSoftmax(Nd4jBackend backend) {
+        final INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        SameDiff sd = SameDiff.create();
+        SDVariable input2 = sd.var("input", input);
+        SDVariable weights = sd.var("weights", Nd4j.rand(2,2));
+        SDVariable bias = sd.var("bias", Nd4j.rand(2));
+        SDVariable dense = sd.nn().linear(input2, weights, bias);
 
-        SDVariable t = sd.nn.softmax(input2,1);
-
+        SDVariable t = sd.nn.softmax(dense,1);
+        SDVariable loss = sd.sum(t);
+        loss.markAsLoss();
         String err = OpValidation.validate(new TestCase(sd)
                 .gradientCheck(true));
         assertNull(err);

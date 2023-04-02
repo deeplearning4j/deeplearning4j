@@ -1162,6 +1162,7 @@ public class SDNN extends SDOps {
     return sd.updateVariableNameAndReference(out, name);
   }
 
+
   /**
    * Element-wise softplus function: out = log(exp(x) + 1)<br>
    *

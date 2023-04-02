@@ -562,6 +562,8 @@ public class NDNN {
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax(x, -1))[0];
   }
 
+
+
   /**
    * Element-wise softplus function: out = log(exp(x) + 1)<br>
    *

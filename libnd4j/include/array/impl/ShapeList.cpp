@@ -39,7 +39,7 @@ ShapeList::ShapeList(const std::vector<const sd::LongType*>& shapes, bool isWork
 #if !defined(__NEC__)
     : ShapeList(shapes) {
 #else
-{
+  {
   for (int i = 0; i < shapes.size(); i++) {
     push_back(shapes[i]);
   }
@@ -77,7 +77,13 @@ int ShapeList::size() const {
 }
 
 const sd::LongType* ShapeList::at(int idx) {
-  if (size() <= idx || idx < 0) throw std::runtime_error("Can't find requested variable by index");
+
+  if (size() <= idx || idx < 0) {
+    std::string errorMessage;
+    errorMessage += "Can't find requested variable by index: ";
+    errorMessage += std::to_string(idx);
+    throw std::runtime_error(errorMessage.c_str());
+  }
 
   return _shapes[idx];
 }
