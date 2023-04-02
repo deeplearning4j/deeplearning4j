@@ -68,11 +68,11 @@ class ProbablisticMerge {
  public:
   no_exec_special no_exec_special_cuda
 
-      method_idx method_X
+  method_idx method_X
 
-      static SD_INLINE SD_HOST_DEVICE T
-      op(T valueX, T valueY, sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper,
-         T *extraParams) {
+  static SD_INLINE SD_HOST_DEVICE T
+  op(T valueX, T valueY, sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper,
+     T *extraParams) {
     T threshold = extraParams[0];
     T randVal = helper->relativeT<T>(idx);
 
@@ -88,10 +88,10 @@ class UniformDistribution {
  public:
   no_exec_special no_exec_special_cuda
 
-      method_XY method_X
+  method_XY method_X
 
-      static SD_INLINE SD_HOST_DEVICE T
-      op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
+  static SD_INLINE SD_HOST_DEVICE T
+  op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
     return helper->relativeT<T>(idx, extraParams[0], extraParams[1]);
   }
 };
@@ -104,10 +104,10 @@ class BernoulliDistribution {
  public:
   no_exec_special no_exec_special_cuda
 
-      method_XY
+  method_XY
 
-      static SD_INLINE SD_HOST_DEVICE T
-      op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
+  static SD_INLINE SD_HOST_DEVICE T
+  op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
     return extraParams[0] >= helper->relativeT<T>(idx) ? (T)1.0f : (T)0.0f;
   }
 
@@ -125,10 +125,10 @@ class ExponentialDistribution {
  public:
   no_exec_special no_exec_special_cuda
 
-      method_XY
+  method_XY
 
-      static SD_INLINE SD_HOST_DEVICE T
-      op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
+  static SD_INLINE SD_HOST_DEVICE T
+  op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
     T lambda = extraParams[0];
     T x = helper->relativeT<T>(idx, sd::DataTypeUtils::min_positive<T>(),
                                T(1.f) - sd::DataTypeUtils::template min_positive<T>());  // x from (0, 1) without bounds
@@ -141,7 +141,7 @@ class ExponentialDistribution {
                                        sd::graph::RandomGenerator *helper, T *extraParams) {
     T lambda = extraParams[0];
     return valueX <= (T)0.f ? (T)0.f : (T)(valueX / lambda);  // 1.f - sd::math::sd_exp<T,T>(-lambda * valueX); //pow<T,
-                                                              // T, T>((T) M_E, -(lambda * valueX));
+    // T, T>((T) M_E, -(lambda * valueX));
   }
 };
 
@@ -150,10 +150,10 @@ class PoissonDistribution {
  public:
   no_exec_special no_exec_special_cuda
 
-      method_XY
+  method_XY
 
-      static SD_INLINE SD_HOST_DEVICE T
-      op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
+  static SD_INLINE SD_HOST_DEVICE T
+  op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
     T lambda = extraParams[0];
     T x = helper->relativeT(idx, -sd::DataTypeUtils::template max<T>() / 10, sd::DataTypeUtils::template max<T>() / 10);
     return x <= (T)0.f ? (T)0.f : sd::math::sd_igammac<T, T, T>(sd::math::sd_floor<T, T>(x), lambda);
@@ -171,10 +171,10 @@ class GammaDistribution {
  public:
   no_exec_special no_exec_special_cuda
 
-      method_XY
+  method_XY
 
-      static SD_INLINE SD_HOST_DEVICE T
-      op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
+  static SD_INLINE SD_HOST_DEVICE T
+  op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
     T alpha = extraParams[0];
     T beta = extraParams[1];
     T x = helper->relativeT(idx, -sd::DataTypeUtils::template max<T>() / 10, sd::DataTypeUtils::template max<T>() / 10);
@@ -197,11 +197,12 @@ class DropOut {
  public:
   no_exec_special no_exec_special_cuda
 
-      method_idx method_XY
+  method_idx method_XY
 
-      // please note: prob is chance to retain original value
-      static SD_INLINE SD_HOST_DEVICE T
-      op(T valueX, sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
+  // please note: prob is chance to retain original value
+  static SD_INLINE SD_HOST_DEVICE T
+  op(T valueX, sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
+    sd_printf("Extra params is null: %d\n",extraParams== nullptr);
     T randVal = helper->relativeT<T>(idx);
     return randVal >= extraParams[0] ? (T)0.0f : valueX;
   }
@@ -212,11 +213,12 @@ class AlphaDropOut {
  public:
   no_exec_special no_exec_special_cuda
 
-      method_idx method_XY
+  method_idx method_XY
 
-      // please note: prob is chance to retain original value
-      static SD_INLINE SD_HOST_DEVICE T
-      op(T valueX, sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
+  // please note: prob is chance to retain original value
+  static SD_INLINE SD_HOST_DEVICE T
+  op(T valueX, sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
+    sd_printf("Alpha dropout: Extra params is null: %d\n",extraParams== nullptr);
     T randVal = helper->relativeT<T>(idx);
     // extraParams[0] == p
     // [1] = a
@@ -235,11 +237,11 @@ class DropOutInverted {
  public:
   no_exec_special no_exec_special_cuda
 
-      method_idx method_XY
+  method_idx method_XY
 
-      // please note: prob is chance to retain original value
-      static SD_INLINE SD_HOST_DEVICE T
-      op(T valueX, sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
+  // please note: prob is chance to retain original value
+  static SD_INLINE SD_HOST_DEVICE T
+  op(T valueX, sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
     T prob = extraParams[0];
     T randVal = helper->relativeT<T>(idx);
     return randVal >= prob ? (T)0.0f : valueX / prob;
@@ -251,10 +253,10 @@ class Linspace {
  public:
   no_exec_special no_exec_special_cuda
 
-      method_X method_XY
+  method_X method_XY
 
-      static SD_INLINE SD_HOST_DEVICE T
-      op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
+  static SD_INLINE SD_HOST_DEVICE T
+  op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
     T from = extraParams[0];
     T to = extraParams[1];
     T step = extraParams[2];
@@ -272,10 +274,10 @@ class ExponentialDistributionInv {  // inverse exponential distribution
  public:
   no_exec_special no_exec_special_cuda
 
-      method_XY
+  method_XY
 
-      static SD_INLINE SD_HOST_DEVICE T
-      op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
+  static SD_INLINE SD_HOST_DEVICE T
+  op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
     T lambda = extraParams[0];
     T x = helper->relativeT(idx, sd::DataTypeUtils::template min_positive<T>(),
                             (T)1.f - sd::DataTypeUtils::template min_positive<T>());

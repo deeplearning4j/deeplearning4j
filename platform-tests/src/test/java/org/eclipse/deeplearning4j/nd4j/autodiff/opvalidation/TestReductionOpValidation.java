@@ -1220,8 +1220,6 @@ public class TestReductionOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDotProductAttentionV2(Nd4jBackend backend) {
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
         final INDArray keys = Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 3 * 4).reshape(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
         final INDArray values =  Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 3 * 4).reshape(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
         final INDArray query =  Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 1 * 4).reshape(new int[]{10, 1,4}).castTo(DataType.DOUBLE);
@@ -1234,7 +1232,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable sdK = sd.var("k", keys);
         SDVariable sdV = sd.var("v", values);
 
-        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,null,null,0.0,0.0,0,false,false,true);
+        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,null,null,0.0,0.5,0,false,false,true);
 
         SDVariable loss = t.norm1("out");
         loss.markAsLoss();
@@ -1262,6 +1260,43 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable attentionScores = sd.linalg().matmul("attentionLogits",sdQ,sdK,1.0,0.0,false,true);
         SDVariable softmax = sd.nn().softmax("attentionScores",attentionScores,-1);
         SDVariable out = sd.linalg().matmul("weightsTimesValue",softmax,sdV);
+        SDVariable loss = out.norm1("out");
+        loss.markAsLoss();
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+        assertNull(err);
+
+        Arrays.stream(sd.getFunction("grad").ops()).forEach(op -> {
+            if(op instanceof CustomOp) {
+                CustomOp customOp = (CustomOp) op;
+                System.out.println(op.opName() + " : iArgs: " + Arrays.toString(customOp.iArgs()) + " tArgs: " + Arrays.toString(customOp.tArgs()) + "bArgs: " + Arrays.toString(customOp.bArgs()) + " Arg inputs: " + Arrays.toString(op.argNames()) + " Op outputs: " + Arrays.toString(op.outputVariablesNames()));
+            } else {
+                System.out.println(op.opName());
+            }
+        });
+
+
+    }
+
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @ParameterizedTest
+    public void testDotProductAttentionV2ManualDropout(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        final INDArray keys = Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 3 * 4).reshape(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
+        final INDArray values =  Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 3 * 4).reshape(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
+        final INDArray query =  Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 1 * 4).reshape(new int[]{10, 1,4}).castTo(DataType.DOUBLE);
+
+
+         SameDiff sd = SameDiff.create();
+        SDVariable sdQ = sd.var("q", query);
+        SDVariable sdK = sd.var("k", keys);
+        SDVariable sdV = sd.var("v", values);
+
+        SDVariable attentionScores = sd.linalg().matmul("attentionLogits",sdQ,sdK,1.0,0.0,false,true);
+        SDVariable softmax = sd.nn().softmax("attentionScores",attentionScores,-1);
+        SDVariable softmaxDroppedOut = sd.nn().dropout("dropout",softmax,false,0.5);
+        SDVariable out = sd.linalg().matmul("weightsTimesValue",softmaxDroppedOut,sdV);
         SDVariable loss = out.norm1("out");
         loss.markAsLoss();
         String err = OpValidation.validate(new TestCase(sd)

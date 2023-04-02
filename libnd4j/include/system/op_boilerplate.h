@@ -2465,9 +2465,10 @@
     auto opLimit = this->getOpDescriptor()->getNumberOfOutputs() < 1 ? block.width()                                  \
                                                                      : this->getOpDescriptor()->getNumberOfOutputs(); \
     for (int e = 0; e < opLimit; e++) {                                                                               \
+      int inputShapeIdx = block.width() < opLimit ? 0 : e;                                                                                                                  \
       auto newshape = ConstantShapeHelper::getInstance().createShapeInfo(                                             \
-          ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), \
-          shape::shapeOf(inputShape->at(e)));                                                                         \
+          ArrayOptions::dataType(inputShape->at(inputShapeIdx)), shape::order(inputShape->at(inputShapeIdx)), shape::rank(inputShape->at(inputShapeIdx)), \
+          shape::shapeOf(inputShape->at(inputShapeIdx)));                                                                         \
       shapeList->push_back(newshape);                                                                                 \
     }                                                                                                                 \
     return shapeList;                                                                                                 \

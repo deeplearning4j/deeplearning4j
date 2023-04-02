@@ -87,7 +87,7 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   auto attentionScores = OUTPUT_VARIABLE(1);
   auto attentionLogits = OUTPUT_VARIABLE(2);
 
-  AttentionHelper::doAttention(inputs, masks2, training, returnAttentionScores, useCausalMask, dropout, attentionType,
+  AttentionHelper::doAttention(inputs, masks2, training, useCausalMask, dropout, attentionType,
                                scale, attentionScores, block.randomSeed(), applyScoresOut,attentionLogits);
 
 

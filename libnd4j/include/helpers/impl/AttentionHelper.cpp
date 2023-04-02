@@ -240,19 +240,18 @@ void AttentionHelper::dotProductAttentionBpHelper(sd::NDArray *query, sd::NDArra
 
 
   matMulBp.execute({attentionScoresWeights,values,eps},{&dldW,dLdv},{},{});
+  softmaxBp.execute({attentionLogits,&dldW,attentionScoresWeights},{&dldS},{},{-1},{});
 
+
+
+  if(scale != 0.0 && scale != 1.0)
+    dldS /= scale;
 
   //first matrix multiply  backprop end
   if(dropout > 0.0 && training) {
     sd::ops::dropout_bp dropoutOp;
-    dropoutOp.execute({attentionScoresWeights,&dldW},{&dldW},{dropout},{dropoutSeed},{});
+    dropoutOp.execute({attentionScoresWeights,&dldS},{&dldS},{dropout},{dropoutSeed},{});
   }
-
-
-  softmaxBp.execute({attentionLogits,&dldW,attentionScoresWeights},{&dldS},{},{-1},{});
-
-  if(scale != 0.0 && scale != 1.0)
-    dldS /= scale;
 
   NDArray times;
   if(mask != nullptr && !mask->isEmpty()) {
@@ -353,15 +352,15 @@ void AttentionHelper::additiveAttentionBpHelper(sd::NDArray *query, sd::NDArray 
 
   NDArray dLds(preSoftmax.shapeInfo());
   sd::ops::softmax_bp softmax_bp;
+
+
   softmax_bp.execute({&preSoftmax, &dLdw}, {&dLds}, {}, {-2}, {});
   //first matrix multiply  backprop end
   if(dropout > 0.0 && training) {
     sd::ops::dropout_bp dropoutOp;
-    dropoutOp.execute({&weights,&dLdw},{&dLdw},{dropout},{dropoutSeed},{});
+    dropoutOp.execute({&weights,&dLdw},{&dLds},{dropout},{dropoutSeed},{});
   }
 
-
-  dLdv->printBuffer("DLDV after dropout/softmax:");
 
 
   if(scale != 0.0 && scale != 1.0)
@@ -531,9 +530,9 @@ void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs,
  * @param useCausalMask
  */
 void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<sd::NDArray *> &masks, bool training,
-                                  bool returnAttentionScores, bool useCausalMask, double dropout, int attentionType,
-                                  double scale, sd::NDArray *attentionScores, int dropoutSeed,
-                                  sd::NDArray *applyScoresOut, sd::NDArray *attentionLogits) {
+                                  bool useCausalMask, double dropout, int attentionType, double scale,
+                                  sd::NDArray *attentionScores, int dropoutSeed, sd::NDArray *applyScoresOut,
+                                  sd::NDArray *attentionLogits) {
   auto q = inputs[0];
   auto v = inputs[1];
   auto k = inputs.size() > 2 ? inputs[2]  : v;

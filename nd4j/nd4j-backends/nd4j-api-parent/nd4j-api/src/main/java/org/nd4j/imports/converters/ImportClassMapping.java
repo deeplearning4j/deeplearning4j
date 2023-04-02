@@ -29,6 +29,7 @@ import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.UserDefinedOp;
 import org.nd4j.linalg.api.ops.impl.shape.SetShape;
+import org.nd4j.linalg.api.ops.random.impl.CustomDropOut;
 
 import java.io.File;
 import java.io.IOException;
@@ -616,11 +617,11 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.random.custom.RandomPoisson.class,
             org.nd4j.linalg.api.ops.random.custom.RandomShuffle.class,
             org.nd4j.linalg.api.ops.random.impl.AlphaDropOut.class,
+            CustomDropOut.class,
             org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution.class,
             org.nd4j.linalg.api.ops.random.impl.BinomialDistribution.class,
             org.nd4j.linalg.api.ops.random.impl.BinomialDistributionEx.class,
             org.nd4j.linalg.api.ops.random.impl.Choice.class,
-            org.nd4j.linalg.api.ops.random.impl.DropOut.class,
             org.nd4j.linalg.api.ops.random.impl.DropOutInverted.class,
             org.nd4j.linalg.api.ops.random.impl.GaussianDistribution.class,
             org.nd4j.linalg.api.ops.random.impl.Linspace.class,

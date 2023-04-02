@@ -30,15 +30,15 @@ namespace ops {
 namespace helpers {
 
 SD_LIB_HIDDEN sd::Status dropOutFunctor(graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape,
-                                        int seed, double probValue);
+                                        int seed, double probValue, NDArray* mask);
 SD_LIB_HIDDEN sd::Status dropOutFunctorBP(graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output,
-                                          NDArray* reduceShape, int seed, double probValue);
+                                          NDArray* reduceShape, int seed, double probValue, NDArray* mask);
 SD_LIB_HIDDEN sd::Status alphaDropOutFunctor(graph::Context& context, NDArray* input, NDArray* output,
                                              NDArray* reduceShape, int seed, double probValue, double alpha,
-                                             double alpha1, double beta);
+                                             double alpha1, double beta, NDArray* mask);
 SD_LIB_HIDDEN sd::Status alphaDropOutFunctorBP(graph::Context& context, NDArray* input, NDArray* gradOut,
                                                NDArray* output, NDArray* reduceShape, int seed, double probValue,
-                                               double alpha, double alpha1, double beta);
+                                               double alpha, double alpha1, double beta, sd::NDArray* mask);
 
 }  // namespace helpers
 }  // namespace ops

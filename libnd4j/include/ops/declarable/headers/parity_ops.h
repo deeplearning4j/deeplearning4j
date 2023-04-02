@@ -981,8 +981,8 @@ DECLARE_OP(weighted_cross_entropy_with_logits, 3, 1, true);
  *  T parameter - probability (should be between 0 and 1)
  *  return value - a tensor with the same shape as target or input
  */
-DECLARE_CONFIGURABLE_OP(dropout, 1, 1, true, 1, 1);
-DECLARE_CONFIGURABLE_OP(dropout_bp, 2, 1, false, 1, 1);
+DECLARE_CONFIGURABLE_OP(dropout, 1, 2, true, 1, 1);
+DECLARE_CONFIGURABLE_OP(dropout_bp, 3, 1, false, 1, 1);
 
 /*  Calculates alpha weighted dropout
     T params:

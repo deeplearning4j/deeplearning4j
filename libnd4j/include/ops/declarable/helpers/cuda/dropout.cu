@@ -120,8 +120,8 @@ sd::Status _dropOutFunctor(graph::Context& context, NDArray* input, NDArray* out
   return sd::Status::OK;
 }
 
-sd::Status dropOutFunctor(graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed,
-                          double probValue) {
+sd::Status dropOutFunctor(sd::graph::Context& context, sd::NDArray* input, sd::NDArray* output,
+                          sd::NDArray* reduceShape, int seed, double probValue, sd::NDArray* mask) {
   auto xType = input->dataType();
   NDArray::prepareSpecialUse({output}, {input});
 
@@ -157,8 +157,9 @@ static SD_KERNEL void dropoutBPKernel(void* outputBuf, sd::LongType const* outpu
   }
 }
 template <typename T>
-static sd::Status dropOutFunctorBP_(graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output,
-                                    NDArray* reduceShape, int seed, double probValue) {
+static sd::Status dropOutFunctorBP_(sd::graph::Context& context, sd::NDArray* input, sd::NDArray* gradOut,
+                                    sd::NDArray* output, sd::NDArray* reduceShape, int seed, double probValue,
+                                    sd::NDArray* mask) {
   // we're making additional FF run to see how probabilities played out with given seeds
   auto res = dropOutFunctor(context, input, output, reduceShape, seed, probValue);
   auto stream = context.launchContext()->getCudaStream();
@@ -220,8 +221,9 @@ static void alphaDropoutSimple(sd::LaunchContext* context, NDArray const* input,
 }
 
 template <typename T>
-static sd::Status alphaDropOutFunctor_(graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape,
-                                       int seed, double probValue, double alpha, double alpha1, double beta) {
+static sd::Status alphaDropOutFunctor_(sd::graph::Context& context, sd::NDArray* input, sd::NDArray* output,
+                                       sd::NDArray* reduceShape, int seed, double probValue, double alpha,
+                                       double alpha1, double beta, sd::NDArray* mask) {
   if (reduceShape == nullptr) {
     alphaDropoutSimple<T>(context.launchContext(), input, output, seed, probValue, alpha, alpha1, beta);
   } else {
@@ -263,9 +265,9 @@ static sd::Status alphaDropOutFunctor_(graph::Context& context, NDArray* input, 
 }
 
 template <typename T>
-sd::Status alphaDropOutFunctorBP_(graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output,
-                                  NDArray* reduceShape, int seed, double probValue, double alpha, double alpha1,
-                                  double beta) {
+sd::Status alphaDropOutFunctorBP_(sd::graph::Context& context, sd::NDArray* input, sd::NDArray* gradOut,
+                                  sd::NDArray* output, sd::NDArray* reduceShape, int seed, double probValue,
+                                  double alpha, double alpha1, double beta, sd::NDArray* mask) {
   auto res = alphaDropOutFunctor(context, input, output, reduceShape, seed, probValue, alpha, alpha1, beta);
   if (res == sd::Status::OK) {
     // FIXME: can we make it single-loop?
@@ -275,21 +277,22 @@ sd::Status alphaDropOutFunctorBP_(graph::Context& context, NDArray* input, NDArr
   return res;
 }
 
-sd::Status dropOutFunctorBP(graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output,
-                            NDArray* reduceShape, int seed, double probValue) {
+sd::Status dropOutFunctorBP(sd::graph::Context& context, sd::NDArray* input, sd::NDArray* gradOut, sd::NDArray* output,
+                            sd::NDArray* reduceShape, int seed, double probValue, sd::NDArray* mask) {
   BUILD_SINGLE_SELECTOR(context.dataType(), return dropOutFunctorBP_,
                         (context, input, gradOut, output, reduceShape, seed, probValue), SD_FLOAT_TYPES);
 }
 
-sd::Status alphaDropOutFunctor(graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed,
-                               double probValue, double alpha, double alpha1, double beta) {
+sd::Status alphaDropOutFunctor(sd::graph::Context& context, sd::NDArray* input, sd::NDArray* output,
+                               sd::NDArray* reduceShape, int seed, double probValue, double alpha, double alpha1,
+                               double beta, sd::NDArray* mask) {
   BUILD_SINGLE_SELECTOR(context.dataType(), return alphaDropOutFunctor_,
                         (context, input, output, reduceShape, seed, probValue, alpha, alpha1, beta), SD_FLOAT_TYPES);
 }
 
-sd::Status alphaDropOutFunctorBP(graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output,
-                                 NDArray* reduceShape, int seed, double probValue, double alpha, double alpha1,
-                                 double beta) {
+sd::Status alphaDropOutFunctorBP(sd::graph::Context& context, sd::NDArray* input, sd::NDArray* gradOut,
+                                 sd::NDArray* output, sd::NDArray* reduceShape, int seed, double probValue,
+                                 double alpha, double alpha1, double beta, sd::NDArray* mask) {
   BUILD_SINGLE_SELECTOR(context.dataType(), return alphaDropOutFunctorBP_,
                         (context, input, gradOut, output, reduceShape, seed, probValue, alpha, alpha1, beta),
                         SD_FLOAT_TYPES);
