@@ -562,19 +562,7 @@ public class NDNN {
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax(x, -1))[0];
   }
 
-  /**
-   * Softmax derivative function<br>
-   *
-   * @param x Softmax input (NUMERIC type)
-   * @param wrt Gradient at output, dL/dx (NUMERIC type)
-   * @param dimension Softmax dimension
-   * @return output  (NUMERIC type)
-   */
-  public INDArray softmaxDerivative(INDArray x, INDArray wrt, int dimension) {
-    NDValidation.validateNumerical("softmaxDerivative", "x", x);
-    NDValidation.validateNumerical("softmaxDerivative", "wrt", wrt);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftmaxBp(x, wrt, dimension))[0];
-  }
+
 
   /**
    * Element-wise softplus function: out = log(exp(x) + 1)<br>

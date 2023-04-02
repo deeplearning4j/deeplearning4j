@@ -51,11 +51,12 @@ CONFIGURABLE_OP_IMPL(softmax, 1, 1, true, 0, 0) {
   return sd::Status::OK;
 }
 
-CONFIGURABLE_OP_IMPL(softmax_bp, 2, 1, true, 0, 0) {
+CONFIGURABLE_OP_IMPL(softmax_bp, 3, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto gradO = INPUT_VARIABLE(1);
+  auto softmaxedOut = INPUT_VARIABLE(2);
   auto gradI = OUTPUT_VARIABLE(0);
-
+  gradI->assign(softmaxedOut);
   const int rank = input->rankOf();
   const int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
 
@@ -64,7 +65,6 @@ CONFIGURABLE_OP_IMPL(softmax_bp, 2, 1, true, 0, 0) {
                "but got dimension = %i instead !",
                rank, dim);
 
-  helpers::softmax(block.launchContext(), *input, *gradI, dim);
 
   auto sumAlongDim = (*gradI * *gradO).reduceAlongDimension(reduce::Sum, {dim}, true);
   gradI->assign(*gradI * (*gradO - sumAlongDim));

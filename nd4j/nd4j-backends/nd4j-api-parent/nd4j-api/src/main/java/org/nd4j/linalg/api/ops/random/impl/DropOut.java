@@ -28,9 +28,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @NoArgsConstructor
 public class DropOut extends BaseRandomOp {
@@ -64,9 +67,33 @@ public class DropOut extends BaseRandomOp {
         return "dropout";
     }
 
+
+
     @Override
     public Type opType() {
-        return Type.RANDOM ;
+        return Type.RANDOM;
+    }
+
+    @Override
+    public void configureWithSameDiff(SameDiff sameDiff) {
+        super.configureWithSameDiff(sameDiff);
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String,Object> properties) {
+        //for serialization we may get confused with CustomDropout. So we need to check for both
+        if(properties.containsKey("probValue")) {
+            this.p = (double) properties.get("probValue");
+            this.extraArgs = new Object[]{p};
+        } else if(properties.containsKey("p")) {
+            this.p = (double) properties.get("p");
+            this.extraArgs = new Object[]{p};
+        }
+    }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        return Collections.singletonMap("p", p);
     }
 
     @Override
@@ -77,6 +104,6 @@ public class DropOut extends BaseRandomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException("Not supported");   //We should only use *inverted* dropout with samediff
+        return Arrays.asList(new DropOutBp(sameDiff, new SDVariable[]{arg(0), f1.get(0)}, false, Nd4j.getRandom().getSeed(), p).outputVariables());
     }
 }

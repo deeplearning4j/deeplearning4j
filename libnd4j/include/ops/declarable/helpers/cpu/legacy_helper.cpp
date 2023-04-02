@@ -186,7 +186,6 @@ void tanhDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theS
   BUILD_SINGLE_SELECTOR(theFirst->dataType(), tanhDerivative_, (theFirst, theSecond, theOutput), SD_FLOAT_TYPES);
 }
 
-// return static_cast<X>(d2) * simdOps::HardTanhDerivative<X>::op(d1, nullptr);
 template <typename T>
 static void hardTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) {

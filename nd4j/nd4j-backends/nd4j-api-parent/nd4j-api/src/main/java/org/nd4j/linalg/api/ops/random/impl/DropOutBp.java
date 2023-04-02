@@ -24,6 +24,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.OpContext;
@@ -71,6 +72,11 @@ public class DropOutBp extends DynamicCustomOp {
     public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
         INDArray input = oc.getInputArray(0);
         return Arrays.asList(input.shapeDescriptor());
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+        return Arrays.asList(dataTypes.get(0));
     }
 
     @Override
