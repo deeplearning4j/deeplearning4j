@@ -47,19 +47,19 @@ public class DotProductAttentionV2Bp extends DynamicCustomOp {
                                    SDVariable attentionScoresOut,
                                    SDVariable attentionScoreWeights,
                                    SDVariable attentionScoresLogits,
+                                   SDVariable dropoutWeights,
                                    double scaleFactor,
                                    double dropout,
                                    int scoreMode,
                                    boolean useCausalMask,
                                    boolean withWeights,
                                    boolean training) {
-        super(null, sameDiff,inputs(sameDiff,queries,values,keys,attentionScoresOut,attentionScoreWeights,attentionScoresLogits,eps,queryMask,valueMask), false);
+        super(null, sameDiff,inputs(sameDiff,queries,values,keys,attentionScoresOut,attentionScoreWeights,attentionScoresLogits,eps,queryMask,valueMask,dropoutWeights), false);
         addIArgument(scoreMode);
 
         addTArgument(scaleFactor);
         addTArgument(dropout);
         addBArgument(useCausalMask);
-        addBArgument(withWeights);
         addBArgument(training);
     }
 
@@ -72,7 +72,8 @@ public class DotProductAttentionV2Bp extends DynamicCustomOp {
                                        SDVariable attentionScoresLogits,
                                        SDVariable eps,
                                        SDVariable queryMask,
-                                       SDVariable valueMask) {
+                                       SDVariable valueMask,
+                                       SDVariable dropoutWeights) {
         List<SDVariable> inputs = new ArrayList<>();
         inputs.add(queries);
         inputs.add(values);
@@ -81,6 +82,9 @@ public class DotProductAttentionV2Bp extends DynamicCustomOp {
         inputs.add(attentionScoreWeights);
         inputs.add(attentionScoresLogits);
         inputs.add(eps);
+        if(dropoutWeights != null) {
+            inputs.add(dropoutWeights);
+        }
         inputs.add(queryMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : queryMask);
         inputs.add(valueMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : valueMask);
         return inputs.toArray(new SDVariable[inputs.size()]);

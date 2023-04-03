@@ -66,8 +66,7 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
         this.queryMask = queryMask;
         this.valueMask = valueMask;
         addIArgument(scoreMode);
-        addBArgument(useCausalMask);
-        addBArgument(withWeights);
+        addBArgument(useCausalMask,training);
         addTArgument(scaleFactor,dropoutProbability);
     }
 
@@ -92,11 +91,9 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
         super.configureFromArguments();
         if(bArguments.size() > 0)
             this.useCausalMask = bArguments.get(0);
-        if(bArguments.size() > 1)
-            this.withWeights = bArguments.get(1);
 
-        if(bArguments.size() > 2)
-            this.training = bArguments.get(2);
+        if(bArguments.size() > 1)
+            this.training = bArguments.get(1);
 
         if(iArguments.size() > 0)
             this.scoreMode = iArguments.get(0).intValue();
@@ -138,6 +135,7 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
                 outs[0],
                 outs[1],
                 outs[2],
+                dropout > 0.0 ? outs[3] : null,
                 scaleFactor,
                 dropout,
                 scoreMode,
@@ -155,13 +153,17 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
                 Preconditions.checkState(first == dataTypes.get(i), "All datatypes must be same type, got input datatypes %s", dataTypes);
             }
         }
+        if(dropout > 0)
+            return Arrays.asList(first, first,first,first);
+
         return Arrays.asList(first, first,first);
+
 
     }
 
     @Override
     public int getNumOutputs() {
-        return 3;
+        return dropout > 0 ? 4 : 3;
 
     }
 }

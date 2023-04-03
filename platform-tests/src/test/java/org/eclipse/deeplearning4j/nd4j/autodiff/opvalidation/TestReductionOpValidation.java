@@ -1220,6 +1220,8 @@ public class TestReductionOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDotProductAttentionV2(Nd4jBackend backend) {
+       Nd4j.getExecutioner().enableDebugMode(true);
+       Nd4j.getExecutioner().enableVerboseMode(true);
         final INDArray keys = Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 3 * 4).reshape(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
         final INDArray values =  Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 3 * 4).reshape(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
         final INDArray query =  Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 1 * 4).reshape(new int[]{10, 1,4}).castTo(DataType.DOUBLE);
@@ -1246,7 +1248,6 @@ public class TestReductionOpValidation extends BaseOpValidation {
     public void testDotProductAttentionV2Manual(Nd4jBackend backend) {
         Nd4j.getExecutioner().enableVerboseMode(true);
         Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.toggleTrace(true);
         final INDArray keys = Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 3 * 4).reshape(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
         final INDArray values =  Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 3 * 4).reshape(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
         final INDArray query =  Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 1 * 4).reshape(new int[]{10, 1,4}).castTo(DataType.DOUBLE);

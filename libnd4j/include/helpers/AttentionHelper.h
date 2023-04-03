@@ -77,7 +77,8 @@ class SD_LIB_EXPORT AttentionHelper {
    * @return
    */
   static void applyAttentionScores(sd::NDArray *scores, sd::NDArray *value, sd::NDArray *scoresMask, double dropout,
-                                   int randomSeed, sd::NDArray *applyScoresOut, sd::NDArray *attentionLogits);
+                                   int randomSeed, sd::NDArray *applyScoresOut, sd::NDArray *attentionLogits,
+                                   sd::NDArray *dropoutMask);
 
 
 
@@ -107,7 +108,7 @@ class SD_LIB_EXPORT AttentionHelper {
                                 sd::NDArray *dLdv, sd::NDArray *eps, LongType dropoutSeed, sd::NDArray *qMask,
                                 sd::NDArray *vMask, bool useCausalMask, double dropout, bool training,
                                 NDArray *attentionScoresOut, NDArray *attentionScoresWeights,
-                                sd::NDArray *attentionScoresLogits);
+                                sd::NDArray *attentionScoresLogits, NDArray *dropoutMask);
 
 
 
@@ -139,7 +140,7 @@ class SD_LIB_EXPORT AttentionHelper {
                                           LongType dropoutSeed, sd::NDArray *qMask, sd::NDArray *vMask,
                                           bool useCausalMask, double dropout, bool training,
                                           NDArray *attentionScoresOut, NDArray *attentionScoresWeights,
-                                          NDArray *attentionLogits);
+                                          NDArray *attentionLogits, NDArray *dropoutMask);
 
 
 
@@ -154,7 +155,7 @@ class SD_LIB_EXPORT AttentionHelper {
   static void doAttention(std::vector<NDArray *> &inputs, std::vector<sd::NDArray *> &masks, bool training,
                           bool useCausalMask, double dropout, int attentionType, double scale,
                           sd::NDArray *attentionScores, int dropoutSeed, sd::NDArray *applyScoresOut,
-                          sd::NDArray *attentionLogits);
+                          sd::NDArray *attentionLogits, sd::NDArray *dropoutMask);
 
 
 

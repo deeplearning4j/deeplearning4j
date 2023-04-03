@@ -70,7 +70,9 @@ DECLARE_TYPES(dropout) {
 CONFIGURABLE_OP_IMPL(dropout_bp, 3, 1, false, 1, 1) {
   auto input = INPUT_VARIABLE(0);    // lookup param
   auto mask = INPUT_VARIABLE(1);
+  sd_printf("About to obtain gradOut with block width %d\n",block.width());
   auto gradOut = INPUT_VARIABLE(2);  // lookup param
+  sd_printf("Obtained gradOut\n",0);
   bool inverted = block.numB() > 0 ? B_ARG(0) : false;
 
   NDArray* reduceShape = nullptr;         // this param is optional
