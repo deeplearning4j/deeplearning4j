@@ -190,14 +190,12 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
 
   auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
   auto training = block.numB() > 1 ? B_ARG(1) : false;
-  sd_printf("Block num bool: %d num t: %d\n",block.numB(),block.numT());
   int attentionType = block.numI() > 0 ? I_ARG(0) : ATTENTION_TYPE_DOT_PRODUCT;
 
 
 
   std::vector<sd::NDArray*> inputs = {queries,values,keys,attentionScoresOut,attentionScoresWeights,attentionScoreLogits,eps};
   if(dropoutMask != nullptr) {
-    sd_printf("Dropout mask is not null\n",0);
     inputs.push_back(dropoutMask);
   }
   std::vector<sd::NDArray *> masks2 = {qMask,vMask};

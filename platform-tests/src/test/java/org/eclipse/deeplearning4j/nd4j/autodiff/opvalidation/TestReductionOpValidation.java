@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
@@ -1234,7 +1235,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable sdK = sd.var("k", keys);
         SDVariable sdV = sd.var("v", values);
 
-        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,null,null,0.0,0.5,0,false,false,true);
+        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,sd.constant(Nd4j.ones(query.dataType(),10,3)),sd.constant(Nd4j.ones(query.dataType(),10,3)),0.5,0.5,0,true,false,true);
 
         SDVariable loss = t.norm1("out");
         loss.markAsLoss();
@@ -1295,7 +1296,8 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable sdV = sd.var("v", values);
 
         SDVariable attentionScores = sd.linalg().matmul("attentionLogits",sdQ,sdK,1.0,0.0,false,true);
-        SDVariable softmax = sd.nn().softmax("attentionScores",attentionScores,-1);
+        SDVariable scaled = sd.math().mul(attentionScores,0.5);
+        SDVariable softmax = sd.nn().softmax("attentionScores",scaled,-1);
         SDVariable softmaxDroppedOut = sd.nn().dropout("dropout",softmax,false,0.5);
         SDVariable out = sd.linalg().matmul("weightsTimesValue",softmaxDroppedOut,sdV);
         SDVariable loss = out.norm1("out");
@@ -1309,7 +1311,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
                 CustomOp customOp = (CustomOp) op;
                 System.out.println(op.opName() + " : iArgs: " + Arrays.toString(customOp.iArgs()) + " tArgs: " + Arrays.toString(customOp.tArgs()) + "bArgs: " + Arrays.toString(customOp.bArgs()) + " Arg inputs: " + Arrays.toString(op.argNames()) + " Op outputs: " + Arrays.toString(op.outputVariablesNames()));
             } else {
-                System.out.println(op.opName());
+                System.out.println(op.opName() +  " op args " + Arrays.toString(op.argNames()));
             }
         });
 

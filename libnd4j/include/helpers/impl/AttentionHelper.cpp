@@ -67,8 +67,8 @@ sd::NDArray* AttentionHelper::lowerTriangularMask(std::vector<sd::LongType> *sha
   auto rowIndexOnes = sd::NDArrayFactory::valueOf(*shape,1,'c');
   auto colIndexOnes = sd::NDArrayFactory::valueOf(*shape,1,'c');
   sd::ops::cumsum cumsum;
-  auto rowCumSum = cumsum.evaluate({rowIndexOnes},{},{-2},{});
-  auto colsCumSum = cumsum.evaluate({colIndexOnes},{},{-1},{});
+  auto rowCumSum = cumsum.evaluate({rowIndexOnes},{},{-2,0},{});
+  auto colsCumSum = cumsum.evaluate({colIndexOnes},{},{-1,0},{});
   sd::ops::greater_equal greaterEqual;
   auto ret = greaterEqual.evaluate({rowCumSum.at(0),colsCumSum.at(0)});
   return ret[0];
@@ -126,7 +126,8 @@ NDArray *AttentionHelper::computeAttentionMask(sd::NDArray *query, sd::NDArray *
   auto all = sd::NDIndexUtils::createAll();
   auto newAxis = sd::NDIndexUtils::createNewAxis();
 
-  if(queryMask != nullptr && !queryMask->isEmpty()) {
+  if(internalQueryMask != nullptr && !internalQueryMask->isEmpty()) {
+    sd_printf("Executing query mask\n",0);
     internalQueryMask = new NDArray(queryMask->cast(sd::DataType::BOOL));
     if(autoMask != nullptr && !autoMask->isEmpty()) {
       //  auto_mask = query_mask[:, :, tf.newaxis]  # shape is [B, T, 1]
@@ -136,6 +137,7 @@ NDArray *AttentionHelper::computeAttentionMask(sd::NDArray *query, sd::NDArray *
   }
 
   if(valueMask != nullptr && !valueMask->isEmpty()) {
+    sd_printf("Executing value mask\n",0);
     internalValueMask = new NDArray(valueMask->cast(sd::DataType::BOOL));
     // mask = value_mask[:, tf.newaxis, :]  # shape is [B, 1, S]
     //                                    auto_mask = mask if auto_mask is None else auto_mask & mask
@@ -160,7 +162,7 @@ NDArray *AttentionHelper::computeAttentionMask(sd::NDArray *query, sd::NDArray *
 
 
   if(autoMask != nullptr && !autoMask->isEmpty()) {
-    if(attentionMask == nullptr && !attentionMask->isEmpty()) {
+    if(attentionMask == nullptr || attentionMask->isEmpty()) {
       return autoMask;
     } else {
       auto ret = new NDArray(booleanAnd.evaluate({attentionMask,autoMask}).at(0));
@@ -197,6 +199,7 @@ void AttentionHelper::applyAttentionScores(sd::NDArray *scores, sd::NDArray *val
   int softmaxDim = -1;
   if (scoresMask != nullptr && !scoresMask->isEmpty()) {
     sd_printf("Applying mask\n",0);
+
     REQUIRE_TRUE(scoresMask->sizeAt(-2) == 1 || scoresMask->sizeAt(-2) == scores->sizeAt(-2),0,
                  "Scores mask must be either broadcastable or equal to scores shape. scores size at -2: was: %i scores size at -2 was: %i",scoresMask->sizeAt(-2),scores->sizeAt(-2));
 
@@ -236,32 +239,30 @@ void AttentionHelper::dotProductAttentionBpHelper(sd::NDArray *query, sd::NDArra
   sd::ops::softmax_bp softmaxBp;
   NDArray dldW(attentionScoresWeights->shapeInfo());
   NDArray dldS(attentionScoresWeights->shapeInfo());
-  auto mask = AttentionHelper::computeAttentionMask(query, values, qMask, vMask, nullptr, useCausalMask);
+  NDArray * mask = nullptr;
+  NDArray *causalPointer = nullptr;
 
-  /*
-   * cast : iArgs: [6] tArgs: []bArgs: [] Arg inputs: [one-var] Op outputs: [cast]
-   * matmul : iArgs: [0, 1, 0] tArgs: [1.0, 0.0]bArgs: [] Arg inputs: [q, k] Op outputs: [attentionLogits]
-softmax : iArgs: [-1] tArgs: []bArgs: [] Arg inputs: [attentionLogits] Op outputs: [attentionScores]
-dropout : iArgs: [0] tArgs: [0.5]bArgs: [false] Arg inputs: [attentionScores] Op outputs: [dropout, dropout:1]
-matmul : iArgs: [0, 0, 0] tArgs: [1.0, 1.0]bArgs: [] Arg inputs: [dropout, v] Op outputs: [weightsTimesValue]
-reduce_norm1
-reduce_norm1_bp : iArgs: [] tArgs: []bArgs: [false] Arg inputs: [weightsTimesValue, cast] Op outputs: [weightsTimesValue-grad]
-matmul_bp : iArgs: [0, 0, 0] tArgs: []bArgs: [] Arg inputs: [dropout, v, weightsTimesValue-grad] Op outputs: [dropout-grad, v-grad]
-zeroslike : iArgs: [] tArgs: []bArgs: [] Arg inputs: [dropout:1] Op outputs: [dropout:1-grad]
-dropout_bp : iArgs: [0] tArgs: [0.5]bArgs: [false] Arg inputs: [attentionScores, dropout:1, dropout-grad] Op outputs: [attentionScores-grad]
-softmax_bp : iArgs: [-1] tArgs: []bArgs: [] Arg inputs: [attentionLogits, attentionScores-grad, attentionScores] Op outputs: [attentionLogits-grad]
-matmul_bp : iArgs: [0, 1, 0] tArgs: []bArgs: [] Arg inputs: [q, k, attentionLogits-grad] Op outputs: [q-grad, k-grad]
+  if(useCausalMask) {
+    std::vector<sd::LongType> causalMaskShape2;
+    causalMaskShape2.push_back(attentionLogits->sizeAt(0));
+    //4d
+    if(attentionLogits->rankOf() > 3)
+      causalMaskShape2.push_back(attentionLogits->sizeAt(1));
 
-   */
+    for(int i = attentionLogits->rankOf() - 2; i < attentionLogits->rankOf(); i++) {
+      causalMaskShape2.push_back(attentionLogits->sizeAt(i));
+    }
+    causalPointer = lowerTriangularMask(&causalMaskShape2);
+  }
+
+  mask = mergeMasks(vMask,causalPointer);
+
 
 
   matMulBp.execute({attentionScoresWeights,values,eps},{&dldW,dLdv},{},{});
-  sd_printf("Dropout is: %f and training is %d\n",dropout,training);
   if(dropout > 0.0 && training) {
-    sd_printf("Dropout mask is not null: %d\n",dropoutMask != nullptr);
     sd::ops::dropout_bp dropoutOp;
     auto inputs = {attentionScoresWeights,dropoutMask,&dldW};
-    sd_printf("Dropout bp Inputs size %d\n",inputs.size());
     dropoutOp.execute(inputs,{&dldW},{dropout},{dropoutSeed},{false});
   }
 
@@ -270,24 +271,23 @@ matmul_bp : iArgs: [0, 1, 0] tArgs: []bArgs: [] Arg inputs: [q, k, attentionLogi
 
 
 
-  if(scale != 0.0 && scale != 1.0)
-    dldS /= scale;
-  
+  if(scale != 0.0 && scale != 1.0) {
+    dldS *= scale;
+  }
+
   NDArray times;
   if(mask != nullptr && !mask->isEmpty()) {
+    sd::ops::expand_dims expandDims;
+    sd_printf("Executing reshape for mask\n",0);
     auto maskCast = mask->cast(query->dataType());
-    if (attentionLogits->rankOf() == 4) {
-      maskCast = maskCast.reshape(mask->ordering(), {mask->sizeAt(0), 1,mask->sizeAt(-1), 1,});
-    } else {
-      maskCast = maskCast.reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(-1),1});
-    }
-
     times = maskCast * 1e9;
+    times.printShapeInfo("Time shape info");
+    dldS.printShapeInfo("DLDS shape info");
+    dldS *= times;
+
   }
 
-  if(mask != nullptr) {
-    dldS *= times;
-  }
+
 
   matMulBp.execute({query,key,&dldS},{dLdq,dLdk},{},{0,1,0});
 }
@@ -533,6 +533,22 @@ void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs,
   auto vMask = masks.size() > 1 ? masks[1] : nullptr;
   auto vmaskInternal = vMask;
   auto qMaskInternal = qMask;
+  if(vMask != nullptr && !vMask->isEmpty() && vMask->rankOf() < v->rankOf()) {
+    vmaskInternal = expandDims.evaluate({vMask},{},{-2}).at(0);
+  }
+
+  if(qMask != nullptr && !qMask->isEmpty()) {
+    qMaskInternal = expandDims.evaluate({qMaskInternal},{},{-1}).at(0);
+  }
+
+  if(qMaskInternal != nullptr) {
+    qMaskInternal->printShapeInfo("Q mask internal shape");
+  }
+
+  if(vmaskInternal != nullptr) {
+    vmaskInternal->printShapeInfo("V mask internal shape");
+  }
+
 
   auto dLdq = outputs[0];
   auto dLdv = outputs[1];
@@ -578,7 +594,7 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<sd
   //note this does not apply softmax yet, we are just computing logits here
   attentionHelper(q, k, attentionType, scale, concatWeights, attentionLogits);
 
-  if(vMask != nullptr && !vMask->isEmpty()) {
+  if(vMask != nullptr && !vMask->isEmpty() && vMask->rankOf() < v->rankOf()) {
     vmaskInternal = expandDims.evaluate({vMask},{},{-2}).at(0);
   }
 
