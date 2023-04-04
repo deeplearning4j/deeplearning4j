@@ -247,34 +247,26 @@ public class SDNN extends SDOps {
    * Note: Queries, keys and values must either be all rank 3 or all rank 4 arrays. Mixing them doesn't work. The<br>
    * output rank will depend on the input rank.<br>
    *
-   * @param queries input 3D array "queries" of shape [batchSize, featureKeys, queryCount]
-   * or 4D array of shape [batchSize, numHeads, featureKeys, queryCount] (NUMERIC type)
-   * @param values input 3D array "values" of shape [batchSize, featureValues, timesteps]
-   * or 4D array of shape [batchSize, numHeads, featureValues, timesteps] (NUMERIC type)
-   * @param keys input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
-   * or 4D array of shape [batchSize, numHeads, featureKeys, timesteps] (NUMERIC type)
-   * @param queryMask input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
-   * or 4D array of shape [batchSize, numHeads, featureKeys, timesteps] (NUMERIC type)
-   * @param valueMask input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
-   * or 4D array of shape [batchSize, numHeads, featureKeys, timesteps] (NUMERIC type)
-   * @param scaleFactor normalization, scale factor for normalization
-   * @param dropoutProbability dropout probability
-   * @param scoreMode normalization, false -> do not apply normalization, true -> apply normalization
-   * @param useCausalMask withWeights return attention weights as well, false -> only one output, true -> two outputs
-   * @param withWeights withWeights return attention weights as well, false -> only one output, true -> two outputs
-   * @param training withWeights return attention weights as well, false -> only one output, true -> two outputs
-   * @return output  Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount],
-   * (optionally) Attention Weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount] (NUMERIC type)
+   * @param queries A {@link SDVariable} representing the query tensor. Shape: [batchSize, numQueries, queryDim] (NUMERIC type)
+   * @param values A {@link SDVariable} representing the value tensor. Shape: [batchSize, numValues, valueDim] (NUMERIC type)
+   * @param keys A {@link SDVariable} representing the key tensor. Shape: [batchSize, numValues, keyDim] (NUMERIC type)
+   * @param queryMask A {@link SDVariable} representing the query mask tensor. Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask @param valueMask          A {@link SDVariable} representing the value mask tensor. Shape: [batchSize, numValues] (NUMERIC type)
+   * @param scaleFactor @param scaleFactor        A {@code double} scaling factor applied to the dot product between queries and keys.
+   * @param dropoutProbability A {@code double} specifying the dropout probability to be applied to attention weights.
+   * @param useCausalMask  A {@code boolean} flag to indicate whether to apply a causal mask to the attention scores, for autoregressive tasks.
+   * @param training  A {@code boolean} flag to indicate whether the layer is in training mode or inference mode, affecting dropout.
+   * @return output  A {@link SDVariable} representing the output tensor of the dot product attention operation. Shape: [batchSize, numQueries, valueDim] (NUMERIC type)
    */
   public SDVariable dotProductAttentionV2(SDVariable queries, SDVariable values, SDVariable keys,
       SDVariable queryMask, SDVariable valueMask, double scaleFactor, double dropoutProbability,
-      int scoreMode, boolean useCausalMask, boolean withWeights, boolean training) {
+      boolean useCausalMask, boolean training) {
     SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
     SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
     SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
     SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
     SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, scoreMode, useCausalMask, withWeights, training).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
   }
 
   /**
@@ -298,35 +290,26 @@ public class SDNN extends SDOps {
    * output rank will depend on the input rank.<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param queries input 3D array "queries" of shape [batchSize, featureKeys, queryCount]
-   * or 4D array of shape [batchSize, numHeads, featureKeys, queryCount] (NUMERIC type)
-   * @param values input 3D array "values" of shape [batchSize, featureValues, timesteps]
-   * or 4D array of shape [batchSize, numHeads, featureValues, timesteps] (NUMERIC type)
-   * @param keys input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
-   * or 4D array of shape [batchSize, numHeads, featureKeys, timesteps] (NUMERIC type)
-   * @param queryMask input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
-   * or 4D array of shape [batchSize, numHeads, featureKeys, timesteps] (NUMERIC type)
-   * @param valueMask input 3D array "keys" of shape [batchSize, featureKeys, timesteps]
-   * or 4D array of shape [batchSize, numHeads, featureKeys, timesteps] (NUMERIC type)
-   * @param scaleFactor normalization, scale factor for normalization
-   * @param dropoutProbability dropout probability
-   * @param scoreMode normalization, false -> do not apply normalization, true -> apply normalization
-   * @param useCausalMask withWeights return attention weights as well, false -> only one output, true -> two outputs
-   * @param withWeights withWeights return attention weights as well, false -> only one output, true -> two outputs
-   * @param training withWeights return attention weights as well, false -> only one output, true -> two outputs
-   * @return output  Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount],
-   * (optionally) Attention Weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount] (NUMERIC type)
+   * @param queries A {@link SDVariable} representing the query tensor. Shape: [batchSize, numQueries, queryDim] (NUMERIC type)
+   * @param values A {@link SDVariable} representing the value tensor. Shape: [batchSize, numValues, valueDim] (NUMERIC type)
+   * @param keys A {@link SDVariable} representing the key tensor. Shape: [batchSize, numValues, keyDim] (NUMERIC type)
+   * @param queryMask A {@link SDVariable} representing the query mask tensor. Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask @param valueMask          A {@link SDVariable} representing the value mask tensor. Shape: [batchSize, numValues] (NUMERIC type)
+   * @param scaleFactor @param scaleFactor        A {@code double} scaling factor applied to the dot product between queries and keys.
+   * @param dropoutProbability A {@code double} specifying the dropout probability to be applied to attention weights.
+   * @param useCausalMask  A {@code boolean} flag to indicate whether to apply a causal mask to the attention scores, for autoregressive tasks.
+   * @param training  A {@code boolean} flag to indicate whether the layer is in training mode or inference mode, affecting dropout.
+   * @return output  A {@link SDVariable} representing the output tensor of the dot product attention operation. Shape: [batchSize, numQueries, valueDim] (NUMERIC type)
    */
   public SDVariable dotProductAttentionV2(String name, SDVariable queries, SDVariable values,
       SDVariable keys, SDVariable queryMask, SDVariable valueMask, double scaleFactor,
-      double dropoutProbability, int scoreMode, boolean useCausalMask, boolean withWeights,
-      boolean training) {
+      double dropoutProbability, boolean useCausalMask, boolean training) {
     SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
     SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
     SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
     SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
     SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, scoreMode, useCausalMask, withWeights, training).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

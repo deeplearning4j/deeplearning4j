@@ -48,14 +48,14 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
 
 
 
-    public DotProductAttentionV2(INDArray queries, INDArray values, INDArray keys, INDArray queryMask, INDArray valueMask, double scaleFactor, double dropoutProbability, int scoreMode, boolean useCausalMask, boolean withWeights,boolean training) {
+    public DotProductAttentionV2(INDArray queries, INDArray values, INDArray keys, INDArray queryMask, INDArray valueMask, double scaleFactor, double dropoutProbability, boolean useCausalMask, boolean training) {
         addInputArgument(wrapFilterNull(queries,values,keys,queryMask,valueMask));
         addTArgument(scaleFactor,dropoutProbability);
         addIArgument(scoreMode);
         addBArgument(useCausalMask,withWeights,training);
     }
 
-    public DotProductAttentionV2(SameDiff sd, SDVariable queries, SDVariable values, SDVariable keys, SDVariable queryMask, SDVariable valueMask, double scaleFactor, double dropoutProbability, int scoreMode, boolean useCausalMask, boolean withWeights,boolean training) {
+    public DotProductAttentionV2(SameDiff sd, SDVariable queries, SDVariable values, SDVariable keys, SDVariable queryMask, SDVariable valueMask, double scaleFactor, double dropoutProbability,  boolean useCausalMask,boolean training) {
         super(null, sd, inputs(sd,queries, values, keys, queryMask, valueMask), false);
         this.scaleFactor = scaleFactor;
         this.dropout = dropoutProbability;

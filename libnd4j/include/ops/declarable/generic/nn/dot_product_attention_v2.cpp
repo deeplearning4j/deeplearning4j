@@ -70,7 +70,6 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
   auto training = block.numB() > 1 ? B_ARG(1) : false;
 
-  int attentionType = block.numI() > 0 ? I_ARG(0) : ATTENTION_TYPE_DOT_PRODUCT;
 
 
   std::vector<sd::NDArray*> inputs = {queries,values,keys};
@@ -86,12 +85,9 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   auto attentionScores = OUTPUT_VARIABLE(1);
   auto attentionLogits = OUTPUT_VARIABLE(2);
   auto dropoutMask = dropout > 0.0 ? OUTPUT_VARIABLE(3) : nullptr;
-  if(dropoutMask != nullptr)
-    dropoutMask->printShapeInfo("Dropout mask shape");
 
-
-  AttentionHelper::doAttention(inputs, masks2, training, useCausalMask, dropout, attentionType,
-                               scale, attentionScores, block.randomSeed(), applyScoresOut,attentionLogits,dropoutMask);
+  AttentionHelper::doAttention(inputs, masks2, training, useCausalMask, dropout, scale, attentionScores,
+                               block.randomSeed(), applyScoresOut, attentionLogits, dropoutMask);
 
 
   return sd::Status::OK;
@@ -113,55 +109,30 @@ DECLARE_SHAPE_FN(dot_product_attention_v2) {
   int tv = values->sizeAt(-2);
   int dim = values->sizeAt(-1);
 
-  int attentionType = block.numI() > 0 ? I_ARG(0) : ATTENTION_TYPE_DOT_PRODUCT;
-
   auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
   auto returnAttentionScores = block.numB() > 1 ? B_ARG(1) : false;
-
   auto dropout = block.numT() > 1 ? block.getTArguments()->at(1) : 0.0;
-  sd_printf("Dot product attention v2: calc shape: block.numT(): %d\n",block.numT());
-  if(attentionType == ATTENTION_TYPE_DOT_PRODUCT) {
-    //inputs: batchSize,Tq,dim batchSize,Tq,Tv
-    //outputs: batchSize,Tq, dim batchSize,Tq,Tv
-    ShapeDescriptor *descriptor = new ShapeDescriptor(firstInputType,'c',{batchSize,tq,dim});
-    auto constOutputScores = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
-    ShapeDescriptor *scoresShape = new ShapeDescriptor(firstInputType,'c',{batchSize,tq,tv});
-    auto attentionScoresShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
-    auto attentionLogitsShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
-    if(dropout > 0) {
-      sd_printf("Dropout > 0: returning 4 shapes\n",0);
-      delete descriptor;
-      delete scoresShape;
-      return SHAPELIST(constOutputScores,attentionScoresShape,attentionLogitsShape,attentionScoresShape);
-
-    } else {
-      sd_printf("Dropout < 0: returning 3 shapes\n",0);
-      delete descriptor;
-      delete scoresShape;
-      return SHAPELIST(constOutputScores,attentionScoresShape,attentionLogitsShape);
-
-    }
-
-
-  } else if(attentionType == ATTENTION_TYPE_ADDITIVE) {
-    //inputs: batchSize,Tq,dim batchSize,Tq,Tv
-    //outputs: batchSize,Tq,Tv
-    ShapeDescriptor *descriptor = new ShapeDescriptor(firstInputType,'c',{batchSize,tq,dim});
-    auto constOutputScores = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
-    if(returnAttentionScores) {
-      ShapeDescriptor *scoresShape = new ShapeDescriptor(firstInputType,'c',{batchSize,tq,tv});
-      auto attentionScoresShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
-      delete descriptor;
-      delete scoresShape;
-      return SHAPELIST(constOutputScores,attentionScoresShape);
-    }
-
+  //inputs: batchSize,Tq,dim batchSize,Tq,Tv
+  //outputs: batchSize,Tq, dim batchSize,Tq,Tv
+  ShapeDescriptor *descriptor = new ShapeDescriptor(firstInputType,'c',{batchSize,tq,dim});
+  auto constOutputScores = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
+  ShapeDescriptor *scoresShape = new ShapeDescriptor(firstInputType,'c',{batchSize,tq,tv});
+  auto attentionScoresShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
+  auto attentionLogitsShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
+  if(dropout > 0) {
     delete descriptor;
-    return SHAPELIST(constOutputScores);
+    delete scoresShape;
+    return SHAPELIST(constOutputScores,attentionScoresShape,attentionLogitsShape,attentionScoresShape);
 
   } else {
-    throw std::runtime_error("dot_product_attention: Calculate output shape: Invalid attention type.");
+    delete descriptor;
+    delete scoresShape;
+    return SHAPELIST(constOutputScores,attentionScoresShape,attentionLogitsShape);
+
   }
+
+
+
 }
 
 CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
@@ -173,9 +144,7 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
   auto attentionScoreLogits = INPUT_VARIABLE(5);
   auto eps = INPUT_VARIABLE(6);
   auto dropoutMask = block.width() > 7 ? INPUT_VARIABLE(7) : nullptr;
-  if(dropoutMask != nullptr) {
-    dropoutMask->printShapeInfo("Dropout mask in backprop is shape");
-  }
+
   auto qMask = block.width() > 8 ? INPUT_VARIABLE(8) : nullptr;
   auto vMask = block.width() > 9 ? INPUT_VARIABLE(9) : nullptr;
 
@@ -190,7 +159,6 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
 
   auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
   auto training = block.numB() > 1 ? B_ARG(1) : false;
-  int attentionType = block.numI() > 0 ? I_ARG(0) : ATTENTION_TYPE_DOT_PRODUCT;
 
 
 
@@ -198,20 +166,15 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
   if(dropoutMask != nullptr) {
     inputs.push_back(dropoutMask);
   }
+
   std::vector<sd::NDArray *> masks2 = {qMask,vMask};
   std::vector<sd::NDArray *> outputs = {dLdq,dLdv,dLdk};
 
   int seed = block.randomSeed();
-  AttentionHelper::doAttentionBp(inputs,
-                                 masks2,
-                                 training,
-                                 false,
-                                 useCausalMask,
-                                 dropout,
-                                 attentionType,
-                                 scale,
-                                 outputs,
-                                 seed);
+  AttentionHelper::dotProductAttentionBpHelper(queries, keys, values, scale, dLdq, dLdk, dLdv, eps, seed, qMask, vMask,
+                                               useCausalMask, dropout, training, attentionScoresWeights,
+                                               attentionScoreLogits, dropoutMask);
+
 
 
   return sd::Status::OK;

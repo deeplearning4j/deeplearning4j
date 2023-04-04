@@ -1174,8 +1174,6 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable sdK = sd.var("k", keys);
         SDVariable sdV = sd.var("v", values);
 
-        //matmul,softmax,matmul,reduce_norm1_bp,matmul,softmax,matmul_bp,matmul,matmul,softmax_bp,matmul_bp,matmul,matmul //working
-        //matmul,softmax,matmul,reduce_norm1_bp,matmul_bp,matmul,matul,softmax_bp,matmul_bp,matmul,matmul,matmul,softmax,matmul,matmul,softmax, //broken
         SDVariable t = sd.nn.dotProductAttention(sdQ, sdK, sdV, null, true);
         t.norm1("out");
 
@@ -1226,16 +1224,14 @@ public class TestReductionOpValidation extends BaseOpValidation {
         final INDArray keys = Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 3 * 4).reshape(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
         final INDArray values =  Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 3 * 4).reshape(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
         final INDArray query =  Nd4j.linspace(DataType.DOUBLE,0.0,1.0,10 * 1 * 4).reshape(new int[]{10, 1,4}).castTo(DataType.DOUBLE);
-        System.out.println(query);
-        System.out.println(keys);
-        System.out.println(values);
+
 
         SameDiff sd = SameDiff.create();
         SDVariable sdQ = sd.var("q", query);
         SDVariable sdK = sd.var("k", keys);
         SDVariable sdV = sd.var("v", values);
 
-        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,sd.constant(Nd4j.ones(query.dataType(),10,3)),sd.constant(Nd4j.ones(query.dataType(),10,3)),0.5,0.5,0,true,false,true);
+        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,sd.constant(Nd4j.ones(query.dataType(),10,3)),sd.constant(Nd4j.ones(query.dataType(),10,3)),0.5,0.5,true,true);
 
         SDVariable loss = t.norm1("out");
         loss.markAsLoss();
@@ -1335,7 +1331,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable sdK = sd.var("k", keys);
         SDVariable sdV = sd.var("v", values);
 
-        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,null,null,1.0,0.0,0,true,false,true);
+        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,null,null,1.0,0.0,true,true);
         t.norm1("out");
 
         String err = OpValidation.validate(new TestCase(sd)
@@ -1345,54 +1341,8 @@ public class TestReductionOpValidation extends BaseOpValidation {
 
 
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testDotProductAttentionV2CausalDropout(Nd4jBackend backend) {
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
-        final INDArray keys = Nd4j.rand(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
-        final INDArray values = Nd4j.rand(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
-        final INDArray query = Nd4j.rand(new int[]{10, 1,4}).castTo(DataType.DOUBLE);
 
 
-        SameDiff sd = SameDiff.create();
-        SDVariable sdQ = sd.var("q", query);
-        SDVariable sdK = sd.var("k", keys);
-        SDVariable sdV = sd.var("v", values);
-
-        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,null,null,1.0,0.5,0,true,false,true);
-        t.norm1("out");
-
-        String err = OpValidation.validate(new TestCase(sd)
-                .gradientCheck(true));
-        assertNull(err);
-    }
-
-
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testDotProductAttentionV2Additive(Nd4jBackend backend) {
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
-        final INDArray keys = Nd4j.rand(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
-        final INDArray values = Nd4j.rand(new int[]{10, 3,4}).castTo(DataType.DOUBLE);
-        final INDArray query = Nd4j.rand(new int[]{10, 1,4}).castTo(DataType.DOUBLE);
-
-
-        SameDiff sd = SameDiff.create();
-        SDVariable sdQ = sd.var("q", query);
-        SDVariable sdK = sd.var("k", keys);
-        SDVariable sdV = sd.var("v", values);
-
-        SDVariable t = sd.nn.dotProductAttentionV2(sdQ,sdV,sdK,null,null,1.0,0.0,1,false,false,true);
-        t.norm1("out");
-
-        String err = OpValidation.validate(new TestCase(sd)
-                .gradCheckDebugMode(true)
-                .gradCheckPrint(true)
-                .gradientCheck(true));
-        assertNull(err);
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -1447,7 +1397,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable qMaskVar = sd.constant("qMask", qMask);
         SDVariable vMaskVar = sd.constant("vMask", vMask);
 
-        SDVariable t = sd.nn.dotProductAttentionV2(sdQ, sdK, sdV,qMaskVar,vMaskVar,1.0,0.0,0,false,false,true);
+        SDVariable t = sd.nn.dotProductAttentionV2(sdQ, sdK, sdV,qMaskVar,vMaskVar,1.0,0.0,false,true);
         SDVariable loss = t.norm1("out");
         loss.markAsLoss();
         String err = OpValidation.validate(new TestCase(sd)

@@ -226,8 +226,8 @@ void AttentionHelper::dotProductAttentionBpHelper(sd::NDArray *query, sd::NDArra
                                                   double scale, sd::NDArray *dLdq, sd::NDArray *dLdk, sd::NDArray *dLdv,
                                                   sd::NDArray *eps, LongType dropoutSeed, sd::NDArray *qMask,
                                                   sd::NDArray *vMask, bool useCausalMask, double dropout, bool training,
-                                                  NDArray *attentionScoresOut, NDArray *attentionScoresWeights,
-                                                  NDArray *attentionLogits, NDArray *dropoutMask) {
+                                                  NDArray *attentionScoresWeights, NDArray *attentionLogits,
+                                                  NDArray *dropoutMask) {
   sd::ops::matmul_bp matMulBp;
   sd::ops::softmax_bp softmaxBp;
   NDArray dldW(attentionScoresWeights->shapeInfo());
@@ -283,138 +283,7 @@ void AttentionHelper::dotProductAttentionBpHelper(sd::NDArray *query, sd::NDArra
 }
 
 
-void AttentionHelper::additiveAttentionBpHelper(sd::NDArray *query, sd::NDArray *key, sd::NDArray *values, double scale,
-                                                sd::NDArray *concatWeights, sd::NDArray *dLdq, sd::NDArray *dLdk,
-                                                sd::NDArray *dLdv, sd::NDArray *eps, LongType dropoutSeed,
-                                                sd::NDArray *qMask, sd::NDArray *vMask, bool useCausalMask,
-                                                double dropout, bool training) {
 
-  sd::ops::matmul matMul;
-  sd::ops::matmul_bp matMulBp;
-  sd::ops::reduce_sum reduceSum;
-  sd::ops::tanh_bp tanh1;
-  sd::ops::add_bp addBp;
-  sd::ops::reduce_sum_bp reduceSumBp;
-  sd::ops::tanh_bp tanhBp;
-  sd::ops::expand_dims expandDims;
-  sd::ops::squeeze squeeze;
-  //A: value, B: weights
-  //note we permute already and do not need to do so again here
-  auto weightShapeInfo = ShapeUtils::evalShapeForMatmul(
-      query->shapeInfo(),
-      key->shapeInfo(),
-      false,
-      true);
-
-
-  const sd::LongType *weightShapeInfoInput = ConstantShapeHelper::getInstance().createShapeInfo(
-      query->dataType(),
-      'c',
-      weightShapeInfo);
-
-
-  NDArray preSoftmax( weightShapeInfoInput);
-
-  int transA = 0;
-  int transB = 1;
-  matMul.execute({query,key},{&preSoftmax},{transA,transB});
-
-
-  auto mask = AttentionHelper::computeAttentionMask(query, values, qMask, vMask, nullptr, useCausalMask);
-
-
-  if(scale != 0.0 && scale != 1.0) {
-    preSoftmax /= scale;
-  }
-
-  NDArray times;
-  if(mask != nullptr && !mask->isEmpty()) {
-    auto maskCast = mask->cast(query->dataType());
-    if (preSoftmax.rankOf() == 4) {
-      maskCast = maskCast.reshape(mask->ordering(), {mask->sizeAt(0), 1,mask->sizeAt(-1), 1,});
-    } else {
-      maskCast = maskCast.reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(-1),1});
-    }
-
-    times = maskCast * 1e9;
-    preSoftmax -= times;
-  }
-  //end masking pre query/key matrix multiply section
-
-  NDArray weights(weightShapeInfoInput);
-  sd::ops::softmax softmax;
-  softmax.execute({&preSoftmax}, {&weights},{}, {-2}, {});
-
-
-  if(dropout > 0.0 && training) {
-    sd::ops::dropout dropoutOp;
-    dropoutOp.execute({&weights},{&weights},{dropout},{dropoutSeed},{});
-  }
-
-
-
-  auto weightInput = weights;
-  //begin dldw
-  NDArray dLdw(weightInput.shapeInfo());
-  matMulBp.execute({&weights,values,eps},{&dLdw,dLdv},{},{});
-
-
-  NDArray dLds(preSoftmax.shapeInfo());
-  sd::ops::softmax_bp softmax_bp;
-
-
-  softmax_bp.execute({&preSoftmax, &dLdw}, {&dLds}, {}, {-2}, {});
-  //first matrix multiply  backprop end
-  if(dropout > 0.0 && training) {
-    sd::ops::dropout_bp dropoutOp;
-    dropoutOp.execute({&weights,&dLdw},{&dLds},{dropout},{dropoutSeed},{});
-  }
-
-
-
-  if(scale != 0.0 && scale != 1.0)
-    dLds /= scale;
-
-  if(mask != nullptr) {
-    dLds *= times;
-  }
-  //inputs: values, weights, eps
-  //output is dldv, dldw
-
-  auto qReshaped = expandDims.evaluate({query},{},{-2}).at(0);
-  auto kReshaped = expandDims.evaluate({key},{},{-3}).at(0);
-
-  auto qPlusK = *qReshaped + *kReshaped;
-
-
-  //reduce sum bp
-  //first input: the input reduced on
-  //second input: the eps which is already the reduced shape
-  auto scaled =  scale > 0 ? ( scale * (qPlusK)) : ((qPlusK));
-  auto dsScores = reduceSumBp.evaluate({&qPlusK,&dLds},{},{-1},{});
-
-  auto dtanh = tanhBp.evaluate({&scaled,dsScores.at(0)});
-  reduceSum.execute({dtanh.at(0)},{dLdq},{},{-2},{});
-  reduceSum.execute({dtanh.at(0)},{dLdk},{},{-3});
-
-
-
-  dLdk->transposei();
-
-
-
-
-
-  if(vMask != nullptr && !vMask->isEmpty()) {
-    *dLdv *= *vMask;
-  }
-
-  if(qMask != nullptr && !qMask->isEmpty()) {
-    *dLdq *= *qMask;
-  }
-
-
-}
 
 /**
    *
@@ -425,20 +294,14 @@ void AttentionHelper::additiveAttentionBpHelper(sd::NDArray *query, sd::NDArray 
    * @return
  */
 void AttentionHelper::attentionBpHelper(sd::NDArray *query, sd::NDArray *key, sd::NDArray *values, double scale,
-                                        sd::NDArray *concatWeights, int scoreMode, sd::NDArray *dLdq, sd::NDArray *dLdk,
-                                        sd::NDArray *dLdv, sd::NDArray *eps, LongType dropoutSeed, sd::NDArray *qMask,
-                                        sd::NDArray *vMask, bool useCausalMask, double dropout, bool training,
-                                        NDArray *attentionScoresOut, NDArray *attentionScoresWeights,
-                                        sd::NDArray *attentionScoresLogits, NDArray *dropoutMask) {
-
-  if(scoreMode == ATTENTION_TYPE_ADDITIVE) {
-    additiveAttentionBpHelper(query, key, values, scale, concatWeights, dLdq, dLdk, dLdv, eps, dropoutSeed, qMask,
-                              vMask, useCausalMask, dropout, training);
-  } else if(scoreMode == ATTENTION_TYPE_DOT_PRODUCT) {
-    dotProductAttentionBpHelper(query, key, values, scale, dLdq, dLdk, dLdv, eps, dropoutSeed, qMask, vMask,
-                                useCausalMask, dropout, training, attentionScoresOut, attentionScoresWeights,
-                                attentionScoresLogits, dropoutMask);
-  }
+                                        sd::NDArray *dLdq, sd::NDArray *dLdk, sd::NDArray *dLdv, sd::NDArray *eps,
+                                        LongType dropoutSeed, sd::NDArray *qMask, sd::NDArray *vMask,
+                                        bool useCausalMask, double dropout, bool training, NDArray *attentionScoresOut,
+                                        NDArray *attentionScoresWeights, sd::NDArray *attentionScoresLogits,
+                                        NDArray *dropoutMask) {
+  dotProductAttentionBpHelper(query, key, values, scale, dLdq, dLdk, dLdv, eps, dropoutSeed, qMask, vMask,
+                              useCausalMask, dropout, training, attentionScoresWeights, attentionScoresLogits,
+                              dropoutMask);
 
 
 }
@@ -451,36 +314,14 @@ void AttentionHelper::attentionBpHelper(sd::NDArray *query, sd::NDArray *key, sd
    * @param scale
    * @return
  */
-void AttentionHelper::attentionHelper(sd::NDArray *query,
-                                      sd::NDArray *key,
-                                      int scoreMode,
-                                      double scale,
-                                      sd::NDArray *concatWeights,
+void AttentionHelper::attentionHelper(sd::NDArray *query, sd::NDArray *key, double scale,
                                       sd::NDArray *attentionLogits) {
 
   sd::ops::matmul matmul3;
-
-  if(scoreMode == ATTENTION_TYPE_DOT_PRODUCT) {
-    matmul3.execute({query,key},{attentionLogits},{},{0,1});
-    if(scale != 0.0 && scale != 1.0) {
-      *attentionLogits *= scale;
-    }
-
-  } else if(scoreMode == ATTENTION_TYPE_ADDITIVE) {
-    sd::ops::expand_dims expandDims;
-    sd::ops::reduce_sum reduceSum;
-    sd::ops::tanh tanh1;
-    auto qReshaped = expandDims.evaluate({query},{},{-2}).at(0);
-    auto kReshaped = expandDims.evaluate({key},{},{-3}).at(0);
-    auto scaled =  scale > 0 ? ( scale * (*qReshaped + *kReshaped)) : ((*qReshaped + *kReshaped));
-    auto qPlusK = tanh1.evaluate({&scaled});
-    reduceSum.execute({qPlusK.at(0)},{attentionLogits},{},{-1});
-    if(concatWeights != nullptr)
-      *attentionLogits *= *concatWeights;
-  } else {
-    throw std::runtime_error("Illegal attention type passed. Please pass either 0 or 1 for a valid attention type. 0 for dot product, 1 for concat.");
+  matmul3.execute({query,key},{attentionLogits},{},{0,1});
+  if(scale != 0.0 && scale != 1.0) {
+    *attentionLogits *= scale;
   }
-
 }
 
 
@@ -534,9 +375,8 @@ void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs,
   auto dLdq = outputs[0];
   auto dLdv = outputs[1];
   auto dLdk = outputs[2];
-  attentionBpHelper(q, k, v, scale, concatWeights, attentionType, dLdq, dLdk, dLdv, eps, dropoutSeed, qMaskInternal,
-                    vmaskInternal, useCausalMask, dropout, training, attentionScoresOut, attentionScoresWeights,
-                    attentionScoresLogits, dropoutMask);
+  attentionBpHelper(q, k, v, scale, dLdq, dLdk, dLdv, eps, dropoutSeed, qMaskInternal, vmaskInternal, useCausalMask,
+                    dropout, training, attentionScoresOut, attentionScoresWeights, attentionScoresLogits, dropoutMask);
 
 }
 
@@ -549,9 +389,9 @@ void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs,
  * @param useCausalMask
  */
 void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<sd::NDArray *> &masks, bool training,
-                                  bool useCausalMask, double dropout, int attentionType, double scale,
-                                  sd::NDArray *attentionScores, int dropoutSeed, sd::NDArray *applyScoresOut,
-                                  sd::NDArray *attentionLogits, sd::NDArray *dropoutMask) {
+                                  bool useCausalMask, double dropout, double scale, sd::NDArray *attentionScores,
+                                  int dropoutSeed, sd::NDArray *applyScoresOut, sd::NDArray *attentionLogits,
+                                  sd::NDArray *dropoutMask) {
   auto q = inputs[0];
   auto v = inputs[1];
   auto k = inputs.size() > 2 ? inputs[2]  : v;
@@ -573,7 +413,7 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<sd
   //inputs: query and value
   //shape: batch_size Tq dim (batch_size Tv dim)
   //note this does not apply softmax yet, we are just computing logits here
-  attentionHelper(q, k, attentionType, scale, concatWeights, attentionLogits);
+  attentionHelper(q, k, scale, attentionLogits);
 
   if(vMask != nullptr && !vMask->isEmpty() && vMask->rankOf() < v->rankOf()) {
     vmaskInternal = expandDims.evaluate({vMask},{},{-2}).at(0);

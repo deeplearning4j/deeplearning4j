@@ -380,21 +380,7 @@ fun NN() = Namespace("NN") {
         }
     }
 
-    Op("softmaxDerivative") {
-        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.gradient"
-        javaOpClass = "SoftmaxBp"
-        Input(NUMERIC, "x") { description = "Softmax input" }
-        Input(NUMERIC, "wrt") { description = "Gradient at output, dL/dx" }
-        Arg(INT, "dimension"){description = "Softmax dimension"}
 
-        Output(NUMERIC, "output") { description = "" }
-
-        Doc(Language.ANY, DocScope.ALL) {
-            """
-                Softmax derivative function
-            """.trimIndent()
-        }
-    }
 
     Op("softplus", transformStrict) {
         javaOpClass = "SoftPlus"
@@ -462,29 +448,21 @@ fun NN() = Namespace("NN") {
 
     Op("dotProductAttentionV2") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
-        val q = Input(NUMERIC, "queries") { description = "input 3D array \"queries\" of shape [batchSize, featureKeys, queryCount]\n" +
-                "or 4D array of shape [batchSize, numHeads, featureKeys, queryCount]" }
-        val v = Input(NUMERIC, "values") { description = "input 3D array \"values\" of shape [batchSize, featureValues, timesteps]\n" +
-                "or 4D array of shape [batchSize, numHeads, featureValues, timesteps]" }
+        val q = Input(NUMERIC, "queries") { description = "A {@link SDVariable} representing the query tensor. Shape: [batchSize, numQueries, queryDim]" }
+        val v = Input(NUMERIC, "values") { description = "A {@link SDVariable} representing the value tensor. Shape: [batchSize, numValues, valueDim]" }
 
-        val k = Input(NUMERIC, "keys") { description = "input 3D array \"keys\" of shape [batchSize, featureKeys, timesteps]\n" +
-                "or 4D array of shape [batchSize, numHeads, featureKeys, timesteps]" }
-        val queryMask = Input(NUMERIC, "queryMask") { description = "input 3D array \"keys\" of shape [batchSize, featureKeys, timesteps]\n" +
-                "or 4D array of shape [batchSize, numHeads, featureKeys, timesteps]" }
-        val valueMask = Input(NUMERIC, "valueMask") { description = "input 3D array \"keys\" of shape [batchSize, featureKeys, timesteps]\n" +
-                "or 4D array of shape [batchSize, numHeads, featureKeys, timesteps]" }
+        val k = Input(NUMERIC, "keys") { description = "A {@link SDVariable} representing the key tensor. Shape: [batchSize, numValues, keyDim]" }
+        val queryMask = Input(NUMERIC, "queryMask") { description = "A {@link SDVariable} representing the query mask tensor. Shape: [batchSize, numQueries]" }
+        val valueMask = Input(NUMERIC, "valueMask") { description = "@param valueMask          A {@link SDVariable} representing the value mask tensor. Shape: [batchSize, numValues]" }
 
-        val s = Arg(FLOATING_POINT, "scaleFactor") { defaultValue = 1.0; description = "normalization, scale factor for normalization" }
-        val dropout = Arg(FLOATING_POINT, "dropoutProbability") { defaultValue = 0.0; description = "dropout probability" }
-        val scoreMode = Arg(INT, "scoreMode") { defaultValue = 0; description = "normalization, false -> do not apply normalization, true -> apply normalization" }
-        val useCausalMask = Arg(BOOL, "useCausalMask") { defaultValue = false; description = "withWeights return attention weights as well, false -> only one output, true -> two outputs" }
-        val withWeights = Arg(BOOL, "withWeights") { defaultValue = false; description = "withWeights return attention weights as well, false -> only one output, true -> two outputs" }
-        val training = Arg(BOOL, "training") { defaultValue = false; description = "withWeights return attention weights as well, false -> only one output, true -> two outputs" }
+        val s = Arg(FLOATING_POINT, "scaleFactor") { defaultValue = 1.0; description = "@param scaleFactor        A {@code double} scaling factor applied to the dot product between queries and keys." }
+        val dropout = Arg(FLOATING_POINT, "dropoutProbability") { defaultValue = 0.0; description = "A {@code double} specifying the dropout probability to be applied to attention weights." }
+        val useCausalMask = Arg(BOOL, "useCausalMask") { defaultValue = false; description = " A {@code boolean} flag to indicate whether to apply a causal mask to the attention scores, for autoregressive tasks." }
+        val training = Arg(BOOL, "training") { defaultValue = false; description = " A {@code boolean} flag to indicate whether the layer is in training mode or inference mode, affecting dropout." }
 
-        Output(NUMERIC, "output") { description = " Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues, queryCount],\n" +
-                "(optionally) Attention Weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads, timesteps, queryCount]" }
+        Output(NUMERIC, "output") { description = " A {@link SDVariable} representing the output tensor of the dot product attention operation. Shape: [batchSize, numQueries, valueDim]"}
 
-        Signature(q,v,k,queryMask,valueMask, s,dropout,scoreMode,useCausalMask,withWeights,training)
+        Signature(q,v,k,queryMask,valueMask, s,dropout,useCausalMask,training)
 
         Doc(Language.ANY, DocScope.ALL) {
             """
