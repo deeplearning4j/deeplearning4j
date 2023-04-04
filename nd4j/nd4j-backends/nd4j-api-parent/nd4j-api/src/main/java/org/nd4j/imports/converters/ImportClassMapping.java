@@ -399,6 +399,8 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.transforms.custom.Dilation2D.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttention.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionBp.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2Bp.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.DynamicPartition.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.DynamicStitch.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.EqualTo.class,

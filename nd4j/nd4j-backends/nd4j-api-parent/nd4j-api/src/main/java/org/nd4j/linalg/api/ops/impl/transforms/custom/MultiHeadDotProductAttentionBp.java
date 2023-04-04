@@ -54,12 +54,19 @@ public class MultiHeadDotProductAttentionBp extends DynamicCustomOp {
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> grad){
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        if(iArguments.size() > 0)
+            this.scaled = iArguments.get(0) > 0;
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
         throw new UnsupportedOperationException("Differentiation of " + getClass().getName() + " not supported");
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 8 || dataTypes.size() == 9), "Expected 8 or 9 input datatypes, got %s", dataTypes);
         DataType first = dataTypes.get(0);
         for( int i=0; i<dataTypes.size(); i++ ) {

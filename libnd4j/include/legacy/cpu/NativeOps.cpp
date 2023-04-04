@@ -83,6 +83,16 @@ bool experimentalSupport = false;
 
 using namespace sd;
 
+SD_LIB_EXPORT int contextNumInputs(void *contextPointer) {
+  sd::graph::Context *context = (sd::graph::Context *) contextPointer;
+  return context->width();
+}
+
+SD_LIB_EXPORT int contextNumOutputs(void *contextPointer) {
+  sd::graph::Context *context = (sd::graph::Context *) contextPointer;
+  return context->outputWidth();
+}
+
 SD_LIB_EXPORT int numInputs(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return trace->inputShapeBuffers->size();
