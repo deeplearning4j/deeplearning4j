@@ -37,9 +37,7 @@ import java.util.Map;
 public class DotProductAttentionLayer extends SameDiffLayer {
     private double scaleFactor;
     private double dropoutProbability;
-    private int scoreMode;
     private boolean useCausalMask;
-    private boolean withWeights;
     private boolean training;
     private long nIn;
     private long nOut;
@@ -48,7 +46,6 @@ public class DotProductAttentionLayer extends SameDiffLayer {
     public final static String V_KEY = "v";
 
     public final static String Q_MASK_KEY = "q_mask";
-    public final static String K_MASK_KEY = "k_mask";
     public final static String V_MASK_KEY = "v_mask";
 
     public DotProductAttentionLayer(Builder builder) {
@@ -57,9 +54,7 @@ public class DotProductAttentionLayer extends SameDiffLayer {
         nOut = builder.nOut;
         scaleFactor = builder.scaleFactor;
         dropoutProbability = builder.dropoutProbability;
-        scoreMode = builder.scoreMode;
         useCausalMask = builder.useCausalMask;
-        withWeights = builder.withWeights;
         training = builder.training;
 
     }
@@ -100,15 +95,24 @@ public class DotProductAttentionLayer extends SameDiffLayer {
 
     @Override
     public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
-        val q = paramTable.get(Q_KEY);
-        val k = paramTable.get(K_KEY);
-        val v = paramTable.get(V_KEY);
-        val qMask = paramTable.get(Q_MASK_KEY);
-        val vMask = paramTable.get(V_MASK_KEY);
-        val kMask = paramTable.get(K_MASK_KEY);
-        return sameDiff.nn.dotProductAttentionV2(q,v,k,qMask,vMask,scaleFactor,dropoutProbability,useCausalMask,training);
+        return sameDiff.nn.dotProductAttentionV2(layerInput,layerInput,layerInput,mask,mask,scaleFactor,dropoutProbability,useCausalMask,training);
 
     }
+
+
+    @Override
+    public void setNIn(InputType inputType, boolean override) {
+        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+            throw new IllegalStateException("Invalid input for Learned Self Attention layer (layer name = \"" + getLayerName()
+                    + "\"): expect RNN input type with size > 0. Got: " + inputType);
+        }
+
+        if (nIn <= 0 || override) {
+            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
+            this.nIn = r.getSize();
+        }
+    }
+
 
 
     @Getter
@@ -117,9 +121,7 @@ public class DotProductAttentionLayer extends SameDiffLayer {
 
         private double scaleFactor;
         private double dropoutProbability;
-        private int scoreMode;
         private boolean useCausalMask;
-        private boolean withWeights;
         private boolean training;
         private long nIn;
         private long nOut;
