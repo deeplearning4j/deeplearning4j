@@ -159,13 +159,55 @@ SD_HOST sd::LongType *createShapeInfo(sd::LongType *shape, sd::LongType *stride,
  * the shape information
  */
 SD_LIB_EXPORT SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, sd::LongType *dimension, int dimensionLength) {
+  if(shapeInfo == nullptr) {
+    throw std::runtime_error("Shape information is null!");
+  }
+
+  if(dimension == nullptr) {
+    throw std::runtime_error("Dimension is null!");
+  }
+
+
+  if(dimensionLength == 0) return 0;
+  int rank = shape::rank(shapeInfo);
+
   if (dimensionLength == 1) {
+    sd_printf("In dimension length 1\n",0);
+    if(dimension[0] < 0) {
+      dimension[0] += rank;
+    }
+
+    if(dimension[0] >= rank) {
+      std::string errorMessage;
+      errorMessage += "Dimension out of rank: ";
+      errorMessage += "dimension: " + std::to_string(dimension[0]);
+      errorMessage += " rank: " + std::to_string(rank);
+      throw std::runtime_error(errorMessage.c_str());
+    }
     return shape::shapeOf(shapeInfo)[dimension[0]];
   } else {
+    sd_printf("In general tad length\n",0);
     sd::LongType ret = 1;
-    for (int i = 0; i < shape::rank(shapeInfo); i++) {
+    sd::LongType  *shape = shape::shapeOf(shapeInfo);
+    sd_printf("Determined shape\n",0);
+    for (int i = 0; i < rank; i++) {
+      sd_printf("Processing dimension %d\n",i);
       for (int j = 0; j < dimensionLength; j++) {
-        if (i == dimension[j]) ret *= shape::shapeOf(shapeInfo)[dimension[j]];
+        if(dimension[j] < 0) {
+          dimension[j] += rank;
+        }
+        if(dimension[0] >= rank) {
+          std::string errorMessage;
+          errorMessage += "Dimension out of rank: ";
+          errorMessage += "dimension: " + std::to_string(dimension[0]);
+          errorMessage += " rank: " + std::to_string(rank);
+          throw std::runtime_error(errorMessage.c_str());
+        }
+
+        if (i == dimension[j]) {
+          sd_printf("Processing dimension i %d with dimension j %d dimension[j] %d\n",i,j,dimension[j]);
+          ret *= shape[dimension[j]];
+        }
       }
     }
     return ret;

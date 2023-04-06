@@ -166,9 +166,8 @@ class SD_LIB_EXPORT AttentionHelper {
    * @param useCausalMask
    */
   static void doAttentionBp(std::vector<NDArray *> &inputs, std::vector<sd::NDArray *> &masks, bool training,
-                            bool returnAttentionScores, bool useCausalMask, double dropout, int attentionType,
-                            double scale, std::vector<NDArray *> outputs,
-                            LongType dropoutSeed = 0);
+                            bool useCausalMask, double dropout, double scale, std::vector<NDArray *> outputs,
+                            LongType dropoutSeed);
 
 
 };

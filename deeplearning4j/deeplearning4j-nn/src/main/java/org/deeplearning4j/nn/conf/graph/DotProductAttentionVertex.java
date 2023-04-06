@@ -21,20 +21,19 @@ package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.layers.samediff.SDVertexParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffVertex;
-import org.deeplearning4j.nn.conf.memory.MemoryReport;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
-@NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class DotProductAttentionVertex extends SameDiffVertex {
@@ -43,10 +42,31 @@ public class DotProductAttentionVertex extends SameDiffVertex {
     private double dropoutProbability;
     private boolean useCausalMask;
     private boolean training;
+    private long nIn;
+    private long nOut;
+
+    public DotProductAttentionVertex() {
+    }
+
+    public DotProductAttentionVertex(Builder builder) {
+        this.scaleFactor = builder.scaleFactor;
+        this.dropoutProbability = builder.dropoutProbability;
+        this.useCausalMask = builder.useCausalMask;
+        this.training = builder.training;
+        this.nIn = builder.nIn;
+        this.nOut = builder.nOut;
+    }
 
     @Override
     public GraphVertex clone() {
-        return null;
+        DotProductAttentionVertex dotProductAttentionVertex = new DotProductAttentionVertex();
+        dotProductAttentionVertex.scaleFactor = scaleFactor;
+        dotProductAttentionVertex.dropoutProbability = dropoutProbability;
+        dotProductAttentionVertex.useCausalMask = useCausalMask;
+        dotProductAttentionVertex.training = training;
+        dotProductAttentionVertex.nIn = nIn;
+        dotProductAttentionVertex.nOut = nOut;
+        return dotProductAttentionVertex;
     }
 
     @Override
@@ -62,11 +82,104 @@ public class DotProductAttentionVertex extends SameDiffVertex {
 
     @Override
     public void defineParametersAndInputs(SDVertexParams params) {
+        params.clear();
 
+        params.defineInputs("queries", "keys", "values");
+
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
+        if(maskArrays != null) {
+            if(maskArrays[0] == null) {
+                // Queries are unmasked, we don't need to pass on any mask
+                return null;
+            }else{
+                // Queries are masked, keep the masking going
+                return Pair.of(maskArrays[0], currentMaskState);
+            }
+        }else {
+            return Pair.of(null, currentMaskState);
+        }
     }
 
     @Override
     public void initializeParameters(Map<String, INDArray> params) {
 
+    }
+
+    @Override
+    public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
+        InputType.InputTypeRecurrent queries = (InputType.InputTypeRecurrent) vertexInputs[0];
+        return InputType.recurrent(nIn, queries.getTimeSeriesLength());
+
+    }
+    @Getter
+    @Setter
+    public static class Builder  {
+
+        private double scaleFactor;
+        private double dropoutProbability;
+        private boolean useCausalMask;
+        private boolean training;
+        private long nIn;
+        private long nOut;
+
+        public Builder nIn(long nIn) {
+            this.nIn = nIn;
+            return this;
+        }
+
+        public Builder nOut(long nOut) {
+            this.nOut = nOut;
+            return this;
+        }
+
+        public Builder training(boolean training) {
+            this.training = training;
+            return this;
+        }
+
+        public Builder dropoutProbability(double dropoutProbability) {
+            this.dropoutProbability = dropoutProbability;
+            return this;
+        }
+
+        /**
+         * @param scaleFactor Whether to scale the input or not.
+         *               Defaults to true.
+         */
+        public Builder scale(double scaleFactor) {
+            this.scaleFactor = scaleFactor;
+            return this;
+        }
+
+        /**
+         * @param nIn Number of inputs to the layer (input size)
+         */
+        public Builder nIn(int nIn) {
+            this.nIn = nIn;
+            return this;
+        }
+
+        /**
+         * @param nOut Number of outputs (output size)
+         */
+        public Builder nOut(int nOut) {
+            this.nOut = nOut;
+            return this;
+        }
+
+
+        public Builder useCausalMask(boolean useCausalMask) {
+            this.useCausalMask = useCausalMask;
+            return this;
+        }
+
+
+        @SuppressWarnings("unchecked")
+        public DotProductAttentionVertex build() {
+            return new DotProductAttentionVertex(this);
+        }
     }
 }

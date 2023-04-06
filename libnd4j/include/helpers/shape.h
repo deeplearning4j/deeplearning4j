@@ -2469,6 +2469,14 @@ SD_INLINE SD_HOST_DEVICE void printArray(void *varr, int length, const char *mes
  */
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType tadLength(const sd::LongType *shapeInfo, sd::LongType *dimension,
                                                               int dimensionLength) {
+  if(shapeInfo == nullptr) {
+    throw std::runtime_error("shape::tadLength No shape info found.");
+  }
+
+  if(dimension == nullptr) {
+    throw std::runtime_error("shape::tadLength No dimension info found.");
+  }
+
   if (dimensionLength == 1) {
     return shape::shapeOf(shapeInfo)[dimension[0]];
   } else {

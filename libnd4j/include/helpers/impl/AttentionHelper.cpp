@@ -334,15 +334,9 @@ void AttentionHelper::attentionHelper(sd::NDArray *query, sd::NDArray *key, doub
  * @param returnAttentionScores
  * @param useCausalMask
  */
-void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs,
-                                    std::vector<sd::NDArray *> &masks,
-                                    bool training,
-                                    bool returnAttentionScores,
-                                    bool useCausalMask,
-                                    double dropout,
-                                    int attentionType,
-                                    double scale,
-                                    std::vector<NDArray *> outputs, LongType dropoutSeed) {
+void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs, std::vector<sd::NDArray *> &masks, bool training,
+                                    bool useCausalMask, double dropout, double scale, std::vector<NDArray *> outputs,
+                                    LongType dropoutSeed) {
   auto q = inputs[0];
   auto v = inputs[1];
   auto k = inputs[2];
@@ -352,7 +346,6 @@ void AttentionHelper::doAttentionBp(std::vector<NDArray *> &inputs,
   auto eps = inputs[6];
 
   auto dropoutMask = inputs.size() > 7 ? inputs[7] : inputs[7];
-  auto concatWeights = inputs.size() > 8 ? inputs[8] : nullptr;
 
   sd::ops::expand_dims expandDims;
   sd::ops::ones_as onesAs;

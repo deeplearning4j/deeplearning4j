@@ -538,7 +538,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         zb, (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(), null,
                         yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
                         getPointerForExtraArgs(op, op.z().dataType()),
-                        ((BaseCpuDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),null,
+                        ((BaseCpuDataBuffer) op.dimensions().castTo(DataType.LONG).data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),null,
                         (LongPointer) hostTadShapeInfo, (LongPointer) hostTadOffsets,
                         (LongPointer) devTadShapeInfoZ, (LongPointer) devTadOffsetsZ);
                 break;
@@ -548,7 +548,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         zb, (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(), null,
                         yb, (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(), null,
                         getPointerForExtraArgs(op, op.z().dataType()),
-                        ((BaseCpuDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
+                        ((BaseCpuDataBuffer) op.dimensions().castTo(DataType.LONG).data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
                         (LongPointer) hostTadShapeInfo, (LongPointer) hostTadOffsets,
                         (LongPointer) devTadShapeInfoZ, (LongPointer) devTadOffsetsZ);
                 break;
