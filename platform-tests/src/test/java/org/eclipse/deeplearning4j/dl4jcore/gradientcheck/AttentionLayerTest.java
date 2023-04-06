@@ -50,6 +50,7 @@ import java.util.Random;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 
 @Disabled
 @DisplayName("Attention Layer Test")
@@ -186,21 +187,21 @@ class AttentionLayerTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Recurrent Attention Layer _ differing Time Steps")
     void testRecurrentAttentionLayer_differingTimeSteps() {
-       assertThrows(IllegalArgumentException.class, () -> {
-           int nIn = 9;
-           int nOut = 5;
-           int layerSize = 8;
-           MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).activation(Activation.IDENTITY).updater(new NoOp()).weightInit(WeightInit.XAVIER).list().layer(new LSTM.Builder().nOut(layerSize).build()).layer(new RecurrentAttentionLayer.Builder().nIn(layerSize).nOut(layerSize).nHeads(1).projectInput(false).hasBias(false).build()).layer(new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build()).layer(new OutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build()).setInputType(InputType.recurrent(nIn)).build();
-           MultiLayerNetwork net = new MultiLayerNetwork(conf);
-           net.init();
-           final INDArray initialInput = Nd4j.rand(new int[] { 8, nIn, 7 });
-           final INDArray goodNextInput = Nd4j.rand(new int[] { 8, nIn, 7 });
-           final INDArray badNextInput = Nd4j.rand(new int[] { 8, nIn, 12 });
-           final INDArray labels = Nd4j.rand(new int[] { 8, nOut });
-           net.fit(initialInput, labels);
-           net.fit(goodNextInput, labels);
-           net.fit(badNextInput, labels);
-       });
+        assertThrows(IllegalArgumentException.class, () -> {
+            int nIn = 9;
+            int nOut = 5;
+            int layerSize = 8;
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).activation(Activation.IDENTITY).updater(new NoOp()).weightInit(WeightInit.XAVIER).list().layer(new LSTM.Builder().nOut(layerSize).build()).layer(new RecurrentAttentionLayer.Builder().nIn(layerSize).nOut(layerSize).nHeads(1).projectInput(false).hasBias(false).build()).layer(new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build()).layer(new OutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build()).setInputType(InputType.recurrent(nIn)).build();
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+            final INDArray initialInput = Nd4j.rand(new int[] { 8, nIn, 7 });
+            final INDArray goodNextInput = Nd4j.rand(new int[] { 8, nIn, 7 });
+            final INDArray badNextInput = Nd4j.rand(new int[] { 8, nIn, 12 });
+            final INDArray labels = Nd4j.rand(new int[] { 8, nOut });
+            net.fit(initialInput, labels);
+            net.fit(goodNextInput, labels);
+            net.fit(badNextInput, labels);
+        });
 
     }
 
@@ -317,6 +318,9 @@ class AttentionLayerTest extends BaseDL4JTest {
         int layerSize = 3;
         Nd4j.getExecutioner().enableVerboseMode(true);
         Nd4j.getExecutioner().enableDebugMode(true);
+  /*      Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
+                .checkForNAN(true)
+                .build());*/
         Random r = new Random(12345);
         for (boolean inputMask : new boolean[] { false, true }) {
             for (int mb : new int[] { 3, 1 }) {

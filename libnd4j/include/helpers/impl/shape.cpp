@@ -172,7 +172,6 @@ SD_LIB_EXPORT SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, sd::
   int rank = shape::rank(shapeInfo);
 
   if (dimensionLength == 1) {
-    sd_printf("In dimension length 1\n",0);
     if(dimension[0] < 0) {
       dimension[0] += rank;
     }

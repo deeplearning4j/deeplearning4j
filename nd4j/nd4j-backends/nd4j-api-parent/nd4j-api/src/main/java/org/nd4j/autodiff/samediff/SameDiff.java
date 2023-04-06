@@ -5015,7 +5015,16 @@ public class SameDiff extends SDBaseOps {
         if(this.sameDiffFunctionInstances.containsKey(GRAD_FN_KEY))
             sameDiffFunctionInstances.remove(GRAD_FN_KEY);
         List<String> lossInferred = bestGuessLossVariables();
-        if (lossInferred.size() == 1) {
+        //Check for external errors function
+        for(SameDiffOp o : ops.values()) {
+            if(o.getOp() instanceof ExternalErrorsFunction) {
+                List<String> l = o.getOutputsOfOp();
+                lossVariables.add(l.get(0));
+            }
+        }
+
+
+        if (lossVariables.isEmpty() && lossInferred.size() == 1) {
             String outName = lossInferred.get(0);
             String opName = variables.get(outName).getOutputOfOp();
             if (opName == null || !(ops.get(opName).getOp() instanceof ExternalErrorsFunction)) {
