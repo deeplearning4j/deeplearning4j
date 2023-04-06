@@ -202,7 +202,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
                     getPointerForExtraArgs(op, x.dataType()),
                     zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                    ((BaseCpuDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
+                    ((BaseCpuDataBuffer) op.dimensions().castTo(DataType.LONG).data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
         }
 
         if (loop.lastErrorCode() != 0)
@@ -361,7 +361,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
                             getPointerForExtraArgs(op, z.dataType()),
                             zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            ((BaseCpuDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
+                            ((BaseCpuDataBuffer) op.dimensions().castTo(DataType.LONG).data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
                             var.isBiasCorrected(), null, null);
                 } catch (Throwable t){
                     String str = opInfoString(op, Optional.of(dimension));
@@ -402,7 +402,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             getPointerForExtraArgs(op, z.dataType()),
                             yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
                             zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            ((BaseCpuDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
+                            ((BaseCpuDataBuffer) op.dimensions().castTo(DataType.LONG).data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
                             null, null, null, null);
                 } catch (Throwable t){
                     String str = opInfoString(op, Optional.of(dimension));
@@ -853,7 +853,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
                         yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
                         zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                        ((BaseCpuDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
+                        ((BaseCpuDataBuffer) op.dimensions().castTo(DataType.LONG).data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
                 break;
             case BROADCAST_BOOL:
                 loop.execBroadcastBool(dummy, op.opNum(),
@@ -861,7 +861,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
                         zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
                         null,
-                        ((BaseCpuDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
+                        ((BaseCpuDataBuffer) op.dimensions().castTo(DataType.LONG).data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown operation type: [" + op.getOpType() + "]");
