@@ -264,6 +264,11 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
       delete qMask;
     if(vMask != nullptr)
       delete vMask;
+
+    dLdq->reshapei('c', {dLdq->sizeAt(1), dLdq->sizeAt(2)});
+    dLdv->reshapei('c', {dLdv->sizeAt(1), dLdv->sizeAt(2)});
+    dLdk->reshapei('c', {dLdk->sizeAt(1), dLdk->sizeAt(2)});
+    eps->reshapei('c', {eps->sizeAt(1), eps->sizeAt(2)});
   }
 
   return sd::Status::OK;
