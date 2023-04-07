@@ -33,6 +33,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.List;
 import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -44,6 +45,7 @@ public class DotProductAttentionVertex extends SameDiffVertex {
     private boolean training;
     private long nIn;
     private long nOut;
+    private List<String> inputNames;
 
     public DotProductAttentionVertex() {
     }
@@ -55,6 +57,7 @@ public class DotProductAttentionVertex extends SameDiffVertex {
         this.training = builder.training;
         this.nIn = builder.nIn;
         this.nOut = builder.nOut;
+        this.inputNames = builder.inputNames;
     }
 
     @Override
@@ -66,25 +69,30 @@ public class DotProductAttentionVertex extends SameDiffVertex {
         dotProductAttentionVertex.training = training;
         dotProductAttentionVertex.nIn = nIn;
         dotProductAttentionVertex.nOut = nOut;
+        dotProductAttentionVertex.inputNames = inputNames;
         return dotProductAttentionVertex;
     }
 
     @Override
     public SDVariable defineVertex(SameDiff sameDiff, Map<String, SDVariable> layerInput, Map<String, SDVariable> paramTable, Map<String, SDVariable> maskVars) {
         final SDVariable queries = layerInput.get("queries");
-        final SDVariable keys = layerInput.get("keys");
         final SDVariable values = layerInput.get("values");
-        final SDVariable qMask = maskVars  != null && maskVars.containsKey("qMask") ? maskVars.get("qMask") : null;
-        final SDVariable vMask = maskVars != null  && maskVars.containsKey("vMask")? maskVars.get("vMask") : null;
-        return sameDiff.nn.dotProductAttentionV2(queries,values,keys,qMask,vMask,scaleFactor,dropoutProbability,useCausalMask,training);
+        final SDVariable keys = layerInput.containsKey("keys") ? layerInput.get("keys") : values;
+        final SDVariable qMask = maskVars  != null && maskVars.containsKey("queries") ? maskVars.get("queries") : null;
+        final SDVariable vMask = maskVars != null  && maskVars.containsKey("values")? maskVars.get("values") : null;
+        return sameDiff.nn.dotProductAttentionV2(queries,values,keys,null,null,scaleFactor,dropoutProbability,useCausalMask,training);
 
     }
 
     @Override
     public void defineParametersAndInputs(SDVertexParams params) {
         params.clear();
-
-        params.defineInputs("queries", "keys", "values");
+        //default to normal 3
+        if(inputNames == null || inputNames != null && inputNames.size() >= 3)
+            params.defineInputs("queries", "keys", "values");
+        else if(inputNames.size() < 3) {
+            params.defineInputs("queries","values");
+        }
 
     }
 
@@ -110,8 +118,19 @@ public class DotProductAttentionVertex extends SameDiffVertex {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
-        InputType.InputTypeRecurrent queries = (InputType.InputTypeRecurrent) vertexInputs[0];
-        return InputType.recurrent(nIn, queries.getTimeSeriesLength());
+        if(vertexInputs[0].getType() == InputType.Type.FF) {
+            InputType.InputTypeFeedForward queries = (InputType.InputTypeFeedForward) vertexInputs[0];
+            return InputType.recurrent(nIn, queries.getSize());
+        } else if(vertexInputs[0].getType() == InputType.Type.RNN) {
+            InputType.InputTypeRecurrent queries = (InputType.InputTypeRecurrent) vertexInputs[0];
+            return InputType.recurrent(nIn, queries.getTimeSeriesLength());
+        } else if(vertexInputs[0].getType() == InputType.Type.CNN) {
+            InputType.InputTypeFeedForward queries = (InputType.InputTypeFeedForward) vertexInputs[0];
+            return InputType.recurrent(nIn, queries.getSize());
+        } else {
+            throw new InvalidInputTypeException("Invalid input type: " + vertexInputs[0].getType());
+        }
+
 
     }
     @Getter
@@ -124,6 +143,14 @@ public class DotProductAttentionVertex extends SameDiffVertex {
         private boolean training;
         private long nIn;
         private long nOut;
+        private List<String> inputNames;
+
+
+
+        public Builder inputNames(List<String> inputNames) {
+            this.inputNames = inputNames;
+            return this;
+        }
 
         public Builder nIn(long nIn) {
             this.nIn = nIn;

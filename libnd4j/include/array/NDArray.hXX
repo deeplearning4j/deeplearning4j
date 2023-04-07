@@ -108,11 +108,11 @@ namespace sd {
 
         if (shape.size() == 0) {
             if (data.size() == 0) {
-              auto desc = ShapeDescriptor::emptyDescriptor(dtype);
+                auto desc = ShapeDescriptor::emptyDescriptor(dtype);
                 setShapeInfo( desc);
                 delete desc;
             } else {
-              auto desc = ShapeDescriptor::scalarDescriptor(dtype);
+                auto desc = ShapeDescriptor::scalarDescriptor(dtype);
                 setShapeInfo( desc);
                 delete desc;
             }
@@ -1983,9 +1983,16 @@ namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
     sd::LongType NDArray::sizeAt(const int dim) const {
-        if (dim >= this->rankOf() || dim < -this->rankOf())
-            throw std::runtime_error("NDArray::sizeAt: bad size index requested");
-
+        if(this->rankOf() == 0 && (dim == 0 || dim == -1))
+            return 0;
+        if (dim >= this->rankOf() || dim < -this->rankOf()) {
+            std::string errorMessage;
+            errorMessage += "NDArray::sizeAt: bad size index requested: ";
+            errorMessage += std::to_string(dim);
+            errorMessage += " for array with rank: ";
+            errorMessage += std::to_string(this->rankOf());
+            throw std::runtime_error(errorMessage.c_str());
+        }
         if (dim >= 0)
             return shape::shapeOf(_shapeInfo)[dim];
         else

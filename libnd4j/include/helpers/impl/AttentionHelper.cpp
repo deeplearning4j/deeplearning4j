@@ -218,6 +218,7 @@ void AttentionHelper::applyAttentionScores(sd::NDArray *scores, sd::NDArray *val
   //batch size, tq tv
   //batch size tv dim
   //output: batch size, tq dim
+  sd_printf("Weights rank: %d Value shape %d\n",weights->rankOf(),value->rankOf());
   matmul.execute({weights,value},{applyScoresOut});
 
 }
