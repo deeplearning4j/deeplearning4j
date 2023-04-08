@@ -1631,6 +1631,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    inputIntName: "squeeze_dims"
     outputIntName: "_a"
     inputToOutput {
       key: "_a"
@@ -4212,6 +4213,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "ksize"
     outputIntName: "kH"
     inputToOutput {
       key: "kH"
@@ -4233,6 +4235,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "ksize"
     outputIntName: "kW"
     inputToOutput {
       key: "kW"
@@ -4254,6 +4257,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "ksize"
     outputIntName: "kD"
     inputToOutput {
       key: "kD"
@@ -4274,6 +4278,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "strides"
     outputIntName: "sH"
     inputToOutput {
       key: "sH"
@@ -4295,6 +4300,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "strides"
     outputIntName: "sW"
     inputToOutput {
       key: "sW"
@@ -4316,6 +4322,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "strides"
     outputIntName: "sD"
     inputToOutput {
       key: "sD"
@@ -4560,6 +4567,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "strides"
     outputIntName: "sD"
     inputToOutput {
       key: "sD"
@@ -4581,6 +4589,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "strides"
     outputIntName: "sH"
     inputToOutput {
       key: "sH"
@@ -4602,6 +4611,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "strides"
     outputIntName: "sW"
     inputToOutput {
       key: "sW"
@@ -4668,6 +4678,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "dilations"
     outputIntName: "dH"
     inputToOutput {
       key: "dH"
@@ -4689,6 +4700,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "dilations"
     outputIntName: "dW"
     inputToOutput {
       key: "dW"
@@ -4710,6 +4722,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "dilations"
     outputIntName: "dD"
     inputToOutput {
       key: "dD"
@@ -5157,6 +5170,7 @@ mappings {
     ruleName: "convertinputstringtondarray"
     functionName: "convertinputstringtondarray"
     inputStringAttrName: "message"
+    inputTensorName: "message"
     inputToOutput {
       key: "message"
       value: "message"
@@ -5317,6 +5331,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    inputIntName: "rates"
     outputIntName: "rates"
     inputToOutput {
       key: "rates"
@@ -5328,6 +5343,7 @@ mappings {
   rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
+    inputIntName: "strides"
     outputIntName: "strides"
     inputToOutput {
       key: "strides"
@@ -5509,6 +5525,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "ksize"
     outputIntName: "kH"
     inputToOutput {
       key: "kH"
@@ -5530,6 +5547,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "ksize"
     outputIntName: "kW"
     inputToOutput {
       key: "kW"
@@ -5551,6 +5569,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "ksize"
     outputIntName: "kD"
     inputToOutput {
       key: "kD"
@@ -5571,6 +5590,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "strides"
     outputIntName: "sH"
     inputToOutput {
       key: "sH"
@@ -5592,6 +5612,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "strides"
     outputIntName: "sW"
     inputToOutput {
       key: "sW"
@@ -5613,6 +5634,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "strides"
     outputIntName: "sD"
     inputToOutput {
       key: "sD"
@@ -6080,6 +6102,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtondarray"
     functionName: "ndarrayinputtondarray"
+    inputTensorName: "input"
     inputTensorName: "value"
     inputToOutput {
       key: "input"
@@ -7055,6 +7078,7 @@ mappings {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
     outputDoubleName: "stop"
+    inputTensorName: "start"
     inputToOutput {
       key: "start"
       value: "start"
@@ -9006,6 +9030,8 @@ mappings {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
     outputIntName: "depth"
+    inputTensorName: "on"
+    inputTensorName: "off"
     inputToOutput {
       key: "depth"
       value: "depth"
@@ -9861,6 +9887,7 @@ mappings {
     ruleName: "convertinputstringtondarray"
     functionName: "convertinputstringtondarray"
     inputStringAttrName: "message"
+    inputTensorName: "message"
     inputToOutput {
       key: "message"
       value: "message"
@@ -9923,27 +9950,11 @@ mappings {
   rule {
     ruleName: "valuemapping"
     functionName: "valuemapping"
-    inputBooleanName: "clear_after_read"
-    outputBooleanName: "clearOnRead"
     inputDataTypeName: "dtype"
     outputDataTypeName: "importDataType"
     inputToOutput {
-      key: "clearOnRead"
-      value: "clear_after_read"
-    }
-    inputToOutput {
       key: "importDataType"
       value: "dtype"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "TensorArrayV3"
-  }
-  rule {
-    ruleName: "listnumbertondarray"
-    functionName: "listnumbertondarray"
-    inputToOutput {
-      key: "setShape"
-      value: "element_shape"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "TensorArrayV3"
@@ -10339,6 +10350,8 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    inputTensorName: "min"
+    inputTensorName: "max"
     inputToOutput {
       key: "max"
       value: "maxval"
@@ -14527,6 +14540,7 @@ mappings {
     functionName: "ndarrayinputtonumericalattribute"
     outputIntName: "maxOutputSize"
     outputDoubleName: "overlapThreshold"
+    inputTensorName: "scoreThreshold"
     inputToOutput {
       key: "maxOutputSize"
       value: "max_output_size"
@@ -14753,6 +14767,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "ksizes"
     outputIntName: "ksizeRows"
     inputToOutput {
       key: "ksizeRows"
@@ -14773,6 +14788,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "ksizes"
     outputIntName: "ksizeCols"
     inputToOutput {
       key: "ksizeCols"
@@ -14794,6 +14810,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "strides"
     outputIntName: "kstrideRows"
     inputToOutput {
       key: "kstrideRows"
@@ -14815,6 +14832,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "strides"
     outputIntName: "kstrideCols"
     inputToOutput {
       key: "kstrideCols"
@@ -14836,6 +14854,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "rates"
     outputIntName: "krateRows"
     inputToOutput {
       key: "krateRows"
@@ -14857,6 +14876,7 @@ mappings {
     ruleName: "listattributevaluelookuptoindex"
     functionName: "listattributevaluelookuptoindex"
     inputIntName: "index"
+    inputIntName: "rates"
     outputIntName: "krateCols"
     inputToOutput {
       key: "krateCols"
