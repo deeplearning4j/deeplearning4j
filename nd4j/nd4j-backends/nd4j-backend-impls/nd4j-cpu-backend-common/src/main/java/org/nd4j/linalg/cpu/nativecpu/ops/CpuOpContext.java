@@ -205,7 +205,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
         List<DataBuffer> shapeInfoReferences = new ArrayList<>();
         for(int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
-            buffers.put(i,Carray.isEmpty() ? null : ((BaseCpuDataBuffer) array.data()).getOpaqueDataBuffer());
+            buffers.put(i,array.isEmpty() ? null : ((BaseCpuDataBuffer) array.data()).getOpaqueDataBuffer());
             DataBuffer dataBuffer = array.shapeInfoDataBuffer();
             shapeInfoReferences.add(dataBuffer);
             Pointer addressPointer = dataBuffer.pointer();
