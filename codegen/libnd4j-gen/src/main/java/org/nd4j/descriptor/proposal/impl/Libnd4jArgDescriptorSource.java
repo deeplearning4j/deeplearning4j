@@ -64,7 +64,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
     public final static String T_ARG = "T_ARG";
     public final static String B_ARG = "B_ARG";
     public final static String DECLARE_SYN = "DECLARE_SYN";
-    public final static String DEFAULT_LIBND4J_DIRECTORY = "../../../libnd4j";
+    public final static String DEFAULT_LIBND4J_DIRECTORY = "../../libnd4j";
     public final static int BROADCASTABLE_OP_IMPL_DEFAULT_NIN = 2;
     public final static int BROADCASTABLE_OP_IMPL_DEFAULT_NOUT = 1;
     public final static String CUSTOM_OP_IMPL = "CUSTOM_OP_IMPL";
@@ -131,7 +131,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                     }
 
                     if(!inOpBlock) {
-                        if (line.contains(CUSTOM_OP_IMPL)) {
+                        if (line.contains(CUSTOM_OP_IMPL) && !line.contains("ENGINE")) {
                             // CUSTOM_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)
                             foundOp = true;
                             line = removeBracesFromDeclarationMacro(line, CUSTOM_OP_IMPL);
@@ -1023,7 +1023,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
 
                             inOpBlock = true;
 
-                        } else if(line.contains(BOOLEAN_OP_IMPL)) {
+                        } else if(line.contains(BOOLEAN_OP_IMPL) && !line.contains("ENGINE")) {
                             // BOOLEAN_OP_IMPL(NAME, NIN, SCALAR)
                             foundOp = true;
                             if(line.contains(");")) {
@@ -1046,7 +1046,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                                     .inplaceAble(inplaceAble);
 
                             inOpBlock = true;
-                        } else if(line.contains(LIST_OP_IMPL)) {
+                        } else if(line.contains(LIST_OP_IMPL) && !line.contains("ENGINE")) {
                             // LIST_OP_IMPL(NAME, NIN, NOUT, TARGS, IARGS)
                             foundOp = true;
                             line = removeBracesFromDeclarationMacro(line, LIST_OP_IMPL);
@@ -1170,7 +1170,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                                                 .build()).build());
                             }
 
-                        } else if(line.contains(LOGIC_OP_IMPL)) {
+                        } else if(line.contains(LOGIC_OP_IMPL) && !line.contains("ENGINE")) {
                             // LOGIC_OP_IMPL(NAME)
                             foundOp = true;
                             if(line.contains(");"))
@@ -1228,7 +1228,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                             }
 
 
-                        } else if(line.contains(DIVERGENT_OP_IMPL)) {
+                        } else if(line.contains(DIVERGENT_OP_IMPL) && !line.contains("ENGINE")) {
                             foundOp = true;
                             //DIVERGENT_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE)
                             line = removeBracesFromDeclarationMacro(line, DIVERGENT_OP_IMPL);
@@ -1250,7 +1250,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                                     .inplaceAble(inplaceAble);
 
                             inOpBlock = true;
-                        } else if(line.contains(CONFIGURABLE_OP_IMPL)) {
+                        } else if(line.contains(CONFIGURABLE_OP_IMPL) && !line.contains("ENGINE")) {
                             // CONFIGURABLE_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)
                             foundOp = true;
                             line = removeBracesFromDeclarationMacro(line, CONFIGURABLE_OP_IMPL);
@@ -1280,6 +1280,451 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                                     .iArgs(iArgs).tArgs(tArgs);
 
                             inOpBlock = true;
+                           if(name.equals("skipgram_inference")) {
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(0)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                               .setName("numCodes")
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(1)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                               .setName("numIndices")
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(2)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                               .setName("numIterations")
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(3)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                               .setName("codes")
+                                               .setIsArray(true)
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(4)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                               .setName("indices")
+                                               .setIsArray(true)
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(5)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                               .setName("target")
+                                               .setIsArray(false)
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(6)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                               .setName("ngStarter")
+                                               .setIsArray(false)
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(7)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                               .setName("randomValue")
+                                               .setIsArray(false)
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(8)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                               .setName("numWorkers")
+                                               .setIsArray(false)
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(9)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                               .setName("nsRounds")
+                                               .setIsArray(false)
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(0)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.DOUBLE)
+                                               .setName("alpha")
+                                               .setIsArray(false)
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(0)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                               .setName("syn0")
+                                               .setIsArray(false)
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(1)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                               .setName("syn1")
+                                               .setIsArray(false)
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(2)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                               .setName("syn1Neg")
+                                               .setIsArray(false)
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(3)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                               .setName("expTable")
+                                               .setIsArray(false)
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(4)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                               .setName("negTable")
+                                               .setIsArray(false)
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(5)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                               .setName("inferenceVector")
+                                               .setIsArray(false)
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(0)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.BOOL)
+                                               .setName("isInference")
+                                               .setIsArray(false)
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+
+                               argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                       .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                               .setArgIndex(1)
+                                               .setArgType(OpNamespace.ArgDescriptor.ArgType.BOOL)
+                                               .setName("isPreciseMode")
+                                               .setIsArray(false)
+                                               .build())
+                                       .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                       .build());
+                           }
+
+
+                            if(name.equals("cbow_inference")) {
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(0)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                                .setName("numCodes")
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(1)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                                .setName("numIndices")
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(2)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                                .setName("numContext")
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(3)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                                .setName("numLockedWords")
+                                                .setIsArray(true)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(4)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                                .setName("codes")
+                                                .setIsArray(true)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(5)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                                .setName("indices")
+                                                .setIsArray(true)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(6)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                                .setName("context")
+                                                .setIsArray(true)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(7)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                                .setName("lockedWords")
+                                                .setIsArray(true)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(8)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                                .setName("target")
+                                                .setIsArray(false)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(9)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                                .setName("ngStarter")
+                                                .setIsArray(false)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(10)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                                .setName("numLabels")
+                                                .setIsArray(false)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(11)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                                .setName("randomValue")
+                                                .setIsArray(false)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(12)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                                .setName("iterations")
+                                                .setIsArray(false)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(13)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                                .setName("numWorkers")
+                                                .setIsArray(false)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(14)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INT64)
+                                                .setName("nsRounds")
+                                                .setIsArray(false)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(0)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.DOUBLE)
+                                                .setName("alpha")
+                                                .setIsArray(false)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(1)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.DOUBLE)
+                                                .setName("minLearningRate")
+                                                .setIsArray(false)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(0)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                                .setName("syn0")
+                                                .setIsArray(false)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(1)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                                .setName("syn1")
+                                                .setIsArray(false)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(2)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                                .setName("syn1neg")
+                                                .setIsArray(false)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(3)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                                .setName("expTable")
+                                                .setIsArray(false)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(4)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                                .setName("negTable")
+                                                .setIsArray(false)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(5)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                                .setName("inferenceVector")
+                                                .setIsArray(false)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(0)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.BOOL)
+                                                .setName("trainWords")
+                                                .setIsArray(false)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgIndex(1)
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.BOOL)
+                                                .setName("isInference")
+                                                .setIsArray(false)
+                                                .build())
+                                        .sourceOfProposal("cpp").proposalWeight(999999.0)
+                                        .build());
+                            }
+
                             if(name.equals("relu6")) {
                                 argDescriptorProposals.add(ArgDescriptorProposal.builder()
                                         .descriptor(OpNamespace.ArgDescriptor.newBuilder()
@@ -1304,7 +1749,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
 
                             }
 
-                        } else if(line.contains(REDUCTION_OP_IMPL)) {
+                        } else if(line.contains(REDUCTION_OP_IMPL) && !line.contains("ENGINE")) {
                             //REDUCTION_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)
                             foundOp = true;
                             line = removeBracesFromDeclarationMacro(line, REDUCTION_OP_IMPL);
@@ -1334,7 +1779,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                                     .iArgs(iArgs).tArgs(tArgs);
 
                             inOpBlock = true;
-                        } else if(line.contains(BROADCASTABLE_OP_IMPL)) {
+                        } else if(line.contains(BROADCASTABLE_OP_IMPL) && !line.contains("ENGINE")) {
                             //BROADCASTABLE_OP_IMPL(NAME, TARGS, IARGS)
                             foundOp = true;
                             line = removeBracesFromDeclarationMacro(line, BROADCASTABLE_OP_IMPL);
@@ -1358,7 +1803,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                                     .iArgs(iArgs).tArgs(tArgs);
 
                             inOpBlock = true;
-                        } else if(line.contains(BROADCASTABLE_BOOL_OP_IMPL)) {
+                        } else if(line.contains(BROADCASTABLE_BOOL_OP_IMPL) && !line.contains("ENGINE")) {
                             //BROADCASTABLE_BOOL_OP_IMPL(NAME, TARGS, IARGS)
                             foundOp = true;
                             line = line.replace(BROADCASTABLE_BOOL_OP_IMPL + "(", "");
@@ -1386,7 +1831,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                                     .iArgs(iArgs).tArgs(tArgs);
 
                             inOpBlock = true;
-                        } else if(line.contains(PLATFORM_IMPL)) {
+                        } else if(line.contains(PLATFORM_IMPL) && !line.contains("ENGINE")) {
                             foundOp = true;
                             line = removeBracesFromDeclarationMacro(line, PLATFORM_IMPL);
                             String[] split = line.trim().split(",");
@@ -1403,7 +1848,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                             platformImpl = true;
                         }
 
-                        else if(line.contains(OP_IMPL)) {
+                        else if(line.contains(OP_IMPL) && !line.contains("ENGINE")) {
                             //OP_IMPL(NAME, NIN, NOUT, INPLACEABLE)
                             foundOp = true;
                             line = removeBracesFromDeclarationMacro(line, OP_IMPL);

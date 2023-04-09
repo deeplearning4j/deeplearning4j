@@ -529,8 +529,8 @@ val tensorArrayV3 = TensorflowMappingProcess(
         variableResolutionType = MapperNamespace.VariableResolutionType.OVERRIDE,
         inputFrameworkOpName = "TensorArrayV3",
         tensorMappingRules = listOf(mappingListNDArrays(mutableMapOf("input" to "size"))),
-        attributeMappingRules = listOf(valueMapping(mutableMapOf("importDataType" to "dtype","clearOnRead" to "clear_after_read")),
-                listNumberToNDarray(mutableMapOf("setShape" to "element_shape")))
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("importDataType" to "dtype")),
+               )
 )
 
 
