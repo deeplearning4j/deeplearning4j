@@ -64,6 +64,8 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     @Override
     public void close() {
         // no-op
+        nativeOps.ctxPurge(context);
+        context.deallocate();
     }
 
     @Override

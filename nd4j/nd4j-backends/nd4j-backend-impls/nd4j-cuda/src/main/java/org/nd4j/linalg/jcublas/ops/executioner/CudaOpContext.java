@@ -62,6 +62,8 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public void close() {
+        nativeOps.ctxPurge(context);
+        context.deallocate();
     }
 
     @Override
