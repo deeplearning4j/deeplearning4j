@@ -1445,6 +1445,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         int nDArgs = opContext != null ? opContext.numDArguments() : op.numDArguments();
         val dArgs = nDArgs > 0 ? new IntPointer(nDArgs) : null;
 
+        int nSArgs = opContext != null ? opContext.numSArguments() : op.numSArguments();
+        val sArgs = nSArgs > 0 ? new PointerPointer(nSArgs) : null;
+
+
+
         cnt = 0;
         if(opContext != null) {
             for (val b: opContext.getBArguments())
@@ -1473,12 +1478,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 dArgs.put(cnt++, b.toInt());
         }
 
+        cnt = 0;
+        if(opContext != null) {
+            for (val b: opContext.getSArguments())
+                sArgs.put(cnt++, new BytePointer(b));
+        } else {
+            for (val b: op.sArgs())
+                sArgs.put(cnt++, new BytePointer(b));
+        }
+
 
         OpaqueShapeList ptrptr;
         try {
             ptrptr = loop.calculateOutputShapes2(null,
                     hash, inputBuffers, inputShapes, nIn, tArgs,
-                    nTArgs, iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs);
+                    nTArgs, iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs, sArgs, nSArgs);
 
             if (loop.lastErrorCode() != 0) {
                 DifferentialFunction differentialFunction = (DifferentialFunction) op;

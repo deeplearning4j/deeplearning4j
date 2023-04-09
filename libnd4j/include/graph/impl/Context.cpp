@@ -480,6 +480,14 @@ void Context::setBArguments(const std::vector<bool> &bArgs) {
   for (auto b : bArgs) _bArgs.push_back(b);
 }
 
+void Context::setDArguments(const std::vector<DataType> &dArgs) {
+  for (auto d : dArgs) _dArgs.push_back(d);
+}
+
+void Context::setSArguments(const std::vector<std::string> &sArgs) {
+  for (auto s : sArgs) _sArgs.push_back(s);
+}
+
 void Context::setShapeFunctionOverride(bool reallyOverride) { _shapeFunctionOverride = reallyOverride; }
 
 bool Context::shapeFunctionOverride() { return _shapeFunctionOverride; }
@@ -497,10 +505,13 @@ void Context::setDArguments(sd::DataType *arguments, int numberOfArguments) {
   for (int e = 0; e < numberOfArguments; e++) _dArgs.emplace_back(arguments[e]);
 }
 
-void Context::setDArguments(const std::vector<sd::DataType> &dArgs) {
-  _dArgs.clear();
-  for (auto d : dArgs) _dArgs.emplace_back(d);
+void Context::setSArguments(std::string **arguments,int numberOfArguments) {
+  _sArgs.clear();
+  for(int i = 0; i < numberOfArguments; i++) {
+    _sArgs.emplace_back(*arguments[i]);
+  }
 }
+
 
 void Context::clearFastPath() {
   _fastpath_in.clear();

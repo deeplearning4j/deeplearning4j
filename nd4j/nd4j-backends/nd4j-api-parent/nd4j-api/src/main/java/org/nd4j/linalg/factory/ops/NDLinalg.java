@@ -24,6 +24,8 @@ package org.nd4j.linalg.factory.ops;
 
 import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
+import java.lang.String;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDValidation;
@@ -42,6 +44,25 @@ public class NDLinalg {
   public INDArray cholesky(INDArray input) {
     NDValidation.validateNumerical("Cholesky", "input", input);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Cholesky(input))[0];
+  }
+
+  /**
+   * The einsum operation, short for "Einstein summation," is a powerful and versatile tensor operation that allows for<br>
+   * the concise specification of a wide range of linear algebraic expressions. By leveraging a simple notation based on subscripts,<br>
+   * the einsum operation enables users to perform element-wise multiplications, reductions, transpositions, and other tensor operations<br>
+   *  without the need for explicit loops or intermediate variables. This not only simplifies the code but can also offer performance<br>
+   *  benefits, as einsum can optimize the underlying operations for better computational efficiency. Common use cases for<br>
+   *  einsum include matrix multiplication, batch matrix multiplication, outer product, inner product, trace, and more, <br>
+   *   making it a valuable addition to any tensor manipulation library.<br>
+   *
+   * @param a input tensors (NUMERIC type)
+   * @param equation Equation for einsum.
+   * @return output  (FLOATING_POINT type)
+   */
+  public INDArray einsum(INDArray[] a, String equation) {
+    NDValidation.validateNumerical("Einsum", "a", a);
+    Preconditions.checkArgument(a.length >= 1, "a has incorrect size/length. Expected: a.length >= 1, got %s", a.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.EinSum(a, equation))[0];
   }
 
   /**

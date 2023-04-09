@@ -1793,10 +1793,7 @@ void deleteShapeList(sd::Pointer shapeList) {
   delete list;
 }
 
-sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::DeclarableOp *op, sd::Pointer *inputBuffers,
-                                      sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                      sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                      int numDArgs) {
+sd::ShapeList *_calculateOutputShapes(sd::Pointer* extraPointers, sd::ops::DeclarableOp* op, sd::Pointer* inputBuffers, sd::Pointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, sd::LongType* iArgs, int numIArgs, bool* bArgs, int numBArgs, int* dArgs, int numDArgs, std::string **sArgs,int numSArgs) {
 
   sd::graph::VariableSpace varSpace;
   Context block(2, &varSpace);
@@ -1810,6 +1807,8 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
 
   for (int e = 0; e < numDArgs; e++) block.getDArguments()->push_back((sd::DataType)dArgs[e]);
 
+  for(int e = 0; e < numSArgs; e++) block.getSArguments()->push_back(*sArgs[e]);
+  
   for (int e = 0; e < numInputShapes; e++) {
     auto shape_ = reinterpret_cast<sd::LongType *>(inputShapes[e]);
     if(shape_ == nullptr) {
@@ -1845,12 +1844,12 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
 sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, sd::Pointer *inputBuffers,
                                       sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
                                       sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                      int numDArgs) {
+                                      int numDArgs, std::string **sArgs, int numSArgs) {
   try {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
 
     return _calculateOutputShapes(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs,
-                                  numIArgs, bArgs, numBArgs, dArgs, numDArgs);
+                                  numIArgs, bArgs, numBArgs, dArgs, numDArgs, sArgs, numSArgs);
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -2800,6 +2799,10 @@ void setGraphContextDArguments(OpaqueContext *ptr, int *arguments, int numberOfA
   for (int e = 0; e < numberOfArguments; e++) dtypes[e] = (sd::DataType)arguments[e];
 
   ptr->setDArguments(dtypes);
+}
+
+void setGraphContextSArguments(sd::graph::Context *ptr, std:: string** arguments, int numberOfArguments) {
+  ptr->setSArguments(arguments, numberOfArguments);
 }
 
 void deleteGraphContext(sd::graph::Context *ptr) { delete ptr; }

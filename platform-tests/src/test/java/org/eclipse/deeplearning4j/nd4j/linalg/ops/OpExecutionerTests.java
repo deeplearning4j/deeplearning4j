@@ -105,6 +105,18 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
 
     }
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testEinsum(Nd4jBackend backend) {
+        INDArray arr = Nd4j.create(new float[] {1, 2, 3, 4, 5, 6}, new int[] {2, 3});
+        INDArray arr2 = Nd4j.create(new float[] {1, 2, 3, 4, 5, 6}, new int[] {3, 2});
+        INDArray result = Nd4j.linalg().einsum(new INDArray[]{arr, arr2},"ij,jk->ik");
+        INDArray assertion = Nd4j.create(new float[] {22, 28, 49, 64}, new int[] {2, 2});
+        assertEquals(assertion, result);
+    }
+
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCosineSimilarity(Nd4jBackend backend) {

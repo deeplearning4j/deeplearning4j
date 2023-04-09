@@ -166,9 +166,34 @@ public interface OpContext extends AutoCloseable {
     List<Boolean> getBArguments();
     int numBArguments();
 
+
+
+
+    /**
+     * This method sets data type arguments required for operation
+     *
+     * @param arguments
+     * @param length
+     */
+    void setSArguments(Pointer arguments, int length);
+
+    /**
+     * This method sets boolean arguments required for operation
+     * @param arguments
+     */
+    void setSArguments(String... arguments);
+
+
+
+    List<String> getSArguments();
+    int numSArguments();
+
+
+
     /**
      * This method sets root-level seed for rng
-     * @param seed
+     * @param rootState the root seed
+     * @param nodeState the current seed
      */
     void setRngStates(long rootState, long nodeState);
 
@@ -258,7 +283,7 @@ public interface OpContext extends AutoCloseable {
     void allowHelpers(boolean reallyAllow);
 
     /**
-     * This methos allows to disape outputs validation via shape function
+     * This method allows to disaable outputs validation via shape function
      * @param reallyOverride
      */
     void shapeFunctionOverride(boolean reallyOverride);

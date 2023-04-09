@@ -1438,11 +1438,11 @@ typedef sd::graph::Context OpaqueContext;
 SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapes(sd::Pointer* extraPointers, sd::LongType hash,
                                                      sd::Pointer* inputShapes, int numInputShapes, double* tArgs,
                                                      int numTArgs, sd::LongType* iArgs, int numIArgs);
-SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapes2(sd::Pointer* extraPointers, sd::LongType hash,
-                                                      sd::Pointer* inputBuffers, sd::Pointer* inputShapes,
-                                                      int numInputShapes, double* tArgs, int numTArgs,
-                                                      sd::LongType* iArgs, int numIArgs, bool* bArgs, int numBArgs,
-                                                      int* dArgs, int numDArgs);
+SD_LIB_EXPORT sd::ShapeList* calculateOutputShapes2(sd::Pointer* extraPointers, sd::LongType hash,
+                                                    sd::Pointer* inputBuffers, sd::Pointer* inputShapes,
+                                                    int numInputShapes, double* tArgs, int numTArgs,
+                                                    sd::LongType* iArgs, int numIArgs, bool* bArgs, int numBArgs,
+                                                    int* dArgs, int numDArgs, std::string** sArgs, int numSArgs);
 #ifdef __NEC__
 SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapesFromContext(OpaqueContext* ctx, sd::LongType hash);
 SD_LIB_EXPORT int calculateOutputShapesAndFill(OpaqueContext *ctx, sd::LongType hash, void **handleState, int outBufferSizeInBytes, sd::LongType *outConcatenatedShapesBuffer);

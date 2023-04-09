@@ -26,8 +26,13 @@
 namespace sd {
 namespace ops {
 
+
+#if NOT_EXCLUDED(OP_einsum)
+DECLARE_CUSTOM_OP(einsum, -2, 1, false, 0, -2);
+#endif
+
 /**
- * This op is general matmum implementation. Depending on inputs dimensionality output result might be different.
+ * This op is general matmul implementation. Depending on inputs dimensionality output result might be different.
  * matrix x matrix = BLAS gemm
  * vector x matrix = BLAS gemm
  * vector x vector = BLAS dot

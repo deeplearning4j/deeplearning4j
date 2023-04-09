@@ -52,6 +52,8 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     private transient BooleanPointer bArgs;
     private transient IntPointer dArgs;
     private transient LongPointer iArgs;
+    private transient PointerPointer sArgs;
+
     private transient  long deallocationId;
     public CpuOpContext() {
         this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
@@ -163,6 +165,26 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             this.bArgs = new BooleanPointer(arguments);
             nativeOps.setGraphContextBArguments(context, this.bArgs, arguments.length);
         }
+    }
+
+    @Override
+    public void setSArguments(Pointer arguments, int length) {
+
+    }
+
+    @Override
+    public void setSArguments(String... arguments) {
+
+    }
+
+    @Override
+    public List<String> getSArguments() {
+        return null;
+    }
+
+    @Override
+    public int numSArguments() {
+        return 0;
     }
 
     @Override

@@ -248,6 +248,8 @@ class SD_LIB_EXPORT Context : public sd::graph::ContextPrototype {
   bool isTraining();
   bool isInference();
 
+  void setSArguments(std::string** arguments, int numberOfArguments);
+  void setSArguments(const std::vector<std::string>& sArgs);
 };
 }  // namespace graph
 }  // namespace sd

@@ -20,6 +20,7 @@
 
 package org.nd4j.codegen.ops
 
+import org.nd4j.codegen.api.AtLeast
 import org.nd4j.codegen.api.DataType
 import org.nd4j.codegen.api.DataType.*
 import org.nd4j.codegen.api.Language
@@ -123,6 +124,31 @@ fun Linalg() =  Namespace("Linalg") {
         Doc(Language.ANY, DocScope.ALL){
             """
              Performs matrix multiplication on input tensors.
+            """.trimIndent()
+        }
+    }
+
+    Op("Einsum") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.reduce"
+        javaOpClass = "EinSum"
+
+        Input(DataType.NUMERIC, "a") {count = AtLeast(1); description = "input tensors"}
+        Arg(DataType.STRING,"equation",{description = "Equation for einsum."})
+         Output(DataType.FLOATING_POINT, "output")
+
+        Doc(Language.ANY, DocScope.ALL){
+            """
+           The einsum operation, short for "Einstein summation," is a powerful and versatile tensor operation that allows for
+           the concise specification of a wide range of linear algebraic expressions. By leveraging a simple notation based on subscripts,
+           the einsum operation enables users to perform element-wise multiplications, reductions, transpositions, and other tensor operations
+            without the need for explicit loops or intermediate variables. This not only simplifies the code but can also offer performance
+            benefits, as einsum can optimize the underlying operations for better computational efficiency. Common use cases for
+            einsum include matrix multiplication, batch matrix multiplication, outer product, inner product, trace, and more, 
+             making it a valuable addition to any tensor manipulation library.
+
+
+
+
             """.trimIndent()
         }
     }
