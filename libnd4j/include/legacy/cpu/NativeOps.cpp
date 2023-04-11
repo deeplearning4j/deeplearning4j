@@ -1390,7 +1390,6 @@ void shuffleGeneric(void **hX, sd::LongType *const *hXShapeInfo, void **dz, sd::
   auto func = PRAGMA_THREADS_FOR {
     for (auto f = start; f < stop; f++) {
       auto hX = reinterpret_cast<T *>(dX[f]);
-      // auto hZ = reinterpret_cast<T *>(dZ[f]);
 
       auto xShapeInfo = hXShapeInfo[f];
       auto tadOffset = reinterpret_cast<sd::LongType *>(tadOffsets[f]);
@@ -1793,7 +1792,7 @@ void deleteShapeList(sd::Pointer shapeList) {
   delete list;
 }
 
-sd::ShapeList *_calculateOutputShapes(sd::Pointer* extraPointers, sd::ops::DeclarableOp* op, sd::Pointer* inputBuffers, sd::Pointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, sd::LongType* iArgs, int numIArgs, bool* bArgs, int numBArgs, int* dArgs, int numDArgs, std::string **sArgs,int numSArgs) {
+sd::ShapeList *_calculateOutputShapes(sd::Pointer* extraPointers, sd::ops::DeclarableOp* op, sd::Pointer* inputBuffers, sd::Pointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, sd::LongType* iArgs, int numIArgs, bool* bArgs, int numBArgs, int* dArgs, int numDArgs, char **sArgs,int numSArgs) {
 
   sd::graph::VariableSpace varSpace;
   Context block(2, &varSpace);
@@ -1807,7 +1806,9 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer* extraPointers, sd::ops::Decla
 
   for (int e = 0; e < numDArgs; e++) block.getDArguments()->push_back((sd::DataType)dArgs[e]);
 
-  for(int e = 0; e < numSArgs; e++) block.getSArguments()->push_back(*sArgs[e]);
+  for(int e = 0; e < numSArgs; e++)  {
+    block.getSArguments()->push_back(std::string(sArgs[e]));
+  }
   
   for (int e = 0; e < numInputShapes; e++) {
     auto shape_ = reinterpret_cast<sd::LongType *>(inputShapes[e]);
@@ -1844,12 +1845,12 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer* extraPointers, sd::ops::Decla
 sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, sd::Pointer *inputBuffers,
                                       sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
                                       sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                      int numDArgs, std::string **sArgs, int numSArgs) {
+                                      int numDArgs,  sd::Pointer *sArgs, int numSArgs) {
   try {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
-
+   char **sArgs_ = reinterpret_cast<char **>(sArgs);
     return _calculateOutputShapes(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs,
-                                  numIArgs, bArgs, numBArgs, dArgs, numDArgs, sArgs, numSArgs);
+                                  numIArgs, bArgs, numBArgs, dArgs, numDArgs, sArgs_, numSArgs);
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -2801,7 +2802,8 @@ void setGraphContextDArguments(OpaqueContext *ptr, int *arguments, int numberOfA
   ptr->setDArguments(dtypes);
 }
 
-void setGraphContextSArguments(sd::graph::Context *ptr, std:: string** arguments, int numberOfArguments) {
+void setGraphContextSArguments(sd::graph::Context *ptr, sd::Pointer *arguments, int numberOfArguments) {
+  std::string **args = reinterpret_cast<std::string **>(arguments);
   ptr->setSArguments(arguments, numberOfArguments);
 }
 

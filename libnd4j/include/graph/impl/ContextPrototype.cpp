@@ -65,7 +65,7 @@ std::vector<bool>* ContextPrototype::getBArguments() { return &(this->_bArgs); }
 
 std::vector<sd::LongType>* ContextPrototype::getAxis() { return &(this->_axis); }
 
-std::vector<std::string> * ContextPrototype::getSArguments() {return &(this->_sArgs);}
+std::vector<std::string>* ContextPrototype::getSArguments() {return &(this->_sArgs);}
 void ContextPrototype::pickInput(int input) {
   std::pair<int, int> pair(input, 0);
   this->_inputs.emplace_back(pair);

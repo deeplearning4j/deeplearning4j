@@ -76,6 +76,8 @@ void parse_einsum_input(const std::string& equation, std::vector<std::string>& i
 CUSTOM_OP_IMPL(einsum, -2, 1, false, 0, 0) {
   // Get the einsum equation string
   std::string equation = block.getSArguments()->at(0);
+  if(equation.empty())
+    throw std::runtime_error("EINSUM: equation string is empty.");
 
   // Parse the einsum equation string and extract relevant information
   std::vector<std::string> input_labels;
@@ -142,7 +144,12 @@ CUSTOM_OP_IMPL(einsum, -2, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(einsum) {
   // Calculate the output shape based on the einsum equation string and input shapes
+  REQUIRE_TRUE(block.getSArguments()->size() > 0, 0, "EINSUM: number of string arguments must be 1, but got %i instead.", block.getSArguments()->size());
   std::string equation = block.getSArguments()->at(0);
+  if(equation.empty())
+    throw std::runtime_error("EINSUM: equation string is empty.");
+
+  sd_printf("Executing EINSUM with equation string: \"%s\"\n",equation.c_str());
   std::vector<std::string> input_labels;
   std::string output_labels;
   parse_einsum_input(equation, input_labels, output_labels);

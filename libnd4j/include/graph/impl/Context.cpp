@@ -485,6 +485,8 @@ void Context::setDArguments(const std::vector<DataType> &dArgs) {
 }
 
 void Context::setSArguments(const std::vector<std::string> &sArgs) {
+  sd_printf("Setting s arguments number %d\n",sArgs.size());
+
   for (auto s : sArgs) _sArgs.push_back(s);
 }
 
@@ -505,10 +507,12 @@ void Context::setDArguments(sd::DataType *arguments, int numberOfArguments) {
   for (int e = 0; e < numberOfArguments; e++) _dArgs.emplace_back(arguments[e]);
 }
 
-void Context::setSArguments(std::string **arguments,int numberOfArguments) {
+void Context::setSArguments(sd::Pointer *arguments,int numberOfArguments) {
   _sArgs.clear();
+  sd_printf("Setting s arguments number %d\n",numberOfArguments);
+  char **strArgs = reinterpret_cast<char **>(arguments);
   for(int i = 0; i < numberOfArguments; i++) {
-    _sArgs.emplace_back(*arguments[i]);
+    _sArgs.emplace_back(std::string(strArgs[i]));
   }
 }
 

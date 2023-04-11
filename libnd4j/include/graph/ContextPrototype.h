@@ -48,9 +48,8 @@ class SD_LIB_EXPORT ContextPrototype {
   std::vector<bool> _bArgs;
   std::vector<sd::LongType> _axis;
   std::vector<sd::DataType> _dArgs;
-#ifndef __JAVACPP_HACK__
   std::vector<std::string> _sArgs;
-#endif
+
   // TODO: remove this field
   sd::DataType _dataType = sd::DataType::FLOAT32;
   bool _isInplace;

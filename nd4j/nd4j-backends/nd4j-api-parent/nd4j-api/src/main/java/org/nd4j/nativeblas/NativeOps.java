@@ -1196,42 +1196,36 @@ public interface NativeOps {
 
     OpaqueShapeList calculateOutputShapes(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("sd::LongType *") LongPointer iArgs, int numIArgs);
 
-     ShapeList calculateOutputShapes2(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash,
-                                                   @Cast("sd::Pointer*") PointerPointer inputBuffers, @Cast("sd::Pointer*") PointerPointer inputShapes,
-                                                   int numInputShapes, DoublePointer tArgs, int numTArgs,
-                                                   @Cast("sd::LongType*") LongPointer iArgs, int numIArgs, @Cast("bool*") BooleanPointer bArgs, int numBArgs,
-                                                   IntPointer dArgs, int numDArgs, @Cast("std::string**") @StdString PointerPointer sArgs, int numSArgs);
-     ShapeList calculateOutputShapes2(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash,
-                                                   @Cast("sd::Pointer*") PointerPointer inputBuffers, @Cast("sd::Pointer*") PointerPointer inputShapes,
-                                                   int numInputShapes, DoublePointer tArgs, int numTArgs,
-                                                   @Cast("sd::LongType*") LongPointer iArgs, int numIArgs, @Cast("bool*") BooleanPointer bArgs, int numBArgs,
-                                                   IntPointer dArgs, int numDArgs, @StdString @ByPtrPtr @Cast({"char*", "std::string*"}) BytePointer sArgs, int numSArgs);
-     ShapeList calculateOutputShapes2(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash,
-                                                   @Cast("sd::Pointer*") PointerPointer inputBuffers, @Cast("sd::Pointer*") PointerPointer inputShapes,
-                                                   int numInputShapes, DoubleBuffer tArgs, int numTArgs,
-                                                   @Cast("sd::LongType*") LongBuffer iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs,
-                                                   IntBuffer dArgs, int numDArgs, @StdString @ByPtrPtr @Cast({"char*", "std::string*"}) BytePointer sArgs, int numSArgs);
-     ShapeList calculateOutputShapes2(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash,
-                                                   @Cast("sd::Pointer*") PointerPointer inputBuffers, @Cast("sd::Pointer*") PointerPointer inputShapes,
-                                                   int numInputShapes, double[] tArgs, int numTArgs,
-                                                   @Cast("sd::LongType*") long[] iArgs, int numIArgs, @Cast("bool*") BooleanPointer bArgs, int numBArgs,
-                                                   int[] dArgs, int numDArgs, @StdString @ByPtrPtr @Cast({"char*", "std::string*"}) BytePointer sArgs, int numSArgs);
-     ShapeList calculateOutputShapes2(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash,
-                                                   @Cast("sd::Pointer*") PointerPointer inputBuffers, @Cast("sd::Pointer*") PointerPointer inputShapes,
-                                                   int numInputShapes, DoublePointer tArgs, int numTArgs,
-                                                   @Cast("sd::LongType*") LongPointer iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs,
-                                                   IntPointer dArgs, int numDArgs, @StdString @ByPtrPtr @Cast({"char*", "std::string*"}) BytePointer sArgs, int numSArgs);
-     ShapeList calculateOutputShapes2(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash,
-                                                   @Cast("sd::Pointer*") PointerPointer inputBuffers, @Cast("sd::Pointer*") PointerPointer inputShapes,
-                                                   int numInputShapes, DoubleBuffer tArgs, int numTArgs,
-                                                   @Cast("sd::LongType*") LongBuffer iArgs, int numIArgs, @Cast("bool*") BooleanPointer bArgs, int numBArgs,
-                                                   IntBuffer dArgs, int numDArgs, @StdString @ByPtrPtr @Cast({"char*", "std::string*"}) BytePointer sArgs, int numSArgs);
-     ShapeList calculateOutputShapes2(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash,
-                                                   @Cast("sd::Pointer*") PointerPointer inputBuffers, @Cast("sd::Pointer*") PointerPointer inputShapes,
-                                                   int numInputShapes, double[] tArgs, int numTArgs,
-                                                   @Cast("sd::LongType*") long[] iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs,
-                                                   int[] dArgs, int numDArgs, @StdString @ByPtrPtr @Cast({"char*", "std::string*"}) BytePointer sArgs, int numSArgs);
-
+    org.nd4j.nativeblas.OpaqueShapeList calculateOutputShapes2(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash,
+                                                                             @Cast("sd::Pointer*") PointerPointer inputBuffers, @Cast("sd::Pointer*") PointerPointer inputShapes,
+                                                                             int numInputShapes, DoublePointer tArgs, int numTArgs,
+                                                                             @Cast("sd::LongType*") LongPointer iArgs, int numIArgs, @Cast("bool*") BooleanPointer bArgs, int numBArgs,
+                                                                             IntPointer dArgs, int numDArgs, @Cast("sd::Pointer*") PointerPointer sArgs, int numSArgs);
+    org.nd4j.nativeblas.OpaqueShapeList calculateOutputShapes2(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash,
+                                                                             @Cast("sd::Pointer*") PointerPointer inputBuffers, @Cast("sd::Pointer*") PointerPointer inputShapes,
+                                                                             int numInputShapes, DoubleBuffer tArgs, int numTArgs,
+                                                                             @Cast("sd::LongType*") LongBuffer iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs,
+                                                                             IntBuffer dArgs, int numDArgs, @Cast("sd::Pointer*") PointerPointer sArgs, int numSArgs);
+    org.nd4j.nativeblas.OpaqueShapeList calculateOutputShapes2(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash,
+                                                                             @Cast("sd::Pointer*") PointerPointer inputBuffers, @Cast("sd::Pointer*") PointerPointer inputShapes,
+                                                                             int numInputShapes, double[] tArgs, int numTArgs,
+                                                                             @Cast("sd::LongType*") long[] iArgs, int numIArgs, @Cast("bool*") BooleanPointer bArgs, int numBArgs,
+                                                                             int[] dArgs, int numDArgs, @Cast("sd::Pointer*") PointerPointer sArgs, int numSArgs);
+    org.nd4j.nativeblas.OpaqueShapeList calculateOutputShapes2(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash,
+                                                                             @Cast("sd::Pointer*") PointerPointer inputBuffers, @Cast("sd::Pointer*") PointerPointer inputShapes,
+                                                                             int numInputShapes, DoublePointer tArgs, int numTArgs,
+                                                                             @Cast("sd::LongType*") LongPointer iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs,
+                                                                             IntPointer dArgs, int numDArgs, @Cast("sd::Pointer*") PointerPointer sArgs, int numSArgs);
+    org.nd4j.nativeblas.OpaqueShapeList calculateOutputShapes2(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash,
+                                                                             @Cast("sd::Pointer*") PointerPointer inputBuffers, @Cast("sd::Pointer*") PointerPointer inputShapes,
+                                                                             int numInputShapes, DoubleBuffer tArgs, int numTArgs,
+                                                                             @Cast("sd::LongType*") LongBuffer iArgs, int numIArgs, @Cast("bool*") BooleanPointer bArgs, int numBArgs,
+                                                                             IntBuffer dArgs, int numDArgs, @Cast("sd::Pointer*") PointerPointer sArgs, int numSArgs);
+    org.nd4j.nativeblas.OpaqueShapeList calculateOutputShapes2(@Cast("sd::Pointer*") PointerPointer extraPointers, @Cast("sd::LongType") long hash,
+                                                                             @Cast("sd::Pointer*") PointerPointer inputBuffers, @Cast("sd::Pointer*") PointerPointer inputShapes,
+                                                                             int numInputShapes, double[] tArgs, int numTArgs,
+                                                                             @Cast("sd::LongType*") long[] iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs,
+                                                                             int[] dArgs, int numDArgs, @Cast("sd::Pointer*") PointerPointer sArgs, int numSArgs);
     long getShapeListSize(OpaqueShapeList list);
     LongPointer getShape(OpaqueShapeList list, long i);
 
