@@ -82,7 +82,6 @@ public class DeallocatorService {
     @Getter
     private Map<Long,DeallocatableReference> referenceMap = Collections.synchronizedMap(new WeakHashMap<>());
 
-    private Map<Long,String> referenceTypes = new ConcurrentHashMap<>();
 
     private Counter<String> allocated = new Counter<>();
     private Counter<String> deallocated = new Counter<>();
@@ -91,7 +90,7 @@ public class DeallocatorService {
 
     private List<List<ReferenceQueue<Deallocatable>>> deviceMap = new ArrayList<>();
     private Boolean noPointerGc;
-    private  int numThreads =  4;
+    private  int numThreads =  1;
 
     private final transient AtomicLong counter = new AtomicLong(0);
 
@@ -149,7 +148,6 @@ public class DeallocatorService {
             val desiredDevice = deallocatable.targetDevice();
             val map = deviceMap.get(desiredDevice);
             allocated.incrementCount(deallocatable.getClass().getName(),1.0);
-            referenceTypes.put(deallocatable.getUniqueId(),deallocatable.getClass().getName());
             val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, numThreads)));
             referenceMap.put(deallocatable.getUniqueId(), reference);
             return deallocatable.getUniqueId();
@@ -193,11 +191,7 @@ public class DeallocatorService {
                     } else {
                         // invoking deallocator
                         if (reference != null) {
-                            if(referenceTypes.containsKey(reference.getId())) {
-                                deallocated.incrementCount(referenceTypes.get(reference.getId()), 1.0);
-                                referenceTypes.remove(reference.getId());
-                                reference.deallocate();
-                            }
+                            reference.deallocate();
 
                             if(referenceMap.containsKey(reference.getId()))
                                 referenceMap.remove(reference.getId());
@@ -210,14 +204,8 @@ public class DeallocatorService {
                             continue;
 
 
-
-                        if(referenceTypes.containsKey(reference.getId())) {
-                            deallocated.incrementCount(referenceTypes.get(reference.getId()), 1.0);
-                            referenceTypes.remove(reference.getId());
-                            // invoking deallocator
-                            reference.deallocate();
-                        }
-
+                        // invoking deallocator
+                        reference.deallocate();
                         if(referenceMap.containsKey(reference.getId()))
                             referenceMap.remove(reference.getId());
                     } catch (InterruptedException e) {

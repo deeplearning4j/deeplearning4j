@@ -65,6 +65,23 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     public void close() {
         // no-op
         nativeOps.ctxPurge(context);
+        Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
+        if(this.iArgs != null) {
+            this.iArgs.deallocate();
+        }
+
+        if(this.tArgs != null) {
+            this.tArgs.deallocate();
+        }
+
+        if(this.bArgs != null) {
+            this.bArgs.deallocate();
+        }
+
+        if(this.dArgs != null) {
+            this.dArgs.deallocate();
+        }
+
         context.deallocate();
     }
 
@@ -216,7 +233,6 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             }
         }
 
-        buffers.retainReference();
         nativeOps.setGraphContextInputBuffers(context,arrays.size(),buffers,shapeInfoBuffer,null);
 
     }
