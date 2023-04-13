@@ -69,6 +69,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
 
         if (sentenceIter != null) {
             SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(sentenceIter)
+                    .vocabCache(vocab)
                     .tokenizerFactory(this.tokenizerFactory).build();
             this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
         }
@@ -80,11 +81,11 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
      * @param iterator SentenceIterator instance
      */
     public void setSentenceIterator(@NonNull SentenceIterator iterator) {
-        //if (tokenizerFactory == null) throw new IllegalStateException("Please call setTokenizerFactory() prior to setSentenceIter() call.");
 
         if (tokenizerFactory != null) {
             SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator)
                     .tokenizerFactory(tokenizerFactory)
+                    .vocabCache(vocab)
                     .allowMultithreading(configuration == null || configuration.isAllowParallelTokenization())
                     .build();
             this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
@@ -687,6 +688,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
                     tokenizerFactory = new DefaultTokenizerFactory();
 
                 SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(sentenceIterator)
+                        .vocabCache(vocabCache)
                         .tokenizerFactory(tokenizerFactory).allowMultithreading(allowParallelTokenization)
                         .build();
                 this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
@@ -698,6 +700,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
 
                 SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(labelAwareIterator)
                         .tokenizerFactory(tokenizerFactory).allowMultithreading(allowParallelTokenization)
+                        .vocabCache(vocabCache)
                         .build();
                 this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
             }

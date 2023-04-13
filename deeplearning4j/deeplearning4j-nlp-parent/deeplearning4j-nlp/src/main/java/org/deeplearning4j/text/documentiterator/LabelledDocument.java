@@ -24,12 +24,13 @@ import lombok.Data;
 import lombok.ToString;
 import org.deeplearning4j.models.word2vec.VocabWord;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
 @ToString(exclude = "referencedContent")
-public class LabelledDocument {
+public class LabelledDocument implements Serializable  {
 
     // optional field
     private String id;

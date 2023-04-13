@@ -52,6 +52,7 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
     protected BasicTransformerIterator currentIterator;
 
     protected static final Logger log = LoggerFactory.getLogger(SentenceTransformer.class);
+    private VocabCache<VocabWord> vocabCache;
 
     private SentenceTransformer(@NonNull LabelAwareIterator iterator) {
         this.iterator = iterator;
@@ -68,7 +69,9 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
             if (token == null || token.isEmpty() || token.trim().isEmpty())
                 continue;
 
-            VocabWord word = new VocabWord(1.0, token);
+            VocabWord word = vocabCache.wordFor(token);
+            if(word == null)
+                word = new VocabWord(1.0, token);
             sequence.addElement(word);
         }
 
@@ -79,10 +82,8 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
     @Override
     public Iterator<Sequence<VocabWord>> iterator() {
         if (currentIterator == null) {
-            //if (!allowMultithreading)
-                currentIterator = new BasicTransformerIterator(iterator, this);
-            //else
-            //    currentIterator = new ParallelTransformerIterator(iterator, this, true);
+            currentIterator = new BasicTransformerIterator(iterator, this);
+
         } else
             reset();
 
@@ -105,6 +106,11 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
 
         public Builder() {
 
+        }
+
+        public Builder vocabCache(@NonNull VocabCache<VocabWord> vocabCache) {
+            this.vocabCache = vocabCache;
+            return this;
         }
 
         public Builder tokenizerFactory(@NonNull TokenizerFactory tokenizerFactory) {
@@ -148,7 +154,7 @@ public class SentenceTransformer implements SequenceTransformer<VocabWord, Strin
             transformer.tokenizerFactory = this.tokenizerFactory;
             transformer.readOnly = this.readOnly;
             transformer.allowMultithreading = this.allowMultithreading;
-
+            transformer.vocabCache = this.vocabCache;
             return transformer;
         }
     }

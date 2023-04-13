@@ -1130,6 +1130,7 @@ public class ParagraphVectors extends Word2Vec {
 
             if (labelAwareIterator != null) {
                 SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(labelAwareIterator)
+                        .vocabCache(vocabCache)
                         .tokenizerFactory(tokenizerFactory).allowMultithreading(allowParallelTokenization)
                         .build();
                 this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();

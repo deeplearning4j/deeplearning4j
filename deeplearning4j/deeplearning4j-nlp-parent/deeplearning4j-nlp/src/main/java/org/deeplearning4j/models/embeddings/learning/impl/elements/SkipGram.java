@@ -23,6 +23,7 @@ package org.deeplearning4j.models.embeddings.learning.impl.elements;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -40,6 +41,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 import org.nd4j.shade.guava.cache.Cache;
 import org.nd4j.shade.guava.cache.CacheBuilder;
+import org.nd4j.shade.guava.cache.Weigher;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,8 +60,11 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected double sampling;
     protected int[] variableWindows;
     protected int vectorLength;
+    protected int maxQueueSize = Integer.parseInt(System.getProperty(DL4JSystemProperties.NLP_QUEUE_SIZE,"1000"));
 
-    private Cache<IterationArraysKey, Queue<IterationArrays>> iterationArrays = CacheBuilder.newBuilder().build();
+    private Cache<IterationArraysKey, Queue<IterationArrays>> iterationArrays = CacheBuilder.newBuilder()
+            .maximumSize(Integer.parseInt(System.getProperty(DL4JSystemProperties.NLP_CACHE_SIZE,"10000")))
+            .build();
     protected int workers = Runtime.getRuntime().availableProcessors();
 
 
@@ -413,8 +418,9 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 items.clear();
 
                 Nd4j.close(targetArray,codes,indices,alphasArray,ngStarterArray,randomValuesArr);
-
-                iterationArraysQueue.add(iterationArrays1);
+/*
+                if(iterationArraysQueue.size() < maxQueueSize)
+                    iterationArraysQueue.add(iterationArrays1);*/
 
             } else {
                 int cnt = 0;
