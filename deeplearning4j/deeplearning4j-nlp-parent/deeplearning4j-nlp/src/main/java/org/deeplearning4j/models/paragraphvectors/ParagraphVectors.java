@@ -1136,6 +1136,7 @@ public class ParagraphVectors extends Word2Vec {
                 this.iterator = new AbstractSequenceIterator.Builder<>(transformer).build();
             }
 
+            ret.vectorCalcThreads = this.vectorCalcThreads;
             ret.numEpochs = this.numEpochs;
             ret.numIterations = this.iterations;
             ret.vocab = this.vocabCache;
@@ -1192,6 +1193,7 @@ public class ParagraphVectors extends Word2Vec {
                 this.configuration.setUseHierarchicSoftmax(this.useHierarchicSoftmax);
                 this.configuration.setTrainElementsVectors(this.trainElementsVectors);
                 this.configuration.setPreciseWeightInit(this.preciseWeightInit);
+                this.configuration.setVectorCalcThreads(this.vectorCalcThreads);
                 if(this.sequenceLearningAlgorithm != null)
                     this.configuration
                             .setSequenceLearningAlgorithm(this.sequenceLearningAlgorithm.getClass().getCanonicalName());
