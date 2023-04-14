@@ -418,9 +418,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 items.clear();
 
                 Nd4j.close(targetArray,codes,indices,alphasArray,ngStarterArray,randomValuesArr);
-/*
                 if(iterationArraysQueue.size() < maxQueueSize)
-                    iterationArraysQueue.add(iterationArrays1);*/
+                    iterationArraysQueue.add(iterationArrays1);
 
             } else {
                 int cnt = 0;
