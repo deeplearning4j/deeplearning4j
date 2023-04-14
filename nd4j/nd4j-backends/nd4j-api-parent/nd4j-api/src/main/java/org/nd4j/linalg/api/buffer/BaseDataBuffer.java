@@ -33,6 +33,7 @@ import org.nd4j.common.primitives.Triple;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
@@ -2237,6 +2238,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.released = true;
         this.indexer = null;
         this.pointer = null;
+        Nd4j.getDeallocatorService().getReferenceMap().remove(deallocationId);
     }
 
     @Override

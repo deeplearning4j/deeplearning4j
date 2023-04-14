@@ -1173,6 +1173,7 @@ public class ParagraphVectors extends Word2Vec {
             ret.modelUtils = this.modelUtils;
             ret.eventListeners = this.vectorsListeners;
             ret.workers = this.workers;
+            ret.vectorCalcThreads = this.vectorCalcThreads;
             if(!configurationSpecified) {
                 this.configuration.setWorkers(this.workers);
                 this.configuration.setLearningRate(this.learningRate);
