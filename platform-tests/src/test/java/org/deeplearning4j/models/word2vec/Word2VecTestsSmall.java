@@ -33,11 +33,11 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.text.documentiterator.FileLabelAwareIterator;
-import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
+import org.deeplearning4j.text.documentiterator.*;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -56,10 +56,12 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 @Slf4j
@@ -135,6 +137,96 @@ public class Word2VecTestsSmall extends BaseDL4JTest {
         tmpFile.deleteOnExit();
 
         WordVectorSerializer.writeWord2VecModel(vec, tmpFile); // NullPointerException was thrown here
+    }
+
+
+
+    @Test
+    public void testShardedLabelAwareIterator() {
+        // Create a dummy LabelAwareIterator with sample documents
+        LabelAwareIterator dummyIterator = new DummyLabelAwareIterator();
+
+        // Create a tokenizer factory for the ShardedLabelAwareIterator
+        TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
+
+        // Instantiate the ShardedLabelAwareIterator with a document size limit of 3 tokens
+        ShardedLabelAwareIterator shardedIterator = new ShardedLabelAwareIterator(dummyIterator, tokenizerFactory, 3);
+
+        // Store expected documents after sharding
+        // Store expected documents after sharding
+        List<String> expectedDocuments = Arrays.asList(
+                "This is a",
+                "sample document with",
+                "some text for",
+                "testing purposes",
+                "Here is another",
+                "document"
+        );
+        // Iterate through the sharded documents and check if they match the expected documents
+        List<String> shardedDocuments = new ArrayList<>();
+        while (shardedIterator.hasNext()) {
+            LabelledDocument document = shardedIterator.next();
+            shardedDocuments.add(document.getContent());
+        }
+
+        assertEquals(expectedDocuments, shardedDocuments);
+
+        // Test reset functionality
+        shardedIterator.reset();
+        assertFalse(shardedIterator.getDocBatches() != null && !shardedIterator.getDocBatches().isEmpty());
+    }
+
+    // A simple dummy LabelAwareIterator implementation for testing purposes
+    private static class DummyLabelAwareIterator implements LabelAwareIterator {
+        private List<LabelledDocument> documents;
+        private int currentIndex;
+
+        public DummyLabelAwareIterator() {
+            documents = new ArrayList<>();
+            LabelledDocument doc1 = new LabelledDocument();
+            doc1.setContent("This is a sample document with some text for testing purposes");
+            documents.add(doc1);
+
+            LabelledDocument doc2 = new LabelledDocument();
+            doc2.setContent("Here is another document");
+            documents.add(doc2);
+
+            currentIndex = 0;
+        }
+
+        @Override
+        public boolean hasNextDocument() {
+            return currentIndex < documents.size();
+        }
+
+        @Override
+        public LabelledDocument nextDocument() {
+            return hasNextDocument() ? documents.get(currentIndex++) : null;
+        }
+
+        @Override
+        public void reset() {
+            currentIndex = 0;
+        }
+
+        @Override
+        public LabelsSource getLabelsSource() {
+            return new LabelsSource();
+        }
+
+        @Override
+        public void shutdown() {
+        }
+
+        @Override
+        public boolean hasNext() {
+            return hasNextDocument();
+        }
+
+        @Override
+        public LabelledDocument next() {
+            return nextDocument();
+        }
     }
 
     @Test

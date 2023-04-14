@@ -69,7 +69,9 @@ public class InMemoryLookupTableTest extends BaseDL4JTest {
 
 
         SentenceTransformer transformer =
-                        new SentenceTransformer.Builder().iterator(underlyingIterator).tokenizerFactory(t).build();
+                        new SentenceTransformer.Builder().iterator(underlyingIterator)
+                                .vocabCache(cacheSource)
+                                .tokenizerFactory(t).build();
 
         AbstractSequenceIterator<VocabWord> sequenceIterator =
                         new AbstractSequenceIterator.Builder<>(transformer).build();
@@ -148,7 +150,9 @@ public class InMemoryLookupTableTest extends BaseDL4JTest {
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
                         .addSourceFolder(dir).build();
 
-        transformer = new SentenceTransformer.Builder().iterator(labelAwareIterator).tokenizerFactory(t).build();
+        transformer = new SentenceTransformer.Builder().iterator(labelAwareIterator)
+                .vocabCache(mem1.getVocabCache())
+                .tokenizerFactory(t).build();
 
         sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer).build();
 
