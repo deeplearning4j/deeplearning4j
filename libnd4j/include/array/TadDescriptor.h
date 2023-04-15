@@ -35,7 +35,7 @@ class SD_LIB_EXPORT TadDescriptor {
   bool _unitiesInShape;
 
  public:
-  explicit TadDescriptor(const sd::LongType *originalShape, const LongType *dimensions, const int length,
+  explicit TadDescriptor(const sd::LongType *originalShape, const LongType *dimensions, const LongType length,
                          const bool keepUnitiesInShape = false);
   explicit TadDescriptor(const ShapeDescriptor &descriptor, const std::vector<LongType> &dimensions,
                          const bool keepUnitiesInShape = false);

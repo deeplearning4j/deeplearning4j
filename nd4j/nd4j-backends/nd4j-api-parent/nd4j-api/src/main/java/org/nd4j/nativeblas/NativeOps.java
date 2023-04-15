@@ -783,7 +783,7 @@ public interface NativeOps {
 
     void setGridLimit(int gridSize);
 
-    OpaqueTadPack tadOnlyShapeInfo(LongPointer shapeInfo, LongPointer dimension, int dimensionLength);
+    OpaqueTadPack tadOnlyShapeInfo(LongPointer shapeInfo, LongPointer dimension, long dimensionLength);
 
     LongPointer getPrimaryShapeInfo(OpaqueTadPack pack);
     LongPointer getPrimaryOffsets(OpaqueTadPack pack);

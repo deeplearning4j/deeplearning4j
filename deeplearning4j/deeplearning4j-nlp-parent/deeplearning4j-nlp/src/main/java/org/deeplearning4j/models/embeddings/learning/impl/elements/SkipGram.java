@@ -45,6 +45,7 @@ import org.nd4j.shade.guava.cache.Weigher;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -327,8 +328,12 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                         iterationArrays1 = new IterationArrays(items.size(),maxCols);
 
                     }else {
-                        iterationArrays1 = iterationArraysQueue.remove();
-                        iterationArrays1.initCodes();
+                        try {
+                            iterationArrays1 = iterationArraysQueue.remove();
+                            iterationArrays1.initCodes();
+                        }catch(NoSuchElementException e) {
+                            iterationArrays1 = new IterationArrays(items.size(),maxCols);
+                        }
                     }
                 }
 
