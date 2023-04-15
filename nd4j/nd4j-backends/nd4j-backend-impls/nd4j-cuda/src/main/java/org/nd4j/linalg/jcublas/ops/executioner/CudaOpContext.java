@@ -53,6 +53,12 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     private final transient long id = Nd4j.getDeallocatorService().nextValue();
     public final static long BASE_CUDA_OP_CONTEXT_OFFSET = RandomUtils.nextLong();
    private long deallocationId;
+    private transient DoublePointer tArgs;
+    private transient BooleanPointer bArgs;
+    private transient IntPointer dArgs;
+    private transient LongPointer iArgs;
+
+
     public CudaOpContext() {
         this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
         if(OpContextTracker.getInstance().isEnabled()) {
@@ -63,6 +69,24 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     @Override
     public void close() {
         nativeOps.ctxPurge(context);
+
+        Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
+        if(this.iArgs != null) {
+            this.iArgs.deallocate();
+        }
+
+        if(this.tArgs != null) {
+            this.tArgs.deallocate();
+        }
+
+        if(this.bArgs != null) {
+            this.bArgs.deallocate();
+        }
+
+        if(this.dArgs != null) {
+            this.dArgs.deallocate();
+        }
+
         context.deallocate();
     }
 
@@ -72,39 +96,28 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     }
 
     @Override
-    public void setIArguments(long... arguments) {
-        if (arguments.length > 0) {
-            super.setIArguments(arguments);
-            nativeOps.setGraphContextIArguments(context, new LongPointer(arguments), arguments.length);
-        }
+    public void setIArguments(Pointer arguments, int length) {
+        this.iArgs = arguments instanceof LongPointer ?(LongPointer) arguments : new LongPointer(arguments);
+        nativeOps.setGraphContextIArguments(context, this.iArgs,length);
+
     }
 
     @Override
-    public void setBArguments(boolean... arguments) {
-        if (arguments.length > 0) {
-            super.setBArguments(arguments);
-            nativeOps.setGraphContextBArguments(context, new BooleanPointer(arguments), arguments.length);
-        }
+    public void setTArguments(Pointer arguments, int length) {
+        this.tArgs = arguments instanceof DoublePointer ?(DoublePointer) arguments : new DoublePointer(arguments);
+        nativeOps.setGraphContextTArguments(context, this.tArgs,length);
     }
 
     @Override
-    public void setTArguments(double... arguments) {
-        if (arguments.length > 0) {
-            super.setTArguments(arguments);
-            nativeOps.setGraphContextTArguments(context, new DoublePointer(arguments), arguments.length);
-        }
+    public void setDArguments(Pointer arguments, int length) {
+        this.dArgs = arguments instanceof IntPointer ?(IntPointer) arguments : new IntPointer(arguments);
+        nativeOps.setGraphContextDArguments(context, this.dArgs,length);
     }
 
     @Override
-    public void setDArguments(DataType... arguments) {
-        if (arguments.length > 0) {
-            super.setDArguments(arguments);
-            val args = new int[arguments.length];
-            for (int e = 0; e < arguments.length; e++)
-                args[e] = arguments[e].toInt();
-
-            nativeOps.setGraphContextDArguments(context, new IntPointer(args), arguments.length);
-        };
+    public void setBArguments(Pointer arguments, int length) {
+        this.bArgs = arguments instanceof BooleanPointer ?(BooleanPointer) arguments : new BooleanPointer(arguments);
+        nativeOps.setGraphContextBArguments(context, this.bArgs,length);
     }
 
     @Override
