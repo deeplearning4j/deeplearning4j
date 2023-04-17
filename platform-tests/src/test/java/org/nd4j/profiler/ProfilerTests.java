@@ -20,6 +20,7 @@
 package org.nd4j.profiler;
 
 import org.junit.jupiter.api.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 public class ProfilerTests {
@@ -27,7 +28,8 @@ public class ProfilerTests {
 
     @Test
     public void testProfiler() {
-        Nd4j.create(2);
+        INDArray arr = Nd4j.create(2);
+        Nd4j.close(arr);
 
     }
 

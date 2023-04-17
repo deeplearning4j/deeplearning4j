@@ -1351,7 +1351,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                     for (int i = 0; i < numIterations; i++) {
                         // we roll over sequences derived from digitizer, it's NOT window loop
                         for (int x = 0; x < sequences.size(); x++) {
-                            try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, workspace_id)) {
+                            try (val ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                                 Sequence<T> sequence = sequences.get(x);
 
                                 log.debug("LR before: {}; wordsCounter: {}; totalWordsCount: {}", learningRate.get(), this.wordsCounter.get(), this.totalWordsCount);

@@ -303,7 +303,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     }
 
     public  Double doExec(List<BatchItem<T>> items,INDArray inferenceVector) {
-        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread()) {
+        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             if (items.size() > 1) {
                 INDArray targetArray = null;
                 INDArray ngStarterArray = null;
@@ -405,7 +405,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 if(configuration.isUseHierarchicSoftmax())
                     indices = Nd4j.createFromArray(indicesArr);
 
-/*
                 SkipGramRound sg = SkipGramRound.builder()
                         .target(targetArray)
                         .expTable(expTable.get())
@@ -424,7 +423,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                         .iterations(inferenceVector != null ? configuration.getIterations() * configuration.getEpochs() : 1)
                         .build();
 
-                Nd4j.getExecutioner().exec(sg);*/
+                Nd4j.getExecutioner().exec(sg);
                 items.clear();
 
                 sg.inputArguments().clear();
