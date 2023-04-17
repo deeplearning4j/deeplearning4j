@@ -21,6 +21,7 @@
 package org.nd4j.linalg.profiler;
 
 import org.nd4j.common.primitives.AtomicBoolean;
+import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.profiler.data.OpContextInfo;
@@ -148,7 +149,8 @@ public class OpContextTracker {
      * @param opContext  the op context
      */
     public void deallocateContext(OpContext opContext) {
-        opContextInfo.get(opContext.id()).setAllocated(false);
+        Deallocatable deallocatable = (Deallocatable) opContext;
+        opContextInfo.get(deallocatable.getUniqueId()).setAllocated(false);
     }
 
     /**
@@ -161,16 +163,18 @@ public class OpContextTracker {
 
     /**
      * Indicates an op context is allocated
-     * This will record information about the op context uponc reation
+     * This will record information about the op context upon creation
      * @param opContext
      */
     public void allocateOpContext(OpContext opContext) {
+        Deallocatable deallocatable = (Deallocatable) opContext;
         OpContextInfo opContextInfo1  = OpContextInfo.builder()
                 .allocated(true)
-                .id(opContext.id())
+                .id(deallocatable.getUniqueId())
                 .build();
 
-        opContextInfo.put(opContext.id(),opContextInfo1);
+
+        opContextInfo.put(deallocatable.getUniqueId(),opContextInfo1);
 
     }
 
@@ -182,7 +186,8 @@ public class OpContextTracker {
      * @param opContext the op context to add the input to
      */
     public void associateInput(INDArray input,OpContext opContext) {
-        opContextInfo.get(opContext.id()).addInput(input);
+        Deallocatable deallocatable = (Deallocatable) opContext;
+        opContextInfo.get(deallocatable.getUniqueId()).addInput(input);
     }
 
 
@@ -198,7 +203,8 @@ public class OpContextTracker {
     public void associateOutput(INDArray input,OpContext opContext) {
         //op outputs are usually allocated alongside an op context after calculateOutputShape
         //is called in op executioners, default to true
-        opContextInfo.get(opContext.id()).addOutput(input,true);
+        Deallocatable deallocatable = (Deallocatable) opContext;
+        opContextInfo.get(deallocatable.getUniqueId()).addOutput(input,true);
     }
 
     /**
@@ -209,7 +215,8 @@ public class OpContextTracker {
      * @param opContext the op context to add the output to
      */
     public void associateOutput(INDArray input,boolean createdByContext,OpContext opContext) {
-        opContextInfo.get(opContext.id()).addOutput(input,createdByContext);
+        Deallocatable deallocatable = (Deallocatable) opContext;
+        opContextInfo.get(deallocatable.getUniqueId()).addOutput(input,createdByContext);
     }
 
 

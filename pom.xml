@@ -131,6 +131,7 @@
         <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
         <datavec.version>1.0.0-SNAPSHOT</datavec.version>
         <dl4j.release.server>ossrh</dl4j.release.server>
+        <aspectj.version>1.9.7</aspectj.version>
         <dl4j-test-resources.version>1.0.0-SNAPSHOT</dl4j-test-resources.version>
         <dl4j-test-resources.classifier></dl4j-test-resources.classifier>
         <rxjava.version>2.2.21</rxjava.version>
@@ -144,7 +145,7 @@
         <ws.rs.version>2.0</ws.rs.version>
         <snakeyaml.version>1.26</snakeyaml.version>
         <!-- FIXME: Might need be synced with all modules that uses spring-core plugin (nd4j-cuda-11.0, nd4j-tests, nd4j-common-tests) -->
-        <spring.version>5.1.1.RELEASE</spring.version>
+        <spring.version>5.2.24.RELEASE</spring.version>
         <oshi.version>3.4.2</oshi.version>
         <typesafe.config.version>1.3.0</typesafe.config.version>
         <jcommander.version>1.27</jcommander.version>

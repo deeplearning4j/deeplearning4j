@@ -301,7 +301,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     }
 
     public  Double doExec(List<BatchItem<T>> items,INDArray inferenceVector) {
-        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread()) {
             if (items.size() > 1) {
                 INDArray targetArray;
                 INDArray ngStarterArray;
@@ -393,7 +393,6 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     }
                 }
 
-
                 alphasArray = Nd4j.createFromArray(alphas);
                 ngStarterArray = Nd4j.createFromArray(ngStarters);
                 randomValuesArr = Nd4j.createFromArray(randomValues);
@@ -401,6 +400,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 codes = Nd4j.createFromArray(codesArr);
                 indices = Nd4j.createFromArray(indicesArr);
 
+/*
                 SkipGramRound sg = SkipGramRound.builder()
                         .target(targetArray)
                         .expTable(expTable.get())
@@ -419,7 +419,7 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                         .iterations(inferenceVector != null ? configuration.getIterations() * configuration.getEpochs() : 1)
                         .build();
 
-                Nd4j.getExecutioner().exec(sg);
+                Nd4j.getExecutioner().exec(sg);*/
                 items.clear();
 
                 Nd4j.close(targetArray,codes,indices,alphasArray,ngStarterArray,randomValuesArr);

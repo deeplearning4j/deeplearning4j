@@ -1,4 +1,6 @@
 open module nd4j.api {
+    requires java.base;
+    requires java.lang.ref;
     requires java.nio;
     requires byteunits;
     requires commons.io;
@@ -232,4 +234,5 @@ open module nd4j.api {
     exports tensorflow.eager;
     provides org.nd4j.common.base.PreconditionsFormat with org.nd4j.linalg.util.NDArrayPreconditionsFormat;
     provides org.nd4j.linalg.env.EnvironmentalAction with org.nd4j.linalg.env.impl.DebugAction, org.nd4j.linalg.env.impl.VerboseAction, org.nd4j.linalg.env.impl.FallbackAction, org.nd4j.linalg.env.impl.WorkspacesBypassAction, org.nd4j.linalg.env.impl.WorkspacesDebugAction, org.nd4j.linalg.env.impl.WorkspacesSpillAction, org.nd4j.linalg.env.impl.OmpNumThreadsAction, org.nd4j.linalg.env.impl.NDArrayUnpackAction;
+    opens java.base to java.lang;
 }

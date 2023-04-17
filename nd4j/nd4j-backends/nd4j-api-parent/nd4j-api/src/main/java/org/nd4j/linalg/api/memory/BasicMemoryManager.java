@@ -208,8 +208,8 @@ public abstract class BasicMemoryManager implements MemoryManager {
         if (workspace == null)
             return new DummyWorkspace();
         else {
-            //Nd4j.getMemoryManager().setCurrentWorkspace(null);
-            return new DummyWorkspace().notifyScopeEntered();//workspace.tagOutOfScopeUse();
+            Nd4j.getMemoryManager().setCurrentWorkspace(null);
+            return new DummyWorkspace().notifyScopeEntered();
         }
     }
 

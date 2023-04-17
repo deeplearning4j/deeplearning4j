@@ -1325,7 +1325,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray[] exec(@NonNull CustomOp op) {
         boolean shapeOverride = false;
-        Nd4j.getDeallocatorService().toggleDeallocationBlock(true);
         if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
             try {
                 val list = this.calculateOutputShape(op);
@@ -1344,7 +1343,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         val name = op.opName();
-        try (val context = buildContext()) {
+     /*   try (val context = buildContext()) {
             long start = profilingConfigurableHookIn(op,context);
             initOpContext(op, shapeOverride, context);
 
@@ -1365,7 +1364,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             // pulling states back
             Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
             profilingConfigurableHookOut(op,context,start);
-            Nd4j.getDeallocatorService().toggleDeallocationBlock(false);
 
             return result;
         } catch (ND4JOpProfilerException e) {
@@ -1373,8 +1371,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } catch (Exception e) {
             throw new RuntimeException("Op [" + name + "] execution failed", e);
         }
+*/
 
-
+        return op.inputArguments().toArray(new INDArray[0]);
     }
 
     protected LongShapeDescriptor getShapeFromPointer(LongPointer ptr) {

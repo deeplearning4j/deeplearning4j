@@ -1,0 +1,18 @@
+<aspectj>
+
+    <aspects>
+        <!-- declare two existing aspects to the weaver -->
+        <aspect name="org.nd4j.profiler.MemoryCounterAspect"/>
+    </aspects>
+
+    <weaver options="-verbose -XlazyTjp  -showWeaveInfo">
+        <!-- Weave types that are within the javax.* or org.aspectj.*
+             packages. Also weave all types in the foo package that do
+             not have the @NoWeave annotation. -->
+        <include within="org.nd4j.profiler.MemoryCounterAspect"/>
+        <include within="org.nd4j..*"/>
+        <include within="org.bytedeco..*"/>
+        <dump within="org.nd4j..*" beforeandafter="true"/>
+    </weaver>
+
+</aspectj>
