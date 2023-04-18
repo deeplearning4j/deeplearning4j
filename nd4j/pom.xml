@@ -52,6 +52,15 @@
         <module>samediff-import</module>
     </modules>
 
+    <profiles>
+        <profile>
+            <id>profiler</id>
+            <modules>
+                <module>nd4j-profiler</module>
+            </modules>
+        </profile>
+    </profiles>
+
     <dependencyManagement>
         <dependencies>
             <dependency>

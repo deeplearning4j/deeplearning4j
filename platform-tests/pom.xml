@@ -11,6 +11,12 @@
 
     <name>platform-tests</name>
 
+    <parent>
+        <groupId>org.deeplearning4j</groupId>
+        <artifactId>deeplearning4j</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
 
     <repositories>
         <!-- Mainly for dokka/kotlinx. Not used outside of releases for kotlin related modules-->
@@ -56,7 +62,7 @@
 
         <logback.version>1.2.3</logback.version>
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
-        <jdk9.exports>--add-opens=java.base/java.lang=ALL-UNNAMED  --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.cs=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED --add-opens=java.base/sun.util.calendar=ALL-UNNAMED --add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED --add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/java.nio=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED</jdk9.exports>
+        <jdk9.exports>--add-opens java.base/java.lang.ref=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED  --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.cs=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED --add-opens=java.base/sun.util.calendar=ALL-UNNAMED --add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED --add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/java.nio=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED</jdk9.exports>
 
         <kotlin.version>1.7.20</kotlin.version>
         <kotlin.compiler.jvmTarget>11</kotlin.compiler.jvmTarget>
@@ -176,6 +182,13 @@
     </dependencyManagement>
 
     <dependencies>
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-profiler</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-arrow</artifactId>
@@ -474,8 +487,20 @@
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-excel</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>${project.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-profiler</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjrt</artifactId>
+            <version>${aspectj.version}</version>
         </dependency>
 
     </dependencies>
@@ -678,8 +703,6 @@
                     <compilerArgs>
                         <arg>--add-exports</arg>
                         <arg>java.base/java.nio=ALL-UNNAMED</arg>
-                        <arg>--add-opens</arg>
-                        <arg>java.base/java.nio=ALL-UNNAMED</arg>
                     </compilerArgs>
                 </configuration>
                 <executions>
@@ -819,6 +842,7 @@
 
 
 
+
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
@@ -843,7 +867,7 @@
                         </classpathDependencyExclude>
                     </classpathDependencyExcludes>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
-                    <argLine>${jdk9.exports} -Dorg.nd4j.linalg.api.ops.udf.packages=org.nd4j.linalg.api.ops -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                    <argLine> -javaagent:"${settings.localRepository}"/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar ${jdk9.exports} -Dorg.nd4j.linalg.api.ops.udf.packages=org.nd4j.linalg.api.ops -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
                     <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
                     <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
                     <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>

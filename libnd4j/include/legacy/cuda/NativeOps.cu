@@ -1419,7 +1419,7 @@ void saveNpy(std::string fname, const InteropDataBuffer *data, const unsigned in
 /**
  * This method saves
  */
-sd::TadPack *tadOnlyShapeInfo(const long long int *hXShapeInfo, long long int *dimension, int dimensionLength) {
+sd::TadPack *tadOnlyShapeInfo(const sd::LongType *hXShapeInfo, sd::LongType*dimension, sd::LongType dimensionLength) {
   try {
     auto pack = new TadPack();
     *pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);

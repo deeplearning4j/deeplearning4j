@@ -1165,7 +1165,7 @@ void setGridLimit(int gridSize) {
   // no-op
 }
 
-sd::TadPack *tadOnlyShapeInfo(sd::LongType const *hXShapeInfo, LongType *dimension, int dimensionLength) {
+sd::TadPack *tadOnlyShapeInfo(sd::LongType const *hXShapeInfo, LongType *dimension, sd::LongType dimensionLength) {
   auto pack = new TadPack();
   try {
     *pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);

@@ -145,7 +145,6 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
         val headerLength = (strings.size() + 1) * 8;
         val headerPointer = new LongPointer(getPointer());
         val dataPointer = new BytePointer(getPointer());
-        this.pointer.retainReference();
         numWords = strings.size();
 
         long cnt = 0;

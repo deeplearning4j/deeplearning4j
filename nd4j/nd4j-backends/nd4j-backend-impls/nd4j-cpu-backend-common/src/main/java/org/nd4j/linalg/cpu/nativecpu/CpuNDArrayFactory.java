@@ -336,62 +336,62 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(double[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType,workspace), shape, stride,  order, dataType, workspace);
     }
 
     @Override
     public INDArray create(long[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType,workspace), shape, stride,  order, dataType,workspace);
     }
 
     @Override
     public INDArray create(int[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType,workspace), shape, stride,  order, dataType,workspace);
     }
 
     @Override
     public INDArray create(short[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType,workspace), shape, stride,  order, dataType,workspace);
     }
 
     @Override
     public INDArray create(byte[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType,workspace), shape, stride,  order, dataType,workspace);
     }
 
     @Override
     public INDArray create(boolean[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  order, dataType);
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType,workspace), shape, stride,  order, dataType,workspace);
     }
 
     @Override
     public INDArray create(float[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType,workspace), shape, stride,  Nd4j.order(), dataType,workspace);
     }
 
     @Override
     public INDArray create(long[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType,workspace), shape, stride,  Nd4j.order(), dataType,workspace);
     }
 
     @Override
     public INDArray create(int[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType,workspace), shape, stride,  Nd4j.order(), dataType,workspace);
     }
 
     @Override
     public INDArray create(short[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType,workspace), shape, stride,  Nd4j.order(), dataType,workspace);
     }
 
     @Override
     public INDArray create(boolean[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType,workspace), shape, stride,  Nd4j.order(), dataType,workspace);
     }
 
     @Override
     public INDArray create(byte[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new NDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
+        return new NDArray(Nd4j.createTypedBuffer(data, dataType,workspace), shape, stride,  Nd4j.order(), dataType,workspace);
     }
 
     @Override

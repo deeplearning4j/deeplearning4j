@@ -1453,7 +1453,7 @@ public class Nd4j {
     }
 
     // used by createBufferDetached(long[] DataType) and createBufferDetached(int[] , DataType)
-    private static DataBuffer createBufferDetachedImpl(long length, DataType type){
+    private static DataBuffer createBufferDetachedImpl(long length, DataType type) {
 
         logAllocationIfNeeded(dataType(),length * type.width());
         switch (type) {
@@ -1713,7 +1713,7 @@ public class Nd4j {
 
 
     // refactoring of duplicate code.
-    private static DataBuffer getDataBuffer(int length, DataType dataType, MemoryWorkspace workspace){
+    private static DataBuffer getDataBuffer(int length, DataType dataType, MemoryWorkspace workspace) {
         return workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, length, false, workspace);
     }
 
@@ -1734,6 +1734,52 @@ public class Nd4j {
      * See {@link #createTypedBuffer(double[], DataType, MemoryWorkspace)}
      */
     public static DataBuffer createTypedBuffer(float[] data, DataType dataType, MemoryWorkspace workspace) {
+        DataBuffer  buffer = getDataBuffer(data.length, dataType, workspace);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBuffer(short[] data, DataType dataType, MemoryWorkspace workspace) {
+        DataBuffer  buffer = getDataBuffer(data.length, dataType, workspace);
+        buffer.setData(data);
+        return buffer;
+    }
+
+
+    public static DataBuffer createTypedBuffer(byte[] data, DataType dataType, MemoryWorkspace workspace) {
+        DataBuffer  buffer = getDataBuffer(data.length, dataType, workspace);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    public static DataBuffer createTypedBuffer(boolean[] data, DataType dataType, MemoryWorkspace workspace) {
+        DataBuffer  buffer = getDataBuffer(data.length, dataType, workspace);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    /**
+     * See {@link #createTypedBuffer(double[], DataType, MemoryWorkspace)}
+     */
+    public static DataBuffer createTypedBuffer(int[] data, DataType dataType, MemoryWorkspace workspace) {
+        DataBuffer  buffer = getDataBuffer(data.length, dataType, workspace);
+        buffer.setData(data);
+        return buffer;
+    }
+
+    /**
+     * See {@link #create(int[], long[], long[], char, DataType)}
+     */
+    public static INDArray create(long[] data, long[] shape, long[]strides, char order, DataType type) {
+        return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
+
+
+    /**
+     * See {@link #createTypedBuffer(double[], DataType, MemoryWorkspace)}
+     */
+    public static DataBuffer createTypedBuffer(long[] data, DataType dataType, MemoryWorkspace workspace) {
         DataBuffer  buffer = getDataBuffer(data.length, dataType, workspace);
         buffer.setData(data);
         return buffer;
@@ -3818,12 +3864,6 @@ public class Nd4j {
         return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
-    /**
-     * See {@link #create(int[], long[], long[], char, DataType)}
-     */
-    public static INDArray create(long[] data, long[] shape, long[]strides, char order, DataType type) {
-        return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
-    }
 
     /**
      * See {@link #create(int[], long[], long[], char, DataType)}
@@ -3831,6 +3871,9 @@ public class Nd4j {
     public static INDArray create(double[] data, long[] shape, long[]strides, char order, DataType type) {
         return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
+
+
+
 
     /**
      * See {@link #create(int[], long[], long[], char, DataType)}
@@ -5173,6 +5216,9 @@ public class Nd4j {
     public static INDArray tile(INDArray tile, @NonNull int... repeat) {
         return Nd4j.exec(new Tile(new INDArray[]{tile}, new INDArray[]{}, repeat))[0];
     }
+
+
+
 
     /**
      * Initializes nd4j

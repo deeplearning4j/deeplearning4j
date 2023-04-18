@@ -20,16 +20,14 @@
 
 package org.nd4j.linalg.api.memory.deallocation;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.SneakyThrows;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.primitives.Counter;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.profiler.OpContextTracker;
 
 import java.lang.ref.ReferenceQueue;
 import java.util.*;
@@ -82,15 +80,19 @@ public class DeallocatorService {
     @Getter
     private Map<Long,DeallocatableReference> referenceMap = Collections.synchronizedMap(new WeakHashMap<>());
 
+    @Getter
+    private Map<Long,String> referenceTypes = new ConcurrentHashMap<>();
 
+    @Getter
     private Counter<String> allocated = new Counter<>();
+    @Setter
     private Counter<String> deallocated = new Counter<>();
 
     private static AtomicBoolean blockDeallocator = new AtomicBoolean(false);
 
     private List<List<ReferenceQueue<Deallocatable>>> deviceMap = new ArrayList<>();
     private Boolean noPointerGc;
-    private  int numThreads =  1;
+    private  int numThreads =  4;
 
     private final transient AtomicLong counter = new AtomicLong(0);
 
@@ -127,6 +129,45 @@ public class DeallocatorService {
     }
 
 
+    /**
+     * Returns the retained size
+     * for each possible pointer type allocated.
+     * @return
+     */
+    public String printRetainedSizesForTypes() {
+        StringBuilder sb = new StringBuilder();
+        for(String s : allocated.keySet()) {
+            sb.append(s).append(" ").append(retainedSizeForType(s)).append("\n");
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Returns the allocated size for each pointer type
+     * @return
+     */
+    public String allocatedTypes() {
+        StringBuilder sb = new StringBuilder();
+        for(String s : allocated.keySet()) {
+            sb.append(s).append(" ").append(allocated).append("\n");
+        }
+
+        return sb.toString();
+    }
+
+
+    /**
+     * Returns the retained size (the allocated size - deallocated size)
+     * for each pointer type
+     * @param pointer the type of pointer to get the retained size for
+     * @return the retained size for the given pointer type
+     */
+    public long retainedSizeForType(String pointer) {
+        return (long) (allocated.getCount(pointer) - deallocated.getCount(pointer));
+    }
+
+
     public void toggleDeallocationBlock(boolean shouldBlock) {
         blockDeallocator.set(shouldBlock);
     }
@@ -147,7 +188,12 @@ public class DeallocatorService {
         } else {
             val desiredDevice = deallocatable.targetDevice();
             val map = deviceMap.get(desiredDevice);
-            allocated.incrementCount(deallocatable.getClass().getName(),1.0);
+            if(OpContextTracker.getInstance().isEnabled()) {
+                allocated.incrementCount(deallocatable.getClass().getName(),1.0);
+                referenceTypes.put(deallocatable.getUniqueId(),deallocatable.getClass().getName());
+
+            }
+
             val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, numThreads)));
             referenceMap.put(deallocatable.getUniqueId(), reference);
             return deallocatable.getUniqueId();
@@ -191,6 +237,11 @@ public class DeallocatorService {
                     } else {
                         // invoking deallocator
                         if (reference != null) {
+                            if(OpContextTracker.getInstance().isEnabled()) {
+                                deallocated.incrementCount(referenceTypes.get(reference.getId()), 1.0);
+                                referenceTypes.remove(reference.getId());
+                            }
+
                             reference.deallocate();
 
                             if(referenceMap.containsKey(reference.getId()))
@@ -204,8 +255,10 @@ public class DeallocatorService {
                             continue;
 
 
-                        // invoking deallocator
+                        updateDeallocationCount(reference.getId());
+
                         reference.deallocate();
+
                         if(referenceMap.containsKey(reference.getId()))
                             referenceMap.remove(reference.getId());
                     } catch (InterruptedException e) {
@@ -215,6 +268,19 @@ public class DeallocatorService {
                     }
                 }
             }
+        }
+    }
+
+    public void updateDeallocationCount(long deallocatableId) {
+        if(OpContextTracker.getInstance().isEnabled() && referenceTypes.containsKey(deallocatableId)) {
+            deallocated.incrementCount(referenceTypes.get(deallocatableId), 1.0);
+            if(referenceTypes.get(deallocatableId).contains("Context")) {
+                OpContextTracker.getInstance().deallocateContext(deallocatableId);
+            }
+
+            referenceTypes.remove(deallocatableId);
+
+
         }
     }
 }

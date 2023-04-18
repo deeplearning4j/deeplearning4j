@@ -50,7 +50,7 @@ TadPack ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, c
   return tadForDimensions(originalShape, const_cast<sd::LongType *>(dimensions.data()), dimensions.size(), keepUnitiesInShape);
 }
 
-TadPack ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, LongType *dimensions, int dimLength,
+TadPack ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, LongType *dimensions, LongType dimLength,
                                             const bool keepUnitiesInShape) {
   TadDescriptor tadDescriptor(originalShape, dimensions, dimLength, keepUnitiesInShape);
   return tadForDimensions(tadDescriptor);
