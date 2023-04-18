@@ -274,7 +274,6 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
                 OpContextTracker.getInstance().associateOutput(array,this);
             }
         }
-
         if(outputBuffers != null) {
             outputBuffers.deallocate();
         }
@@ -282,7 +281,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
         if(shapeInfoOutputBuffer != null)
             shapeInfoOutputBuffer.deallocate();
         shapeInfoOutputBuffer = new PointerPointer<>(shapeInfoBufers2);
-        nativeOps.setGraphContextOutputBuffers(context,arrays.size(),shapeInfoOutputBuffer,shapeInfoOutputBuffer,null);
+        nativeOps.setGraphContextOutputBuffers(context,arrays.size(),outputBuffers,shapeInfoOutputBuffer,null);
 
     }
 

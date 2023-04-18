@@ -403,11 +403,15 @@ void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataB
 void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer* shapeInfo,
                                   sd::Pointer * specialShapeInfo) {
   auto inputShapeBuffers = (void **) shapeInfo;
-
+  sd_printf("After input shape buffers resolution\n",0);
   for(int i = 0; i < numArrays; i++) {
-    if(buffer != nullptr && buffer[i] != nullptr)
-      setGraphContextOutputBuffer(ptr,i,buffer[i],inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
-    else {
+    sd_printf("Context: Setting output array %d\n",i);
+    if(buffer != nullptr && buffer[i] != nullptr) {
+      sd_printf("Context: Before Setting output array %d\n",i);
+      setGraphContextOutputBuffer(ptr, i, buffer[i], inputShapeBuffers[i],
+                                  specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+      sd_printf("Context: After Setting output array %d\n",i);
+    } else {
       setGraphContextOutputBuffer(ptr,i, nullptr,inputShapeBuffers[i],specialShapeInfo);
     }
 
