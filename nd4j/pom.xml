@@ -50,8 +50,16 @@
         <module>nd4j-tvm</module>
         <module>nd4j-common-tests</module>
         <module>samediff-import</module>
-        <module>nd4j-profiler</module>
     </modules>
+
+    <profiles>
+        <profile>
+            <id>profiler</id>
+            <modules>
+                <module>nd4j-profiler</module>
+            </modules>
+        </profile>
+    </profiles>
 
     <dependencyManagement>
         <dependencies>

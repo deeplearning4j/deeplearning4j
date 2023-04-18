@@ -703,8 +703,6 @@
                     <compilerArgs>
                         <arg>--add-exports</arg>
                         <arg>java.base/java.nio=ALL-UNNAMED</arg>
-                        <arg>--add-opens</arg>
-                        <arg>java.base/java.nio=ALL-UNNAMED</arg>
                     </compilerArgs>
                 </configuration>
                 <executions>
@@ -842,33 +840,7 @@
                 </executions>
             </plugin>
 
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>aspectj-maven-plugin</artifactId>
-                <version>1.14.0</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>test-compile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.target}</target>
-                    <showWeaveInfo>true</showWeaveInfo>
-                    <encoding>${encoding}</encoding>
-                    <complianceLevel>${maven.compiler.target}</complianceLevel>
-                    <Xlint>ignore</Xlint>
-                    <weaveDependencies>
-                        <weaveDependency>
-                            <groupId>org.nd4j</groupId>
-                            <artifactId>nd4j-api</artifactId>
-                        </weaveDependency>
-                    </weaveDependencies>
-                </configuration>
-            </plugin>
+
 
 
             <plugin>
