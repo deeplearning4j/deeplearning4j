@@ -855,12 +855,6 @@
                     <encoding>${encoding}</encoding>
                     <complianceLevel>${maven.compiler.target}</complianceLevel>
                     <Xlint>ignore</Xlint>
-                    <aspectLibraries>
-                        <aspectLibrary>
-                            <groupId>org.aspectj</groupId>
-                            <artifactId>aspectjrt</artifactId>
-                        </aspectLibrary>
-                    </aspectLibraries>
                     <weaveDependencies>
                         <weaveDependency>
                             <groupId>org.nd4j</groupId>
