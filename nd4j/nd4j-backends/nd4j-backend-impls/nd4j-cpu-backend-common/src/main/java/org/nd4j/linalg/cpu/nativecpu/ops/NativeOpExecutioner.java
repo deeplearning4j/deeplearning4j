@@ -1343,7 +1343,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         val name = op.opName();
-     /*   try (val context = buildContext()) {
+        try (val context = buildContext()) {
             long start = profilingConfigurableHookIn(op,context);
             initOpContext(op, shapeOverride, context);
 
@@ -1371,9 +1371,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } catch (Exception e) {
             throw new RuntimeException("Op [" + name + "] execution failed", e);
         }
-*/
 
-        return op.inputArguments().toArray(new INDArray[0]);
+
     }
 
     protected LongShapeDescriptor getShapeFromPointer(LongPointer ptr) {
