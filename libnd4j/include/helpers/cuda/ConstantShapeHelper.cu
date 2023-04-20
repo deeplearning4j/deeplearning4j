@@ -206,14 +206,13 @@ ConstantShapeBuffer * ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcas
 }
 
 ////////////////////////////////////////////////////////////////////////
-ConstantShapeBuffer * ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(const sd::LongType* inShapeInfo,
-                                                                                const std::vector<int>& dimsWithUnities,
+ConstantShapeBuffer * ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(const sd::LongType* inShapeInfo, const std::vector<LongType>& dimsWithUnities,
                                                                                 sd::memory::Workspace* workspace) {
   sd::LongType* newShapeInfo = nullptr;
   ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(inShapeInfo) - dimsWithUnities.size()),
            sd::LongType);
 
-  int temp;
+  sd::LongType temp;
   if (dimsWithUnities.size() == 1 && shape::isCommonVector(inShapeInfo, temp) && temp == dimsWithUnities[0]) {
     auto dims = ShapeUtils::evalDimsToExclude(shape::rank(inShapeInfo), {temp});
     shape::excludeUnitiesFromShapeInfo(inShapeInfo, dims.data(), dims.size(), newShapeInfo);
@@ -231,8 +230,8 @@ ConstantShapeBuffer * ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce
 }
 
 ////////////////////////////////////////////////////////////////////////
-ConstantShapeBuffer *ConstantShapeHelper::createSubArrShapeInfo(const sd::LongType* inShapeInfo, const int* dims,
-                                                                const int dimsSize, sd::memory::Workspace* workspace) {
+ConstantShapeBuffer *ConstantShapeHelper::createSubArrShapeInfo(const sd::LongType* inShapeInfo, const LongType* dims,
+                                                                const LongType dimsSize, sd::memory::Workspace* workspace) {
   sd::LongType* newShapeInfo = ShapeBuilders::createSubArrShapeInfo(inShapeInfo, dims, dimsSize, workspace);
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);

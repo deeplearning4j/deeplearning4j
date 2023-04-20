@@ -315,16 +315,15 @@ SD_KERNEL static void spaceToBatchCuda(const void* vx, const sd::LongType* xShap
 template <typename T>
 static void spaceToBatchCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                      const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
-                                     void* vz, const sd::LongType* zShapeInfo, const sd::Unsigned padBottom,
-                                     const sd::Unsigned padTop, const sd::Unsigned padLeft,
-                                     const sd::Unsigned padRight) {
+                                     void* vz, const sd::LongType* zShapeInfo, const LongType padBottom,
+                                     const LongType padTop, const LongType padLeft, const LongType padRight) {
   spaceToBatchCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, padBottom,
                                                                               padTop, padLeft, padRight);
 }
 BUILD_SINGLE_TEMPLATE(template void spaceToBatchCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                        const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                       const sd::LongType* zShapeInfo, const sd::Unsigned padBottom, const sd::LongType padTop,
+                       const sd::LongType* zShapeInfo, const sd::LongType padBottom, const sd::LongType padTop,
                        const sd::LongType padLeft, const sd::LongType padRight),
                       SD_COMMON_TYPES);
 

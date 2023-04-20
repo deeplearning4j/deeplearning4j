@@ -146,7 +146,7 @@ SD_KERNEL static void sruBICuda(const void* vx, const sd::LongType* xShapeInfo, 
   __syncthreads();
 
   const sd::LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
-  sd::LOngType coords = sharedMem + threadIdx.x * rank;
+  sd::LongType *coords = sharedMem + threadIdx.x * rank;
 
   if (tid >= len) return;
 

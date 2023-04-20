@@ -39,7 +39,7 @@ static SD_KERNEL void indicesFiller(void* vz, sd::LongType const* zShapeInfo, sd
 
 template <typename T, typename Y>
 static void maxPoolingFunctor_(sd::graph::Context& block, NDArray* input, NDArray* values,
-                               std::vector<int> const& params, NDArray* indices) {
+                               std::vector<sd::LongType> const& params, NDArray* indices) {
   int kY = params[0];
   int kX = params[1];
 
@@ -80,17 +80,12 @@ static void maxPoolingFunctor_(sd::graph::Context& block, NDArray* input, NDArra
     indicesFiller<Y><<<256, 256, 1024, *block.launchContext()->getCudaStream()>>>(
         indices->specialBuffer(), indices->specialShapeInfo(), part, bSize);
 
-    /*
-    for (int k = 0; k < total; )
-        for (int i = 0; i < part; i++) {
-            indices->p(k++, i);
-        }
-    */
+
   }
 }
 
 void maxPoolingFunctor(sd::LaunchContext* context, sd::graph::Context& block, NDArray* input, NDArray* values,
-                       std::vector<int> const& params, NDArray* indices) {
+                       std::vector<sd::LongType> const& params, NDArray* indices) {
   NDArray::prepareSpecialUse({values, indices}, {input});
   auto yType = indices == nullptr ? sd::DataType::INT64 : indices->dataType();
   BUILD_DOUBLE_SELECTOR(input->dataType(), yType, maxPoolingFunctor_, (block, input, values, params, indices),

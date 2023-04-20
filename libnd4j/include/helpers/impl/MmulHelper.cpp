@@ -227,7 +227,7 @@ NDArray* sd::MmulHelper::tensorDot(const sd::NDArray* a, const sd::NDArray* b,
 //////////////////////////////////////////////////////////////////////////
 sd::NDArray* MmulHelper::mmul(const sd::NDArray* A, const sd::NDArray* B, sd::NDArray* C, const double alpha,
                               const double beta, const char outOrder) {
-  int lenDim;
+  sd::LongType  lenDim;
   const int aRank = A->rankOf();
   const int bRank = B->rankOf();
   const bool isAVector = shape::isCommonVector(A->shapeInfo(), lenDim);

@@ -1414,7 +1414,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                     (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
                     AtomicAllocator.getInstance().getPointer(x, context),
                     (LongPointer) AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context),
-                    (IntPointer) dimensionPointer,
+                    (LongPointer) dimensionPointer,
                     dimension.length,
                     (LongPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
                     new LongPointerWrapper(AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context)),

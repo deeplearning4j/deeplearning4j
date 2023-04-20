@@ -67,7 +67,8 @@ class Broadcast {
   static SD_HOST void intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, const void *x,
                                             const sd::LongType *xShapeInfo, const void *y,
                                             const sd::LongType *yShapeInfo, void *result,
-                                            const sd::LongType *resultShapeInfo, int *dimension, int dimensionLength,
+                                            const sd::LongType *resultShapeInfo, long long int *dimension,
+                                            long long int dimensionLength,
                                             const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
                                             const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);
 
@@ -114,16 +115,14 @@ class Broadcast {
 
   static void execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                           const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo,
-                          sd::LongType *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
+                          sd::LongType *dimension, long long int dimensionLength, const sd::LongType *tadShapeInfo,
                           const sd::LongType *tadOffset, const sd::LongType *tadShapeInfoZ,
-                          const sd::LongType *tadOffsetZ, uint64_t start, uint64_t stop);
+                          const sd::LongType *tadOffsetZ, sd::LongType start, sd::LongType stop);
 
   static void exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                    const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo,
-                   sd::LongType *dimension,
-                   int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset,
-                   const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, sd::LoopKind::Kind loopKind,
-                   uint64_t start, uint64_t stop);
+                   sd::LongType *dimension, long long int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset,
+                   const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, sd::LoopKind::Kind loopKind,sd::LongType start, sd::LongType stop);
 
   /**
    * CPU execution
@@ -146,8 +145,8 @@ class Broadcast {
   static void execInverse(const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo,
                           void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength,
                           const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset,
-                          const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, uint64_t start,
-                          uint64_t stop);
+                          const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, sd::LongType start,
+                          sd::LongType stop);
 
   static void exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                    const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo);

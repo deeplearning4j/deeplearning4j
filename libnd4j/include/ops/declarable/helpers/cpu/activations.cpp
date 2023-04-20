@@ -63,7 +63,7 @@ void static _softMaxDerivForVector(sd::LaunchContext* context, const void* input
 ///////////////////////////////////////////////////////////////////
 void softmaxDerivative(sd::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
   const int rank = input.rankOf();
-  int temp;
+  sd::LongType temp;
 
   if (shape::isCommonVector(input.shapeInfo(), temp)) {
     BUILD_SINGLE_SELECTOR(input.dataType(), _softMaxDerivForVector,

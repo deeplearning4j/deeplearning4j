@@ -65,7 +65,7 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
 
   ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);
 
-  std::vector<int> gradOaxesForDot;
+  std::vector<sd::LongType> gradOaxesForDot;
 
   if (!isNCHW) {
     gradOaxesForDot = {0, 1, 2};                        // bS, oH, oW
@@ -75,7 +75,7 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
     gradOaxesForDot = {0, 2, 3};  // bS, oH, oW
   }
 
-  std::vector<int> wPermut, colPermut;
+  std::vector<sd::LongType> wPermut, colPermut;
   if (0 == wFormat) {
     wPermut = {2, 0, 1, 3};
     colPermut = {2, 3, 1, 0, 4, 5};

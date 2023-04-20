@@ -126,7 +126,7 @@ class SD_LIB_HIDDEN ReduceLongFunction {
 
   template <typename OpType>
   static void SD_HOST exec(sd::memory::Workspace *workspace, const void *vx, const sd::LongType *xShapeInfo,
-                           void *vextraParams, void *vz, const sd::LongType *zShapeInfo, const long long int *dims);
+                           void *vextraParams, void *vz, const sd::LongType *zShapeInfo, const sd::LongType *dims);
 
   /**
    * CPU implementation

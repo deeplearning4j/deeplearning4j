@@ -34,7 +34,8 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_KERNEL static void clipByNormCuda(const void* vClipNorm, const void* vNorm, const sd::LongType* normShapeInfo,
-                                     void* vz, const sd::LongType* zShapeInfo, const int* dimensions, const int dimsLen,
+                                     void* vz, const sd::LongType* zShapeInfo, const LongType* dimensions,
+                                     const LongType dimsLen,
                                      const bool useAverage) {
   const T clipNorm = *reinterpret_cast<const T*>(vClipNorm);
   const T* norm = reinterpret_cast<const T*>(vNorm);
@@ -72,7 +73,7 @@ template <typename T>
 SD_HOST static void clipByNormCudaLauncher(const int blocksPerGrid, const int threadsPerBlock,
                                            const cudaStream_t* stream, const void* vClipNorm, const void* vNorm,
                                            const sd::LongType* normShapeInfo, void* vz, const sd::LongType* zShapeInfo,
-                                           const int* dimensions, const int dimsLen, const bool useAverage) {
+                                           const LongType* dimensions, const LongType dimsLen, const bool useAverage) {
   clipByNormCuda<T><<<blocksPerGrid, threadsPerBlock, 512, *stream>>>(vClipNorm, vNorm, normShapeInfo, vz, zShapeInfo,
                                                                       dimensions, dimsLen, useAverage);
 }
@@ -111,7 +112,7 @@ void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, con
     BUILD_SINGLE_SELECTOR(z->dataType(), clipByNormCudaLauncher,
                           (blocksPerGrid, threadsPerBlock, context->getCudaStream(), clipNorm.specialBuffer(),
                            actualNorms.specialBuffer(), actualNorms.specialShapeInfo(), z->specialBuffer(),
-                           z->specialShapeInfo(), dimensions, (int)dimsToExclude.size(), useAverage),
+                           z->specialShapeInfo(), dimensions, (sd::LongType)dimsToExclude.size(), useAverage),
                           SD_FLOAT_TYPES);
     NDArray::registerSpecialUse({z}, {z, &actualNorms, &clipNorm});
 

@@ -70,7 +70,8 @@ class SD_LIB_EXPORT ConstantShapeHelper {
   ConstantShapeBuffer* createShapeInfoWithNoUnitiesForReduce(const sd::LongType* maxShapeInfo,
                                                              const std::vector<sd::LongType>& dimsWithUnities,
                                                              sd::memory::Workspace* workspace = nullptr);
-  ConstantShapeBuffer* createSubArrShapeInfo(const sd::LongType* inShapeInfo, const LongType* dims, const int dimsSize,
+  ConstantShapeBuffer* createSubArrShapeInfo(const sd::LongType* inShapeInfo, const LongType* dims,
+                                             const LongType dimsSize,
                                              sd::memory::Workspace* workspace = nullptr);
 
   const sd::LongType* emptyShapeInfo(sd::DataType dataType);

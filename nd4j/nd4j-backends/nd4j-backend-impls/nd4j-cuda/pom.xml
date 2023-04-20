@@ -182,6 +182,9 @@
                     <linkPaths>
                         <linkPath>${libnd4jhome}/blasbuild/cuda/blas</linkPath>
                     </linkPaths>
+                    <compilerOptions>
+                        <compilerOption>${javacpp.compiler.options}</compilerOption>
+                    </compilerOptions>
                 </configuration>
                 <executions>
                     <execution>

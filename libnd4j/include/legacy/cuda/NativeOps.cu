@@ -2362,7 +2362,7 @@ void sortByValue(sd::Pointer *extraPointers, void *x, sd::LongType const *xShape
 
 void sortTadByKey(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo, void *dX,
                   sd::LongType const *dXShapeInfo, void *y, sd::LongType const *yShapeInfo, void *dy,
-                  sd::LongType const *dyShapeInfo, sd::LongType *dimension, int dimensionLength, bool descending) {
+                  sd::LongType const *dyShapeInfo, sd::LongType *dimension, LongType dimensionLength, bool descending) {
   try {
     auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
     auto context =
@@ -2383,9 +2383,9 @@ void sortTadByKey(sd::Pointer *extraPointers, void *x, sd::LongType const *xShap
   }
 }
 
-void sortTadByValue(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo, void *dX,
-                    sd::LongType const *dXShapeInfo, void *y, sd::LongType const *yShapeInfo, void *dy,
-                    sd::LongType const *dyShapeInfo, sd::LongType *dimension, int dimensionLength, bool descending) {
+void sortTadByValue(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo, void *dx,
+                    sd::LongType const *dxShapeInfo, void *y, sd::LongType const *yShapeInfo, void *dy,
+                    sd::LongType const *dyShapeInfo, sd::LongType *dimension, LongType dimensionLength, bool descending) {
   try {
     auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
     auto context =
@@ -2396,7 +2396,7 @@ void sortTadByValue(sd::Pointer *extraPointers, void *x, sd::LongType const *xSh
     auto yType = sd::ArrayOptions::dataType(xShapeInfo);
 
     BUILD_DOUBLE_SELECTOR(xType, yType, oesTadGenericKey,
-                          (launchDims, stream, dy, dyShapeInfo, dX, dXShapeInfo, nullptr, dimensionLength,
+                          (launchDims, stream, dy, dyShapeInfo, dx, dxShapeInfo, nullptr, dimensionLength,
                               tadPack.platformShapeInfo(), tadPack.platformOffsets(), descending),
                           SD_COMMON_TYPES, SD_COMMON_TYPES);
 
@@ -2408,7 +2408,7 @@ void sortTadByValue(sd::Pointer *extraPointers, void *x, sd::LongType const *xSh
 }
 
 void sortTad(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo, void *dX,
-             sd::LongType const *dXShapeInfo, sd::LongType *dimension, int dimensionLength, sd::LongType const *tadShapeInfo,
+             sd::LongType const *dXShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, sd::LongType const *tadShapeInfo,
              sd::LongType const *tadOffsets, bool descending) {
   try {
     // to be implemented

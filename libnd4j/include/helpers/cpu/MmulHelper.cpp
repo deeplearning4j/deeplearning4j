@@ -283,7 +283,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
   if (Y != nullptr && X->dataType() != Y->dataType())
     throw datatype_exception::build("mmulMxV expects all data types to be the same", A->dataType(), Y->dataType());
 
-  int xLenDim, yLenDim(0);
+  sd::LongType xLenDim, yLenDim(0);
 
   if (A->rankOf() != 2) throw std::runtime_error("MmulHelper::mmulMxV: rank of A array is not equal 2 !");
   if (!shape::isCommonVector(X->shapeInfo(), xLenDim))
@@ -356,7 +356,7 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
   if (Z != nullptr && X->dataType() != Z->dataType())
     throw datatype_exception::build("Dot expects all data types to be the same", X->dataType(), Z->dataType());
 
-  int xLenDim(0), yLenDim(0);
+  sd::LongType xLenDim(0), yLenDim(0);
 
   if (!shape::isCommonVector(X->shapeInfo(), xLenDim))
     throw std::runtime_error("MmulHelper::dot: X array must be vector !");

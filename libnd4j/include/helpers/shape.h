@@ -2422,8 +2422,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isEmpty(const sd::LongType *shapeInf
 // function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array
 // (already stored in maxIdxs)
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void maxIndToMinInd(sd::LongType *maxIdxs, sd::LongType *minIdxs, const sd::LongType *maxShapeInfo,
-                                                           const sd::LongType *minShapeInfo, const sd::LongType *dimsToExclude,
-                                                           int dimsLen) {
+                                                           const sd::LongType *minShapeInfo, const sd::LongType *dimsToExclude, long long int dimsLen) {
   const auto maxRank = shape::rank(maxShapeInfo);
   const auto minRank = shape::rank(minShapeInfo);
 

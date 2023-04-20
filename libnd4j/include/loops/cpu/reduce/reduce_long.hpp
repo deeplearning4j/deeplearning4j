@@ -207,7 +207,7 @@ void SD_HOST ReduceLongFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
 template <typename X, typename Y>
 void ReduceLongFunction<X, Y>::exec(const int opNum, sd::memory::Workspace *workspace, const void *vx,
                                     const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                    const sd::LongType *zShapeInfo, const long long int *dims) {
+                                    const sd::LongType *zShapeInfo,  sd::LongType *dims) {
   DISPATCH_BY_OPNUM_TT(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_LONG_OPS);
 }
 

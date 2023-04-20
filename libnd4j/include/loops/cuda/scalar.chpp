@@ -33,12 +33,12 @@ using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z, typename OpType>
-SD_KERNEL static void scalarSimpleShaped(void const* x, void const* y, sd::LongType const* xShapeInfo, void * params, void * z, sd::LongType const* zShapeInfo, long long int* allocationBuffer) {
+SD_KERNEL static void scalarSimpleShaped(void const* x, void const* y, sd::LongType const* xShapeInfo, void * params, void * z, sd::LongType const* zShapeInfo,  sd::LongType* allocationBuffer) {
 
     auto scalar = reinterpret_cast<Y const*>(y)[0];
-    auto x      = reinterpret_cast<X const*>(x);
-    auto params = reinterpret_cast<Z*>(params);
-    auto z = reinterpret_cast<Z*>(z);
+    auto x2      = reinterpret_cast<X const*>(x);
+    auto params2 = reinterpret_cast<Z*>(params);
+    auto z2 = reinterpret_cast<Z*>(z);
 
     int totalThreads = gridDim.x * blockDim.x;
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -58,11 +58,11 @@ SD_KERNEL static void scalarSimpleShaped(void const* x, void const* y, sd::LongT
 
     if (xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
         for (sd::LongType i = tid; i < length; i += totalThreads) {
-            z[i * zEws] = OpType::op(x[i * xEws], scalar, params);
+            z2[i * zEws] = OpType::op(x2[i * xEws], scalar, params2);
         }
     } else {
         for (sd::LongType i = tid; i < length; i += totalThreads) {
-            z[shape::getIndexOffset(i, zShapeInfo)] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo)], scalar, params);
+            z2[shape::getIndexOffset(i, zShapeInfo)] = OpType::op(x2[shape::getIndexOffset(i, xShapeInfo)], scalar, params2);
         }
     }
 
@@ -74,14 +74,14 @@ SD_KERNEL static void scalarAlongDimension(void const* x, sd::LongType const* xS
                                           void* extraParams,
                                           void* z, sd::LongType const* zShapeInfo,
                                           void const* scalars,
-                                           long long int* dimension, long long int dimensionLength,
+                                           sd::LongType* dimension,  sd::LongType dimensionLength,
                                           sd::LongType const* tadShapeInfo,  sd::LongType const* tadOffsets,
                                           sd::LongType const* tadShapeInfoZ, sd::LongType const* tadOffsetsZ) {
 
-    auto x = reinterpret_cast<X const*>(x);
-    auto extraParams = reinterpret_cast<Z*>(extraParams);
-    auto z = reinterpret_cast<Z*>(z);
-    auto scalars = reinterpret_cast<Y const*>(scalars);
+    auto x2 = reinterpret_cast<X const*>(x);
+    auto extraParams2 = reinterpret_cast<Z*>(extraParams);
+    auto z2 = reinterpret_cast<Z*>(z);
+    auto scalars2 = reinterpret_cast<Y const*>(scalars);
 
     if (tadShapeInfoZ == nullptr) {
         tadShapeInfoZ = tadShapeInfo;
@@ -98,24 +98,24 @@ SD_KERNEL static void scalarAlongDimension(void const* x, sd::LongType const* xS
 
         // main loop, rolling over tads
         for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-            Z *oZ = z + tadOffsetsZ[r];
-            auto oX = x + tadOffsets[r];
+            Z *oZ = z2 + tadOffsetsZ[r];
+            auto oX = x2+ tadOffsets[r];
 
-            auto s = scalars[r];
+            auto s = scalars2[r];
 
             for (int f = threadIdx.x; f < tadLength; f += blockDim.x)
-                oZ[f * zEws] = OpType::op(oX[f * tadEws], s, extraParams);
+                oZ[f * zEws] = OpType::op(oX[f * tadEws], s, extraParams2);
         }
     } else {
         // main loop, rolling over tads
         for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-            Z *oZ = z + tadOffsetsZ[r];
-            auto oX = x + tadOffsets[r];
+            Z *oZ = z2 + tadOffsetsZ[r];
+            auto oX = x2 + tadOffsets[r];
 
-            auto s = scalars[r];
+            auto s = scalars2[r];
 
             for (int f = threadIdx.x; f < tadLength; f += blockDim.x)
-                oZ[shape::getIndexOffset(f, tadShapeInfoZ)] = OpType::op(oX[shape::getIndexOffset(f, tadShapeInfo)], s, extraParams);
+                oZ[shape::getIndexOffset(f, tadShapeInfoZ)] = OpType::op(oX[shape::getIndexOffset(f, tadShapeInfo)], s, extraParams2);
         }
     }
 }

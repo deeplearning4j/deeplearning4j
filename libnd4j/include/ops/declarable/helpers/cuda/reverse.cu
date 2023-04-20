@@ -183,12 +183,11 @@ static void reverseSequence_(sd::LaunchContext* context, const NDArray* input, c
     else
       reverseArrayKernel<T><<<256, 512, 8192, *stream>>>(
           input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
-          numOfElemsToReverse);  // helpers::reverseArray<T>(context, const_cast<NDArray*>(input), output,
-                                 // numOfElemsToReverse);
+          numOfElemsToReverse);
   } else {
     if (seqDim > batchDim) --seqDim;
 
-    std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {batchDim});
+    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {batchDim});
 
     auto inSubArrsSet = input->allTensorsAlongDimension(dimensions);
     auto outSubArrsSet = output->allTensorsAlongDimension(dimensions);
@@ -221,7 +220,7 @@ void reverseSequence(sd::LaunchContext* context, const NDArray* input, const NDA
 }
 
 //////////////////////////////////////////////////////////////////////////
-void reverse(sd::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs) {
+void reverse(sd::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<LongType>* intArgs) {
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), *intArgs);
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), *intArgs);
 

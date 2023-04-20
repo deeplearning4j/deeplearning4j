@@ -458,7 +458,7 @@ class SD_LIB_EXPORT NativeOpExecutioner {
     BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::sortGeneric(x, xShapeInfo, descending), SD_COMMON_TYPES);
   }
 
-  static void execSort(void *x, const sd::LongType *xShapeInfo, long long int *dimension, int dimensionLength,
+  static void execSort(void *x, const sd::LongType *xShapeInfo, long long int *dimension, long long int dimensionLength,
                        const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, bool descending) {
     auto xType = sd::ArrayOptions::dataType(xShapeInfo);
 
