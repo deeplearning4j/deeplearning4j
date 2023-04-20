@@ -358,7 +358,7 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
     auto func = PRAGMA_THREADS_FOR {
       sd::LongType  inIdx[SD_MAX_RANK], outIdx[SD_MAX_RANK];
 
-      for (auto i = start; i < stop; i++) {
+      for (sd::LongType i = start; i < stop; i++) {
         shape::index2coordsCPU(start, i, output.shapeInfo(), outIdx);
 
         for (int j = 0; j < rank; ++j) {

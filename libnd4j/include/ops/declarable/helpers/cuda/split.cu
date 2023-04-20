@@ -58,16 +58,16 @@ SD_KERNEL static void splitCuda(const void* vx, const sd::LongType* xShapeInfo, 
 
   sd::LongType coords[SD_MAX_RANK];
 
-  for (uint64_t i = tid; i < xLen; i += totalThreads) {
+  for (sd::LongType i = tid; i < xLen; i += totalThreads) {
     shape::index2coords(i, xShapeInfo, coords);
 
-    const auto xOffset = shape::getOffset(xShapeInfo, coords);
+    const sd::LongType xOffset = shape::getOffset(xShapeInfo, coords);
 
     auto* z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[coords[axis] / zDim]);
 
     coords[axis] %= zDim;
 
-    const auto zOffset = shape::getOffset(zTadShapeInfo, coords);
+    const sd::LongType zOffset = shape::getOffset(zTadShapeInfo, coords);
 
     z[zOffset] = x[xOffset];
   }

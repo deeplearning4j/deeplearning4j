@@ -5081,8 +5081,8 @@ namespace sd {
                                 bool keepUnitiesInShape) const {
         std::vector<sd::LongType> idxRanges(2 * rankOf());
 
-        const auto rank = rankOf();
-        const auto subArrRank = static_cast<int>(dimsToExclude.size());
+        const sd::LongType rank = rankOf();
+        const sd::LongType subArrRank = static_cast<sd::LongType>(dimsToExclude.size());
 
         if (subArrRank > rank)
             throw std::invalid_argument(
@@ -5095,7 +5095,7 @@ namespace sd {
 
         if (subArrRank != 0) {
             std::vector<sd::LongType> shapeOfSubArr(subArrRank), indexes(subArrRank);
-            for (int i = 0; i < subArrRank; ++i) shapeOfSubArr[i] = sizeAt(dimsToExclude[i]);
+            for (sd::LongType i = 0; i < subArrRank; ++i) shapeOfSubArr[i] = sizeAt(dimsToExclude[i]);
 
             shape::index2coords(subArrIdx, subArrRank, shapeOfSubArr.data(), indexes.data());
 
@@ -5114,8 +5114,8 @@ namespace sd {
                                            sd::LongType *&subArrOffsets, bool keepUnitiesInShape) const {
         if (isEmpty()) throw std::invalid_argument("NDArray::getSubArrShapeAndOffsets: array is empty !");
 
-        const int rank = rankOf();
-        const int subArrRank = (rank == dimsToExclude.size() || keepUnitiesInShape) ? rank : rank - dimsToExclude.size();
+        const sd::LongType rank = rankOf();
+        const sd::LongType subArrRank = (rank == dimsToExclude.size() || keepUnitiesInShape) ? rank : rank - dimsToExclude.size();
         const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(_shapeInfo, dimsToExclude);
 
         // allocate memory

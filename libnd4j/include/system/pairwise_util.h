@@ -32,17 +32,7 @@
 // Loops adapted from:
 // https://github.com/numpy/numpy/blob/009b17a85a22707e63ac9ea1896413992bbf9ce5/numpy/core/src/private/lowlevel_strided_loops.h#L401-L401
 
-/*
-namespace shape {
 
-    sd::LongType length(const sd::LongType *shapeInfo);
-    sd::LongType elementWiseStride(const sd::LongType *shapeInfo);
-    char order(const sd::LongType *shapeInfo);
-    bool isStrideSimple(const sd::LongType* shapeInfo);
-    sd::LongType getIndexOffset(sd::LongType index, const sd::LongType *shapeInfo);
-}
-
- */
 /************************************************************
  * A struct used by CreateSortedStridePerm, new in 1.7.
  ************************************************************/

@@ -153,13 +153,13 @@ void compareAndBitpack_(const NDArray& input, const NDArray& thresholdScalar, ND
                          uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) -> void {
         sd::LongType coords[SD_MAX_RANK] = {};
         sd::LongType* ptr_coords = (sd::LongType*)&coords;
-        auto len = (stop - start);
+        sd::LongType len = (stop - start);
         // its extended as {rank+1} so extendedStrides[rank] is valid
         auto innermostStride = extendedStrides[rank];
         sd::index2coords_C(start, rank, outShapes, ptr_coords);
         // here last dimension will not be in coords. this way output shape and input shapes are equal
         auto offset = sd::offset_from_coords(extendedStrides, outStrides, ptr_coords, rank);
-        for (auto k = 0; k < len; k++) {
+        for (sd::LongType k = 0; k < len; k++) {
           auto buffPart = &(buff[offset.first]);
           auto outBuffPart = &(outBuff[offset.second]);
           *outBuffPart = pack<X>(buffPart, innermostStride, threshold);

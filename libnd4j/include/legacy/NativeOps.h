@@ -1152,7 +1152,7 @@ SD_LIB_EXPORT sd::Pointer shapeBufferForNumpy(sd::Pointer npyArray);
  */
 static sd::Pointer shapeBufferForNumpyHeader(sd::Pointer npyArray) {
   cnpy::NpyArray arr = cnpy::loadNpyFromHeader(reinterpret_cast<char*>(npyArray));
-  auto shape = new unsigned int[arr.shape.size()];
+  auto shape = new sd::LongType[arr.shape.size()];
   for (unsigned int i = 0; i < arr.shape.size(); i++) {
     shape[i] = arr.shape[i];
   }

@@ -42,27 +42,24 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
   if (gradIEWS == 1)
     memset(gradIBuff, 0, gradILen * sizeof(T));
   else {
-    // PRAGMA_OMP_PARALLEL_FOR_SIMD
     for (sd::LongType i = 0; i < gradILen * gradIEWS; i += gradIEWS) gradIBuff[i] = static_cast<T>(0.f);
   }
 
   if (gradO.ordering() == 'c' && gradOEWS == 1) {
-    // PRAGMA_OMP_PARALLEL_FOR_SIMD
     for (sd::LongType i = 0; i < gradOLen; ++i) {
       auto idx = shape::subArrayIndex(i, gradO.shapeInfo(), gradI.shapeInfo());
       gradI.p(idx, gradI.e<T>(idx) + gradOBuff[i]);
     }
   } else if (gradO.ordering() == 'c' && gradOEWS > 1) {
-    // PRAGMA_OMP_PARALLEL_FOR_SIMD
     for (sd::LongType i = 0; i < gradOLen; ++i) {
-      auto idx = shape::subArrayIndex(i, gradO.shapeInfo(), gradI.shapeInfo());
+      sd::LongType idx = shape::subArrayIndex(i, gradO.shapeInfo(), gradI.shapeInfo());
       gradI.p(idx, gradI.e<T>(idx) + gradOBuff[i * gradOEWS]);
     }
   } else {
-    // PRAGMA_OMP_PARALLEL_FOR_SIMD
     for (sd::LongType i = 0; i < gradOLen; ++i) {
-      auto fidx = shape::subArrayIndex(i, gradO.shapeInfo(), gradI.shapeInfo());
-      gradI.p(fidx, gradI.e<T>(fidx) + gradOBuff[shape::getIndexOffset(i, gradO.shapeInfo())]);
+      sd::LongType fidx = shape::subArrayIndex(i, gradO.shapeInfo(), gradI.shapeInfo());
+      sd::LongType  outIdx = shape::getIndexOffset(i, gradO.shapeInfo());
+      gradI.p(fidx, gradI.e<T>(fidx) + gradOBuff[outIdx]);
     }
   }
 }

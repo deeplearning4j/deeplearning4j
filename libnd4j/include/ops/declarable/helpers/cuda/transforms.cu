@@ -110,7 +110,7 @@ SD_KERNEL static void traceCuda(const void* vx, const sd::LongType* xShapeInfo, 
 
   sd::LongType coords[SD_MAX_RANK];
 
-  for (sd::Unsigned m = blockIdx.x; m < zLen;
+  for (sd::LongType m = blockIdx.x; m < zLen;
        m += gridDim.x) {  // one block per each element of z, that is per each matrix
 
     shape::index2coords(m, zShapeInfo, coords);
@@ -186,7 +186,7 @@ SD_KERNEL static void triuBPCuda(const void* vx, const sd::LongType* xShapeInfo,
 
   sd::LongType coords[SD_MAX_RANK];
 
-  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const sd::LongType  tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (sd::LongType i = tid; i < len; i += totalThreads) {
     shape::index2coords(i, zShapeInfo, coords);

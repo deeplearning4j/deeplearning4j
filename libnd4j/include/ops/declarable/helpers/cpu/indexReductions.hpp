@@ -120,7 +120,7 @@ static SD_INLINE void indexInnerReductionConstRank(const X* buffer, X& current, 
 }
 
 template <typename X, typename Z, typename ReductionOp, bool LastIndexFaster = true>
-static SD_INLINE void indexInnerReduction(const int& rank, const X* buffer, X& current, Z& argCurrent,
+static SD_INLINE void indexInnerReduction(const LongType& rank, const X* buffer, X& current, Z& argCurrent,
                                           const sd::LongType* bases, const sd::LongType* strides,
                                           const sd::LongType& outerLoopStart, const sd::LongType& outerLoopStop,
                                           const sd::LongType& innerLoopCount) {

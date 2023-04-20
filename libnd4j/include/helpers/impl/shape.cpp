@@ -209,7 +209,7 @@ SD_LIB_EXPORT SD_HOST bool strideDescendingCAscendingF(const sd::LongType *shape
 // (already stored in maxIdxs)
 SD_LIB_EXPORT SD_HOST void maxIndToMinInd(long long int *maxIdxs, long long int *minIdxs, const sd::LongType *maxShapeInfo,
                                           const sd::LongType *minShapeInfo,
-                                          const long long int *dimsToExclude, int dimsLen) {
+                                          const long long int *dimsToExclude, long long int dimsLen) {
   const auto maxRank = shape::rank(maxShapeInfo);
   const auto minRank = shape::rank(minShapeInfo);
 
@@ -278,22 +278,12 @@ SD_LIB_EXPORT SD_HOST void maxIndToMinInd(long long int *maxIdxs, long long int 
   }
 }
 
-SD_LIB_EXPORT SD_HOST sd::LongType subArrayIndex(const sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
-                                                 const sd::LongType *minShapeInfo, const long long int *dimsToExclude,
-                                                 const int dimsLen) {
-  sd::LongType maxIdxs[SD_MAX_RANK];
-  shape::index2coords(const_cast<sd::LongType &>(maxIdx), maxShapeInfo, maxIdxs);
 
-  sd::LongType minIdxs[SD_MAX_RANK];
-  maxIndToMinInd(maxIdxs, minIdxs, maxShapeInfo, minShapeInfo, dimsToExclude, dimsLen);
-
-  return shape::coords2index(minShapeInfo, minIdxs);
-}
 
 //////////////////////////////////////////////////////////////////////
 SD_LIB_EXPORT SD_HOST sd::LongType subArrayOffset(const sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
-                                                  const sd::LongType *minShapeInfo, const long long int *dimsToExclude,
-                                                  const int dimsLen) {
+                                                  const sd::LongType *minShapeInfo, const sd::LongType  *dimsToExclude,
+                                                  const sd::LongType dimsLen) {
   sd::LongType maxIdxs[SD_MAX_RANK];
   shape::index2coords(const_cast<sd::LongType &>(maxIdx), maxShapeInfo, maxIdxs);
 
@@ -306,7 +296,7 @@ SD_LIB_EXPORT SD_HOST sd::LongType subArrayOffset(const sd::LongType maxIdx, con
 //////////////////////////////////////////////////////////////////////
 SD_LIB_EXPORT SD_HOST int outerArrayOffsets(sd::LongType *maxOffsets, const sd::LongType minIdx,
                                             const sd::LongType *maxShapeInfo, const sd::LongType *minShapeInfo,
-                                            long long int *memBuff, const long long int *dimsToExclude) {
+                                            sd::LongType *memBuff, const sd::LongType *dimsToExclude) {
   const auto rankMin = shape::rank(minShapeInfo);
   const auto rankMax = shape::rank(maxShapeInfo);
 
@@ -316,7 +306,7 @@ SD_LIB_EXPORT SD_HOST int outerArrayOffsets(sd::LongType *maxOffsets, const sd::
   sd::LongType *indices = memBuff;
   sd::LongType *increment = memBuff + rankMax;
 
-  int N, minI, maxI;
+  sd::LongType N, minI, maxI;
 
   // calculate min per-dim-indices which corresponds to absolute minIdx index
   shape::index2coords(minIdx, minShapeInfo, indices);
@@ -370,18 +360,18 @@ SD_LIB_EXPORT SD_HOST int outerArrayOffsets(sd::LongType *maxOffsets, const sd::
 }
 
 //////////////////////////////////////////////////////////////////////
-SD_LIB_EXPORT SD_HOST int outerArrayIndexes(int *maxIdxs, const sd::LongType minIdx,
+SD_LIB_EXPORT SD_HOST sd::LongType outerArrayIndexes(sd::LongType *maxIdxs, const sd::LongType minIdx,
                                             const sd::LongType *maxShapeInfo, const sd::LongType *minShapeInfo,
-                                            const int *dimsToExclude) {
+                                            const sd::LongType  *dimsToExclude) {
   const auto rankMin = shape::rank(minShapeInfo);
   const auto rankMax = shape::rank(maxShapeInfo);
 
 
-  const auto diff = rankMax - rankMin;  // the size of dimsToExclude is equal to diff
+  const sd::LongType diff = rankMax - rankMin;  // the size of dimsToExclude is equal to diff
 
   sd::LongType indices[SD_MAX_RANK], increment[SD_MAX_RANK];
 
-  int N, minI, maxI;
+  sd::LongType N, minI, maxI;
 
   // calculate min per-dim-indices which corresponds to absolute minIdx index
   shape::index2coords(minIdx, minShapeInfo, indices);
@@ -444,18 +434,7 @@ SD_LIB_EXPORT SD_HOST int outerArrayIndexes(int *maxIdxs, const sd::LongType min
  * @param startNum the start number for the strides
  * @return the strides for a matrix of n dimensions
  */
-SD_HOST sd::LongType *calcStridesFortran(sd::LongType const *shape, int rank, int startNum) {
-  // if (isVector(shape, rank)) {
-
-  //     traceNew(5);
-
-  //     sd::LongType *ret = new sd::LongType[2];
-  //     for (int i = 0; i < 2; i++)
-  //         ret[i] = 1;
-  //     return ret;
-
-  // }
-
+SD_HOST sd::LongType *calcStridesFortran(sd::LongType const *shape, sd::LongType rank, sd::LongType startNum) {
   int dimensions = rank;
 
   traceNew(5);
@@ -1577,12 +1556,12 @@ SD_HOST int rearMostLeftOverItem(sd::LongType *data, sd::LongType *dimension, in
 }
 
 SD_HOST sd::LongType *shapeBufferOfNpy(cnpy::NpyArray arr) {
-  return shape::shapeBufferOfNpy(arr.shape.size(), (unsigned int *)arr.shape.data(), arr.fortranOrder);
+  return shape::shapeBufferOfNpy(arr.shape.size(), (sd::LongType *)arr.shape.data(), arr.fortranOrder);
 }
 
 
 
-SD_HOST sd::LongType *shapeBufferOfNpy(int rank, unsigned int *shape, bool fortranOrder) {
+SD_HOST sd::LongType *shapeBufferOfNpy(sd::LongType rank, sd::LongType *shape, bool fortranOrder) {
   if (fortranOrder) {
     sd::LongType *shapeBufferRet = shape::shapeBufferFortran(rank, sd::FLOAT32, (sd::LongType *)shape);
     return shapeBufferRet;

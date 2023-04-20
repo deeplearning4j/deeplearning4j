@@ -211,8 +211,7 @@ static SD_KERNEL void mirrorPadKernel(void const* vx, const sd::LongType* xShape
 
     shape::index2coords(i, zShape, xzCoord);
     auto outOffset = shape::getOffset(zShape, xzCoord);
-    //                auto intStep = blockDim.y * gridDim.y;
-    for (int j = 0; j < rank; j++) {
+    for (sd::LongType j = 0; j < rank; j++) {
       const sd::LongType inLen = shape::sizeAt(xShape, j);
       sd::LongType coords[2] = {j, 0};
       auto padOffset = shape::getOffset(paddingShape, coords);  // padding already has rank 2
@@ -242,7 +241,7 @@ static void mirrorPad_(sd::LaunchContext* context, const NDArray& input, const N
                        const int mode) {
   // mode:  0 - REFLECT, else - SYMMETRIC
   const int reflBorder = (bool)mode ? 1 : 0;
-  const int rank = input.rankOf();
+  const sd::LongType rank = input.rankOf();
   const sd::LongType outLen = output.lengthOf();
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({&output}, {&input, &paddings});

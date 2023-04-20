@@ -31,14 +31,14 @@ namespace helpers {
 template <typename T>
 static void __where(NDArray &condition, NDArray &output, memory::Workspace *workspace) {
   NDArrayList list(0, true);
-  int cnt = 0;
+  sd::LongType  cnt = 0;
 
   sd::LongType idx[SD_MAX_RANK];
 
   for (sd::LongType e = 0; e < condition.lengthOf(); e++) {
     shape::index2coordsCPU(0, e, condition.shapeInfo(), idx);
 
-    auto offset = shape::getOffset(condition.shapeInfo(), idx);
+    sd::LongType  offset = shape::getOffset(condition.shapeInfo(), idx);
 
     if (condition.e<bool>(offset)) {
       auto array = NDArrayFactory::create_('c', {1, condition.rankOf()}, output.dataType(), output.getContext());

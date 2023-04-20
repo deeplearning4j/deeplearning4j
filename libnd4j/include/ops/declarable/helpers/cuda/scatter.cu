@@ -605,22 +605,22 @@ SD_KERNEL void scatterForLossCuda(const void *vx, const sd::LongType *xShapeInfo
   auto z = reinterpret_cast<Z *>(vz);
 
   __shared__ sd::LongType xLen;
-  __shared__ int xRank, *sharedMem;  // xRank = zRank, yRank = xRank + 1
+  __shared__ sd::LongType xRank, *sharedMem;  // xRank = zRank, yRank = xRank + 1
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<int *>(shmem);
+    sharedMem = reinterpret_cast<sd::LongType *>(shmem);
 
     xLen = shape::length(xShapeInfo);
     xRank = shape::rank(xShapeInfo);
   }
   __syncthreads();
 
-  const auto xInd = threadIdx.x + blockIdx.x * blockDim.x;
+  const sd::LongType xInd = threadIdx.x + blockIdx.x * blockDim.x;
 
   if (xInd >= xLen) return;
 
-  auto coords = sharedMem + threadIdx.x * (xRank + 1);
+  sd::LongType coords = sharedMem + threadIdx.x * (xRank + 1);
 
   shape::index2coords(xInd, xShapeInfo, coords);
 

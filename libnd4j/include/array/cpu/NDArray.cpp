@@ -86,12 +86,12 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
     //track input vector coordinates, only used in specific cases
     sd::LongType vectorCoord[1];
     vectorCoord[0] = 0;
-    int targetRank = target.rankOf();
-    int thisRank = this->rankOf();
+    sd::LongType targetRank = target.rankOf();
+    sd::LongType thisRank = this->rankOf();
     bool notVectorScalar = targetRank == 2 && thisRank == 2;
     bool thisNotVectorScalar = !shape::isScalar(this->shapeInfo()) && !shape::isVector(this->shapeInfo());
     bool targetNotVectorScalar =  !shape::isScalar(target.shapeInfo()) && !shape::isVector(target.shapeInfo());
-    for (auto i = start; i < stop; i++) {
+    for (sd::LongType i = start; i < stop; i++) {
       shape::index2coordsCPU(start, i, target.shapeInfo(), coords);
       sd::LongType row = targetNotVectorScalar ?  coords[zRank - 2] : 0;
       sd::LongType col = targetNotVectorScalar ? coords[zRank - 1]: 1;
@@ -182,14 +182,14 @@ static void templatedSwap(void* xBuffer, void* yBuffer, const sd::LongType* xSha
 
   auto func = PRAGMA_THREADS_FOR {
     if (isSameOrders && xEws > 0 && yEws > 0) {
-      for (auto i = start; i < stop; i++) sd::math::sd_swap(x[i * xEws], y[i * yEws]);
+      for (sd::LongType i = start; i < stop; i++) sd::math::sd_swap(x[i * xEws], y[i * yEws]);
     } else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
-      for (auto i = start; i < stop; i++) {
+      for (sd::LongType i = start; i < stop; i++) {
         const auto ind = shape::getIndexOffset(i, xShapeInfo);
         sd::math::sd_swap(x[ind], y[ind]);
       }
     } else {
-      for (auto i = start; i < stop; i++) {
+      for (sd::LongType i = start; i < stop; i++) {
         const auto xInd = shape::getIndexOffset(i, xShapeInfo);
         const auto yInd = shape::getIndexOffset(i, yShapeInfo);
         sd::math::sd_swap(x[xInd], y[yInd]);
@@ -481,26 +481,26 @@ void NDArray::tile(NDArray& target) const {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-static void repeat_(const NDArray& input, NDArray& output, const std::vector<LongType>& repeats, const int axis) {
+static void repeat_(const NDArray& input, NDArray& output, const std::vector<LongType>& repeats, const LongType axis) {
   const X* x = input.bufferAsT<X>();
   Z* z = output.bufferAsT<Z>();
 
-  const int rank = input.rankOf();     // xRank = zRank
-  const int zLen = output.lengthOf();  // xLen <= zLen
+  const sd::LongType rank = input.rankOf();     // xRank = zRank
+  const sd::LongType zLen = output.lengthOf();  // xLen <= zLen
   const sd::Unsigned repSize = repeats.size();
 
   // loop through input array
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK], temp;
 
-    for (auto i = start; i < stop; i++) {
+    for (sd::LongType i = start; i < stop; i++) {
       shape::index2coordsCPU(start, i, output.shapeInfo(), coords);
       const auto zOffset = shape::getOffset(output.shapeInfo(), coords);
 
       temp = coords[axis];
 
       if (repSize > 1) {
-        for (sd::Unsigned j = 0; j < repSize; ++j) {
+        for (sd::LongType j = 0; j < repSize; ++j) {
           coords[axis] -= repeats[j];
           if (coords[axis] < 0) {
             coords[axis] = j;

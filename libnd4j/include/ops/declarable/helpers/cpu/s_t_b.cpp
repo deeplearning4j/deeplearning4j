@@ -302,7 +302,7 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
 
-    for (auto i = start; i < stop; i++) {
+    for (sd::LongType i = start; i < stop; i++) {
       shape::index2coordsCPU(start, i, output.shapeInfo(), zCoords);
 
       const auto zOffset = shape::getOffset(output.shapeInfo(), zCoords);

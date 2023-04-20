@@ -177,7 +177,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK], temp;
 
-    for (auto i = start; i < stop; i += increment) {
+    for (sd::LongType i = start; i < stop; i += increment) {
       shape::index2coordsCPU(start, i, output.shapeInfo(), coords);
 
       const auto zOffset = shape::getOffset(output.shapeInfo(), coords);
@@ -258,7 +258,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray &input, const std::vector<
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK], temp;
 
-    for (auto i = start; i < stop; i += increment) {
+    for (sd::LongType i = start; i < stop; i += increment) {
       shape::index2coordsCPU(start, i, input.shapeInfo(), coords);
       const auto xOffset = shape::getOffset(input.shapeInfo(), coords);
 
@@ -370,7 +370,7 @@ void SpecialMethods<T>::averageGeneric(void **vx, void *vz, sd::LongType const *
 
 template <typename T>
 sd::LongType SpecialMethods<T>::getPosition(sd::LongType const *xShapeInfo, sd::LongType index) {
-  auto xEWS = shape::elementWiseStride(xShapeInfo);
+  LongType xEWS = shape::elementWiseStride(xShapeInfo);
 
   if (xEWS == 1)
     return index;
