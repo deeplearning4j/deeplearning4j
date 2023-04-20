@@ -63,25 +63,16 @@ sd::LongType barnes_row_count(const NDArray* rowP, const NDArray* colP, sd::Long
 template <typename T>
 static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const NDArray* valP, sd::LongType N,
                                NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts) {
-  // auto N = rowP->lengthOf() - 1; /// 2 + rowP->lengthOf() % 2;
-  // auto numElements = output->lengthOf();
-  // std::vector<int> symRowP = rowCounts->asVectorT<int>();//NDArrayFactory::create<int>('c', {numElements});
-  // NDArray symValP = NDArrayFactory::create<double>('c', {numElements});
-  // symRowP.insert(symRowP.begin(),0);
-  // symRowP(1, {0}) = *rowCounts;
+
   int const* pRows = reinterpret_cast<int const*>(rowP->buffer());
   int* symRowP = reinterpret_cast<int*>(outputRows->buffer());
   symRowP[0] = 0;
   for (sd::LongType n = 0; n < N; n++) symRowP[n + 1] = symRowP[n] + rowCounts->e<int>(n);
-  //        outputRows->printBuffer("output rows");
 
   int* symColP = reinterpret_cast<int*>(outputCols->buffer());
-  //            symRowP.p(n + 1, symRowP.e(n) + rowCounts.e(n))
-  //        outputRows->printBuffer("SymRows are");
   int const* pCols = reinterpret_cast<int const*>(colP->buffer());
   T const* pVals = reinterpret_cast<T const*>(valP->buffer());
   T* pOutput = reinterpret_cast<T*>(outputVals->buffer());
-  // std::vector<int> rowCountsV = rowCounts->getBufferAsVector<int>();
   std::vector<int> offset(N);  // = NDArrayFactory::create<int>('c', {N});
 
   // PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(schedule(guided) shared(offset))

@@ -65,17 +65,19 @@ SD_HOST void bitonicArbitraryStepGenericValue(dim3 &launchDims, cudaStream_t *st
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_HOST void oesTadGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
-                           int *dimension, int dimensionLength, sd::LongType const *tadShapeInfo,
+                           sd::LongType *dimension, sd::LongType dimensionLength, sd::LongType const *tadShapeInfo,
                            sd::LongType const *tadOffsets, bool descending);
 
 template <typename X, typename Y>
 SD_HOST void oesTadGenericKey(dim3 &launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
-                              void *vy, sd::LongType const *yShapeInfo, int *dimension, int dimensionLength,
+                              void *vy, sd::LongType const *yShapeInfo, sd::LongType *dimension,
+                              sd::LongType dimensionLength,
                               sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets, bool descending);
 
 template <typename X, typename Y>
 SD_HOST void oesTadGenericValue(dim3 &launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
-                                void *vy, sd::LongType const *yShapeInfo, int *dimension, int dimensionLength,
+                                void *vy, sd::LongType const *yShapeInfo, sd::LongType *dimension,
+                                sd::LongType dimensionLength,
                                 sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets, bool descending);
 
 ////////////////////////////////////////////////////////////////////////

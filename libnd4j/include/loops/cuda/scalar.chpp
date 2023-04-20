@@ -33,12 +33,12 @@ using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z, typename OpType>
-SD_KERNEL static void scalarSimpleShaped(void const* vx, void const* vscalar, sd::LongType const* xShapeInfo, void *vparams, void *vz, sd::LongType const* zShapeInfo, int *allocationBuffer) {
+SD_KERNEL static void scalarSimpleShaped(void const* x, void const* y, sd::LongType const* xShapeInfo, void * params, void * z, sd::LongType const* zShapeInfo, long long int* allocationBuffer) {
 
-    auto scalar = reinterpret_cast<Y const*>(vscalar)[0];
-    auto x      = reinterpret_cast<X const*>(vx);
-    auto params = reinterpret_cast<Z*>(vparams);
-    auto z = reinterpret_cast<Z*>(vz);
+    auto scalar = reinterpret_cast<Y const*>(y)[0];
+    auto x      = reinterpret_cast<X const*>(x);
+    auto params = reinterpret_cast<Z*>(params);
+    auto z = reinterpret_cast<Z*>(z);
 
     int totalThreads = gridDim.x * blockDim.x;
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -70,18 +70,18 @@ SD_KERNEL static void scalarSimpleShaped(void const* vx, void const* vscalar, sd
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z, typename OpType>
-SD_KERNEL static void scalarAlongDimension(void const* vx, sd::LongType const* xShapeInfo,
-                                          void* vextraParams,
-                                          void* vz, sd::LongType const* zShapeInfo,
-                                          void const* vscalars,
-                                          int *dimension, int dimensionLength,
+SD_KERNEL static void scalarAlongDimension(void const* x, sd::LongType const* xShapeInfo,
+                                          void* extraParams,
+                                          void* z, sd::LongType const* zShapeInfo,
+                                          void const* scalars,
+                                           long long int* dimension, long long int dimensionLength,
                                           sd::LongType const* tadShapeInfo,  sd::LongType const* tadOffsets,
                                           sd::LongType const* tadShapeInfoZ, sd::LongType const* tadOffsetsZ) {
 
-    auto x = reinterpret_cast<X const*>(vx);
-    auto extraParams = reinterpret_cast<Z*>(vextraParams);
-    auto z = reinterpret_cast<Z*>(vz);
-    auto scalars = reinterpret_cast<Y const*>(vscalars);
+    auto x = reinterpret_cast<X const*>(x);
+    auto extraParams = reinterpret_cast<Z*>(extraParams);
+    auto z = reinterpret_cast<Z*>(z);
+    auto scalars = reinterpret_cast<Y const*>(scalars);
 
     if (tadShapeInfoZ == nullptr) {
         tadShapeInfoZ = tadShapeInfo;
@@ -127,7 +127,7 @@ namespace scalar    {
 ////////////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
 template<typename OpType>
-void SD_HOST ScalarTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cudaStream_t *stream, void const* vx, sd::LongType const* xShapeInfo, sd::LongType const* hxShapeInfo, void *vz, sd::LongType const* zShapeInfo, sd::LongType const* hzShapeInfo, void const* vscalar, void *vextraParams, int *allocPointer){
+void SD_HOST ScalarTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cudaStream_t *stream, void const* vx, sd::LongType const* xShapeInfo, sd::LongType const* hxShapeInfo, void *vz, sd::LongType const* zShapeInfo, sd::LongType const* hzShapeInfo, void const* vscalar, void *vextraParams, long long int* allocPointer){
 
     auto xEws = shape::elementWiseStride(hxShapeInfo);
     auto xOrder = shape::order(hxShapeInfo);
@@ -144,7 +144,8 @@ void SD_HOST ScalarTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cudaSt
 ////////////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
 template<typename OpType>
-void SD_HOST ScalarTransform<X,Y,Z>::intermediateAlongDimension(dim3& launchDims, cudaStream_t *stream, void const* x, sd::LongType const* xShapeInfo, void *z, sd::LongType const* zShapeInfo, void const* scalars, void *extraParams, int *dimension, int dimensionLength, sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* tadShapeInfoZ, sd::LongType const* tadOffsetsZ) {
+void SD_HOST ScalarTransform<X,Y,Z>::intermediateAlongDimension(dim3& launchDims, cudaStream_t *stream, void const* x, sd::LongType const* xShapeInfo, void *z, sd::LongType const* zShapeInfo, void const* scalars, void *extraParams, long long int* dimension,
+    long long int dimensionLength, sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* tadShapeInfoZ, sd::LongType const* tadOffsetsZ) {
     scalarAlongDimension<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z>>>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
     sd::DebugHelper::checkErrorCode(stream, "scalarAlongDimA(...) failed");
 }
@@ -161,7 +162,8 @@ void ScalarTransform<X,Y,Z>::executeCudaShaped(dim3& launchDims, cudaStream_t *s
 
 ////////////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
-void ScalarTransform<X,Y,Z>::executeCudaAlongDimension(dim3& launchDims, cudaStream_t *stream, int opNum, void const* vx, sd::LongType const* xShapeInfo, void *vz, sd::LongType const* zShapeInfo, void const* vscalars, void *vextraParams, int *dimension, int dimensionLength,  sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* tadShapeInfoZ, sd::LongType const* tadOffsetsZ) {
+void ScalarTransform<X,Y,Z>::executeCudaAlongDimension(dim3& launchDims, cudaStream_t *stream, int opNum, void const* vx, sd::LongType const* xShapeInfo, void *vz, sd::LongType const* zShapeInfo, void const* vscalars, void *vextraParams, sd::LongType* dimension,
+                                                         sd::LongType dimensionLength,  sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* tadShapeInfoZ, sd::LongType const* tadOffsetsZ) {
     DISPATCH_BY_OPNUM_TTT(intermediateAlongDimension, PARAMS(launchDims, stream, vx, xShapeInfo, vz, zShapeInfo, vscalars, vextraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), SCALAR_OPS);
 }
 

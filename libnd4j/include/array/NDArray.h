@@ -1524,7 +1524,7 @@ class SD_LIB_EXPORT NDArray {
    *  returns true if all dimensions of array except one are unities, for example: [1,1,n,1], [n,1,1], [n], ...
    *  posOfNonUnityDim - one dimension with value > 1
    */
-  SD_INLINE bool isCommonVector(int &posOfNonUnityDim) const;
+  SD_INLINE bool isCommonVector(LongType &posOfNonUnityDim) const;
 
   /**
    *  returns true if array is scalar
@@ -1735,7 +1735,7 @@ bool NDArray::isRowVector() const {
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::isCommonVector(int &posOfNonUnityDim) const {
+bool NDArray::isCommonVector(LongType &posOfNonUnityDim) const {
   return shape::isCommonVector(_shapeInfo, posOfNonUnityDim);
 }
 

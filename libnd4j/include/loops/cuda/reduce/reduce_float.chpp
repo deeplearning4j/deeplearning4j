@@ -45,8 +45,7 @@ SD_KERNEL void simpleReduce(const void *x, const sd::LongType *outerXTadShapeInf
 template <typename X, typename Z, typename OpType>
 SD_KERNEL void simpleScalar(const void *x, const sd::LongType *xShapeInfo,
                             void *extraParams,
-                            void *z, const sd::LongType *zShapeInfo,
-                            int *dimension, int dimensionLength,
+                            void *z, const sd::LongType *zShapeInfo, long long int *dimension, long long int dimensionLength,
                             void *reductionBuffer,
                              const sd::LongType *tadOnlyShapeInfo) {
 
@@ -115,7 +114,7 @@ SD_DEVICE void ReduceFloatFunction<X,Z>::transformCudaXD(const void *vx, const s
 
     int coords[SD_MAX_RANK];
 
-    for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+    for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
 
         shape::index2coords(r, outerXTadShapeInfo, coords);
         const auto outerOffset = shape::getOffset(outerXTadShapeInfo, coords);

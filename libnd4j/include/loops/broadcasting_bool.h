@@ -54,7 +54,7 @@ class BroadcastBool {
   template <typename OpType>
   static SD_DEVICE void transformCuda(const void *x, const sd::LongType *xShapeInfo, const void *y,
                                       const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo,
-                                      void *extraParams, int *dimension, int dimensionLength,
+                                      void *extraParams,sd::LongType *dimension,sd::LongType dimensionLength,
                                       const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
                                       const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);
 
@@ -67,8 +67,8 @@ class BroadcastBool {
   static SD_HOST void intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, void const *x,
                                             sd::LongType const *xShapeInfo, void const *y,
                                             sd::LongType const *yShapeInfo, void *result,
-                                            sd::LongType const *resultShapeInfo, void *extraParams, int *dimension,
-                                            int dimensionLength, sd::LongType const *tadOnlyShapeInfo,
+                                            sd::LongType const *resultShapeInfo, void *extraParams,
+                                            sd::LongType *dimension,sd::LongType dimensionLength, sd::LongType const *tadOnlyShapeInfo,
                                             sd::LongType const *tadOffsets, sd::LongType const *tadOnlyShapeInfoZ,
                                             sd::LongType const *tadOffsetsZ);
 
@@ -81,7 +81,7 @@ class BroadcastBool {
   static SD_HOST void execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void const *x,
                                     sd::LongType const *xShapeInfo, void const *y, sd::LongType const *yShapeInfo,
                                     void *result, sd::LongType const *resultShapeInfo, void *extraParams,
-                                    int *dimension, int dimensionLength, sd::LongType const *tadOnlyShapeInfo,
+                                    sd::LongType *dimension, sd::LongType dimensionLength, sd::LongType const *tadOnlyShapeInfo,
                                     sd::LongType const *tadOffsets, sd::LongType const *tadOnlyShapeInfoZ,
                                     sd::LongType const *tadOffsetsZ);
 
@@ -92,8 +92,8 @@ class BroadcastBool {
   template <typename OpType>
   static SD_DEVICE void transformInverseCuda(const void *x, const sd::LongType *xShapeInfo, const void *y,
                                              const sd::LongType *yShapeInfo, void *result,
-                                             const sd::LongType *resultShapeInfo, void *extraParams, int *dimension,
-                                             int dimensionLength, const sd::LongType *tadOnlyShapeInfo,
+                                             const sd::LongType *resultShapeInfo, void *extraParams,
+                                             sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadOnlyShapeInfo,
                                              const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ,
                                              const sd::LongType *tadOffsetsZ);
 
@@ -101,14 +101,14 @@ class BroadcastBool {
   static SD_HOST void intermediateInverseBroadcast(
       dim3 launchDims, cudaStream_t *stream, const void *x, const sd::LongType *xShapeInfo, const void *y,
       const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, void *extraParams,
-      int *dimension, int dimensionLength, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
+      sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
       const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);
 
   static SD_HOST void execInverseBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, const void *x,
                                            const sd::LongType *xShapeInfo, const void *y,
                                            const sd::LongType *yShapeInfo, void *result,
-                                           const sd::LongType *resultShapeInfo, void *extraParams, int *dimension,
-                                           int dimensionLength, const sd::LongType *tadOnlyShapeInfo,
+                                           const sd::LongType *resultShapeInfo, void *extraParams,
+                                           long long int *dimension, long long int dimensionLength, const sd::LongType *tadOnlyShapeInfo,
                                            const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ,
                                            const sd::LongType *tadOffsetsZ);
 
@@ -141,7 +141,7 @@ class BroadcastBool {
    */
   template <typename OpType>
   static void exec(const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo,
-                   void *result, const sd::LongType *resultShapeInfo, void *extraParams, long long int *dimension,
+                   void *result, const sd::LongType *resultShapeInfo, void *extraParams, sd::LongType *dimension,
                    int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset,
                    const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, uint64_t start, uint64_t stop);
 
@@ -152,7 +152,7 @@ class BroadcastBool {
   template <typename OpType>
   static void execInverse(const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo,
                           void *result, const sd::LongType *resultShapeInfo, void *extraParams,
-                          long long int *dimension,
+                          sd::LongType *dimension,
                           int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset,
                           const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, uint64_t start,
                           uint64_t stop);

@@ -171,12 +171,9 @@ static void unsortedSegmentProdFunctor_(sd::LaunchContext* context, NDArray* inp
   //        NDArray classes = NDArrayFactory::create<int>('c', {numOfClasses, 2});
   NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses}, context);
   NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses}, context);
-  //        NDArray row = NDArrayFactory::create<int>('c', {1, 2}, {(int)indices->lengthOf(), (int)0});
-  //        classes.applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), &row, &classes);
   classesRangesBegs.assign(indices->lengthOf());
   classesRangesLens.assign(0);
   dim3 dims(numOfClasses, indices->lengthOf(), numOfClasses * 32 + 32);
-  //        int* classesBuf = reinterpret_cast<int*>(classes.specialBuffer());
   fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
   int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
   int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());

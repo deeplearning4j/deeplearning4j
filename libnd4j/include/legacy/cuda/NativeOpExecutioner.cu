@@ -76,8 +76,7 @@ extern "C" SD_KERNEL void prepareShapeBuffer(int* dimension, int* maxDimension, 
 
   ArrayOptions::setDataType(specialPointer, dataType);
 
-  // printf("special[0]: [%lld]\n", (long long) specialPointer[0]);
-  // shape::printShapeInfoLinear("prepareShapeBuffer", specialPointer);
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -118,9 +117,7 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext* lc, int opNum
       SD_COMMON_TYPES)
 #endif
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execPairwiseTransform failed", res);
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -154,9 +151,7 @@ void NativeOpExecutioner::execPairwiseBoolTransform(sd::LaunchContext* lc, int o
       ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraParams),
       SD_COMMON_TYPES, SD_BOOL_TYPES)
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execPairwiseBoolTransform failed", res);
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -190,9 +185,7 @@ void NativeOpExecutioner::execPairwiseIntTransform(sd::LaunchContext* lc, int op
       ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraParams),
       SD_INTEGER_TYPES)
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execPairwiseIntTransform failed", res);
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -215,9 +208,6 @@ void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext* lc, int opNu
                                      dZShapeInfo, hZShapeInfo, nullptr, nullptr, biasCorrected, reductionPointer),
       SD_COMMON_TYPES, SD_FLOAT_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execSummaryStatsScalar failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -227,7 +217,7 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext* lc, int opNum, vo
                                             sd::LongType const* hYShapeInfo, void const* dY,
                                             sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo,
                                             void* dZ, sd::LongType const* dZShapeInfo, void* extraParams,
-                                            sd::LongType* dimension, int dimensionLength, sd::LongType const* tadOnlyShapeInfo,
+                                            sd::LongType* dimension, LongType dimensionLength, sd::LongType const* tadOnlyShapeInfo,
                                             sd::LongType const* tadOffsets, sd::LongType const* tadOnlyShapeInfoZ,
                                             sd::LongType const* tadOffsetsZ) {
   auto stream = lc->getCudaStream();
@@ -254,9 +244,6 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext* lc, int opNum, vo
                       dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
       SD_COMMON_TYPES, SD_BOOL_TYPES)
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execBroadcastBool failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -284,9 +271,6 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext* lc, const int opN
       ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraParams),
       SD_COMMON_TYPES, SD_BOOL_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execBroadcastBool failed", res);
 }
 
 void NativeOpExecutioner::execInverseBroadcastBool(
@@ -318,9 +302,6 @@ void NativeOpExecutioner::execInverseBroadcastBool(
                              dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
       SD_COMMON_TYPES, SD_BOOL_TYPES)
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execInverseBroadcastBool failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -352,9 +333,6 @@ void NativeOpExecutioner::execBroadcastInt(
                       dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
       SD_INTEGER_TYPES)
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execBroadcastBool failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -388,9 +366,7 @@ void NativeOpExecutioner::execBroadcastInt(sd::LaunchContext* lc, const int opNu
                         ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo),
                         SD_INTEGER_TYPES)
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execBroadcastBool failed", res);
+
 }
 
 void NativeOpExecutioner::execInverseBroadcastInt(
@@ -423,9 +399,7 @@ void NativeOpExecutioner::execInverseBroadcastInt(
                              dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
       SD_INTEGER_TYPES)
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execInverseBroadcastInt failed", res);
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -473,9 +447,6 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext* lc, int opNum, void c
       SD_COMMON_TYPES);
 #endif
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execBroadcast failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -509,9 +480,7 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext* lc, const int opNum, 
       ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo), SD_COMMON_TYPES);
 #endif
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execBroadcast failed", res);
+
 }
 
 void NativeOpExecutioner::execInverseBroadcast(
@@ -544,9 +513,6 @@ void NativeOpExecutioner::execInverseBroadcast(
       SD_COMMON_TYPES);
 #endif
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execInverseBroadcast failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -575,9 +541,6 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext* lc, int opNum, void 
                                        reductionPointer, dZ, dZShapeInfo, hZShapeInfo, dimension),
                         SD_COMMON_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execReduceSame failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -606,9 +569,7 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext* lc, int opNum, void 
                                        reductionPointer, dZ, dZShapeInfo, hZShapeInfo, dimension),
                         SD_COMMON_TYPES, SD_LONG_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execReduceLong failed", res);
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -636,9 +597,6 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext* lc, int opNum, void 
                                        reductionPointer, dZ, dZShapeInfo, hZShapeInfo, dimension),
                         SD_COMMON_TYPES, SD_BOOL_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execReduceBool failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -672,9 +630,7 @@ void NativeOpExecutioner::execReduceFloat(sd::LaunchContext* lc, int opNum, cons
                                        reductionPointer, dZ, dZShapeInfo, hZShapeInfo, dimension),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execReduceFloat failed", res);
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -693,7 +649,7 @@ void NativeOpExecutioner::execIndexReduce(sd::LaunchContext* lc, int opNum, void
                                           sd::LongType const* hXShapeInfo, void const* dX,
                                           sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
                                           sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo,
-                                          sd::LongType* dimension, int dimensionLength, sd::LongType const* tadShapeInfo,
+                                          sd::LongType* dimension, LongType dimensionLength, sd::LongType const* tadShapeInfo,
                                           sd::LongType const* tadOffsets) {
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
@@ -721,9 +677,6 @@ void NativeOpExecutioner::execIndexReduce(sd::LaunchContext* lc, int opNum, void
                            reductionPointer, tadShapeInfo, tadOffsets),
       SD_COMMON_TYPES, SD_INDEXING_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execIndexReduce failed", res);
 }
 
 /**
@@ -743,7 +696,7 @@ void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext* lc, int opNum
 
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
-  auto allocationPointer = lc->getAllocationPointer();
+  sd::LongType *allocationPointer = lc->getAllocationPointer();
 
   auto xLength = shape::length(hXShapeInfo);
   auto blockWidth = 256;
@@ -755,10 +708,7 @@ void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext* lc, int opNum
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  // FIXME: we want Z to be one of integer types
-  // if (!DataTypeUtils::isZ(zType))
-  //    throw sd::datatype_exception("NativeOpExecutioner::execIndexReduceScalar requires Z operand to have one of
-  //    integer types")
+
   if (zType != sd::DataType::INT64 && zType != sd::DataType::INT32)
     throw sd::datatype_exception::build(
         "NativeOpExecutioner::execIndexReduceScalar requires Z operand to have INT32/INT64 data type", zType);
@@ -767,12 +717,9 @@ void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext* lc, int opNum
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::indexreduce::IndexReduce,
-      ::executeIndexReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz,
+      ::executeIndexReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, (sd::LongType ) shape::rank(hXShapeInfo), extraParams, dz,
                                  dZShapeInfo, 0, nullptr, 0, 1, allocationPointer, reductionPointer, nullptr, nullptr),
       SD_COMMON_TYPES, SD_INDEXING_TYPES);
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execIndexReduceScalar failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1091,7 +1038,7 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext* lc, int opNum, voi
                                            sd::LongType const* hXShapeInfo, void const* dX,
                                            sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
                                            sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo,
-                                           sd::LongType* dimension, int dimensionLength, sd::LongType const* tadShapeInfo,
+                                           sd::LongType* dimension, LongType dimensionLength, sd::LongType const* tadShapeInfo,
                                            sd::LongType const* tadOffsets, bool biasCorrected) {
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();

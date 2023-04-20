@@ -181,7 +181,7 @@ static void segmentMaxFunctor_(LaunchContext* context, NDArray* input, NDArray* 
         input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numOfClasses, output->specialBuffer(),
         output->specialShapeInfo());
   } else {
-    std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto inputTads = packX.specialShapeInfo();
@@ -213,12 +213,9 @@ static void unsortedSegmentMaxFunctor_(sd::LaunchContext* context, NDArray* inpu
 
   NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses}, context);
   NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses}, context);
-  //        NDArray row = NDArrayFactory::create<int>('c', {1, 2}, {(int)indices->lengthOf(), (int)0});
-  //        classes.applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), row, classes);
   classesRangesBegs.assign(indices->lengthOf());
   classesRangesLens.assign(0);
   dim3 dims(numOfClasses, indices->lengthOf(), numOfClasses * 32 + 32);
-  //        int* classesBuf = reinterpret_cast<int*>(classes.specialBuffer());
   fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
   int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
   int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
@@ -228,7 +225,7 @@ static void unsortedSegmentMaxFunctor_(sd::LaunchContext* context, NDArray* inpu
         input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo());
   } else {
-    std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto inputTads = packX.specialShapeInfo();
@@ -359,7 +356,7 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         output->specialBuffer(), output->specialShapeInfo());
   } else {
-    std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);
@@ -410,7 +407,7 @@ static sd::Status unsortedSegmentMaxFunctorBP_(sd::LaunchContext* context, NDArr
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         output->specialBuffer(), output->specialShapeInfo());
   } else {
-    std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);

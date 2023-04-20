@@ -257,17 +257,11 @@ static void rollFunctorFull_(NDArray *input, NDArray *output, std::vector<int> c
       ResultSet listOfOutTensors = output->allTensorsAlongDimension({axe});
       int fullLen = listOfTensors.size();
       int theShift = shifts[i];
-      //                if (theShift > 0) {
-      //                    theShift %= fullLen;
-      //                }
-      //                else {
-      //                    theShift -= fullLen * (theShift / fullLen - 1);
-      //                }
       for (int k = 0; k < fullLen; k++) {
         rollFunctorLinear(output->getContext(), listOfTensors.at(k), listOfOutTensors.at(k), theShift, true);
       }
     } else {
-      std::vector<int> dims(input->rankOf() - axe - 1);
+      std::vector<sd::LongType> dims(input->rankOf() - axe - 1);
       for (int i = 0; i < dims.size(); ++i) dims[i] = axe + 1 + i;
 
       auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dims);

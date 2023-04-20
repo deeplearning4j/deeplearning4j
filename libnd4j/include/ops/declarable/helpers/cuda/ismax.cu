@@ -64,7 +64,7 @@ static void ismax_(sd::LaunchContext* context, const NDArray* input, NDArray* ou
     sd::LongType* hostTShapeInfo = nullptr;
     int* dimension = nullptr;
     int dimensionLength = dimensions.size();
-    std::vector<int> copy(dimensions);
+    std::vector<sd::LongType> copy(dimensions);
 
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), copy.data(), copy.size());
 

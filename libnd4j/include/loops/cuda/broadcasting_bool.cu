@@ -37,7 +37,7 @@ using namespace simdOps;
 template <typename X, typename Z, typename OpClass>
 static SD_KERNEL void broadcastBoolSimple(void const* x, sd::LongType const* xShapeInfo, void const* y,
                                           sd::LongType const* yShapeInfo, void* z, sd::LongType const* zShapeInfo,
-                                          void* extraParams, int* dimension, int dimensionLength,
+                                          void* extraParams, sd::LongType* dimension, sd::LongType dimensionLength,
                                           sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
                                           sd::LongType const* tadOnlyShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   functions::broadcast::BroadcastBool<X, Z>::template transformCuda<OpClass>(
@@ -57,8 +57,8 @@ static SD_KERNEL void broadcastBoolSimple(const void const* x, const sd::LongTyp
 template <typename X, typename Z, typename OpClass>
 static SD_KERNEL void broadcastBoolInverseSimple(void const* x, sd::LongType const* xShapeInfo, void const* y,
                                                  sd::LongType const* yShapeInfo, void* z,
-                                                 sd::LongType const* zShapeInfo, void* extraParams, int* dimension,
-                                                 int dimensionLength, sd::LongType const* tadOnlyShapeInfo,
+                                                 sd::LongType const* zShapeInfo, void* extraParams,
+                                                 sd::LongType* dimension, sd::LongType dimensionLength, sd::LongType const* tadOnlyShapeInfo,
                                                  sd::LongType const* tadOffsets, sd::LongType const* tadOnlyShapeInfoZ,
                                                  sd::LongType const* tadOffsetsZ) {
   functions::broadcast::BroadcastBool<X, Z>::template transformInverseCuda<OpClass>(
@@ -74,8 +74,8 @@ template <typename X, typename Z>
 template <typename OpClass>
 SD_HOST void BroadcastBool<X, Z>::intermediateBroadcast(
     dim3 launchDims, cudaStream_t* stream, void const* x, sd::LongType const* xShapeInfo, void const* y,
-    sd::LongType const* yShapeInfo, void* z, sd::LongType const* zShapeInfo, void* extraParams, int* dimension,
-    int dimensionLength, sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
+    sd::LongType const* yShapeInfo, void* z, sd::LongType const* zShapeInfo, void* extraParams,
+    sd::LongType* dimension, sd::LongType dimensionLength, sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
     sd::LongType const* tadOnlyShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   broadcastBoolSimple<X, Z, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, dimension, dimensionLength, tadOnlyShapeInfo,
@@ -100,7 +100,8 @@ template <typename X, typename Y>
 SD_HOST void BroadcastBool<X, Y>::execBroadcast(dim3 launchDims, cudaStream_t* stream, int opNum, void const* x,
                                                 sd::LongType const* xShapeInfo, void const* y,
                                                 sd::LongType const* yShapeInfo, void* z, sd::LongType const* zShapeInfo,
-                                                void* extraParams, int* dimension, int dimensionLength,
+                                                void* extraParams, sd::LongType* dimension,
+                                                sd::LongType dimensionLength,
                                                 sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
                                                 sd::LongType const* tadOnlyShapeInfoZ,
                                                 sd::LongType const* tadOffsetsZ) {
@@ -128,8 +129,8 @@ template <typename X, typename Z>
 template <typename OpClass>
 SD_HOST void BroadcastBool<X, Z>::intermediateInverseBroadcast(
     dim3 launchDims, cudaStream_t* stream, void const* x, sd::LongType const* xShapeInfo, void const* y,
-    sd::LongType const* yShapeInfo, void* z, sd::LongType const* zShapeInfo, void* extraParams, int* dimension,
-    int dimensionLength, sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
+    sd::LongType const* yShapeInfo, void* z, sd::LongType const* zShapeInfo, void* extraParams,
+    sd::LongType* dimension, sd::LongType dimensionLength, sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
     sd::LongType const* tadOnlyShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   broadcastBoolInverseSimple<X, Z, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, dimension, dimensionLength, tadOnlyShapeInfo,
@@ -141,8 +142,8 @@ SD_HOST void BroadcastBool<X, Z>::intermediateInverseBroadcast(
 template <typename X, typename Y>
 SD_HOST void BroadcastBool<X, Y>::execInverseBroadcast(
     dim3 launchDims, cudaStream_t* stream, int opNum, void const* x, sd::LongType const* xShapeInfo, void const* y,
-    sd::LongType const* yShapeInfo, void* z, sd::LongType const* zShapeInfo, void* extraParams, int* dimension,
-    int dimensionLength, sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
+    sd::LongType const* yShapeInfo, void* z, sd::LongType const* zShapeInfo, void* extraParams,
+    sd::LongType* dimension, sd::LongType dimensionLength, sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
     sd::LongType const* tadOnlyShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   DISPATCH_BY_OPNUM_TT(intermediateInverseBroadcast,
                        PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, dimension,
@@ -157,7 +158,7 @@ template <typename X, typename Z>
 template <typename OpType>
 SD_DEVICE void BroadcastBool<X, Z>::transformInverseCuda(
     void const* vx, sd::LongType const* xShapeInfo, void const* vy, sd::LongType const* yShapeInfo, void* vz,
-    sd::LongType const* zShapeInfo, void* vextraParams, int* dimension, int dimensionLength,
+    sd::LongType const* zShapeInfo, void* vextraParams, sd::LongType* dimension, sd::LongType dimensionLength,
     sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* tadOnlyShapeInfoZ,
     sd::LongType const* tadOffsetsZ) {
   if (tadOnlyShapeInfoZ == nullptr) {
@@ -214,8 +215,8 @@ template <typename X, typename Z>
 template <typename OpType>
 SD_DEVICE void BroadcastBool<X, Z>::transformCuda(void const* vx, sd::LongType const* xShapeInfo, void const* vy,
                                                   sd::LongType const* yShapeInfo, void* vz,
-                                                  sd::LongType const* zShapeInfo, void* vextraParams, int* dimension,
-                                                  int dimensionLength, sd::LongType const* tadOnlyShapeInfo,
+                                                  sd::LongType const* zShapeInfo, void* vextraParams,
+                                                  sd::LongType* dimension, sd::LongType dimensionLength, sd::LongType const* tadOnlyShapeInfo,
                                                   sd::LongType const* tadOffsets, sd::LongType const* tadOnlyShapeInfoZ,
                                                   sd::LongType const* tadOffsetsZ) {
   if (tadOnlyShapeInfoZ == nullptr) {
@@ -300,9 +301,9 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(const void* vx, const sd::Long
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  int coords[SD_MAX_RANK];
+  sd::LongType coords[SD_MAX_RANK];
 
-  for (int i = tid; i < zLen; i += blockDim.x * gridDim.x) {
+  for (sd::LongType i = tid; i < zLen; i += blockDim.x * gridDim.x) {
     shape::index2coords(i, zShapeInfo, coords);
 
     const auto zOffset = shape::getOffset(zShapeInfo, coords);

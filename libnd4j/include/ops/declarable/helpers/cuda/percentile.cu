@@ -84,7 +84,7 @@ static SD_KERNEL void percentileKernel(void* vx, const sd::LongType* xTadShapeIn
 }
 
 template <typename T>
-static void _percentile(sd::LaunchContext* context, const NDArray& input, NDArray& output, std::vector<int>& axis,
+static void _percentile(sd::LaunchContext* context, const NDArray& input, NDArray& output, std::vector<LongType>& axis,
                         const float q, const int interpolation) {
   const int inputRank = input.rankOf();
 

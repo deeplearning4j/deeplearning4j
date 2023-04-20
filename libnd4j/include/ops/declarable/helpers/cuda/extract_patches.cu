@@ -99,7 +99,7 @@ template <typename T>
 static void _extractPatches(sd::LaunchContext* context, NDArray* images, NDArray* output, int sizeRow, int sizeCol,
                             int strideRow, int strideCol, int rateRow, int rateCol, bool theSame) {
   NDArray::prepareSpecialUse({output}, {images});
-  std::vector<int> restDims({1, 2, 3});  // the first and the last dims
+  std::vector<sd::LongType> restDims({1, 2, 3});  // the first and the last dims
   // 3D matricies - 2D matricies of vectors (if last dim is greater than 1)
   // int e = 0;
   const int ksizeRowsEffective = sizeRow + (sizeRow - 1) * (rateRow - 1);

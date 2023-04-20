@@ -59,13 +59,13 @@ class ScalarTransform {
   SD_HOST static void intermediateShaped(dim3 &launchDims, cudaStream_t *stream, const void *vx,
                                          const sd::LongType *xShapeInfo, const sd::LongType *hxShapeInfo, void *vz,
                                          const sd::LongType *zShapeInfo, const sd::LongType *hzShapeInfo,
-                                         const void *vscalar, void *vextraParams, int *allocPointer);
+                                         const void *vscalar, void *vextraParams, sd::LongType *allocPointer);
 
   template <typename OpType>
   SD_HOST static void intermediateAlongDimension(dim3 &launchDims, cudaStream_t *stream, const void *x,
                                                  const sd::LongType *xShapeInfo, void *z,
                                                  const sd::LongType *zShapeInfo, const void *scalars, void *extraParams,
-                                                 int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
+                                                 sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
                                                  const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ,
                                                  const sd::LongType *tadOffsetsZ);
 
@@ -78,7 +78,8 @@ class ScalarTransform {
   SD_HOST
   static void executeCudaAlongDimension(dim3 &launchDims, cudaStream_t *stream, int opNum, const void *x,
                                         const sd::LongType *xShapeInfo, void *z, const sd::LongType *zShapeInfo,
-                                        const void *scalars, void *extraParams, int *dimension, int dimensionLength,
+                                        const void *scalars, void *extraParams, sd::LongType *dimension,
+                                        sd::LongType dimensionLength,
                                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                                         const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ);
 

@@ -40,12 +40,12 @@ SD_KERNEL static void checkIndicesCuda(const void *vx, const sd::LongType *xShap
                                        const sd::LongType *zShapeInfo, const int axis) {
   const auto x = reinterpret_cast<const X *>(vx);
 
-  __shared__ int xRank, *coords, xLastDim;
+  __shared__ sd::LongType xRank, *coords, xLastDim;
   __shared__ sd::LongType xLen, numOfBadIndxPerBlock;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    coords = reinterpret_cast<int *>(shmem);
+    coords = reinterpret_cast<sd::LongType *>(shmem);
 
     xRank = shape::rank(xShapeInfo);
     xLen = shape::length(xShapeInfo);
@@ -115,13 +115,13 @@ SD_KERNEL static void scatterLockCuda(const int opCode, const void *vx, const sd
   const auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Y *>(vz);
 
-  __shared__ int xRank, yRank, zRank, xNonUnitDim, yNonUnitDim, zNonUnitDim, *coords;
+  __shared__ sd::LongType xRank, yRank, zRank, xNonUnitDim, yNonUnitDim, zNonUnitDim, *coords;
   __shared__ sd::LongType xLen, zLen;
   __shared__ bool is1Dcase, xySameStride;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    coords = reinterpret_cast<int *>(shmem);
+    coords = reinterpret_cast<sd::LongType *>(shmem);
 
     xLen = shape::length(xShapeInfo);
     zLen = shape::length(zShapeInfo);
@@ -141,7 +141,7 @@ SD_KERNEL static void scatterLockCuda(const int opCode, const void *vx, const sd
   __syncthreads();
 
   sd::LongType yOffset, zOffset;
-  int zFirstCoord, *yCoords, *zCoords;
+  sd::LongType zFirstCoord, *yCoords, *zCoords;
 
   for (sd::LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x) {
     if (!is1Dcase) {
@@ -217,13 +217,13 @@ SD_KERNEL static void scatterCuda(const int opCode, const void *vx, const sd::Lo
   const auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Y *>(vz);
 
-  __shared__ int xRank, yRank, zRank, xNonUnitDim, yNonUnitDim, zNonUnitDim, *coords;
+  __shared__ sd::LongType xRank, yRank, zRank, xNonUnitDim, yNonUnitDim, zNonUnitDim, *coords;
   __shared__ sd::LongType yLen;
   __shared__ bool is1Dcase, xySameStride;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    coords = reinterpret_cast<int *>(shmem);
+    coords = reinterpret_cast<sd::LongType *>(shmem);
 
     yLen = shape::length(yShapeInfo);
 
@@ -242,7 +242,7 @@ SD_KERNEL static void scatterCuda(const int opCode, const void *vx, const sd::Lo
   __syncthreads();
 
   sd::LongType xOffset, yOffset, zOffset;
-  int *yCoords, *zCoords;
+  sd::LongType *yCoords, *zCoords;
 
   if (!is1Dcase) {
     yCoords = coords + threadIdx.x * (yRank + zRank);
@@ -350,13 +350,13 @@ SD_KERNEL static void scatterNDLockCuda(const int opCode, const void *vx, const 
   const auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Y *>(vz);
 
-  __shared__ int xRank, yRank, zRank, biggerXYRank, xLastDim, *coords, xNonUnitDim, yNonUnitDim, zNonUnitDim;
+  __shared__ sd::LongType xRank, yRank, zRank, biggerXYRank, xLastDim, *coords, xNonUnitDim, yNonUnitDim, zNonUnitDim;
   __shared__ sd::LongType zLen, len;
   __shared__ bool is1Dcase;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    coords = reinterpret_cast<int *>(shmem);
+    coords = reinterpret_cast<sd::LongType *>(shmem);
 
     xRank = shape::rank(xShapeInfo);
     yRank = shape::rank(yShapeInfo);
@@ -377,7 +377,7 @@ SD_KERNEL static void scatterNDLockCuda(const int opCode, const void *vx, const 
   __syncthreads();
 
   sd::LongType yOffset, zOffset, xOffset;
-  int *yCoords, *zCoords;
+  sd::LongType *yCoords, *zCoords;
 
   if (!is1Dcase) {
     yCoords = coords + threadIdx.x * (biggerXYRank + zRank);
@@ -467,13 +467,13 @@ SD_KERNEL static void scatterNDCuda(const int opCode, const void *vx, const sd::
   const auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Y *>(vz);
 
-  __shared__ int xRank, yRank, zRank, biggerXYRank, xLastDim, *coords, xNonUnitDim, yNonUnitDim, zNonUnitDim;
+  __shared__ sd::LongType xRank, yRank, zRank, biggerXYRank, xLastDim, *coords, xNonUnitDim, yNonUnitDim, zNonUnitDim;
   __shared__ sd::LongType yLen;
   __shared__ bool is1Dcase;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    coords = reinterpret_cast<int *>(shmem);
+    coords = reinterpret_cast<sd::LongType *>(shmem);
 
     yLen = shape::length(yShapeInfo);
     xRank = shape::rank(xShapeInfo);
@@ -492,7 +492,7 @@ SD_KERNEL static void scatterNDCuda(const int opCode, const void *vx, const sd::
   __syncthreads();
 
   sd::LongType yOffset, zOffset;
-  int *yCoords, *zCoords;
+  sd::LongType *yCoords, *zCoords;
 
   if (!is1Dcase) {
     yCoords = coords + threadIdx.x * (biggerXYRank + zRank);
@@ -620,7 +620,7 @@ SD_KERNEL void scatterForLossCuda(const void *vx, const sd::LongType *xShapeInfo
 
   if (xInd >= xLen) return;
 
-  sd::LongType coords = sharedMem + threadIdx.x * (xRank + 1);
+  sd::LongType *coords = sharedMem + threadIdx.x * (xRank + 1);
 
   shape::index2coords(xInd, xShapeInfo, coords);
 

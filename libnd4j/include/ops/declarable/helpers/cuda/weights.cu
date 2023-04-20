@@ -39,39 +39,25 @@ static SD_DEVICE void adjustWeightsKernelD(void* inputBuffer, sd::LongType const
     sd::LongType xOffset = shape::getIndexOffset(e, inputShape);
     int current = *(reinterpret_cast<int*>(inputBuffer) + xOffset);
     if (current == val) {
-      // printf("%lld\n", xOffset);
-      // sd::LongType zOffset = shape::getIndexOffset(val, outputShape);
       if (weightsBuffer != nullptr) {
         sd::LongType yOffset = shape::getIndexOffset(e, weightsShape);
         // atomicAdd();
-        //*reinterpret_cast<int *>(outputBuffer) +=  reinterpret_cast<int *>(weightsBuffer)[yOffset];
         sd::math::atomics::sd_atomicAdd(
             reinterpret_cast<T*>(outputBuffer),
-            reinterpret_cast<T*>(weightsBuffer)[yOffset]);  // output->p(val, output->e<T>(val) + 1);
-        //                    atomicAdd(reinterpret_cast<int *>(outputBuffer), reinterpret_cast<int
-        //                    *>(weightsBuffer)[yOffset]); //output->p(val, output->e<T>(val) + 1);
+            reinterpret_cast<T*>(weightsBuffer)[yOffset]);
       } else {
-        //*reinterpret_cast<int *>(outputBuffer) += int(1);
-        // printf("outputBuffer[0] = %d\n", static_cast<int>(*(reinterpret_cast<T *>(outputBuffer))));
         sd::math::atomics::sd_atomicAdd(reinterpret_cast<T*>(outputBuffer),
-                                        T(1));  // output->p(val, output->e<T>(val) + 1);
-        //                    atomicAdd(reinterpret_cast<int *>(outputBuffer), int(1)); //output->p(val,
-        //                    output->e<T>(val) + 1);
-        //            printf("outputBuffer[%ld] = %d\n", zOffset, static_cast<int>(*(reinterpret_cast<T *>(outputBuffer)
-        //            + zOffset)));
+                                        T(1));
+
       }
-      // printf("xOffset is %ld, zOffset is %ld\n", xOffset, zOffset);
     }
   }
-  //        if (threadIdx.x + offset < outputLength)
-  //            reinterpret_cast<T *>(outputBuffer)[threadIdx.x + offset] = outputPart[threadIdx.x];
 }
 
 template <typename T>
 static SD_KERNEL void adjustWeightsKernel(void* inputBuffer, sd::LongType const* inputShape, void* weightsBuffer,
                                           sd::LongType const* weightsShape, void* outputBuffer,
                                           sd::LongType const* outputShape, int minLength, int maxLength) {
-  // auto tid = blockIdx.x * blockDim.x + threadIdx.x; // * blockDim.x; // + threadIdx.x;
   int threadCount = gridDim.x * blockDim.x;
   sd::LongType inputLength = shape::length(inputShape);
 
@@ -79,11 +65,7 @@ static SD_KERNEL void adjustWeightsKernel(void* inputBuffer, sd::LongType const*
   sd::LongType borderLen = 1;
 
   for (sd::LongType e = blockIdx.x; e < outputLength; e += threadCount) {
-    // if (blockIdx.x < outputLength) {
-    // if (e + threadCount < outputLength) {
     sd::LongType zOffset = shape::getIndexOffset(e, outputShape);
-    // printf("%d %d %d\n", blockIdx.x, blockDim.x, threadIdx.x);
-    // sd::LongType borderLen = 1;
     T* outputBufferZ = reinterpret_cast<T*>(outputBuffer) + zOffset;
     adjustWeightsKernelD<T>(inputBuffer, inputShape, weightsBuffer, weightsShape, (void*)outputBufferZ, inputLength,
                             outputLength, (int)zOffset);
@@ -93,15 +75,6 @@ static SD_KERNEL void adjustWeightsKernel(void* inputBuffer, sd::LongType const*
 template <typename T>
 static void adjustWeights_(sd::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength,
                            int maxLength) {
-  //        for (int e = 0; e < input->lengthOf(); e++) {
-  //            int val = input->e<int>(e);
-  //            if (val < maxLength) {
-  //                if (weights != nullptr)
-  //                    output->p(val, output->e<T>(val) + weights->e<T>(e));
-  //                else
-  //                    output->p(val, output->e<T>(val) + 1);
-  //            }
-  //        }
   dim3 launchDims(256, 512, 8192);
   auto stream = context->getCudaStream();
   adjustWeightsKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(

@@ -104,7 +104,7 @@ void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, con
 
     PointersManager manager(context, "clipByNorm");
 
-    const int* dimensions = reinterpret_cast<const int*>(
+    const sd::LongType * dimensions = reinterpret_cast<const sd::LongType *>(
         manager.replicatePointer(dimsToExclude.data(), dimsToExclude.size() * sizeof(int)));
 
     NDArray::prepareSpecialUse({z}, {z, &actualNorms, &clipNorm});

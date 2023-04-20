@@ -379,7 +379,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE int isVector(const sd::LongType *shapeInfo);
 
 SD_LIB_EXPORT SD_HOST_DEVICE bool isLikeVector(sd::LongType const *shapeInfo, int &posOfNonUnityDim);
 
-SD_LIB_EXPORT SD_HOST_DEVICE bool isCommonVector(const sd::LongType *shapeInfo, int &posOfNonUnityDim);
+SD_LIB_EXPORT SD_HOST_DEVICE bool isCommonVector(const sd::LongType *shapeInfo, long long int &posOfNonUnityDim);
 
 SD_LIB_EXPORT SD_HOST_DEVICE bool isRowVector(const sd::LongType *shapeInfo);
 
@@ -1446,7 +1446,7 @@ SD_INLINE SD_HOST_DEVICE bool isLikeVector(sd::LongType const *shapeInfo, int &p
   return numOfNonUnity == 1 && shapeInfo[0] > 2;
 }
 
-SD_INLINE SD_HOST_DEVICE bool isCommonVector(const sd::LongType *shapeInfo, int &posOfNonUnityDim) {
+SD_INLINE SD_HOST_DEVICE bool isCommonVector(const sd::LongType *shapeInfo, long long int &posOfNonUnityDim) {
   if (rank(shapeInfo) > 0 && length(shapeInfo) == 1) {
     posOfNonUnityDim = -1;
     return true;
@@ -2596,69 +2596,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int tadElementWiseStride(sd::LongType *sh
 }
 
 //////////////////////////////////////////////////////////////////////
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int outerArrayIndexes(sd::LongType *maxIdxs, const sd::LongType minIdx,
-                                                             const sd::LongType *maxShapeInfo,
-                                                             const sd::LongType *minShapeInfo,
-                                                             const sd::LongType *dimsToExclude) {
-  const auto rankMin = shape::rank(minShapeInfo);
-  const auto rankMax = shape::rank(maxShapeInfo);
 
-  const auto diff = rankMax - rankMin;  // the size of dimsToExclude is equal to diff
-
-  sd::LongType indices[SD_MAX_RANK], increment[SD_MAX_RANK];
-
-  sd::LongType N, minI, maxI;
-
-  // calculate min per-dim-indices which corresponds to absolute minIdx index
-  shape::index2coords(minIdx, minShapeInfo, indices);
-
-  // transform storage indices to contain per-dim max indices, purpose - memory saving
-  // fill increment array as well
-  if (dimsToExclude == nullptr) {  // means dimsToExclude == {0,1,2,...,diff-1}
-    for (minI = rankMin - 1, maxI = rankMax - 1; maxI >= diff; --maxI, --minI) {
-      increment[maxI] = (maxShapeInfo[maxI + 1] == minShapeInfo[minI + 1]) ? 0 : minShapeInfo[minI + 1];
-      indices[maxI] = indices[minI];
-    }
-    for (maxI = 0; maxI < diff; ++maxI) {
-      increment[maxI] = 1;
-      indices[maxI] = 0;
-    }
-  } else {
-    for (N = diff - 1, minI = rankMin - 1, maxI = rankMax - 1; maxI >= 0; --maxI) {
-      if (N >= 0 && dimsToExclude[N] == maxI) {
-        increment[maxI] = 1;
-        indices[maxI] = 0;
-        --N;
-      } else {
-        increment[maxI] = (maxShapeInfo[maxI + 1] == minShapeInfo[minI + 1]) ? 0 : minShapeInfo[minI + 1];
-        indices[maxI] = indices[minI--];
-      }
-    }
-  }
-
-  maxI = rankMax - 1;
-  N = 0;
-  int step;
-  maxIdxs[N++] = shape::coords2index(maxShapeInfo, indices);
-
-  // nested loops - producing of absolute indices for max array
-  while (maxI >= 0) {
-    if (increment[maxI] != 0) {
-      indices[maxI] += increment[maxI];
-      if (indices[maxI] >= maxShapeInfo[maxI + 1]) {
-        indices[maxI] %= increment[maxI];  // restore initial value of indices[maxI]
-        step = -1;
-      } else {
-        maxIdxs[N++] = shape::coords2index(maxShapeInfo, indices);
-        step = rankMax - 1 - maxI;
-      }
-    } else if (maxI == rankMax - 1)
-      step = -1;
-
-    maxI += step;
-  }
-  return N;
-}
 
 #endif
 

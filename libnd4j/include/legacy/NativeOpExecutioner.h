@@ -127,7 +127,7 @@ class SD_LIB_EXPORT NativeOpExecutioner {
   static void execIndexReduce(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                               const void *dX, const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
                               const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                              long long int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
+                              long long int *dimension, long long int dimensionLength, const sd::LongType *tadShapeInfo,
                               const sd::LongType *tadOffsets);
 
   /**
@@ -221,7 +221,7 @@ class SD_LIB_EXPORT NativeOpExecutioner {
                                 const void *dX, const sd::LongType *dXShapeInfo, const void *hY,
                                 const sd::LongType *hYShapeInfo, const void *dY, const sd::LongType *dYShapeInfo,
                                 void *hZ, const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                                void *extraParams, long long int *dimension, int dimensionLength,
+                                void *extraParams, long long int *dimension, long long int dimensionLength,
                                 const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
                                 const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ);
 
@@ -406,7 +406,7 @@ class SD_LIB_EXPORT NativeOpExecutioner {
   static void execSummaryStats(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                                const void *dX, const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
                                const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                               long long int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
+                               long long int *dimension, long long int dimensionLength, const sd::LongType *tadShapeInfo,
                                const sd::LongType *tadOffsets, bool biasCorrected);
 
   /**

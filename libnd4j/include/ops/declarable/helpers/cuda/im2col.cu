@@ -37,11 +37,11 @@ SD_KERNEL static void im2colCuda(const void *image, void *columns, const sd::Lon
   auto col = reinterpret_cast<T *>(columns);
 
   __shared__ sd::LongType colLen, iH, iW;
-  __shared__ int imRank, colRank, *sharedMem;
+  __shared__ sd::LongType imRank, colRank, *sharedMem;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<int *>(shmem);
+    sharedMem = reinterpret_cast<sd::LongType *>(shmem);
 
     colRank = 6;
     imRank = 4;

@@ -34,7 +34,7 @@ SD_KERNEL static void crossCuda(const void* vx, const sd::LongType* xShapeInfo, 
   __shared__ const T* x;
   __shared__ const T* y;
   __shared__ T* z;
-  __shared__ int rank, *sharedMem;
+  __shared__ sd::LongType rank, *sharedMem;
   __shared__ sd::LongType lenWithoutLastDim, totalThreads;
 
   if (threadIdx.x == 0) {
@@ -43,7 +43,7 @@ SD_KERNEL static void crossCuda(const void* vx, const sd::LongType* xShapeInfo, 
     z = reinterpret_cast<T*>(vz);
 
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<int*>(shmem);
+    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
     totalThreads = gridDim.x * blockDim.x;
 
     rank = shape::rank(xShapeInfo);
@@ -54,7 +54,7 @@ SD_KERNEL static void crossCuda(const void* vx, const sd::LongType* xShapeInfo, 
   auto coords = sharedMem + threadIdx.x * rank;
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (sd::Unsigned i = tid; i < lenWithoutLastDim; i += totalThreads) {
+  for (sd::LongType i = tid; i < lenWithoutLastDim; i += totalThreads) {
     shape::index2coords(i, rank - 1, xShapeInfo + 1, coords);
 
     coords[rank - 1] = 0;

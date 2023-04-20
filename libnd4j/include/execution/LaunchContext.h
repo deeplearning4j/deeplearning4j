@@ -82,7 +82,7 @@ class SD_LIB_EXPORT LaunchContext {
 
   void* getReductionPointer() const;
   void* getScalarPointer() const;
-  int* getAllocationPointer() const;
+  LongType* getAllocationPointer() const;
   void* getCublasHandle() const;
   void* getCusolverHandle() const;
   void* getCuDnnHandle() const;

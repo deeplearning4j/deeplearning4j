@@ -43,7 +43,8 @@ SD_KERNEL void simpleReduce(const void *x, const sd::LongType *outerXTadShapeInf
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
 SD_DEVICE void reduceScalarGeneric(const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z,
-                                   const sd::LongType *zShapeInfo, int *dimension, int dimensionLength,
+                                   const sd::LongType *zShapeInfo, long long int *dimension,
+                                   long long int dimensionLength,
                                    void *reductionBuffer, const sd::LongType *tadOnlyShapeInfo) {
   functions::reduce::ReduceLongFunction<X, Z>::template execScalarCuda<OpType>(
       x, xShapeInfo, extraParams, z, zShapeInfo, reductionBuffer, tadOnlyShapeInfo);
@@ -52,7 +53,7 @@ SD_DEVICE void reduceScalarGeneric(const void *x, const sd::LongType *xShapeInfo
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
 SD_KERNEL void simpleScalar(const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z,
-                            const sd::LongType *zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer,
+                            const sd::LongType *zShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, void *reductionBuffer,
                             const sd::LongType *tadOnlyShapeInfo) {
   reduceScalarGeneric<X, Z, OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength,
                                     reductionBuffer, tadOnlyShapeInfo);
@@ -228,7 +229,7 @@ SD_HOST void ReduceLongFunction<X, Z>::intermediateXD(dim3 launchDims, cudaStrea
                                                       const sd::LongType *dXShapeInfo, const sd::LongType *hXShapeInfo,
                                                       void *extraParams, void *vreductionBuffer, void *z,
                                                       const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo,
-                                                      const int *dims) {
+                                                      const sd::LongType *dims) {
   if (shape::isEmpty(hXShapeInfo)) {
     if (shape::isEmpty(hZShapeInfo)) return;
 
@@ -245,8 +246,8 @@ SD_HOST void ReduceLongFunction<X, Z>::intermediateXD(dim3 launchDims, cudaStrea
     functions::scalar::ScalarTransform<Z, Z, Z>::executeCudaShaped(launchDims, stream, 14, z, dZShapeInfo, hXShapeInfo,
                                                                    z, dZShapeInfo, hZShapeInfo, ptr, nullptr);
   } else {
-    const int zRank = shape::rank(hZShapeInfo);
-    const int tadRank = shape::rank(hXShapeInfo) - zRank;
+    const sd::LongType zRank = shape::rank(hZShapeInfo);
+    const sd::LongType tadRank = shape::rank(hXShapeInfo) - zRank;
 
     auto outerPack = sd::ConstantShapeHelper::getInstance().createSubArrShapeInfo(hXShapeInfo, dims, zRank);
     auto innerPack = sd::ConstantShapeHelper::getInstance().createSubArrShapeInfo(hXShapeInfo, dims + zRank, tadRank);
@@ -264,8 +265,8 @@ SD_HOST void ReduceLongFunction<X, Z>::intermediateScalar(dim3 launchDims, cudaS
                                                           const sd::LongType *xShapeInfo,
                                                           const sd::LongType *hXShapeInfo, void *extraParams, void *z,
                                                           const sd::LongType *zShapeInfo,
-                                                          const sd::LongType *hZShapeInfo, int *dimension,
-                                                          int dimensionLength, void *reductionBuffer,
+                                                          const sd::LongType *hZShapeInfo,sd::LongType *dimension,
+                                                          sd::LongType dimensionLength, void *reductionBuffer,
                                                           const sd::LongType *tadOnlyShapeInfo) {
   if (shape::isEmpty(hXShapeInfo)) {
     if (shape::isEmpty(hZShapeInfo)) return;
@@ -288,7 +289,7 @@ SD_HOST void ReduceLongFunction<X, Y>::execReduceScalar(dim3 launchDims, cudaStr
                                                         const void *x, const sd::LongType *xShapeInfo,
                                                         const sd::LongType *hXShapeInfo, void *extraParams, void *z,
                                                         const sd::LongType *zShapeInfo, const sd::LongType *hZShapeInfo,
-                                                        int *dimension, int dimensionLength, void *reductionBuffer,
+                                                        sd::LongType *dimension, sd::LongType dimensionLength, void *reductionBuffer,
                                                         const sd::LongType *tadOnlyShapeInfo) {
   DISPATCH_BY_OPNUM_TT(intermediateScalar,
                        PARAMS(launchDims, stream, x, xShapeInfo, hXShapeInfo, extraParams, z, zShapeInfo, hZShapeInfo,
@@ -299,11 +300,12 @@ SD_HOST void ReduceLongFunction<X, Y>::execReduceScalar(dim3 launchDims, cudaStr
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-SD_HOST void ReduceLongFunction<X, Y>::execReduceXD(dim3 launchDims, cudaStream_t *stream, const int opNum,
+SD_HOST void ReduceLongFunction<X, Y>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum,
                                                     const void *x, const sd::LongType *dXShapeInfo,
                                                     const sd::LongType *hXShapeInfo, void *extraParams,
                                                     void *vreductionBuffer, void *z, const sd::LongType *dZShapeInfo,
-                                                    const sd::LongType *hZShapeInfo, const int *dims) {
+                                                    const sd::LongType *hZShapeInfo,
+                                                    const long long int *dims) {
   if (shape::length(hZShapeInfo) == 1) {
     ReduceLongFunction<X, Y>::execReduceScalar(launchDims, stream, opNum, x, dXShapeInfo, hXShapeInfo, extraParams, z,
                                                dZShapeInfo, hZShapeInfo, nullptr, 0, vreductionBuffer, nullptr);

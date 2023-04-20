@@ -24,7 +24,7 @@
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 SD_KERNEL void execOesTadKernelKey(void *vx, sd::LongType const *xShapeInfo, void *vy, sd::LongType const *yShapeInfo,
-                                   int *dimension, int dimensionLength, sd::LongType const *tadShapeInfo,
+                                   long long int *dimension, long long int dimensionLength, sd::LongType const *tadShapeInfo,
                                    sd::LongType const *tadOffsets, bool descending) {
   auto x = static_cast<X *>(vx);
   auto y = static_cast<Y *>(vy);
@@ -91,7 +91,8 @@ SD_KERNEL void execOesTadKernelKey(void *vx, sd::LongType const *xShapeInfo, voi
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execOesTadKernel(void *vx, sd::LongType const *xShapeInfo, int *dimension, int dimensionLength,
+SD_KERNEL void execOesTadKernel(void *vx, sd::LongType const *xShapeInfo,sd::LongType *dimension,
+                                sd::LongType dimensionLength,
                                 sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets, bool descending) {
   auto x = static_cast<T *>(vx);
   const int sharedSize = 32768;
@@ -174,7 +175,7 @@ SD_KERNEL void execOesTadKernel(void *vx, sd::LongType const *xShapeInfo, int *d
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_HOST void oesTadGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
-                           int *dimension, int dimensionLength, sd::LongType const *tadShapeInfo,
+                           sd::LongType *dimension, sd::LongType dimensionLength, sd::LongType const *tadShapeInfo,
                            sd::LongType const *tadOffsets, bool descending) {
   execOesTadKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, dimension, dimensionLength,
                                                                              tadShapeInfo, tadOffsets, descending);
@@ -182,7 +183,8 @@ SD_HOST void oesTadGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, sd:
 
 template <typename X, typename Y>
 SD_HOST void oesTadGenericKey(dim3 &launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
-                              void *vy, sd::LongType const *yShapeInfo, int *dimension, int dimensionLength,
+                              void *vy, sd::LongType const *yShapeInfo, sd::LongType *dimension,
+                              sd::LongType dimensionLength,
                               sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets, bool descending) {
   execOesTadKernelKey<X, Y><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       vx, xShapeInfo, vy, yShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
@@ -190,11 +192,11 @@ SD_HOST void oesTadGenericKey(dim3 &launchDims, cudaStream_t *stream, void *vx, 
 
 BUILD_SINGLE_TEMPLATE(template void oesTadGeneric,
                       (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
-                       int *dimension, int dimensionLength, sd::LongType const *tadShapeInfo,
+                       sd::LongType *dimension, sd::LongType dimensionLength, sd::LongType const *tadShapeInfo,
                        sd::LongType const *tadOffsets, bool descending),
                       SD_COMMON_TYPES);
 BUILD_DOUBLE_TEMPLATE(template void oesTadGenericKey,
                       (dim3 & launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo, void *vy,
-                       sd::LongType const *yShapeInfo, int *dimension, int dimensionLength,
+                       sd::LongType const *yShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength,
                        sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets, bool descending),
                       SD_COMMON_TYPES, SD_COMMON_TYPES);

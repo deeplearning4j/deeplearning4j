@@ -1836,8 +1836,8 @@ void execScalarTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbScalars});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
+    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
