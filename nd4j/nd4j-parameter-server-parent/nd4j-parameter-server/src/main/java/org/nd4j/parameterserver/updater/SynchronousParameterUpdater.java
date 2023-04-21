@@ -142,7 +142,7 @@ public class SynchronousParameterUpdater extends BaseParameterUpdater {
         updateStorage.addUpdate(message);
         INDArray arr = message.getArr();
         //of note for ndarrays
-        int[] dimensions = message.getDimensions();
+        long[] dimensions = message.getDimensions();
         boolean whole = dimensions.length == 1 && dimensions[0] == -1;
 
         if (!whole)
@@ -154,7 +154,7 @@ public class SynchronousParameterUpdater extends BaseParameterUpdater {
     /**
      * Updates result
      * based on arr along a particular
-     * {@link INDArray#tensorAlongDimension(int, int...)}
+     * {@link INDArray#tensorAlongDimension(long, long...)}
      *
      * @param arr        the array to update
      * @param result     the result ndarray to update
@@ -162,7 +162,7 @@ public class SynchronousParameterUpdater extends BaseParameterUpdater {
      * @param dimensions the dimensions to update
      */
     @Override
-    public void partialUpdate(INDArray arr, INDArray result, long idx, int... dimensions) {
+    public void partialUpdate(INDArray arr, INDArray result, long idx, long... dimensions) {
         result.tensorAlongDimension((int) idx, dimensions).addi(arr);
     }
 

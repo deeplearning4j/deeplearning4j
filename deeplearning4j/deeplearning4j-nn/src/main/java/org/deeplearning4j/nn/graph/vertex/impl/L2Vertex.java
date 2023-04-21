@@ -68,7 +68,7 @@ public class L2Vertex extends BaseGraphVertex {
         INDArray a = inputs[0];
         INDArray b = inputs[1];
 
-        int[] dimensions = new int[a.rank() - 1];
+        long[] dimensions = new long[a.rank() - 1];
         for (int i = 1; i < a.rank(); i++) {
             dimensions[i - 1] = i;
         }

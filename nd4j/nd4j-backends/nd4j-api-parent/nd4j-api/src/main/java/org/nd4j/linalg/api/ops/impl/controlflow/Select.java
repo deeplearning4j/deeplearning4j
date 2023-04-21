@@ -45,7 +45,7 @@ public class Select extends DynamicCustomOp {
         super(null, sameDiff, args);
     }
 
-    public Select( INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments) {
+    public Select( INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Long> iArguments) {
         super(null, inputs, outputs, tArguments, iArguments);
     }
 

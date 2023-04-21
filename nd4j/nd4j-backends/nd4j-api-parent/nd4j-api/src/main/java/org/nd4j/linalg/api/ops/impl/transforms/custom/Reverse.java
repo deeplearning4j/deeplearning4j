@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Longs;
 
 import java.util.Collections;
 import java.util.List;
@@ -36,7 +37,7 @@ import java.util.Map;
 
 public class Reverse extends DynamicCustomOp {
 
-    public Reverse(@NonNull SameDiff sameDiff, @NonNull SDVariable i_v, @NonNull int... dimensions) {
+    public Reverse(@NonNull SameDiff sameDiff, @NonNull SDVariable i_v, @NonNull long... dimensions) {
         super(sameDiff, new SDVariable[]{i_v});
         this.dimensions = dimensions;
         addIArgument(dimensions);
@@ -59,7 +60,7 @@ public class Reverse extends DynamicCustomOp {
      * @param x
      * @param axis
      */
-    public Reverse(INDArray x, int... axis){
+    public Reverse(INDArray x, long... axis){
         super(new INDArray[]{x}, new INDArray[0]);
         this.inPlace = false;
         this.dimensions = axis;
@@ -71,7 +72,7 @@ public class Reverse extends DynamicCustomOp {
      * @param x
      * @param axis
      */
-    public Reverse(INDArray x, INDArray z, int... axis){
+    public Reverse(INDArray x, INDArray z, long... axis){
         super(new INDArray[]{x}, new INDArray[] {z});
         this.inPlace = false;
         this.dimensions = axis;
@@ -85,7 +86,7 @@ public class Reverse extends DynamicCustomOp {
      */
     public Reverse(INDArray x, INDArray z){
         super(new INDArray[]{x}, new INDArray[]{z});
-        this.dimensions = new int[x.rank()];
+        this.dimensions = new long[x.rank()];
         for(int i = 0 ; i < this.dimensions.length ; i++)
             this.dimensions[i] = i;
         addIArgument(dimensions);
@@ -111,7 +112,7 @@ public class Reverse extends DynamicCustomOp {
     @Override
     public void configureFromArguments() {
         if(!iArguments.isEmpty()) {
-            this.dimensions = Ints.toArray(iArguments);
+            this.dimensions = Longs.toArray(iArguments);
         }
     }
 

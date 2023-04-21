@@ -33,7 +33,7 @@ import java.util.Collections;
 import java.util.List;
 
 public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSameOp {
-    public BaseReduceSameOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public BaseReduceSameOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -49,11 +49,11 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
         super(sameDiff, i_v, i_v2);
     }
 
-    protected BaseReduceSameOp(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    protected BaseReduceSameOp(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    public BaseReduceSameOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+    public BaseReduceSameOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
     }
 
@@ -61,15 +61,15 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
         super(sameDiff, i_v);
     }
 
-    protected BaseReduceSameOp(SameDiff sameDiff, SDVariable input, int... dimensions) {
+    protected BaseReduceSameOp(SameDiff sameDiff, SDVariable input, long... dimensions) {
         super(sameDiff, input, dimensions);
     }
 
-    public BaseReduceSameOp(INDArray x, INDArray z, boolean keepDims, int[] dimensions) {
+    public BaseReduceSameOp(INDArray x, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, null, z, keepDims, dimensions);
     }
 
-    public BaseReduceSameOp(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public BaseReduceSameOp(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
@@ -81,15 +81,15 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public BaseReduceSameOp(INDArray x, int... dimensions) {
+    public BaseReduceSameOp(INDArray x, long... dimensions) {
         super(x, dimensions);
     }
 
-    public BaseReduceSameOp(INDArray x, boolean keepDims, int... dimensions) {
+    public BaseReduceSameOp(INDArray x, boolean keepDims, long... dimensions) {
         super(x, keepDims, dimensions);
     }
 
-    public BaseReduceSameOp(INDArray x, INDArray y, int... dimensions) {
+    public BaseReduceSameOp(INDArray x, INDArray y, long... dimensions) {
         super(x, y, dimensions);
     }
 
@@ -97,7 +97,7 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
         super();
     }
 
-    public BaseReduceSameOp(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+    public BaseReduceSameOp(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 

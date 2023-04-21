@@ -29,11 +29,11 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.MaxBp;
 import java.util.List;
 
 public class Max extends BaseReduceSameOp {
-    public Max(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+    public Max(SameDiff sameDiff, SDVariable i_v, boolean keepDims, long[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
     }
 
-    public Max(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public Max(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -49,11 +49,11 @@ public class Max extends BaseReduceSameOp {
         super(sameDiff, i_v, i_v2);
     }
 
-    public Max(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    public Max(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    public Max(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+    public Max(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
     }
 
@@ -61,14 +61,14 @@ public class Max extends BaseReduceSameOp {
         super(sameDiff, i_v);
     }
 
-    public Max(SameDiff sameDiff, SDVariable input, int... dimensions) {
+    public Max(SameDiff sameDiff, SDVariable input, long... dimensions) {
         super(sameDiff, input, dimensions);
     }
 
     public Max() {
     }
 
-    public Max(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+    public Max(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
@@ -82,22 +82,22 @@ public class Max extends BaseReduceSameOp {
      * @param z the result
      * @param n the number of elements
      */
-    public Max(INDArray x, int... axis) {
+    public Max(INDArray x, long... axis) {
         super(x, null, null, axis);
     }
-    public Max(INDArray x, boolean keepDims, int... axis) {
+    public Max(INDArray x, boolean keepDims, long... axis) {
         super(x, keepDims, axis);
     }
 
-    public Max(INDArray x, INDArray z, int... axis) {
+    public Max(INDArray x, INDArray z, long... axis) {
         super(x, null, z, axis);
     }
 
-    public Max(INDArray x, INDArray z, boolean keepDims, int... dimensions) {
+    public Max(INDArray x, INDArray z, boolean keepDims, long... dimensions) {
         super(x, z, keepDims, dimensions);
     }
 
-    public Max(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public Max(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
@@ -109,7 +109,7 @@ public class Max extends BaseReduceSameOp {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public Max(INDArray in, int[] dimensions, boolean keepDims) {
+    public Max(INDArray in, long[] dimensions, boolean keepDims) {
         super(in,keepDims,dimensions);
     }
 

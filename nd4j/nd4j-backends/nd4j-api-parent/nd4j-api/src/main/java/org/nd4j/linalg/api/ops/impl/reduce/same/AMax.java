@@ -31,15 +31,15 @@ import java.util.Collections;
 import java.util.List;
 
 public class AMax extends BaseReduceSameOp {
-    public AMax(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+    public AMax(SameDiff sameDiff, SDVariable i_v, long[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
-    public AMax(INDArray x, INDArray z, boolean keepDims, int[] dimensions) {
+    public AMax(INDArray x, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, z, keepDims, dimensions);
     }
 
-    public AMax(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public AMax(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
@@ -51,7 +51,7 @@ public class AMax extends BaseReduceSameOp {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public AMax(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public AMax(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -67,11 +67,11 @@ public class AMax extends BaseReduceSameOp {
         super(sameDiff, i_v, i_v2);
     }
 
-    public AMax(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    public AMax(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    public AMax(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+    public AMax(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
     }
 
@@ -79,34 +79,34 @@ public class AMax extends BaseReduceSameOp {
         super(sameDiff, i_v);
     }
 
-    public AMax(INDArray x, INDArray z, int... dimensions) {
+    public AMax(INDArray x, INDArray z, long... dimensions) {
         super(x, null, z, dimensions);
     }
 
     public AMax() {}
 
-    public AMax(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+    public AMax(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
 
-    public AMax(INDArray x, int... dimensions) {
+    public AMax(INDArray x, long... dimensions) {
         super(x, null, null, dimensions);
     }
 
     public AMax(INDArray in, INDArray dimensions, boolean keepDims) {
-        super(in,keepDims,in.toIntVector());
+        super(in,keepDims,in.toLongVector());
     }
 
-    public AMax(INDArray in, boolean keepDims, int[] dimensions) {
+    public AMax(INDArray in, boolean keepDims, long[] dimensions) {
         super(in,keepDims,dimensions);
     }
 
-    public AMax(INDArray in, int[] dimensions, boolean keepDims) {
+    public AMax(INDArray in, long[] dimensions, boolean keepDims) {
         super(in,keepDims,dimensions);
     }
 
-    public AMax(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+    public AMax(SameDiff sd, SDVariable in, boolean keepDims, long[] dimensions) {
         super(sd,in, dimensions, keepDims);
     }
 

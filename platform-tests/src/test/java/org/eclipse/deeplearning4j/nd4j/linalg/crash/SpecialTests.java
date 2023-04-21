@@ -90,7 +90,7 @@ public class SpecialTests extends BaseNd4jTestWithBackends {
     }
 
     protected static INDArray transform(INDArray a, INDArray b) {
-        int nShape[] = new int[] {1, 2};
+        long nShape[] = new long[] {1, 2};
         INDArray a_reduced = a.sum(nShape);
         INDArray b_reduced = b.sum(nShape);
 

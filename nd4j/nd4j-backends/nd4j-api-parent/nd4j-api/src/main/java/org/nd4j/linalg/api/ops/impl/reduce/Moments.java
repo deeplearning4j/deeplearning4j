@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.MeanBp;
 import org.nd4j.linalg.api.ops.impl.reduce.bp.VarianceBp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Longs;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -45,14 +46,14 @@ public class Moments extends DynamicCustomOp {
     public Moments() {
     }
 
-    public Moments(@NonNull INDArray input, boolean keepDims, int... dimensions) {
+    public Moments(@NonNull INDArray input, boolean keepDims, long... dimensions) {
         super(new INDArray[]{input}, null);
         this.dimensions = dimensions;
         this.keepDims = keepDims;
         addArgs();
     }
 
-    public Moments(@NonNull INDArray input, int... dimensions) {
+    public Moments(@NonNull INDArray input, long... dimensions) {
         super(new INDArray[]{input}, null);
         this.dimensions = dimensions;
         addArgs();
@@ -63,19 +64,19 @@ public class Moments extends DynamicCustomOp {
         addArgs();
     }
 
-    public Moments(SameDiff sameDiff, SDVariable input, int[] axes) {
+    public Moments(SameDiff sameDiff, SDVariable input, long[] axes) {
         super(null, sameDiff, new SDVariable[] {input}, false);
         this.dimensions = axes;
         addArgs();
     }
 
-    public Moments(INDArray in, INDArray outMean, INDArray outStd, int... axes) {
+    public Moments(INDArray in, INDArray outMean, INDArray outStd, long... axes) {
         super(null, new INDArray[]{in}, new INDArray[]{outMean, outStd}, null, axes);
         this.dimensions = axes;
         addArgs();
     }
 
-    public Moments(INDArray input, int[] axes, boolean keepDims) {
+    public Moments(INDArray input, long[] axes, boolean keepDims) {
         super(null,new INDArray[]{input},null);
         this.keepDims = keepDims;
         this.dimensions = axes;
@@ -88,7 +89,7 @@ public class Moments extends DynamicCustomOp {
         addArgs();
     }
 
-    public Moments(SameDiff sd, SDVariable input, int[] axes, boolean keepDims) {
+    public Moments(SameDiff sd, SDVariable input, long[] axes, boolean keepDims) {
         super(null,sd,new SDVariable[]{input},false);
         this.keepDims = keepDims;
         this.dimensions = axes;
@@ -113,7 +114,7 @@ public class Moments extends DynamicCustomOp {
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> grad){
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
         SDVariable dLdMean = grad.get(0);
         SDVariable dLdVar = grad.get(1);        //Note: non-bias-corrected variance
         if(dimensions != null) {
@@ -122,7 +123,7 @@ public class Moments extends DynamicCustomOp {
             return Collections.singletonList(meanBp.add(varBp));
 
         } else if(numIArguments() > 0) {
-            int[] newDimensions = Ints.toArray(this.iArguments);
+            long[] newDimensions = Longs.toArray(this.iArguments);
             this.dimensions = newDimensions;
             SDVariable meanBp = new MeanBp(sameDiff, arg(), dLdMean, keepDims, newDimensions).outputVariable();
             SDVariable varBp = new VarianceBp(sameDiff, arg(), dLdVar, false, keepDims,newDimensions).outputVariable();

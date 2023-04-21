@@ -29,34 +29,34 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.MinBp;
 import java.util.List;
 
 public class Min extends BaseReduceSameOp {
-    public Min(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+    public Min(SameDiff sameDiff, SDVariable i_v, boolean keepDims, long[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
     }
 
     public Min() {
     }
 
-    public Min(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+    public Min(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
-    public Min(INDArray x, int... dimensions) {
+    public Min(INDArray x, long... dimensions) {
         super(x, dimensions);
     }
 
-    public Min(INDArray x, boolean keepDims, int... dimensions) {
+    public Min(INDArray x, boolean keepDims, long... dimensions) {
         super(x, keepDims, dimensions);
     }
 
-    public Min(INDArray x, INDArray z, int... dimensions) {
+    public Min(INDArray x, INDArray z, long... dimensions) {
         super(x, null, z, dimensions);
     }
 
-    public Min(INDArray x, INDArray z, boolean keepDims, int... dimensions) {
+    public Min(INDArray x, INDArray z, boolean keepDims, long... dimensions) {
         super(x, z, keepDims, dimensions);
     }
 
-    public Min(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public Min(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
@@ -68,7 +68,7 @@ public class Min extends BaseReduceSameOp {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public Min(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public Min(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -84,11 +84,11 @@ public class Min extends BaseReduceSameOp {
         super(sameDiff, i_v, i_v2);
     }
 
-    public Min(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    public Min(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    public Min(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+    public Min(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
     }
 
@@ -96,11 +96,11 @@ public class Min extends BaseReduceSameOp {
         super(sameDiff, i_v);
     }
 
-    public Min(SameDiff sameDiff, SDVariable input, int... dimensions) {
+    public Min(SameDiff sameDiff, SDVariable input, long... dimensions) {
         super(sameDiff, input, dimensions);
     }
 
-    public Min(INDArray in, int[] dimensions, boolean keepDims) {
+    public Min(INDArray in, long[] dimensions, boolean keepDims) {
         super(in,keepDims,dimensions);
     }
 

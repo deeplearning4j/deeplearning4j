@@ -42,11 +42,11 @@ public class SqrtM extends DynamicCustomOp {
     public SqrtM() {
     }
 
-    public SqrtM(INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, int[] iArguments) {
+    public SqrtM(INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, long[] iArguments) {
         super(null, inputs, outputs, tArguments, iArguments);
     }
 
-    public SqrtM( INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments) {
+    public SqrtM( INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Long> iArguments) {
         super(null, inputs, outputs, tArguments, iArguments);
     }
 

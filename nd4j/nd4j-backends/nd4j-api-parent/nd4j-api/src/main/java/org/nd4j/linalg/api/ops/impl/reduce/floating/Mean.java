@@ -29,19 +29,19 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.MeanBp;
 import java.util.List;
 
 public class Mean extends BaseReduceFloatOp {
-    public Mean(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+    public Mean(SameDiff sameDiff, SDVariable i_v, boolean keepDims, long[] dimensions) {
         super(sameDiff, i_v, keepDims, dimensions);
     }
 
-    public Mean(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public Mean(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public Mean(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    public Mean(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    public Mean(SameDiff sameDiff, SDVariable input, int... dimensions) {
+    public Mean(SameDiff sameDiff, SDVariable input, long... dimensions) {
         super(sameDiff, input, dimensions);
     }
 
@@ -64,31 +64,31 @@ public class Mean extends BaseReduceFloatOp {
     public Mean() {
     }
 
-    public Mean(INDArray x, INDArray z, int... dimensions) {
+    public Mean(INDArray x, INDArray z, long... dimensions) {
         super(x, null, z, dimensions);
     }
 
-    public Mean(INDArray x, int... dimensions) {
+    public Mean(INDArray x, long... dimensions) {
         super(x, dimensions);
     }
 
-    public Mean(INDArray x, boolean keepDims, int... dimensions) {
+    public Mean(INDArray x, boolean keepDims, long... dimensions) {
         super(x, keepDims, dimensions);
     }
 
-    public Mean(INDArray x, INDArray z, boolean keepDims, int... dimensions) {
+    public Mean(INDArray x, INDArray z, boolean keepDims, long... dimensions) {
         super(x, z, keepDims, dimensions);
     }
 
-    public Mean(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public Mean(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
-    public Mean(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions) {
+    public Mean(INDArray x, INDArray y, INDArray z, boolean keepDims, long... dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
-    public Mean(INDArray in, int[] dimensions, boolean keepDims) {
+    public Mean(INDArray in, long[] dimensions, boolean keepDims) {
         super(in,keepDims,dimensions);
     }
 

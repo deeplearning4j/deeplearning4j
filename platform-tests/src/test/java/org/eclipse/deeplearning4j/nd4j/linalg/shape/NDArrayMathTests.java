@@ -106,7 +106,7 @@ public class NDArrayMathTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testOffsetForSlice(Nd4jBackend backend) {
         INDArray arr = Nd4j.linspace(1, 16, 16, DataType.DOUBLE).reshape(2, 2, 2, 2);
-        int[] dimensions = {0, 1};
+        long[] dimensions = {0, 1};
         INDArray permuted = arr.permute(2, 3, 0, 1);
         int[] test = {0, 0, 1, 1};
         for (int i = 0; i < permuted.tensorsAlongDimension(dimensions); i++) {

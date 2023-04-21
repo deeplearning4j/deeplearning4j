@@ -29,31 +29,31 @@ public class StandardDeviationBp extends BaseReductionBp {
 
     private boolean biasCorrected;
 
-    public StandardDeviationBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean biasCorrected, boolean keepDims, int... dimensions) {
+    public StandardDeviationBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean biasCorrected, boolean keepDims, long... dimensions) {
         super(sameDiff, origInput, gradAtOutput, keepDims, dimensions);
         this.biasCorrected = biasCorrected;
         addArgs();
     }
 
-    public StandardDeviationBp(SameDiff sameDiff, SDVariable origInput1, SDVariable origInput2, SDVariable gradAtOutput, boolean keepDims, boolean biasCorrected, int... dimensions) {
+    public StandardDeviationBp(SameDiff sameDiff, SDVariable origInput1, SDVariable origInput2, SDVariable gradAtOutput, boolean keepDims, boolean biasCorrected, long... dimensions) {
         super(sameDiff, origInput1, origInput2, gradAtOutput, keepDims, dimensions);
         this.biasCorrected = biasCorrected;
         addArgs();
     }
 
-    public StandardDeviationBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean biasCorrected, boolean keepDims, int... dimensions){
+    public StandardDeviationBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean biasCorrected, boolean keepDims, long... dimensions){
         super(origInput, gradAtOutput, output, keepDims, dimensions);
         this.biasCorrected = biasCorrected;
         addArgs();
     }
 
-    public StandardDeviationBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output, boolean keepDims, boolean biasCorrected, int... dimensions) {
+    public StandardDeviationBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output, boolean keepDims, boolean biasCorrected, long... dimensions) {
         super(origInput1, origInput2, gradAtOutput, output, keepDims, dimensions);
         this.biasCorrected = biasCorrected;
         addArgs();
     }
 
-    public StandardDeviationBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output1, INDArray output2, boolean keepDims, boolean biasCorrected, int... dimensions) {
+    public StandardDeviationBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output1, INDArray output2, boolean keepDims, boolean biasCorrected, long... dimensions) {
         super(origInput1, origInput2, gradAtOutput, output1, output2, keepDims, dimensions);
         this.biasCorrected = biasCorrected;
         addArgs();

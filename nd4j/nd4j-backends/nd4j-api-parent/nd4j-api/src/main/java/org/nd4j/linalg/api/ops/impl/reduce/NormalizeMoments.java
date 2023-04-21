@@ -58,7 +58,7 @@ public class NormalizeMoments extends DynamicCustomOp {
 
     public NormalizeMoments(INDArray counts, INDArray ssSum, INDArray ssSqSum, INDArray outMean, INDArray outVar) {
         super(null, new INDArray[]{counts, ssSum, ssSqSum}, new INDArray[]{outMean, outVar},
-                new ArrayList<Double>(), new ArrayList<Integer>());
+                new ArrayList<>(), new ArrayList<>());
 
         addArgs();
     }

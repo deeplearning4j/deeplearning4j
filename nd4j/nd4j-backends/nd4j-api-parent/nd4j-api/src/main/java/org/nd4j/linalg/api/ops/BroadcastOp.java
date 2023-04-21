@@ -24,11 +24,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 public interface BroadcastOp extends Op {
 
-    /** Dimension to do the vector op along. Along dimension 1 for row vector ops,  along 0 for column vector ops */
-    int[] getDimension();
+    /**
+     * Dimension to do the vector op along. Along dimension 1 for row vector ops,  along 0 for column vector ops
+     */
+    long[] getDimension();
 
     /** Set the dimension for the vector op. */
-    void setDimension(int... dimension);
+    void setDimension(long... dimension);
 
     boolean validateDataTypes(boolean experimentalOp);
 

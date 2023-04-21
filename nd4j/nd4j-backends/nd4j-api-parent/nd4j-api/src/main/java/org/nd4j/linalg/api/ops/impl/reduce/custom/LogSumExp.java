@@ -35,7 +35,7 @@ public class LogSumExp extends DynamicCustomOp {
 
     protected boolean keepDims;
 
-    public LogSumExp(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+    public LogSumExp(SameDiff sameDiff, SDVariable i_v, boolean keepDims, long[] dimensions) {
         super(sameDiff, i_v);
         if(dimensions != null) {
             addIArgument(dimensions);
@@ -45,21 +45,21 @@ public class LogSumExp extends DynamicCustomOp {
         this.keepDims = keepDims;
     }
 
-    public LogSumExp(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+    public LogSumExp(SameDiff sameDiff, SDVariable i_v, long[] dimensions) {
         this(sameDiff, i_v, false, dimensions);
     }
 
     public LogSumExp() {}
 
-    public LogSumExp(INDArray x, int... dimensions) {
+    public LogSumExp(INDArray x, long... dimensions) {
         this(x, false, dimensions);
     }
 
-    public LogSumExp(INDArray x, boolean keepDim, int... dimensions) {
+    public LogSumExp(INDArray x, boolean keepDim, long... dimensions) {
         this(x, null, keepDim, dimensions);
     }
 
-    public LogSumExp(INDArray x, INDArray z, boolean keepDim, int... dimensions) {
+    public LogSumExp(INDArray x, INDArray z, boolean keepDim, long... dimensions) {
         super(null, x,z, Collections.singletonList(keepDim ? 1.0 : 0.0), dimensions);
     }
 
@@ -86,7 +86,7 @@ public class LogSumExp extends DynamicCustomOp {
         SDVariable sumExp =  null;
         if(dimensions == null) {
             if(args().length < 2) {
-                dimensions = new int[]{Integer.MAX_VALUE};
+                dimensions = new long[]{Integer.MAX_VALUE};
                 sumExp = exp.sum(dimensions);
             } else {
                 sumExp = sameDiff.math().sum(exp,arg(1));

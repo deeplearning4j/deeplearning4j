@@ -159,15 +159,40 @@ SD_HOST sd::LongType *createShapeInfo(sd::LongType *shape, sd::LongType *stride,
  * the shape information
  */
 SD_LIB_EXPORT SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, sd::LongType *dimension, int dimensionLength) {
+
+  if(shapeInfo == nullptr || dimension == nullptr) {
+    std::string  errorMessage;
+    errorMessage += "shape info null: %d";
+    errorMessage += std::to_string(shapeInfo == nullptr);
+    errorMessage += " dimension null: %d";
+    errorMessage += std::to_string(dimension == nullptr);
+    throw std::runtime_error(errorMessage.c_str());
+  }
+
+  if(dimensionLength == 0)
+    return 0;
+
+  if(shapeInfo[0] > SD_MAX_RANK || shapeInfo[0] < 0)
+    throw std::runtime_error("Corrupt shape information found. Potentially dellocated?");
+
+
+
   if (dimensionLength == 1) {
+    if(dimension[0] > SD_MAX_RANK || dimension[0] < 0)
+      throw std::runtime_error("Corrupt dimension information found. Potentially dellocated?");
+
+    sd_printf("Returning shape of dimension %i\n", dimension[0]);
     return shape::shapeOf(shapeInfo)[dimension[0]];
   } else {
     sd::LongType ret = 1;
     for (int i = 0; i < shape::rank(shapeInfo); i++) {
+      sd_printf("Checking dimension %i\n", i);
       for (int j = 0; j < dimensionLength; j++) {
         if (i == dimension[j]) ret *= shape::shapeOf(shapeInfo)[dimension[j]];
       }
     }
+
+    sd_printf("Returning tad length %i\n", ret);
     return ret;
   }
 }
@@ -361,8 +386,8 @@ SD_LIB_EXPORT SD_HOST int outerArrayOffsets(sd::LongType *maxOffsets, const sd::
 
 //////////////////////////////////////////////////////////////////////
 SD_LIB_EXPORT SD_HOST sd::LongType outerArrayIndexes(sd::LongType *maxIdxs, const sd::LongType minIdx,
-                                            const sd::LongType *maxShapeInfo, const sd::LongType *minShapeInfo,
-                                            const sd::LongType  *dimsToExclude) {
+                                                     const sd::LongType *maxShapeInfo, const sd::LongType *minShapeInfo,
+                                                     const sd::LongType  *dimsToExclude) {
   const auto rankMin = shape::rank(minShapeInfo);
   const auto rankMax = shape::rank(maxShapeInfo);
 

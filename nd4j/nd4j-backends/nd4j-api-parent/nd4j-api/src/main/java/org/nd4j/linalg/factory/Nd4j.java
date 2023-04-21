@@ -33,7 +33,6 @@ import org.nd4j.linalg.profiler.data.eventlogger.EventType;
 import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
 import org.nd4j.linalg.profiler.data.eventlogger.ObjectAllocationType;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
@@ -489,7 +488,7 @@ public class Nd4j {
      * @param random the random to use
      * @param dimension the dimension to do the shuffle
      */
-    public static void shuffle(INDArray toShuffle, Random random, @NonNull int... dimension) {
+    public static void shuffle(INDArray toShuffle, Random random, @NonNull long... dimension) {
         INSTANCE.shuffle(toShuffle, random, dimension);
     }
 
@@ -499,7 +498,7 @@ public class Nd4j {
      * @param toShuffle the ndarray to shuffle
      * @param dimension the dimension to do the shuffle
      */
-    public static void shuffle(INDArray toShuffle, @NonNull int... dimension) {
+    public static void shuffle(INDArray toShuffle, @NonNull long... dimension) {
         INSTANCE.shuffle(toShuffle, new Random(), dimension);
     }
 
@@ -509,7 +508,7 @@ public class Nd4j {
      * @param toShuffle the ndarray to shuffle
      * @param dimension the dimension to do the shuffle
      */
-    public static void shuffle(Collection<INDArray> toShuffle, @NonNull int... dimension) {
+    public static void shuffle(Collection<INDArray> toShuffle, @NonNull long... dimension) {
         INSTANCE.shuffle(toShuffle, new Random(), dimension);
     }
 
@@ -519,7 +518,7 @@ public class Nd4j {
      * @param toShuffle the ndarray to shuffle
      * @param dimension the dimension to do the shuffle
      */
-    public static void shuffle(Collection<INDArray> toShuffle, Random rnd, @NonNull int... dimension) {
+    public static void shuffle(Collection<INDArray> toShuffle, Random rnd, @NonNull long... dimension) {
         INSTANCE.shuffle(toShuffle, rnd, dimension);
     }
 
@@ -530,7 +529,7 @@ public class Nd4j {
      * @param toShuffle the ndarray to shuffle
      * @param dimensions the dimension to do the shuffle. Please note - order matters here.
      */
-    public static void shuffle(List<INDArray> toShuffle, Random rnd, List<int[]> dimensions) {
+    public static void shuffle(List<INDArray> toShuffle, Random rnd, List<long[]> dimensions) {
         INSTANCE.shuffle(toShuffle, rnd, dimensions);
     }
 
@@ -695,15 +694,15 @@ public class Nd4j {
      * @param dimension the dimension along which to get the maximum
      * @return array of maximum values.
      */
-    public static INDArray argMax(INDArray arr, @NonNull int... dimension) {
+    public static INDArray argMax(INDArray arr, @NonNull long... dimension) {
         val imax = new ArgMax(new INDArray[]{arr},null,false, dimension);
         return Nd4j.getExecutioner().exec(imax)[0];
     }
 
     /**
-     * See {@link #argMax(INDArray, int...)} but return minimum values.
+     * See {@link #argMax(INDArray, long...)} but return minimum values.
      */
-    public static INDArray argMin(INDArray arr, @NonNull int... dimension) {
+    public static INDArray argMin(INDArray arr, @NonNull long... dimension) {
         val imin = new ArgMin(new INDArray[]{arr}, null,false,dimension);
         return Nd4j.getExecutioner().exec(imin)[0];
     }
@@ -717,7 +716,7 @@ public class Nd4j {
      * @param start the starting point
      * @return the rolled ndarray
      */
-    public static INDArray rollAxis(INDArray a, int axis, int start) {
+    public static INDArray rollAxis(INDArray a, long axis, long start) {
         if (axis < 0)
             axis += a.rank();
         if (start < 0)
@@ -731,10 +730,10 @@ public class Nd4j {
         if (!(start >= 0 && axis < a.rank() + 1))
             throw new IllegalArgumentException("Axis must be >= 0 && < start");
 
-        List<Integer> range = new ArrayList<>(Ints.asList(ArrayUtil.range(0, a.rank())));
+        List<Long> range = new ArrayList<>(Longs.asList(ArrayUtil.range(0, (long)a.rank())));
         range.remove(axis);
-        range.add(start, axis);
-        int[] newRange = Ints.toArray(range);
+        range.add((int) start, axis);
+        long[] newRange = Longs.toArray(range);
         return a.permute(newRange);
 
     }
@@ -749,7 +748,7 @@ public class Nd4j {
      * @param axes the axes for each array to do matrix multiply along
      * @return the result array
      */
-    public static INDArray tensorMmul(INDArray a, INDArray b,INDArray result, int[][] axes) {
+    public static INDArray tensorMmul(INDArray a, INDArray b, INDArray result, long[][] axes) {
         int validationLength = Math.min(axes[0].length, axes[1].length);
         for (int i = 0; i < validationLength; i++) {
             if (a.size(axes[0][i]) != b.size(axes[1][i]))
@@ -761,21 +760,21 @@ public class Nd4j {
 
         }
 
-        List<Integer> listA = new ArrayList<>();
-        for (int i = 0; i < a.rank(); i++) {
-            if (!Ints.contains(axes[0], i))
+        List<Long> listA = new ArrayList<>();
+        for (long i = 0; i < a.rank(); i++) {
+            if (!Longs.contains(axes[0], i))
                 listA.add(i);
         }
 
-        int[] newAxesA = Ints.concat(Ints.toArray(listA), axes[0]);
+        long[] newAxesA = Longs.concat(Longs.toArray(listA), axes[0]);
 
-        List<Integer> listB = new ArrayList<>();
+        List<Long> listB = new ArrayList<>();
         for (int i = 0; i < b.rank(); i++) {
-            if (!Ints.contains(axes[1], i))
-                listB.add(i);
+            if (!Longs.contains(axes[1], i))
+                listB.add((long) i);
         }
 
-        int[] newAxesB = Ints.concat(axes[1], Ints.toArray(listB));
+        long[] newAxesB = Longs.concat(axes[1], Longs.toArray(listB));
 
         int n2 = 1;
         int aLength = Math.min(a.rank(), axes[0].length);
@@ -806,7 +805,7 @@ public class Nd4j {
     }
 
     // Some duplicate code that refactored out:
-    private static long[] getOldShape(List<Integer> list, INDArray x){
+    private static long[] getOldShape(List<Long> list, INDArray x) {
         long[] res;
         if (list.size() == 0) {
             res = new long[] {1};
@@ -972,70 +971,70 @@ public class Nd4j {
     }
 
     /**
-     * See {@link INDArray#max(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#max(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray max(INDArray compute) {
         return compute.max(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link INDArray#min(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#min(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray min(INDArray compute) {
         return compute.min(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link INDArray#prod(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#prod(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray prod(INDArray compute) {
         return compute.prod(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link INDArray#normmax(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#normmax(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray normmax(INDArray compute) {
         return compute.normmax(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link INDArray#norm2(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#norm2(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray norm2(INDArray compute) {
         return compute.norm2(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link INDArray#norm1(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#norm1(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray norm1(INDArray compute) {
         return compute.norm1(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link INDArray#std(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#std(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray std(INDArray compute) {
         return compute.std(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link INDArray#var(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#var(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray var(INDArray compute) {
         return compute.var(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link INDArray#sum(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#sum(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray sum(INDArray compute) {
         return compute.sum(Integer.MAX_VALUE);
     }
 
     /**
-     * See {@link INDArray#mean(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#mean(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray mean(INDArray compute) {
         return compute.mean(Integer.MAX_VALUE);
@@ -1049,70 +1048,70 @@ public class Nd4j {
     }
 
     /**
-     * See {@link INDArray#max(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#max(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray max(INDArray compute, int dimension) {
         return compute.max(dimension);
     }
 
     /**
-     * See {@link INDArray#min(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#min(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray min(INDArray compute, int dimension) {
         return compute.min(dimension);
     }
 
     /**
-     * See {@link INDArray#prod(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#prod(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray prod(INDArray compute, int dimension) {
         return compute.prod(dimension);
     }
 
     /**
-     * See {@link INDArray#normmax(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#normmax(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray normmax(INDArray compute, int dimension) {
         return compute.normmax(dimension);
     }
 
     /**
-     * See {@link INDArray#norm2(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#norm2(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray norm2(INDArray compute, int dimension) {
         return compute.norm2(dimension);
     }
 
     /**
-     * See {@link INDArray#norm1(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#norm1(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray norm1(INDArray compute, int dimension) {
         return compute.norm1(dimension);
     }
 
     /**
-     * See {@link INDArray#std(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#std(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray std(INDArray compute, int dimension) {
         return compute.std(dimension);
     }
 
     /**
-     * See {@link INDArray#var(int...)} with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#var(long...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray var(INDArray compute, int dimension) {
         return compute.var(dimension);
     }
 
     /**
-     * See {@link INDArray#sum(int...)}with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#sum(long...)}with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray sum(INDArray compute, int dimension) {
         return compute.sum(dimension);
     }
 
     /**
-     * See {@link INDArray#mean(int...)}with Integer.MAX_VALUE for full array reduction.
+     * See {@link INDArray#mean(long...)}with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray mean(INDArray compute, int dimension) {
         return compute.mean(dimension);
@@ -5615,11 +5614,11 @@ public class Nd4j {
      * @param dimensions dimensions
      * @return Array copies
      */
-    public static INDArray[] tear(INDArray tensor, @NonNull int... dimensions) {
+    public static INDArray[] tear(INDArray tensor, @NonNull long... dimensions) {
         if (dimensions.length >= tensor.rank())
             throw new ND4JIllegalStateException("Target dimensions number should be less tensor rank");
 
-        for (int dimension : dimensions)
+        for (long dimension : dimensions)
             if (dimension < 0) throw new ND4JIllegalStateException("Target dimensions can't have negative values");
 
         return factory().tear(tensor, dimensions);
@@ -6813,7 +6812,7 @@ public class Nd4j {
      * This method applies ScatterUpdate op
      */
     @Deprecated
-    public static void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, int... axis) {
+    public static void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, long... axis) {
         Preconditions.checkArgument(indices.dataType() == DataType.INT || indices.dataType() == DataType.LONG,
                 "Indices should have INT data type");
         Preconditions.checkArgument(array.dataType() == updates.dataType(), "Array and updates should have the same data type");

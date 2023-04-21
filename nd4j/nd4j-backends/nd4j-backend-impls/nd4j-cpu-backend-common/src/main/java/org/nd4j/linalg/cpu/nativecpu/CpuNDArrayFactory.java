@@ -24,8 +24,6 @@ package org.nd4j.linalg.cpu.nativecpu;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.common.base.Preconditions;
-import org.nd4j.common.config.ND4JEnvironmentVars;
-import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.impl.shape.Concat;
@@ -523,7 +521,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
-    public INDArray[] tear(INDArray tensor, int... dimensions) {
+    public INDArray[] tear(INDArray tensor, long... dimensions) {
         if (tensor.isCompressed())
             Nd4j.getCompressor().decompressi(tensor);
 
@@ -534,8 +532,8 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         long tadLength = 1;
         long[] shape = new long[dimensions.length];
         for (int i = 0; i < dimensions.length; i++) {
-            tadLength *= tensor.shape()[dimensions[i]];
-            shape[i] = tensor.shape()[dimensions[i]];
+            tadLength *= tensor.size(dimensions[i]);
+            shape[i] = tensor.size(dimensions[i]);
         }
 
 
@@ -674,9 +672,9 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         val tadManager = Nd4j.getExecutioner().getTADManager();
 
-        val tadBuffers = tadManager.getTADOnlyShapeInfo(source, new int[] {sourceDimension});
+        val tadBuffers = tadManager.getTADOnlyShapeInfo(source, new long[] {sourceDimension});
 
-        val zTadBuffers = tadManager.getTADOnlyShapeInfo(ret, new int[] {sourceDimension});
+        val zTadBuffers = tadManager.getTADOnlyShapeInfo(ret, new long[] {sourceDimension});
 
         val hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
 
@@ -837,7 +835,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
      * @return
      */
     @Override
-    public void shuffle(INDArray array, Random rnd, int... dimension) {
+    public void shuffle(INDArray array, Random rnd, long... dimension) {
         shuffle(Collections.singletonList(array), rnd, dimension);
     }
 
@@ -850,7 +848,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
      * @return
      */
     @Override
-    public void shuffle(Collection<INDArray> array, Random rnd, int... dimension) {
+    public void shuffle(Collection<INDArray> array, Random rnd, long... dimension) {
         shuffle(new ArrayList<>(array), rnd, Collections.singletonList(dimension));
     }
 
@@ -863,7 +861,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
      * @return
      */
     @Override
-    public void shuffle(List<INDArray> arrays, Random rnd, List<int[]> dimensions) {
+    public void shuffle(List<INDArray> arrays, Random rnd, List<long[]> dimensions) {
         if (dimensions == null || dimensions.size() == 0)
             throw new RuntimeException("Dimension can't be null or 0-length");
 
@@ -877,7 +875,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         int tadLength = 1;
         if (zero.rank() > 1)
             for (int i = 0; i < dimensions.get(0).length; i++) {
-                tadLength *= zero.shape()[dimensions.get(0)[i]];
+                tadLength *= zero.size(dimensions.get(0)[i]);
             }
 
         long numTads = zero.length() / tadLength;
@@ -1045,7 +1043,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
-    public INDArray sort(INDArray x, boolean descending, int... dimension) {
+    public INDArray sort(INDArray x, boolean descending, long... dimension) {
         if (x.isScalar())
             return x;
 

@@ -29,7 +29,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class CountNonZero extends BaseReduceLongOp {
-    public CountNonZero(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public CountNonZero(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -45,11 +45,11 @@ public class CountNonZero extends BaseReduceLongOp {
         super(sameDiff, i_v, i_v2);
     }
 
-    public CountNonZero(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    public CountNonZero(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    public CountNonZero(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+    public CountNonZero(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
     }
 
@@ -57,20 +57,20 @@ public class CountNonZero extends BaseReduceLongOp {
         super(sameDiff, i_v);
     }
 
-    public CountNonZero(SameDiff sameDiff, SDVariable input, int... dimensions) {
+    public CountNonZero(SameDiff sameDiff, SDVariable input, long... dimensions) {
         super(sameDiff, input, dimensions);
     }
 
 
-    public CountNonZero(INDArray x, int... dimensions) {
+    public CountNonZero(INDArray x, long... dimensions) {
         super(x, dimensions);
     }
 
-    public CountNonZero(INDArray x, INDArray z, int... dimensions) {
+    public CountNonZero(INDArray x, INDArray z, long... dimensions) {
         super(x, z, dimensions);
     }
 
-    public CountNonZero(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public CountNonZero(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
@@ -85,19 +85,19 @@ public class CountNonZero extends BaseReduceLongOp {
     public CountNonZero() {
     }
 
-    public CountNonZero(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+    public CountNonZero(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
-    public CountNonZero(INDArray in, boolean keepDims, int[] dimensions) {
+    public CountNonZero(INDArray in, boolean keepDims, long[] dimensions) {
        super(in,keepDims,dimensions);
     }
 
-    public CountNonZero(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+    public CountNonZero(SameDiff sd, SDVariable in, boolean keepDims, long[] dimensions) {
         super(sd,in,dimensions,keepDims);
     }
 
-    public CountNonZero(INDArray in, int[] dimensions, boolean keepDims) {
+    public CountNonZero(INDArray in, long[] dimensions, boolean keepDims) {
         super(in,keepDims,dimensions);
     }
 

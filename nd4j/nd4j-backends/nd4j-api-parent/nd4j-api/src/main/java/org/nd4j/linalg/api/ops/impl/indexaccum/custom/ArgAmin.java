@@ -47,7 +47,7 @@ public class ArgAmin extends BaseDynamicCustomIndexReduction {
         super(sameDiff, args, keepDims);
     }
 
-    public ArgAmin(SameDiff sameDiff, SDVariable[] args, boolean keepDims, int[] dimensions) {
+    public ArgAmin(SameDiff sameDiff, SDVariable[] args, boolean keepDims, long[] dimensions) {
         super(sameDiff, args, keepDims, dimensions);
     }
 
@@ -64,11 +64,11 @@ public class ArgAmin extends BaseDynamicCustomIndexReduction {
         super(inputs, outputs, keepDims);
     }
 
-    public ArgAmin(INDArray[] inputs, INDArray[] outputs, boolean keepDims, int... dimensions) {
+    public ArgAmin(INDArray[] inputs, INDArray[] outputs, boolean keepDims, long... dimensions) {
         super(inputs, outputs, keepDims, dimensions);
     }
 
-    public ArgAmin(INDArray[] inputs, int[] dim) {
+    public ArgAmin(INDArray[] inputs, long[] dim) {
         this(inputs,null,false,dim);
     }
 

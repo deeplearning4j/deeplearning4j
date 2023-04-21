@@ -37,7 +37,7 @@ public class WhereNumpy extends DynamicCustomOp {
         super(null, sameDiff, args);
     }
 
-    public WhereNumpy(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments) {
+    public WhereNumpy(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Long> iArguments) {
         super(opName, inputs, outputs, tArguments, iArguments);
     }
 

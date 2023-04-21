@@ -32,7 +32,7 @@ import java.util.Collections;
 import java.util.List;
 
 public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoolOp {
-    public BaseReduceBoolOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public BaseReduceBoolOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -48,11 +48,11 @@ public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoo
         super(sameDiff, i_v, i_v2);
     }
 
-    protected BaseReduceBoolOp(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    protected BaseReduceBoolOp(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    public BaseReduceBoolOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+    public BaseReduceBoolOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
     }
 
@@ -60,28 +60,28 @@ public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoo
         super(sameDiff, i_v);
     }
 
-    protected BaseReduceBoolOp(SameDiff sameDiff, SDVariable input, int... dimensions) {
+    protected BaseReduceBoolOp(SameDiff sameDiff, SDVariable input, long... dimensions) {
         super(sameDiff, input, dimensions);
     }
 
 
-    public BaseReduceBoolOp(INDArray x, INDArray z, boolean keepDims, int[] dimensions) {
+    public BaseReduceBoolOp(INDArray x, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, null, z, keepDims, dimensions);
     }
 
-    public BaseReduceBoolOp(INDArray x, int... dimensions) {
+    public BaseReduceBoolOp(INDArray x, long... dimensions) {
         this(x, null, false, dimensions);
     }
 
-    public BaseReduceBoolOp(INDArray x, boolean keepDims, int... dimensions) {
+    public BaseReduceBoolOp(INDArray x, boolean keepDims, long... dimensions) {
         super(x, keepDims, dimensions);
     }
 
-    public BaseReduceBoolOp(INDArray x, INDArray z, int... dimensions) {
+    public BaseReduceBoolOp(INDArray x, INDArray z, long... dimensions) {
         this(x, z, false, dimensions);
     }
 
-    public BaseReduceBoolOp(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public BaseReduceBoolOp(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
@@ -97,7 +97,7 @@ public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoo
         super();
     }
 
-    public BaseReduceBoolOp(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+    public BaseReduceBoolOp(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 

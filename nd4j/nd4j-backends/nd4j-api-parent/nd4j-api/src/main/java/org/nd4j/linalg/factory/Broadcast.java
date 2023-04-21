@@ -45,7 +45,7 @@ public class Broadcast {
     /**
      * Broadcast add op. See: {@link BroadcastAddOp}
      */
-    public static INDArray add(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static INDArray add(INDArray x, INDArray y, INDArray z, long... dimensions) {
         if(dimensions == null || dimensions.length == 0  || y.isScalar()) {
             validateShapesNoDimCase(x,y,z);
             return Nd4j.getExecutioner().exec(new AddOp(x,y,z))[0];
@@ -57,7 +57,7 @@ public class Broadcast {
     /**
      * Broadcast copy op. See: {@link BroadcastCopyOp}
      */
-    public static INDArray copy(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static INDArray copy(INDArray x, INDArray y, INDArray z, long... dimensions) {
         if(dimensions == null || dimensions.length == 0  || y.isScalar()) {
             validateShapesNoDimCase(x,y,z);
             return Nd4j.getExecutioner().exec(new CopyOp(x,y,z));
@@ -69,7 +69,7 @@ public class Broadcast {
     /**
      * Broadcast divide op. See: {@link BroadcastDivOp}
      */
-    public static INDArray div(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static INDArray div(INDArray x, INDArray y, INDArray z, long... dimensions) {
         if(dimensions == null || dimensions.length == 0  || y.isScalar()) {
             validateShapesNoDimCase(x,y,z);
             return Nd4j.getExecutioner().exec(new DivOp(x,y,z))[0];
@@ -81,7 +81,7 @@ public class Broadcast {
     /**
      * Broadcast equal to op. See: {@link BroadcastEqualTo}
      */
-    public static INDArray eq(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static INDArray eq(INDArray x, INDArray y, INDArray z, long... dimensions) {
         if(dimensions == null || dimensions.length == 0  || y.isScalar()) {
             validateShapesNoDimCase(x,y,z);
             return Nd4j.getExecutioner().exec(new EqualTo(x,y,z))[0];
@@ -92,7 +92,7 @@ public class Broadcast {
     /**
      * Broadcast greater than op. See: {@link BroadcastGreaterThan}
      */
-    public static INDArray gt(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static INDArray gt(INDArray x, INDArray y, INDArray z, long... dimensions) {
         if(dimensions == null || dimensions.length == 0  || y.isScalar()) {
             validateShapesNoDimCase(x,y,z);
             return Nd4j.getExecutioner().exec(new GreaterThan(x,y,z))[0];
@@ -104,7 +104,7 @@ public class Broadcast {
     /**
      * Broadcast greater than or equal to op. See: {@link BroadcastGreaterThanOrEqual}
      */
-    public static INDArray gte(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static INDArray gte(INDArray x, INDArray y, INDArray z, long... dimensions) {
         if(dimensions == null || dimensions.length == 0  || y.isScalar()) {
             validateShapesNoDimCase(x,y,z);
             return Nd4j.getExecutioner().exec(new GreaterThanOrEqual(x,y,z))[0];
@@ -116,7 +116,7 @@ public class Broadcast {
     /**
      * Broadcast less than op. See: {@link BroadcastLessThan}
      */
-    public static INDArray lt(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static INDArray lt(INDArray x, INDArray y, INDArray z, long... dimensions) {
         if(dimensions == null || dimensions.length == 0  || y.isScalar()) {
             validateShapesNoDimCase(x,y,z);
             return Nd4j.getExecutioner().exec(new LessThan(x,y,z))[0];
@@ -128,7 +128,7 @@ public class Broadcast {
     /**
      * Broadcast less than or equal to op. See: {@link BroadcastLessThanOrEqual}
      */
-    public static INDArray lte(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static INDArray lte(INDArray x, INDArray y, INDArray z, long... dimensions) {
         if(dimensions == null || dimensions.length == 0 || y.isScalar()) {
             validateShapesNoDimCase(x,y,z);
             return Nd4j.getExecutioner().exec(new LessThanOrEqual(x,y,z))[0];
@@ -140,7 +140,7 @@ public class Broadcast {
     /**
      * Broadcast element-wise multiply op. See: {@link BroadcastMulOp}
      */
-    public static INDArray mul(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static INDArray mul(INDArray x, INDArray y, INDArray z, long... dimensions) {
         if(dimensions == null || dimensions.length == 0 || y.isScalar()) {
             validateShapesNoDimCase(x,y,z);
             return Nd4j.getExecutioner().exec(new MulOp(x,y,z))[0];
@@ -152,7 +152,7 @@ public class Broadcast {
     /**
      * Broadcast not equal to op. See: {@link BroadcastNotEqual}
      */
-    public static INDArray neq(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static INDArray neq(INDArray x, INDArray y, INDArray z, long... dimensions) {
         if(dimensions == null || dimensions.length == 0  || y.isScalar()) {
             validateShapesNoDimCase(x,y,z);
             return Nd4j.getExecutioner().exec(new NotEqualTo(x,y,z))[0];
@@ -164,7 +164,7 @@ public class Broadcast {
     /**
      * Broadcast reverse division op. See: {@link BroadcastRDivOp}
      */
-    public static INDArray rdiv(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static INDArray rdiv(INDArray x, INDArray y, INDArray z, long... dimensions) {
         if(dimensions == null || dimensions.length == 0  || y.isScalar()) {
             validateShapesNoDimCase(x,y,z);
             return Nd4j.getExecutioner().exec(new RDivOp(x,y,z))[0];
@@ -176,7 +176,7 @@ public class Broadcast {
     /**
      * Broadcast reverse subtraction op. See: {@link BroadcastRSubOp}
      */
-    public static INDArray rsub(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static INDArray rsub(INDArray x, INDArray y, INDArray z, long... dimensions) {
         if(dimensions == null || dimensions.length == 0  || y.isScalar()) {
             validateShapesNoDimCase(x,y,z);
             return Nd4j.getExecutioner().exec(new SubOp(x,y,z))[0];
@@ -188,7 +188,7 @@ public class Broadcast {
     /**
      * Broadcast subtraction op. See: {@link BroadcastSubOp}
      */
-    public static INDArray sub(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static INDArray sub(INDArray x, INDArray y, INDArray z, long... dimensions) {
         if(dimensions == null || dimensions.length == 0  || y.isScalar()) {
             validateShapesNoDimCase(x,y,z);
             return Nd4j.getExecutioner().exec(new SubOp(x,y,z))[0];
@@ -200,7 +200,7 @@ public class Broadcast {
     /**
      * Broadcast max op. See: {@link BroadcastMax}
      */
-    public static INDArray max(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static INDArray max(INDArray x, INDArray y, INDArray z, long... dimensions) {
         if(dimensions == null || dimensions.length == 0  || y.isScalar()) {
             validateShapesNoDimCase(x,y,z);
             return Nd4j.getExecutioner().exec(new Max(x,y,z))[0];
@@ -213,7 +213,7 @@ public class Broadcast {
     /**
      * Broadcast min op. See: {@link BroadcastMin}
      */
-    public static INDArray min(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static INDArray min(INDArray x, INDArray y, INDArray z, long... dimensions) {
         if(dimensions == null || dimensions.length == 0  || y.isScalar()) {
             validateShapesNoDimCase(x,y,z);
             return Nd4j.getExecutioner().exec(new Min(x,y,z))[0];
@@ -226,7 +226,7 @@ public class Broadcast {
     /**
      * Broadcast absolute max op. See: {@link BroadcastAMax}
      */
-    public static INDArray amax(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static INDArray amax(INDArray x, INDArray y, INDArray z, long... dimensions) {
         if(dimensions == null || dimensions.length == 0  || y.isScalar()) {
             validateShapesNoDimCase(x,y,z);
             return Nd4j.getExecutioner().exec(new AMax(x,y,z));
@@ -238,7 +238,7 @@ public class Broadcast {
     /**
      * Broadcast absolute min op. See: {@link BroadcastAMax}
      */
-    public static INDArray amin(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static INDArray amin(INDArray x, INDArray y, INDArray z, long... dimensions) {
         if(dimensions == null || dimensions.length == 0  || y.isScalar()) {
             validateShapesNoDimCase(x,y,z);
             return Nd4j.getExecutioner().exec(new AMin(x,y,z));
@@ -262,7 +262,7 @@ public class Broadcast {
      * Here, the dimensions are those that the arrays match on WRT X.
      * For example, mul([a,b,c], [a,c], 0,2)
      */
-    public static void validateBroadcastDims(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public static void validateBroadcastDims(INDArray x, INDArray y, INDArray z, long... dimensions) {
         Preconditions.checkArgument(x == z || x.equalShapes(z), "X and Z arrays must be equal shape. X shape: %s, Z shape: %s",
                 x.shape(), z.shape());
         long[] sx = x.shape();
@@ -270,24 +270,24 @@ public class Broadcast {
         //Possibility 1: equal ranks - dimensions must match
         if(dimensions.length == 1 && sy.length == 2 && (sy[0] == 1 || sy[1] == 1)) {
             //Edge case: x=[a,b,c], y=[1,b], dim=1 etc
-            int d2 = dimensions[0] < 0 ? dimensions[0] + sx.length : dimensions[0]; //Handle negative dimensions
+            long d2 = dimensions[0] < 0 ? dimensions[0] + sx.length : dimensions[0]; //Handle negative dimensions
             if (sy[0] == 1) {
-                Preconditions.checkState(sx[d2] == sy[1], "Shapes do not match: dimensions[0] - x[%s] must match y[%s], x shape %s, y shape %s, dimensions %s",
+                Preconditions.checkState(sx[(int) d2] == sy[1], "Shapes do not match: dimensions[0] - x[%s] must match y[%s], x shape %s, y shape %s, dimensions %s",
                         dimensions[0], 1, sx, sy, dimensions);
             } else {
-                Preconditions.checkState(sx[d2] == sy[0], "Shapes do not match: dimensions[0] - x[%s] must match y[%s], x shape %s, y shape %s, dimensions %s",
+                Preconditions.checkState(sx[(int) d2] == sy[0], "Shapes do not match: dimensions[0] - x[%s] must match y[%s], x shape %s, y shape %s, dimensions %s",
                         dimensions[0], 0, sx, sy, dimensions);
             }
         } else if(sx.length == sy.length){
-            for(int d : dimensions){
-                int d2 = d < 0 ? d + sx.length : d; //Handle negative dimensions
-                Preconditions.checkState(sx[d2] == sy[d2], "Dimensions mismatch on dimension %s: x shape %s, y shape %s", d, sx, sy);
+            for(long d : dimensions){
+                long d2 = d < 0 ? d + sx.length : d; //Handle negative dimensions
+                Preconditions.checkState(sx[(int) d2] == sy[(int) d2], "Dimensions mismatch on dimension %s: x shape %s, y shape %s", d, sx, sy);
             }
         } else if(dimensions.length == sy.length) {
             //Possibility 2: different ranks - for example, mul([a,b,c],[a,c], [0,2]) - dimensions refer to x
             for (int i = 0; i < dimensions.length; i++) {
-                int d2 = dimensions[i] < 0 ? dimensions[i] + sx.length : dimensions[i]; //Handle negative dimensions
-                Preconditions.checkState(sx[d2] == sy[i], "Shapes do not match: dimensions[%s] - x[%s] must match y[%s], x shape %s, y shape %s, dimensions %s",
+                long d2 = dimensions[i] < 0 ? dimensions[i] + sx.length : dimensions[i]; //Handle negative dimensions
+                Preconditions.checkState(sx[(int) d2] == sy[i], "Shapes do not match: dimensions[%s] - x[%s] must match y[%s], x shape %s, y shape %s, dimensions %s",
                         i, d2, i, sx, sy, dimensions);
             }
         } else {

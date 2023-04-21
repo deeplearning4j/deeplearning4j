@@ -1225,7 +1225,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
         final INDArray res = standardized.mulRowVector(gain).addRowVector(bias);
         final INDArray expOut = res.norm1();
 
-        final int[] axis = new int[]{1};
+        final long[] axis = new long[]{1};
         SameDiff sd = SameDiff.create();
         SDVariable sdInput = sd.var("input", standardized);
         SDVariable sdGain = sd.var("gain", gain);
@@ -1255,7 +1255,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
             INDArray standardized = x.sub(mean).div(std);
             INDArray exp = standardized.mul(gain4d).add(bias4d);
 
-            final int[] axis = new int[]{1, 2, 3};
+            final long[] axis = new long[]{1, 2, 3};
             SameDiff sd = SameDiff.create();
             SDVariable sdInput = sd.var("input", x);
             SDVariable sdGain = sd.var("gain", gain4d.reshape(ch));
@@ -1293,7 +1293,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
                         .checkForINF(true)
                 .build());
         //test layer norm op
-        int[] layerNormDimension = new int[] {2};
+        long[] layerNormDimension = new long[] {2};
         SDVariable input = sd.constant("input", Nd4j.createFromArray(arr));
         SDVariable gain = sd.constant("gain", Nd4j.ones(DataType.FLOAT, Z));
         SDVariable bias = sd.constant("bias", Nd4j.zeros(DataType.FLOAT, Z));
@@ -1334,7 +1334,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
         final INDArray res = standardized.mulRowVector(gain);
         final INDArray expOut = res.norm1();
 
-        final int[] axis = new int[]{1};
+        final long[] axis = new long[]{1};
         SameDiff sd = SameDiff.create();
         SDVariable sdInput = sd.var("input", standardized);
         SDVariable sdGain = sd.var("gain", gain);
@@ -1379,7 +1379,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
         final INDArray res = standardized.mulRowVector(gain).addRowVector(bias);
         final INDArray expOut = res.norm1();
 
-        final int[] axis = new int[]{1};
+        final long[] axis = new long[]{1};
         SameDiff sd = SameDiff.create();
         SDVariable sdInput = sd.var("input", standardized);
         SDVariable sdGain = sd.var("gain", gain);

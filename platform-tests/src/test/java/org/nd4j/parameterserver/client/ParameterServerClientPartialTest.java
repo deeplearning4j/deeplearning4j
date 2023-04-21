@@ -124,7 +124,7 @@ public class ParameterServerClientPartialTest extends BaseND4JTest {
          * which adds the array for parameter averaging.
          * In this case totalN should be 1.
          */
-        client.pushNDArrayMessage(NDArrayMessage.of(Nd4j.ones(2), new int[] {0}, 0));
+        client.pushNDArrayMessage(NDArrayMessage.of(Nd4j.ones(2), new long[] {0}, 0));
         log.info("Pushed ndarray");
         Thread.sleep(30000);
         ParameterServerListener listener = (ParameterServerListener) masterNode.getCallback();

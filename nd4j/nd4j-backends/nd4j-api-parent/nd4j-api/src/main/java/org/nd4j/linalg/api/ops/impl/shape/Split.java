@@ -56,11 +56,11 @@ public class Split extends DynamicCustomOp {
     }
 
     public Split(@NonNull INDArray in, INDArray out) {
-        super(null, new INDArray[]{in}, wrapOrNull(out), null, (List<Integer>)null);
+        super(null, new INDArray[]{in}, wrapOrNull(out), null, (List<Long>)null);
     }
 
     public Split(INDArray input, int numSplit, int splitDim) {
-        super(null,input,null,Collections.emptyList(),new int[0]);
+        super(null,input,null,Collections.emptyList(),new long[0]);
         addIArgument(numSplit,splitDim);
         this.numSplit = numSplit;
         this.splitDim = splitDim;

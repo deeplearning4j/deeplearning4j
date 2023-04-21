@@ -36,7 +36,7 @@ import java.util.List;
 public abstract class BaseReductionBp extends DynamicCustomOp {
 
     protected boolean keepDims;
-    protected int[] dimensions;
+    protected long[] dimensions;
 
     /**
      *
@@ -45,7 +45,7 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
      * @param keepDims     If true: reduction dimensions were kept
      * @param dimensions   Dimensions to reduce. May be null
      */
-    public BaseReductionBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, int... dimensions) {
+    public BaseReductionBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, long... dimensions) {
         super(null, sameDiff, new SDVariable[]{origInput, gradAtOutput}, false);
         this.keepDims = keepDims;
         this.dimensions = dimensions;
@@ -59,7 +59,7 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
      * @param keepDims     If true: reduction dimensions were kept
      * @param dimensions   Dimensions to reduce. May be null
      */
-    public BaseReductionBp(SameDiff sameDiff, SDVariable origInput1, SDVariable origInput2, SDVariable gradAtOutput, boolean keepDims, int... dimensions) {
+    public BaseReductionBp(SameDiff sameDiff, SDVariable origInput1, SDVariable origInput2, SDVariable gradAtOutput, boolean keepDims, long... dimensions) {
         super(null, sameDiff, new SDVariable[]{origInput1, origInput2, gradAtOutput}, false);
         this.keepDims = keepDims;
         this.dimensions = dimensions;
@@ -73,7 +73,7 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
      * @param keepDims     If true: reduction dimensions were kept
      * @param dimensions   Dimensions to reduce. May be null
      */
-    public BaseReductionBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, int... dimensions) {
+    public BaseReductionBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, long... dimensions) {
         super(null, new INDArray[]{origInput, gradAtOutput}, (output == null ? null : new INDArray[]{output}));
         this.keepDims = keepDims;
         this.dimensions = dimensions;
@@ -88,13 +88,13 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
      * @param keepDims     If true: reduction dimensions were kept
      * @param dimensions   Dimensions to reduce. May be null
      */
-    public BaseReductionBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output, boolean keepDims, int... dimensions){
+    public BaseReductionBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output, boolean keepDims, long... dimensions){
         super(null, new INDArray[]{origInput1, origInput2, gradAtOutput}, (output == null ? null : new INDArray[]{output}));
         this.keepDims = keepDims;
         this.dimensions = dimensions;
     }
 
-    public BaseReductionBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output1, INDArray output2, boolean keepDims, int... dimensions){
+    public BaseReductionBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output1, INDArray output2, boolean keepDims, long... dimensions){
         super(null, new INDArray[]{origInput1, origInput2, gradAtOutput}, new INDArray[]{output1, output2});
         this.keepDims = keepDims;
         this.dimensions = dimensions;

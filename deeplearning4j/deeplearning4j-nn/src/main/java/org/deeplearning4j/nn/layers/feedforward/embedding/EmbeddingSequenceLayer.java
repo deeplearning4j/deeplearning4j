@@ -44,7 +44,7 @@ import static org.nd4j.linalg.api.shape.Shape.hasDefaultStridesForShape;
 
 @Slf4j
 public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer> {
-    private static final int[] WEIGHT_DIM = new int[]{1};
+    private static final long[] WEIGHT_DIM = new long[]{1};
 
     public EmbeddingSequenceLayer(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);

@@ -29,11 +29,11 @@ import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 import java.util.List;
 
 public class BroadcastAMin extends BaseBroadcastOp {
-    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, int[] dimension) {
+    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, long[] dimension) {
         super(sameDiff, i_v1, i_v2, dimension);
     }
 
-    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, int[] dimension) {
+    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, long[] dimension) {
         super(sameDiff, i_v1, i_v2, inPlace, dimension);
     }
 
@@ -41,25 +41,25 @@ public class BroadcastAMin extends BaseBroadcastOp {
         super(sameDiff);
     }
 
-    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, int[] dimension, Object[] extraArgs) {
+    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, long[] dimension, Object[] extraArgs) {
         super(sameDiff, i_v1, i_v2, dimension, extraArgs);
     }
 
-    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v, int[] dimension, boolean inPlace) {
+    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v, long[] dimension, boolean inPlace) {
         super(sameDiff, i_v, dimension, inPlace);
     }
 
-    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, int[] dimension, Object[] extraArgs) {
+    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, long[] dimension, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, dimension, extraArgs);
     }
 
-    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v, int[] dimension, Object[] extraArgs) {
+    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v, long[] dimension, Object[] extraArgs) {
         super(sameDiff, i_v, dimension, extraArgs);
     }
 
     public BroadcastAMin() {}
 
-    public BroadcastAMin(INDArray x, INDArray y, INDArray z, int... dimension) {
+    public BroadcastAMin(INDArray x, INDArray y, INDArray z, long... dimension) {
         super(x, y, z, dimension);
     }
 

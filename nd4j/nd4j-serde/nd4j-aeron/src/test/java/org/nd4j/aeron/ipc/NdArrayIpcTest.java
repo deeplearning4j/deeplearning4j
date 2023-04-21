@@ -100,7 +100,7 @@ public class NdArrayIpcTest extends BaseND4JTest {
                                 }
 
                                 @Override
-                                public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+                                public void onNDArrayPartial(INDArray arr, long idx, long... dimensions) {
 
                             }
 
@@ -183,7 +183,7 @@ public class NdArrayIpcTest extends BaseND4JTest {
                             }
 
                             @Override
-                            public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+                            public void onNDArrayPartial(INDArray arr, long idx, long... dimensions) {
 
                         }
 

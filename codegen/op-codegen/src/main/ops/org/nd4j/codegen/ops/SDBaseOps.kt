@@ -115,7 +115,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         javaOpClass = "ArgMax"
         Input(NUMERIC, "in") { description = "Input variable" }
         Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue = false }
-        Arg(INT, "dimensions"){ count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+        Arg(LONG, "dimensions"){ count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
 
         Output(NUMERIC, "output"){ description = "reduced array of rank (input rank - num dimensions) if keepDims = false, or\n" +
                 " of rank (input rank) if keepdims = true" }
@@ -133,7 +133,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         javaOpClass = "ArgMin"
         Input(NUMERIC, "in") { description = "Input variable" }
         Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue = false }
-        Arg(INT, "dimensions"){ count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+        Arg(LONG, "dimensions"){ count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
         Output(NUMERIC, "output"){ description = "reduced array of rank (input rank - num dimensions) if keepDims = false, or of rank (input rank) if keepdims = true" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -168,7 +168,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Input(NUMERIC, "in") { description = "Input variable" }
         Arg(BOOL, "exclusive") { description = "If true: exclude the first value"; defaultValue = FALSE }
         Arg(BOOL, "reverse") { description = "If true: reverse the direction of the accumulation"; defaultValue = FALSE }
-        Arg(INT, "axis") { count = AtLeast(1); description = "Scalar axis argument for dimension to perform cumululative sum operations along" }
+        Arg(LONG, "axis") { count = AtLeast(1); description = "Scalar axis argument for dimension to perform cumululative sum operations along" }
         Output(NUMERIC, "output"){ description = "Output variable" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -188,7 +188,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Input(NUMERIC, "in") { description = "Input variable" }
         Arg(BOOL, "exclusive") { description = "If true: exclude the first value"; defaultValue = FALSE }
         Arg(BOOL,  "reverse") { description = "If true: reverse the direction of the accumulation"; defaultValue = FALSE  }
-        Arg(INT, "axis") { count = AtLeast(1); description = "Scalar axis argument for dimension to perform cumululative sum operations along" }
+        Arg(LONG, "axis") { count = AtLeast(1); description = "Scalar axis argument for dimension to perform cumululative sum operations along" }
         Output(NUMERIC, "output"){ description = "" }
 
         Doc(Language.ANY, DocScope.ALL){
@@ -212,7 +212,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         legacy = true
         Input(NUMERIC, "x") { description = "first input" }
         Input(NUMERIC, "y") { description = "second input" }
-        Arg(INT, "dimensions") {count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+        Arg(LONG, "dimensions") {count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
         Output(NUMERIC, "output"){ description = "output variable" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -716,7 +716,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Input(NUMERIC, "in") { description = "Input variable" }
         Arg(CONDITION, "condition") { description = "Condition" }
         Arg(BOOL, "keepDim") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue=FALSE}
-        Arg(INT, "dimensions") {count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+        Arg(LONG, "dimensions") {count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
         Output(NUMERIC, "output"){ description = "Number of elements that the condition is satisfied for" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -789,7 +789,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Input(NUMERIC, "x") { description = "Input variable" }
         Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"
             ; defaultValue=FALSE }
-        Arg(INT, "dimensions") { count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+        Arg(LONG, "dimensions") { count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
         Output(NUMERIC, "output"){ description = "Reduced array of rank (input rank - num dimensions)" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -817,7 +817,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         legacy = true
         Input(NUMERIC, "x") { description = "Input variable" }
         Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue=false }
-        Arg(INT, "dimensions") { count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+        Arg(LONG, "dimensions") { count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
         Output(NUMERIC, "output"){ description = "Reduced array of rank (input rank - num dimensions)" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -863,7 +863,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         legacy = true
         Input(NUMERIC, "x") { description = "Input variable" }
         Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue=false }
-        Arg(INT, "dimensions") { count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+        Arg(LONG, "dimensions") { count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
         Output(NUMERIC, "output"){ description = "Reduced array of rank (input rank - num dimensions)" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -938,7 +938,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         legacy = true
         Input(NUMERIC, "x") { description = "Input variable" }
         Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue=false }
-        Arg(INT, "dimensions") { count = AtLeast(0);  description = "dimensions to reduce over" }
+        Arg(LONG, "dimensions") { count = AtLeast(0);  description = "dimensions to reduce over" }
         Output(NUMERIC, "output"){ description = "Output variable" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -954,7 +954,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         legacy = true
         Input(NUMERIC, "x") { description = "Input variable" }
         Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue=false }
-        Arg(INT, "dimensions") { count = AtLeast(0); description = "dimensions dimensions to reduce over" }
+        Arg(LONG, "dimensions") { count = AtLeast(0); description = "dimensions dimensions to reduce over" }
         Output(NUMERIC, "output"){ description = "Output variable" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -971,7 +971,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         legacy = true
         Input(NUMERIC, "x") { description = "Input variable" }
         Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue=false }
-        Arg(INT, "dimensions") { count = AtLeast(0); description = "dimensions to reduce over" }
+        Arg(LONG, "dimensions") { count = AtLeast(0); description = "dimensions to reduce over" }
         Output(NUMERIC, "output"){ description = "Output variable" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -1146,7 +1146,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     Op("permute") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
         Input(NDARRAY, "x") { description = "Input variable" }
-        Arg(INT, "dimensions") { count = AtLeast(0); description = "" }
+        Arg(LONG, "dimensions") { count = AtLeast(0); description = "" }
         Output(NUMERIC, "output"){ description = "Output variable (permuted input)" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -1161,7 +1161,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         legacy = true
         Input(NUMERIC, "x") { description = "Input variable" }
         Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue=false }
-        Arg(INT, "dimensions") { count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+        Arg(LONG, "dimensions") { count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
         Output(NUMERIC, "output"){ description = "" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -1313,7 +1313,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
     Op("reverse") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         Input(NDARRAY, "x") { description = "Input variable" }
-        Arg(INT, "dimensions") { count = AtLeast(0); description = "Input variable" }
+        Arg(LONG, "dimensions") { count = AtLeast(0); description = "Input variable" }
         Output(NUMERIC, "output"){ description = "Output variable" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -1690,7 +1690,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         legacy = true
         Input(NUMERIC, "x") { description = "" }
         Arg(BOOL, "keepDims") { description = ""; defaultValue=false }
-        Arg(INT, "dimensions") { count = AtLeast(0); description = "" }
+        Arg(LONG, "dimensions") { count = AtLeast(0); description = "" }
         Output(NUMERIC, "output"){ description = "" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -1738,7 +1738,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Input(NUMERIC, "x") { description = "Input variable" }
         Arg(BOOL, "biasCorrected") { description = "If true: divide by (N-1) (i.e., sample stdev). If false: divide by N (population stdev)" }
         Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue=false }
-        Arg(INT, "dimensions") { count= AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+        Arg(LONG, "dimensions") { count= AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
         Output(NUMERIC, "output"){ description = "reduced array of rank (input rank - num dimensions)" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -1809,7 +1809,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         legacy = true
         Input(NUMERIC, "x") { description = "Input variable" }
         Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as length 1). False: remove the reduction dimensions"; defaultValue=false }
-        Arg(INT, "dimensions") { count= AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+        Arg(LONG, "dimensions") { count= AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
         Output(NUMERIC, "output"){ description = "reduced array of rank (input rank - num dimensions) if keepDims = false, or of rank (input rank) if keepdims = true" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -2059,7 +2059,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Input(NUMERIC, "x") { description = "Input variable" }
         Arg(BOOL, "biasCorrected") { description = "If true: divide by (N-1) (i.e., sample variable). If false: divide by N (population variance)" }
         Arg(BOOL, "keepDims") {  description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"; defaultValue=false }
-        Arg(INT, "dimensions") { count=AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+        Arg(LONG, "dimensions") { count=AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
         Output(NUMERIC, "output"){ description = "reduced array of rank (input rank - num dimensions)" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -2089,7 +2089,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.bool"
         legacy = true
         Input(NDARRAY, "x") { description = " Input variable" }
-        Arg(INT, "dimensions"){ count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+        Arg(LONG, "dimensions"){ count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
         Output(BOOL, "output"){ description = "reduced array of rank (input rank - num dimensions)" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -2102,7 +2102,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.bool"
         legacy = true
         Input(NDARRAY, "x") { description = "Input variable" }
-        Arg(INT, "dimensions"){ count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+        Arg(LONG, "dimensions"){ count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
         Output(BOOL, "output"){ description = "reduced array of rank (input rank - num dimensions)" }
         Doc(Language.ANY, DocScope.ALL){
             """

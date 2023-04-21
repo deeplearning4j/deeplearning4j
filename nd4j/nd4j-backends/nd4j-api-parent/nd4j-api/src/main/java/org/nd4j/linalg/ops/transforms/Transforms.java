@@ -88,19 +88,19 @@ public class Transforms {
         return Nd4j.getExecutioner().exec(new JaccardDistance(d1, d2)).getDouble(0);
     }
 
-    public static INDArray allCosineSimilarities(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
+    public static INDArray allCosineSimilarities(@NonNull INDArray d1, @NonNull INDArray d2, long... dimensions) {
         return Nd4j.getExecutioner().exec(new CosineSimilarity(d1, d2, true, dimensions));
     }
 
-    public static INDArray allCosineDistances(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
+    public static INDArray allCosineDistances(@NonNull INDArray d1, @NonNull INDArray d2, long... dimensions) {
         return Nd4j.getExecutioner().exec(new CosineDistance(d1, d2, true, dimensions));
     }
 
-    public static INDArray allEuclideanDistances(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
+    public static INDArray allEuclideanDistances(@NonNull INDArray d1, @NonNull INDArray d2, long... dimensions) {
         return Nd4j.getExecutioner().exec(new EuclideanDistance(d1, d2, true, dimensions));
     }
 
-    public static INDArray allManhattanDistances(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
+    public static INDArray allManhattanDistances(@NonNull INDArray d1, @NonNull INDArray d2, long... dimensions) {
         return Nd4j.getExecutioner().exec(new ManhattanDistance(d1, d2, true, dimensions));
     }
 

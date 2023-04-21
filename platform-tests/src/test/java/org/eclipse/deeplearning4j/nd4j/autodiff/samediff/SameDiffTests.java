@@ -1355,7 +1355,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         SDVariable sdInput = sd.var("input", input);
 
-        SDVariable[] moments = sd.math().moments(sdInput, new int[]{0, 1},false);
+        SDVariable[] moments = sd.math().moments(sdInput, new long[]{0, 1},false);
         SDVariable mean = moments[0];
         SDVariable variance = moments[1];
 
@@ -2069,7 +2069,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     public void testArgMax(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
-        for (val dim : new int[][]{{0}, {1}, {Integer.MAX_VALUE}, {0, 1}, {}}) {
+        for (val dim : new long[][]{{0}, {1}, {Integer.MAX_VALUE}, {0, 1}, {}}) {
             INDArray inArr = Nd4j.rand(3, 4);
             SameDiff sd = SameDiff.create();
 
@@ -2090,7 +2090,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         Nd4j.getRandom().setSeed(12345);
 
-        for (val dim : new int[][]{{0}, {1}, {Integer.MAX_VALUE}, {0, 1}, {}}) {
+        for (val dim : new long[][]{{0}, {1}, {Integer.MAX_VALUE}, {0, 1}, {}}) {
             INDArray inArr = Nd4j.rand(3, 4);
             SameDiff sd = SameDiff.create();
 

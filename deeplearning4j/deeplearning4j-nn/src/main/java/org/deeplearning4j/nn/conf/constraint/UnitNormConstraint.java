@@ -43,7 +43,7 @@ public class UnitNormConstraint extends BaseConstraint {
      *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
-    public UnitNormConstraint(int... dimensions){
+    public UnitNormConstraint(long... dimensions){
         this(Collections.<String>emptySet(), dimensions);
     }
 
@@ -53,7 +53,7 @@ public class UnitNormConstraint extends BaseConstraint {
      *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
-    public UnitNormConstraint(Set<String> paramNames, int... dimensions){
+    public UnitNormConstraint(Set<String> paramNames, long... dimensions){
         super(paramNames, dimensions);
     }
 

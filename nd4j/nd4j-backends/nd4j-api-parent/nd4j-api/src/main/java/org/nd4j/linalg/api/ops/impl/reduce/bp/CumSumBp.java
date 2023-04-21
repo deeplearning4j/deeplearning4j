@@ -30,7 +30,7 @@ public class CumSumBp extends BaseReductionBp {
     private boolean exclusive;
     private boolean reverse;
 
-    public CumSumBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean exclusive, boolean reverse, int... axis) {
+    public CumSumBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean exclusive, boolean reverse, long... axis) {
         super(sameDiff, origInput, gradAtOutput, false, axis);
         this.exclusive = exclusive;
         this.reverse = reverse;
@@ -40,7 +40,7 @@ public class CumSumBp extends BaseReductionBp {
         addArgs();
     }
 
-    public CumSumBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean exclusive, boolean reverse, int... axis){
+    public CumSumBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean exclusive, boolean reverse, long... axis){
         super(origInput, gradAtOutput, output, false, axis);
         this.exclusive = exclusive;
         this.reverse = reverse;
@@ -50,35 +50,35 @@ public class CumSumBp extends BaseReductionBp {
         addArgs();
     }
 
-    public CumSumBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, boolean exclusive, boolean reverse, int... dimensions) {
+    public CumSumBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, boolean exclusive, boolean reverse, long... dimensions) {
         super(sameDiff, origInput, gradAtOutput, keepDims, dimensions);
         this.exclusive = exclusive;
         this.reverse = reverse;
         addArgs();
     }
 
-    public CumSumBp(SameDiff sameDiff, SDVariable origInput1, SDVariable origInput2, SDVariable gradAtOutput, boolean keepDims, boolean exclusive, boolean reverse, int... dimensions) {
+    public CumSumBp(SameDiff sameDiff, SDVariable origInput1, SDVariable origInput2, SDVariable gradAtOutput, boolean keepDims, boolean exclusive, boolean reverse, long... dimensions) {
         super(sameDiff, origInput1, origInput2, gradAtOutput, keepDims, dimensions);
         this.exclusive = exclusive;
         this.reverse = reverse;
         addArgs();
     }
 
-    public CumSumBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, boolean exclusive, boolean reverse, int... dimensions) {
+    public CumSumBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, boolean exclusive, boolean reverse, long... dimensions) {
         super(origInput, gradAtOutput, output, keepDims, dimensions);
         this.exclusive = exclusive;
         this.reverse = reverse;
         addArgs();
     }
 
-    public CumSumBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output, boolean keepDims, boolean exclusive, boolean reverse, int... dimensions) {
+    public CumSumBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output, boolean keepDims, boolean exclusive, boolean reverse, long... dimensions) {
         super(origInput1, origInput2, gradAtOutput, output, keepDims, dimensions);
         this.exclusive = exclusive;
         this.reverse = reverse;
         addArgs();
     }
 
-    public CumSumBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output1, INDArray output2, boolean keepDims, boolean exclusive, boolean reverse, int... dimensions) {
+    public CumSumBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output1, INDArray output2, boolean keepDims, boolean exclusive, boolean reverse, long... dimensions) {
         super(origInput1, origInput2, gradAtOutput, output1, output2, keepDims, dimensions);
         this.exclusive = exclusive;
         this.reverse = reverse;

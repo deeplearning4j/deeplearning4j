@@ -70,7 +70,7 @@ class Conv : PreImportHook  {
         val computeIndex = storageComputeFormat.second.indexOf('C')
         val spatialFormat = StringUtils.join(storageComputeFormat.second.filter { input -> input == 'C' || input == 'W' })
 
-        val perm = (2 to weightsRank - 1).toList() + listOf(1,0)
+        val perm = ((2 to weightsRank - 1).toList() + listOf(1,0)).map { input -> input.toLong() }.toLongArray()
         val kernelShape = if(attributes.containsKey("kernel_shape")) {
             val kernelShapeList = attributes["kernel_shape"] as List<Int>
             kernelShapeList.map { input -> input }.toIntArray()
@@ -79,8 +79,8 @@ class Conv : PreImportHook  {
             weightsShape.map { input -> input.toInt() }.toIntArray()
         }
 
-        var weights = sd.permute(inWeights,*perm.toIntArray())
-        var inWeightsShape = ArrayUtil.permute(ArrayUtil.copy(inWeights.shape),perm.toIntArray())
+        var weights = sd.permute(inWeights,*perm)
+        var inWeightsShape = ArrayUtil.permute(ArrayUtil.copy(inWeights.shape),perm)
         val dilations = if(attributes.containsKey("dilations")) {
             val dilationsList = attributes["dilations"] as List<Int>
             val dilationsArr = dilationsList

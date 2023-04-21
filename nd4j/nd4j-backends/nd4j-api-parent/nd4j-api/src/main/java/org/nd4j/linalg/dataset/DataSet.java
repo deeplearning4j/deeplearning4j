@@ -460,22 +460,22 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         //note here we use the same seed with different random objects guaranteeing same order
 
         List<INDArray> arrays = new ArrayList<>();
-        List<int[]> dimensions = new ArrayList<>();
+        List<long[]> dimensions = new ArrayList<>();
 
         arrays.add(getFeatures());
-        dimensions.add(ArrayUtil.range(1, getFeatures().rank()));
+        dimensions.add(ArrayUtil.range(1L, getFeatures().rank()));
 
         arrays.add(getLabels());
-        dimensions.add(ArrayUtil.range(1, getLabels().rank()));
+        dimensions.add(ArrayUtil.range(1L, getLabels().rank()));
 
         if (featuresMask != null) {
             arrays.add(getFeaturesMaskArray());
-            dimensions.add(ArrayUtil.range(1, getFeaturesMaskArray().rank()));
+            dimensions.add(ArrayUtil.range(1L, getFeaturesMaskArray().rank()));
         }
 
         if (labelsMask != null) {
             arrays.add(getLabelsMaskArray());
-            dimensions.add(ArrayUtil.range(1, getLabelsMaskArray().rank()));
+            dimensions.add(ArrayUtil.range(1L, getLabelsMaskArray().rank()));
         }
 
         Nd4j.shuffle(arrays, new Random(seed), dimensions);

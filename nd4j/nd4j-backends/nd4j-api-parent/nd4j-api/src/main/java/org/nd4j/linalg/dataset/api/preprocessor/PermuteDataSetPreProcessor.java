@@ -28,7 +28,7 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 public class PermuteDataSetPreProcessor implements DataSetPreProcessor {
 
     private final PermutationTypes permutationType;
-    private final int[] rearrange;
+    private final long[] rearrange;
 
     public enum PermutationTypes { NCHWtoNHWC, NHWCtoNCHW, Custom }
 
@@ -42,7 +42,7 @@ public class PermuteDataSetPreProcessor implements DataSetPreProcessor {
     /**
      * @param rearrange The new order. For example PermuteDataSetPreProcessor(1, 2, 0) will rearrange the middle dimension first, the last one in the middle and the first one last.
      */
-    public PermuteDataSetPreProcessor(int... rearrange) {
+    public PermuteDataSetPreProcessor(long... rearrange) {
 
         this.permutationType = PermutationTypes.Custom;
         this.rearrange = rearrange;

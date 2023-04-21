@@ -34,28 +34,28 @@ public class DotBp extends BaseReductionBp {
     public DotBp() {
     }
 
-    public DotBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, int... dimensions) {
+    public DotBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, long... dimensions) {
         super(sameDiff, origInput, gradAtOutput, keepDims, dimensions);
         addArgs();
     }
 
-    public DotBp(SameDiff sameDiff, SDVariable origInput1, SDVariable origInput2, SDVariable gradAtOutput, boolean keepDims, int... dimensions) {
+    public DotBp(SameDiff sameDiff, SDVariable origInput1, SDVariable origInput2, SDVariable gradAtOutput, boolean keepDims, long... dimensions) {
         super(sameDiff, origInput1, origInput2, gradAtOutput, keepDims, dimensions);
         addArgs();
     }
 
-    public DotBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, int... dimensions) {
+    public DotBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, long... dimensions) {
         super(origInput, gradAtOutput, output, keepDims, dimensions);
         addArgs();
     }
 
-    public DotBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output, boolean keepDims, int... dimensions){
+    public DotBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output, boolean keepDims, long... dimensions){
         super(origInput1, origInput2, gradAtOutput, output, keepDims, dimensions);
         addArgs();
     }
 
     public DotBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput,
-                 INDArray outputX, INDArray outputY, boolean keepDims, int... dimensions) {
+                 INDArray outputX, INDArray outputY, boolean keepDims, long... dimensions) {
         super(origInput1, origInput2, gradAtOutput, outputX, outputY, keepDims, dimensions);
         addArgs();
     }

@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.shade.guava.primitives.Longs;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -40,13 +41,13 @@ import org.tensorflow.framework.NodeDef;
 import java.util.*;
 
 public class Transpose extends DynamicCustomOp {
-    protected int[] permuteDims;
+    protected long[] permuteDims;
 
     public Transpose(SameDiff sameDiff, SDVariable i_v) {
         super(null, sameDiff, new SDVariable[]{i_v});
     }
 
-    public Transpose(SameDiff sameDiff, SDVariable in, int[] permuteDims){
+    public Transpose(SameDiff sameDiff, SDVariable in, long[] permuteDims){
         super(null, sameDiff, new SDVariable[]{in});
         this.permuteDims = permuteDims;
     }
@@ -56,7 +57,7 @@ public class Transpose extends DynamicCustomOp {
     }
 
     public Transpose(INDArray input, INDArray result){
-        super(null, new INDArray[]{input}, result == null ? null : new INDArray[]{result}, null, (List<Integer>) null);
+        super(null, new INDArray[]{input}, result == null ? null : new INDArray[]{result}, null, (List<Long>) null);
     }
 
     public Transpose(INDArray input){
@@ -117,7 +118,7 @@ public class Transpose extends DynamicCustomOp {
 
         INDArray permuteArrayOp = TFGraphMapper.getNDArrayFromTensor(permuteDimsNode);
         if (permuteArrayOp != null) {
-            this.permuteDims = permuteArrayOp.data().asInt();
+            this.permuteDims = permuteArrayOp.data().asLong();
         }
 
         //handle once properly mapped
@@ -134,7 +135,7 @@ public class Transpose extends DynamicCustomOp {
         }
 
         if (arr != null && permuteDims == null) {
-            this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0, arr.rank()));
+            this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0L, arr.rank()));
         }
 
         if (permuteDims != null && permuteDims.length < arg().getShape().length)
@@ -146,7 +147,7 @@ public class Transpose extends DynamicCustomOp {
         if (!attributesForNode.containsKey("perm")) {
 
         } else
-            this.permuteDims = Ints.toArray(attributesForNode.get("perm").getIntsList());
+            this.permuteDims = Longs.toArray(attributesForNode.get("perm").getIntsList());
     }
 
     @Override
@@ -155,7 +156,7 @@ public class Transpose extends DynamicCustomOp {
         if(permuteDims == null) {
             ret = sameDiff.transpose(i_v.get(0));
         } else {
-            int[] reverse = ArrayUtil.invertPermutation(permuteDims);
+            long[] reverse = ArrayUtil.invertPermutation(permuteDims);
             ret = sameDiff.permute(i_v.get(0), reverse);
         }
         return Collections.singletonList(ret);

@@ -71,7 +71,7 @@ public class DeviceTADManager extends BasicTADManager {
     }
 
     @Override
-    public Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, int[] dimension) {
+    public Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, long... dimension) {
         /*
             so, we check, if we have things cached.
             If we don't - we just create new TAD shape, and push it to constant memory

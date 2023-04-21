@@ -38,7 +38,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 
 @Slf4j
 public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.EmbeddingLayer> {
-    private static final int[] DIM_1 = new int[]{1};
+    private static final long[] DIM_1 = new long[]{1};
 
     public EmbeddingLayer(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);

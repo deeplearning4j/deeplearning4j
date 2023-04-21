@@ -49,7 +49,7 @@ public class Cross extends DynamicCustomOp {
     }
 
     public Cross(INDArray a, INDArray b, INDArray out){
-        super(null, new INDArray[]{a,b}, wrapOrNull(out), null, (int[])null);
+        super(null, new INDArray[]{a,b}, wrapOrNull(out), null, (long[])null);
     }
 
     @Override

@@ -29,7 +29,7 @@ import java.util.List;
 
 public class Dot extends BaseReduce3Op {
 
-    public Dot(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
+    public Dot(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -54,41 +54,41 @@ public class Dot extends BaseReduce3Op {
      * @param dimensions (optional) Dimensions to reduce over. If dimensions are not specified, full array reduction is performed.
      * @see org.nd4j.linalg.ops.transforms.Transforms#dot Transforms.dot(...) for a wrapper around the common use case of 2 INDArrays.
      */
-    public Dot(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public Dot(INDArray x, INDArray y, INDArray z, long... dimensions) {
         this(x, y, z, true, false, dimensions);
     }
 
 
     /**
-     * @see #Dot(INDArray x, INDArray y, INDArray z, int...)
+     * @see #Dot(INDArray x, INDArray y, INDArray z, long...)
      */
-    public Dot(INDArray x, INDArray y, int... dimensions) {
+    public Dot(INDArray x, INDArray y, long... dimensions) {
         this(x, y, null, dimensions);
     }
 
-    public Dot(INDArray x, INDArray y, boolean allDistances, int... dimensions) {
+    public Dot(INDArray x, INDArray y, boolean allDistances, long... dimensions) {
         super(x, y, allDistances, dimensions);
     }
 
     /**
-     * @see #Dot(INDArray x, INDArray y, INDArray z, int...)
+     * @see #Dot(INDArray x, INDArray y, INDArray z, long...)
      */
     public Dot(INDArray x, INDArray y, INDArray z) {
         this(x, y, z, null);
     }
 
-    public Dot(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions) {
+    public Dot(INDArray x, INDArray y, INDArray z, boolean keepDims, long... dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
     /**
-     * @see #Dot(INDArray x, INDArray y, INDArray z, int...)
+     * @see #Dot(INDArray x, INDArray y, INDArray z, long...)
      */
-    public Dot(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int... dimensions) {
+    public Dot(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, long... dimensions) {
         super(x, y, z, keepDims, false, dimensions);
     }
 
-    public Dot(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+    public Dot(SameDiff sameDiff, SDVariable i_v, long[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 

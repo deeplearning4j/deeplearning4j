@@ -231,9 +231,9 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
     }
 
     private static Triple<INDArray,INDArray,INDArray> reshapeSameShapeTo2d(int axis, INDArray labels, INDArray predictions, INDArray mask){
-        int[] permuteDims = new int[labels.rank()];
-        int j=0;
-        for( int i=0; i<labels.rank(); i++ ){
+        long[] permuteDims = new long[labels.rank()];
+        int j = 0;
+        for( int i = 0; i < labels.rank(); i++) {
             if(i == axis){
                 continue;
             }
@@ -241,7 +241,7 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
         }
         permuteDims[j] = axis;
         long size0 = 1;
-        for( int i=0; i<permuteDims.length-1; i++ ){
+        for( int i = 0; i < permuteDims.length - 1; i++) {
             size0 *= labels.size(permuteDims[i]);
         }
 

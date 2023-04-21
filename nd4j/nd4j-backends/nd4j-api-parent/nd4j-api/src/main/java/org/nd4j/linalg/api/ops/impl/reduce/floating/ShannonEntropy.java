@@ -31,7 +31,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class ShannonEntropy extends BaseReduceFloatOp {
-    public ShannonEntropy(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+    public ShannonEntropy(SameDiff sameDiff, SDVariable i_v, long[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
@@ -51,51 +51,51 @@ public class ShannonEntropy extends BaseReduceFloatOp {
         super(sameDiff, input, dimensions);
     }
 
-    public ShannonEntropy(INDArray input, INDArray output, boolean keepDims, int... dimensions) {
+    public ShannonEntropy(INDArray input, INDArray output, boolean keepDims, long... dimensions) {
         super(input, output, keepDims, dimensions);
     }
 
-    public ShannonEntropy(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public ShannonEntropy(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
-    public ShannonEntropy(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public ShannonEntropy(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public ShannonEntropy(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    public ShannonEntropy(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
     public ShannonEntropy() {}
 
-    public ShannonEntropy(INDArray x, INDArray z, int... dimensions) {
+    public ShannonEntropy(INDArray x, INDArray z, long... dimensions) {
         super(x, null, z, dimensions);
     }
 
 
 
-    public ShannonEntropy(INDArray in, boolean keepDims, int[] dimensions) {
+    public ShannonEntropy(INDArray in, boolean keepDims, long[] dimensions) {
         super(in,keepDims,dimensions);
     }
 
-    public ShannonEntropy(INDArray x, int... dimensions) {
+    public ShannonEntropy(INDArray x, long... dimensions) {
         super(x, dimensions);
     }
 
     public ShannonEntropy(INDArray in, INDArray dimensions, boolean keepDims) {
-        super(in,keepDims,dimensions.toIntVector());
+        super(in,keepDims,dimensions.toLongVector());
     }
 
-    public ShannonEntropy(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions) {
+    public ShannonEntropy(INDArray x, INDArray y, INDArray z, boolean keepDims, long... dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
-    public ShannonEntropy(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+    public ShannonEntropy(SameDiff sameDiff, SDVariable i_v, boolean keepDims, long[] dimensions) {
         super(sameDiff, i_v, keepDims, dimensions);
     }
 
-    public ShannonEntropy(INDArray in, int[] dimensions, boolean keepDims) {
+    public ShannonEntropy(INDArray in, long[] dimensions, boolean keepDims) {
         super(in,keepDims,dimensions);
     }
 

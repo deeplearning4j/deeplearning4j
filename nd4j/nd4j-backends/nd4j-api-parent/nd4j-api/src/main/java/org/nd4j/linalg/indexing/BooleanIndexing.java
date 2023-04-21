@@ -74,7 +74,7 @@ public class BooleanIndexing {
      * @return true if all of the elements meet the specified
      * condition false otherwise
      */
-    public static boolean[] and(final INDArray n, final Condition condition, int... dimension) {
+    public static boolean[] and(final INDArray n, final Condition condition, long... dimension) {
         if (!(condition instanceof BaseCondition))
             throw new UnsupportedOperationException("Only static Conditions are supported");
 
@@ -103,7 +103,7 @@ public class BooleanIndexing {
      * @return true if all of the elements meet the specified
      * condition false otherwise
      */
-    public static boolean[] or(final INDArray n, final Condition condition, int... dimension) {
+    public static boolean[] or(final INDArray n, final Condition condition, long... dimension) {
         if (!(condition instanceof BaseCondition))
             throw new UnsupportedOperationException("Only static Conditions are supported");
 
@@ -298,7 +298,7 @@ public class BooleanIndexing {
      * @param dimension
      * @return
      */
-    public static INDArray firstIndex(INDArray array, Condition condition, int... dimension) {
+    public static INDArray firstIndex(INDArray array, Condition condition, long... dimension) {
         if (!(condition instanceof BaseCondition))
             throw new UnsupportedOperationException("Only static Conditions are supported");
 
@@ -334,7 +334,7 @@ public class BooleanIndexing {
      * @param dimension
      * @return
      */
-    public static INDArray lastIndex(INDArray array, Condition condition, int... dimension) {
+    public static INDArray lastIndex(INDArray array, Condition condition, long... dimension) {
         if (!(condition instanceof BaseCondition))
             throw new UnsupportedOperationException("Only static Conditions are supported");
 

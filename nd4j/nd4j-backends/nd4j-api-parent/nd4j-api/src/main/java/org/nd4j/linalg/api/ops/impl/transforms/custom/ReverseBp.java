@@ -31,7 +31,7 @@ import java.util.List;
 
 @NoArgsConstructor
 public class ReverseBp extends DynamicCustomOp {
-    public ReverseBp(@NonNull SameDiff sameDiff, @NonNull SDVariable i_v, @NonNull SDVariable grad, @NonNull int... dimensions) {
+    public ReverseBp(@NonNull SameDiff sameDiff, @NonNull SDVariable i_v, @NonNull SDVariable grad, @NonNull long... dimensions) {
         super(sameDiff, new SDVariable[]{i_v, grad});
         addIArgument(dimensions);
     }

@@ -266,7 +266,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             batchMean = input.mean(0);
             batchVar = input.var(false, 0);
         } else if (epsilon.rank() == 4) {
-            int[] nonChDims = nchw ? new int[]{0, 2, 3} : new int[]{0, 1, 2};
+            long[] nonChDims = nchw ? new long[]{0, 2, 3} : new long[]{0, 1, 2};
             int hIdx = nchw ? 2 : 1;
             int wIdx = nchw ? 3 : 2;
 
@@ -477,7 +477,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         CNN2DFormat format = layerConf().getCnn2DFormat();
         boolean nchw = format == CNN2DFormat.NCHW;
         int chIdx = nchw ? 1 : 3;
-        int[] nonChDims = nchw ? new int[]{0, 2, 3} : new int[]{0, 1, 2};
+        long[] nonChDims = nchw ? new long[]{0, 2, 3} : new long[]{0, 1, 2};
         int hIdx = nchw ? 2 : 1;
         int wIdx = nchw ? 3 : 2;
 

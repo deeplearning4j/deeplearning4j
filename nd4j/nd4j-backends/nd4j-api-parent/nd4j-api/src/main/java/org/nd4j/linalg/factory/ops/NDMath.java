@@ -44,7 +44,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray clipByAvgNorm(INDArray x, double clipValue, int... dimensions) {
+  public INDArray clipByAvgNorm(INDArray x, double clipValue, long... dimensions) {
     NDValidation.validateNumerical("ClipByAvgNorm", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNorm(x, clipValue, dimensions))[0];
@@ -198,7 +198,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray asum(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray asum(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("asum", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.ASum(in, keepDims, dimensions));
@@ -211,7 +211,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray asum(INDArray in, int... dimensions) {
+  public INDArray asum(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("asum", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.ASum(in, false, dimensions));
@@ -328,7 +328,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray clipByNorm(INDArray x, double clipValue, int... dimensions) {
+  public INDArray clipByNorm(INDArray x, double clipValue, long... dimensions) {
     NDValidation.validateNumerical("clipByNorm", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm(x, clipValue, dimensions))[0];
@@ -467,7 +467,7 @@ public class NDMath {
    * @return output Output variable (NUMERIC type)
    */
   public INDArray cosineDistance(INDArray x, INDArray y, boolean keepDims, boolean isComplex,
-      int... dimensions) {
+      long... dimensions) {
     NDValidation.validateNumerical("cosineDistance", "x", x);
     NDValidation.validateNumerical("cosineDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
@@ -484,7 +484,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray cosineDistance(INDArray x, INDArray y, int... dimensions) {
+  public INDArray cosineDistance(INDArray x, INDArray y, long... dimensions) {
     NDValidation.validateNumerical("cosineDistance", "x", x);
     NDValidation.validateNumerical("cosineDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
@@ -504,7 +504,7 @@ public class NDMath {
    * @return output Output variable (NUMERIC type)
    */
   public INDArray cosineSimilarity(INDArray x, INDArray y, boolean keepDims, boolean isComplex,
-      int... dimensions) {
+      long... dimensions) {
     NDValidation.validateNumerical("cosineSimilarity", "x", x);
     NDValidation.validateNumerical("cosineSimilarity", "y", y);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
@@ -521,7 +521,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray cosineSimilarity(INDArray x, INDArray y, int... dimensions) {
+  public INDArray cosineSimilarity(INDArray x, INDArray y, long... dimensions) {
     NDValidation.validateNumerical("cosineSimilarity", "x", x);
     NDValidation.validateNumerical("cosineSimilarity", "y", y);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
@@ -536,7 +536,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray countNonZero(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray countNonZero(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("countNonZero", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero(in, keepDims, dimensions));
@@ -549,7 +549,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray countNonZero(INDArray in, int... dimensions) {
+  public INDArray countNonZero(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("countNonZero", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero(in, false, dimensions));
@@ -563,7 +563,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray countZero(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray countZero(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("countZero", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.longer.CountZero(in, keepDims, dimensions));
@@ -576,7 +576,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray countZero(INDArray in, int... dimensions) {
+  public INDArray countZero(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("countZero", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.longer.CountZero(in, false, dimensions));
@@ -679,7 +679,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray entropy(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray entropy(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("entropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.Entropy(in, keepDims, dimensions));
@@ -692,7 +692,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray entropy(INDArray in, int... dimensions) {
+  public INDArray entropy(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("entropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.Entropy(in, false, dimensions));
@@ -733,7 +733,7 @@ public class NDMath {
    * @return output Output variable (NUMERIC type)
    */
   public INDArray euclideanDistance(INDArray x, INDArray y, boolean keepDims, boolean isComplex,
-      int... dimensions) {
+      long... dimensions) {
     NDValidation.validateNumerical("euclideanDistance", "x", x);
     NDValidation.validateNumerical("euclideanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
@@ -750,7 +750,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray euclideanDistance(INDArray x, INDArray y, int... dimensions) {
+  public INDArray euclideanDistance(INDArray x, INDArray y, long... dimensions) {
     NDValidation.validateNumerical("euclideanDistance", "x", x);
     NDValidation.validateNumerical("euclideanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
@@ -817,7 +817,7 @@ public class NDMath {
    * @param dimensions  (Size: AtLeast(min=0))
    * @return output Identity matrix (NUMERIC type)
    */
-  public INDArray eye(int rows, int cols, DataType dataType, int... dimensions) {
+  public INDArray eye(int rows, int cols, DataType dataType, long... dimensions) {
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Eye(rows, cols, dataType, dimensions))[0];
   }
@@ -862,7 +862,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray firstIndex(INDArray in, Condition condition, int... dimensions) {
+  public INDArray firstIndex(INDArray in, Condition condition, long... dimensions) {
     NDValidation.validateNumerical("firstIndex", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex(in, false, condition, dimensions));
@@ -886,7 +886,7 @@ public class NDMath {
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
   public INDArray firstIndex(INDArray in, Condition condition, boolean keepDims,
-      int... dimensions) {
+      long... dimensions) {
     NDValidation.validateNumerical("firstIndex", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex(in, keepDims, condition, dimensions));
@@ -963,7 +963,7 @@ public class NDMath {
    * @return output Output variable (NUMERIC type)
    */
   public INDArray hammingDistance(INDArray x, INDArray y, boolean keepDims, boolean isComplex,
-      int... dimensions) {
+      long... dimensions) {
     NDValidation.validateNumerical("hammingDistance", "x", x);
     NDValidation.validateNumerical("hammingDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
@@ -980,7 +980,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray hammingDistance(INDArray x, INDArray y, int... dimensions) {
+  public INDArray hammingDistance(INDArray x, INDArray y, long... dimensions) {
     NDValidation.validateNumerical("hammingDistance", "x", x);
     NDValidation.validateNumerical("hammingDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
@@ -995,7 +995,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray iamax(INDArray in, int... dimensions) {
+  public INDArray iamax(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("iamax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax(in, false, dimensions))[0];
@@ -1010,7 +1010,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray iamax(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray iamax(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("iamax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax(in, keepDims, dimensions))[0];
@@ -1024,7 +1024,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray iamin(INDArray in, int... dimensions) {
+  public INDArray iamin(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("iamin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin(in, false, dimensions))[0];
@@ -1039,7 +1039,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray iamin(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray iamin(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("iamin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin(in, keepDims, dimensions))[0];
@@ -1135,7 +1135,7 @@ public class NDMath {
    * @return output Output variable (NUMERIC type)
    */
   public INDArray jaccardDistance(INDArray x, INDArray y, boolean keepDims, boolean isComplex,
-      int... dimensions) {
+      long... dimensions) {
     NDValidation.validateNumerical("jaccardDistance", "x", x);
     NDValidation.validateNumerical("jaccardDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
@@ -1151,7 +1151,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray jaccardDistance(INDArray x, INDArray y, int... dimensions) {
+  public INDArray jaccardDistance(INDArray x, INDArray y, long... dimensions) {
     NDValidation.validateNumerical("jaccardDistance", "x", x);
     NDValidation.validateNumerical("jaccardDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
@@ -1174,7 +1174,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray lastIndex(INDArray in, Condition condition, int... dimensions) {
+  public INDArray lastIndex(INDArray in, Condition condition, long... dimensions) {
     NDValidation.validateNumerical("lastIndex", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex(in, false, condition, dimensions));
@@ -1197,7 +1197,8 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray lastIndex(INDArray in, Condition condition, boolean keepDims, int... dimensions) {
+  public INDArray lastIndex(INDArray in, Condition condition, boolean keepDims,
+      long... dimensions) {
     NDValidation.validateNumerical("lastIndex", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex(in, keepDims, condition, dimensions));
@@ -1257,7 +1258,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray logEntropy(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray logEntropy(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("logEntropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.LogEntropy(in, keepDims, dimensions));
@@ -1270,7 +1271,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray logEntropy(INDArray in, int... dimensions) {
+  public INDArray logEntropy(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("logEntropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.LogEntropy(in, false, dimensions));
@@ -1284,7 +1285,7 @@ public class NDMath {
    * @param dimensions Optional dimensions to reduce along (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray logSumExp(INDArray input, int... dimensions) {
+  public INDArray logSumExp(INDArray input, long... dimensions) {
     NDValidation.validateNumerical("logSumExp", "input", input);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.custom.LogSumExp(input, dimensions))[0];
@@ -1303,7 +1304,7 @@ public class NDMath {
    * @return output Output variable (NUMERIC type)
    */
   public INDArray manhattanDistance(INDArray x, INDArray y, boolean keepDims, boolean isComplex,
-      int... dimensions) {
+      long... dimensions) {
     NDValidation.validateNumerical("manhattanDistance", "x", x);
     NDValidation.validateNumerical("manhattanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
@@ -1320,7 +1321,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray manhattanDistance(INDArray x, INDArray y, int... dimensions) {
+  public INDArray manhattanDistance(INDArray x, INDArray y, long... dimensions) {
     NDValidation.validateNumerical("manhattanDistance", "x", x);
     NDValidation.validateNumerical("manhattanDistance", "y", y);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
@@ -1378,7 +1379,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray mean(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray mean(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("mean", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(in, keepDims, dimensions));
@@ -1391,7 +1392,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray mean(INDArray in, int... dimensions) {
+  public INDArray mean(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("mean", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.Mean(in, false, dimensions));
@@ -1516,7 +1517,7 @@ public class NDMath {
    * @param axes Dimensions to perform calculation over (Size: AtLeast(min=0))
    * @param keepDims Whether to keep dimensions during reduction or not. 
    */
-  public INDArray[] moments(INDArray input, int[] axes, boolean keepDims) {
+  public INDArray[] moments(INDArray input, long[] axes, boolean keepDims) {
     NDValidation.validateNumerical("moments", "input", input);
     Preconditions.checkArgument(axes.length >= 0, "axes has incorrect size/length. Expected: axes.length >= 0, got %s", axes.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.Moments(input, axes, keepDims));
@@ -1583,7 +1584,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray norm1(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray norm1(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("norm1", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1(in, keepDims, dimensions));
@@ -1596,7 +1597,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray norm1(INDArray in, int... dimensions) {
+  public INDArray norm1(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("norm1", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1(in, false, dimensions));
@@ -1637,7 +1638,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray norm2(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray norm2(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("norm2", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2(in, keepDims, dimensions));
@@ -1650,7 +1651,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray norm2(INDArray in, int... dimensions) {
+  public INDArray norm2(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("norm2", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2(in, false, dimensions));
@@ -1691,7 +1692,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray normMax(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray normMax(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("normMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax(in, keepDims, dimensions));
@@ -1704,7 +1705,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray normMax(INDArray in, int... dimensions) {
+  public INDArray normMax(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("normMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax(in, false, dimensions));
@@ -1802,7 +1803,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray prod(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray prod(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("prod", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(in, keepDims, dimensions));
@@ -1815,7 +1816,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray prod(INDArray in, int... dimensions) {
+  public INDArray prod(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("prod", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.Prod(in, false, dimensions));
@@ -1920,7 +1921,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray reduceAMax(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray reduceAMax(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("reduceAMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.AMax(in, keepDims, dimensions));
@@ -1933,7 +1934,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray reduceAMax(INDArray in, int... dimensions) {
+  public INDArray reduceAMax(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("reduceAMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.AMax(in, false, dimensions));
@@ -1974,7 +1975,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray reduceAmean(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray reduceAmean(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("reduceAmean", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.AMean(in, keepDims, dimensions));
@@ -1987,7 +1988,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray reduceAmean(INDArray in, int... dimensions) {
+  public INDArray reduceAmean(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("reduceAmean", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.AMean(in, false, dimensions));
@@ -2028,7 +2029,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray reduceAmin(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray reduceAmin(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("reduceAmin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.AMin(in, keepDims, dimensions));
@@ -2041,7 +2042,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray reduceAmin(INDArray in, int... dimensions) {
+  public INDArray reduceAmin(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("reduceAmin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.AMin(in, false, dimensions));
@@ -2082,7 +2083,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray reduceMax(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray reduceMax(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("reduceMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.Max(in, keepDims, dimensions));
@@ -2095,7 +2096,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray reduceMax(INDArray in, int... dimensions) {
+  public INDArray reduceMax(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("reduceMax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.Max(in, false, dimensions));
@@ -2136,7 +2137,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray reduceMin(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray reduceMin(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("reduceMin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.Min(in, keepDims, dimensions));
@@ -2149,7 +2150,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray reduceMin(INDArray in, int... dimensions) {
+  public INDArray reduceMin(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("reduceMin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.Min(in, false, dimensions));
@@ -2263,7 +2264,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray shannonEntropy(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray shannonEntropy(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("shannonEntropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.ShannonEntropy(in, keepDims, dimensions));
@@ -2276,7 +2277,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray shannonEntropy(INDArray in, int... dimensions) {
+  public INDArray shannonEntropy(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("shannonEntropy", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.ShannonEntropy(in, false, dimensions));
@@ -2392,7 +2393,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray squaredNorm(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray squaredNorm(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("squaredNorm", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.SquaredNorm(in, keepDims, dimensions));
@@ -2405,7 +2406,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray squaredNorm(INDArray in, int... dimensions) {
+  public INDArray squaredNorm(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("squaredNorm", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.SquaredNorm(in, false, dimensions));
@@ -2456,7 +2457,7 @@ public class NDMath {
    * @param dimensions  (Size: AtLeast(min=1))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray standardize(INDArray x, int... dimensions) {
+  public INDArray standardize(INDArray x, long... dimensions) {
     NDValidation.validateNumerical("standardize", "x", x);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize(x, dimensions))[0];
@@ -2513,7 +2514,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray sum(INDArray in, boolean keepDims, int... dimensions) {
+  public INDArray sum(INDArray in, boolean keepDims, long... dimensions) {
     NDValidation.validateNumerical("sum", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.Sum(in, keepDims, dimensions));
@@ -2526,7 +2527,7 @@ public class NDMath {
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
-  public INDArray sum(INDArray in, int... dimensions) {
+  public INDArray sum(INDArray in, long... dimensions) {
     NDValidation.validateNumerical("sum", "in", in);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.Sum(in, false, dimensions));

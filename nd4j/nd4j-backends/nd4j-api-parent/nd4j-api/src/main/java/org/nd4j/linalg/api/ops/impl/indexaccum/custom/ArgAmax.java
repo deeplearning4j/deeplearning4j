@@ -34,7 +34,7 @@ public class ArgAmax extends BaseDynamicCustomIndexReduction {
         super(sameDiff, args, keepDims);
     }
 
-    public ArgAmax(SameDiff sameDiff, SDVariable[] args, boolean keepDims, int[] dimensions) {
+    public ArgAmax(SameDiff sameDiff, SDVariable[] args, boolean keepDims, long[] dimensions) {
         super(sameDiff, args, keepDims, dimensions);
     }
 
@@ -50,14 +50,14 @@ public class ArgAmax extends BaseDynamicCustomIndexReduction {
         super(inputs, outputs, keepDims);
     }
 
-    public ArgAmax(INDArray[] inputs, INDArray[] outputs, boolean keepDims, int... dimensions) {
+    public ArgAmax(INDArray[] inputs, INDArray[] outputs, boolean keepDims, long... dimensions) {
         super(inputs, outputs, keepDims, dimensions);
     }
 
     public ArgAmax() {
     }
 
-    public ArgAmax(INDArray[] inputs, int[] dim) {
+    public ArgAmax(INDArray[] inputs, long[] dim) {
         this(inputs,null,false,dim);
     }
 

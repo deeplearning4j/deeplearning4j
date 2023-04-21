@@ -53,11 +53,11 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
     public BaseReduceOp(SameDiff sameDiff,
                         SDVariable i_v,
-                        int[] dimensions, boolean keepDims) {
+                        long[] dimensions, boolean keepDims) {
         super(sameDiff, null);
         if (i_v != null) {
             if(dimensions == null || dimensions.length < 1)
-                dimensions = new int[] {Integer.MAX_VALUE};
+                dimensions = new long[] {Integer.MAX_VALUE};
 
             this.dimensions = dimensions;
             SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
@@ -74,11 +74,11 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     public BaseReduceOp(SameDiff sameDiff,
                         SDVariable i_v,
                         SDVariable i_v2,
-                        int[] dimensions, boolean keepDims) {
+                        long[] dimensions, boolean keepDims) {
         super(sameDiff,null);
         if (i_v != null) {
             if(dimensions == null || dimensions.length < 1)
-                dimensions = new int[] {Integer.MAX_VALUE};
+                dimensions = new long[] {Integer.MAX_VALUE};
 
             this.dimensions = dimensions;
 
@@ -105,7 +105,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
     public BaseReduceOp(SameDiff sameDiff,
                         SDVariable i_v,
-                        int[] dimensions) {
+                        long[] dimensions) {
         this(sameDiff,i_v,dimensions,false);
 
     }
@@ -113,7 +113,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     public BaseReduceOp(SameDiff sameDiff,
                         SDVariable i_v,
                         SDVariable i_v2,
-                        int[] dimensions) {
+                        long[] dimensions) {
         this(sameDiff,i_v,i_v2,dimensions,false);
     }
 
@@ -133,7 +133,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
         super(sameDiff, null);
         if (i_v != null) {
             if(dimensions == null || dimensions.length < 1)
-                dimensions = new int[] {Integer.MAX_VALUE};
+                dimensions = new long[] {Integer.MAX_VALUE};
 
             SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
             this.keepDims = keepDims;
@@ -179,27 +179,27 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     public BaseReduceOp() {}
 
 
-    public BaseReduceOp(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+    public BaseReduceOp(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, y, z);
         this.keepDims = keepDims;
         this.dimensions = dimensions;
         defineDimensions(dimensions);
     }
 
-    public BaseReduceOp(INDArray x, int... dimensions) {
+    public BaseReduceOp(INDArray x, long... dimensions) {
         this(x, null, dimensions);
     }
 
-    public BaseReduceOp(INDArray x, boolean keepDims, int... dimensions) {
+    public BaseReduceOp(INDArray x, boolean keepDims, long... dimensions) {
         this(x, null, dimensions);
         this.keepDims = keepDims;
     }
 
-    public BaseReduceOp(INDArray x, INDArray y, int... dimensions) {
+    public BaseReduceOp(INDArray x, INDArray y, long... dimensions) {
         this(x, y, null, dimensions);
     }
 
-    public BaseReduceOp(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public BaseReduceOp(INDArray x, INDArray y, INDArray z, long... dimensions) {
         this(x, y, z, false, dimensions);
     }
 
@@ -246,7 +246,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         if (!attributesForNode.containsKey("axis") && !hasReductionIndices(nodeDef)) {
-            this.dimensions = new int[] { Integer.MAX_VALUE };
+            this.dimensions = new long[] { Integer.MAX_VALUE };
         }   //Otherwise: dimensions are dynamically set during execution in InferenceSession
 
         if(attributesForNode.containsKey("keep_dims")) {
@@ -278,7 +278,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     }
 
     @Override
-    public void setDimensions(int... dimensions) {
+    public void setDimensions(long... dimensions) {
         this.dimensions = dimensions;
         defineDimensions(dimensions);
     }

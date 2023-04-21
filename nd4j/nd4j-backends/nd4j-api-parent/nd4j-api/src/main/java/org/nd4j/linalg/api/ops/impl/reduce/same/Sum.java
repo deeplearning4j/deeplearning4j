@@ -31,11 +31,11 @@ import java.util.List;
 
 @Slf4j
 public class Sum extends BaseReduceSameOp {
-    public Sum(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+    public Sum(SameDiff sameDiff, SDVariable i_v, boolean keepDims, long[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
     }
 
-    public Sum(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public Sum(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -51,11 +51,11 @@ public class Sum extends BaseReduceSameOp {
         super(sameDiff, i_v, i_v2);
     }
 
-    public Sum(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    public Sum(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    public Sum(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+    public Sum(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
     }
 
@@ -63,30 +63,30 @@ public class Sum extends BaseReduceSameOp {
         super(sameDiff, i_v);
     }
 
-    public Sum(SameDiff sameDiff, SDVariable input, int... dimensions) {
+    public Sum(SameDiff sameDiff, SDVariable input, long... dimensions) {
         super(sameDiff, input, dimensions);
     }
 
     public Sum() {
     }
 
-    public Sum(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+    public Sum(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
-    public Sum(INDArray x, int... dimensions) {
+    public Sum(INDArray x, long... dimensions) {
         super(x, dimensions);
     }
 
-    public Sum(INDArray x, INDArray z, int... dimensions) {
+    public Sum(INDArray x, INDArray z, long... dimensions) {
         super(x, null, z, dimensions);
     }
 
-    public Sum(INDArray x, INDArray z, boolean keepDims, int... dimensions) {
+    public Sum(INDArray x, INDArray z, boolean keepDims, long... dimensions) {
         super(x, z, keepDims, dimensions);
     }
 
-    public Sum(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public Sum(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
@@ -98,11 +98,11 @@ public class Sum extends BaseReduceSameOp {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public Sum(INDArray x, boolean keepDims, int... dimensions) {
+    public Sum(INDArray x, boolean keepDims, long... dimensions) {
         this(x, null, keepDims, dimensions);
     }
 
-    public Sum(INDArray in, int[] dimensions, boolean keepDims) {
+    public Sum(INDArray in, long[] dimensions, boolean keepDims) {
         super(in,keepDims,dimensions);
     }
 

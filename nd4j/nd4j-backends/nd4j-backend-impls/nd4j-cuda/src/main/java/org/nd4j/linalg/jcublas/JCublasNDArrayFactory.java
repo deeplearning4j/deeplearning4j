@@ -812,7 +812,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
      * @return
      */
     @Override
-    public void shuffle(INDArray array, Random rnd, int... dimension) {
+    public void shuffle(INDArray array, Random rnd, long... dimension) {
         shuffle(Collections.singletonList(array), rnd, dimension);
     }
 
@@ -825,7 +825,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
      * @return
      */
     @Override
-    public void shuffle(List<INDArray> arrays, Random rnd, List<int[]> dimensions) {
+    public void shuffle(List<INDArray> arrays, Random rnd, List<long[]> dimensions) {
         // no dimension - no shuffle
         if (dimensions == null || dimensions.size() == 0)
             throw new RuntimeException("Dimension can't be null or 0-length");
@@ -963,7 +963,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
      * @return
      */
     @Override
-    public void shuffle(Collection<INDArray> sourceArrays, Random rnd, int... dimension) {
+    public void shuffle(Collection<INDArray> sourceArrays, Random rnd, long... dimension) {
         shuffle(new ArrayList<INDArray>(sourceArrays), rnd, Collections.singletonList(dimension));
     }
 
@@ -1264,7 +1264,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
     @Override
-    public INDArray[] tear(INDArray tensor, int... dimensions) {
+    public INDArray[] tear(INDArray tensor, long... dimensions) {
         if (tensor.isCompressed())
             Nd4j.getCompressor().decompressi(tensor);
 
@@ -1389,7 +1389,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
     @Override
-    public INDArray sort(INDArray x, boolean descending, int... dimension) {
+    public INDArray sort(INDArray x, boolean descending, long... dimension) {
         if (x.isScalar())
             return x;
 

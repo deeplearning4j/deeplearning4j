@@ -37,7 +37,7 @@ public class ClipByNormBp extends DynamicCustomOp {
         //
     }
 
-    public ClipByNormBp(SameDiff sameDiff, SDVariable x, SDVariable eps, double clipValue, int... dimensions) {
+    public ClipByNormBp(SameDiff sameDiff, SDVariable x, SDVariable eps, double clipValue, long... dimensions) {
         super(null, sameDiff, new SDVariable[]{x, eps});
         this.clipValue = clipValue;
         this.dimensions = dimensions;

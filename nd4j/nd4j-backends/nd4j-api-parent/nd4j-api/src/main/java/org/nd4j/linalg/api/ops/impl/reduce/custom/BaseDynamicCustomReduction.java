@@ -49,7 +49,7 @@ public abstract  class BaseDynamicCustomReduction extends DynamicCustomOp {
     protected boolean isComplex = false;
     @Setter @Getter
     protected boolean isEmptyReduce = false;
-    protected int[] dimensions;
+    protected long[] dimensions;
 
     public BaseDynamicCustomReduction() {}
 
@@ -64,7 +64,7 @@ public abstract  class BaseDynamicCustomReduction extends DynamicCustomOp {
     public BaseDynamicCustomReduction(SameDiff sameDiff,
                                       SDVariable[] args,
                                       boolean keepDims,
-                                      int[] dimensions) {
+                                      long[] dimensions) {
         this(sameDiff,args,keepDims,false,dimensions);
 
     }
@@ -84,7 +84,7 @@ public abstract  class BaseDynamicCustomReduction extends DynamicCustomOp {
                                       SDVariable[] args,
                                       boolean keepDims,
                                       boolean isComplex,
-                                      int[] dimensions) {
+                                      long[] dimensions) {
         super(null,sameDiff,args);
         this.keepDims = keepDims;
         this.isComplex = isComplex;
@@ -103,7 +103,7 @@ public abstract  class BaseDynamicCustomReduction extends DynamicCustomOp {
         this(inputs,outputs,keepDims,null);
     }
 
-    public BaseDynamicCustomReduction(INDArray[] inputs, INDArray[] outputs,boolean keepDims,int[] dimensions) {
+    public BaseDynamicCustomReduction(INDArray[] inputs, INDArray[] outputs,boolean keepDims,long[] dimensions) {
         this(inputs,outputs);
         this.keepDims = keepDims;
         this.dimensions = dimensions;
@@ -111,11 +111,11 @@ public abstract  class BaseDynamicCustomReduction extends DynamicCustomOp {
 
     }
 
-    public BaseDynamicCustomReduction(INDArray[] inputs,boolean keepDims,int[] dimensions) {
+    public BaseDynamicCustomReduction(INDArray[] inputs,boolean keepDims,long[] dimensions) {
         this(inputs,null,keepDims,dimensions);
     }
 
-    public BaseDynamicCustomReduction(boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomReduction(boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         this.keepDims = keepDims;
         this.isComplex = isComplex;
         this.isEmptyReduce = isEmptyReduce;
@@ -124,7 +124,7 @@ public abstract  class BaseDynamicCustomReduction extends DynamicCustomOp {
 
     }
 
-    public BaseDynamicCustomReduction(SameDiff sameDiff, SDVariable arg, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomReduction(SameDiff sameDiff, SDVariable arg, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(sameDiff, arg);
         this.keepDims = keepDims;
         this.isComplex = isComplex;
@@ -134,7 +134,7 @@ public abstract  class BaseDynamicCustomReduction extends DynamicCustomOp {
 
     }
 
-    public BaseDynamicCustomReduction(SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomReduction(SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(sameDiff, args);
         this.keepDims = keepDims;
         this.isComplex = isComplex;
@@ -144,7 +144,7 @@ public abstract  class BaseDynamicCustomReduction extends DynamicCustomOp {
 
     }
 
-    public BaseDynamicCustomReduction(String opName, SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomReduction(String opName, SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(opName, sameDiff, args);
         this.keepDims = keepDims;
         this.isComplex = isComplex;
@@ -154,7 +154,7 @@ public abstract  class BaseDynamicCustomReduction extends DynamicCustomOp {
 
     }
 
-    public BaseDynamicCustomReduction(String opName, INDArray input, INDArray output, List<Double> tArguments, int[] iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomReduction(String opName, INDArray input, INDArray output, List<Double> tArguments, long[] iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(opName, input, output, tArguments, iArguments);
         this.keepDims = keepDims;
         this.isComplex = isComplex;
@@ -164,7 +164,7 @@ public abstract  class BaseDynamicCustomReduction extends DynamicCustomOp {
 
     }
 
-    public BaseDynamicCustomReduction(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, int[] iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomReduction(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, long[] iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(opName, inputs, outputs, tArguments, iArguments);
         this.keepDims = keepDims;
         this.isComplex = isComplex;
@@ -174,7 +174,7 @@ public abstract  class BaseDynamicCustomReduction extends DynamicCustomOp {
 
     }
 
-    public BaseDynamicCustomReduction(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomReduction(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Long> iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(opName, inputs, outputs, tArguments, iArguments);
         this.keepDims = keepDims;
         this.isComplex = isComplex;
@@ -184,7 +184,7 @@ public abstract  class BaseDynamicCustomReduction extends DynamicCustomOp {
 
     }
 
-    public BaseDynamicCustomReduction(INDArray[] inputs, INDArray[] outputs, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomReduction(INDArray[] inputs, INDArray[] outputs, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(inputs, outputs);
         this.keepDims = keepDims;
         this.isComplex = isComplex;
@@ -194,7 +194,7 @@ public abstract  class BaseDynamicCustomReduction extends DynamicCustomOp {
 
     }
 
-    public BaseDynamicCustomReduction(String opName, INDArray[] inputs, INDArray[] outputs, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomReduction(String opName, INDArray[] inputs, INDArray[] outputs, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(opName, inputs, outputs);
         this.keepDims = keepDims;
         this.isComplex = isComplex;
@@ -204,7 +204,7 @@ public abstract  class BaseDynamicCustomReduction extends DynamicCustomOp {
 
     }
 
-    public BaseDynamicCustomReduction(String opName, SameDiff sameDiff, SDVariable[] args, boolean inPlace, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomReduction(String opName, SameDiff sameDiff, SDVariable[] args, boolean inPlace, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(opName, sameDiff, args, inPlace);
         this.keepDims = keepDims;
         this.isComplex = isComplex;
@@ -214,7 +214,7 @@ public abstract  class BaseDynamicCustomReduction extends DynamicCustomOp {
 
     }
 
-    public BaseDynamicCustomReduction(SameDiff sameDiff, SDVariable[] args, boolean inPlace, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomReduction(SameDiff sameDiff, SDVariable[] args, boolean inPlace, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(sameDiff, args, inPlace);
         this.keepDims = keepDims;
         this.isComplex = isComplex;
@@ -224,7 +224,7 @@ public abstract  class BaseDynamicCustomReduction extends DynamicCustomOp {
 
     }
 
-    public BaseDynamicCustomReduction(String opName, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomReduction(String opName, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(opName);
         this.keepDims = keepDims;
         this.isComplex = isComplex;
@@ -234,7 +234,7 @@ public abstract  class BaseDynamicCustomReduction extends DynamicCustomOp {
 
     }
 
-    public BaseDynamicCustomReduction(INDArray[] input, INDArray[] output, boolean keepDims, boolean isComplex, int[] dimensions) {
+    public BaseDynamicCustomReduction(INDArray[] input, INDArray[] output, boolean keepDims, boolean isComplex, long[] dimensions) {
         super(null,input,output);
         this.keepDims = keepDims;
         this.isComplex = isComplex;
