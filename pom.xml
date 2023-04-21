@@ -135,7 +135,6 @@
         <dl4j-test-resources.version>1.0.0-SNAPSHOT</dl4j-test-resources.version>
         <dl4j-test-resources.classifier></dl4j-test-resources.classifier>
         <rxjava.version>2.2.21</rxjava.version>
-        <jackson-asl.version>1.9.13</jackson-asl.version>
         <arrow.version>6.0.1</arrow.version>
         <jets3t.version>0.7.1</jets3t.version>
         <metrics.version>3.2.6</metrics.version>
@@ -173,6 +172,8 @@
         <javacpp.platform.compiler/>  <!-- -Djavacpp.platform.compiler=/path/to/arm-linux-androideabi-g++ -->
         <javacpp.platform.sysroot/>   <!-- -Djavacpp.platform.sysroot=$(xcrun -sdk iphoneos -show-sdk-path) -->
         <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
+        <!-- Must not be empty. Otherwise the command line will fail. Put all arguments here needed for customization. If overridden, ensure not empty.-->
+        <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
 
@@ -232,7 +233,7 @@
         <junit.platform.launcher.version>1.8.0-M1</junit.platform.launcher.version>
         <archunit.version>0.14.1</archunit.version>
         <logback.version>1.2.3</logback.version>
-        <jackson.version>2.13.3</jackson.version>
+        <jackson.version>2.14.2</jackson.version>
         <jackson.databind.version>2.14.2</jackson.databind.version>
         <shaded.snakeyaml.version>1.26</shaded.snakeyaml.version>
         <geo.jackson.version>2.8.7</geo.jackson.version>

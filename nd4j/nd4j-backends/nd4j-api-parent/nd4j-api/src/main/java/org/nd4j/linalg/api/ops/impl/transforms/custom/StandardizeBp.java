@@ -32,12 +32,12 @@ import java.util.List;
 
 public class StandardizeBp extends DynamicCustomOp {
 
-    public StandardizeBp(SameDiff sameDiff, SDVariable i_v, SDVariable grad, int... dimensions) {
+    public StandardizeBp(SameDiff sameDiff, SDVariable i_v, SDVariable grad, long... dimensions) {
         super(null, sameDiff, new SDVariable[]{i_v, grad}, false);
         setDimensions(dimensions);
     }
 
-    public StandardizeBp(INDArray input, INDArray eps, INDArray result, int... dimensions){
+    public StandardizeBp(INDArray input, INDArray eps, INDArray result, long... dimensions){
         super("standardize_bp", new INDArray[]{input, eps}, new INDArray[]{result});
         setDimensions(dimensions);
     }
@@ -46,7 +46,7 @@ public class StandardizeBp extends DynamicCustomOp {
     }
 
     @Override
-    public void setDimensions(int[] dimensions) {
+    public void setDimensions(long[] dimensions) {
         Preconditions.checkArgument(dimensions != null, "StandardizeBp: You have to provide dimensions");
         Preconditions.checkArgument(dimensions.length > 0, "StandardizeBp: You have to provide dimensions");
 

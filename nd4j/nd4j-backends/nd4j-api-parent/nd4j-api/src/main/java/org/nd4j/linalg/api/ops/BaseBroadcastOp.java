@@ -45,13 +45,13 @@ import java.util.Map;
 @Slf4j
 public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
-    protected int[] dimension;
+    protected long[] dimension;
 
 
     public BaseBroadcastOp(SameDiff sameDiff,
                            SDVariable i_v1,
                            SDVariable i_v2,
-                           int[] dimension) {
+                           long[] dimension) {
         this(sameDiff, i_v1, i_v2, false, dimension);
     }
 
@@ -59,7 +59,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
                            SDVariable i_v1,
                            SDVariable i_v2,
                            boolean inPlace,
-                           int[] dimension) {
+                           long[] dimension) {
         super(sameDiff, inPlace, new Object[]{i_v2});
         if (i_v1 != null && i_v2 != null) {
             this.sameDiff = sameDiff;
@@ -78,7 +78,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
     public BaseBroadcastOp(SameDiff sameDiff,
                            SDVariable i_v1,
                            SDVariable i_v2,
-                           int[] dimension,
+                           long[] dimension,
                            Object[] extraArgs) {
         super(sameDiff, extraArgs);
         this.dimension = dimension;
@@ -97,7 +97,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
     }
 
 
-    public BaseBroadcastOp(SameDiff sameDiff, SDVariable i_v, int[] dimension, boolean inPlace) {
+    public BaseBroadcastOp(SameDiff sameDiff, SDVariable i_v, long[] dimension, boolean inPlace) {
         this(sameDiff, i_v, i_v.getShape(), inPlace, dimension, null);
     }
 
@@ -105,7 +105,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
                            SDVariable i_v,
                            long[] shape,
                            boolean inPlace,
-                           int[] dimension,
+                           long[] dimension,
                            Object[] extraArgs) {
         super(sameDiff, inPlace, extraArgs);
         this.dimension = dimension;
@@ -124,12 +124,12 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
     public BaseBroadcastOp(SameDiff sameDiff,
                            SDVariable i_v,
-                           int[] dimension,
+                           long[] dimension,
                            Object[] extraArgs) {
         this(sameDiff, i_v, i_v.getShape(), false, dimension, extraArgs);
     }
 
-    public BaseBroadcastOp(INDArray x, INDArray y, INDArray z, int... dimension) {
+    public BaseBroadcastOp(INDArray x, INDArray y, INDArray z, long... dimension) {
         super(x, y, z);
         Broadcast.validateBroadcastDims(x,y,z, dimension);
 
@@ -161,7 +161,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
 
     @Override
-    public int[] getDimension() {
+    public long[] getDimension() {
         if (dimension == null) {
             dimension = Shape.getBroadcastDimensions(larg().getShape(), rarg().getShape());
         }
@@ -170,7 +170,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
 
 
     @Override
-    public void setDimension(int... dimension) {
+    public void setDimension(long... dimension) {
         this.dimension = dimension;
     }
 

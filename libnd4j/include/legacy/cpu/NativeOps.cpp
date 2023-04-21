@@ -1652,7 +1652,7 @@ void sort(sd::Pointer *extraPointers, void *hX, const sd::LongType *hXShapeInfo,
 }
 
 void sortTad(sd::Pointer *extraPointers, void *hX, const sd::LongType *hXShapeInfo, void *dX,
-             const sd::LongType *dXShapeInfo, LongType *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
+             const sd::LongType *dXShapeInfo, LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
              const sd::LongType *tadOffsets, bool descending) {
   try {
     NativeOpExecutioner::execSort(hX, hXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
@@ -2943,9 +2943,9 @@ void sortByValue(sd::Pointer *extraPointers, void *x, const sd::LongType *xShape
   }
 }
 
-void sortTadByKey(sd::Pointer *extraPointers, void *x, const sd::LongType *xShapeInfo, void *dx,
-                  const sd::LongType *dxShapeInfo, void *y, const sd::LongType *yShapeInfo, void *dy,
-                  const sd::LongType *dyShapeInfo, LongType *dimension, int dimensionLength, bool descending) {
+void sortTadByKey(sd::Pointer *extraPointers, void *x, const sd::LongType *xShapeInfo, void *dX,
+                  const sd::LongType *dXShapeInfo, void *y, const sd::LongType *yShapeInfo, void *dy,
+                  const sd::LongType *dyShapeInfo, LongType *dimension, LongType dimensionLength, bool descending) {
   try {
     auto xType = ArrayOptions::dataType(xShapeInfo);
     auto yType = ArrayOptions::dataType(yShapeInfo);
@@ -2961,7 +2961,7 @@ void sortTadByKey(sd::Pointer *extraPointers, void *x, const sd::LongType *xShap
 
 void sortTadByValue(sd::Pointer *extraPointers, void *x, const sd::LongType *xShapeInfo, void *dx,
                     const sd::LongType *dxShapeInfo, void *y, const sd::LongType *yShapeInfo, void *dy,
-                    const sd::LongType *dyShapeInfo, LongType *dimension, int dimensionLength, bool descending) {
+                    const sd::LongType *dyShapeInfo, LongType *dimension, LongType dimensionLength, bool descending) {
   try {
     auto xType = ArrayOptions::dataType(xShapeInfo);
     auto yType = ArrayOptions::dataType(yShapeInfo);

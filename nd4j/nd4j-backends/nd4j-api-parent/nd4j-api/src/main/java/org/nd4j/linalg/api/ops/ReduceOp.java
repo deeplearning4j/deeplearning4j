@@ -68,5 +68,5 @@ public interface ReduceOp extends Op {
 
     Number getFinalResult();
 
-    void setDimensions(int... dimensions);
+    void setDimensions(long... dimensions);
 }

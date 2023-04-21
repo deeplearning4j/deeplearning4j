@@ -45,9 +45,9 @@ import java.util.List;
 import java.util.Map;
 
 public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
-    private static final int[] RANK2_DIMS = {0};
-    private static final int[] RANK4_DIMS_NCHW = {0,2,3};
-    private static final int[] RANK4_DIMS_NHWC = {0,1,2};
+    private static final long[] RANK2_DIMS = {0};
+    private static final long[] RANK4_DIMS_NCHW = {0,2,3};
+    private static final long[] RANK4_DIMS_NHWC = {0,1,2};
 
     protected OpContext context;
     private INDArray meanCache;
@@ -146,7 +146,7 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
                 }
             }
 
-            int[] dims;
+            long[] dims;
             if(x.rank() == 2){
                 dims = RANK2_DIMS;
             } else if(format == CNN2DFormat.NCHW){

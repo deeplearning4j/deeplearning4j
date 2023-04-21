@@ -234,7 +234,7 @@ public class NDNN {
    * @return output Output variable (NUMERIC type)
    */
   public INDArray layerNorm(INDArray input, INDArray gain, INDArray bias, boolean channelsFirst,
-      int... dimensions) {
+      long... dimensions) {
     NDValidation.validateNumerical("layerNorm", "input", input);
     NDValidation.validateNumerical("layerNorm", "gain", gain);
     NDValidation.validateNumerical("layerNorm", "bias", bias);
@@ -254,7 +254,7 @@ public class NDNN {
    * @return output Output variable (NUMERIC type)
    */
   public INDArray layerNorm(INDArray input, INDArray gain, boolean channelsFirst,
-      int... dimensions) {
+      long... dimensions) {
     NDValidation.validateNumerical("layerNorm", "input", input);
     NDValidation.validateNumerical("layerNorm", "gain", gain);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
@@ -561,8 +561,6 @@ public class NDNN {
     NDValidation.validateNumerical("softmax", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax(x, -1))[0];
   }
-
-
 
   /**
    * Element-wise softplus function: out = log(exp(x) + 1)<br>

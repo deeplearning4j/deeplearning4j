@@ -43,12 +43,12 @@ public class Variance extends BaseReduceOp {
     protected double mean, bias;
     protected boolean biasCorrected = true;
 
-    public Variance(SameDiff sameDiff, SDVariable i_v, int[] dimensions, boolean keepDims, double mean) {
+    public Variance(SameDiff sameDiff, SDVariable i_v, long[] dimensions, boolean keepDims, double mean) {
         super(sameDiff, i_v, dimensions, keepDims);
         this.mean = mean;
     }
 
-    public Variance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims, double mean) {
+    public Variance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims, double mean) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
         this.mean = mean;
     }
@@ -58,12 +58,12 @@ public class Variance extends BaseReduceOp {
         this.mean = mean;
     }
 
-    public Variance(SameDiff sameDiff, SDVariable i_v, int[] dimensions, double mean) {
+    public Variance(SameDiff sameDiff, SDVariable i_v, long[] dimensions, double mean) {
         super(sameDiff, i_v, dimensions);
         this.mean = mean;
     }
 
-    public Variance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, double mean) {
+    public Variance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, double mean) {
         super(sameDiff, i_v, i_v2, dimensions);
         this.mean = mean;
     }
@@ -87,27 +87,27 @@ public class Variance extends BaseReduceOp {
         this.mean = mean;
     }
 
-    public Variance(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions, double mean) {
+    public Variance(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions, double mean) {
         super(x, y, z, keepDims, dimensions);
         this.mean = mean;
     }
 
-    public Variance(INDArray x, double mean, int... dimensions) {
+    public Variance(INDArray x, double mean, long... dimensions) {
         super(x, dimensions);
         this.mean = mean;
     }
 
-    public Variance(INDArray x, boolean keepDims, double mean, int... dimensions) {
+    public Variance(INDArray x, boolean keepDims, double mean, long... dimensions) {
         super(x, keepDims, dimensions);
         this.mean = mean;
     }
 
-    public Variance(INDArray x, INDArray y, double mean, int... dimensions) {
+    public Variance(INDArray x, INDArray y, double mean, long... dimensions) {
         super(x, y, dimensions);
         this.mean = mean;
     }
 
-    public Variance(INDArray x, INDArray y, INDArray z, double mean, int... dimensions) {
+    public Variance(INDArray x, INDArray y, INDArray z, double mean, long... dimensions) {
         super(x, y, z, dimensions);
         this.mean = mean;
     }
@@ -122,13 +122,13 @@ public class Variance extends BaseReduceOp {
         this.mean = mean;
     }
 
-    public Variance(SameDiff sameDiff, SDVariable i_v, int[] dimensions, boolean keepDims, double mean, double bias) {
+    public Variance(SameDiff sameDiff, SDVariable i_v, long[] dimensions, boolean keepDims, double mean, double bias) {
         super(sameDiff, i_v, dimensions, keepDims);
         this.mean = mean;
         this.bias = bias;
     }
 
-    public Variance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims, double mean, double bias) {
+    public Variance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims, double mean, double bias) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
         this.mean = mean;
         this.bias = bias;
@@ -140,13 +140,13 @@ public class Variance extends BaseReduceOp {
         this.bias = bias;
     }
 
-    public Variance(SameDiff sameDiff, SDVariable i_v, int[] dimensions, double mean, double bias) {
+    public Variance(SameDiff sameDiff, SDVariable i_v, long[] dimensions, double mean, double bias) {
         super(sameDiff, i_v, dimensions);
         this.mean = mean;
         this.bias = bias;
     }
 
-    public Variance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, double mean, double bias) {
+    public Variance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, double mean, double bias) {
         super(sameDiff, i_v, i_v2, dimensions);
         this.mean = mean;
         this.bias = bias;
@@ -175,31 +175,31 @@ public class Variance extends BaseReduceOp {
         this.bias = bias;
     }
 
-    public Variance(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions, double mean, double bias) {
+    public Variance(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions, double mean, double bias) {
         super(x, y, z, keepDims, dimensions);
         this.mean = mean;
         this.bias = bias;
     }
 
-    public Variance(INDArray x, double mean, double bias, int... dimensions) {
+    public Variance(INDArray x, double mean, double bias, long... dimensions) {
         super(x, dimensions);
         this.mean = mean;
         this.bias = bias;
     }
 
-    public Variance(INDArray x, boolean keepDims, double mean, double bias, int... dimensions) {
+    public Variance(INDArray x, boolean keepDims, double mean, double bias, long... dimensions) {
         super(x, keepDims, dimensions);
         this.mean = mean;
         this.bias = bias;
     }
 
-    public Variance(INDArray x, INDArray y, double mean, double bias, int... dimensions) {
+    public Variance(INDArray x, INDArray y, double mean, double bias, long... dimensions) {
         super(x, y, dimensions);
         this.mean = mean;
         this.bias = bias;
     }
 
-    public Variance(INDArray x, INDArray y, INDArray z, double mean, double bias, int... dimensions) {
+    public Variance(INDArray x, INDArray y, INDArray z, double mean, double bias, long... dimensions) {
         super(x, y, z, dimensions);
         this.mean = mean;
         this.bias = bias;
@@ -217,14 +217,14 @@ public class Variance extends BaseReduceOp {
         this.bias = bias;
     }
 
-    public Variance(SameDiff sameDiff, SDVariable i_v, int[] dimensions, boolean keepDims, double mean, double bias, boolean biasCorrected) {
+    public Variance(SameDiff sameDiff, SDVariable i_v, long[] dimensions, boolean keepDims, double mean, double bias, boolean biasCorrected) {
         super(sameDiff, i_v, dimensions, keepDims);
         this.mean = mean;
         this.bias = bias;
         this.biasCorrected = biasCorrected;
     }
 
-    public Variance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims, double mean, double bias, boolean biasCorrected) {
+    public Variance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims, double mean, double bias, boolean biasCorrected) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
         this.mean = mean;
         this.bias = bias;
@@ -238,14 +238,14 @@ public class Variance extends BaseReduceOp {
         this.biasCorrected = biasCorrected;
     }
 
-    public Variance(SameDiff sameDiff, SDVariable i_v, int[] dimensions, double mean, double bias, boolean biasCorrected) {
+    public Variance(SameDiff sameDiff, SDVariable i_v, long[] dimensions, double mean, double bias, boolean biasCorrected) {
         super(sameDiff, i_v, dimensions);
         this.mean = mean;
         this.bias = bias;
         this.biasCorrected = biasCorrected;
     }
 
-    public Variance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, double mean, double bias, boolean biasCorrected) {
+    public Variance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, double mean, double bias, boolean biasCorrected) {
         super(sameDiff, i_v, i_v2, dimensions);
         this.mean = mean;
         this.bias = bias;
@@ -279,35 +279,35 @@ public class Variance extends BaseReduceOp {
         this.biasCorrected = biasCorrected;
     }
 
-    public Variance(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions, double mean, double bias, boolean biasCorrected) {
+    public Variance(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions, double mean, double bias, boolean biasCorrected) {
         super(x, y, z, keepDims, dimensions);
         this.mean = mean;
         this.bias = bias;
         this.biasCorrected = biasCorrected;
     }
 
-    public Variance(INDArray x, double mean, double bias, boolean biasCorrected, int... dimensions) {
+    public Variance(INDArray x, double mean, double bias, boolean biasCorrected, long... dimensions) {
         super(x, dimensions);
         this.mean = mean;
         this.bias = bias;
         this.biasCorrected = biasCorrected;
     }
 
-    public Variance(INDArray x, boolean keepDims, double mean, double bias, boolean biasCorrected, int... dimensions) {
+    public Variance(INDArray x, boolean keepDims, double mean, double bias, boolean biasCorrected, long... dimensions) {
         super(x, keepDims, dimensions);
         this.mean = mean;
         this.bias = bias;
         this.biasCorrected = biasCorrected;
     }
 
-    public Variance(INDArray x, INDArray y, double mean, double bias, boolean biasCorrected, int... dimensions) {
+    public Variance(INDArray x, INDArray y, double mean, double bias, boolean biasCorrected, long... dimensions) {
         super(x, y, dimensions);
         this.mean = mean;
         this.bias = bias;
         this.biasCorrected = biasCorrected;
     }
 
-    public Variance(INDArray x, INDArray y, INDArray z, double mean, double bias, boolean biasCorrected, int... dimensions) {
+    public Variance(INDArray x, INDArray y, INDArray z, double mean, double bias, boolean biasCorrected, long... dimensions) {
         super(x, y, z, dimensions);
         this.mean = mean;
         this.bias = bias;
@@ -328,7 +328,7 @@ public class Variance extends BaseReduceOp {
         this.biasCorrected = biasCorrected;
     }
 
-    public Variance(SameDiff sameDiff, SDVariable i_v, boolean biasCorrected, boolean keepDims, int[] dimensions) {
+    public Variance(SameDiff sameDiff, SDVariable i_v, boolean biasCorrected, boolean keepDims, long[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
         this.biasCorrected = biasCorrected;
         defineDimensions(dimensions);
@@ -341,26 +341,26 @@ public class Variance extends BaseReduceOp {
         this.biasCorrected = biasCorrected;
     }
 
-    public Variance(INDArray x, int... dimension) {
+    public Variance(INDArray x, long... dimension) {
         this(x, true, dimension);
     }
 
-    public Variance(INDArray x, INDArray z, boolean biasCorrected, int... dimensions) {
+    public Variance(INDArray x, INDArray z, boolean biasCorrected, long... dimensions) {
         this(x, z, true, false, dimensions);
         this.biasCorrected = biasCorrected;
     }
 
-    public Variance(INDArray x, boolean biasCorrected, boolean keepDims, int... dimensions) {
+    public Variance(INDArray x, boolean biasCorrected, boolean keepDims, long... dimensions) {
         this(x, null, biasCorrected, keepDims, dimensions);
     }
 
-    public Variance(INDArray x, boolean biasCorrected, int... dimensions) {
+    public Variance(INDArray x, boolean biasCorrected, long... dimensions) {
         super(x);
         this.biasCorrected = biasCorrected;
         defineDimensions(dimensions);
     }
 
-    public Variance(INDArray x, INDArray z, boolean biasCorrected, boolean keepDims, int... dimensions) {
+    public Variance(INDArray x, INDArray z, boolean biasCorrected, boolean keepDims, long... dimensions) {
         super(x, null, z, keepDims, dimensions);
         this.biasCorrected = biasCorrected;
         defineDimensions(dimensions);

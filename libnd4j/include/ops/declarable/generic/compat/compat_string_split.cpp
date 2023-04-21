@@ -50,7 +50,7 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
   uint64_t ss = 0L;
   sd::LongType ic = 0L;
   // loop through each string within tensor
-  for (auto e = 0L; e < input->lengthOf(); e++) {
+  for (sd::LongType e = 0L; e < input->lengthOf(); e++) {
     // now we should map substring to indices
     auto s = input->e<std::string>(e);
 

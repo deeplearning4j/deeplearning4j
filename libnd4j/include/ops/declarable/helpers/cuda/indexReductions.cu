@@ -40,7 +40,7 @@ void argMax(const NDArray& input, NDArray& output, const std::vector<sd::LongTyp
     NativeOpExecutioner::execIndexReduce(LaunchContext::defaultContext(), indexreduce::Ops::IndexMax, input.buffer(),
                                          input.shapeInfo(), input.specialBuffer(), input.specialShapeInfo(), nullptr,
                                          output.buffer(), output.shapeInfo(), output.specialBuffer(),
-                                         output.specialShapeInfo(), (int*)nullptr, dimensions.size(),
+                                         output.specialShapeInfo(), (sd::LongType*)nullptr, dimensions.size(),
                                          tadPack.specialShapeInfo(), tadPack.specialOffsets());
   }
 
@@ -60,7 +60,7 @@ void argMin(const NDArray& input, NDArray& output, const std::vector<sd::LongTyp
     NativeOpExecutioner::execIndexReduce(LaunchContext::defaultContext(), indexreduce::Ops::IndexMin, input.buffer(),
                                          input.shapeInfo(), input.specialBuffer(), input.specialShapeInfo(), nullptr,
                                          output.buffer(), output.shapeInfo(), output.specialBuffer(),
-                                         output.specialShapeInfo(), (int*)nullptr, dimensions.size(),
+                                         output.specialShapeInfo(), (sd::LongType*)nullptr, dimensions.size(),
                                          tadPack.specialShapeInfo(), tadPack.specialOffsets());
   }
 
@@ -80,7 +80,7 @@ void argAbsMax(const NDArray& input, NDArray& output, const std::vector<sd::Long
     NativeOpExecutioner::execIndexReduce(LaunchContext::defaultContext(), indexreduce::Ops::IndexAbsoluteMax,
                                          input.buffer(), input.shapeInfo(), input.specialBuffer(),
                                          input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(),
-                                         output.specialBuffer(), output.specialShapeInfo(), (int*)nullptr,
+                                         output.specialBuffer(), output.specialShapeInfo(), (sd::LongType*)nullptr,
                                          dimensions.size(), tadPack.specialShapeInfo(), tadPack.specialOffsets());
   }
 
@@ -100,7 +100,7 @@ void argAbsMin(const NDArray& input, NDArray& output, const std::vector<sd::Long
     NativeOpExecutioner::execIndexReduce(LaunchContext::defaultContext(), indexreduce::Ops::IndexAbsoluteMin,
                                          input.buffer(), input.shapeInfo(), input.specialBuffer(),
                                          input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(),
-                                         output.specialBuffer(), output.specialShapeInfo(), (int*)nullptr,
+                                         output.specialBuffer(), output.specialShapeInfo(), (sd::LongType*)nullptr,
                                          dimensions.size(), tadPack.specialShapeInfo(), tadPack.specialOffsets());
   }
 

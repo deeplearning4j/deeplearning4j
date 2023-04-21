@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -37,19 +38,22 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 public class L2NormalizeVertex extends GraphVertex {
     public static final double DEFAULT_EPS = 1e-8;
 
-    protected int[] dimension;
+    protected long[] dimension;
     protected double eps;
 
     public L2NormalizeVertex() {
-        this(null, DEFAULT_EPS);
+        this((int[]) null, DEFAULT_EPS);
     }
 
     public L2NormalizeVertex(@JsonProperty("dimension") int[] dimension, @JsonProperty("eps") double eps) {
-        this.dimension = dimension;
+        this.dimension = ArrayUtil.toLongArray(dimension);
         this.eps = eps;
     }
 
-
+    public L2NormalizeVertex(@JsonProperty("dimension") long[] dimension, @JsonProperty("eps") double eps) {
+        this.dimension = ArrayUtil.toLongArray(dimension);
+        this.eps = eps;
+    }
 
     @Override
     public L2NormalizeVertex clone() {

@@ -31,15 +31,15 @@ import java.util.Collections;
 import java.util.List;
 
 public class AMin extends BaseReduceSameOp {
-    public AMin(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+    public AMin(SameDiff sameDiff, SDVariable i_v, long[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
-    public AMin(INDArray x, INDArray z, boolean keepDims, int[] dimensions) {
+    public AMin(INDArray x, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, z, keepDims, dimensions);
     }
 
-    public AMin(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public AMin(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
@@ -51,7 +51,7 @@ public class AMin extends BaseReduceSameOp {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public AMin(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public AMin(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -67,11 +67,11 @@ public class AMin extends BaseReduceSameOp {
         super(sameDiff, i_v, i_v2);
     }
 
-    public AMin(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    public AMin(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    public AMin(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+    public AMin(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
     }
 
@@ -81,31 +81,31 @@ public class AMin extends BaseReduceSameOp {
 
     public AMin() {}
 
-    public AMin(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+    public AMin(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
-    public AMin(INDArray x, int... dimensions) {
+    public AMin(INDArray x, long... dimensions) {
         super(x, dimensions);
     }
 
-    public AMin(INDArray x, INDArray z, int... dimensions) {
+    public AMin(INDArray x, INDArray z, long... dimensions) {
         super(x, null, z, dimensions);
     }
 
-    public AMin(INDArray in, boolean keepDims, int[] dimensions) {
+    public AMin(INDArray in, boolean keepDims, long[] dimensions) {
         super(in,keepDims,dimensions);
     }
 
     public AMin(INDArray in, INDArray dimensions, boolean keepDims) {
-        super(in,keepDims,dimensions.toIntVector());
+        super(in,keepDims,dimensions.toLongVector());
     }
 
-    public AMin(INDArray in, int[] dimensions, boolean keepDims) {
+    public AMin(INDArray in, long[] dimensions, boolean keepDims) {
         super(in,keepDims,dimensions);
     }
 
-    public AMin(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+    public AMin(SameDiff sd, SDVariable in, boolean keepDims, long[] dimensions) {
         super(sd,in,dimensions,keepDims);
     }
 

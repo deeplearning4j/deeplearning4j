@@ -561,9 +561,9 @@ public class TestTransformOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEye(Nd4jBackend backend) {
-        int[] rows = new int[]{3, 3, 3, 3};
-        int[] cols = new int[]{3, 2, 2, 2};
-        int[][] batch = new int[][]{{}, {}, {4}, {3, 3}};
+        long[] rows = new long[]{3, 3, 3, 3};
+        long[] cols = new long[]{3, 2, 2, 2};
+        long[][] batch = new long[][]{{}, {}, {4}, {3, 3}};
         INDArray[] expOut = new INDArray[4];
 
         expOut[0] = Nd4j.eye(3).castTo(DataType.DOUBLE);
@@ -581,7 +581,7 @@ public class TestTransformOpValidation extends BaseOpValidation {
 
         for (int i = 0; i < 3; i++) {
             SameDiff sd = SameDiff.create();
-            SDVariable eye = sd.math().eye("e", rows[i], cols[i], DataType.DOUBLE, batch[i]);
+            SDVariable eye = sd.math().eye("e", (int)rows[i], (int) cols[i], DataType.DOUBLE, batch[i]);
 
             SDVariable loss = sd.standardDeviation("loss", eye, true);
 
@@ -1862,7 +1862,7 @@ public class TestTransformOpValidation extends BaseOpValidation {
     public void testStandardize(Nd4jBackend backend) {
         final INDArray random = Nd4j.rand(new int[]{10, 4});
 
-        final int[] axis = new int[]{1};
+        final long[] axis = new long[]{1};
         final INDArray means = random.mean(axis);
         final INDArray std = random.std(false, axis);
         final INDArray res = random.subColumnVector(means).divColumnVector(std);
@@ -1884,7 +1884,7 @@ public class TestTransformOpValidation extends BaseOpValidation {
     public void testStandardizeOP(Nd4jBackend backend) {
         final INDArray random = Nd4j.rand(new int[]{10, 4});
 
-        final int[] axis = new int[]{1};
+        final long[] axis = new long[]{1};
         final INDArray means = random.mean(axis);
         final INDArray std = random.std(false, axis);
         final INDArray res = random.subColumnVector(means).divColumnVector(std);
@@ -1903,7 +1903,7 @@ public class TestTransformOpValidation extends BaseOpValidation {
             random.putScalar(1, i, 7);
         }
 
-        final int[] axis = new int[]{1};
+        final long[] axis = new long[]{1};
         final INDArray means = random.mean(axis);
         final INDArray std = random.std(false, axis);
         std.addi(std.eq(0).castTo(DataType.DOUBLE));

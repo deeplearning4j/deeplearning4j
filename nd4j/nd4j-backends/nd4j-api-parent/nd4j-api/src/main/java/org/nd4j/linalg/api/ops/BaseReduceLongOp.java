@@ -32,7 +32,7 @@ import java.util.Collections;
 import java.util.List;
 
 public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLongOp {
-    public BaseReduceLongOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public BaseReduceLongOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -48,11 +48,11 @@ public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLon
         super(sameDiff, i_v, i_v2);
     }
 
-    protected BaseReduceLongOp(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    protected BaseReduceLongOp(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    public BaseReduceLongOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+    public BaseReduceLongOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
     }
 
@@ -60,23 +60,23 @@ public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLon
         super(sameDiff, i_v);
     }
 
-    protected BaseReduceLongOp(SameDiff sameDiff, SDVariable input, int... dimensions) {
+    protected BaseReduceLongOp(SameDiff sameDiff, SDVariable input, long... dimensions) {
         super(sameDiff, input, dimensions);
     }
 
-    public BaseReduceLongOp(INDArray x, int... dimensions) {
+    public BaseReduceLongOp(INDArray x, long... dimensions) {
         super(x, dimensions);
     }
 
-    public BaseReduceLongOp(INDArray x, boolean keepDims, int... dimensions) {
+    public BaseReduceLongOp(INDArray x, boolean keepDims, long... dimensions) {
         super(x, keepDims, dimensions);
     }
 
-    public BaseReduceLongOp(INDArray x, INDArray z, int... dimensions) {
+    public BaseReduceLongOp(INDArray x, INDArray z, long... dimensions) {
         super(x, z, dimensions);
     }
 
-    public BaseReduceLongOp(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public BaseReduceLongOp(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
@@ -92,7 +92,7 @@ public abstract class BaseReduceLongOp extends BaseReduceOp implements ReduceLon
         super();
     }
 
-    public BaseReduceLongOp(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+    public BaseReduceLongOp(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 

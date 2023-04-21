@@ -30,8 +30,8 @@ namespace helpers {
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 SD_KERNEL static void batchToSpaceCuda(const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                                       const sd::LongType* zShapeInfo, const sd::Unsigned cropBottom,
-                                       const sd::Unsigned cropLeft) {
+                                       const sd::LongType* zShapeInfo, const LongType cropBottom,
+                                       const LongType cropLeft) {
   // input [bS, H * blockSize, W * blockSize, iC]
   // output [bS, H * blockSize - cropBottom - cropTop, W * blockSize - cropLeft - cropRight, iC]
 
@@ -44,21 +44,21 @@ SD_KERNEL static void batchToSpaceCuda(const void* vx, const sd::LongType* xShap
   const auto x = reinterpret_cast<const T*>(vx);
   auto z = reinterpret_cast<T*>(vz);
 
-  __shared__ int rank, *sharedMem;
+  __shared__ sd::LongType rank, *sharedMem;
   __shared__ sd::LongType zLen;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<int*>(shmem);
+    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
 
     rank = shape::rank(zShapeInfo);
     zLen = shape::length(zShapeInfo);
   }
   __syncthreads();
 
-  auto coords = sharedMem + threadIdx.x * rank;
+  sd::LongType *coords = sharedMem + threadIdx.x * rank;
 
-  const auto i = blockIdx.x * blockDim.x + threadIdx.x;
+  const sd::LongType i = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (i >= zLen) return;
 
@@ -145,12 +145,12 @@ SD_KERNEL static void batchToSpaceNDCuda(const void* vx, const sd::LongType* xSh
   const auto y = reinterpret_cast<const Y*>(vy);
   auto z = reinterpret_cast<X*>(vz);
 
-  __shared__ int rank, *sharedMem;
+  __shared__ sd::LongType rank, *sharedMem;
   __shared__ sd::LongType zLen;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<int*>(shmem);
+    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
 
     rank = shape::rank(zShapeInfo);
     zLen = shape::length(zShapeInfo);
@@ -158,20 +158,20 @@ SD_KERNEL static void batchToSpaceNDCuda(const void* vx, const sd::LongType* xSh
 
   __syncthreads();
 
-  auto coords = sharedMem + threadIdx.x * rank;
+  sd::LongType *coords = sharedMem + threadIdx.x * rank;
 
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x) {
+  for (sd::LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x) {
     shape::index2coords(i, zShapeInfo, coords);
 
     const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
     // evaluate spatial coordinates for x
-    for (sd::Unsigned j = 1; j <= numOfSpatialDims; ++j) {
-      const auto yOffset = (j - 1) * yShapeInfo[3];  // yRank = 2, calculate offset manually
+    for (sd::LongType j = 1; j <= numOfSpatialDims; ++j) {
+      const sd::LongType yOffset = (j - 1) * yShapeInfo[3];  // yRank = 2, calculate offset manually
       coords[j] += y[yOffset];                       // add crop left
     }
 
-    const auto xOffset = shape::getOffset(xShapeInfo, coords);
+    const sd::LongType xOffset = shape::getOffset(xShapeInfo, coords);
 
     z[zOffset] = x[xOffset];
   }
@@ -277,21 +277,21 @@ SD_KERNEL static void spaceToBatchCuda(const void* vx, const sd::LongType* xShap
   const auto x = reinterpret_cast<const T*>(vx);
   auto z = reinterpret_cast<T*>(vz);
 
-  __shared__ int rank, *sharedMem;
+  __shared__ sd::LongType rank, *sharedMem;
   __shared__ sd::LongType zLen;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<int*>(shmem);
+    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
 
     rank = shape::rank(zShapeInfo);
     zLen = shape::length(zShapeInfo);
   }
   __syncthreads();
 
-  auto coords = sharedMem + threadIdx.x * rank;
+  sd::LongType *coords = sharedMem + threadIdx.x * rank;
 
-  const auto i = blockIdx.x * blockDim.x + threadIdx.x;
+  const sd::LongType i = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (i >= zLen) return;
 
@@ -315,17 +315,16 @@ SD_KERNEL static void spaceToBatchCuda(const void* vx, const sd::LongType* xShap
 template <typename T>
 static void spaceToBatchCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                      const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
-                                     void* vz, const sd::LongType* zShapeInfo, const sd::Unsigned padBottom,
-                                     const sd::Unsigned padTop, const sd::Unsigned padLeft,
-                                     const sd::Unsigned padRight) {
+                                     void* vz, const sd::LongType* zShapeInfo, const LongType padBottom,
+                                     const LongType padTop, const LongType padLeft, const LongType padRight) {
   spaceToBatchCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, padBottom,
                                                                               padTop, padLeft, padRight);
 }
 BUILD_SINGLE_TEMPLATE(template void spaceToBatchCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                        const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                       const sd::LongType* zShapeInfo, const sd::Unsigned padBottom, const sd::Unsigned padTop,
-                       const sd::Unsigned padLeft, const sd::Unsigned padRight),
+                       const sd::LongType* zShapeInfo, const sd::LongType padBottom, const sd::LongType padTop,
+                       const sd::LongType padLeft, const sd::LongType padRight),
                       SD_COMMON_TYPES);
 
 ///////////////////////////////////////////////////////////////////
@@ -388,12 +387,12 @@ SD_KERNEL static void spaceToBatchNDCuda(const void* vx, const sd::LongType* xSh
   const auto y = reinterpret_cast<const Y*>(vy);
   auto z = reinterpret_cast<X*>(vz);
 
-  __shared__ int rank, *sharedMem;  // xRank = zRank, yRank = 2;
+  __shared__ sd::LongType rank, *sharedMem;  // xRank = zRank, yRank = 2;
   __shared__ sd::LongType zLen, totalThreads;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<int*>(shmem);
+    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
 
     rank = shape::rank(zShapeInfo);
     zLen = shape::length(zShapeInfo);
@@ -404,7 +403,7 @@ SD_KERNEL static void spaceToBatchNDCuda(const void* vx, const sd::LongType* xSh
 
   auto coords = sharedMem + threadIdx.x * rank;
 
-  for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < zLen; i += totalThreads) {
+  for (sd::LongType i = blockDim.x * blockIdx.x + threadIdx.x; i < zLen; i += totalThreads) {
     shape::index2coords(i, zShapeInfo, coords);
 
     const auto zOffset = shape::getOffset(zShapeInfo, coords);

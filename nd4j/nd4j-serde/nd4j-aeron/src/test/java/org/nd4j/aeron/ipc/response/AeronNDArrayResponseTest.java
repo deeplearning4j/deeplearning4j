@@ -134,7 +134,7 @@ public class AeronNDArrayResponseTest extends BaseND4JTest {
                              * from the master array.
                              */
                             @Override
-                            public INDArray getTad(int idx, int... dimensions) {
+                            public INDArray getTad(int idx, long... dimensions) {
                                 return Nd4j.scalar(1.0);
                             }
                         }
@@ -157,7 +157,7 @@ public class AeronNDArrayResponseTest extends BaseND4JTest {
                             }
 
                             @Override
-                            public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+                            public void onNDArrayPartial(INDArray arr, long idx, long... dimensions) {
                                 count.incrementAndGet();
                             }
 

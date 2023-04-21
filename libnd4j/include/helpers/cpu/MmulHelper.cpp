@@ -283,7 +283,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
   if (Y != nullptr && X->dataType() != Y->dataType())
     throw datatype_exception::build("mmulMxV expects all data types to be the same", A->dataType(), Y->dataType());
 
-  int xLenDim, yLenDim(0);
+  sd::LongType xLenDim, yLenDim(0);
 
   if (A->rankOf() != 2) throw std::runtime_error("MmulHelper::mmulMxV: rank of A array is not equal 2 !");
   if (!shape::isCommonVector(X->shapeInfo(), xLenDim))
@@ -356,7 +356,7 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
   if (Z != nullptr && X->dataType() != Z->dataType())
     throw datatype_exception::build("Dot expects all data types to be the same", X->dataType(), Z->dataType());
 
-  int xLenDim(0), yLenDim(0);
+  sd::LongType xLenDim(0), yLenDim(0);
 
   if (!shape::isCommonVector(X->shapeInfo(), xLenDim))
     throw std::runtime_error("MmulHelper::dot: X array must be vector !");
@@ -393,8 +393,8 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
 // bS could stand for several axes
 template <typename T1, typename T2, typename T3>
 static void batchedGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const LongType* aBatchDims,
-                        const LongType* bBatchDims, const LongType* cBatchDims, const int aMaxis, const int aKaxis, const int bKaxis, const int bNaxis,
-                        const int cMaxis, const int cNaxis, const double alpha, const double beta) {
+                        const LongType* bBatchDims, const LongType* cBatchDims, LongType aMaxis, LongType aKaxis,
+                        LongType bKaxis, LongType bNaxis, LongType cMaxis, LongType cNaxis, const double alpha, const double beta) {
   const T1* A = vA->bufferAsT<T1>();
   const T2* B = vB->bufferAsT<T2>();
   T3* C = vC->bufferAsT<T3>();
@@ -419,7 +419,7 @@ static void batchedGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const
   auto func = PRAGMA_THREADS_FOR {
     std::vector<sd::LongType> aCoords(aRank), bCoords(bRank), cCoords(cRank);
 
-    for (auto i = start; i < stop; ++i) {
+    for (sd::LongType i = start; i < stop; ++i) {
       // evaluate C coordinates
       shape::index2coordsCPU(start, i, cShapeInfo, cCoords.data());
 
@@ -467,8 +467,8 @@ static void batchedGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const
 // bS could stand for several axes
 NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, const double alpha, const double beta,
                              const char outOrder) {
-  const int aRank = A->rankOf();
-  const int bRank = B->rankOf();
+  const sd::LongType aRank = A->rankOf();
+  const sd::LongType bRank = B->rankOf();
 
   // input ranks validation
   if (aRank > bRank && bRank != 2)
@@ -500,9 +500,9 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
 
   if (C->isEmpty()) return C;
 
-  const int cRank = C->rankOf();
+  const sd::LongType cRank = C->rankOf();
 
-  const int aMaxis(aRank - 2), aKaxis(aRank - 1), bKaxis(bRank - 2), bNaxis(bRank - 1), cMaxis(cRank - 2),
+  const sd::LongType aMaxis(aRank - 2), aKaxis(aRank - 1), bKaxis(bRank - 2), bNaxis(bRank - 1), cMaxis(cRank - 2),
       cNaxis(cRank - 1);
 
   std::vector<sd::LongType> aBatchDims, bBatchDims, cBatchDims;
@@ -520,188 +520,7 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
   return C;
 }
 
-/*
-//////////////////////////////////////////////////////////////////////////
-NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, const double alpha, const double beta,
-const char outOrder) {
-
-    const int aRank = A->rankOf();
-    const int bRank = B->rankOf();
-
-    // input ranks validation
-    if(aRank > bRank && bRank != 2)
-        throw std::runtime_error("MmulHelper::mmulNxN: rank of B array should be equal 2 !");
-    else if(bRank > aRank && aRank != 2)
-        throw std::runtime_error("MmulHelper::mmulNxN: rank of A array should be equal 2 !");
-    else if (aRank == bRank ) {
-        for(int i = 0; i < aRank - 2; ++i)
-            if(A->sizeAt(i) != B->sizeAt(i))
-                throw std::runtime_error("MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix
-multiplication !");
-    }
-
-    if(A->sizeAt(-1) != B->sizeAt(-2))
-        throw std::runtime_error("MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix
-multiplication !");
-
-    // validation of C array
-    std::vector<sd::LongType> cExpectedShape = aRank > bRank ? A->getShapeAsVector() : B->getShapeAsVector();
-    cExpectedShape[cExpectedShape.size() - 2] = A->sizeAt(-2);
-    cExpectedShape[cExpectedShape.size() - 1] = B->sizeAt(-1);
-
-    if(C != nullptr ) {
-        if(!C->isSameShape(cExpectedShape))
-            throw std::runtime_error("MmulHelper::mmulNxN: shape of C array is not suitable for AxB matrix
-multiplication !");
-    }
-    else {
-        C = new NDArray(outOrder, cExpectedShape, B->dataType());
-    }
 
 
-    // multiplication
-    const std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(C->rankOf(), {-2, -1});
-    const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(C->shapeInfo(), dimsToExclude);
-    std::vector<sd::LongType> idxRanges(2 * C->rankOf());
-
-// #pragma omp parallel for schedule(guided) firstprivate(idxRanges)
-        for(sd::LongType i = 0; i < numOfSubArrs; ++i) {
-
-            ShapeUtils::evalIdxRangesForSubArr(i, C->shapeInfo(), dimsToExclude, idxRanges.data());
-            NDArray cSubArr = (*C)(idxRanges);
-
-            if(aRank > bRank) {
-                NDArray aSubArr = (*A)(idxRanges);
-                mmulMxM(&aSubArr, B, &cSubArr, 1., 0., outOrder);
-            }
-            else if(bRank > aRank) {
-                NDArray bSubArr = (*B)(idxRanges);
-                mmulMxM(A, &bSubArr, &cSubArr, 1., 0, outOrder);
-            }
-            else {
-                NDArray aSubArr = (*A)(idxRanges);
-                NDArray bSubArr = (*B)(idxRanges);
-                mmulMxM(&aSubArr, &bSubArr, &cSubArr, 1., 0., outOrder);
-            }
-        }
-
-    return C;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// MXK x KxN = MxN
-template <typename T1, typename T2, typename T3>
-static void usualGemm(const char cOrder, const bool transA, const bool transB, const int M, const int N, const int K,
-const double alpha, const void* vA, const int lda, const void* vB, const int ldb, const double beta, void* vC, const int
-ldc) {
-
-    T1* A = reinterpret_cast<T1*>(const_cast<void*>(vA));
-    T2* B = reinterpret_cast<T2*>(const_cast<void*>(vB));
-    T3* C = reinterpret_cast<T3*>(vC);
-    T3 alphaZ(alpha), betaZ(beta);
-
-    const bool flagC = cOrder == 'f';
-    const bool flagA = (flagC && transA) || (!flagC && !transA);
-    const bool flagB = (flagC && transB) || (!flagC && !transB);
-
-    // PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(M*N > Environment::getInstance().elementwiseThreshold()) schedule(guided))
-    // for(sd::Unsigned row = 0; row < M; ++row) {
-
-    //     T3* c = flagC ? (C + row) : (C + row * ldc);
-
-    //     for(sd::Unsigned col = 0; col < N; ++col)
-    //         c[flagC ? col * ldc : col] = 0;
-
-    //     for(sd::Unsigned i = 0; i < K; ++i) {
-
-    //         T3* b = flagB ? (B + i * ldb) : (B + i);
-    //         T3* a = flagA ? (A + row * lda + i) : (A + row + i * lda);
-
-    //         if(flagC) {
-    //             for(sd::Unsigned col = 0; col < N; ++col) {
-    //                 if(betaZ)
-    //                     c[col * ldc] += a * b[flagB ? col : col * ldb] + betaZ * c[col * ldc];
-    //                 else
-    //                     c[col * ldc] += a * b[flagB ? col : col * ldb];
-    //             }
-    //         }
-    //         else {
-    //             for(sd::Unsigned col = 0; col < N; ++col) {
-    //                 if(betaZ)
-    //                     c[col] += a * b[flagB ? col : col * ldb] + betaZ * c[col];
-    //                 else
-    //                     c[col] += a * b[flagB ? col : col * ldb];
-    //             }
-    //         }
-    //     }
-    // }
-
-    auto func = PRAGMA_THREADS_FOR_2D { ;
-        for (auto row = start_x; row < stop_x; row += inc_x) {
-            for (auto col = start_y; col < stop_y; col += inc_y) {
-                T3 *c = flagC ? (C + row + col * ldc) : (C + row * ldc + col);
-                T3 val = 0;
-
-                for (sd::Unsigned i = 0; i < K; ++i) {
-                    T3 a = flagA ? *(A + row * lda + i) : *(A + row + i * lda);
-                    T3 b = flagB ? *(B + col + i * ldb) : *(B + col * ldb + i);
-                    val += alphaZ * a * b;
-                }
-
-                if (betaZ)
-                    *c = val + betaZ * *c;
-                else
-                    *c = val;
-            }
-        }
-    };
-
-    samediff::Threads::parallel_tad(func, 0, M, 1, 0, N, 1);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// MXN x N = M
-template <typename T1, typename T2, typename T3>
-static void usualGemv(const char aOrder, const int M, const int N, const double alpha, const void* vA, const int lda,
-const void* vX, const int incx, const double beta, void* vY, const int incy) {
-
-    T1* A = reinterpret_cast<T1*>(const_cast<void*>(vA));
-    T2* X = reinterpret_cast<T2*>(const_cast<void*>(vX));
-    T3* Y = reinterpret_cast<T3*>(vY);
-    T3 alphaZ(alpha), betaZ(beta);
-
-    const bool flagA = aOrder == 'f';
-
-    auto func = PRAGMA_THREADS_FOR {
-        for (auto row = start; row < stop; row += increment) {
-
-            T3 *y = Y + row * incy;
-            T3 val = 0;
-
-            for (int i = 0; i < N; ++i) {
-                T3 a = flagA ? *(A + row + i * lda) : *(A + row * lda + i);
-                T3 x = *(X + i * incx);
-                val += alphaZ * a * x;
-            }
-
-            if (betaZ)
-                *y = val + betaZ * *y;
-            else
-                *y = val;
-        }
-    };
-
-        samediff::Threads::parallel_tad(func, 0, M);
-}
-*/
-
-// BUILD_TRIPLE_TEMPLATE(template void usualGemm, (const char cOrder, const bool transA, const bool transB, const int M,
-// const int N, const int K, const double alpha, const void* A, const int lda, const void* B, const int ldb, const double
-// beta, void* C, const int ldc), SD_COMMON_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES); BUILD_TRIPLE_TEMPLATE(template void
-// usualGemv, (const char aOrder, const int M, const int N, const double alpha, const void* A, const int lda, const void*
-// B, const int incx, const double beta, void* C, const int incy), SD_COMMON_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
-// BUILD_TRIPLE_TEMPLATE(template void usualDot,  (const sd::LongType length, const double alpha, const void* vX, const
-// sd::LongType incx, const void* vY, const sd::LongType incy, const double beta, void* vZ), SD_COMMON_TYPES,
-// SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 
 }  // namespace sd

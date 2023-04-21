@@ -44,7 +44,7 @@ public class Stack extends DynamicCustomOp {
     }
 
     public Stack(INDArray[] inputs, INDArray output, int axis){
-        super(null, inputs, output == null ? null : new INDArray[]{output}, null, (List<Integer>)null);
+        super(null, inputs, output == null ? null : new INDArray[]{output}, null, (List<Long>)null);
         this.jaxis = axis;
         addArgs();
     }

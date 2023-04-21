@@ -151,13 +151,10 @@ static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const N
   // fill up syRowP array
   fillUpsymRow<<<1, N, 128, *stream>>>(pRowCounts, symRowP, N);
   outputRows->syncToHost();
-  //        outputRows->printBuffer("output rows");
   int* symColP = reinterpret_cast<int*>(outputCols->specialBuffer());
-  //        outputRows->printBuffer("SymRows are");
   int const* pCols = reinterpret_cast<int const*>(colP->specialBuffer());
   T const* pVals = reinterpret_cast<T const*>(valP->specialBuffer());
   T* pOutput = reinterpret_cast<T*>(outputVals->specialBuffer());
-  // std::vector<int> rowCountsV = rowCounts->getBufferAsVector<int>();
   auto offsetArr = NDArrayFactory::create<int>('c', {N});
   int* offset = reinterpret_cast<int*>(offsetArr.specialBuffer());
   // symmetrize itself

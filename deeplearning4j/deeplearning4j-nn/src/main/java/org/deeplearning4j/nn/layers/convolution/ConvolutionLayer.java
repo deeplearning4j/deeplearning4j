@@ -444,7 +444,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //to get old order from required order: permute(0,3,4,5,1,2)
         //Post reshaping: rows are such that minibatch varies slowest, outW fastest as we step through the rows post-reshape
         INDArray col = Nd4j.createUninitialized(weights.dataType(), new long[] {miniBatch, outH, outW, inDepth, kH, kW}, 'c');
-        int[] permute =  new int[]{0, 3, 4, 5, 1, 2};
+        long[] permute =  new long[]{0, 3, 4, 5, 1, 2};
         INDArray col2 = col.permute(permute);
         INDArray im2ColIn = input.castTo(col2.dataType());      //No op if already (for example) float
         if (kH > Integer.MAX_VALUE || kW > Integer.MAX_VALUE)

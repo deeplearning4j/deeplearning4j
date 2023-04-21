@@ -54,7 +54,7 @@ class CumSum : PreImportHook  {
         val exclusive = attributes.getOrDefault("exclusive",false) as Boolean
         val reverse = attributes.getOrDefault("reverse",false) as Boolean
         val inputAxis =  sd.getVariable(op.inputsToOp[1])
-        val outputVar = sd.cumsum(outputNames[0],inputVariable,exclusive,reverse,inputAxis.arr.getInt(0))
+        val outputVar = sd.cumsum(outputNames[0],inputVariable,exclusive,reverse,inputAxis.arr.getLong(0))
         return mapOf(outputVar.name() to listOf(outputVar))
     }
 

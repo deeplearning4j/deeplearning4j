@@ -86,10 +86,10 @@ SD_KERNEL void amsGradUpdaterCuda(const void* vx, const sd::LongType* xShapeInfo
   }
   __syncthreads();
 
-  int coords[SD_MAX_RANK];
+  sd::LongType coords[SD_MAX_RANK];
 
   for (sd::LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
-    auto xOffset = i, zOffset = i, initMOffset = i, initVOffset = i, initHOffset = i, stMOffset = i, stVOffset = i,
+    sd::LongType  xOffset = i, zOffset = i, initMOffset = i, initVOffset = i, initHOffset = i, stMOffset = i, stVOffset = i,
          stHOffset = i;
 
     if (!bEWS || !bOrdering) {

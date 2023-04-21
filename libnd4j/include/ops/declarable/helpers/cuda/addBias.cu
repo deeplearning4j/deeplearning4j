@@ -43,7 +43,7 @@ SD_KERNEL static void addBiasCuda(const void* vx, const sd::LongType* xShapeInfo
   const Y* y = reinterpret_cast<const Y*>(vy);
   X* z = reinterpret_cast<X*>(vz);
 
-  __shared__ int rank, channelPosition, posOfNonUnityDim;
+  __shared__ sd::LongType rank, channelPosition, posOfNonUnityDim;
   __shared__ sd::LongType len, *sharedMem;
   __shared__ bool xzSameOffsets, xzAreSame;
 

@@ -70,12 +70,12 @@ public class ScalarEps extends BaseScalarBoolOp {
 
 
     @Override
-    public int[] getDimension() {
+    public long[] getDimension() {
         return null;
     }
 
     @Override
-    public void setDimension(int... dimension) {
+    public void setDimension(long... dimension) {
 
     }
 

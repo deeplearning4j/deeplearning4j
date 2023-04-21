@@ -49,7 +49,7 @@ public class Repeat extends DynamicCustomOp {
         this.jaxis = axis;
     }
 
-    public Repeat(INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments, int axis) {
+    public Repeat(INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Long> iArguments, int axis) {
         super(null, inputs, outputs, tArguments, iArguments);
         this.jaxis = axis;
     }

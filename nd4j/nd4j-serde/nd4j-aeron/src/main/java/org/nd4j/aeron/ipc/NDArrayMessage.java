@@ -48,11 +48,11 @@ public class NDArrayMessage implements Serializable {
     private INDArray arr;
     private long sent;
     private long index;
-    private int[] dimensions;
+    private long[] dimensions;
     private byte[] chunk;
     private int numChunks = 0;
     //default dimensions: a 1 length array of -1 means use the whole array for an update.
-    private static int[] WHOLE_ARRAY_UPDATE = {-1};
+    private static long[] WHOLE_ARRAY_UPDATE = {-1};
     //represents the constant for indicating using the whole array for an update (-1)
     private static int WHOLE_ARRAY_INDEX = -1;
 
@@ -126,7 +126,7 @@ public class NDArrayMessage implements Serializable {
      * @param index the index to use
      * @return the created
      */
-    public static NDArrayMessage of(INDArray arr, int[] dimensions, long index) {
+    public static NDArrayMessage of(INDArray arr, long[] dimensions, long index) {
         //allow null dimensions as long as index is -1
         if (dimensions == null) {
             dimensions = WHOLE_ARRAY_UPDATE;
@@ -294,7 +294,7 @@ public class NDArrayMessage implements Serializable {
         byteBuffer.putLong(index);
         byteBuffer.putInt(message.getDimensions().length);
         for (int i = 0; i < message.getDimensions().length; i++) {
-            byteBuffer.putInt(message.getDimensions()[i]);
+            byteBuffer.putLong(message.getDimensions()[i]);
         }
 
         //rewind the buffer before putting it in to the unsafe buffer
@@ -340,7 +340,7 @@ public class NDArrayMessage implements Serializable {
         int dimensionLength = rest.getInt();
         if (dimensionLength <= 0)
             throw new IllegalArgumentException("Invalid dimension length " + dimensionLength);
-        int[] dimensions = new int[dimensionLength];
+        long[] dimensions = new long[dimensionLength];
         for (int i = 0; i < dimensionLength; i++)
             dimensions[i] = rest.getInt();
         return NDArrayMessage.builder().sent(time).arr(arr).index(index).dimensions(dimensions).build();

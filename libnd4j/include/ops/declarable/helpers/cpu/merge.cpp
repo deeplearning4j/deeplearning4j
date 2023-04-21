@@ -138,7 +138,7 @@ static void mergeMaxBp_(const std::vector<const NDArray*>& inArrs, std::vector<N
     for (auto e = start; e < stop; e++) {
       shape::index2coordsCPU(start, e, gradShape, coords);
 
-      const auto gradOffset = shape::getOffset(gradShape, coords);
+      const sd::LongType  gradOffset = shape::getOffset(gradShape, coords);
 
       T max = -DataTypeUtils::max<T>();
       sd::LongType nMaxIndex = 0;

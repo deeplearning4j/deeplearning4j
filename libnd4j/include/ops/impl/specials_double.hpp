@@ -47,8 +47,8 @@ void SpecialTypeConverter::convertGeneric(sd::Pointer *extras, void *dx, sd::Lon
 
 template <typename X, typename Y>
 void quickSort_parallel_internal_key(X *key, sd::LongType const *xShapeInfo, Y *values, sd::LongType const *yShapeInfo,
-                                     int left, int right, int cutoff, bool descending) {
-  int i = left, j = right;
+                                     LongType left, LongType right, LongType cutoff, bool descending) {
+  sd::LongType i = left, j = right;
   X ktmp;
   X pivot = key[shape::getIndexOffset((left + right) / 2, xShapeInfo)];
 
@@ -113,8 +113,8 @@ void quickSort_parallel_internal_key(X *key, sd::LongType const *xShapeInfo, Y *
 
 template <typename X, typename Y>
 void quickSort_parallel_internal_value(X *key, sd::LongType const *xShapeInfo, Y *value, sd::LongType const *yShapeInfo,
-                                       int left, int right, int cutoff, bool descending) {
-  int i = left, j = right;
+                                       LongType left, LongType right, LongType cutoff, bool descending) {
+  sd::LongType i = left, j = right;
   X ktmp;
   Y pivot = value[shape::getIndexOffset((left + right) / 2, yShapeInfo)];
 
@@ -223,7 +223,7 @@ void DoubleMethods<X, Y>::sortByValue(void *vx, sd::LongType const *xShapeInfo, 
 
 template <typename X, typename Y>
 void DoubleMethods<X, Y>::sortTadByKey(void *vx, sd::LongType const *xShapeInfo, void *vy,
-                                       sd::LongType const *yShapeInfo, LongType *dimension, int dimensionLength,
+                                       sd::LongType const *yShapeInfo, LongType *dimension, LongType dimensionLength,
                                        bool descending) {
   auto x = reinterpret_cast<X *>(vx);
   auto y = reinterpret_cast<Y *>(vy);
@@ -250,7 +250,7 @@ void DoubleMethods<X, Y>::sortTadByKey(void *vx, sd::LongType const *xShapeInfo,
 
 template <typename X, typename Y>
 void DoubleMethods<X, Y>::sortTadByValue(void *vx, sd::LongType const *xShapeInfo, void *vy,
-                                         sd::LongType const *yShapeInfo, LongType *dimension, int dimensionLength,
+                                         sd::LongType const *yShapeInfo, LongType *dimension, LongType dimensionLength,
                                          bool descending) {
   auto x = reinterpret_cast<X *>(vx);
   auto y = reinterpret_cast<Y *>(vy);

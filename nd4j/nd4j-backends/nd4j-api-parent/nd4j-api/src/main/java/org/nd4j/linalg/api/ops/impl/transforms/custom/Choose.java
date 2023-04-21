@@ -49,7 +49,7 @@ public class Choose extends DynamicCustomOp {
         this.condition = condition;
     }
 
-    public Choose(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments) {
+    public Choose(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Long> iArguments) {
         super(opName, inputs, outputs, tArguments, iArguments);
     }
 

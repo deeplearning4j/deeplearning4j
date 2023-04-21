@@ -208,7 +208,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(
   ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(inShapeInfo) - dimsWithUnities.size()),
            sd::LongType);
 
-  int temp;
+  sd::LongType temp;
   if (dimsWithUnities.size() == 1 && shape::isCommonVector(inShapeInfo, temp) && temp == dimsWithUnities[0]) {
     auto dims = ShapeUtils::evalDimsToExclude(shape::rank(inShapeInfo), {temp});
     shape::excludeUnitiesFromShapeInfo(inShapeInfo, dims.data(), dims.size(), newShapeInfo);
@@ -227,7 +227,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(
 
 ////////////////////////////////////////////////////////////////////////
 ConstantShapeBuffer* ConstantShapeHelper::createSubArrShapeInfo(const sd::LongType* inShapeInfo, const LongType* dims,
-                                                                const int dimsSize, sd::memory::Workspace* workspace) {
+                                                                const sd::LongType dimsSize, sd::memory::Workspace* workspace) {
   sd::LongType* newShapeInfo = ShapeBuilders::createSubArrShapeInfo(inShapeInfo, dims, dimsSize, workspace);
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);

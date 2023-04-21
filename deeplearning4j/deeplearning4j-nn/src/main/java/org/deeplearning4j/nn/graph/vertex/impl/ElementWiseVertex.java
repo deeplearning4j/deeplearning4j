@@ -185,7 +185,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
             return new Pair<>(null, new INDArray[] {workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon)});
 
         boolean broadcastCase = false;
-        for( int i=1; i<nInForwardPass; i++ ){
+        for( int i = 1; i<nInForwardPass; i++) {
             broadcastCase |= !inputs[0].equalShapes(inputs[i]);
         }
 
@@ -203,7 +203,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
                         if(inputs[i].equalShapes(epsilon)){
                             out[i] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon);
                         } else {
-                            int[] bcDim = Shape.getBroadcastDimensions(inputs[i].shape(), epsilon.shape());
+                            long[] bcDim = Shape.getBroadcastDimensions(inputs[i].shape(), epsilon.shape());
                             try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)){
                                 out[i] = epsilon.sum(true, bcDim);
                             }
@@ -218,7 +218,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
                         if(inputs[i].equalShapes(epsilon)){
                             outAverage[i] = epsilon.div(nInForwardPass);
                         } else {
-                            int[] bcDim = Shape.getBroadcastDimensions(inputs[i].shape(), epsilon.shape());
+                            long[] bcDim = Shape.getBroadcastDimensions(inputs[i].shape(), epsilon.shape());
                             outAverage[i] = epsilon.div(nInForwardPass).sum(true, bcDim);
                         }
                     }
@@ -233,13 +233,13 @@ public class ElementWiseVertex extends BaseGraphVertex {
                     if(inputs[0].equalShapes(epsilon)){
                         //Second input is smaller/broadcast
                         out2[0] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon);
-                        int[] bcDim = Shape.getBroadcastDimensions(inputs[1].shape(), epsilon.shape());
+                        long[] bcDim = Shape.getBroadcastDimensions(inputs[1].shape(), epsilon.shape());
                         try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
                             out2[1] = epsilon.sum(true, bcDim).negi();
                         }
                     } else {
                         //First input is smaller/broadcast
-                        int[] bcDim = Shape.getBroadcastDimensions(inputs[0].shape(), epsilon.shape());
+                        long[] bcDim = Shape.getBroadcastDimensions(inputs[0].shape(), epsilon.shape());
                         try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
                             out2[0] = epsilon.sum(true, bcDim);
                         }
@@ -270,7 +270,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
                     }
 
                     if(!inputs[i].equalShapes(epsilon)){
-                        int[] bcDim = Shape.getBroadcastDimensions(inputs[i].shape(), epsilon.shape());
+                        long[] bcDim = Shape.getBroadcastDimensions(inputs[i].shape(), epsilon.shape());
                         try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
                             out_product[i] = out_product[i].sum(true, bcDim);
                         }
@@ -310,7 +310,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
                     if(broadcastCase && !epsilon.equalShapes(inputs[i])){
                         //Broadcast  for ths input
                         outMax[i] = outMax[i].castTo(epsilon.dataType()).mul(epsilon);
-                        int[] bcDim = Shape.getBroadcastDimensions(inputs[i].shape(), epsilon.shape());
+                        long[] bcDim = Shape.getBroadcastDimensions(inputs[i].shape(), epsilon.shape());
                         try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
                             outMax[i] = outMax[i].sum(true, bcDim);
                         }

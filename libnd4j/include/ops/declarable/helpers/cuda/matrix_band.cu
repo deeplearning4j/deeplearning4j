@@ -91,8 +91,8 @@ void matrixBandPart_(sd::LaunchContext* context, NDArray* input, NDArray* output
   dim3 launchDims(256, 512, 8192);
   auto stream = context->getCudaStream();
 
-  std::vector<int> lastDims({input->rankOf() - 2, input->rankOf() - 1});
-  std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), lastDims);
+  std::vector<sd::LongType> lastDims({input->rankOf() - 2, input->rankOf() - 1});
+  std::vector<sd::LongType> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), lastDims);
 
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), lastDims);
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), lastDims);

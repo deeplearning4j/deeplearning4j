@@ -29,27 +29,27 @@ import java.util.Collections;
 import java.util.List;
 
 public class IsNaN extends BaseReduceBoolOp {
-    public IsNaN(SameDiff sameDiff, SDVariable i_v, int[] dims) {
+    public IsNaN(SameDiff sameDiff, SDVariable i_v, long[] dims) {
         super(sameDiff, i_v, dims);
     }
 
-    public IsNaN(INDArray x, INDArray z, boolean keepDims, int[] dimensions) {
+    public IsNaN(INDArray x, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, z, keepDims, dimensions);
     }
 
-    public IsNaN(INDArray x, int... dimensions) {
+    public IsNaN(INDArray x, long... dimensions) {
         super(x, dimensions);
     }
 
-    public IsNaN(INDArray x, boolean keepDims, int... dimensions) {
+    public IsNaN(INDArray x, boolean keepDims, long... dimensions) {
         super(x, keepDims, dimensions);
     }
 
-    public IsNaN(INDArray x, INDArray z, int... dimensions) {
+    public IsNaN(INDArray x, INDArray z, long... dimensions) {
         super(x, z, dimensions);
     }
 
-    public IsNaN(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public IsNaN(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
@@ -61,11 +61,11 @@ public class IsNaN extends BaseReduceBoolOp {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public IsNaN(SameDiff sameDiff, SDVariable i_v, int[] dims, boolean keepDims) {
+    public IsNaN(SameDiff sameDiff, SDVariable i_v, long[] dims, boolean keepDims) {
         super(sameDiff, i_v, dims, keepDims);
     }
 
-    public IsNaN(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+    public IsNaN(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
     }
 
@@ -76,7 +76,7 @@ public class IsNaN extends BaseReduceBoolOp {
 
     public IsNaN() {}
 
-    public IsNaN(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+    public IsNaN(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
@@ -88,7 +88,7 @@ public class IsNaN extends BaseReduceBoolOp {
         super(x);
     }
 
-    public IsNaN(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public IsNaN(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 

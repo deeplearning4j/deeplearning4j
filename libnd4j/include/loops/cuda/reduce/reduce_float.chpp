@@ -45,8 +45,7 @@ SD_KERNEL void simpleReduce(const void *x, const sd::LongType *outerXTadShapeInf
 template <typename X, typename Z, typename OpType>
 SD_KERNEL void simpleScalar(const void *x, const sd::LongType *xShapeInfo,
                             void *extraParams,
-                            void *z, const sd::LongType *zShapeInfo,
-                            int *dimension, int dimensionLength,
+                            void *z, const sd::LongType *zShapeInfo, long long int *dimension, long long int dimensionLength,
                             void *reductionBuffer,
                              const sd::LongType *tadOnlyShapeInfo) {
 
@@ -102,7 +101,7 @@ SD_DEVICE void ReduceFloatFunction<X,Z>::transformCudaXD(const void *vx, const s
 
     //shared memory space for storing intermediate results
     __shared__ Z sPartials[SD_CUDA_BLOCK_SIZE];
-    __shared__ int tadLen, numTads;
+    __shared__  sd::LongType tadLen, numTads;
     __shared__ bool sameOffsets;
 
     if (threadIdx.x == 0) {
@@ -113,9 +112,9 @@ SD_DEVICE void ReduceFloatFunction<X,Z>::transformCudaXD(const void *vx, const s
     }
     __syncthreads();
 
-    int coords[SD_MAX_RANK];
+    sd::LongType coords[SD_MAX_RANK];
 
-    for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+    for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
 
         shape::index2coords(r, outerXTadShapeInfo, coords);
         const auto outerOffset = shape::getOffset(outerXTadShapeInfo, coords);
@@ -229,7 +228,8 @@ template<typename OpType>
 SD_HOST void ReduceFloatFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStream_t *stream,
                                                        const void *x, const sd::LongType *dXShapeInfo, const sd::LongType *hXShapeInfo,
                                                        void *extraParams, void *vreductionBuffer,
-                                                       void *z, const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo, const int* dims) {
+                                                       void *z, const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo,
+                                                       const  sd::LongType *dims) {
 
     if(shape::isEmpty(hXShapeInfo)) {
 
@@ -267,8 +267,8 @@ template<typename OpType>
 SD_HOST void ReduceFloatFunction<X,Z>::intermediateScalar(dim3 launchDims, cudaStream_t *stream,
                                                            const void *x, const sd::LongType *xShapeInfo, const sd::LongType *hXShapeInfo,
                                                            void *extraParams,
-                                                           void *z, const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo,
-                                                           int *dimension, int dimensionLength,
+                                                           void *z, const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo,  sd::LongType *dimension,
+                                                           sd::LongType dimensionLength,
                                                            void *reductionBuffer,
                                                            const sd::LongType *tadOnlyShapeInfo) {
 
@@ -294,8 +294,8 @@ SD_HOST void ReduceFloatFunction<X,Y>::execReduceScalar(dim3 launchDims, cudaStr
                                                         const int opNum,
                                                         const void *x, const sd::LongType *xShapeInfo, const sd::LongType *hXShapeInfo,
                                                         void *extraParams,
-                                                        void *z, const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo,
-                                                        int *dimension, int dimensionLength,
+                                                        void *z, const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo, long long int *dimension,
+                                                         long long int dimensionLength,
                                                         void *reductionBuffer,
                                                         const sd::LongType *tadOnlyShapeInfo) {
 
@@ -308,7 +308,7 @@ template <typename X, typename Y>
 SD_HOST void ReduceFloatFunction<X,Y>::execReduceXD(dim3 launchDims, cudaStream_t *stream, const int opNum,
                                                     const void *x, const sd::LongType *dXShapeInfo, const sd::LongType *hXShapeInfo,
                                                     void *extraParams, void *vreductionBuffer,
-                                                    void *z, const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo, const int *dims) {
+                                                    void *z, const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo, const  sd::LongType *dims) {
 
     if(shape::length(hZShapeInfo) == 1)  {
         ReduceFloatFunction<X,Y>::execReduceScalar(launchDims, stream, opNum, x, dXShapeInfo, hXShapeInfo, extraParams, z, dZShapeInfo, hZShapeInfo, nullptr, 0, vreductionBuffer, nullptr);

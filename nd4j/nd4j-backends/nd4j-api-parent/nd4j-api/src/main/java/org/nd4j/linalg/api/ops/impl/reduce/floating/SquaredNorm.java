@@ -31,19 +31,19 @@ import java.util.List;
 
 
 public class SquaredNorm extends BaseReduceFloatOp {
-    public SquaredNorm(SameDiff sameDiff, SDVariable input, boolean keepDims, int... dimensions) {
+    public SquaredNorm(SameDiff sameDiff, SDVariable input, boolean keepDims, long... dimensions) {
         super(sameDiff, input, keepDims, dimensions);
     }
 
-    public SquaredNorm(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public SquaredNorm(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public SquaredNorm(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    public SquaredNorm(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    public SquaredNorm(SameDiff sameDiff, SDVariable input, int... dimensions) {
+    public SquaredNorm(SameDiff sameDiff, SDVariable input, long... dimensions) {
         super(sameDiff, input, dimensions);
     }
 
@@ -63,33 +63,33 @@ public class SquaredNorm extends BaseReduceFloatOp {
         super(sameDiff, input, dimensions);
     }
 
-    public SquaredNorm(INDArray input, INDArray output, boolean keepDims, int... dimensions){
+    public SquaredNorm(INDArray input, INDArray output, boolean keepDims, long... dimensions){
         super(input, output, keepDims, dimensions);
     }
 
-    public SquaredNorm(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public SquaredNorm(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
-    public SquaredNorm(INDArray x, INDArray z, int... dimensions) {
+    public SquaredNorm(INDArray x, INDArray z, long... dimensions) {
         super(x, z, dimensions);
     }
 
-    public SquaredNorm(INDArray input, boolean keepDims, int... dimensions){
+    public SquaredNorm(INDArray input, boolean keepDims, long... dimensions){
         this(input, null, keepDims, dimensions);
     }
 
     public SquaredNorm(){}
 
-    public SquaredNorm(INDArray x, int... dimensions){
+    public SquaredNorm(INDArray x, long... dimensions){
         super(x,  dimensions);
     }
 
-    public SquaredNorm(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions) {
+    public SquaredNorm(INDArray x, INDArray y, INDArray z, boolean keepDims, long... dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
-    public SquaredNorm(INDArray in, int[] dimensions, boolean keepDims) {
+    public SquaredNorm(INDArray in, long[] dimensions, boolean keepDims) {
         super(in,keepDims,dimensions);
     }
 

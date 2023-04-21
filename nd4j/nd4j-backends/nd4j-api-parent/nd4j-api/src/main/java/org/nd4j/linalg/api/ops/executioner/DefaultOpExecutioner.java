@@ -888,7 +888,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public void scatterUpdate(ScatterUpdate.UpdateOp op, INDArray array, INDArray indices, INDArray updates, int[] axis) {
+    public void scatterUpdate(ScatterUpdate.UpdateOp op, INDArray array, INDArray indices, INDArray updates, long[] axis) {
         throw new UnsupportedOperationException();
     }
 
@@ -900,7 +900,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
      *                     Otherwise present = "exec(Op,int[])" call
      * @return
      */
-    public String opInfoString(Op op, Optional<int[]> dimensions){
+    public String opInfoString(Op op, Optional<long[]> dimensions){
         if(op == null)
             return "<NULL OP>";
 
@@ -980,7 +980,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension) {
+    public TadPack tadShapeInfoAndOffsets(INDArray array, long[] dimension) {
         throw new UnsupportedOperationException();
     }
 

@@ -37,7 +37,7 @@ public class ClipByAvgNorm extends DynamicCustomOp {
     private double clipValue;
 
 
-    public ClipByAvgNorm(SameDiff sameDiff, SDVariable x, double clipValue, int... dimensions) {
+    public ClipByAvgNorm(SameDiff sameDiff, SDVariable x, double clipValue, long... dimensions) {
         super("clipbyavgnorm", sameDiff, new SDVariable[]{x});
         this.clipValue = clipValue;
         this.dimensions = dimensions;
@@ -45,11 +45,11 @@ public class ClipByAvgNorm extends DynamicCustomOp {
         addTArgument(clipValue);
     }
 
-    public ClipByAvgNorm(INDArray in, double clipValue, int... dimensions){
+    public ClipByAvgNorm(INDArray in, double clipValue, long... dimensions){
         this(in, null, clipValue, dimensions);
     }
 
-    public ClipByAvgNorm(INDArray in, INDArray out, double clipValue, int... dimensions){
+    public ClipByAvgNorm(INDArray in, INDArray out, double clipValue, long... dimensions){
         super("clipbyavgnorm", new INDArray[]{in}, wrapOrNull(out), Collections.singletonList(clipValue), dimensions);
     }
 

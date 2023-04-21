@@ -1510,7 +1510,19 @@ public class ArrayUtil {
         return ret;
     }
 
-    public static List<Integer> toList(int... ints){
+    public static List<Long> toList(long... ints) {
+        if(ints == null){
+            return null;
+        }
+        List<Long> ret = new ArrayList<>();
+        for (long anInt : ints) {
+            ret.add(anInt);
+        }
+        return ret;
+    }
+
+
+    public static List<Integer> toList(int... ints) {
         if(ints == null){
             return null;
         }
@@ -1796,6 +1808,28 @@ public class ArrayUtil {
      * @return the new array with the omitted
      * item
      */
+    public static long[] keep(long[] data, long... index) {
+        if (index.length == data.length)
+            return data;
+
+        long[] ret = new long[index.length];
+        int count = 0;
+        for (int i = 0; i < data.length; i++)
+            if (Longs.contains(index, i))
+                ret[count++] = data[i];
+
+        return ret;
+    }
+
+    /**
+     * Return a copy of this array with only the
+     * given index(es) remaining
+     *
+     * @param data  the data to copy
+     * @param index the index of the item to remove
+     * @return the new array with the omitted
+     * item
+     */
     public static long[] keep(long[] data, int... index) {
         if (index.length == data.length)
             return data;
@@ -1805,6 +1839,38 @@ public class ArrayUtil {
         for (int i = 0; i < data.length; i++)
             if (Ints.contains(index, i))
                 ret[count++] = data[i];
+
+        return ret;
+    }
+
+
+
+    /**
+     * Return a copy of this array with the
+     * given index omitted
+     *
+     * PLEASE NOTE: index to be omitted must exist in source array.
+     *
+     * @param data  the data to copy
+     * @param index the index of the item to remove
+     * @return the new array with the omitted
+     * item
+     */
+    public static long[] removeIndex(long[] data, long... index) {
+        if (index.length >= data.length) {
+            throw new IllegalStateException("Illegal remove: indexes.length > data.length (index.length="
+                    + index.length + ", data.length=" + data.length + ")");
+        }
+
+        int offset = 0;
+
+
+        long[] ret = new long[data.length - index.length + offset];
+        int count = 0;
+        for (int i = 0; i < data.length; i++)
+            if (!Longs.contains(index, i)) {
+                ret[count++] = data[i];
+            }
 
         return ret;
     }
@@ -1827,14 +1893,7 @@ public class ArrayUtil {
                     + index.length + ", data.length=" + data.length + ")");
         }
         int offset = 0;
-        /*
-            workaround for non-existent indexes (such as Integer.MAX_VALUE)
 
-
-        for (int i = 0; i < index.length; i ++) {
-            if (index[i] >= data.length || index[i] < 0) offset++;
-        }
-        */
 
         int[] ret = new int[data.length - index.length + offset];
         int count = 0;
@@ -1973,7 +2032,14 @@ public class ArrayUtil {
     }
 
 
+    public static long[] permute(long[] shape, long[] dimensions) {
+        val ret = new long[shape.length];
+        for (int i = 0; i < shape.length; i++) {
+            ret[i] = shape[(int) dimensions[i]];
+        }
 
+        return ret;
+    }
     public static long[] permute(long[] shape, int[] dimensions) {
         val ret = new long[shape.length];
         for (int i = 0; i < shape.length; i++) {
@@ -2200,6 +2266,11 @@ public class ArrayUtil {
         System.arraycopy(data, 0, result, 0, index);
         System.arraycopy(data, index + 1, result, index, len - index - 1);
         return result;
+    }
+
+
+    public static long[] removeIndex(long[] data, long index) {
+        return removeIndex(data,(int) index);
     }
 
     public static long[] removeIndex(long[] data, int index) {

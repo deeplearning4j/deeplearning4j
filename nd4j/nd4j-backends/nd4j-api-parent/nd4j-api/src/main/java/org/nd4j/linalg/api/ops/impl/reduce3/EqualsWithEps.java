@@ -31,11 +31,11 @@ import java.util.List;
 public class EqualsWithEps extends BaseReduce3Op {
     private double eps;
 
-    public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+    public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, long[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
-    public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
+    public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -47,12 +47,12 @@ public class EqualsWithEps extends BaseReduce3Op {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, int[] dimensions, double eps) {
+    public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, long[] dimensions, double eps) {
         super(sameDiff, i_v, dimensions);
         this.eps = eps;
     }
 
-    public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, double eps, int... dimensions) {
+    public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, double eps, long... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
         this.eps = eps;
     }
@@ -71,32 +71,32 @@ public class EqualsWithEps extends BaseReduce3Op {
         this.eps = eps;
     }
 
-    public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, double eps) {
+    public EqualsWithEps(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, double eps) {
         super(sameDiff, i_v, i_v2, dimensions);
         this.eps = eps;
     }
 
     public EqualsWithEps() {}
 
-    public EqualsWithEps(INDArray x, INDArray y, int... dimensions) {
+    public EqualsWithEps(INDArray x, INDArray y, long... dimensions) {
         super(x, y, dimensions);
         this.eps = Nd4j.EPS_THRESHOLD;
     }
 
-    public EqualsWithEps(INDArray x, INDArray y, boolean allDistances, int... dimensions) {
+    public EqualsWithEps(INDArray x, INDArray y, boolean allDistances, long... dimensions) {
         super(x, y, allDistances, dimensions);
     }
 
-    public EqualsWithEps(INDArray x, INDArray y, INDArray z, double eps, int... dimensions) {
+    public EqualsWithEps(INDArray x, INDArray y, INDArray z, double eps, long... dimensions) {
         super(x, y, z, false, dimensions);
         this.extraArgs = new Object[] {0.0, 0.0, eps};
     }
 
-    public EqualsWithEps(INDArray x, INDArray y, double eps, int... dimensions) {
+    public EqualsWithEps(INDArray x, INDArray y, double eps, long... dimensions) {
         this(x, y, null, eps, dimensions);
     }
 
-    public EqualsWithEps(INDArray x, INDArray y, boolean allDistances, double eps, int... dimensions) {
+    public EqualsWithEps(INDArray x, INDArray y, boolean allDistances, double eps, long... dimensions) {
         super(x, y, allDistances, dimensions);
         this.eps = eps;
     }
@@ -106,12 +106,12 @@ public class EqualsWithEps extends BaseReduce3Op {
         this.eps = eps;
     }
 
-    public EqualsWithEps(INDArray x, INDArray y, INDArray z, boolean keepDims, double eps, int... dimensions) {
+    public EqualsWithEps(INDArray x, INDArray y, INDArray z, boolean keepDims, double eps, long... dimensions) {
         super(x, y, z, keepDims, dimensions);
         this.eps = eps;
     }
 
-    public EqualsWithEps(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, double eps, int... dimensions) {
+    public EqualsWithEps(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, double eps, long... dimensions) {
         super(x, y, z, keepDims, allDistances, dimensions);
         this.eps = eps;
     }
@@ -120,15 +120,15 @@ public class EqualsWithEps extends BaseReduce3Op {
         this(x, y, z, Nd4j.EPS_THRESHOLD, null);
     }
 
-    public EqualsWithEps(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions) {
+    public EqualsWithEps(INDArray x, INDArray y, INDArray z, boolean keepDims, long... dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
-    public EqualsWithEps(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, int... dimensions) {
+    public EqualsWithEps(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, long... dimensions) {
         super(x, y, z, keepDims, allDistances, dimensions);
     }
 
-    public EqualsWithEps(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public EqualsWithEps(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 

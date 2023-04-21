@@ -129,11 +129,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         sArguments = new ArrayList<>();
     }
 
-    public DynamicCustomOp(String opName, INDArray input, INDArray output, List<Double> tArguments, int[] iArguments) {
+    public DynamicCustomOp(String opName, INDArray input, INDArray output, List<Double> tArguments, long[] iArguments) {
         this(opName, (input == null ? null : new INDArray[]{input}), (output == null ? null : new INDArray[]{output}), tArguments, iArguments);
     }
 
-    public DynamicCustomOp(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, int[] iArguments) {
+    public DynamicCustomOp(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, long[] iArguments) {
         this(opName, inputs, outputs, tArguments, ArrayUtil.toList(iArguments));
     }
 
@@ -148,7 +148,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
      * @param tArguments the input float arguments
      * @param iArguments the input int arguments
      */
-    public DynamicCustomOp(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments) {
+    public DynamicCustomOp(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Long> iArguments) {
         if (inputs != null) {
             for(int i = 0; i < inputs.length; i++) {
                 if(inputs[i] == null) {

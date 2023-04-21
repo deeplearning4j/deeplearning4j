@@ -32,11 +32,11 @@ import java.util.List;
 public class EuclideanDistance extends BaseReduce3Op {
     public static final String OP_NAME = "euclidean";
 
-    public EuclideanDistance(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+    public EuclideanDistance(SameDiff sameDiff, SDVariable i_v, long[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
-    public EuclideanDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public EuclideanDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -53,7 +53,7 @@ public class EuclideanDistance extends BaseReduce3Op {
 
 
 
-    public EuclideanDistance(INDArray x, INDArray y, int... dimensions) {
+    public EuclideanDistance(INDArray x, INDArray y, long... dimensions) {
         this(x, y, null, dimensions);
     }
 
@@ -61,35 +61,35 @@ public class EuclideanDistance extends BaseReduce3Op {
         this(x, y, z, null);
     }
 
-    public EuclideanDistance(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public EuclideanDistance(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z,dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 
-    public EuclideanDistance(INDArray x, INDArray y, boolean allDistances, int... dimensions) {
+    public EuclideanDistance(INDArray x, INDArray y, boolean allDistances, long... dimensions) {
         this(x, y, null, allDistances, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
 
     }
 
-    public EuclideanDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimensions) {
+    public EuclideanDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, long... dimensions) {
         this(x, y, z, false, allDistances, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
 
     }
 
-    public EuclideanDistance(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, int... dimensions){
+    public EuclideanDistance(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, long... dimensions){
         super(x, y, z, keepDims, allDistances, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 
-    public EuclideanDistance(SameDiff sd, SDVariable x, SDVariable y, boolean keepDims, boolean isComplex, int[] dimensions) {
+    public EuclideanDistance(SameDiff sd, SDVariable x, SDVariable y, boolean keepDims, boolean isComplex, long[] dimensions) {
         super(sd,x,y,keepDims,isComplex,dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
 
     }
 
-    public EuclideanDistance(INDArray x, INDArray y, boolean keepDims, boolean isComplex, int[] dimensions) {
+    public EuclideanDistance(INDArray x, INDArray y, boolean keepDims, boolean isComplex, long[] dimensions) {
         super(x,y,null,keepDims,isComplex,dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
 

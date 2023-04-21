@@ -53,10 +53,10 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, sd::LongType xEws, const v
 
   if (xEws == 1 && yEws == 1 && zEws == 1) {
     PRAGMA_OMP_SIMD
-    for (auto i = start; i < stop; i++) z[i] = OpType::op(x[i], y[i], extraParams);
+    for (sd::LongType i = start; i < stop; i++) z[i] = OpType::op(x[i], y[i], extraParams);
   } else {
     PRAGMA_OMP_SIMD
-    for (auto i = start; i < stop; i++) z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], extraParams);
+    for (sd::LongType i = start; i < stop; i++) z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], extraParams);
   }
 }
 
@@ -89,7 +89,7 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
 
     if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
       PRAGMA_OMP_SIMD
-      for (auto i = start; i < stop; i++) {
+      for (sd::LongType i = start; i < stop; i++) {
         auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
         z[offset] = OpType::op(x[offset], y[0], extraParams);
       };
@@ -98,7 +98,7 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
       const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
       PRAGMA_OMP_SIMD
-      for (auto i = start; i < stop; i++) {
+      for (sd::LongType i = start; i < stop; i++) {
         auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
         auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
         z[zOffset] = OpType::op(x[xOffset], y[0], extraParams);
@@ -122,7 +122,7 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
       bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
       PRAGMA_OMP_SIMD
-      for (auto i = start; i < stop; i++) {
+      for (sd::LongType i = start; i < stop; i++) {
         auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
         z[offset] = OpType::op(x[offset], y[offset], extraParams);
       }
@@ -133,7 +133,7 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
       bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
       PRAGMA_OMP_SIMD
-      for (auto i = start; i < stop; i++) {
+      for (sd::LongType i = start; i < stop; i++) {
         auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
         auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
         z[zOffset] = OpType::op(x[offset], y[offset], extraParams);
@@ -145,7 +145,7 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
       bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
       PRAGMA_OMP_SIMD
-      for (auto i = start; i < stop; i++) {
+      for (sd::LongType i = start; i < stop; i++) {
         auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
         auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
         z[offset] = OpType::op(x[offset], y[yOffset], extraParams);
@@ -157,7 +157,7 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
       bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
       PRAGMA_OMP_SIMD
-      for (auto i = start; i < stop; i++) {
+      for (sd::LongType i = start; i < stop; i++) {
         auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
         auto offset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
         z[offset] = OpType::op(x[xOffset], y[offset], extraParams);
@@ -171,7 +171,7 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
       bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
       PRAGMA_OMP_SIMD
-      for (auto i = start; i < stop; i++) {
+      for (sd::LongType i = start; i < stop; i++) {
         auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
         auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
         auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);

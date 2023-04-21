@@ -147,7 +147,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to calculate the number of vectors for
      * @return the number of possible vectors along a dimension
      */
-    long tensorsAlongDimension(int... dimension);
+    long tensorsAlongDimension(long... dimension);
 
     /**
      * Get the vector along a particular dimension
@@ -156,7 +156,10 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the vector from
      * @return the vector along a particular dimension
      */
-    INDArray tensorAlongDimension(long index, int... dimension);
+    INDArray tensorAlongDimension(long index, long... dimension);
+
+
+
 
     /**
      * Returns the cumulative sum along a dimension. In-place method.
@@ -1518,7 +1521,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to the max norm along
      * @return Max norm along the specified dimension
      */
-    INDArray normmax(int... dimension);
+    INDArray normmax(long... dimension);
 
     /**
      * Returns the max norm (aka infinity norm, equal to the maximum absolute value) along the specified dimension(s)
@@ -1527,7 +1530,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param keepDims whether to keep reduced dimensions as dimensions of size 1
      * @return Max norm along the specified dimension
      */
-    INDArray normmax(boolean keepDims, int... dimension);
+    INDArray normmax(boolean keepDims, long... dimension);
 
     /**
      * Return the max norm (aka infinity norm, equal to the maximum absolute value) for the entire array
@@ -1542,7 +1545,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the norm2 along
      * @return the norm2 along the specified dimension
      */
-    INDArray norm2(int... dimension);
+    INDArray norm2(long... dimension);
 
     /**
      * Returns the norm2 (L2 norm, sqrt(sum(x_i^2), also known as Euclidean norm) along the specified dimension(s)
@@ -1551,7 +1554,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param keepDims whether to keep reduced dimensions as dimensions of size 1
      * @return the norm2 along the specified dimension
      */
-    INDArray norm2(boolean keepDims, int... dimension);
+    INDArray norm2(boolean keepDims, long... dimension);
 
     /**
      * Return the norm2 (L2 norm, sqrt(sum(x_i^2), also known as Euclidean norm) for the entire array
@@ -1567,7 +1570,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the norm1 along
      * @return the norm1 along the specified dimension
      */
-    INDArray norm1(int... dimension);
+    INDArray norm1(long... dimension);
 
     /**
      * Returns the norm1 (L1 norm, i.e., sum of absolute values; also known as Taxicab or Manhattan norm) along the
@@ -1577,7 +1580,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param keepDims whether to keep reduced dimensions as dimensions of size 1
      * @return the norm1 along the specified dimension
      */
-    INDArray norm1(boolean keepDims, int... dimension);
+    INDArray norm1(boolean keepDims, long... dimension);
 
     /**
      * Calculate and return norm1 (L1 norm, i.e., sum of absolute values; also known as Taxicab or Manhattan norm) for
@@ -1593,7 +1596,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the std along
      * @return the standard deviation along a particular dimension
      */
-    INDArray std(int... dimension);
+    INDArray std(long... dimension);
 
     /**
      * Calculate the standard deviation for the entire array
@@ -1608,7 +1611,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the std along
      * @return the standard deviation along a particular dimension
      */
-    INDArray std(boolean biasCorrected, int... dimension);
+    INDArray std(boolean biasCorrected, long... dimension);
 
     /**
      * Standard deviation of an ndarray along a dimension
@@ -1617,7 +1620,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param keepDims whether to keep reduced dimensions as dimensions of size 1
      * @return the standard deviation along a particular dimension
      */
-    INDArray std(boolean biasCorrected, boolean keepDims, int... dimension);
+    INDArray std(boolean biasCorrected, boolean keepDims, long... dimension);
 
     /**
      * Calculate the standard deviation for the entire array, specifying whether it is bias corrected or not
@@ -1633,7 +1636,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the product along
      * @return the product along the specified dimension
      */
-    INDArray prod(int... dimension);
+    INDArray prod(long... dimension);
 
     /**
      * Returns the product along a given dimension
@@ -1642,7 +1645,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param keepDims whether to keep reduced dimensions as dimensions of size 1
      * @return the product along the specified dimension
      */
-    INDArray prod(boolean keepDims, int... dimension);
+    INDArray prod(boolean keepDims, long... dimension);
 
     /**
      * Calculate the product of all values in the array
@@ -1657,7 +1660,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
-    INDArray mean(int... dimension);
+    INDArray mean(long... dimension);
 
     /**
      * Returns the overall mean of this ndarray
@@ -1665,16 +1668,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
-    INDArray mean(INDArray result, int... dimension);
-
-    /**
-     * Returns the overall mean of this ndarray
-     *
-     * @param dimension the dimension to getScalar the mean along
-     * @param keepDims whether to keep reduced dimensions as dimensions of size 1
-     * @return the mean along the specified dimension of this ndarray
-     */
-    INDArray mean(boolean keepDims, int... dimension);
+    INDArray mean(INDArray result, long... dimension);
 
     /**
      * Returns the overall mean of this ndarray
@@ -1683,7 +1677,16 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param keepDims whether to keep reduced dimensions as dimensions of size 1
      * @return the mean along the specified dimension of this ndarray
      */
-    INDArray mean(INDArray result, boolean keepDims, int... dimension);
+    INDArray mean(boolean keepDims, long... dimension);
+
+    /**
+     * Returns the overall mean of this ndarray
+     *
+     * @param dimension the dimension to getScalar the mean along
+     * @param keepDims whether to keep reduced dimensions as dimensions of size 1
+     * @return the mean along the specified dimension of this ndarray
+     */
+    INDArray mean(INDArray result, boolean keepDims, long... dimension);
 
     /**
      * Returns the absolute overall mean of this ndarray
@@ -1691,7 +1694,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the mean along
      * @return the absolute mean along the specified dimension of this ndarray
      */
-    INDArray amean(int... dimension);
+    INDArray amean(long... dimension);
 
     /**
      * Returns the overall mean of this ndarray
@@ -1713,7 +1716,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the variance along
      * @return the variance along the specified dimension of this ndarray
      */
-    INDArray var(int... dimension);
+    INDArray var(long... dimension);
 
     /**
      * Returns the overall variance of this ndarray
@@ -1722,7 +1725,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the variance along
      * @return the variance along the specified dimension of this ndarray
      */
-    INDArray var(boolean biasCorrected, int... dimension);
+    INDArray var(boolean biasCorrected, long... dimension);
 
     /**
      * Returns the overall variance of all values in this INDArray
@@ -1737,7 +1740,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the max along
      * @return the max along the specified dimension of this ndarray
      */
-    INDArray max(int... dimension);
+    INDArray max(long... dimension);
 
     /**
      * Returns the overall max of this ndarray along given dimensions
@@ -1746,7 +1749,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param keepDims whether to keep reduced dimensions as dimensions of size 1
      * @return the max along the specified dimension of this ndarray
      */
-    INDArray max(boolean keepDims, int... dimension);
+    INDArray max(boolean keepDims, long... dimension);
 
     /**
      * Returns the absolute overall max of this ndarray along given dimensions
@@ -1754,7 +1757,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the amax along
      * @return the amax along the specified dimension of this ndarray
      */
-    INDArray amax(int... dimension);
+    INDArray amax(long... dimension);
 
     /**
      * Returns maximum value in this INDArray
@@ -1774,7 +1777,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the min along
      * @return the min along the specified dimension of this ndarray
      */
-    INDArray min(int... dimension);
+    INDArray min(long... dimension);
 
     /**
      * Returns the overall min of this ndarray
@@ -1783,14 +1786,14 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param keepDims whether to keep reduced dimensions as dimensions of size 1
      * @return the min along the specified dimension of this ndarray
      */
-    INDArray min(boolean keepDims, int... dimension);
+    INDArray min(boolean keepDims, long... dimension);
 
     /**
      * Returns minimum (absolute) value in this INDArray, along the specified dimensions
      *
      * @return Minimum absolute value
      */
-    INDArray amin(int... dimension);
+    INDArray amin(long... dimension);
 
     /**
      * Returns min value in this INDArray
@@ -1811,7 +1814,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the sum along
      * @return the sum along the specified dimension of this ndarray
      */
-    INDArray sum(int... dimension);
+    INDArray sum(long... dimension);
 
     /**
      * Returns the sum along the last dimension of this ndarray
@@ -1820,7 +1823,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param keepDims whether to keep reduced dimensions as dimensions of size 1
      * @return the sum along the specified dimension of this ndarray
      */
-    INDArray sum(boolean keepDims, int... dimension);
+    INDArray sum(boolean keepDims, long... dimension);
 
     /**
      * This method takes boolean condition, and returns number of elements matching this condition
@@ -1837,7 +1840,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the sum along
      * @return the sum along the specified dimension of this ndarray
      */
-    INDArray sum(INDArray result, int... dimension);
+    INDArray sum(INDArray result, long... dimension);
 
     /**
      * Returns the sum along the last dimension of this ndarray
@@ -1847,7 +1850,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension the dimension to getScalar the sum along
      * @return the sum along the specified dimension of this ndarray
      */
-    INDArray sum(INDArray result, boolean keepDims, int... dimension);
+    INDArray sum(INDArray result, boolean keepDims, long... dimension);
 
     /**
      * Sum the entire array
@@ -1878,21 +1881,21 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension specified dimension(s)
      * @return entropy value
      */
-    INDArray entropy(int... dimension);
+    INDArray entropy(long... dimension);
 
     /**
      * Returns Shannon entropy value for this INDArray along specified dimension(s)
      * @param dimension specified dimension(s)
      * @return Shannon entropy
      */
-    INDArray shannonEntropy(int... dimension);
+    INDArray shannonEntropy(long... dimension);
 
     /**
      * Returns log entropy value for this INDArray along specified dimension(s)
      * @param dimension specified dimension(s)
      * @return log entropy value
      */
-    INDArray logEntropy(int... dimension);
+    INDArray logEntropy(long... dimension);
 
     /**
      * Shape and stride setter
@@ -2200,7 +2203,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param rearrange the dimensions to swap to
      * @return the newly permuted array
      */
-    INDArray permute(int... rearrange);
+    INDArray permute(long... rearrange);
 
     /**
      * An <b>in-place</b> version of permute. The array  shape information (shape, strides)
@@ -2210,7 +2213,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param rearrange the dimensions to swap to
      * @return the current array
      */
-    INDArray permutei(int... rearrange);
+    INDArray permutei(long... rearrange);
 
     /**
      * Dimshuffle: an extension of permute that adds the ability
@@ -2399,6 +2402,11 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     long size(int dimension);
 
+
+    default long size(long dimension) {
+        return size((int) dimension);
+    }
+
     /**
      * Returns the total number of elements in the ndarray
      *
@@ -2571,7 +2579,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension Dimension along which to perform the argMax operation
      * @return Array containing indices
      */
-    INDArray argMax(int... dimension);
+    INDArray argMax(long... dimension);
 
     /**
      * This method returns True, if this INDArray instance is attached to some Workspace. False otherwise.
@@ -2685,7 +2693,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension Dimension to calculate median
      * @return Median along specified dimensions
      */
-    INDArray median(int... dimension);
+    INDArray median(long... dimension);
 
     /**
      * This method returns percentile along given dimension(s)
@@ -2693,7 +2701,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param dimension  Dimension to calculate percentile for
      * @return array with percentiles
      */
-    INDArray percentile(Number percentile, int... dimension);
+    INDArray percentile(Number percentile, long... dimension);
 
     /**
      * Add an {@link INDArray}

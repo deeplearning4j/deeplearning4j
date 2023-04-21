@@ -138,14 +138,14 @@ static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray
       else
         ++j;
 
-    for (auto i = start; i < stop; i++) {
+    for (sd::LongType i = start; i < stop; i++) {
       shape::index2coordsCPU(start, i, input->shapeInfo(), xzCoords);
 
       const auto xOffset = shape::getOffset(input->shapeInfo(), xzCoords);
       const auto zOffset = xzSameOffset ? xOffset : shape::getOffset(output->shapeInfo(), xzCoords);
 
       if (minRank == xRank) {
-        for (sd::Unsigned j = 0; j < numAxes; ++j) minCoords[axes[j]] = xzCoords[axes[j]];
+        for (sd::LongType j = 0; j < numAxes; ++j) minCoords[axes[j]] = xzCoords[axes[j]];
       } else  // minRank = numAxes = 1 in this case
         minCoords[0] = xzCoords[axes[0]];
 

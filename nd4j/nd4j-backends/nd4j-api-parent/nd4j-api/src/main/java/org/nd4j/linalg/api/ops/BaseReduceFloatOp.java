@@ -34,23 +34,23 @@ import java.util.List;
 
 public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFloatOp {
 
-    public BaseReduceFloatOp(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions){
+    public BaseReduceFloatOp(INDArray x, INDArray y, INDArray z, boolean keepDims, long... dimensions){
         super(x, y, z, keepDims, dimensions);
     }
 
-    protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+    protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable i_v, boolean keepDims, long[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
     }
 
-    protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable input, int... dimensions) {
+    protected BaseReduceFloatOp(SameDiff sameDiff, SDVariable input, long... dimensions) {
         super(sameDiff, input, dimensions);
     }
 
@@ -76,27 +76,27 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
 
 
 
-    public BaseReduceFloatOp(INDArray input, INDArray output, boolean keepDims, int... dimensions){
+    public BaseReduceFloatOp(INDArray input, INDArray output, boolean keepDims, long... dimensions){
         super(input, null, output, dimensions);
         this.keepDims = keepDims;
         this.dimensions = dimensions;
     }
 
 
-    public BaseReduceFloatOp(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public BaseReduceFloatOp(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
-    public BaseReduceFloatOp(INDArray x, INDArray z, int... dimensions) {
+    public BaseReduceFloatOp(INDArray x, INDArray z, long... dimensions) {
         super(x, null, z, dimensions);
     }
 
 
-    public BaseReduceFloatOp(INDArray x, boolean keepDims, int... dimensions) {
+    public BaseReduceFloatOp(INDArray x, boolean keepDims, long... dimensions) {
         super(x, keepDims, dimensions);
     }
 
 
-    public BaseReduceFloatOp(INDArray x, int... dimensions) {
+    public BaseReduceFloatOp(INDArray x, long... dimensions) {
         super(x, dimensions);
     }
 

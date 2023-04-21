@@ -41,7 +41,7 @@ public class SizeAt extends DynamicCustomOp {
     }
 
     public SizeAt(INDArray input, INDArray output, int dimension) {
-        super(null,input, output, new ArrayList<Double>(), new int[]{dimension});
+        super(null,input, output, new ArrayList<>(), new long[]{dimension});
     }
 
     public SizeAt(SameDiff sameDiff, SDVariable input, int dimension) {

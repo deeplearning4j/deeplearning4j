@@ -64,14 +64,16 @@ class SD_LIB_HIDDEN Reduce3 {
   template <typename OpType>
   static SD_DEVICE void execScalarCuda(const void *x, const sd::LongType *xShapeInfo, const void *y,
                                        const sd::LongType *yShapeInfo, void *extraParams, void *z,
-                                       const sd::LongType *zShapeInfo, int *allocationPointer, void *reductionBuffer,
+                                       const sd::LongType *zShapeInfo, sd::LongType *allocationPointer, void *reductionBuffer,
                                        const sd::LongType *tadOnlyShapeInfo);
 
   template <typename OpType>
   static SD_DEVICE void transformAll(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                                      const sd::LongType *yShapeInfo, void *extraParams, void *vz,
-                                     const sd::LongType *zShapeInfo, int *dimension, int dimensionLength,
-                                     int postProcessOrNot, int *allocationPointer, const sd::LongType *xTadShapeInfo,
+                                     const sd::LongType *zShapeInfo, sd::LongType*dimension,
+                                     sd::LongType dimensionLength,
+                                     int postProcessOrNot,
+                                     sd::LongType *allocationPointer, const sd::LongType *xTadShapeInfo,
                                      const sd::LongType *xOffsets, const sd::LongType *yTadShapeInfo,
                                      const sd::LongType *yOffsets);
 
@@ -87,47 +89,52 @@ class SD_LIB_HIDDEN Reduce3 {
   template <typename OpType>
   static SD_DEVICE void transform(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                                   const sd::LongType *yShapeInfo, void *extraParams, void *vz,
-                                  const sd::LongType *zShapeInfo, int *dimension, int dimensionLength,
-                                  int postProcessOrNot, int *allocationPointer, const sd::LongType *tadOnlyShapeInfo,
+                                  const sd::LongType *zShapeInfo, sd::LongType *dimension,
+                                  sd::LongType dimensionLength,
+                                  int postProcessOrNot, sd::LongType *allocationPointer, const sd::LongType *tadOnlyShapeInfo,
                                   const sd::LongType *tadOffsets, const sd::LongType *yTadOnlyShapeInfo,
                                   const sd::LongType *yTadOffsets);
 
   static SD_DEVICE void execCuda(int opNum, const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                                  const sd::LongType *yShapeInfo, void *extraParams, void *vz,
-                                 const sd::LongType *zShapeInfo, int *dimension, int dimensionLength,
-                                 int postProcessOrNot, int *allocationPointer, const sd::LongType *tadOnlyShapeInfo,
+                                 const sd::LongType *zShapeInfo, sd::LongType *dimension,
+                                 sd::LongType dimensionLength,
+                                 int postProcessOrNot, long long int *allocationPointer, const sd::LongType *tadOnlyShapeInfo,
                                  const sd::LongType *tadOffsets, const sd::LongType *yTadOnlyShapeInfo,
                                  const sd::LongType *yTadOffsets);
 
   static SD_DEVICE void execAllCuda(int opNum, const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                                     const sd::LongType *yShapeInfo, void *extraParams, void *vz,
-                                    const sd::LongType *zShapeInfo, int *dimension, int dimensionLength,
-                                    int postProcessOrNot, int *allocationPointer, const sd::LongType *tadOnlyShapeInfo,
+                                    const sd::LongType *zShapeInfo, sd::LongType *dimension,
+                                    sd::LongType dimensionLength,
+                                    int postProcessOrNot,
+                                    sd::LongType *allocationPointer, const sd::LongType *tadOnlyShapeInfo,
                                     const sd::LongType *tadOffsets, const sd::LongType *yTadOnlyShapeInfo,
                                     const sd::LongType *yTadOffsets);
 
   static SD_DEVICE void execScalarCuda(int opNum, const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                                        const sd::LongType *yShapeInfo, void *extraParams, void *vz,
-                                       const sd::LongType *zShapeInfo, int *allocationPointer, void *reductionBuffer,
+                                       const sd::LongType *zShapeInfo, long long int *allocationPointer, void *reductionBuffer,
                                        const sd::LongType *tadOnlyShapeInfo);
 
   static SD_HOST void exec(dim3 launchDims, cudaStream_t *stream, int opNum, const void *vx,
                            const sd::LongType *xShapeInfo, const void *vy, const sd::LongType *yShapeInfo,
-                           void *extraParams, void *vz, const sd::LongType *zShapeInfo, int *dimension,
-                           int dimensionLength, int postProcessOrNot, int *allocationPointer,
+                           void *extraParams, void *vz, const sd::LongType *zShapeInfo, sd::LongType *dimension,
+                           sd::LongType dimensionLength, int postProcessOrNot, long long int *allocationPointer,
                            const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
                            const sd::LongType *yTadOnlyShapeInfo, const sd::LongType *yTadOffsets);
 
   static SD_HOST void execAll(dim3 launchDims, cudaStream_t *stream, int opNum, const void *vx,
                               const sd::LongType *xShapeInfo, const void *vy, const sd::LongType *yShapeInfo,
-                              void *extraParams, void *vz, const sd::LongType *zShapeInfo, int *dimension,
-                              int dimensionLength, int postProcessOrNot, int *allocationPointer,
+                              void *extraParams, void *vz, const sd::LongType *zShapeInfo, long long int *dimension,
+                              sd::LongType dimensionLength, int postProcessOrNot, sd::LongType *allocationPointer,
                               const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
                               const sd::LongType *yTadOnlyShapeInfo, const sd::LongType *yTadOffsets);
 
   static SD_HOST void execScalar(dim3 launchDims, cudaStream_t *stream, int opNum, const void *vx,
                                  const sd::LongType *xShapeInfo, const void *vy, const sd::LongType *yShapeInfo,
-                                 void *extraParams, void *vz, const sd::LongType *zShapeInfo, int *allocationPointer,
+                                 void *extraParams, void *vz, const sd::LongType *zShapeInfo,
+                                 sd::LongType *allocationPointer,
                                  void *reductionBuffer, const sd::LongType *tadOnlyShapeInfo);
 
 #else

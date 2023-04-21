@@ -428,7 +428,7 @@ fun NN() = Namespace("NN") {
         val g = Input(NUMERIC, "gain") { description = "Gain" }
         Input(NUMERIC, "bias") { description = "Bias"; defaultValue = null}
         val ch = Arg(BOOL, "channelsFirst") { description = "For 2D input - unused. True for NCHW (minibatch, channels, height, width), false for NHWC data" }
-        val dim = Arg(INT, "dimensions") { count = AtLeast(1); description = "Dimensions to perform layer norm over - dimension=1 for 2d/MLP data, dimension=1,2,3 for CNNs" }
+        val dim = Arg(LONG, "dimensions") { count = AtLeast(1); description = "Dimensions to perform layer norm over - dimension=1 for 2d/MLP data, dimension=1,2,3 for CNNs" }
 
         Output(NUMERIC, "output") { description = "Output variable" }
 

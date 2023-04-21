@@ -43,7 +43,7 @@ public class FirstIndex extends BaseIndexAccumulation {
     protected double eps;
     protected Conditions.ConditionMode mode;
 
-    public FirstIndex(SameDiff sameDiff, SDVariable i_v, Condition condition, boolean keepDims, int... dimensions) {
+    public FirstIndex(SameDiff sameDiff, SDVariable i_v, Condition condition, boolean keepDims, long... dimensions) {
         super(sameDiff, i_v, keepDims, dimensions);
         this.condition = condition;
         this.compare = condition.getValue();
@@ -52,24 +52,24 @@ public class FirstIndex extends BaseIndexAccumulation {
         this.extraArgs = new Object[] {compare, eps, (double) mode.index};
     }
 
-    public FirstIndex(SameDiff sameDiff, SDVariable i_v, boolean keepDims, Condition condition, int... dimensions) {
+    public FirstIndex(SameDiff sameDiff, SDVariable i_v, boolean keepDims, Condition condition, long... dimensions) {
         this(sameDiff, i_v, condition, keepDims, dimensions);
     }
 
-    public FirstIndex(INDArray x, @NonNull Condition condition, int... dimension) {
+    public FirstIndex(INDArray x, @NonNull Condition condition, long... dimension) {
         this(x, condition, false, dimension);
     }
 
-    public FirstIndex(INDArray x, boolean keepDims, @NonNull Condition condition, int... dimension) {
+    public FirstIndex(INDArray x, boolean keepDims, @NonNull Condition condition, long... dimension) {
         this(x,condition,keepDims,dimension);
     }
 
-    public FirstIndex(INDArray x, @NonNull Condition condition, boolean keepDims, int... dimension) {
+    public FirstIndex(INDArray x, @NonNull Condition condition, boolean keepDims, long... dimension) {
         this(x, condition, Nd4j.EPS_THRESHOLD, dimension);
         this.keepDims = keepDims;
     }
 
-    public FirstIndex(INDArray x, @NonNull Condition condition, double eps, int... dimension) {
+    public FirstIndex(INDArray x, @NonNull Condition condition, double eps, long... dimension) {
         super(x, dimension);
         this.condition = condition;
         this.compare = condition.getValue();

@@ -31,15 +31,15 @@ import java.util.Collections;
 import java.util.List;
 
 public class ASum extends BaseReduceSameOp {
-    public ASum(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+    public ASum(SameDiff sameDiff, SDVariable i_v, long[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
-    public ASum(INDArray x, INDArray z, boolean keepDims, int[] dimensions) {
+    public ASum(INDArray x, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, z, keepDims, dimensions);
     }
 
-    public ASum(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public ASum(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
@@ -51,7 +51,7 @@ public class ASum extends BaseReduceSameOp {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public ASum(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public ASum(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -67,11 +67,11 @@ public class ASum extends BaseReduceSameOp {
         super(sameDiff, i_v, i_v2);
     }
 
-    public ASum(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    public ASum(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    public ASum(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+    public ASum(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
     }
 
@@ -81,27 +81,27 @@ public class ASum extends BaseReduceSameOp {
 
     public ASum() {}
 
-    public ASum(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+    public ASum(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
-    public ASum(INDArray x, int... dimensions) {
+    public ASum(INDArray x, long... dimensions) {
         super(x, dimensions);
     }
 
-    public ASum(INDArray x, INDArray z, int... dimensions) {
+    public ASum(INDArray x, INDArray z, long... dimensions) {
         super(x, null, z, dimensions);
     }
 
-    public ASum(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+    public ASum(SameDiff sd, SDVariable in, boolean keepDims, long[] dimensions) {
         super(sd,in,dimensions,keepDims);
     }
 
-    public ASum(INDArray in, boolean keepDims, int[] dimensions) {
+    public ASum(INDArray in, boolean keepDims, long[] dimensions) {
         super(in,keepDims,dimensions);
     }
 
-    public ASum(INDArray in, int[] dimensions, boolean keepDims) {
+    public ASum(INDArray in, long[] dimensions, boolean keepDims) {
         super(in,keepDims,dimensions);
     }
 

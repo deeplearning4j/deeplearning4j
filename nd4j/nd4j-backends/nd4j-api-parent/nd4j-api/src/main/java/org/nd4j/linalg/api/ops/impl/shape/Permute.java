@@ -27,6 +27,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Longs;
 
 import java.util.Collections;
 import java.util.List;
@@ -34,22 +35,22 @@ import java.util.Map;
 
 public class Permute extends Transpose {
 
-    private int[] reverseDims;
+    private long[] reverseDims;
 
-    public Permute(SameDiff sameDiff, SDVariable i_v, int... permuteDims) {
+    public Permute(SameDiff sameDiff, SDVariable i_v, long... permuteDims) {
         super(sameDiff, i_v);
         this.permuteDims = permuteDims;
-        this.reverseDims = new int[permuteDims.length];
+        this.reverseDims = new long[permuteDims.length];
         for (int i = 0; i < reverseDims.length; i++) {
             reverseDims[i] = ArrayUtils.indexOf(permuteDims, i);
         }
         addIArgument(permuteDims);
     }
 
-    public Permute(INDArray input, INDArray result, int... permuteDims) {
+    public Permute(INDArray input, INDArray result, long... permuteDims) {
         super(input, result);
         this.permuteDims = permuteDims;
-        this.reverseDims = new int[permuteDims.length];
+        this.reverseDims = new long[permuteDims.length];
         for (int i = 0; i < reverseDims.length; i++) {
             reverseDims[i] = ArrayUtils.indexOf(permuteDims, i);
         }
@@ -60,7 +61,7 @@ public class Permute extends Transpose {
         super(sd, input, permuteDims);
     }
 
-    public Permute(INDArray input, int... permuteDims){
+    public Permute(INDArray input, long... permuteDims){
         super(input, null);
         this.permuteDims = permuteDims;
         addIArgument(permuteDims);
@@ -91,8 +92,8 @@ public class Permute extends Transpose {
     public void configureFromArguments() {
         super.configureFromArguments();
         if(!iArguments.isEmpty()) {
-            this.reverseDims = Ints.toArray(iArguments);
-            this.permuteDims = Ints.toArray(iArguments);
+            this.reverseDims = Longs.toArray(iArguments);
+            this.permuteDims = Longs.toArray(iArguments);
             for (int i = 0; i < reverseDims.length; i++) {
                 reverseDims[i] = ArrayUtils.indexOf(permuteDims, i);
             }

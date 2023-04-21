@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.util.MaskedReductionUtil;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
@@ -45,12 +46,12 @@ import java.util.Arrays;
 
 public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer> {
 
-    private static final int[] DEFAULT_TIMESERIES_POOL_DIMS = new int[]{2};
-    private static final int[] DEFAULT_CNN_POOL_DIMS = new int[]{2, 3};
-    private static final int[] DEFAULT_CNN3D_POOL_DIMS = new int[]{2, 3, 4};
+    private static final long[] DEFAULT_TIMESERIES_POOL_DIMS = new long[]{2};
+    private static final long[] DEFAULT_CNN_POOL_DIMS = new long[]{2, 3};
+    private static final long[] DEFAULT_CNN3D_POOL_DIMS = new long[]{2, 3, 4};
 
 
-    private final int[] poolingDimensions;
+    private final long[] poolingDimensions;
     private final PoolingType poolingType;
     private final int pNorm;
 
@@ -60,7 +61,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer) conf.getLayer();
 
-        poolingDimensions = layerConf.getPoolingDimensions();
+        poolingDimensions = ArrayUtil.toLongArray(layerConf.getPoolingDimensions());
         poolingType = layerConf.getPoolingType();
         pNorm = layerConf.getPnorm();
     }
@@ -84,7 +85,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
 
-        int[] poolDim;
+        long[] poolDim;
         if (input.rank() == 3) {
             //TODO validation on pooling dimensions
 
@@ -172,7 +173,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         return new GlobalPoolingLayer(conf, dataType);
     }
 
-    private INDArray activateHelperFullArray(INDArray inputArray, int[] poolDim) {
+    private INDArray activateHelperFullArray(INDArray inputArray, long[] poolDim) {
         switch (poolingType) {
             case MAX:
                 return inputArray.max(poolDim);
@@ -210,7 +211,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
         Gradient retGradient = new DefaultGradient(); //Empty: no params
 
-        int[] poolDim = null;
+        long[] poolDim = null;
         if (input.rank() == 3) {
             if (poolingDimensions == null) {
                 //Use default pooling dimensions;
@@ -259,11 +260,11 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         return new Pair<>(retGradient, epsilonNd);
     }
 
-    private INDArray epsilonHelperFullArray(INDArray inputArray, INDArray epsilon, int[] poolDim) {
+    private INDArray epsilonHelperFullArray(INDArray inputArray, INDArray epsilon, long[] poolDim) {
 
         //Broadcast: occurs on the remaining dimensions, after the pool dimensions have been removed.
         //TODO find a more efficient way to do this
-        int[] broadcastDims = new int[inputArray.rank() - poolDim.length];
+        long[] broadcastDims = new long[inputArray.rank() - poolDim.length];
         int count = 0;
         for (int i = 0; i < inputArray.rank(); i++) {
             if (ArrayUtils.contains(poolDim, i))
@@ -278,7 +279,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
             case AVG:
                 //if out = avg(in,dims) then dL/dIn = 1/N * dL/dOut
                 int n = 1;
-                for (int d : poolDim) {
+                for (long d : poolDim) {
                     n *= inputArray.size(d);
                 }
                 INDArray ret = inputArray.ulike();

@@ -426,7 +426,7 @@ public interface OpExecutioner {
      * @param axis
      */
     @Deprecated
-    void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, int[] axis);
+    void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, long[] axis);
 
     /**
      * This method returns OpContext which can be used (and reused) to execute custom ops
@@ -458,7 +458,7 @@ public interface OpExecutioner {
     /**
      * This method returns host/device tad buffers
      */
-    TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension);
+    TadPack tadShapeInfoAndOffsets(INDArray array, long[] dimension);
 
     /**
      * This method returns constant buffer for the given jvm array

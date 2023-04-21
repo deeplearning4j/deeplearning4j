@@ -1324,17 +1324,6 @@ samediff::EmptyHandling DeclarableOp::emptyHandling() { return samediff::EmptyHa
 
 void DeclarableOp::registerTypes() { this->getOpDescriptor()->setSameMode(true); }
 
-/*
-template <typename T>
-int* sd::ops::DeclarableOp::calculateOutputShape(int* inputShape, sd::graph::Block& block) {
-    // default implementation suits transform, so just returns the same shape
 
-    int* newshape;
-    ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape), int);
-    memcpy(newshape, inputShape, shape::shapeInfoByteLength(inputShape));
-
-    return newshape;
-}
-*/
 }  // namespace ops
 }  // namespace sd

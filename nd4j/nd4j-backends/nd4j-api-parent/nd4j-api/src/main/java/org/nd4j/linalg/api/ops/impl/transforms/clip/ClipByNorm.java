@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Longs;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -44,7 +45,7 @@ public class ClipByNorm extends DynamicCustomOp {
 
     }
 
-    public ClipByNorm(SameDiff sameDiff, SDVariable x, double clipValue, int... dimensions) {
+    public ClipByNorm(SameDiff sameDiff, SDVariable x, double clipValue, long... dimensions) {
         super(null, sameDiff, new SDVariable[]{x});
         this.clipValue = clipValue;
         this.dimensions = dimensions;
@@ -52,11 +53,11 @@ public class ClipByNorm extends DynamicCustomOp {
         addTArgument(clipValue);
     }
 
-    public ClipByNorm(INDArray in, double clipValue, int... dimensions){
+    public ClipByNorm(INDArray in, double clipValue, long... dimensions){
         this(in, null, clipValue, dimensions);
     }
 
-    public ClipByNorm(INDArray in, INDArray out, double clipValue, int... dimensions){
+    public ClipByNorm(INDArray in, INDArray out, double clipValue, long... dimensions){
         super(null, new INDArray[]{in}, wrapOrNull(out), Collections.singletonList(clipValue), dimensions);
     }
 
@@ -92,7 +93,7 @@ public class ClipByNorm extends DynamicCustomOp {
 
         if(properties.containsKey("dimensions")) {
             Long dimension = getLongValueFromProperty("dimensions",properties);
-            this.dimensions = new int[]{dimension.intValue()};
+            this.dimensions = new long[]{dimension.longValue()};
         }
 
     }
@@ -101,7 +102,7 @@ public class ClipByNorm extends DynamicCustomOp {
     public void configureFromArguments() {
         super.configureFromArguments();
         if(!iArguments.isEmpty()) {
-            this.dimensions = Ints.toArray(iArguments);
+            this.dimensions = Longs.toArray(iArguments);
         }
 
         if(!tArguments.isEmpty()) {

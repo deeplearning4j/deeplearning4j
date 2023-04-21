@@ -40,15 +40,13 @@ void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates,
 
   // increasing counter to skip numIndices
   e++;
-  std::vector<int> indices;
+  std::vector<sd::LongType> indices;
   for (; e < static_cast<sd::LongType>(intArgs->size()); e++) indices.push_back((*intArgs)[e]);
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; i++) {
       auto inSubArr = input(indices[i], dimsToExclude, true);
       auto updSubArr = updates(i, dimsToExclude, true);
-      inSubArr.printIndexedBuffer("In sub %d",i);
-      updSubArr.printIndexedBuffer("Up sub %d",i);
       if (inSubArr.lengthOf() != updSubArr.lengthOf()) continue;
 
       switch (opCode) {

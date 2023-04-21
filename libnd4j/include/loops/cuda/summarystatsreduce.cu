@@ -38,9 +38,9 @@ namespace functions {
 namespace summarystats {
 
 template <typename X, typename Z>
-void SD_KERNEL summaryStatsReduceT(int op, void const* dx, sd::LongType const* xShapeInfo, int xRank, void* extraParams,
-                                   void* z, sd::LongType const* zShapeInfo, int zRank, int* dimension,
-                                   int dimensionLength, int postProcessOrNot, bool biasCorrected, int* allocationBuffer,
+void SD_KERNEL summaryStatsReduceT(int op, void const* dx, sd::LongType const* xShapeInfo, sd::LongType xRank, void* extraParams,
+                                   void* z, sd::LongType const* zShapeInfo, sd::LongType zRank,
+                                   sd::LongType* dimension, long long int dimensionLength, int postProcessOrNot, bool biasCorrected, sd::LongType* allocationBuffer,
                                    void* reductionBuffer, sd::LongType const* tadOnlyShapeInfo,
                                    sd::LongType const* tadOffsets) {
   functions::summarystats::SummaryStatsReduce<X, Z>::transform(
@@ -109,8 +109,9 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::aggregatePartials(SummaryStatsData<X>* 
 template <typename X, typename Z>
 template <typename OpType>
 SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void const* vx, sd::LongType const* xShapeInfo, void* vextraParams,
-                                                   void* vz, sd::LongType const* zShapeInfo, int* dimension,
-                                                   int dimensionLength, int postProcessOrNot, int* allocationBuffer,
+                                                   void* vz, sd::LongType const* zShapeInfo, sd::LongType* dimension,
+                                                   sd::LongType dimensionLength, int postProcessOrNot,
+                                                   sd::LongType* allocationBuffer,
                                                    void* vreductionBuffer, sd::LongType const* tadOnlyShapeInfo,
                                                    sd::LongType const* tadOffsets) {
   auto dx = static_cast<X const*>(vx);
@@ -176,7 +177,7 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void const* vx, sd::LongType 
     __shared__ int numTads;
 
     if (threadIdx.x == 0) {
-      tadLength = shape::length(tadOnlyShapeInfo);  // shape::tadLength(xShapeInfo, dimension, dimensionLength);
+      tadLength = shape::length(tadOnlyShapeInfo);
       tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
       numTads = shape::length(xShapeInfo) / tadLength;
     }
@@ -313,8 +314,7 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void const* vx, sd::LongType 
 template <typename X, typename Y>
 SD_DEVICE void SummaryStatsReduce<X, Y>::transform(const int opNum, void const* dx, sd::LongType const* xShapeInfo,
                                                    void* extraParams, void* z, sd::LongType const* zShapeInfo,
-                                                   int* dimension, int dimensionLength, int postProcessOrNot,
-                                                   int* allocationBuffer, void* reductionBuffer,
+                                                   sd::LongType* dimension, sd::LongType dimensionLength, int postProcessOrNot, sd::LongType* allocationBuffer, void* reductionBuffer,
                                                    sd::LongType const* tadOnlyShapeInfo,
                                                    sd::LongType const* tadOffsets) {
   DISPATCH_BY_OPNUM_TT(transform,
@@ -369,7 +369,7 @@ template <typename X, typename Z>
 SD_HOST void SummaryStatsReduce<X, Z>::execSummaryStatsReduce(
     dim3& launchDims, cudaStream_t* stream, int opNum, void const* vx, sd::LongType const* xShapeInfo,
     sd::LongType const* hxShapeInfo, void* vextraParams, void* vz, sd::LongType const* zShapeInfo,
-    sd::LongType const* hzShapeInfo, int* dimension, int dimensionLength, sd::LongType const* tadShapeInfo,
+    sd::LongType const* hzShapeInfo, long long int* dimension, long long int dimensionLength, sd::LongType const* tadShapeInfo,
     sd::LongType const* tadOffsets, bool biasCorrected, void* reductionBuffer) {
   auto x = static_cast<X const*>(vx);
   auto z = static_cast<Z*>(vz);

@@ -172,7 +172,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
         List<String> failed = new ArrayList<>();
 
-        for (int[] perm : new int[][]{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}) {
+        for (long[] perm : new long[][]{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}) {
             for (Pair<INDArray, String> p : NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, origShape, DataType.DOUBLE)) {
                 String msg = "permute=" + Arrays.toString(perm) + ", source=" + p.getSecond();
                 System.out.println(msg);
@@ -1081,16 +1081,15 @@ public class TestShapeOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPermute2(Nd4jBackend backend) {
-        for (int[] perm : new int[][]{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}) {
+        for (long[] perm : new long[][]{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}) {
             INDArray in = Nd4j.linspace(1, 60, 60).reshape(3,4,5);
             INDArray exp = in.permute(perm).dup('c');
 
             int[] outShape = new int[3];
-            for( int i=0; i<3; i++ ){
+            for( int i = 0; i < 3; i++) {
                 outShape[i] = (int)in.size(perm[i]);
             }
 
-            //System.out.println(Arrays.toString(outShape) + " - permute " + Arrays.toString(perm));
             INDArray out = Nd4j.create(outShape);
             OpTestCase op = new OpTestCase(new Permute(in, out, perm));
             op.expectedOutput(0, exp);

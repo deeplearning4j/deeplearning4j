@@ -1426,7 +1426,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 INDArray arr = getArray(axisArgVar, opInputs, allIterInputs);
                 Preconditions.checkState(arr != null, "Could not get axis argument for op %s: %s", df.getOwnName(), df.getClass());
                 if (!arr.isEmpty()) {
-                    int[] axis = arr.toIntVector();
+                    long[] axis = arr.toLongVector();
                     int rank = args[0].rank();
                     axis = Shape.normalizeAxis(rank, axis);
                     df.setDimensions(axis);

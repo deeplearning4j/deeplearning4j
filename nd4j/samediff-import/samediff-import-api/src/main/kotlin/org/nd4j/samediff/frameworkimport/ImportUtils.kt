@@ -38,8 +38,8 @@ object ImportUtils {
     }
 
 
-    fun getPermFromFormats(from: String,to: String): IntArray {
-        return to.map { x -> from.indexOf(x) }.toIntArray()
+    fun getPermFromFormats(from: String,to: String): LongArray {
+        return to.map { x -> from.indexOf(x) }.map { x -> x.toLong() }.toLongArray()
     }
 
 }

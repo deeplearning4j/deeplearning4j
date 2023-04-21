@@ -78,7 +78,7 @@ static void adaDeltaUpdater_(const NDArray& gradient, const NDArray& initStateMs
 
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
-    for (auto i = start; i < gradient.lengthOf(); i++) {
+    for (sd::LongType  i = start; i < gradient.lengthOf(); i++) {
       shape::index2coordsCPU(start, i, gradient.shapeInfo(), coords);
       const auto xOffset = shape::getOffset(gradient.shapeInfo(), coords);
       const auto zOffset = bXZsame ? xOffset : shape::getOffset(update.shapeInfo(), coords);

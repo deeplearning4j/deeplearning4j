@@ -32,11 +32,11 @@ import java.util.List;
 public class CosineSimilarity extends BaseReduce3Op {
     public static final String OP_NAME = "cosinesimilarity";
 
-    public CosineSimilarity(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+    public CosineSimilarity(SameDiff sameDiff, SDVariable i_v, long[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
-    public CosineSimilarity(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public CosineSimilarity(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -52,12 +52,12 @@ public class CosineSimilarity extends BaseReduce3Op {
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 
-    public CosineSimilarity(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public CosineSimilarity(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 
-    public CosineSimilarity(INDArray x, INDArray y, int... dimensions) {
+    public CosineSimilarity(INDArray x, INDArray y, long... dimensions) {
         this(x, y, null, dimensions);
     }
 
@@ -65,25 +65,25 @@ public class CosineSimilarity extends BaseReduce3Op {
         this(x, y, z, null);
     }
 
-    public CosineSimilarity(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimension) {
+    public CosineSimilarity(INDArray x, INDArray y, INDArray z, boolean allDistances, long... dimension) {
         this(x, y, z, dimension);
         this.isComplex = allDistances;
     }
 
-    public CosineSimilarity(INDArray x, INDArray y, boolean allDistances, int... dimension) {
+    public CosineSimilarity(INDArray x, INDArray y, boolean allDistances, long... dimension) {
         this(x, y, null, allDistances, dimension);
     }
 
-    public CosineSimilarity(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, int... dimensions){
+    public CosineSimilarity(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, long... dimensions){
         super(x, y, z, keepDims, allDistances, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 
-    public CosineSimilarity(SameDiff sd, SDVariable x, SDVariable y, boolean keepDims, boolean isComplex, int[] dimensions) {
+    public CosineSimilarity(SameDiff sd, SDVariable x, SDVariable y, boolean keepDims, boolean isComplex, long[] dimensions) {
         super(sd, x, y, keepDims, isComplex, dimensions);
     }
 
-    public CosineSimilarity(INDArray x, INDArray y, boolean keepDims, boolean isComplex, int[] dimensions) {
+    public CosineSimilarity(INDArray x, INDArray y, boolean keepDims, boolean isComplex, long[] dimensions) {
         super(x,y,null,keepDims,isComplex,dimensions);
     }
 
@@ -109,7 +109,7 @@ public class CosineSimilarity extends BaseReduce3Op {
     }
 
     public static List<SDVariable> doDiff(SameDiff sameDiff, SDVariable x, SDVariable y,
-                                          SDVariable gradOut, boolean keepDims, int... dimensions){
+                                          SDVariable gradOut, boolean keepDims, long... dimensions){
         SDVariable a = sameDiff.sum(x.mul(y),true, dimensions);
         SDVariable l2x = sameDiff.norm2(x, true, dimensions);
         SDVariable l2y = sameDiff.norm2(y, true, dimensions);

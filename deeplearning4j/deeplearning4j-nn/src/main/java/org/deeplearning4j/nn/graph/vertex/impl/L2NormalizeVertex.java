@@ -39,19 +39,19 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 public class L2NormalizeVertex extends BaseGraphVertex {
 
-    private static final int[] DEFAULT_RANK2_DIMS = new int[] {1};
-    private static final int[] DEFAULT_RANK3_DIMS = new int[] {1, 2};
-    private static final int[] DEFAULT_RANK4_DIMS = new int[] {1, 2, 3};
+    private static final long[] DEFAULT_RANK2_DIMS = new long[] {1};
+    private static final long[] DEFAULT_RANK3_DIMS = new long[] {1, 2};
+    private static final long[] DEFAULT_RANK4_DIMS = new long[] {1, 2, 3};
 
-    private int[] dimension;
+    private long[] dimension;
     private double eps;
 
-    public L2NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, int[] dimension, double eps, DataType dataType) {
+    public L2NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, long[] dimension, double eps, DataType dataType) {
         this(graph, name, vertexIndex, null, null, dimension, eps, dataType);
     }
 
     public L2NormalizeVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, int[] dimension, double eps, DataType dataType) {
+                    VertexIndices[] outputVertices, long[] dimension, double eps, DataType dataType) {
         super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
         this.dimension = dimension;
         this.eps = eps;
@@ -76,7 +76,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
         // L2 norm along all dimensions except 0, unless user-specified
         // x / |x|2
         INDArray x = inputs[0];
-        int[] dimensions = getDimensions(x);
+        long[] dimensions = getDimensions(x);
 
         INDArray xNorm2 = x.norm2(true,dimensions);
         Transforms.max(xNorm2, eps, false);
@@ -97,7 +97,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
                             + " idx " + vertexIndex + ")");
 
         INDArray x = inputs[0];
-        int[] dimensions = getDimensions(x);
+        long[] dimensions = getDimensions(x);
 
         INDArray norm = x.norm2(dimensions);
         INDArray norm3 = Transforms.pow(norm, 3.0, true);
@@ -130,7 +130,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
         return new Pair<>(null, new INDArray[] {dLdx});
     }
 
-    private int[] getDimensions(INDArray x) {
+    private long[] getDimensions(INDArray x) {
         if (dimension == null || dimension.length < 1) {
             switch (x.rank()) {
                 case 2:

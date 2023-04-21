@@ -43,9 +43,9 @@ public interface ScalarOp extends Op {
      */
     INDArray dimensions();
 
-    int[] getDimension();
+    long[] getDimension();
 
-    void setDimension(int... dimension);
+    void setDimension(long... dimension);
 
     boolean validateDataTypes(boolean experimentalMode);
 

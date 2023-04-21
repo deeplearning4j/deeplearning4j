@@ -39,14 +39,14 @@ SD_INLINE SD_HOST_DEVICE sd::LongType getIndexOffsetOrdered(sd::LongType index, 
   sd::LongType offset = 0;
 
   if (order == 'c') {
-    for (sd::Unsigned i = shapeInfo[0]; i > 1; --i) {
+    for (sd::LongType i = shapeInfo[0]; i > 1; --i) {
       offset += (index % shapeInfo[i]) * shapeInfo[i + shapeInfo[0]];
       index /= shapeInfo[i];
     }
 
     offset += index * shapeInfo[1 + shapeInfo[0]];  // last iteration
   } else {
-    for (sd::Unsigned i = 1; i < shapeInfo[0]; ++i) {
+    for (sd::LongType i = 1; i < shapeInfo[0]; ++i) {
       offset += (index % shapeInfo[i]) * shapeInfo[i + shapeInfo[0]];
       index /= shapeInfo[i];
     }

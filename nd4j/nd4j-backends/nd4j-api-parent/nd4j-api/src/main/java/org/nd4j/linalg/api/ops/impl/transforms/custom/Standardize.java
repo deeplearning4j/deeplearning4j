@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Longs;
 
 import java.util.Collections;
 import java.util.List;
@@ -34,16 +35,16 @@ import java.util.Map;
 
 public class Standardize extends DynamicCustomOp {
 
-    public Standardize(SameDiff sameDiff, SDVariable i_v, int... dimensions) {
+    public Standardize(SameDiff sameDiff, SDVariable i_v, long... dimensions) {
         super(null, sameDiff, new SDVariable[]{i_v}, false);
         setDimensions(dimensions);
     }
 
-    public Standardize(INDArray input, int... dimensions){
+    public Standardize(INDArray input, long... dimensions){
         this(input, null, dimensions);
     }
 
-    public Standardize(INDArray input, INDArray result, int... dimensions){
+    public Standardize(INDArray input, INDArray result, long... dimensions){
         super("standardize", new INDArray[]{input},wrapOrNull(result));
         setDimensions(dimensions);
     }
@@ -52,7 +53,7 @@ public class Standardize extends DynamicCustomOp {
     }
 
     @Override
-    public void setDimensions(int[] dimensions) {
+    public void setDimensions(long[] dimensions) {
         Preconditions.checkArgument(dimensions != null, "Standardize: You have to provide dimensions");
         Preconditions.checkArgument(dimensions.length > 0, "Standardize: You have to provide dimensions");
 
@@ -69,7 +70,7 @@ public class Standardize extends DynamicCustomOp {
     @Override
     public void configureFromArguments() {
         if(!iArguments.isEmpty()) {
-            this.dimensions = Ints.toArray(iArguments);
+            this.dimensions = Longs.toArray(iArguments);
         }
     }
 
@@ -78,10 +79,18 @@ public class Standardize extends DynamicCustomOp {
         if(properties.containsKey("dimensions")) {
             if(properties.get("dimensions") instanceof Long) {
                 Long dimension = (Long) properties.get("dimensions");
-                this.dimensions = new int[]{dimension.intValue()};
+                this.dimensions = new long[]{dimension.longValue()};
             }
             if(properties.get("dimensions") instanceof int[]) {
                 int[] dimensions = (int[]) properties.get("dimensions");
+                this.dimensions = new long[dimensions.length];
+                for(int i = 0; i < dimensions.length; i++) {
+                    this.dimensions[i] = dimensions[i];
+                }
+            }
+
+            if(properties.get("dimensions") instanceof long[]) {
+                long[] dimensions = (long[]) properties.get("dimensions");
                 this.dimensions = dimensions;
             }
         }

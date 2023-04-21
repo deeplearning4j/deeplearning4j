@@ -131,7 +131,7 @@ void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* ind
           new NDArray(input->ordering(), {numOfIntArgs - 1}, std::vector<double>(intArgs.begin() + 1, intArgs.end()),
                       DataType::INT64, input->getContext());
 
-    std::vector<int> dimsOut(pIndices->rankOf());
+    std::vector<sd::LongType> dimsOut(pIndices->rankOf());
     std::iota(dimsOut.begin(), dimsOut.end(), axis);  // fill with axis, axis+1, ... axis+pIndices->rankOf()-1
 
     const sd::LongType numOfSubArrs = pIndices->lengthOf();

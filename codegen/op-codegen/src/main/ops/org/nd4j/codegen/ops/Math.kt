@@ -226,11 +226,10 @@ fun Math() =  Namespace("Math") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.clip"
         val x = Input(NUMERIC, "x") { description = "Input variable" }
         val clipValue = Arg(NUMERIC, "clipValue") { description = "Clipping value (maximum l2 norm)" }
-        Arg(INT, "dimensions"){ count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed"}  //; defaultValue = intArrayOf(0) }   //TODO
+        Arg(LONG, "dimensions"){ count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed"}  //; defaultValue = intArrayOf(0) }   //TODO
         Output(NUMERIC, "output"){ description = "Output variable" }
 
-//        AllParamSignature(withOutput = false)
-//        Signature(x, clipValue)
+
         Doc(Language.ANY, DocScope.ALL){
             """ 
                 Clipping by L2 norm, optionally along dimension(s)
@@ -264,7 +263,7 @@ fun Math() =  Namespace("Math") {
         javaOpClass = "ClipByAvgNorm"
         Input(NUMERIC, "x") { description = "Input variable" }
         Arg(NUMERIC, "clipValue") { description = "Value for clipping" }
-        Arg(INT, "dimensions"){ count = AtLeast(0); description = "Dimensions to reduce over"}
+        Arg(LONG, "dimensions"){ count = AtLeast(0); description = "Dimensions to reduce over"}
         Output(NUMERIC, "output"){ description = "Output variable" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -557,7 +556,7 @@ fun Math() =  Namespace("Math") {
         Arg(INT, "rows") { description = "Number of rows" }
         Arg(INT, "cols") { description = "Number of columns" }
         Arg(DATA_TYPE, "dataType") { description = "Data type" } //TODO: Mapped DataType to INT.
-        Arg(DataType.INT, "dimensions"){ count = AtLeast(0)}
+        Arg(DataType.LONG, "dimensions"){ count = AtLeast(0)}
         Output(NUMERIC, "output"){ description = "Identity matrix" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -819,7 +818,7 @@ fun Math() =  Namespace("Math") {
     Op("logSumExp") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.reduce.custom"
         Input(NUMERIC, "input") { description = "Input variable" }
-        Arg(INT, "dimensions"){ count = AtLeast(0); description = "Optional dimensions to reduce along" }
+        Arg(LONG, "dimensions"){ count = AtLeast(0); description = "Optional dimensions to reduce along" }
         Output(NUMERIC, "output"){ description = "Output variable" }
         Doc(Language.ANY, DocScope.ALL){
             """
@@ -972,7 +971,7 @@ fun Math() =  Namespace("Math") {
     Op("moments") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.reduce"
         Input(NUMERIC, "input") { description = "Input to calculate moments for" }
-        Arg(INT, "axes"){ count = AtLeast(0); description = "Dimensions to perform calculation over" }
+        Arg(LONG, "axes"){ count = AtLeast(0); description = "Dimensions to perform calculation over" }
         Arg(BOOL,"keepDims") { description = "Whether to keep dimensions during reduction or not. "}
         Output(NUMERIC, "output_mean"){ description = "Mean variable" }
         Output(NUMERIC, "output_variance"){ description = "Variance variable" }
@@ -1335,7 +1334,7 @@ fun Math() =  Namespace("Math") {
     Op("standardize") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         Input(NUMERIC, "x") { description = "Input variable" }
-        Arg(INT, "dimensions"){ count = AtLeast(1); description = "" } //TODO: Missing description for dimension.
+        Arg(LONG, "dimensions"){ count = AtLeast(1); description = "" } //TODO: Missing description for dimension.
         Output(NUMERIC, "output"){ description = "Output variable" }
         Doc(Language.ANY, DocScope.ALL){
             """

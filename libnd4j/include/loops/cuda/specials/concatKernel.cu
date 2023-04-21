@@ -122,14 +122,14 @@ SD_DEVICE void concatKernel(int numArrays, sd::Pointer *data, sd::Pointer *input
       //    printf("Branch 0\n");
 
       // edge case, each thread will handle it's own tad then
-      for (int j = tid; j < numTads; j += blockDim.x * gridDim.x) {
+      for (sd::LongType j = tid; j < numTads; j += blockDim.x * gridDim.x) {
         sd::LongType inputOffset = currentOffsets[j];
         sd::LongType resultOffset = zOffsets[j];
 
         T *dataTAD = currentData + inputOffset;
         T *resultTAD = result + resultOffset;
 
-        int sub[SD_MAX_RANK];
+        sd::LongType sub[SD_MAX_RANK];
 
         shape::index2coords(arrOffset, zTadShape, sub);
 
@@ -148,17 +148,16 @@ SD_DEVICE void concatKernel(int numArrays, sd::Pointer *data, sd::Pointer *input
         resultTAD[resultOffset] = dataTAD[yOffset];
       }
     } else {
-      // if (threadIdx.x == 0 && blockIdx.x == 0)
-      //    printf("Branch 1\n");
 
-      for (int j = blockIdx.x; j < numTads; j += gridDim.x) {
+
+      for (sd::LongType j = blockIdx.x; j < numTads; j += gridDim.x) {
         auto inputOffset = currentOffsets[j];
         auto resultOffset = zOffsets[j];
 
         auto dataTAD = currentData + inputOffset;
         auto resultTAD = result + resultOffset;
 
-        int sub[SD_MAX_RANK];
+        sd::LongType sub[SD_MAX_RANK];
 
         shape::index2coords(arrOffset, zTadShape, sub);
         sd::LongType baseOffset = shape::getOffset(zTadShape, sub);
@@ -191,10 +190,10 @@ SD_DEVICE void concatKernel(int numArrays, sd::Pointer *data, sd::Pointer *input
                 resultTAD[baseIdx + k * tadEWS] = dataTAD[k];
               }
             } else {
-              int yIdx[SD_MAX_RANK];
+              sd::LongType yIdx[SD_MAX_RANK];
               auto yRank = shape::rank(currentTad);
 
-              for (int i = threadIdx.x; i < yLength; i += blockDim.x) {
+              for (sd::LongType i = threadIdx.x; i < yLength; i += blockDim.x) {
                 shape::index2coords(i, currentTad, yIdx);
                 auto yOffset = shape::getOffset(currentTad, yIdx);
 
@@ -206,12 +205,10 @@ SD_DEVICE void concatKernel(int numArrays, sd::Pointer *data, sd::Pointer *input
             // if (threadIdx.x == 0 && blockIdx.x  == 0)
             //    printf("Branch C; yLength: %i;\n", yLength);
 
-            int zIdx[SD_MAX_RANK];
-            int yIdx[SD_MAX_RANK];
-            auto yRank = shape::rank(currentTad);
-            auto tadRank = shape::rank(zTadShape);
+            sd::LongType zIdx[SD_MAX_RANK];
+            sd::LongType yIdx[SD_MAX_RANK];
 
-            for (int i = threadIdx.x; i < yLength; i += blockDim.x) {
+            for (sd::LongType i = threadIdx.x; i < yLength; i += blockDim.x) {
               shape::index2coords(i, currentTad, yIdx);
               shape::index2coords(i, zTadShape, zIdx);
 

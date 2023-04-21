@@ -68,13 +68,13 @@ static sd::Status _matrixDiagPart(sd::LaunchContext* context, const NDArray* inp
   }
   sd::LongType lastDimension = sd::math::sd_min(input->sizeAt(-2), input->sizeAt(-1));
 
-  std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(output->rankOf(), {output->rankOf() - 1});
+  std::vector<sd::LongType> dimsToExclude = ShapeUtils::evalDimsToExclude(output->rankOf(), {output->rankOf() - 1});
   const sd::LongType numTads =
       ShapeUtils::getNumOfSubArrs(input->shapeInfo(), dimsToExclude);  // this->tensorsAlongDimension({dimension});
   // printf("Repeat delta %lld, numTads %lld\n", repeatDelta, numTads);
   // tadOnlyInputShapeInfo, tadInputOffsets, tadOnlyOutputShapeInfo, tadOutputOffsets;
-  std::vector<int> outputDims({output->rankOf() - 1});
-  std::vector<int> inputDims({input->rankOf() - 2, input->rankOf() - 1});
+  std::vector<sd::LongType> outputDims({output->rankOf() - 1});
+  std::vector<sd::LongType> inputDims({input->rankOf() - 2, input->rankOf() - 1});
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), inputDims);
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), outputDims);
 

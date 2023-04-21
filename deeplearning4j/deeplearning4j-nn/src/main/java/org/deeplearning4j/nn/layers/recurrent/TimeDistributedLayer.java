@@ -65,14 +65,14 @@ public class TimeDistributedLayer extends BaseWrapperLayer {
         return workspaceMgr.dup(ArrayType.ACTIVATIONS, ret);
     }
 
-    protected INDArray reshape(INDArray array){
+    protected INDArray reshape(INDArray array) {
         //Reshape the time axis to the minibatch axis
         //For example, for RNN -> FF (dense time distributed): [mb, size, seqLen] -> [mb x seqLen, size]
         int axis = (rnnDataFormat == RNNFormat.NCW) ? 2 : 1;
         if(axis < 0)
             axis += array.rank();
 
-        int[] permuteAxis = permuteAxes(array.rank(), axis);
+        long[] permuteAxis = permuteAxes(array.rank(), axis);
         INDArray permute = array.permute(permuteAxis);
 
         long[] newShape = new long[array.rank()-1];
@@ -88,8 +88,8 @@ public class TimeDistributedLayer extends BaseWrapperLayer {
         return reshape;
     }
 
-    protected int[] permuteAxes(int rank, int timeAxis){
-        int[] permuteAxis = new int[rank];
+    protected long[] permuteAxes(int rank, int timeAxis) {
+        long[] permuteAxis = new long[rank];
         permuteAxis[0] = 0;
         permuteAxis[1] = timeAxis;
         int j=2;
@@ -116,7 +116,7 @@ public class TimeDistributedLayer extends BaseWrapperLayer {
 
         INDArray reshaped = toRevert.reshape('c', newShape);
 
-        int[] permute = ArrayUtil.invertPermutation(permuteAxes(toRevert.rank() + 1, axis));
+        long[] permute = ArrayUtil.invertPermutation(permuteAxes(toRevert.rank() + 1, axis));
 
         INDArray permuted = reshaped.permute(permute);
         return permuted;

@@ -29,17 +29,17 @@ import java.util.Collections;
 import java.util.List;
 
 public class Any extends BaseReduceBoolOp {
-    public Any(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+    public Any(SameDiff sameDiff, SDVariable i_v, long[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
-    public Any(INDArray x, INDArray z, boolean keepDims, int[] dimensions) {
+    public Any(INDArray x, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, z, keepDims, dimensions);
     }
 
     public Any() {}
 
-    public Any(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+    public Any(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
@@ -47,19 +47,19 @@ public class Any extends BaseReduceBoolOp {
         super(x);
     }
 
-    public Any(INDArray x, int... dimensions) {
+    public Any(INDArray x, long... dimensions) {
         super(x, dimensions);
     }
 
-    public Any(INDArray x, boolean keepDims, int... dimensions) {
+    public Any(INDArray x, boolean keepDims, long... dimensions) {
         super(x, keepDims, dimensions);
     }
 
-    public Any(INDArray x, INDArray z, int... dimensions) {
+    public Any(INDArray x, INDArray z, long... dimensions) {
         super(x, z, dimensions);
     }
 
-    public Any(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public Any(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
@@ -71,7 +71,7 @@ public class Any extends BaseReduceBoolOp {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public Any(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public Any(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -87,11 +87,11 @@ public class Any extends BaseReduceBoolOp {
         super(sameDiff, i_v, i_v2);
     }
 
-    public Any(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    public Any(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    public Any(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+    public Any(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
     }
 

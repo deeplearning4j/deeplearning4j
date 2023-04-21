@@ -85,7 +85,7 @@ public class ParameterServerListener implements NDArrayCallback {
      * @param dimensions the dimensions to act on for the tensor along dimension
      */
     @Override
-    public synchronized void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+    public synchronized void onNDArrayPartial(INDArray arr, long idx, long... dimensions) {
         updater.partialUpdate(arr, updater.ndArrayHolder().get(), idx, dimensions);
     }
 

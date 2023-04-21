@@ -272,7 +272,7 @@ sd::Status alphaDropOutFunctorBP_(sd::graph::Context& context, sd::NDArray* inpu
   if (res == sd::Status::OK) {
     // FIXME: can we make it single-loop?
     (*output) *= alpha;
-    (*output) *= (*gradOut);  //->applyPairwiseTransform<transform::Multiply>(gradOut, output, nullptr);
+    (*output) *= (*gradOut);
   }
   return res;
 }
@@ -280,21 +280,21 @@ sd::Status alphaDropOutFunctorBP_(sd::graph::Context& context, sd::NDArray* inpu
 sd::Status dropOutFunctorBP(sd::graph::Context& context, sd::NDArray* input, sd::NDArray* gradOut, sd::NDArray* output,
                             sd::NDArray* reduceShape, int seed, double probValue, sd::NDArray* mask) {
   BUILD_SINGLE_SELECTOR(context.dataType(), return dropOutFunctorBP_,
-                        (context, input, gradOut, output, reduceShape, seed, probValue), SD_FLOAT_TYPES);
+                        (context, input, gradOut, output, reduceShape, seed, probValue,mask), SD_FLOAT_TYPES);
 }
 
 sd::Status alphaDropOutFunctor(sd::graph::Context& context, sd::NDArray* input, sd::NDArray* output,
                                sd::NDArray* reduceShape, int seed, double probValue, double alpha, double alpha1,
                                double beta, sd::NDArray* mask) {
   BUILD_SINGLE_SELECTOR(context.dataType(), return alphaDropOutFunctor_,
-                        (context, input, output, reduceShape, seed, probValue, alpha, alpha1, beta), SD_FLOAT_TYPES);
+                        (context, input, output, reduceShape, seed, probValue, alpha, alpha1, beta,mask), SD_FLOAT_TYPES);
 }
 
 sd::Status alphaDropOutFunctorBP(sd::graph::Context& context, sd::NDArray* input, sd::NDArray* gradOut,
                                  sd::NDArray* output, sd::NDArray* reduceShape, int seed, double probValue,
                                  double alpha, double alpha1, double beta, sd::NDArray* mask) {
   BUILD_SINGLE_SELECTOR(context.dataType(), return alphaDropOutFunctorBP_,
-                        (context, input, gradOut, output, reduceShape, seed, probValue, alpha, alpha1, beta),
+                        (context, input, gradOut, output, reduceShape, seed, probValue, alpha, alpha1, beta,mask),
                         SD_FLOAT_TYPES);
 }
 

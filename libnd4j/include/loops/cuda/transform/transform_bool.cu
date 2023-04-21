@@ -29,8 +29,9 @@
 using namespace simdOps;
 
 template <typename X, typename Z, typename OpType>
-SD_KERNEL void transformBoolSimple(const void *x, const sd::LongType *xShapeInfo, int xRank, void *params, void *z,
-                                   const sd::LongType *zShapeInfo, int zRank, int *allocationPointer,
+SD_KERNEL void transformBoolSimple(const void *x, const sd::LongType *xShapeInfo, sd::LongType xRank, void *params, void *z,
+                                   const sd::LongType *zShapeInfo, sd::LongType zRank,
+                                   sd::LongType *allocationPointer,
                                    void *reductionPointer, const sd::LongType *tadShapeInfo,
                                    const sd::LongType *tadOffsets) {
   functions::transform::TransformBool<X, Z>::template transformCuda<OpType>(
@@ -42,9 +43,9 @@ namespace transform {
 
 template <typename X, typename Y>
 SD_HOST void TransformBool<X, Y>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, const int opNum,
-                                                         const void *x, const sd::LongType *xShape, int xRank,
+                                                         const void *x, const sd::LongType *xShape, long long int xRank,
                                                          void *extraParams, void *z, const sd::LongType *zShape,
-                                                         int zRank, int *allocationPointer, void *reductionPointer,
+                                                         long long int zRank, long long int *allocationPointer, void *reductionPointer,
                                                          const sd::LongType *tadShapeInfo,
                                                          const sd::LongType *tadOffsets) {
   DISPATCH_BY_OPNUM_TT(intermediateShaped,
@@ -58,7 +59,8 @@ SD_HOST void TransformBool<X, Y>::executeTransformShaped(dim3 launchDims, cudaSt
 template <typename X, typename Z>
 template <typename OpType>
 SD_DEVICE void TransformBool<X, Z>::transformCuda(const void *vx, const sd::LongType *xShapeInfo, void *vparams,
-                                                  void *vz, const sd::LongType *zShapeInfo, int *allocationPointer,
+                                                  void *vz, const sd::LongType *zShapeInfo,
+                                                  sd::LongType *allocationPointer,
                                                   void *vreductionPointer, const sd::LongType *tadShapeInfo,
                                                   const sd::LongType *tadOffsets) {
   auto x = static_cast<const X *>(vx);
@@ -111,8 +113,9 @@ SD_DEVICE void TransformBool<X, Z>::transformCuda(const void *vx, const sd::Long
 template <typename X, typename Z>
 template <typename OpType>
 SD_HOST void TransformBool<X, Z>::intermediateShaped(dim3 launchDims, cudaStream_t *stream, const void *x,
-                                                     const sd::LongType *xShape, int xRank, void *extraParams, void *z,
-                                                     const sd::LongType *zShape, int zRank, int *allocationPointer,
+                                                     const sd::LongType *xShape, sd::LongType xRank, void *extraParams, void *z,
+                                                     const sd::LongType *zShape, sd::LongType zRank,
+                                                     sd::LongType *allocationPointer,
                                                      void *reductionPointer, const sd::LongType *tadShapeInfo,
                                                      const sd::LongType *tadOffsets) {
   transformBoolSimple<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(

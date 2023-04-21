@@ -38,7 +38,7 @@ static void flatten_(std::vector<NDArray *> &inputs, NDArray *output, const char
   }
 
   // actually transferring data
-  for (int e = 0; e < numArrays; e++) {
+  for (sd::LongType e = 0; e < numArrays; e++) {
     auto z = reinterpret_cast<T *>(output->bufferWithOffset(offsets[e]));
 
     auto xBuffer = inputs[e]->bufferAsT<T>();

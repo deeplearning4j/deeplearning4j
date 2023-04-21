@@ -40,14 +40,14 @@ public class LayerNormBp extends DynamicCustomOp {
     private boolean channelsFirst;
 
 
-    public LayerNormBp(@NonNull SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable gain, SDVariable bias, @NonNull SDVariable gradient, boolean channelsFirst, int... dimensions) {
+    public LayerNormBp(@NonNull SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable gain, SDVariable bias, @NonNull SDVariable gradient, boolean channelsFirst, long... dimensions) {
         super(null, sameDiff, wrapFilterNull(input, gain, bias, gradient), false);
         this.noBias = bias == null;
         this.channelsFirst = channelsFirst;
         setDimensions(dimensions);
     }
 
-    public LayerNormBp(@NonNull INDArray input, @NonNull INDArray gain, INDArray bias, @NonNull INDArray grad, @NonNull INDArray dLdx, @NonNull INDArray dLdg, INDArray dLdb, boolean channelsFirst, int... dimensions) {
+    public LayerNormBp(@NonNull INDArray input, @NonNull INDArray gain, INDArray bias, @NonNull INDArray grad, @NonNull INDArray dLdx, @NonNull INDArray dLdg, INDArray dLdb, boolean channelsFirst, long... dimensions) {
         super("layer_norm_bp", wrapFilterNull(input, gain, bias, grad), wrapFilterNull(dLdx, dLdg, dLdb));
         this.noBias = bias == null;
         this.channelsFirst = channelsFirst;
@@ -55,16 +55,16 @@ public class LayerNormBp extends DynamicCustomOp {
     }
 
 
-    public LayerNormBp(SameDiff sameDiff, SDVariable input, SDVariable gain, SDVariable gradient, boolean channelsFirst, int... dimensions) {
+    public LayerNormBp(SameDiff sameDiff, SDVariable input, SDVariable gain, SDVariable gradient, boolean channelsFirst, long... dimensions) {
         this(sameDiff, input, gain, null, gradient, channelsFirst, dimensions);
     }
 
-    public LayerNormBp(INDArray input, INDArray gain, INDArray grad, INDArray dLdx, INDArray dLdg, boolean channelsFirst, int... dimensions) {
+    public LayerNormBp(INDArray input, INDArray gain, INDArray grad, INDArray dLdx, INDArray dLdg, boolean channelsFirst, long... dimensions) {
         this(input, gain, null, grad, dLdx, dLdg, null, channelsFirst, dimensions);
     }
 
     @Override
-    public void setDimensions(int[] dimensions) {
+    public void setDimensions(long[] dimensions) {
         Preconditions.checkArgument(dimensions != null, "LayerNormBp: You have to provide dimensions");
         Preconditions.checkArgument(dimensions.length > 0, "LayerNormBp: You have to provide dimensions");
 
