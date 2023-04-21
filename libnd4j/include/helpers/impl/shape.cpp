@@ -181,18 +181,15 @@ SD_LIB_EXPORT SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, sd::
     if(dimension[0] > SD_MAX_RANK || dimension[0] < 0)
       throw std::runtime_error("Corrupt dimension information found. Potentially dellocated?");
 
-    sd_printf("Returning shape of dimension %i\n", dimension[0]);
     return shape::shapeOf(shapeInfo)[dimension[0]];
   } else {
     sd::LongType ret = 1;
     for (int i = 0; i < shape::rank(shapeInfo); i++) {
-      sd_printf("Checking dimension %i\n", i);
       for (int j = 0; j < dimensionLength; j++) {
         if (i == dimension[j]) ret *= shape::shapeOf(shapeInfo)[dimension[j]];
       }
     }
 
-    sd_printf("Returning tad length %i\n", ret);
     return ret;
   }
 }
