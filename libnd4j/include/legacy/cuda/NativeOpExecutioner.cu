@@ -277,7 +277,7 @@ void NativeOpExecutioner::execInverseBroadcastBool(
     sd::LaunchContext* lc, int opNum, void const* hX, sd::LongType const* hXShapeInfo, void const* dX,
     sd::LongType const* dXShapeInfo, void const* hY, sd::LongType const* hYShapeInfo, void const* dY,
     sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo, void* dZ,
-    sd::LongType const* dZShapeInfo, void* extraParams, sd::LongType* dimension, int dimensionLength,
+    sd::LongType const* dZShapeInfo, void* extraParams, sd::LongType* dimension, sd::LongType dimensionLength,
     sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* tadOnlyShapeInfoZ,
     sd::LongType const* tadOffsetsZ) {
   auto stream = lc->getCudaStream();
@@ -309,7 +309,7 @@ void NativeOpExecutioner::execBroadcastInt(
     sd::LaunchContext* lc, int opNum, void const* hX, sd::LongType const* hXShapeInfo, void const* dX,
     sd::LongType const* dXShapeInfo, void const* hY, sd::LongType const* hYShapeInfo, void const* dY,
     sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo, void* dZ,
-    sd::LongType const* dZShapeInfo, sd::LongType* dimension, int dimensionLength, sd::LongType const* tadOnlyShapeInfo,
+    sd::LongType const* dZShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength, sd::LongType const* tadOnlyShapeInfo,
     sd::LongType const* tadOffsets, sd::LongType const* tadOnlyShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   auto stream = lc->getCudaStream();
 
@@ -373,7 +373,7 @@ void NativeOpExecutioner::execInverseBroadcastInt(
     sd::LaunchContext* lc, int opNum, void const* hX, sd::LongType const* hXShapeInfo, void const* dX,
     sd::LongType const* dXShapeInfo, void const* hY, sd::LongType const* hYShapeInfo, void const* dY,
     sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo, void* dZ,
-    sd::LongType const* dZShapeInfo, sd::LongType* dimension, int dimensionLength, sd::LongType const* tadOnlyShapeInfo,
+    sd::LongType const* dZShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength, sd::LongType const* tadOnlyShapeInfo,
     sd::LongType const* tadOffsets, sd::LongType const* tadOnlyShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   auto stream = lc->getCudaStream();
 
@@ -420,7 +420,7 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext* lc, int opNum, void c
                                         sd::LongType const* dXShapeInfo, void const* hY,
                                         sd::LongType const* hYShapeInfo, void const* dY,
                                         sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo,
-                                        void* dZ, sd::LongType const* dZShapeInfo, sd::LongType* dimension, int dimensionLength,
+                                        void* dZ, sd::LongType const* dZShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength,
                                         sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
                                         sd::LongType const* tadOnlyShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   auto stream = lc->getCudaStream();
@@ -487,7 +487,7 @@ void NativeOpExecutioner::execInverseBroadcast(
     sd::LaunchContext* lc, int opNum, void const* hX, sd::LongType const* hXShapeInfo, void const* dX,
     sd::LongType const* dXShapeInfo, void const* hY, sd::LongType const* hYShapeInfo, void const* dY,
     sd::LongType const* dYShapeInfo, void* hZ, sd::LongType const* hZShapeInfo, void* dZ,
-    sd::LongType const* dZShapeInfo, sd::LongType* dimension, int dimensionLength, sd::LongType const* tadOnlyShapeInfo,
+    sd::LongType const* dZShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength, sd::LongType const* tadOnlyShapeInfo,
     sd::LongType const* tadOffsets, sd::LongType const* tadOnlyShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   auto stream = lc->getCudaStream();
 
@@ -520,7 +520,7 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext* lc, int opNum, void 
                                          sd::LongType const* hXShapeInfo, void const* dX,
                                          sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
                                          sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo,
-                                         sd::LongType* dimension, int dimensionLength) {
+                                         sd::LongType* dimension, sd::LongType dimensionLength) {
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
 
@@ -548,7 +548,7 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext* lc, int opNum, void 
                                          sd::LongType const* hXShapeInfo, void const* dX,
                                          sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
                                          sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo,
-                                         sd::LongType* dimension, int dimensionLength) {
+                                         sd::LongType* dimension, sd::LongType dimensionLength) {
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
 
@@ -577,7 +577,7 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext* lc, int opNum, void 
                                          sd::LongType const* hXShapeInfo, void const* dX,
                                          sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
                                          sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo,
-                                         sd::LongType* dimension, int dimensionLength) {
+                                         sd::LongType* dimension, sd::LongType dimensionLength) {
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
 
@@ -613,7 +613,7 @@ void NativeOpExecutioner::execReduceFloat(sd::LaunchContext* lc, int opNum, cons
                                           const sd::LongType* hXShapeInfo, const void* dX,
                                           const sd::LongType* dXShapeInfo, void* extraParams, void* hZ,
                                           const sd::LongType* hZShapeInfo, void* dZ, const sd::LongType* dZShapeInfo,
-                                          sd::LongType* dimension, int dimensionLength) {
+                                          sd::LongType* dimension, sd::LongType dimensionLength) {
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
 

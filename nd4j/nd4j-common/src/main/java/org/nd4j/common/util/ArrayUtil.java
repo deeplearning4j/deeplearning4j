@@ -2181,6 +2181,8 @@ public class ArrayUtil {
     }
 
     public static long[] toLongArray(int[] intArray) {
+        if(intArray == null)
+            return null;
         long[] ret = new long[intArray.length];
         for (int i = 0; i < intArray.length; i++) {
             ret[i] = intArray[i];

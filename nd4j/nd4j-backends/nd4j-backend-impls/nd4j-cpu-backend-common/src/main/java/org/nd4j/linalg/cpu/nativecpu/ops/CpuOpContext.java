@@ -299,7 +299,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
         PointerPointer<OpaqueDataBuffer> outputBuffers = new PointerPointer<>(buffers1);
 
         PointerPointer<LongPointer> shapeInfoOutputBuffer = new PointerPointer<>(shapeInfoBufers2);
-        nativeOps.setGraphContextOutputBuffers(context,arrays.length,shapeInfoOutputBuffer,shapeInfoOutputBuffer,null);
+        nativeOps.setGraphContextOutputBuffers(context,arrays.length,outputBuffers,shapeInfoOutputBuffer,null);
         super.setOutputArrays(arrays);
     }
 

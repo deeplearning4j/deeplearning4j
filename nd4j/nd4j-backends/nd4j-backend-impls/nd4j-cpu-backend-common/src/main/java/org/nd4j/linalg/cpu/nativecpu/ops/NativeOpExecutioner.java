@@ -361,7 +361,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
                             getPointerForExtraArgs(op, z.dataType()),
                             zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            ((BaseCpuDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
+                            ((BaseCpuDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(),
+                            (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                            null,
                             var.isBiasCorrected(), null, null);
                 } catch (Throwable t){
                     String str = opInfoString(op, Optional.of(dimension));
@@ -1842,7 +1844,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val tadShape = new LongBuffer(loop.getPrimaryShapeInfo(pack), loop.getShapeInfoLength(pack));
         val tadOffsets = new LongBuffer(loop.getPrimaryOffsets(pack), loop.getNumberOfTads(pack));
 
-        loop.deleteTadPack(pack);
+        //    loop.deleteTadPack(pack);
 
         return new TadPack(tadShape, tadOffsets);
     }

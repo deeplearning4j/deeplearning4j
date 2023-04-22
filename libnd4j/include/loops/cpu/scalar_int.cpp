@@ -37,7 +37,7 @@ template <typename X>
 template <typename OpType>
 void ScalarIntTransform<X>::transform(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
                                       const sd::LongType *zShapeInfo, const void *vscalars, long long int *dimension,
-                                      int dimensionLength, const sd::LongType *xTadShapeInfo,
+                                      long long int dimensionLength, const sd::LongType *xTadShapeInfo,
                                       const sd::LongType *xTadOffsets, const sd::LongType *zTadShapeInfo,
                                       const sd::LongType *zTadOffsets, const uint64_t start, const uint64_t stop) {
   auto x = reinterpret_cast<const X *>(vx);
@@ -87,8 +87,7 @@ void ScalarIntTransform<X>::transform(const void *vx, const sd::LongType *xShape
 template <typename X>
 void ScalarIntTransform<X>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams,
                                       void *z, const sd::LongType *zShapeInfo, const void *scalars,
-                                      long long int *dimension,
-                                      int dimensionLength, const sd::LongType *xTadShapeInfo,
+                                      sd::LongType *dimension,sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo,
                                       const sd::LongType *xTadOffsets, const sd::LongType *zTadShapeInfo,
                                       const sd::LongType *zTadOffsets, const uint64_t start, const uint64_t stop) {
   DISPATCH_BY_OPNUM_T(transform,

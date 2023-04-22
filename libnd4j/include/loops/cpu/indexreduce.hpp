@@ -42,7 +42,7 @@ sd::LongType IndexReduce<X, Y>::execScalar(const int opNum, const void *x, const
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 void IndexReduce<X, Y>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z,
-                             const sd::LongType *zShapeInfo, long long int *dimension, int dimensionLength,
+                             const sd::LongType *zShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength,
                              const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {
   DISPATCH_BY_OPNUM_TT(
       exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset),
@@ -104,7 +104,7 @@ sd::LongType IndexReduce<X, Y>::execScalar(const void *vx, const sd::LongType *x
 template <typename X, typename Z>
 template <typename OpType>
 void IndexReduce<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                             const sd::LongType *zShapeInfo, long long int *dimension, int dimensionLength,
+                             const sd::LongType *zShapeInfo, sd::LongType *dimension,sd::LongType dimensionLength,
                              const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);

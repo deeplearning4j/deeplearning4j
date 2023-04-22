@@ -274,7 +274,7 @@ void execIndexReduce(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
   try {
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
 
@@ -609,8 +609,8 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
                      const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo, OpaqueDataBuffer *dbDimension,
                      const sd::LongType *hDimensionShape, const sd::LongType *dDimensionShape) {
   try {
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
+    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
     std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
 
@@ -644,8 +644,8 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
                      const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo, OpaqueDataBuffer *dbDimension,
                      const sd::LongType *hDimensionShape, const sd::LongType *dDimensionShape) {
   try {
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
+    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
     std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
 
@@ -891,10 +891,21 @@ void execSummaryStatsTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer
                          OpaqueDataBuffer *dbDimension, const sd::LongType *hDimensionShape,
                          const sd::LongType *dDimensionShape, bool biasCorrected, const sd::LongType *tadShapeInfo,
                          const sd::LongType *tadOffsets) {
-  try {
-    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
+  if(hXShapeInfo == nullptr) {
+    throw std::runtime_error("X shape info can't be null!");
+  }
+
+  if(hXShapeInfo[0] > SD_MAX_RANK || hXShapeInfo[0] < 0) {
+    throw std::runtime_error("HX shape info rank can't be negative or greater than 32!");
+  }
+
+  try {
+    sd_printf("Before dimension length\n",0);
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
+    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
+
+    sd_printf("Obtained dimension length\n",0);
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execSummaryStats(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                           extraParams, dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo,

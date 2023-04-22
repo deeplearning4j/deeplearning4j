@@ -35,8 +35,7 @@ namespace broadcast {
 template <typename X>
 void BroadcastInt<X>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                            const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
-                           long long int *dimension,
-                           int dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
+                           long long int *dimension, sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
                            const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset, uint64_t start,
                            uint64_t stop) {
   DISPATCH_BY_OPNUM_T(exec,
@@ -54,7 +53,7 @@ void BroadcastInt<X>::exec(const int opNum, const void *x, const sd::LongType *x
 template <typename X>
 void BroadcastInt<X>::execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                                   const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
-                                  long long int *dimension, int dimensionLength, const sd::LongType *xTadShapeInfo,
+                                  long long int *dimension, sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo,
                                   const sd::LongType *xTadOffset, const sd::LongType *zTadShapeInfo,
                                   const sd::LongType *zTadOffset, uint64_t start, uint64_t stop) {
   DISPATCH_BY_OPNUM_T(execInverse,
@@ -67,8 +66,7 @@ template <typename X>
 template <typename OpType>
 void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                            const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                           long long int *dimension,
-                           int dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
+                           long long int *dimension, sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
                            const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset, uint64_t start,
                            uint64_t stop) {
   auto x = reinterpret_cast<const X *>(vx);
@@ -221,9 +219,10 @@ template <typename X>
 template <typename OpType>
 void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                                   const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                                  long long int *dimension, int dimensionLength, const sd::LongType *yTadShapeInfo,
+                                  long long int *dimension, sd::LongType dimensionLength, const sd::LongType *yTadShapeInfo,
                                   const sd::LongType *yTadOffset, const sd::LongType *zTadShapeInfo,
-                                  const sd::LongType *zTadOffset, uint64_t start, uint64_t stop) {
+                                  const sd::LongType *zTadOffset,
+                                  long long int start, long long int stop) {
   auto x = reinterpret_cast<const X *>(vx);
   auto y = reinterpret_cast<const X *>(vy);
   auto z = reinterpret_cast<X *>(vz);

@@ -42,6 +42,16 @@ class JsonYamlTest {
     @Test
     @DisplayName("Test Json Yaml Image Transform Process")
     void testJsonYamlImageTransformProcess() throws IOException {
+        /**
+         * TODO: something is expecting a newer snakeyaml.
+         * There is a constructor that has existed since 1.33
+         * We are not bringing this version in for some reason.
+         *
+         * The current jackson version expects 1.33.
+         *
+         * Somethign else requires an older version.
+         * Dependency management hasn't worked
+         */
         int seed = 12345;
         Random random = new Random(seed);
         // from org.bytedeco.javacpp.opencv_imgproc

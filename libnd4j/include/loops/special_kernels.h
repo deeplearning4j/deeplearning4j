@@ -40,7 +40,7 @@ SD_HOST void fillIsMaxGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, 
 template <typename T>
 SD_HOST void fillDimensionalIsMaxGeneric(dim3 &launchDims, cudaStream_t *stream, const void *dX, void *dZ,
                                          const sd::LongType *zShapeInfo, const sd::LongType *tadOnlyShapeInfo,
-                                         int *dimension, int dimensionLength, const sd::LongType *tadOffsets);
+                                         LongType *dimension, LongType dimensionLength, const sd::LongType *tadOffsets);
 
 template <typename T>
 SD_HOST void convertToHalfGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, sd::LongType n, half *dz);

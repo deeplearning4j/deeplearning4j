@@ -48,7 +48,7 @@ void Broadcast<X, Y, Z>::execInverse(int opNum, const void *x, const sd::LongTyp
 template <typename X, typename Y, typename Z>
 void Broadcast<X, Y, Z>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                               const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
-                              long long int *dimension, long long int dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
+                              sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
                               const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset,
                               sd::LoopKind::Kind loopKind, long long int start, long long int stop) {
   DISPATCH_BY_OPNUM_TTT(exec,
@@ -61,8 +61,7 @@ template <typename X, typename Y, typename Z>
 template <typename OpType>
 void Broadcast<X, Y, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                               const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                              long long int *dimension,
-                              int dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
+                              sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
                               const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset,
                               sd::LoopKind::Kind loopKind, uint64_t start, uint64_t stop) {
   auto x = reinterpret_cast<const X *>(vx);

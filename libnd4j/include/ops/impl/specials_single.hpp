@@ -471,7 +471,8 @@ void SpecialMethods<T>::sortGeneric(void *vx, sd::LongType const *xShapeInfo, bo
 }
 
 template <typename T>
-void SpecialMethods<T>::sortTadGeneric(void *vx, sd::LongType const *xShapeInfo, LongType *dimension, int dimensionLength,
+void SpecialMethods<T>::sortTadGeneric(void *vx, sd::LongType const *xShapeInfo, LongType *dimension,
+                                       LongType dimensionLength,
                                        sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets,
                                        bool descending) {
   auto x = reinterpret_cast<T *>(vx);

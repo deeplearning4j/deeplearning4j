@@ -35,7 +35,7 @@ class BroadcastMultiDimTest : public testing::Test {
   float broadcastData[10] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0};
   sd::LongType broadcastShapeInfo[8] = {2, 2, 5, 5, 1, 8192, 1, 99};
   int opNum = 2;
-  int dimensionLength = 2;
+  sd::LongType dimensionLength = 2;
 };
 
 #ifndef __CUDABLAS__

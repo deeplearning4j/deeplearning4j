@@ -385,7 +385,7 @@ void execBroadcastBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
     auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
     auto hTADShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers[9]);
     auto tadOnlyShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers[10]);
@@ -430,7 +430,7 @@ void execBroadcast(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
     auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
@@ -518,7 +518,7 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
     auto dimension = reinterpret_cast<int *>(dbDimension->primary());
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
     const auto zLen = shape::length(hZShapeInfo);
 
@@ -556,8 +556,8 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
+    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
     const auto zLen = shape::length(hZShapeInfo);
 
@@ -639,7 +639,7 @@ void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
     auto dimension = reinterpret_cast<int *>(dbDimension->primary());
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
     const auto zLen = shape::length(hZShapeInfo);
 
@@ -731,7 +731,7 @@ void execIndexReduce(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
     auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
     auto tadPack =
         sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, shape::length(hDimensionShape));
@@ -769,7 +769,7 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *d
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
     auto dimension = reinterpret_cast<int *>(dbDimension->primary());
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
     const auto zLen = shape::length(hZShapeInfo);
 
@@ -1689,7 +1689,7 @@ void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
     auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
     auto tadPack =
         sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, shape::length(hDimensionShape));
@@ -1783,7 +1783,7 @@ void execScalarBoolTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
     auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execScalarBool(
@@ -2152,7 +2152,7 @@ void execReduce3All(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
     auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduce3All(&lc, opNum, dbX->primary(), hXShapeInfo, dbX->special(),

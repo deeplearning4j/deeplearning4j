@@ -49,7 +49,8 @@ template <typename X, typename Y>
 void SummaryStatsReduce<X, Y>::exec(int opNum, bool biasCorrected, const void *x,
                                     const sd::LongType *xShapeInfo, void *extraParams, void *z,
                                     const sd::LongType *zShapeInfo,
-                                    long long int *dimension, int dimensionLength) {
+                                    sd::LongType *dimension,
+                                    sd::LongType dimensionLength) {
   DISPATCH_BY_OPNUM_TT(exec,
                        PARAMS(biasCorrected, x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength),
                        SUMMARY_STATS_OPS);
@@ -92,8 +93,7 @@ template <typename X, typename Z>
 template <typename OpType>
 void SummaryStatsReduce<X, Z>::exec(bool biasCorrected, const void *vx, const sd::LongType *xShapeInfo,
                                     void *vextraParams, void *vz, const sd::LongType *zShapeInfo,
-                                    long long int *dimension,
-                                    int dimensionLength) {
+                                    sd::LongType *dimension, sd::LongType dimensionLength) {
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
   auto extraParams = reinterpret_cast<Z *>(vextraParams);

@@ -66,7 +66,7 @@ class SD_LIB_EXPORT SpecialMethods {
   static int lastPowerOf2(int number);
 
   static void sortGeneric(void *x, const sd::LongType *xShapeInfo, bool descending);
-  static void sortTadGeneric(void *x, const sd::LongType *xShapeInfo, sd::LongType  *dimension, int dimensionLength,
+  static void sortTadGeneric(void *x, const sd::LongType *xShapeInfo, sd::LongType  *dimension, LongType dimensionLength,
                              const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, bool descending);
 
   static void decodeBitmapGeneric(const void *dx, sd::LongType N, void *dz, const sd::LongType *zShapeInfo);

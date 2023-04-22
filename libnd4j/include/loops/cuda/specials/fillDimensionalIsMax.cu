@@ -27,7 +27,7 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_DEVICE void fillDimensionalIsMax(const void *vdX, void *vdZ, const sd::LongType *zShapeInfo,
-                                    const sd::LongType *tadOnlyShapeInfo, int *dimension, int dimensionLength,
+                                    const sd::LongType *tadOnlyShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength,
                                     const sd::LongType *tadOffsets) {
   auto dX = reinterpret_cast<const sd::LongType *>(vdX);
   auto dZ = reinterpret_cast<T *>(vdZ);
@@ -65,7 +65,7 @@ SD_DEVICE void fillDimensionalIsMax(const void *vdX, void *vdZ, const sd::LongTy
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_KERNEL void execfillDimensionalIsMax(const void *dX, void *dZ, const sd::LongType *zShapeInfo,
-                                        const sd::LongType *tadOnlyShapeInfo, int *dimension, int dimensionLength,
+                                        const sd::LongType *tadOnlyShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength,
                                         const sd::LongType *tadOffsets) {
   fillDimensionalIsMax<T>(dX, dZ, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
 }
@@ -74,14 +74,14 @@ SD_KERNEL void execfillDimensionalIsMax(const void *dX, void *dZ, const sd::Long
 template <typename T>
 SD_HOST void fillDimensionalIsMaxGeneric(dim3 &launchDims, cudaStream_t *stream, const void *dX, void *dZ,
                                          const sd::LongType *zShapeInfo, const sd::LongType *tadOnlyShapeInfo,
-                                         int *dimension, int dimensionLength, const sd::LongType *tadOffsets) {
+                                         sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadOffsets) {
   execfillDimensionalIsMax<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       dX, dZ, zShapeInfo, tadOnlyShapeInfo, dimension, dimensionLength, tadOffsets);
   sd::DebugHelper::checkErrorCode(stream, "fillDimensionalIsMax(...) failed");
 }
 BUILD_SINGLE_TEMPLATE(template void fillDimensionalIsMaxGeneric,
                       (dim3 & launchDims, cudaStream_t *stream, const void *dX, void *dZ,
-                       const sd::LongType *zShapeInfo, const sd::LongType *tadOnlyShapeInfo, int *dimension,
-                       int dimensionLength, const sd::LongType *tadOffsets),
+                       const sd::LongType *zShapeInfo, const sd::LongType *tadOnlyShapeInfo, sd::LongType *dimension,
+                       sd::LongType dimensionLength, const sd::LongType *tadOffsets),
                       SD_COMMON_TYPES);
 }  // namespace sd

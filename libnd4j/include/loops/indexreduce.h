@@ -77,7 +77,7 @@ class IndexReduce {
   static sd::LongType execScalar(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams);
 
   static void exec(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *result,
-                   const sd::LongType *resultShapeInfoBuffer, long long int *dimension, int dimensionLength,
+                   const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength,
                    const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset);
 
   template <typename OpType>
@@ -85,7 +85,8 @@ class IndexReduce {
 
   template <typename OpType>
   static SD_HOST void exec(const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *result,
-                           const sd::LongType *resultShapeInfoBuffer, long long int *dimension, int dimensionLength,
+                           const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension,
+                           sd::LongType dimensionLength,
                            const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset);
 #endif
 };

@@ -26,8 +26,8 @@ namespace shape {
 
 
 
-SD_HOST sd::LongType *computeResultShape(sd::LongType const *originalShapeBuffer, int *dimension,
-                                         int dimensionLength) {
+SD_HOST sd::LongType *computeResultShape(sd::LongType const *originalShapeBuffer, long long int *dimension,
+                                         long long int dimensionLength) {
   sd::LongType *retShape;
   int retShapeLength;
   if (dimensionLength == 1 && dimension[0] == 2147483647) {
@@ -36,7 +36,7 @@ SD_HOST sd::LongType *computeResultShape(sd::LongType const *originalShapeBuffer
     retShape[1] = 1;
     retShapeLength = 2;
   } else {
-    retShape = shape::removeIndex<sd::LongType, int>(shape::shapeOf(originalShapeBuffer), dimension,
+    retShape = shape::removeIndex<sd::LongType, sd::LongType>(shape::shapeOf(originalShapeBuffer), dimension,
                                                      shape::shapeInfoLength(shape::rank(originalShapeBuffer)),
                                                      dimensionLength);
     retShapeLength = shape::rank(originalShapeBuffer) - dimensionLength;
@@ -68,7 +68,8 @@ SD_HOST sd::LongType *computeResultShape(sd::LongType const *originalShapeBuffer
 }
 
 SD_HOST sd::LongType *shapeInfoOnlyShapeAndStride(const sd::LongType *shapeInfo,
-                                                  sd::LongType *dimension, int dimensionLength,
+                                                  sd::LongType *dimension,
+                                                  long long int dimensionLength,
                                                   bool reverseCopyStride, sd::LongType *buffer) {
   sd::LongType *theShape = shape::shapeOf(shapeInfo);
   sd::LongType *theStride = shape::stride(shapeInfo);
@@ -120,7 +121,8 @@ SD_HOST sd::LongType *shapeInfoOnlyShapeAndStride(const sd::LongType *shapeInfo,
 }
 
 SD_HOST sd::LongType *shapeInfoOnlyShapeAndStride(const sd::LongType *shapeInfo,
-                                                  sd::LongType *dimension, int dimensionLength,
+                                                  sd::LongType *dimension,
+                                                  long long int dimensionLength,
                                                   bool reverseCopyStride) {
   int rank = dimensionLength == 1 ? 2 : dimensionLength;
 
@@ -158,7 +160,8 @@ SD_HOST sd::LongType *createShapeInfo(sd::LongType *shape, sd::LongType *stride,
  * Length of a tad given
  * the shape information
  */
-SD_LIB_EXPORT SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, sd::LongType *dimension, int dimensionLength) {
+SD_LIB_EXPORT SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, sd::LongType *dimension,
+                                             long long int dimensionLength) {
 
   if(shapeInfo == nullptr || dimension == nullptr) {
     std::string  errorMessage;
@@ -195,7 +198,8 @@ SD_LIB_EXPORT SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, sd::
 }
 
 
-SD_LIB_EXPORT  SD_HOST int tadElementWiseStride(sd::LongType *shapeInfo, int *dimension, int dimensionLength) {
+SD_LIB_EXPORT  SD_HOST sd::LongType tadElementWiseStride(sd::LongType *shapeInfo, sd::LongType *dimension,
+                                               sd::LongType dimensionLength) {
   return reductionIndexElementWiseStride(shapeInfo, dimension, dimensionLength);
 }
 
@@ -856,7 +860,7 @@ SD_HOST sd::LongType *shapeBufferFortran(int rank, sd::DataType dtype, sd::LongT
  * @param rearrange
  * @return
  */
-SD_HOST sd::LongType *doPermuteSwap(int length, sd::LongType *shape, int *rearrange) {
+SD_HOST sd::LongType *doPermuteSwap(long long int length, sd::LongType *shape, long long int *rearrange) {
   traceNew(16);
   sd::LongType *ret = new sd::LongType[length];
   for (int i = 0; i < length; i++) {
@@ -966,7 +970,8 @@ SD_HOST void doPermuteShapeInfo(sd::LongType *shapeInfo, const long long int *re
   delete[] temp;
 }
 
-SD_HOST sd::LongType *createPermuteIndexes(int originalRank, int *dimension, int dimensionLength) {
+SD_HOST sd::LongType *createPermuteIndexes(long long int originalRank, long long int *dimension,
+                                           long long int dimensionLength) {
   int delta = originalRank - dimensionLength;
 
   traceNew(17);
@@ -1073,8 +1078,8 @@ SD_HOST sd::LongType *sliceOfShapeBuffer(sd::LongType sliceIdx, sd::LongType *sh
  * Returns the element wise stride for this information
  * buffer relative to a dimension and reduction index
  */
-SD_HOST sd::LongType reductionIndexElementWiseStride(sd::LongType *buffer, int *dimension,
-                                                     int dimensionLength) {
+SD_HOST sd::LongType reductionIndexElementWiseStride(sd::LongType *buffer, sd::LongType *dimension,
+                                                     sd::LongType dimensionLength) {
   if (dimensionLength > 1) {
     if (shape::order(buffer) == 'f') {
       /**
@@ -1087,8 +1092,6 @@ SD_HOST sd::LongType reductionIndexElementWiseStride(sd::LongType *buffer, int *
        * along which to iterate.
        */
       if (shape::shapeOf(buffer)[dimension[dimensionLength - 1]] != 1) {
-        // int tadElementWiseStride = shape::stride(buffer)[dimension[dimensionLength - 1]];
-        // return tadElementWiseStride;
         auto tadElementWiseStride = shape::stride(buffer)[dimension[0]];
         return tadElementWiseStride;
       }
@@ -1209,7 +1212,7 @@ SD_HOST sd::LongType *keep(volatile sd::LongType *data, const long long int *ind
  * along the given dimension
  */
 SD_HOST sd::LongType lengthPerSlice(int rank, sd::LongType const *shape, const long long int *dimension,
-                                    int dimensionLength) {
+                                    long long int dimensionLength) {
   if (shape::isVector(shape, rank)) {
     // return total length for row vectors
     if (dimensionLength == 1 && shape[0] == 1) {
@@ -1234,7 +1237,7 @@ SD_HOST sd::LongType lengthPerSlice(int rank, sd::LongType const *shape, const l
  */
 SD_HOST sd::LongType sliceOffsetForTensor(int rank, int index, sd::LongType const *shape,
                                           sd::LongType const *tensorShape, int tensorShapeLength,
-                                          const long long int *dimension, int dimensionLength) {
+                                          const long long int *dimension, long long int dimensionLength) {
   auto tensorLength = prodLong(tensorShape, tensorShapeLength);
   auto lengthPerSlice2 = lengthPerSlice(rank, shape, dimension, dimensionLength);
   if (lengthPerSlice2 <= 0) {
@@ -1251,8 +1254,7 @@ SD_HOST sd::LongType sliceOffsetForTensor(int rank, int index, sd::LongType cons
  */
 SD_HOST sd::LongType tensorsAlongDimension(volatile int rank, volatile int length,
                                            volatile sd::LongType *shape,
-                                           long long int *dimension,
-                                           int dimensionLength) {
+                                           long long int *dimension, long long int dimensionLength) {
   sd::LongType *tensorShape = shape::keep(shape, dimension, dimensionLength, rank);
   sd::LongType ret = length / shape::prodLong(tensorShape, dimensionLength);
   delete[] tensorShape;
@@ -1265,7 +1267,7 @@ SD_HOST sd::LongType tensorsAlongDimension(volatile int rank, volatile int lengt
  * a given dimension
  */
 SD_HOST sd::LongType tensorsAlongDimension(sd::LongType *shapeInfo, long long int *dimension,
-                                           int dimensionLength) {
+                                           long long int dimensionLength) {
   sd::LongType *keepShape = shape::shapeOf(shapeInfo);
   sd::LongType *tensorShape = shape::keep(keepShape, dimension, dimensionLength, rank(shapeInfo));
   sd::LongType ret = shape::length(shapeInfo) / shape::prodLong(tensorShape, dimensionLength);
@@ -1522,7 +1524,7 @@ SD_HOST void transposeInplace(sd::LongType *shapeBuffer) {
     shapeBuffer[shape::shapeInfoLength(shapeBuffer) - 1] = 99;
 }
 
-SD_HOST int rearMostLeftOverItem(sd::LongType *data, sd::LongType *dimension, int dimensionLength) {
+SD_HOST int rearMostLeftOverItem(sd::LongType *data, sd::LongType *dimension, long long int dimensionLength) {
   sd::LongType *stride = shape::stride(data);
   // corner case: return the final item when its greater than the max, since its guaranteed to be left over
   // note here that strides are interpreted in reverse for tad
@@ -1624,7 +1626,7 @@ SD_HOST bool areStridesDefault(const sd::LongType *shapeInfo) {
 }
 
 //////////////////////////////////////////////////////////////////////
-SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, const char newOrder, const int newRank,
+SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, const char newOrder, const long long int newRank,
                       const sd::LongType *newShape, sd::LongType *newShapeInfo) {
   // copy shape from newShape into newShapeInfo
   newShapeInfo[0] = newRank;

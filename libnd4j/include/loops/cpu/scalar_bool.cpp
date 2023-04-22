@@ -37,10 +37,10 @@ template <typename X, typename Z>
 template <typename OpType>
 void ScalarBoolTransform<X, Z>::transform(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
                                           const sd::LongType *zShapeInfo, const void *vscalars,
-                                          long long int *dimension,
-                                          int dimensionLength, const sd::LongType *xTadShapeInfo,
+                                          long long int *dimension, long long int dimensionLength, const sd::LongType *xTadShapeInfo,
                                           const sd::LongType *xTadOffsets, const sd::LongType *zTadShapeInfo,
-                                          const sd::LongType *zTadOffsets, const uint64_t start, const uint64_t stop) {
+                                          const sd::LongType *zTadOffsets,
+                                          const long long int start, const long long int stop) {
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
   auto scalars = reinterpret_cast<const X *>(vscalars);
@@ -88,10 +88,10 @@ void ScalarBoolTransform<X, Z>::transform(const void *vx, const sd::LongType *xS
 template <typename X, typename Y>
 void ScalarBoolTransform<X, Y>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams,
                                           void *z, const sd::LongType *zShapeInfo, const void *scalars,
-                                          long long int *dimension,
-                                          int dimensionLength, const sd::LongType *xTadShapeInfo,
+                                          long long int *dimension, long long int dimensionLength, const sd::LongType *xTadShapeInfo,
                                           const sd::LongType *xTadOffsets, const sd::LongType *zTadShapeInfo,
-                                          const sd::LongType *zTadOffsets, const uint64_t start, const uint64_t stop) {
+                                          const sd::LongType *zTadOffsets,
+                                          const long long int start, const long long int stop) {
   DISPATCH_BY_OPNUM_TT(transform,
                        PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength,
                               xTadShapeInfo, xTadOffsets, zTadShapeInfo, zTadOffsets, start, stop),

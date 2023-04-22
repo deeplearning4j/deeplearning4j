@@ -101,7 +101,7 @@ static inline __device__ void transformCuda(T scalar, T *dy, int *shapeInfo, T *
   * ScalarOp along dimension
 **/
 template<typename OpType>
-static inline void __device__ transformCuda(T *x, int *xShapeInfo, T *extraParams, T *z, int *zShapeInfo, T *scalars, int *dimension, int dimensionLength, int *tadShapeInfo, sd::LongType *tadOffsets, int *tadShapeInfoZ, sd::LongType *tadOffsetsZ) {
+static inline void __device__ transformCuda(T *x, int *xShapeInfo, T *extraParams, T *z, int *zShapeInfo, T *scalars, sd::LongType *dimension, sd::LongType dimensionLength, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets, sd::LongType *tadShapeInfoZ, sd::LongType *tadOffsetsZ) {
 
     if (tadShapeInfoZ == nullptr) {
         tadShapeInfoZ = tadShapeInfo;

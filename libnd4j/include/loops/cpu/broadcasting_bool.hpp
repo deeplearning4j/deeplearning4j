@@ -35,7 +35,7 @@ namespace broadcast {
 template <typename X, typename Y>
 void BroadcastBool<X, Y>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                                const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
-                               void *extraParams, long long int *dimension, int dimensionLength,
+                               void *extraParams, sd::LongType *dimension, sd::LongType dimensionLength,
                                const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
                                const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset, uint64_t start,
                                uint64_t stop) {
@@ -55,7 +55,7 @@ void BroadcastBool<X, Y>::exec(const int opNum, const void *x, const sd::LongTyp
 template <typename X, typename Y>
 void BroadcastBool<X, Y>::execInverse(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                                       const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
-                                      void *extraParams, long long int *dimension, int dimensionLength,
+                                      void *extraParams, sd::LongType *dimension, sd::LongType dimensionLength,
                                       const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
                                       const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset, uint64_t start,
                                       uint64_t stop) {
@@ -69,7 +69,7 @@ template <typename X, typename Z>
 template <typename OpType>
 void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                                const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                               void *vextraParams, long long int *dimension, int dimensionLength,
+                               void *vextraParams, sd::LongType *dimension, sd::LongType dimensionLength,
                                const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
                                const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset, uint64_t start,
                                uint64_t stop) {
@@ -225,7 +225,7 @@ template <typename X, typename Z>
 template <typename OpType>
 void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                                       const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                                      void *vextraParams, long long int *dimension, int dimensionLength,
+                                      void *vextraParams, sd::LongType *dimension, sd::LongType dimensionLength,
                                       const sd::LongType *yTadShapeInfo, const sd::LongType *yTadOffset,
                                       const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset, uint64_t start,
                                       uint64_t stop) {

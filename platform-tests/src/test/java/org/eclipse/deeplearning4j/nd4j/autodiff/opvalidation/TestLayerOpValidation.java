@@ -1244,6 +1244,8 @@ public class TestLayerOpValidation extends BaseOpValidation {
     public void testLayerNorm4d(Nd4jBackend backend) {
         int mb = 3;
         int ch = 4;
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
         for (boolean nchw : new boolean[]{true, false}) {
             double eps = 0.0;
             INDArray x = Nd4j.rand(DataType.DOUBLE, nchw ? new long[]{mb, ch, 8, 8} : new long[]{mb, 8, 8, ch});
@@ -1289,8 +1291,8 @@ public class TestLayerOpValidation extends BaseOpValidation {
         }
 
         Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
-                        .checkForNAN(true)
-                        .checkForINF(true)
+                .checkForNAN(true)
+                .checkForINF(true)
                 .build());
         //test layer norm op
         long[] layerNormDimension = new long[] {2};

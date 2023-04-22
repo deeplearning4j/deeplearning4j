@@ -73,8 +73,8 @@ DECLARE_SHAPE_FN(im2col) {
   sd::LongType pX = INT_ARG(5);
   int dY = INT_ARG(6);  // Dilation, height/y dimension
   int dX = INT_ARG(7);  // Dilation, width/x dimension
-  bool isSameMode = INT_ARG(8) > 0;
-
+  int paddingMode = INT_ARG(8);
+  bool isSameMode = INT_ARG(8) == 1;
   // output is always 6d for im2col
   sd::LongType* zShape;
   ALLOCATE(zShape, block.getWorkspace(), shape::shapeInfoLength(6), sd::LongType);
@@ -82,7 +82,7 @@ DECLARE_SHAPE_FN(im2col) {
   int oY = 0;
   int oX = 0;
 
-  ConvolutionUtils::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+  ConvolutionUtils::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, paddingMode);
 
   if (isSameMode) ConvolutionUtils::calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
 
@@ -120,7 +120,7 @@ CUSTOM_OP_IMPL(im2col_bp, 2, 1, false, 0, 9) {
   int pW = INT_ARG(5);
   int dY = INT_ARG(6);  // Dilation, height/y dimension
   int dX = INT_ARG(7);  // Dilation, width/x dimension
-  bool isSameMode = INT_ARG(8) > 0;
+  int paddingMode = INT_ARG(8);
   double zeroPadVal = 0.0;
   if (block.getTArguments()->size() > 0) zeroPadVal = T_ARG(0);
 

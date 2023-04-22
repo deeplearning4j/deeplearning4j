@@ -32,7 +32,7 @@ class EqualsTest : public testing::Test {
   int opNum = 4;
   float extraArgs[1] = {1e-6f};
   int dimension[1] = {2147483647};
-  int dimensionLength = 1;
+  sd::LongType dimensionLength = 1;
 };
 
 #ifndef __CUDABLAS__

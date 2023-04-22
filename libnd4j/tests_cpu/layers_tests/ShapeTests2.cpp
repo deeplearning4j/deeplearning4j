@@ -28,9 +28,9 @@
 class OnesTest : public testing::Test {
  public:
   sd::LongType shapeBuffer[12] = {4, 4, 3, 1, 1, 3, 1, 1, 1, 0, 1, 99};
-  int dimension[3] = {0, 2, 3};
+  sd::LongType dimension[3] = {0, 2, 3};
   sd::LongType tadAssertionShape[10] = {3, 1, 1, 4, 1, 1, 3, 0, 3, 99};
-  int dimensionLength = 3;
+  sd::LongType dimensionLength = 3;
 };
 
 class LabelTest : public testing::Test {
@@ -57,8 +57,8 @@ class LabelTest : public testing::Test {
       1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
       1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
   sd::LongType shapeInfo[8] = {2, 150, 3, 1, 150, 16384, 1, 102};
-  int dimension[1] = {1};
-  int dimensionLength = 1;
+  sd::LongType dimension[1] = {1};
+  sd::LongType dimensionLength = 1;
   sd::LongType tadShapeInfoAssert[8] = {2, 1, 3, 1, 150, 16384, 150, 102};
 };
 class ThreeDTest : public testing::Test {
@@ -115,7 +115,7 @@ class TensorTwoDimTest : public testing::Test {
   int rows = 3;
   int cols = 4;
   int dim2 = 5;
-  int dimensionLength = 2;
+  sd::LongType dimensionLength = 2;
   int dims[3][2] = {{0, 1}, {0, 2}, {1, 2}};
 
   sd::LongType shape[3]{rows, cols, dim2};

@@ -385,7 +385,7 @@ TEST_F(LegacyOpsTests, reduce3_1) {
   float y[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
   float x[4] = {1, 2, 3, 4};
   int dimension[1] = {1};
-  int dimensionLength = 1;
+  sd::LongType dimensionLength = 1;
   int opNum = 1;
   float extraVals[1] = {0};
   float result[4] = {0.0, 0.0, 0.0, 0.0};

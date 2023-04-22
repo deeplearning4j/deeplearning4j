@@ -33,8 +33,8 @@ __device__ void reduceSimpleGeneric(
         void *extraParams,
         void *result,
         sd::LongType *resultShapeInfo,
-        int *dimension,
-        int dimensionLength,
+    sd::LongType *dimension,
+    sd::LongType dimensionLength,
         void *reductionBuffer, sd::LongType *tadOnlyShapeInfo, sd::LongType *tadOffsets) {
 
     __shared__ UnifiedSharedMemory *manager;
@@ -68,8 +68,8 @@ __device__ void reduceSimpleGeneric1D(
         T *extraParams,
         T *result,
         sd::LongType *resultShapeInfo,
-        int *dimension,
-        int dimensionLength,
+    sd::LongType *dimension,
+    sd::LongType dimensionLength,
         T *reductionBuffer,
         sd::LongType *tadOnlyShapeInfo,
         sd::LongType *tadOffsets) {
@@ -92,8 +92,8 @@ __device__ void reduceSimpleGeneric3D(
         T *extraParams,
         T *result,
         sd::LongType *resultShapeInfo,
-        int *dimension,
-        int dimensionLength,
+    sd::LongType *dimension,
+    sd::LongType dimensionLength,
         T *reductionBuffer,
         sd::LongType *tadOnlyShapeInfo,
         sd::LongType *tadOffsets) {
@@ -119,8 +119,8 @@ __device__ void reduceScalarGeneric(
         T *extraParams,
         T *result,
         sd::LongType *resultShapeInfo,
-        int *dimension,
-        int dimensionLength,
+    sd::LongType *dimension,
+    sd::LongType dimensionLength,
         T *reductionBuffer, sd::LongType *tadOnlyShapeInfo) {
 
     __shared__ UnifiedSharedMemory *manager;
@@ -145,24 +145,24 @@ __device__ void reduceScalarGeneric(
 
 #ifndef __CLION_IDE__
 // reduceScalar
-DISPATCH_KERNEL_SIMPLE(reduceScalarSimple_, reduceScalarGeneric, float, INPUT(float *x, sd::LongType *xShapeInfo, float *extraParams, float *z, sd::LongType *zShapeInfo, int *dimension, int dimensionLength, float *reductionBuffer, sd::LongType *tadOnlyShapeInfo), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
-DISPATCH_KERNEL_SIMPLE(reduceScalarSimple_, reduceScalarGeneric, double, INPUT(double *x, sd::LongType *xShapeInfo, double *extraParams, double *z, sd::LongType *zShapeInfo, int *dimension, int dimensionLength, double *reductionBuffer, sd::LongType *tadOnlyShapeInfo), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
-DISPATCH_KERNEL_SIMPLE(reduceScalarSimple_, reduceScalarGeneric, float16, INPUT(float16 *x, sd::LongType *xShapeInfo, float16 *extraParams, float16 *z, sd::LongType *zShapeInfo, int *dimension, int dimensionLength, float16 *reductionBuffer, sd::LongType *tadOnlyShapeInfo), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceScalarSimple_, reduceScalarGeneric, float, INPUT(float *x, sd::LongType *xShapeInfo, float *extraParams, float *z, sd::LongType *zShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, float *reductionBuffer, sd::LongType *tadOnlyShapeInfo), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceScalarSimple_, reduceScalarGeneric, double, INPUT(double *x, sd::LongType *xShapeInfo, double *extraParams, double *z, sd::LongType *zShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, double *reductionBuffer, sd::LongType *tadOnlyShapeInfo), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceScalarSimple_, reduceScalarGeneric, float16, INPUT(float16 *x, sd::LongType *xShapeInfo, float16 *extraParams, float16 *z, sd::LongType *zShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, float16 *reductionBuffer, sd::LongType *tadOnlyShapeInfo), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
 // reduce1D
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric1D_, reduceSimpleGeneric1D, float, INPUT(float *x, sd::LongType *xShape, float *extraParams, float *z, sd::LongType *zShape, int *dimension, int dimensionLength, float *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric1D_, reduceSimpleGeneric1D, double, INPUT(double *x, sd::LongType *xShape, double *extraParams, double *z, sd::LongType *zShape, int *dimension, int dimensionLength, double *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric1D_, reduceSimpleGeneric1D, float16, INPUT(float16 *x, sd::LongType *xShape, float16 *extraParams, float16 *z, sd::LongType *zShape, int *dimension, int dimensionLength, float16 *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric1D_, reduceSimpleGeneric1D, float, INPUT(float *x, sd::LongType *xShape, float *extraParams, float *z, sd::LongType *zShape, sd::LongType *dimension, sd::LongType dimensionLength, float *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric1D_, reduceSimpleGeneric1D, double, INPUT(double *x, sd::LongType *xShape, double *extraParams, double *z, sd::LongType *zShape, sd::LongType *dimension, sd::LongType dimensionLength, double *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric1D_, reduceSimpleGeneric1D, float16, INPUT(float16 *x, sd::LongType *xShape, float16 *extraParams, float16 *z, sd::LongType *zShape, sd::LongType *dimension, sd::LongType dimensionLength, float16 *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
 
 // reduce3D
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric3D_, reduceSimpleGeneric3D, float, INPUT(float *x, sd::LongType *xShape, float *extraParams, float *z, sd::LongType *zShape, int *dimension, int dimensionLength, float *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric3D_, reduceSimpleGeneric3D, double, INPUT(double *x, sd::LongType *xShape, double *extraParams, double *z, sd::LongType *zShape, int *dimension, int dimensionLength, double *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric3D_, reduceSimpleGeneric3D, float16, INPUT(float16 *x, sd::LongType *xShape, float16 *extraParams, float16 *z, sd::LongType *zShape, int *dimension, int dimensionLength, float16 *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric3D_, reduceSimpleGeneric3D, float, INPUT(float *x, sd::LongType *xShape, float *extraParams, float *z, sd::LongType *zShape, sd::LongType *dimension, sd::LongType dimensionLength, float *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric3D_, reduceSimpleGeneric3D, double, INPUT(double *x, sd::LongType *xShape, double *extraParams, double *z, sd::LongType *zShape, sd::LongType *dimension, sd::LongType dimensionLength, double *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric3D_, reduceSimpleGeneric3D, float16, INPUT(float16 *x, sd::LongType *xShape, float16 *extraParams, float16 *z, sd::LongType *zShape, sd::LongType *dimension, sd::LongType dimensionLength, float16 *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
 
 // reduceXD
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, float, INPUT(float *x, sd::LongType *xShape, float *extraParams, float *z, sd::LongType *zShape, int *dimension, int dimensionLength, float *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, double, INPUT(double *x, sd::LongType *xShape, double *extraParams, double *z, sd::LongType *zShape, int *dimension, int dimensionLength, double *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, float16, INPUT(float16 *x, sd::LongType *xShape, float16 *extraParams, float16 *z, sd::LongType *zShape, int *dimension, int dimensionLength, float16 *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, float, INPUT(float *x, sd::LongType *xShape, float *extraParams, float *z, sd::LongType *zShape, sd::LongType *dimension, sd::LongType dimensionLength, float *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, double, INPUT(double *x, sd::LongType *xShape, double *extraParams, double *z, sd::LongType *zShape, sd::LongType *dimension, sd::LongType dimensionLength, double *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, float16, INPUT(float16 *x, sd::LongType *xShape, float16 *extraParams, float16 *z, sd::LongType *zShape, sd::LongType *dimension, sd::LongType dimensionLength, float16 *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
 
 #endif
 
@@ -170,7 +170,7 @@ namespace functions {
     namespace reduce {
 
             template <>
-            SD_HOST void ReduceFunction<float>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, float *x, sd::LongType *xShapeInfo, float *extraParams, float *z, sd::LongType *zShapeInfo, int *dimension, int dimensionLength, float *reductionBuffer, sd::LongType *tadOnlyShapeInfo) {
+            SD_HOST void ReduceFunction<float>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, float *x, sd::LongType *xShapeInfo, float *extraParams, float *z, sd::LongType *zShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, float *reductionBuffer, sd::LongType *tadOnlyShapeInfo) {
 
                 DISPATCH_SIMPLE(reduceScalarSimple, float, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
@@ -178,7 +178,7 @@ namespace functions {
             }
 
             template <>
-            SD_HOST void ReduceFunction<float16>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, float16 *x, sd::LongType *xShapeInfo, float16 *extraParams, float16 *z, sd::LongType *zShapeInfo, int *dimension, int dimensionLength, float16 *reductionBuffer, sd::LongType *tadOnlyShapeInfo) {
+            SD_HOST void ReduceFunction<float16>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, float16 *x, sd::LongType *xShapeInfo, float16 *extraParams, float16 *z, sd::LongType *zShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, float16 *reductionBuffer, sd::LongType *tadOnlyShapeInfo) {
 
                 DISPATCH_SIMPLE(reduceScalarSimple, float16, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
@@ -186,7 +186,7 @@ namespace functions {
             }
 
             template <>
-            SD_HOST void ReduceFunction<double>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, double *x, sd::LongType *xShapeInfo, double *extraParams, double *z, sd::LongType *zShapeInfo, int *dimension, int dimensionLength, double *reductionBuffer, sd::LongType *tadOnlyShapeInfo) {
+            SD_HOST void ReduceFunction<double>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, double *x, sd::LongType *xShapeInfo, double *extraParams, double *z, sd::LongType *zShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, double *reductionBuffer, sd::LongType *tadOnlyShapeInfo) {
 
                 DISPATCH_SIMPLE(reduceScalarSimple, double, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
@@ -194,7 +194,7 @@ namespace functions {
             }
 
             template <>
-            SD_HOST void ReduceFunction<float>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, float *x, sd::LongType *xShape, float *extraParams, float *z, sd::LongType *zShape, int *dimension, int dimensionLength, float *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets) {
+            SD_HOST void ReduceFunction<float>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, float *x, sd::LongType *xShape, float *extraParams, float *z, sd::LongType *zShape, sd::LongType *dimension, sd::LongType dimensionLength, float *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets) {
                 if (rank == 1) {
                     DISPATCH_SIMPLE(reduceSimpleGeneric1D, float, PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
                 } else if (rank <= 3) {
@@ -207,7 +207,7 @@ namespace functions {
             }
 
             template <>
-            SD_HOST void ReduceFunction<float16>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, float16 *x, sd::LongType *xShape, float16 *extraParams, float16 *z, sd::LongType *zShape, int *dimension, int dimensionLength, float16 *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets) {
+            SD_HOST void ReduceFunction<float16>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, float16 *x, sd::LongType *xShape, float16 *extraParams, float16 *z, sd::LongType *zShape, sd::LongType *dimension, sd::LongType dimensionLength, float16 *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets) {
                 if (rank == 1) {
                     DISPATCH_SIMPLE(reduceSimpleGeneric1D, float16, PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
                 } else if (rank <= 3) {
@@ -220,7 +220,7 @@ namespace functions {
             }
 
             template <>
-            SD_HOST void ReduceFunction<double>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, double *x, sd::LongType *xShape, double *extraParams, double *z, sd::LongType *zShape, int *dimension, int dimensionLength, double *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets) {
+            SD_HOST void ReduceFunction<double>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, double *x, sd::LongType *xShape, double *extraParams, double *z, sd::LongType *zShape, sd::LongType *dimension, sd::LongType dimensionLength, double *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets) {
 
                 if (rank == 1) {
                     DISPATCH_SIMPLE(reduceSimpleGeneric1D, double, PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
@@ -249,8 +249,8 @@ namespace functions {
 				T *extraParams,
 				T *result,
 				sd::LongType *resultShapeInfo,
-				int *dimension,
-				int dimensionLength,
+                                                               sd::LongType *dimension,
+                                                               sd::LongType dimensionLength,
 				T *reductionBuffer, UnifiedSharedMemory *manager, sd::LongType *tadOnlyShapeInfo, sd::LongType *tadOffsets) {
 
                 if (OpType::requiresSpecialAccumulation) {
@@ -425,8 +425,8 @@ namespace functions {
 				T *extraParams,
 				T *result,
 				sd::LongType *resultShapeInfo,
-				int *dimension,
-				int dimensionLength,
+                            sd::LongType *dimension,
+                            sd::LongType dimensionLength,
 				T *reductionBuffer, UnifiedSharedMemory *manager, sd::LongType *tadOnlyShapeInfo, sd::LongType *tadOffsets) {
 
                 if (OpType::requiresSpecialAccumulation) {
@@ -486,8 +486,8 @@ namespace functions {
 				T *extraParams,
 				T *result,
 				sd::LongType *resultShapeInfo,
-				int *dimension,
-				int dimensionLength,
+				sd::LongType *dimension,
+				sd::LongType dimensionLength,
 				T *reductionBuffer,
 				UnifiedSharedMemory *manager,
 				sd::LongType *tadOnlyShapeInfo,
