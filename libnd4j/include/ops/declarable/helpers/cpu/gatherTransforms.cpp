@@ -116,8 +116,8 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
         auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
 
         auto tadArr = NDArray(reinterpret_cast<void*>(reinterpret_cast<T*>(input->buffer()) +
-                                                      tadPack.primaryOffsets()[indices->e<sd::LongType>(0)]),
-                              tadPack.primaryShapeInfo(), output->getContext());
+                                                      tadPack->primaryOffsets()[indices->e<sd::LongType>(0)]),
+                              tadPack->primaryShapeInfo(), output->getContext());
         output->assign(&tadArr);
       }
     } else if (input->rankOf() == 1 && indices->isVector()) {

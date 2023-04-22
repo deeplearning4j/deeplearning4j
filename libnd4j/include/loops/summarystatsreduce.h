@@ -279,7 +279,7 @@ class SummaryStatsReduce {
 
   template <typename OpType>
   static void exec(bool biasCorrected, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *vz,
-                   const sd::LongType *resultShapeInfoBuffer, long long int *dimension, long long int dimensionLength);
+                   const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength);
 #endif
 };
 }  // namespace summarystats

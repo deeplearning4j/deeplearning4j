@@ -1251,10 +1251,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
             INDArray x = Nd4j.rand(DataType.DOUBLE, nchw ? new long[]{mb, ch, 8, 8} : new long[]{mb, 8, 8, ch});
             INDArray gain4d = Nd4j.rand(DataType.DOUBLE, nchw ? new long[]{1, ch, 1, 1} : new long[]{1, 1, 1, ch});
             INDArray bias4d = Nd4j.rand(DataType.DOUBLE, nchw ? new long[]{1, ch, 1, 1} : new long[]{1, 1, 1, ch});
-            INDArray mean = x.mean(true, 1, 2, 3);
-            INDArray std = Transforms.sqrt(x.var(false, 1, 2, 3).addi(eps)).reshape(mb, 1, 1, 1);
-
-            INDArray standardized = x.sub(mean).div(std);
+            INDArray standardized = Nd4j.math().standardize(x,1,2,3);
             INDArray exp = standardized.mul(gain4d).add(bias4d);
 
             final long[] axis = new long[]{1, 2, 3};
@@ -1265,7 +1262,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
             SDVariable out = sd.nn.layerNorm("layernorm", sdInput, sdGain, sdBias, nchw, axis);
 
             SDVariable loss = sd.loss.l2Loss(out);
-
+            loss.markAsLoss();
             String err = OpValidation.validate(new TestCase(sd)
                     .expectedOutput("layernorm", exp)
                     .gradientCheck(true));

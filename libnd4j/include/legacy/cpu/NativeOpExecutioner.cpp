@@ -731,7 +731,7 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext *lc, int opNum, const vo
   const auto xLen = shape::length(hXShapeInfo);
   const auto yLen = shape::length(hYShapeInfo);
 
-  sd::TadPack tadPack;
+  sd::TadPack *tadPack;
 
   if (xLen == yLen) {
     tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
@@ -748,7 +748,7 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext *lc, int opNum, const vo
                           SD_COMMON_TYPES, SD_FLOAT_TYPES);
   };
 
-  samediff::Threads::parallel_tad(func, 0, tadPack.numberOfTads());
+  samediff::Threads::parallel_tad(func, 0, tadPack->numberOfTads());
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -775,7 +775,7 @@ void NativeOpExecutioner::execReduce3All(sd::LaunchContext *lc, int opNum, const
         SD_COMMON_TYPES, SD_FLOAT_TYPES);
   };
 
-  samediff::Threads::parallel_tad(func, 0, tadPack.numberOfTads());
+  samediff::Threads::parallel_tad(func, 0, tadPack->numberOfTads());
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -794,7 +794,7 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext *lc, int opNum, const
   const auto xLen = shape::length(hXShapeInfo);
   const auto yLen = shape::length(hYShapeInfo);
 
-  sd::TadPack tadPack;
+  sd::TadPack *tadPack;
 
   if (xLen == yLen) {
     tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
@@ -811,7 +811,7 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext *lc, int opNum, const
                           SD_COMMON_TYPES, SD_FLOAT_TYPES);
   };
 
-  samediff::Threads::parallel_tad(func, 0, tadPack.numberOfTads());
+  samediff::Threads::parallel_tad(func, 0, tadPack->numberOfTads());
 }
 
 ////////////////////////////////////////////////////////////////////////

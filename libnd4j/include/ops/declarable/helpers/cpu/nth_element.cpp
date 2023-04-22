@@ -42,7 +42,7 @@ void nthElementFunctor_(NDArray* input, sd::LongType n, NDArray* output, bool re
     auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(sortedVals.shapeInfo(), lastDims);
 
     SpecialMethods<T>::sortTadGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), lastDims.data(), lastDims.size(),
-                                      pack.primaryShapeInfo(), pack.primaryOffsets(), reverse);
+                                      pack->primaryShapeInfo(), pack->primaryOffsets(), reverse);
 
     ResultSet rows = sortedVals.allTensorsAlongDimension(lastDims);
     sd::LongType oL = output->lengthOf();

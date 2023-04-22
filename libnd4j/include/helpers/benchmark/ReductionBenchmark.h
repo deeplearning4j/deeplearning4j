@@ -101,8 +101,8 @@ class SD_LIB_EXPORT ReductionBenchmark : public OpBenchmark {
     else {
       auto pack = ConstantTadHelper::getInstance().tadForDimensions(_x->shapeInfo(), _axis);
 
-      auto tadOnlyShapeInfo = Environment::getInstance().isCPU() ? pack.primaryShapeInfo() : pack.specialShapeInfo();
-      auto tadOffsets = Environment::getInstance().isCPU() ? pack.primaryOffsets() : pack.specialOffsets();
+      auto tadOnlyShapeInfo = Environment::getInstance().isCPU() ? pack->primaryShapeInfo() : pack->specialShapeInfo();
+      auto tadOffsets = Environment::getInstance().isCPU() ? pack->primaryOffsets() : pack->specialOffsets();
 
       if (_opType == 0)
         NativeOpExecutioner::execReduceFloat(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(),

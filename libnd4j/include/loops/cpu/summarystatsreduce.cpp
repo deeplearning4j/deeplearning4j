@@ -117,29 +117,28 @@ void SummaryStatsReduce<X, Z>::exec(bool biasCorrected, const void *vx, const sd
   if (dimensionLength < 1) return;
 
   auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
-
   // pre squeezed: this is for keeping the pointer to the original
   // shape information for tad offset
   // the squeezed information doesn't render the right strides for
   // tad offset
-  if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || tadPack.numberOfTads() == 1) {
+  if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || tadPack->numberOfTads() == 1) {
     z[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
     return;
   }
 
-  auto tadShapeShapeInfo = tadPack.primaryShapeInfo();
-  auto tadLength = shape::length(tadPack.primaryShapeInfo());
-  auto tadEWS = shape::elementWiseStride(tadPack.primaryShapeInfo());
-  auto tadOrder = shape::order(tadPack.primaryShapeInfo());
-
+  auto tadShapeShapeInfo = tadPack->primaryShapeInfo();
+  auto tadLength = shape::length(tadPack->primaryShapeInfo());
+  auto tadEWS = shape::elementWiseStride(tadPack->primaryShapeInfo());
+  auto tadOrder = shape::order(tadPack->primaryShapeInfo());
+  auto offsets = tadPack->primaryOffsets();
   sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
   const bool canCast = tadEWS == 1 && tadOrder == 'c'
-                           ? false
-                           : sd::DataTypeUtils::castShapeInfo<sd::LongType>(tadShapeShapeInfo, tadShapeShapeInfoCast);
+                       ? false
+                       : sd::DataTypeUtils::castShapeInfo<sd::LongType>(tadShapeShapeInfo, tadShapeShapeInfoCast);
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto r = start; r < stop; r++) {
-      auto tadOffsetForBlock = tadPack.primaryOffsets()[r];
+      auto tadOffsetForBlock = offsets[r];
       auto tx = x + tadOffsetForBlock;
       SummaryStatsData<X> comp;
       comp.initWithValue(tx[0]);
@@ -150,15 +149,16 @@ void SummaryStatsReduce<X, Z>::exec(bool biasCorrected, const void *vx, const sd
           indexVal2.initWithValue(tx[i]);
 
           comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
+
         }
       } else {
         for (sd::LongType i = 1; i < tadLength; i++) {
           auto xOffset = shape::indexOffset(i, tadShapeShapeInfo, tadShapeShapeInfoCast, canCast);
-
           SummaryStatsData<X> indexVal2;
           indexVal2.initWithValue(tx[xOffset]);
 
           comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
+
         }
       }
 

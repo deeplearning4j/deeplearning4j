@@ -278,8 +278,8 @@ void execIndexReduce(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
 
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
 
-    auto hTADShapeInfo = tadPack.primaryShapeInfo();
-    auto hTADOffsets = tadPack.primaryOffsets();
+    auto hTADShapeInfo = tadPack->primaryShapeInfo();
+    auto hTADOffsets = tadPack->primaryOffsets();
 
     auto hz = reinterpret_cast<sd::LongType *>(dbZ->primary());
 
@@ -318,10 +318,10 @@ void execBroadcast(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
     auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
     auto tadPackZ = sd::ConstantTadHelper::getInstance().tadForDimensions(hZShapeInfo, dimension, dimensionLength);
 
-    auto hTADShapeInfo = tadPackX.primaryShapeInfo();
-    auto hTADOffsets = tadPackX.primaryOffsets();
-    auto hTADShapeInfoZ = tadPackZ.primaryShapeInfo();
-    auto hTADOffsetsZ = tadPackZ.primaryOffsets();
+    auto hTADShapeInfo = tadPackX->primaryShapeInfo();
+    auto hTADOffsets = tadPackX->primaryOffsets();
+    auto hTADShapeInfoZ = tadPackZ->primaryShapeInfo();
+    auto hTADOffsetsZ = tadPackZ->primaryOffsets();
 
     NativeOpExecutioner::execBroadcast(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                        dbY->primary(), hYShapeInfo, dbY->special(), dYShapeInfo, dbZ->primary(),
@@ -347,10 +347,10 @@ void execBroadcastBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *
     auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
     auto tadPackZ = sd::ConstantTadHelper::getInstance().tadForDimensions(hZShapeInfo, dimension, dimensionLength);
 
-    auto hTADShapeInfo = tadPackX.primaryShapeInfo();
-    auto hTADOffsets = tadPackX.primaryOffsets();
-    auto hTADShapeInfoZ = tadPackZ.primaryShapeInfo();
-    auto hTADOffsetsZ = tadPackZ.primaryOffsets();
+    auto hTADShapeInfo = tadPackX->primaryShapeInfo();
+    auto hTADOffsets = tadPackX->primaryOffsets();
+    auto hTADShapeInfoZ = tadPackZ->primaryShapeInfo();
+    auto hTADOffsetsZ = tadPackZ->primaryOffsets();
 
     NativeOpExecutioner::execBroadcastBool(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                            dbY->primary(), hYShapeInfo, dbY->special(), dYShapeInfo, dbZ->primary(),
@@ -760,8 +760,8 @@ void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
       // going tad-way
       auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
 
-      auto hTADShapeInfo = tadPack.primaryShapeInfo();
-      auto hTADOffsets = tadPack.primaryOffsets();
+      auto hTADShapeInfo = tadPack->primaryShapeInfo();
+      auto hTADOffsets = tadPack->primaryOffsets();
 
       OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX, dbY});
       NativeOpExecutioner::execReduce3TAD(
@@ -892,20 +892,10 @@ void execSummaryStatsTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer
                          const sd::LongType *dDimensionShape, bool biasCorrected, const sd::LongType *tadShapeInfo,
                          const sd::LongType *tadOffsets) {
 
-  if(hXShapeInfo == nullptr) {
-    throw std::runtime_error("X shape info can't be null!");
-  }
-
-  if(hXShapeInfo[0] > SD_MAX_RANK || hXShapeInfo[0] < 0) {
-    throw std::runtime_error("HX shape info rank can't be negative or greater than 32!");
-  }
-
   try {
-    sd_printf("Before dimension length\n",0);
     auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
-    sd_printf("Obtained dimension length\n",0);
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     NativeOpExecutioner::execSummaryStats(nullptr, opNum, dbX->primary(), hXShapeInfo, dbX->special(), dXShapeInfo,
                                           extraParams, dbZ->primary(), hZShapeInfo, dbZ->special(), dZShapeInfo,
@@ -1177,22 +1167,26 @@ void setGridLimit(int gridSize) {
 }
 
 sd::TadPack *tadOnlyShapeInfo(sd::LongType const *hXShapeInfo, LongType *dimension, sd::LongType dimensionLength) {
-  auto pack = new TadPack();
   try {
-    *pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    return pack;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 
-  return pack;
+
 }
 
 sd::LongType const *getPrimaryShapeInfo(sd::TadPack *pack) {
   return const_cast<sd::LongType *>(pack->primaryShapeInfo());
 }
 
-sd::LongType const *getPrimaryOffsets(sd::TadPack *pack) { return const_cast<sd::LongType *>(pack->primaryOffsets()); }
+sd::LongType const *getPrimaryOffsets(sd::TadPack *pack) {
+ if(pack->primaryOffsets() == nullptr)
+   throw std::runtime_error("getPrimaryOffsets: primaryOffsets is nullptr!");
+  return const_cast<sd::LongType *>(pack->primaryOffsets());
+}
 
 sd::LongType const *getSpecialShapeInfo(sd::TadPack *pack) {
   return const_cast<sd::LongType *>(pack->specialShapeInfo());

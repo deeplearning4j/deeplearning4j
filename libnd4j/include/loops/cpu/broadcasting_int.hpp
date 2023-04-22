@@ -83,8 +83,8 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
   if (xTadShapeInfo == nullptr || tadOffsets == nullptr) {
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
 
-    xTadShapeShapeInfo = const_cast<sd::LongType *>(tadPack.primaryShapeInfo());
-    tadOffsets = const_cast<sd::LongType *>(tadPack.primaryOffsets());
+    xTadShapeShapeInfo = const_cast<sd::LongType *>(tadPack->primaryShapeInfo());
+    tadOffsets = const_cast<sd::LongType *>(tadPack->primaryOffsets());
   }
 
   // int *resultStride = shape::stride(xTadShapeShapeInfo);
@@ -237,8 +237,8 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
   if (yTadShapeInfo == nullptr || tadOffsets == nullptr) {
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dimension, dimensionLength);
 
-    yTadShapeShapeInfo = const_cast<sd::LongType *>(tadPack.primaryShapeInfo());
-    tadOffsets = const_cast<sd::LongType *>(tadPack.primaryOffsets());
+    yTadShapeShapeInfo = const_cast<sd::LongType *>(tadPack->primaryShapeInfo());
+    tadOffsets = const_cast<sd::LongType *>(tadPack->primaryOffsets());
   }
 
   // int *resultStride = shape::stride(yTadShapeShapeInfo);

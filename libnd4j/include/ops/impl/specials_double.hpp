@@ -232,15 +232,15 @@ void DoubleMethods<X, Y>::sortTadByKey(void *vx, sd::LongType const *xShapeInfo,
   auto packY = ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dimension, dimensionLength);
 
   auto xLength = shape::length(xShapeInfo);
-  auto xTadLength = shape::length(packX.primaryShapeInfo());
-  auto numTads = packX.numberOfTads();
+  auto xTadLength = shape::length(packX->primaryShapeInfo());
+  auto numTads = packX->numberOfTads();
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto r = start; r < stop; r++) {
-      auto dx = x + packX.primaryOffsets()[r];
-      auto dy = y + packY.primaryOffsets()[r];
+      auto dx = x + packX->primaryOffsets()[r];
+      auto dy = y + packY->primaryOffsets()[r];
 
-      quickSort_parallel_key<X, Y>(dx, packX.primaryShapeInfo(), dy, packY.primaryShapeInfo(), xTadLength, 1,
+      quickSort_parallel_key<X, Y>(dx, packX->primaryShapeInfo(), dy, packY->primaryShapeInfo(), xTadLength, 1,
                                    descending);
     }
   };
@@ -259,15 +259,15 @@ void DoubleMethods<X, Y>::sortTadByValue(void *vx, sd::LongType const *xShapeInf
   auto packY = ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dimension, dimensionLength);
 
   auto xLength = shape::length(xShapeInfo);
-  auto xTadLength = shape::length(packX.primaryShapeInfo());
-  auto numTads = packX.numberOfTads();
+  auto xTadLength = shape::length(packX->primaryShapeInfo());
+  auto numTads = packX->numberOfTads();
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto r = start; r < stop; r++) {
-      auto dx = x + packX.primaryOffsets()[r];
-      auto dy = y + packY.primaryOffsets()[r];
+      auto dx = x + packX->primaryOffsets()[r];
+      auto dy = y + packY->primaryOffsets()[r];
 
-      quickSort_parallel_value<X, Y>(dx, packX.primaryShapeInfo(), dy, packY.primaryShapeInfo(), xTadLength, 1,
+      quickSort_parallel_value<X, Y>(dx, packX->primaryShapeInfo(), dy, packY->primaryShapeInfo(), xTadLength, 1,
                                      descending);
     }
   };

@@ -63,13 +63,12 @@ sd::Status LegacyStatsOp::validateAndExecute(Context &block) {
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dims);
 
     auto pTadShape = Environment::getInstance().isCPU()
-                         ? packX.primaryShapeInfo()
-                         : packX.specialShapeInfo();  //(sd::LongType *) manager.replicatePointer(tad.tadOnlyShapeInfo,
-                                                      //shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+                         ? packX->primaryShapeInfo()
+                         : packX->specialShapeInfo();
+
     auto pTadOffsets = Environment::getInstance().isCPU()
-                           ? packX.primaryOffsets()
-                           : packX.specialOffsets();  //(sd::LongType *) manager.replicatePointer(tad.tadOffsets,
-                                                      //tad.numTads * sizeof(sd::LongType));
+                           ? packX->primaryOffsets()
+                           : packX->specialOffsets();
 
     NativeOpExecutioner::execSummaryStats(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                           x->specialShapeInfo(), extras.argumentsAsT(z->dataType()), z->buffer(),
