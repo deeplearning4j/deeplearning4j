@@ -207,14 +207,11 @@ public class ParameterAveragingTrainingWorker extends BaseTrainingWorker<Paramet
         if (isLast) {
             val result =  getFinalResult(network);
 
-            // releasing Context here
-//            Nd4j.getMemoryManager().releaseCurrentContext();
+
 
             return result;
         }
 
-        // releasing Context here
-//        Nd4j.getMemoryManager().releaseCurrentContext();
 
         return null;
     }
@@ -252,14 +249,10 @@ public class ParameterAveragingTrainingWorker extends BaseTrainingWorker<Paramet
         if (isLast) {
             val result = getFinalResult(graph);
 
-            // releasing Context here
-//            Nd4j.getMemoryManager().releaseCurrentContext();
 
             return result;
         }
 
-        // releasing Context here
-//        Nd4j.getMemoryManager().releaseCurrentContext();
 
         return null;
     }

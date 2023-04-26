@@ -159,10 +159,9 @@ public final class ModelParameterServer {
 
     /**
      * This method stores provided entities for MPS internal use
-     *
      * @param configuration
      * @param transport
-     * @param isMasterNode
+     * @param updaterProvider
      */
     public void configure(@NonNull VoidConfiguration configuration, @NonNull Transport transport, @NonNull UpdaterParametersProvider updaterProvider) {
         this.transport = transport;
@@ -172,7 +171,7 @@ public final class ModelParameterServer {
     }
 
     /**
-     * This method adds subcriber that will be called upon gradients update receival
+     * This method adds subscriber that will be called upon gradients update receival
      * @param s
      */
     public void addUpdatesSubscriber(@NonNull UpdatesHandler s) {
@@ -180,7 +179,7 @@ public final class ModelParameterServer {
     }
 
     /**
-     * This method adds subcriber that will be called upon model params receival
+     * This method adds subscriber that will be called upon model params receival
      * @param s
      */
     public void addModelParamsSubscriber(@NonNull Subscriber<INDArray> s) {
@@ -188,7 +187,7 @@ public final class ModelParameterServer {
     }
 
     /**
-     * This method adds subcriber that will be called upon updater params receival
+     * This method adds subscriber that will be called upon updater params receival
      * @param s
      */
     public void addUpdaterParamsSubscriber(@NonNull Subscriber<INDArray> s) {
@@ -198,7 +197,7 @@ public final class ModelParameterServer {
     /**
      * This method checks if ModelParameterServer was initialized
      *
-     * @return true if already initalized, false otherwise
+     * @return true if already initialized, false otherwise
      */
     public boolean isInitialized() {
         return launchLock.get();
@@ -222,52 +221,46 @@ public final class ModelParameterServer {
 
         configuration.setUnicastControllerPort(configuration.getPortSupplier().getPort());
 
-        transport.setRestartCallback(new RestartCallback() {
-            @Override
-            public void call(HandshakeResponse response) {
-                // upon restart command we'll request current parameters from the current upstream (without any propagation
-                try {
-                    log.info("Restart callback started...");
-                    val msg = new ModelParametersRequest();
-                    val rootId = transport.getRootId();
-                    ModelParametersMessage modelParams = transport.sendMessageBlocking(msg, rootId);
-                    val mParams = modelParams.getPayload();
-                    modelParamsSubsribers.forEach(s -> s.onNext(mParams));
+        transport.setRestartCallback(response -> {
+            // upon restart command we'll request current parameters from the current upstream (without any propagation
+            try {
+                log.info("Restart callback started...");
+                val msg = new ModelParametersRequest();
+                val rootId = transport.getRootId();
+                ModelParametersMessage modelParams = transport.sendMessageBlocking(msg, rootId);
+                val mParams = modelParams.getPayload();
+                modelParamsSubsribers.forEach(s -> s.onNext(mParams));
 
-                    // updating starting points
-                    iterationNumber.set(modelParams.getIterationNumber());
-                    epochNumber.set(modelParams.getEpochNumber());
+                // updating starting points
+                iterationNumber.set(modelParams.getIterationNumber());
+                epochNumber.set(modelParams.getEpochNumber());
 
-                    // updater parameters are optional, it's possible to have models without updater parameters (i.e. SGD)
-                    UpdaterParametersMessage updaterParams = transport.sendMessageBlocking(new UpdaterParametersRequest(), rootId);
-                    val uParams = updaterParams.getPayload();
-                    if (uParams != null) {
-                        updaterParamsSubscribers.forEach(s -> s.onNext(uParams));
-                        log.debug("Updater parameters propagated...");
-                    }
-                } catch (Exception e) {
-                    log.error("RestartCallback processing exception: {}", e);
-                    throw new RuntimeException(e);
+                // updater parameters are optional, it's possible to have models without updater parameters (i.e. SGD)
+                UpdaterParametersMessage updaterParams = transport.sendMessageBlocking(new UpdaterParametersRequest(), rootId);
+                val uParams = updaterParams.getPayload();
+                if (uParams != null) {
+                    updaterParamsSubscribers.forEach(s -> s.onNext(uParams));
+                    log.debug("Updater parameters propagated...");
                 }
+            } catch (Exception e) {
+                log.error("RestartCallback processing exception: {}", e);
+                throw new RuntimeException(e);
             }
         });
 
         // listener for model params requests
-        transport.addRequestConsumer(ModelParametersRequest.class, new Consumer<ModelParametersRequest>() {
-            @Override
-            public void accept(ModelParametersRequest modelParametersRequest) throws Exception {
-                // send model parameters somewhere
-                val msg = new ModelParametersMessage(java.util.UUID.randomUUID().toString(), updatesSubscribers.get(0).getParametersArray());
-                msg.setRequestId(modelParametersRequest.getRequestId());
-                msg.setIterationNumber(iterationNumber.get());
-                msg.setEpochNumber(epochNumber.get());
-                transport.sendMessage(msg, modelParametersRequest.getOriginatorId());
-            }
+        transport.addRequestConsumer(ModelParametersRequest.class, modelParametersRequest -> {
+            // send model parameters somewhere
+            val msg = new ModelParametersMessage(java.util.UUID.randomUUID().toString(), updatesSubscribers.get(0).getParametersArray().dup());
+            msg.setRequestId(modelParametersRequest.getRequestId());
+            msg.setIterationNumber(iterationNumber.get());
+            msg.setEpochNumber(epochNumber.get());
+            transport.sendMessage(msg, modelParametersRequest.getOriginatorId());
         });
 
         if (masterMode) {
             // on master node when updater params come - we're just storing them
-            addUpdaterParamsSubscriber(new AbstractSubscriber<INDArray>() {
+            addUpdaterParamsSubscriber(new AbstractSubscriber<>() {
                 @Override
                 public void onNext(INDArray array) {
                     // we're keeping first final updater params state
@@ -277,7 +270,7 @@ public final class ModelParameterServer {
                         updaterParamsLock.writeLock().lock();
 
                         // just store new array
-                        updaterParameters.get().setParameters(array);
+                        updaterParameters.get().setParameters(array.dup());
                         updaterParameters.get().setTimeReceived(System.currentTimeMillis());
                     } finally {
                         updaterParamsLock.writeLock().unlock();
@@ -286,64 +279,58 @@ public final class ModelParameterServer {
             });
 
             // listener for updater params requests
-            transport.addRequestConsumer(UpdaterParametersRequest.class, new Consumer<UpdaterParametersRequest>() {
-                @Override
-                public void accept(UpdaterParametersRequest updaterParametersRequest) throws Exception {
-                    // master mode physically can't have own updater parameters, so we're acting as proxy here
+            transport.addRequestConsumer(UpdaterParametersRequest.class, updaterParametersRequest -> {
+                // master mode physically can't have own updater parameters, so we're acting as proxy here
 
-                    // we're not requesting updater params if
-                    if (!gotFinalState.get()) {
-                        val tId = transport.getRandomDownstreamFrom(transport.getRootId(), updaterParametersRequest.getOriginatorId());
-                        log.debug("Sending UpdaterParameters request to [{}]", tId);
+                // we're not requesting updater params if
+                if (!gotFinalState.get()) {
+                    val tId = transport.getRandomDownstreamFrom(transport.getRootId(), updaterParametersRequest.getOriginatorId());
+                    log.debug("Sending UpdaterParameters request to [{}]", tId);
 
-                        // trying to get updaters from root downstreams, excluding original message sender
-                        UpdaterParametersMessage updaterParams = transport.sendMessageBlocking(new UpdaterParametersRequest(), tId);
-                        val uParams = updaterParams.getPayload();
-
-                        try {
-                            updaterParamsLock.writeLock().lock();
-
-                            if (updaterParameters.get() == null) {
-                                updaterParameters.set(new UpdaterParametersHolder(uParams, System.currentTimeMillis(), false));
-                            } else
-                                updaterParameters.get().setParameters(uParams);
-
-                        } finally {
-                            updaterParamsLock.writeLock().unlock();
-                        }
-                    }
+                    // trying to get updaters from root downstreams, excluding original message sender
+                    UpdaterParametersMessage updaterParams = transport.sendMessageBlocking(new UpdaterParametersRequest(), tId);
+                    val uParams = updaterParams.getPayload();
 
                     try {
-                        updaterParamsLock.readLock().lock();
+                        updaterParamsLock.writeLock().lock();
 
-                        // send updater parameters somewhere
-                        log.debug("Trying to send back Updater parameters...");
-                        val msg = new UpdaterParametersMessage(java.util.UUID.randomUUID().toString(), updaterParameters.get().getParameters());
-                        msg.setRequestId(updaterParametersRequest.getRequestId());
-                        transport.sendMessage(msg, updaterParametersRequest.getOriginatorId());
+                        if (updaterParameters.get() == null) {
+                            updaterParameters.set(new UpdaterParametersHolder(uParams, System.currentTimeMillis(), false));
+                        } else
+                            updaterParameters.get().setParameters(uParams);
+
                     } finally {
-                        updaterParamsLock.readLock().unlock();
+                        updaterParamsLock.writeLock().unlock();
                     }
+                }
+
+                try {
+                    updaterParamsLock.readLock().lock();
+
+                    // send updater parameters somewhere
+                    log.debug("Trying to send back Updater parameters...");
+                    val msg = new UpdaterParametersMessage(java.util.UUID.randomUUID().toString(), updaterParameters.get().getParameters().dup());
+                    msg.setRequestId(updaterParametersRequest.getRequestId());
+                    transport.sendMessage(msg, updaterParametersRequest.getOriginatorId());
+                } finally {
+                    updaterParamsLock.readLock().unlock();
                 }
             });
         } else {
             // in case of regular
-            transport.addRequestConsumer(UpdaterParametersRequest.class, new Consumer<UpdaterParametersRequest>() {
-                @Override
-                public void accept(UpdaterParametersRequest updaterParametersRequest) throws Exception {
-                    // master mode physically can't have updater parameters
-                    log.debug("Trying to send back Updater parameters...");
-                    if (updaterParametersProvider == null) {
-                        log.warn("UpdaterParametersProvider wasn't set!");
-                        val msg = new UpdaterParametersMessage(java.util.UUID.randomUUID().toString(), null);
-                        msg.setRequestId(updaterParametersRequest.getRequestId());
-                        transport.sendMessage(msg, updaterParametersRequest.getOriginatorId());
-                    } else {
-                        // send updater parameters back
-                        val msg = new UpdaterParametersMessage(java.util.UUID.randomUUID().toString(), updaterParametersProvider.getUpdaterParameters());
-                        msg.setRequestId(updaterParametersRequest.getRequestId());
-                        transport.sendMessage(msg, updaterParametersRequest.getOriginatorId());
-                    }
+            transport.addRequestConsumer(UpdaterParametersRequest.class, updaterParametersRequest -> {
+                // master mode physically can't have updater parameters
+                log.debug("Trying to send back Updater parameters...");
+                if (updaterParametersProvider == null) {
+                    log.warn("UpdaterParametersProvider wasn't set!");
+                    val msg = new UpdaterParametersMessage(java.util.UUID.randomUUID().toString(), null);
+                    msg.setRequestId(updaterParametersRequest.getRequestId());
+                    transport.sendMessage(msg, updaterParametersRequest.getOriginatorId());
+                } else {
+                    // send updater parameters back
+                    val msg = new UpdaterParametersMessage(java.util.UUID.randomUUID().toString(), updaterParametersProvider.getUpdaterParameters().dup());
+                    msg.setRequestId(updaterParametersRequest.getRequestId());
+                    transport.sendMessage(msg, updaterParametersRequest.getOriginatorId());
                 }
             });
         }
@@ -364,10 +351,8 @@ public final class ModelParameterServer {
 
                 // it's possible to get updates messages BEFORE model was properly initalized
                 if (updatesSubscribers.isEmpty()) {
-                    //log.debug("Storing GradientsUpdateMessage into backlog queue...");
                     updatesQueue.add(message.getPayload());
                 } else {
-                    //log.debug("Propagating GradientsUpdateMessage to subscribers: [{}]", updatesSubscribers.size());
                     updatesSubscribers.forEach(s -> s.onNext(message.getPayload()));
                 }
             } else
@@ -414,7 +399,6 @@ public final class ModelParameterServer {
 
     public void sendUpdate(@NonNull INDArray array, int iteration, int epoch) {
         try {
-            //transport.outgoingConsumer().accept(new GradientsUpdateMessage(java.util.UUID.randomUUID().toString(), array));
             val msg = new GradientsUpdateMessage(java.util.UUID.randomUUID().toString(), array);
             msg.setOriginatorId(transport.id());
             msg.setIteration(iteration);

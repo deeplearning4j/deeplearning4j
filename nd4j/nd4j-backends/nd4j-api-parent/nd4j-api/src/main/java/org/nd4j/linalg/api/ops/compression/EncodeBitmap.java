@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class EncodeBitmap extends DynamicCustomOp {
+
     protected float threshold = 1e-3f;
 
     public EncodeBitmap() {

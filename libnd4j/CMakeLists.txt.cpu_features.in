@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.2)
 project(onednn-download NONE)
 
 include(ExternalProject)
-ExternalProject_Add(onednn
+ExternalProject_Add(cpu_features
   GIT_REPOSITORY     https://github.com/google/cpu_features.git
   GIT_TAG           v0.4.1
   SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/cpu_features-src"

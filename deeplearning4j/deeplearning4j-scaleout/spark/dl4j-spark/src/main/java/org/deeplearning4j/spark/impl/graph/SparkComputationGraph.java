@@ -797,7 +797,7 @@ public class SparkComputationGraph extends SparkListenable {
      * {@link ROC}) at the same time.<br>
      * Note that the default number of worker threads {@link #getDefaultEvaluationWorkers()} will be used
      *
-     * @param data             Data to evaluatie
+     * @param data             Data to evaluate
      * @param evalBatchSize    Minibatch size for evaluation
      * @param emptyEvaluations Evaluations to perform
      * @return                 Evaluations

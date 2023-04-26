@@ -57,8 +57,6 @@ static void _compare_elem(NDArray* input, bool isStrictlyIncreasing, bool& outpu
     sumt = samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, length - 1);
   }
 
-  // sd_printf("Sum: %lld\n", sumt)
-
   output = (sumt > -1);
 }
 

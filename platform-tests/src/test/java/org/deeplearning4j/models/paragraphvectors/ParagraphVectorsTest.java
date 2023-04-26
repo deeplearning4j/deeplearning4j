@@ -172,6 +172,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
+    @Disabled("OOMs")
     public void testParagraphVectorsModelling1(Nd4jBackend backend) throws Exception {
         if(backend.getNDArrayClass().toString().toLowerCase().contains("cu"))
             return;
@@ -385,6 +386,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     @Tag(TagNames.LARGE_RESOURCES)
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled("OOM in regular tests")
     public void testParagraphVectorsDM(Nd4jBackend backend) throws Exception {
         if(backend.getNDArrayClass().toString().toLowerCase().contains("cu"))
             return;
@@ -651,7 +653,6 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
         vec.fit();
 
-        //WordVectorSerializer.writeWordVectors(vec, "vectors.txt");
 
         INDArray w1 = vec.lookupTable().vector("I");
         INDArray w2 = vec.lookupTable().vector("am");

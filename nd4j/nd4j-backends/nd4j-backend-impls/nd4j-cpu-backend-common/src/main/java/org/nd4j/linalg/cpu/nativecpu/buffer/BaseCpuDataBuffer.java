@@ -397,6 +397,8 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     }
 
     public void actualizePointerAndIndexer() {
+        if(ptrDataBuffer.isNull())
+            throw new IllegalArgumentException("Ptr data buffer was released!");
         val cptr = ptrDataBuffer.primaryBuffer();
 
         // skip update if pointers are equal
@@ -461,7 +463,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         // we're fetching actual pointer right from C++
         PagedPointer tempPtr = new PagedPointer(ptrDataBuffer.primaryBuffer());
-        tempPtr = (PagedPointer) tempPtr;
 
         switch (this.type) {
             case DOUBLE:
@@ -873,12 +874,12 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
     @Override
     protected void release() {
-        ptrDataBuffer.closeBuffer();
-        if(pointer != null && !pointer.isNull())
-            pointer.close();
-        if(addressPointer != null)
-            addressPointer.deallocate();
-        super.release();
+       // ptrDataBuffer.closeBuffer();
+     /*   if(pointer != null && !pointer.isNull())
+            pointer.close();*/
+   /*     if(addressPointer != null)
+            addressPointer.deallocate();*/
+      //  super.release();
     }
 
     /**

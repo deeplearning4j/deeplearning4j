@@ -801,13 +801,14 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 
   // now we print out all outputs for this node
   if (sd::Environment::getInstance().isDebugAndVerbose()) {
-    auto vs = block->getVariableSpace();
     sd_printf("Op with name %s and num inputs %i \n", this->getOpName()->c_str(), block->width());
+    auto vs = block->getVariableSpace();
     int numInputs = block->width();
     for (int e = 0; e < numInputs; e++) {
       auto array = block->isFastPath() ?  block->fastpath_in()[e]
                                        : vs->getVariable(block->nodeId(), e)->getNDArray();
 
+      sd_printf("Declarable op execute: before shapeutils shape as string inputs\n",0);
       auto shape = ShapeUtils::shapeAsString(array);
       auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(32);
       auto type = DataTypeUtils::asString(array->dataType());
@@ -829,6 +830,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
           if (block->fastpath_out().size() <= e) break;
         }
       }
+      sd_printf("Declarable op execute: before shapeutils shape as string outputs\n",0);
 
       auto array = block->isFastPath() ? block->isInplace() ? block->fastpath_in()[e] : block->fastpath_out()[e]
                                        : vs->getVariable(block->nodeId(), e)->getNDArray();

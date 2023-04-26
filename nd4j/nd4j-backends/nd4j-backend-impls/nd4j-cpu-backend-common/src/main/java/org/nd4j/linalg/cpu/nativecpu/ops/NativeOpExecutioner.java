@@ -1326,41 +1326,29 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      */
     @Override
     public INDArray[] exec(@NonNull CustomOp op) {
-        boolean shapeOverride = false;
-        if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
-            try {
-                val list = this.calculateOutputShape(op);
-                if (list.isEmpty())
-                    throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to calculate output shape and data types.");
-
-                for (LongShapeDescriptor shape : list)
-                    op.addOutputArgument(Nd4j.create(shape, false));
-
-                shapeOverride = true;
-            } catch (ND4JIllegalStateException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new ND4JIllegalStateException("Op name " + op.opName() + " - no output arrays were provided and calculateOutputShape failed to execute", e);
-            }
-        }
-
+        boolean shapeOverride = op.initializeOutputs(null);
         val name = op.opName();
         try (val context = buildContext()) {
             long start = profilingConfigurableHookIn(op,context);
+            // check if input & output needs update
+            for (val in:op.inputArguments()) {
+                if (!in.isEmpty())
+                    ((BaseCpuDataBuffer) in.data()).actualizePointerAndIndexer();
+
+            }
+
             initOpContext(op, shapeOverride, context);
 
             val result = exec(op, context);
             val states = context.getRngStates();
 
-            // check if input & output needs update
-            for (val in:op.inputArguments()) {
-                if (!in.isEmpty())
-                    ((BaseCpuDataBuffer) in.data()).actualizePointerAndIndexer();
-            }
+
 
             for (val out:op.outputArguments()) {
                 if (!out.isEmpty())
                     ((BaseCpuDataBuffer) out.data()).actualizePointerAndIndexer();
+                ((BaseCpuDataBuffer) out.shapeInfoDataBuffer()).actualizePointerAndIndexer();
+
             }
 
             // pulling states back
@@ -1821,10 +1809,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val result = new LongBuffer(loop.getConstantShapeBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
 
-        shapePointer.deallocate();
-        stridePointer.deallocate();
-        shapePointer.releaseReference();
-        stridePointer.releaseReference();
+       // shapePointer.deallocate();
+   //     stridePointer.deallocate();
         loop.deleteConstantShapeBuffer(dbf);
 
         return result;

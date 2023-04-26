@@ -3320,13 +3320,13 @@ void setGraphContextOutputArray(sd::graph::Context *ptr, int index, void *buffer
   ptr->setOutputArray(index, buffer, shapeInfo, specialBuffer, specialShapeInfo);
 }
 
-void setGraphContextInputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer, void *shapeInfo,
-                                void *specialShapeInfo) {
+void setGraphContextInputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer,
+                                sd::InteropDataBuffer *shapeInfo, sd::InteropDataBuffer *specialShapeInfo) {
   ptr->setInputArray(index, buffer, shapeInfo, specialShapeInfo);
 }
 
-void setGraphContextOutputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer, void *shapeInfo,
-                                 void *specialShapeInfo) {
+void setGraphContextOutputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer,
+                                 sd::InteropDataBuffer *shapeInfo, sd::InteropDataBuffer *specialShapeInfo) {
   ptr->setOutputArray(index, buffer, shapeInfo, specialShapeInfo);
 }
 
@@ -3647,8 +3647,8 @@ void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, void** buffe
   }
 
 }
-void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer * shapeInfo,
-                                 sd::Pointer * specialShapeInfo) {
+void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer,
+                                 sd::InteropDataBuffer **shapeInfo, sd::InteropDataBuffer **specialShapeInfo) {
   auto inputShapeBuffers = (void **) shapeInfo;
   if(shapeInfo == nullptr)
     throw std::runtime_error("Input shape info was null!");
@@ -3663,8 +3663,8 @@ void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataB
   }
 
 }
-void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer* shapeInfo,
-                                  sd::Pointer * specialShapeInfo) {
+void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer,
+                                  sd::InteropDataBuffer **shapeInfo, sd::InteropDataBuffer **specialShapeInfo) {
   auto inputShapeBuffers = (void **) shapeInfo;
 
   for(int i = 0; i < numArrays; i++) {

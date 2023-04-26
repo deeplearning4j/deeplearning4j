@@ -105,7 +105,7 @@ if(SD_TYPES_LIST_COUNT GREATER 0)
         string(APPEND DEFINITIONS_CONTENT  "#define HAS_${SD_TYPE_UPPERCASE}\n")
     endforeach()
 endif()
-if(OP_OUTPUT_FILE MATCHES "\.h$")
+if(OP_OUTPUT_FILE MATCHES ".h$")
     message("definitions will be written to \"${OP_OUTPUT_FILE}\"")
     file(WRITE "${OP_OUTPUT_FILE}" "#ifndef SD_DEFINITIONS_GEN_H_\n#define SD_DEFINITIONS_GEN_H_\n${DEFINITIONS_CONTENT}\n#endif\n")
 endif()
@@ -168,8 +168,15 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"  AND NOT ${CMAKE_SYSTEM_NAME} 
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -rdynamic -Wl,-export-dynamic")
         SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -export-dynamic")
     endif()
-endif()
 
+    if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
+        # Set C++ compiler and flags
+        set(CMAKE_CXX_STANDARD 17)
+        set(CMAKE_CXX_STANDARD_REQUIRED ON)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Bsymbolic -rdynamic -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
+        add_compile_definitions(SD_GCC_FUNCTRACE)
+    endif()
+endif()
 
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     list(APPEND EXTERNAL_INCLUDE_DIRS "/usr/include")
@@ -291,7 +298,6 @@ if(SD_CUDA)
         string (REPLACE ";" " " CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS}")
 
         set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} ${EXPM} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
-
         file(GLOB_RECURSE PERF_SOURCES false ../include/performance/*.cpp ../include/performance/*.h)
         file(GLOB_RECURSE EXCEPTIONS_SOURCES false ../include/exceptions/*.cpp ../include/exceptions/*.h)
         file(GLOB_RECURSE EXEC_SOURCES false ../include/execution/impl/*.cpp ../include/execution/*.cu ../include/execution/*.h)
@@ -323,7 +329,7 @@ if(SD_CUDA)
         endif()
 
         add_library(samediff_obj OBJECT ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES} ${HELPERS_CPP}
-                ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES}
+                ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${CALLSTACK_SRC}
                 ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                 ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES}
                 ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
@@ -360,7 +366,7 @@ if(SD_CUDA)
             SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj /std:c++14")
         endif()
 
-        target_link_libraries(${SD_LIBRARY_NAME} ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${MKLDNN})
+        target_link_libraries(${SD_LIBRARY_NAME}  ${CALLTRACE_LIBS}  ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${MKLDNN})
         set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cuda)
 
         install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
@@ -536,8 +542,8 @@ elseif(SD_CPU OR SD_AURORA)
         file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES false ../include/ops/declarable/platform/cudnn/*.cu)
     endif()
 
-    add_library(samediff_obj OBJECT ${LEGACY_SOURCES}
-            ${LOOPS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
+    add_library(samediff_obj OBJECT ${LEGACY_SOURCES} ${CALLSTACK_SRC}
+            ${LOOPS_SOURCES} ${CALLSTACK_SRC} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
             ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES}
             ${CUSTOMOPS_VEDNN_SOURCES}
             ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES})
@@ -590,7 +596,7 @@ elseif(SD_CPU OR SD_AURORA)
 
     #This breaks the build. Normally you want to run tests anyways.
     if(NOT "$ENV{CLION_IDE}")
-        target_link_libraries(${SD_LIBRARY_NAME} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN}  ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
+        target_link_libraries(${SD_LIBRARY_NAME} ${CALLTRACE_LIBS}   ${EXTERNAL_DEPENDENCY_LIBS} ${CALL_STACK} ${ONEDNN}  ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
         target_include_directories (${SD_LIBRARY_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
     endif()
 
@@ -606,12 +612,7 @@ elseif(SD_CPU OR SD_AURORA)
         endif()
     endif()
 
-    if ("${SD_ALL_OPS}" AND "${SD_BUILD_MINIFIER}")
-        message(STATUS "Building minifier...")
-        add_executable(minifier ../minifier/minifier.cpp ../minifier/graphopt.cpp)
-        target_link_libraries(minifier samediff_obj ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN} ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
 
-    endif()
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
         message(FATAL_ERROR "You need at least GCC 4.9")

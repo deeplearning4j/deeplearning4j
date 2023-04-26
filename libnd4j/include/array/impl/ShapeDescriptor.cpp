@@ -121,6 +121,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
   for (int i = 0; i < _rank; i++) {
     _shape[i] = shape[i];
   }
+  _order = order;
   fillStrides();
 }
 
@@ -131,6 +132,8 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order,
   _rank = shape.size();
   _ews = 1;
   _shape_strides.resize(2 * _rank);
+  _order = order;
+
   auto _shape = _shape_strides.data();
   int i = 0;
   for (auto x : shape) {

@@ -623,7 +623,9 @@ std::string ShapeUtils::shapeAsString(const NDArray* array) {
   std::string result;
 
   result.append("[");
+  sd_printf("ShapeUtils::shapeAsString: Trying to get rank\n",0);
   for (int e = 0; e < array->rankOf(); e++) {
+    sd_printf("ShapeUtils::shapeAsString: In rank %d\n",e);
     result += flatbuffers::NumToString(array->sizeAt(e));
     if (e < array->rankOf() - 1) result.append(", ");
   }

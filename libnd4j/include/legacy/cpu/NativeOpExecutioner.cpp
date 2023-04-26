@@ -329,7 +329,7 @@ void NativeOpExecutioner::execBroadcastInt(
     const sd::LongType *dXShapeInfo, const void *hY, const sd::LongType *hYShapeInfo, const void *dY,
     const sd::LongType *dYShapeInfo, void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
     const sd::LongType *dZShapeInfo, sd::LongType *dimension,
-                                           sd::LongType dimensionLength, const sd::LongType *tadOnlyShapeInfo,
+    sd::LongType dimensionLength, const sd::LongType *tadOnlyShapeInfo,
     const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
@@ -942,7 +942,7 @@ void NativeOpExecutioner::execScalarBool(
     const sd::LongType *dXShapeInfo, void *extraParams, void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
     const sd::LongType *dZShapeInfo, const void *hScalars, const sd::LongType *hScalarShapeInfo, const void *dScalars,
     const sd::LongType *dScalarShapeInfo,
-                                         long long int *dimension, long long int dimensionLength, const sd::LongType *tadShapeInfo,
+    long long int *dimension, long long int dimensionLength, const sd::LongType *tadShapeInfo,
     const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
@@ -1009,7 +1009,7 @@ void NativeOpExecutioner::execScalarInt(
     const sd::LongType *dXShapeInfo, void *extraParams, void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
     const sd::LongType *dZShapeInfo, const void *hScalars, const sd::LongType *hScalarShapeInfo, const void *dScalars,
     const sd::LongType *dScalarShapeInfo,
-                                        long long int *dimension, long long int dimensionLength, const sd::LongType *tadShapeInfo,
+    long long int *dimension, long long int dimensionLength, const sd::LongType *tadShapeInfo,
     const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
@@ -1170,6 +1170,18 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
                                            void *dZ, const sd::LongType *dZShapeInfo, void *extraParams,
                                            const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                                            bool allowParallelism) {
+  if(hX == nullptr)
+    throw std::runtime_error("NativeOpExecutioner::execTransformAny requires X array to be present");
+  if(hXShapeInfo == nullptr)
+        throw std::runtime_error("NativeOpExecutioner::execTransformAny requires X shapeInfo to be present");
+  if(hZShapeInfo == nullptr)
+    throw std::runtime_error("NativeOpExecutioner::execTransformAny requires Z array to be present");
+
+  if(hXShapeInfo[0] > SD_MAX_RANK || hXShapeInfo[0] < 0)
+        throw std::runtime_error("NativeOpExecutioner::execTransformAny requires X rank to be in range of 0 to SD_MAX_RANK");
+  if(hZShapeInfo[0] > SD_MAX_RANK || hZShapeInfo[0] < 0)
+        throw std::runtime_error("NativeOpExecutioner::execTransformAny requires Z rank to be in range of 0 to SD_MAX_RANK");
+
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
 
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -1179,7 +1191,9 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
   if (opNum == sd::transform::Assign && shape::order(hXShapeInfo) == shape::order(hZShapeInfo) &&
       shape::order(hXShapeInfo) == 'c' && xType == zType && shape::elementWiseStride(hXShapeInfo) == 1 &&
       shape::elementWiseStride(hZShapeInfo) == 1) {
+    sd_printf("Executing assign\n",0);
     memcpy(hZ, hX, shape::length(hXShapeInfo) * sd::DataTypeUtils::sizeOfElement(xType));
+    sd_printf("After Executing assign\n",0);
 
   } else {
     auto func = PRAGMA_THREADS_DO {

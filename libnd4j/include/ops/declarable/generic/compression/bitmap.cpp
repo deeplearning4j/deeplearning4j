@@ -55,6 +55,7 @@ DECLARE_TYPES(decode_bitmap) {
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(encode_bitmap, 1, 3, true, 1, 0) {
+
   auto input = INPUT_VARIABLE(0);
   auto encoded = OUTPUT_NULLIFIED(1);
   auto counter = OUTPUT_NULLIFIED(2);
@@ -67,6 +68,7 @@ CUSTOM_OP_IMPL(encode_bitmap, 1, 3, true, 1, 0) {
   encoded->p(3, 1);  // flag for BITMAP_ENCODING
 
   auto result = helpers::encodeBitmap(block.launchContext(), input, encoded, threshold);
+
   counter->p(0, result);
   counter->syncToDevice();
 

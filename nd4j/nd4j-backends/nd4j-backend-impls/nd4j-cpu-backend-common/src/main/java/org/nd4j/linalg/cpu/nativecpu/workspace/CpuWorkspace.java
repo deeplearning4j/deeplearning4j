@@ -175,7 +175,7 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
     @Override
     public synchronized void destroyWorkspace(boolean extended) {
-        if (isDebug.get())
+       /* if (isDebug.get())
             log.info("Destroying workspace...");
 
         val sizez = currentSize.getAndSet(0);
@@ -198,7 +198,7 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
         }
 
         workspace.setDevicePointer(null);
-        workspace.setHostPointer(null);
+        workspace.setHostPointer(null);*/
     }
 
     @Override

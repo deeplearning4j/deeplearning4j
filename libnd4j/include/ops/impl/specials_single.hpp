@@ -38,7 +38,7 @@ namespace sd {
  * @param axis
  * @return int
  */
-SD_INLINE int isShapeExtendedWithOnes(const NDArray &input, int axis) {
+SD_INLINE int isShapeExtendedWithOnes(const NDArray &input, LongType axis) {
   bool isAllOne = true;
   auto shapes = shape::shapeOf(input.shapeInfo());
   auto rank = input.rankOf();
@@ -67,7 +67,8 @@ struct InputArgsCase2 {
 };
 
 template <typename T>
-void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inArrs, NDArray &output, const int axis) {
+void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inArrs, NDArray &output,
+                                         const LongType axis) {
   const int numOfInArrs = inArrs.size();
   const auto sizeofT = output.sizeOfT();
 
@@ -236,7 +237,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray &input, const std::vector<
       input.ews() == 1;
 
   if (luckCase1) {
-    for (sd::Unsigned i = 0; i < numSplits; ++i) {
+    for (sd::LongType i = 0; i < numSplits; ++i) {
       luckCase1 &= outArrs[i]->ordering() == input.ordering() && outArrs[i]->ews() == 1;
       if (!luckCase1) break;
     }
@@ -252,7 +253,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray &input, const std::vector<
     return;
   }
 
-  sd::Unsigned zDim = outArrs[0]->sizeAt(axis);
+  sd::LongType zDim = outArrs[0]->sizeAt(axis);
   // general case
 
   auto func = PRAGMA_THREADS_FOR {
@@ -262,7 +263,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray &input, const std::vector<
       shape::index2coordsCPU(start, i, input.shapeInfo(), coords);
       const auto xOffset = shape::getOffset(input.shapeInfo(), coords);
 
-      sd::Unsigned outArrIdx = 0;
+      sd::LongType outArrIdx = 0;
       temp = coords[axis];
 
       while (coords[axis] >= zDim) {
@@ -477,7 +478,6 @@ void SpecialMethods<T>::sortTadGeneric(void *vx, sd::LongType const *xShapeInfo,
                                        bool descending) {
   auto x = reinterpret_cast<T *>(vx);
 
-  // quickSort_parallel(x, xShapeInfo, shape::length(xShapeInfo), omp_get_max_threads(), descending);
   sd::LongType xLength = shape::length(xShapeInfo);
   sd::LongType xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
   int numTads = xLength / xTadLength;
@@ -579,8 +579,5 @@ sd::LongType SpecialMethods<T>::encodeBitmapGeneric(void *vx, sd::LongType const
   }
 
   return retVal;
-  //};
-
-  // return samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, N, 16);
 }
 }  // namespace sd

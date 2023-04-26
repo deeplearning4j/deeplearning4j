@@ -90,8 +90,6 @@
         <jemalloc.mallocconf></jemalloc.mallocconf>
     </properties>
 
-
-
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -518,6 +516,16 @@
 
     </dependencies>
     <profiles>
+        <profile>
+            <id>profiler</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-profiler</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
         <profile>
             <id>jemalloc</id>
             <properties>

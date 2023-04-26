@@ -52,13 +52,33 @@ std::shared_ptr<DataBuffer> InteropDataBuffer::getDataBuffer() const { return _d
 
 std::shared_ptr<DataBuffer> InteropDataBuffer::dataBuffer() { return _dataBuffer; }
 
-void* InteropDataBuffer::primary() const { return reinterpret_cast<int8_t*>(_dataBuffer->primary()) + _offset; }
+void* InteropDataBuffer::primary() const {
+  if(_dataBuffer == nullptr)
+    throw std::runtime_error("InteropDataBuffer::primary() - _dataBuffer is nullptr");
+  if(_dataBuffer->primary() == nullptr)
+        throw std::runtime_error("InteropDataBuffer::primary() - _dataBuffer->primary() is nullptr");
+    return reinterpret_cast<int8_t*>(_dataBuffer->primary()) + _offset;
+}
 
-void* InteropDataBuffer::special() const { return reinterpret_cast<int8_t*>(_dataBuffer->special()) + _offset; }
+void* InteropDataBuffer::special() const {
+  if(_dataBuffer == nullptr)
+    throw std::runtime_error("InteropDataBuffer::primary() - _dataBuffer is nullptr");
+  if(_dataBuffer->special() == nullptr)
+    throw std::runtime_error("InteropDataBuffer::primary() - _dataBuffer->primary() is nullptr");
+  return reinterpret_cast<int8_t*>(_dataBuffer->special()) + _offset;
+}
 
-void InteropDataBuffer::setPrimary(void* ptr, size_t length) { _dataBuffer->setPrimaryBuffer(ptr, length); }
+void InteropDataBuffer::setPrimary(void* ptr, size_t length) {
+  if(_dataBuffer == nullptr)
+    throw std::runtime_error("InteropDataBuffer::setPrimary() - _dataBuffer is nullptr");
+  _dataBuffer->setPrimaryBuffer(ptr, length);
+}
 
-void InteropDataBuffer::setSpecial(void* ptr, size_t length) { _dataBuffer->setSpecialBuffer(ptr, length); }
+void InteropDataBuffer::setSpecial(void* ptr, size_t length) {
+  if(_dataBuffer == nullptr)
+    throw std::runtime_error("InteropDataBuffer::setSpecial() - _dataBuffer is nullptr");
+  _dataBuffer->setSpecialBuffer(ptr, length);
+}
 
 uint64_t InteropDataBuffer::offset() const { return _offset; }
 

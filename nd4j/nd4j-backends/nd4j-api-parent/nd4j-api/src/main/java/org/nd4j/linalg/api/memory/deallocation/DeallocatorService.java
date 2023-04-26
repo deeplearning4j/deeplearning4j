@@ -92,7 +92,7 @@ public class DeallocatorService {
 
     private List<List<ReferenceQueue<Deallocatable>>> deviceMap = new ArrayList<>();
     private Boolean noPointerGc;
-    private  int numThreads =  4;
+    private  int numThreads =  1;
 
     private final transient AtomicLong counter = new AtomicLong(0);
 
@@ -242,6 +242,9 @@ public class DeallocatorService {
                                 referenceTypes.remove(reference.getId());
                             }
 
+                            /*
+                            TODO: figure out reference deallocate race condition
+                             */
                             reference.deallocate();
 
                             if(referenceMap.containsKey(reference.getId()))

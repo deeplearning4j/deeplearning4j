@@ -3644,6 +3644,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray reshape(char order, boolean enforceView, long... newShape) {
+        Nd4j.getCompressor().autoDecompress(this);
         Reshape reshape = new Reshape(this, order,newShape);
         return Nd4j.getExecutioner().exec(reshape)[0];
     }

@@ -489,7 +489,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                 log.debug("Detected changed training instance - setting up new parameter server - old instance {}, new instance {}",
                         LAST_TRAINING_INSTANCE, instanceId);
 
-                ModelParameterServer.getInstance().shutdown();
+           //     ModelParameterServer.getInstance().shutdown();
                 try{    //TODO is this required?
                     Thread.sleep(3000);
                 } catch (Exception e){
@@ -538,13 +538,13 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
          */
 
         // applying non-applied updates, if any :)
-        if (trainingDriver != null) {
+/*        if (trainingDriver != null) {
             trainingDriver.finishTraining(0L, 0L);
         }
 
         // the same, but v2 impl
         if (updatesConsumer != null)
-            updatesConsumer.flush();
+            updatesConsumer.flush();*/
     }
 
     @Override

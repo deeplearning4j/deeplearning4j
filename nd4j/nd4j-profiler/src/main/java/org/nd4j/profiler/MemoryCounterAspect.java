@@ -24,6 +24,9 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.bytedeco.javacpp.Pointer;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 /**
  * Aspect for tracking memory allocation and deallocation
  * as well as current memory usage at a given
@@ -33,6 +36,8 @@ import org.bytedeco.javacpp.Pointer;
  */
 @Aspect
 public class MemoryCounterAspect {
+    private static Set<Long> deallocatedAddresses = new LinkedHashSet<>();
+
 
     /**
      * Track memory allocation for pointers.
@@ -69,7 +74,44 @@ public class MemoryCounterAspect {
             long currMemory = Pointer.physicalBytes();
             Object ret = joinPoint.proceed();
             long after = Pointer.physicalBytes();
+            Pointer pointer = (Pointer) joinPoint.getTarget();
+            if(deallocatedAddresses.contains(pointer.address())) {
+                throw new IllegalStateException("Double deallocation of pointer: " + pointer.getClass().getName());
+            }
+
+            deallocatedAddresses.add(pointer.address());
             MemoryCounter.decrement(className, currMemory - after);
+            System.out.println("Deallocating : " + joinPoint.getTarget().getClass().getName());
+            return ret;
+        }
+
+        return joinPoint.proceed();
+    }
+
+
+    /**
+     * Track memory  deallocation
+     * for pointers.
+     * @param joinPoint when a pointer is deallocated
+     * @return
+     * @throws Throwable
+     */
+    @Around("execution(* org.nd4j..*.*freeHost*(..))")
+    public Object freeHost(ProceedingJoinPoint joinPoint) throws Throwable {
+        if (joinPoint != null && joinPoint.getSignature() != null && joinPoint.getTarget() instanceof Pointer) {
+            String className = joinPoint.getSignature().getDeclaringTypeName();
+            Pointer freeHost = (Pointer) joinPoint.getArgs()[0];
+            long currMemory = Pointer.physicalBytes();
+            Object ret = joinPoint.proceed();
+            long after = Pointer.physicalBytes();
+            Pointer pointer = (Pointer) joinPoint.getTarget();
+            if(deallocatedAddresses.contains(freeHost)) {
+                throw new IllegalStateException("Double free host of pointer: " + pointer.getClass().getName());
+            }
+
+            deallocatedAddresses.add(pointer.address());
+            MemoryCounter.decrement(className, currMemory - after);
+            System.out.println("Deallocating : " + joinPoint.getTarget().getClass().getName());
             return ret;
         }
 

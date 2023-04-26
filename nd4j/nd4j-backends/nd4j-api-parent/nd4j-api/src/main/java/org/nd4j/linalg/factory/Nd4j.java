@@ -2784,27 +2784,30 @@ public class Nd4j {
      * @return the ndarray
      */
     public static INDArray read(DataInputStream dis) {
-        val headerShape = BaseDataBuffer.readHeader(dis);
+        try(MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            val headerShape = BaseDataBuffer.readHeader(dis);
 
-        //noinspection UnnecessaryUnboxing
-        DataBuffer shapeInformation = Nd4j.createBufferDetached(new long[]{headerShape.getMiddle().longValue()}, headerShape.getRight());
-        shapeInformation.read(dis, headerShape.getLeft(), headerShape.getMiddle(), headerShape.getThird());
-        DataType type;
-        DataBuffer data = null;
+            //noinspection UnnecessaryUnboxing
+            DataBuffer shapeInformation = Nd4j.createBufferDetached(new long[]{headerShape.getMiddle().longValue()}, headerShape.getRight());
+            shapeInformation.read(dis, headerShape.getLeft(), headerShape.getMiddle(), headerShape.getThird());
+            DataType type;
+            DataBuffer data = null;
 
-        val headerData = BaseDataBuffer.readHeader(dis);
-        try {
-            // current version contains dtype in extras
-            data = CompressedDataBuffer.readUnknown(dis, headerData.getFirst(), headerData.getMiddle(), headerData.getRight());
-            ArrayOptionsHelper.dataType(shapeInformation.asLong());
-        } catch (ND4JUnknownDataTypeException e) {
-            // manually setting data type
-            type = headerData.getRight();
-            long extras = ArrayOptionsHelper.setOptionBit(0L, type);
-            shapeInformation.put(shapeInformation.length() - 3, extras);
+            val headerData = BaseDataBuffer.readHeader(dis);
+            try {
+                // current version contains dtype in extras
+                data = CompressedDataBuffer.readUnknown(dis, headerData.getFirst(), headerData.getMiddle(), headerData.getRight());
+                ArrayOptionsHelper.dataType(shapeInformation.asLong());
+            } catch (ND4JUnknownDataTypeException e) {
+                // manually setting data type
+                type = headerData.getRight();
+                long extras = ArrayOptionsHelper.setOptionBit(0L, type);
+                shapeInformation.put(shapeInformation.length() - 3, extras);
+            }
+
+            return createArrayFromShapeBuffer(data, shapeInformation);
         }
 
-        return createArrayFromShapeBuffer(data, shapeInformation);
     }
 
     /**

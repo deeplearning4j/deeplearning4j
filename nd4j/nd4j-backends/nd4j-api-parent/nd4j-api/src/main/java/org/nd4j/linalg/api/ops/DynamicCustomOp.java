@@ -616,6 +616,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public boolean initializeOutputs(OpContext ctx) {
+        return CustomOp.super.initializeOutputs(ctx);
+    }
+
+    @Override
     public void removeOutputArgument(INDArray arg) {
         outputArguments.remove(arg);
     }

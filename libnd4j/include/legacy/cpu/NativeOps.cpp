@@ -71,7 +71,6 @@ bool experimentalSupport = false;
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/specials.h>
 #include <system/Environment.h>
-
 #ifdef CPU_FEATURES
 #include <cpuinfo_x86.h>
 #endif
@@ -82,6 +81,86 @@ bool experimentalSupport = false;
 #include <ops/declarable/OpRegistrator.h>
 
 using namespace sd;
+
+//note we only include this if we're running gcc linux
+//and should not be enabled in default builds.
+#if defined(SD_GCC_FUNCTRACE)
+#include <dlfcn.h> // needed for dladdr
+#include <cxxabi.h> // needed  __cxa_demangle
+
+
+//this is mainly a c based function.
+extern "C" {
+
+//we need to tell -finstrument-functions not to include the logger otherwise it will recursively
+// stack overflow and segfault.
+__attribute__((no_instrument_function)) SD_LIB_EXPORT  void writeLog(bool enter,void *this_fn,void *call_site) {
+  if(instrumentFile == nullptr)
+    return;
+
+  Dl_info info;
+  if (dladdr(this_fn, &info)) {
+    int status;
+    const char *funcName;
+    char* demangled = abi::__cxa_demangle(info.dli_sname, nullptr, 0, &status);
+    if (status == 0) {
+      funcName = demangled  != nullptr ? demangled : "null_demangled";
+    } else {
+      funcName = info.dli_sname ? info.dli_sname : "null_dli_sname";
+    }
+
+    fprintf( instrumentFile," %s %s (%s)\n",enter ? "enter" : "exit", funcName, info.dli_fname);
+    if (demangled != nullptr) {
+      delete demangled;
+      demangled = nullptr;
+    }
+  } else {
+    fprintf(instrumentFile, "%s %s\n", enter ? "enter" : "exit","unknown");
+  }
+}
+//we need to tell -finstrument-functions not to include the logger otherwise it will recursively
+// stack overflow and segfault.
+__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_enter(void *this_fn,
+                                                                                    void *call_site) {
+  writeLog(true,this_fn, call_site);
+}
+
+
+//we need to tell -finstrument-functions not to include the logger otherwise it will recursively
+// stack overflow and segfault.
+__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_exit  (void *this_fn,
+                                                                                     void *call_site) {
+  writeLog(false,this_fn, call_site);
+
+}
+}
+
+//note this is outside extern C. This is fine.
+
+
+//sets the file to be written to.
+void setInstrumentOut(char *instrumentOutPath) {
+  if (instrumentOutPath != nullptr) {
+    if(instrumentFile != nullptr)
+      fclose(instrumentFile);
+    instrumentFile = fopen(instrumentOutPath, "w");
+    if (instrumentFile == nullptr) {
+      perror("Failed to open profiler output file");
+      exit(EXIT_FAILURE);
+    }
+  }
+}
+
+//clears the file.
+
+void closeInstrumentOut() {
+  if(instrumentFile != nullptr)
+    fclose(instrumentFile);
+}
+
+#endif
+
+
 
 SD_LIB_EXPORT int numInputs(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
@@ -378,37 +457,68 @@ void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, void** buffe
                                  sd::Pointer * specialBuffer, sd::Pointer * specialShapeInfo) {
   auto inputBuffers = (void **) buffer;
   auto inputShapeBuffers = (void **) shapeInfo;
+  OpaqueDataBuffer **pOpaqueDataBuffer = (OpaqueDataBuffer **) inputBuffers;
+  OpaqueDataBuffer **sOpaqueDataBuffer = (OpaqueDataBuffer **) specialBuffer;
+  OpaqueDataBuffer **pOpaqueDataBufferShape = (OpaqueDataBuffer **) shapeInfo;
+  OpaqueDataBuffer **specialShapeInfoCast = (OpaqueDataBuffer **) specialShapeInfo;
+
   for(int i = 0; i < numArrays; i++) {
-    ptr->setOutputArray(i,inputBuffers != nullptr && inputBuffers[i] != nullptr  ? inputBuffers[i] : nullptr,inputShapeBuffers[i],specialBuffer != nullptr ? specialBuffer[i] : nullptr,specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+    ptr->setOutputArray(i,inputBuffers != nullptr && inputBuffers[i] != nullptr  ? inputBuffers[i] : nullptr,pOpaqueDataBufferShape[i]->primary(),
+                        specialBuffer != nullptr ? specialBuffer[i] : nullptr,
+                        specialShapeInfo != nullptr ? sOpaqueDataBuffer[i]->primary() : nullptr);
   }
 
 }
-void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer * shapeInfo,
-                                  sd::Pointer * specialShapeInfo) {
-  auto inputShapeBuffers = (void **) shapeInfo;
+void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays,void** buffer,
+                                  void **shapeInfo, void **specialShapeInfo) {
   if(shapeInfo == nullptr)
     throw std::runtime_error("Input shape info was null!");
+
+  if(buffer == nullptr)
+    throw std::runtime_error("Input buffer was null!");
+
+  OpaqueDataBuffer  **buffers = (OpaqueDataBuffer **) buffer;
+  OpaqueDataBuffer **shapeBuffers = (OpaqueDataBuffer **) shapeInfo;
+  OpaqueDataBuffer **specialShapeBuffers = (OpaqueDataBuffer **) specialShapeInfo;
+
   for(int i = 0; i < numArrays; i++) {
-    if(inputShapeBuffers[i] == nullptr)
+    if(buffer[i] == nullptr)
+      throw std::runtime_error("Input buffer was null!");
+
+
+    if(shapeInfo[i] == nullptr)
       throw std::runtime_error("Input shape at index was null!");
+
+
+    sd::LongType *primary = (sd::LongType *) shapeBuffers[i]->primary();
+    sd_printf("Setting input buffer %d. Printing buffer\n",i);
+    if(primary != nullptr)
+      shape::printShapeInfo(primary);
+    else
+      throw std::runtime_error("Primary shape info was null!");
     if(buffer != nullptr && buffer[i] != nullptr) {
-      setGraphContextInputBuffer(ptr,i,buffer[i],inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+      setGraphContextInputBuffer(ptr,i,buffers[i],shapeBuffers[i],specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
     }
     else {
-      setGraphContextInputBuffer(ptr,i, nullptr,inputShapeBuffers[i],specialShapeInfo);
+      setGraphContextInputBuffer(ptr,i, nullptr,shapeBuffers[i],specialShapeInfo != nullptr ? specialShapeBuffers[i] : nullptr);
     }
   }
 
 }
-void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer* shapeInfo,
-                                  sd::Pointer * specialShapeInfo) {
-  auto inputShapeBuffers = (void **) shapeInfo;
+void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, void** buffer,
+                                  void **shapeInfo, void **specialShapeInfo) {
+
+  OpaqueDataBuffer **buffers = (OpaqueDataBuffer **) buffer;
+  OpaqueDataBuffer **shapeBuffers = (OpaqueDataBuffer **) shapeInfo;
+  OpaqueDataBuffer **specialShapeBuffers = (OpaqueDataBuffer **) specialShapeInfo;
   for(int i = 0; i < numArrays; i++) {
+    sd_printf("Setting output buffer %d\n",i);
+
     if(buffer != nullptr && buffer[i] != nullptr) {
-      setGraphContextOutputBuffer(ptr, i, buffer[i], inputShapeBuffers[i],
-                                  specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+      setGraphContextOutputBuffer(ptr, i, buffers[i], shapeBuffers[i],
+                                  specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
     } else {
-      setGraphContextOutputBuffer(ptr,i, nullptr,inputShapeBuffers[i],specialShapeInfo);
+      setGraphContextOutputBuffer(ptr,i, nullptr,shapeBuffers[i],specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
     }
 
   }
@@ -1183,8 +1293,8 @@ sd::LongType const *getPrimaryShapeInfo(sd::TadPack *pack) {
 }
 
 sd::LongType const *getPrimaryOffsets(sd::TadPack *pack) {
- if(pack->primaryOffsets() == nullptr)
-   throw std::runtime_error("getPrimaryOffsets: primaryOffsets is nullptr!");
+  if(pack->primaryOffsets() == nullptr)
+    throw std::runtime_error("getPrimaryOffsets: primaryOffsets is nullptr!");
   return const_cast<sd::LongType *>(pack->primaryOffsets());
 }
 
@@ -2767,26 +2877,32 @@ void setGraphContextOutputArray(sd::graph::Context *ptr, int index, void *buffer
   ptr->setOutputArray(index, buffer, shapeInfo, specialBuffer, specialShapeInfo);
 }
 
-void setGraphContextInputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer, void *shapeInfo,
-                                void *specialShapeInfo) {
+void setGraphContextInputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer, OpaqueDataBuffer *shapeInfo,
+                                OpaqueDataBuffer *specialShapeInfo) {
   if(ptr == nullptr)
     throw std::runtime_error("Context pointer is null!");
-  sd::LongType *shapeInfoCast = reinterpret_cast<sd::LongType *>(shapeInfo);
-  if(shape::rank(shapeInfoCast) > SD_MAX_RANK || shape::rank(shapeInfoCast) < 0) {
+  if(shapeInfo == nullptr)
+    throw std::runtime_error("ShapeInfo  pointer is null!");
+  if(shapeInfo->primary() == nullptr)
+    throw std::runtime_error("ShapeInfo primary pointer is null!");
+  sd::LongType *shapeInfoCast = reinterpret_cast<sd::LongType *>(shapeInfo->primary());
+  if(shapeInfoCast[0] > SD_MAX_RANK || shapeInfoCast[0] < 0) {
     std::string error;
-    error += std::string("Shape Buffer at index ");
+    error += std::string("2 Shape Buffer at index ");
     error += std::string(" ");
     error += std::to_string(index);
     error += std::string(" ");
-    error += std::string(" was corrupt! This is likely due to deallocation. Please double check the passed in shape  buffer.");
+    error += std::string(" was corrupt! This is likely due to deallocation.Please double check the passed in shapebuffer.");
+    error += std::string(" value was: ");
+    error  += std::to_string(shapeInfoCast[0]);
     throw std::runtime_error(error.c_str());
   }
 
   ptr->setInputArray(index, buffer, shapeInfo, specialShapeInfo);
 }
 
-void setGraphContextOutputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer, void *shapeInfo,
-                                 void *specialShapeInfo) {
+void setGraphContextOutputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer, OpaqueDataBuffer *shapeInfo,
+                                 OpaqueDataBuffer *specialShapeInfo) {
   ptr->setOutputArray(index, buffer, shapeInfo, specialShapeInfo);
 }
 
@@ -3124,7 +3240,11 @@ OpaqueDataBuffer *allocateDataBuffer(sd::LongType elements, int dataType, bool a
   }
 }
 
-sd::Pointer dbPrimaryBuffer(OpaqueDataBuffer *dataBuffer) { return dataBuffer->primary(); }
+sd::Pointer dbPrimaryBuffer(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    throw std::runtime_error("dbPrimaryBuffer: dataBuffer is nullptr");
+  return dataBuffer->primary();
+}
 
 sd::Pointer dbSpecialBuffer(OpaqueDataBuffer *dataBuffer) { return dataBuffer->special(); }
 

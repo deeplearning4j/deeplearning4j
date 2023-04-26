@@ -439,12 +439,12 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         try {
             if (accumulator.get() == null) {
                 // we don't want accumulator to be attached to workspaces
-                try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+              //  try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                     accumulator.set(Nd4j.create(array.shape(), array.ordering()));
-                }
+              //  }
             }
 
-            // accumulate gradients updates in residental array
+            // accumulate gradients updates in residential array
             accumulator.get().addi(array);
 
             if (isDebug)

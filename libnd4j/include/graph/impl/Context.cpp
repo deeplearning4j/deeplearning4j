@@ -375,7 +375,14 @@ void Context::setOutputArray(int index, void *buffer, const void *shapeInfo, voi
                              const void *specialShapeInfo) {
   if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);
 
-  auto array =  new NDArray(buffer, specialBuffer, reinterpret_cast<sd::LongType const *>(shapeInfo));
+  sd_printf("Setting output array %d\n",index);
+
+  InteropDataBuffer *output1 = reinterpret_cast<InteropDataBuffer *>(buffer);
+  auto newBuff = output1->primary();
+  InteropDataBuffer *shapeInfoCast = reinterpret_cast<InteropDataBuffer *>(const_cast<void *>(shapeInfo));
+  auto newShapeInfoCast = reinterpret_cast<sd::LongType *>(shapeInfoCast->primary());
+
+  auto array =  new NDArray(newBuff, specialBuffer, newShapeInfoCast);
 
   _fastpath_out[index] = array;
   _handles.emplace_back(array);
@@ -385,9 +392,9 @@ void Context::setOutputArray(int index, void *buffer, const void *shapeInfo, voi
 
 void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo, void const *specialShapeInfo) {
   auto dataBuffer = reinterpret_cast<InteropDataBuffer *>(vdatabuffer);
-  auto shapeInfoCast = reinterpret_cast<sd::LongType const *>(shapeInfo);
-  auto newShapeInfoCast = const_cast<sd::LongType *>(shapeInfoCast);
-  if(shape::rank(shapeInfoCast) > SD_MAX_RANK || shape::rank(shapeInfoCast) < 0) {
+  auto shapeInfoCast = reinterpret_cast<const InteropDataBuffer *>(shapeInfo);
+  auto newShapeInfoCast = reinterpret_cast<sd::LongType *>(shapeInfoCast->primary());
+  if(shape::rank(newShapeInfoCast) > SD_MAX_RANK || shape::rank(newShapeInfoCast) < 0) {
     std::string error;
     error += std::string("Shape Buffer at index ");
     error += std::string(" " + index);
@@ -396,13 +403,13 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
   }
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
   NDArray *array;
-  if (dataBuffer != nullptr && !shape::isEmpty(shapeInfoCast)) {
+  if (dataBuffer != nullptr && !shape::isEmpty(newShapeInfoCast)) {
     array = new NDArray(dataBuffer->dataBuffer(),newShapeInfoCast, sd::LaunchContext::defaultContext(),
                         dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
-                            shapeInfoCast)));
+                            newShapeInfoCast)));
 
   } else {
-    array = new NDArray(nullptr, nullptr, shapeInfoCast);
+    array = new NDArray(nullptr, nullptr, newShapeInfoCast);
   }
   _fastpath_in[index] = array;
   _handles.emplace_back(array);
@@ -411,23 +418,27 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
 }
 
 void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo, void const *specialShapeInfo) {
- if(vdatabuffer == nullptr)
-   throw std::runtime_error("Input data buffer is null!");
+  sd_printf("Calling setOutputArray %d\n",index);
+  if(vdatabuffer == nullptr)
+    throw std::runtime_error("Input data buffer is null!");
   auto dataBuffer = reinterpret_cast<InteropDataBuffer *>(vdatabuffer);
-
+  sd_printf("Obtained data buffer\n",0);
   if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);
 
-  auto shapeInfoCast = reinterpret_cast<sd::LongType const *>(shapeInfo);
-  auto newShapeInfoCast = const_cast<sd::LongType *>(shapeInfoCast);
+  auto newShapeInfoCast = reinterpret_cast<const InteropDataBuffer *>(shapeInfo);
+  auto newShapeInfoCast2 = reinterpret_cast<sd::LongType *>(newShapeInfoCast->primary());
   NDArray *array;
-  if (dataBuffer != nullptr && !shape::isEmpty(shapeInfoCast))
-    array = new NDArray(dataBuffer->dataBuffer(),newShapeInfoCast,
-                        sd::LaunchContext::defaultContext(),
-                        dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
-                            shapeInfoCast)));
+  sd_printf("Setting output array %d\n",index);
 
-  else {
-    array = new NDArray(nullptr, nullptr, shapeInfoCast);
+  if (dataBuffer != nullptr && !shape::isEmpty(newShapeInfoCast2)) {
+    sd_printf("About to create array %d\n",index);
+    array = new NDArray(dataBuffer->dataBuffer(), newShapeInfoCast2, sd::LaunchContext::defaultContext(),
+                        dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(newShapeInfoCast2)));
+    sd_printf("Created array %d\n",index);
+
+
+  } else {
+    array = new NDArray(nullptr, nullptr, newShapeInfoCast2);
   }
   _fastpath_out[index] = array;
   _handles.emplace_back(array);
@@ -554,8 +565,14 @@ void Context::setOutputArrays(int numArrays,void** buffer, void** shapeInfo, voi
 }
 
 void Context::setOutputArrays(int numArrays,void** databuffer, void const** shapeInfo, void const** specialShapeInfo) {
+  sd_printf("Before calling set output arrays\n",0);
+  InteropDataBuffer **pInteropDataBuffer = reinterpret_cast<InteropDataBuffer **>(databuffer);
+  const InteropDataBuffer **pInteropShapeInfo = reinterpret_cast<const InteropDataBuffer **>(shapeInfo);
+  const InteropDataBuffer **pInteropSpecialShapeInfo = reinterpret_cast<const InteropDataBuffer **>(specialShapeInfo);
+  sd_printf("Calling set context output array with num arrays %d\n",numArrays);
   for(int i = 0; i < numArrays; i++) {
-    setOutputArray(i,databuffer[i],shapeInfo[i],specialShapeInfo[i]);
+    setOutputArray(i,databuffer != nullptr  && databuffer[i] != nullptr ? pInteropDataBuffer[i]->primary() : nullptr,
+                   pInteropShapeInfo[i]->primary(),pInteropSpecialShapeInfo != nullptr ? pInteropSpecialShapeInfo[i] : nullptr);
   }
 }
 

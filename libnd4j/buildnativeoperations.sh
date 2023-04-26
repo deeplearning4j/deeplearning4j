@@ -92,7 +92,7 @@ NAME=
 OP_OUTPUT_FILE="include/generated/include_ops.h"
 USE_LTO=
 SANITIZE="OFF"
-
+FUNC_TRACE="OFF"
 
 while [[ $# -gt 0 ]]
 do
@@ -106,6 +106,10 @@ case $key in
     ;;
     -o|-platform|--platform)
     OS="$value"
+    shift # past argument
+    ;;
+    -ft|-functrace|--functrace)
+    FUNC_TRACE="$value"
     shift # past argument
     ;;
     -b|--build-type)
@@ -485,6 +489,13 @@ if [ -z "$COMPUTE" ]; then
   fi
 fi
 
+# Enable call stacking
+if [ "$FUNC_TRACE" == "ON" ]; then
+   export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_GCC_FUNCTRACE=ON"
+  else
+      COMPUTE="all"
+  fi
+
 OPERATIONS_ARG=
 
 if [ -z "$OPERATIONS" ]; then
@@ -669,6 +680,7 @@ echo HELPERS = "$HELPERS"
 echo OP_OUTPUT_FILE ="$OP_OUTPUT_FILE"
 echo USE_LTO="$USE_LTO"
 echo SANITIZE="$SANITIZE"
+echo FUNC_TRACE="$FUNC_TRACE"
 mkbuilddir
 pwd
 

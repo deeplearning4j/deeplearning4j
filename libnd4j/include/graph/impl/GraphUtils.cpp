@@ -50,7 +50,6 @@ bool GraphUtils::filterOperations(GraphUtils::OpList& ops) {
   std::string name = *(filtered[0].getOpName());
 
   for (int e = 1; e < filtered.size(); e++) {
-    //        sd_printf(">%s<, %lu %lu\n", name.c_str(), ops.size(), filtered.size());
     if (0 == filtered[e].getOpName()->compare(name)) {
       // there is a match
       auto fi = std::find_if(ops.begin(), ops.end(),

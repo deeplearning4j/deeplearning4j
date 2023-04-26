@@ -1604,7 +1604,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if (offset() == 0) {
             return wrappedBuffer().asIntBuffer();
         } else
-            return (IntBuffer) wrappedBuffer().asIntBuffer().position((int) offset());
+            return wrappedBuffer().asIntBuffer().position((int) offset());
     }
 
     @Override
@@ -2149,7 +2149,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             deallocator().logEvent().setConstant(reallyConstant);
 
         this.constant = reallyConstant;
-
+        Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
 
     }
 
@@ -2237,14 +2237,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected void release() {
         this.released = true;
         this.indexer = null;
-        if(this.pointer != null)
-            this.pointer.close();
+    /*    if(this.pointer != null)
+            this.pointer.close();*/
         this.pointer = null;
         //note: also calls ptrDataBuffer.deallocate()
-        this.ptrDataBuffer.closeBuffer();
+        /*     this.ptrDataBuffer.closeBuffer();
+         */
 
-
-        Nd4j.getDeallocatorService().getReferenceMap().remove(deallocationId);
+        //  Nd4j.getDeallocatorService().getReferenceMap().remove(deallocationId);
 
     }
 

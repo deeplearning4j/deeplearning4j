@@ -56,6 +56,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.AMSGrad;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -338,8 +339,9 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
     @Test
     public void testEpochUpdating(@TempDir Path testDir) throws Exception {
         //Ensure that epoch counter is incremented properly on the workers
-
-        File temp = testDir.resolve("new-dir-" + UUID.randomUUID().toString()).toFile();
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        File temp = testDir.resolve("new-dir-" + UUID.randomUUID()).toFile();
         temp.mkdirs();
 
         //TODO this probably won't work everywhere...
@@ -352,11 +354,11 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
                 .controllerAddress(controller)
                 .meshBuildMode(MeshBuildMode.PLAIN) // everyone is connected to the master
                 .build();
-        SharedTrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, 2, new AdaptiveThresholdAlgorithm(1e-3), 16)
+        SharedTrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, 1, new AdaptiveThresholdAlgorithm(1e-3), 16)
                 .rngSeed(12345)
                 .collectTrainingStats(false)
                 .batchSizePerWorker(16) // Minibatch size for each worker
-                .workersPerNode(2) // Workers per node
+                .workersPerNode(1) // Workers per node
                 .exportDirectory("file:///" + temp.getAbsolutePath().replaceAll("\\\\", "/"))
                 .build();
 

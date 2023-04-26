@@ -96,11 +96,11 @@ public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResul
             network.init();
 
             if (tuple.getParameters() != null)
-                network.setParams(tuple.getParameters());
+                network.setParams(tuple.getParameters().dup());
 
             // we can assign properly, without
             if (tuple.getUpdaterState() != null)
-                network.getUpdater().getStateViewArray().assign(tuple.getUpdaterState());
+                network.getUpdater().getStateViewArray().assign(tuple.getUpdaterState().dup());
 
             return network;
         } else
@@ -118,10 +118,10 @@ public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResul
             network.init();
 
             if (tuple.getParameters() != null)
-                network.setParams(tuple.getParameters());
+                network.setParams(tuple.getParameters().dup());
 
             if (tuple.getUpdaterState() != null)
-                network.getUpdater().getUpdaterStateViewArray().assign(tuple.getUpdaterState());
+                network.getUpdater().getUpdaterStateViewArray().assign(tuple.getUpdaterState().dup());
 
             return network;
         } else

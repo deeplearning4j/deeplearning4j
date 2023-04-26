@@ -30,11 +30,14 @@ import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 @Slf4j
 @DisplayName("Encoded Gradients Accumulator Test")
@@ -87,12 +90,16 @@ class EncodedGradientsAccumulatorTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Encoding Limits 1")
     void testEncodingLimits1() throws Exception {
+       System.setProperty("org.bytedeco.javacpp.logger.debug", "true");
+        Nd4jCpu nd4jCpu = (Nd4jCpu) NativeOpsHolder.getInstance().getDeviceNativeOps();
         int numParams;
         if (isIntegrationTests()) {
             numParams = 100000;
         } else {
             numParams = 10000;
         }
+
+        nd4jCpu.setInstrumentOut("profilerout.txt");
         EncodingHandler handler = new EncodingHandler(new FixedThresholdAlgorithm(1e-3), null, Integer.MAX_VALUE, false);
         for (int e = 10; e < numParams / 5; e++) {
             val gradients = getGradients(numParams, e, 2e-3);

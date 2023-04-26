@@ -82,6 +82,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         if(!op.isInplaceCall())
             context.setOutputArrays(op.outputArguments());
 
+
         // transferring static args
         context.setBArguments(op.bArgs());
         context.setIArguments(op.iArgs());
@@ -754,7 +755,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     public long bitmapEncode(INDArray indArray, INDArray target, double threshold) {
         val results = Nd4j.exec(new EncodeBitmap(indArray, target, Nd4j.scalar(0), (float) threshold));
 
-        // return number of elements taht were compressed
+        // return number of elements that were compressed
         return results[2].getInt(0);
     }
 

@@ -447,15 +447,15 @@ public class DefaultTrainer implements Trainer,Runnable {
             throw new RuntimeException(e);
         } finally {
             log.debug("Terminating all workspaces for trainer_{}", threadId);
-            Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+          //  Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
 
-            if (!onRootModel) {
+      /*      if (!onRootModel && replicatedModel != null) {
                 replicatedModel.close();
-            }
+            }*/
 
             // let's try to enforce GC to actually clean all references now
             replicatedModel.clear();
-            System.gc();
+          //  System.gc();
             isStopped.set(true);
         }
     }
