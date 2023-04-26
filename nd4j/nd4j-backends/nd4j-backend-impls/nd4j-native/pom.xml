@@ -41,6 +41,8 @@
         <!-- Java 9 module name does not allow native-->
         <module.name>nd4j.cpu</module.name>
         <libnd4j.functrace>OFF</libnd4j.functrace>
+        <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
+
     </properties>
 
 
@@ -256,15 +258,13 @@
 
     <profiles>
 
-
-
         <profile>
             <id>non-functrace</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
                 <property>
                     <name>libnd4j.functrace</name>
-                    <value>ON</value>
+                    <value>OFF</value>
                 </property>
 
             </activation>
@@ -370,7 +370,7 @@
                                 <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>
                             </linkResources>
                             <compilerOptions>
-                                <compilerOption>-Wl,--no-undefined</compilerOption>
+                                <compilerOption>${javacpp.compiler.options}</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>
@@ -534,7 +534,7 @@
                                 <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>
                             </linkResources>
                             <compilerOptions>
-                                <compilerOption>-Wl,--no-undefined</compilerOption>
+                                <compilerOption>${javacpp.compiler.options}</compilerOption>
                                 <!-- This is the main function. Tells gcc to instrument every function with an enter and exit function.-->
                                 <compilerOption>-finstrument-functions</compilerOption>
                                 <!-- Adds debug information in to the generated .so file. Needed for symbol decoding.  -->
@@ -550,7 +550,6 @@
 
 
                             </compilerOptions>
-                            <deleteJniFiles>false</deleteJniFiles>
                         </configuration>
                         <executions>
                             <execution>

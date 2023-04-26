@@ -174,7 +174,7 @@
         <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
         <!-- Must not be empty. Otherwise the command line will fail. Put all arguments here needed for customization. If overridden, ensure not empty.-->
         <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
-        <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
+         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
 
         <javacpp.version>1.5.8</javacpp.version>
