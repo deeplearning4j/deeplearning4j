@@ -39,7 +39,6 @@
     <modules>
         <module>nd4j-aeron</module>
         <module>nd4j-arrow</module>
-        <module>nd4j-kryo</module>
     </modules>
 
     <dependencyManagement>
