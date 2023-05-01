@@ -43,7 +43,6 @@
         <module>nd4j-serde</module>
         <module>nd4j-common</module>
         <module>nd4j-backends</module>
-        <module>nd4j-parameter-server-parent</module>
         <module>nd4j-tensorflow</module>
         <module>nd4j-tensorflow-lite</module>
         <module>nd4j-onnxruntime</module>
