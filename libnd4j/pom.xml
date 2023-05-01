@@ -163,14 +163,14 @@
                                 <argument>${libnd4j.operations}</argument>
                                 <argument>--datatypes</argument>
                                 <argument>${libnd4j.datatypes}</argument>
-                                <argument>--sanitize</argument>
                                 <argument>${libnd4j.sanitize}</argument>
+                                <argument>--sanitize</argument>
                                 <argument>--arch</argument>
                                 <argument>${libnd4j.arch}</argument>
                                 <argument>--use_lto</argument>
                                 <argument>${libnd4j.lto}</argument>
                                 <argument>--functrace</argument>
-                                <argument>${libnd4j.functrace}</argument>
+                                <argument>${libnd4j.calltrace}</argument>
                             </buildCommand>
                             <workingDirectory>${project.basedir}</workingDirectory>
                         </configuration>

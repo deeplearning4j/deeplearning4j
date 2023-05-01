@@ -1816,6 +1816,8 @@ public class Shape {
     }
 
     public static long elementWiseStride(long[] shape, long[] stride, boolean isFOrder) {
+        if(shape == null)
+            return 0;
         // 0D edge case
         if (shape.length == 0 || stride == null && stride.length == 0)
             return 1;
@@ -1944,6 +1946,8 @@ public class Shape {
 
     public static boolean ableToReshapeWithView(INDArray arr,boolean isFOrder, long[] newShape) {
         int oldnd;
+        if(arr == null || arr.shape() == null)
+            return false;
         long[] olddims = ArrayUtil.copy(arr.shape());
         long[] oldstrides = ArrayUtil.copy(arr.stride());
         long np, op, last_stride;
@@ -3068,7 +3072,7 @@ public class Shape {
         return sb.toString();
     }
 
-    public static String shapeToStringShort(INDArray arr){
+    public static String shapeToStringShort(INDArray arr) {
         long[] s = arr.shape();
         return arr.dataType() + "," + (s == null ? "[]" : Arrays.toString(s).replace(" ","")) + "," + arr.ordering();
     }

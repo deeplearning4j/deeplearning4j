@@ -262,6 +262,7 @@ elseif (APPLE)
         set(CMAKE_OSX_ARCHITECTURES "arm64")
     endif()
 
+
     set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  " -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true")
 elseif(WIN32)
@@ -293,7 +294,11 @@ else()
     # we also have to do this for release because libnd4j has issues when working with java
     # ideally debug builds would work but since it's not consistent it's better to just
     # set this for release flags so we can debug code even from the java level
-    set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
+    if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O0 -fPIC -D_RELEASE=true")
+    else()
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
+    endif()
     set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC")
 
     if (SD_CPU AND SD_SANITIZE)

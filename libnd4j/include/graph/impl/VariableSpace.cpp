@@ -312,11 +312,7 @@ sd::graph::VariableSpace::~VariableSpace() {
 
   delete _handles;
 
-  //_internal.clear();
-  //_external.clear();
-  //_temporary.clear();
 
-  // sd_printf("Number of NDArrayLists in this space: [%i]\n", _lists.size())
   for (auto p : _lists) delete p;
 
   _lists.clear();

@@ -49,14 +49,17 @@ public class LongShapeDescriptor {
     private long extras;
 
     public LongShapeDescriptor(long[] shape, long[] stride, long offset, long ews, char order, long extras) {
-        this.shape = Arrays.copyOf(shape, shape.length);
-        this.stride = Arrays.copyOf(stride, stride.length);
+     if(shape != null) {
+         this.shape = Arrays.copyOf(shape, shape.length);
+         this.stride = Arrays.copyOf(stride, stride.length);
 
-        this.offset = offset;
-        this.ews = ews;
-        this.order = order;
+         this.offset = offset;
+         this.ews = ews;
+         this.order = order;
 
-        this.extras = extras;
+         this.extras = extras;
+     }
+
     }
 
     @Override

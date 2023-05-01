@@ -60,7 +60,7 @@ public class Lgamma extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
         return Collections.singletonList(inputDataTypes.get(0));

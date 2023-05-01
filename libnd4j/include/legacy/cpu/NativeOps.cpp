@@ -85,19 +85,26 @@ using namespace sd;
 //note we only include this if we're running gcc linux
 //and should not be enabled in default builds.
 #if defined(SD_GCC_FUNCTRACE)
-#include <dlfcn.h> // needed for dladdr
-#include <cxxabi.h> // needed  __cxa_demangle
+#include <cxxabi.h>  // needed  __cxa_demangle
+#include <dlfcn.h>   // needed for dladdr
+
+#include "exceptions/backward.hpp"
 
 
-//this is mainly a c based function.
+
+
+// this is mainly a c based function.
 extern "C" {
+
+
 
 //we need to tell -finstrument-functions not to include the logger otherwise it will recursively
 // stack overflow and segfault.
 __attribute__((no_instrument_function)) SD_LIB_EXPORT  void writeLog(bool enter,void *this_fn,void *call_site) {
-  if(instrumentFile == nullptr)
+  if(instrumentFile == nullptr) {
+    sd_printf("Instrument file is null\n",0)
     return;
-
+  }
   Dl_info info;
   if (dladdr(this_fn, &info)) {
     int status;
@@ -109,20 +116,23 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT  void writeLog(bool enter,
       funcName = info.dli_sname ? info.dli_sname : "null_dli_sname";
     }
 
+    printf(" %s %s (%s)\n",enter ? "enter" : "exit", funcName, info.dli_fname);
     fprintf( instrumentFile," %s %s (%s)\n",enter ? "enter" : "exit", funcName, info.dli_fname);
     if (demangled != nullptr) {
       delete demangled;
       demangled = nullptr;
     }
   } else {
+    printf("%s %s\n", enter ? "enter" : "exit","unknown");
     fprintf(instrumentFile, "%s %s\n", enter ? "enter" : "exit","unknown");
+    fflush(instrumentFile);
   }
 }
 //we need to tell -finstrument-functions not to include the logger otherwise it will recursively
 // stack overflow and segfault.
 __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_enter(void *this_fn,
                                                                                     void *call_site) {
-  writeLog(true,this_fn, call_site);
+  //writeLog(true,this_fn, call_site);
 }
 
 
@@ -130,9 +140,11 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_en
 // stack overflow and segfault.
 __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_exit  (void *this_fn,
                                                                                      void *call_site) {
-  writeLog(false,this_fn, call_site);
+  //writeLog(false,this_fn, call_site);
 
 }
+
+
 }
 
 //note this is outside extern C. This is fine.
@@ -140,7 +152,9 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_ex
 
 //sets the file to be written to.
 void setInstrumentOut(char *instrumentOutPath) {
-  if (instrumentOutPath != nullptr) {
+  // sd_printf("Setting signal handler and instrument path %s\n",instrumentOutPath);
+  //backward::SignalHandling sh;
+/*  if (instrumentOutPath != nullptr) {
     if(instrumentFile != nullptr)
       fclose(instrumentFile);
     instrumentFile = fopen(instrumentOutPath, "w");
@@ -148,7 +162,7 @@ void setInstrumentOut(char *instrumentOutPath) {
       perror("Failed to open profiler output file");
       exit(EXIT_FAILURE);
     }
-  }
+  }*/
 }
 
 //clears the file.
@@ -276,7 +290,6 @@ void printOpTrace() {
       }
     }
 
-    sd_printf(" Output  buffers:\n",0);
     if(curr->outputShapeBuffers == nullptr || curr->outputShapeBuffers->size() == 0) {
       sd_printf("No output buffers\n",0);
       continue;
@@ -474,28 +487,17 @@ void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays,void** buffe
   if(shapeInfo == nullptr)
     throw std::runtime_error("Input shape info was null!");
 
-  if(buffer == nullptr)
-    throw std::runtime_error("Input buffer was null!");
 
   OpaqueDataBuffer  **buffers = (OpaqueDataBuffer **) buffer;
   OpaqueDataBuffer **shapeBuffers = (OpaqueDataBuffer **) shapeInfo;
   OpaqueDataBuffer **specialShapeBuffers = (OpaqueDataBuffer **) specialShapeInfo;
 
   for(int i = 0; i < numArrays; i++) {
-    if(buffer[i] == nullptr)
-      throw std::runtime_error("Input buffer was null!");
-
-
     if(shapeInfo[i] == nullptr)
       throw std::runtime_error("Input shape at index was null!");
 
 
     sd::LongType *primary = (sd::LongType *) shapeBuffers[i]->primary();
-    sd_printf("Setting input buffer %d. Printing buffer\n",i);
-    if(primary != nullptr)
-      shape::printShapeInfo(primary);
-    else
-      throw std::runtime_error("Primary shape info was null!");
     if(buffer != nullptr && buffer[i] != nullptr) {
       setGraphContextInputBuffer(ptr,i,buffers[i],shapeBuffers[i],specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
     }
@@ -512,7 +514,6 @@ void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, void** buff
   OpaqueDataBuffer **shapeBuffers = (OpaqueDataBuffer **) shapeInfo;
   OpaqueDataBuffer **specialShapeBuffers = (OpaqueDataBuffer **) specialShapeInfo;
   for(int i = 0; i < numArrays; i++) {
-    sd_printf("Setting output buffer %d\n",i);
 
     if(buffer != nullptr && buffer[i] != nullptr) {
       setGraphContextOutputBuffer(ptr, i, buffers[i], shapeBuffers[i],
@@ -1283,6 +1284,7 @@ sd::TadPack *tadOnlyShapeInfo(sd::LongType const *hXShapeInfo, LongType *dimensi
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    throw std::runtime_error(e.what());
   }
 
 
@@ -1463,25 +1465,7 @@ void enableP2P(bool enable) {
   // no-op
 }
 
-void encodeThresholdP1(sd::Pointer *extraPointers, void *hX, sd::LongType const *hXShapeInfo, sd::LongType N, int *dz,
-                       float threshold) {
-  // TODO: to be implemented
-}
 
-void encodeThresholdP2Int(sd::Pointer *extraPointers, int *hX, sd::LongType N, int *dz) {
-  // TODO: to be implemented
-}
-
-void encodeThresholdP3(sd::Pointer *extraPointers, void *hX, sd::LongType const *hXShapeInfo, int *offsets,
-                       sd::LongType N, int *dz) {
-  // offsets won't be used here
-
-  // TODO: to be implemented
-}
-
-void decodeThreshold(sd::Pointer *extraPointers, void *hX, sd::LongType N, void *dz, const sd::LongType *hZShapeInfo) {
-  // TODO: to be implemented
-}
 
 bool isP2PAvailable() {
   // always TRUE for cpu backend
@@ -1490,10 +1474,6 @@ bool isP2PAvailable() {
 
 void checkP2P() {
   // no-op
-}
-
-void decodeBitmap(sd::Pointer *extraPointers, void *hX, sd::LongType N, void *dz, sd::LongType const *hZShapeInfo) {
-  NativeOpExecutioner::decodeBitmap(hX, N, dz, hZShapeInfo);
 }
 
 template <typename T>
@@ -1714,8 +1694,7 @@ sd::Pointer initRandom(sd::Pointer *extraPointers, long seed, long bufferSize, s
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-
-    return nullptr;
+    throw std::runtime_error(e.what());
   }
 }
 
@@ -1801,10 +1780,6 @@ void unravelIndex(sd::Pointer *extraPointers, sd::LongType *indices, sd::LongTyp
   NativeOpExecutioner::execUnravelIndex(indices, flatIndices, length, shapeInfo);
 }
 
-sd::LongType encodeBitmap(sd::Pointer *extraPointers, void *hX, sd::LongType const *hXShapeInfo, sd::LongType N,
-                          LongType *dz, float threshold) {
-  return NativeOpExecutioner::encodeBitmap(hX, hXShapeInfo, N, dz, threshold);
-}
 
 sd::LongType *mmapFile(sd::Pointer *extraPointers, const char *fileName, sd::LongType length) {
   auto hZ = new sd::LongType[2];
@@ -1833,7 +1808,7 @@ sd::LongType *mmapFile(sd::Pointer *extraPointers, const char *fileName, sd::Lon
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
+    throw std::runtime_error(e.what());
   }
 }
 
@@ -1969,7 +1944,7 @@ sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType h
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
+    throw std::runtime_error(e.what());
   }
 }
 
@@ -2150,7 +2125,7 @@ sd::ShapeList *calculateOutputShapes(sd::Pointer *extraPointers, sd::LongType ha
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
+    throw std::runtime_error(e.what());
   }
 }
 
@@ -2809,7 +2784,7 @@ OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::Long
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
+    throw std::runtime_error(e.what());
   }
 }
 
@@ -2835,7 +2810,7 @@ sd::ConstantDataBuffer *constantBuffer(sd::DataType dtype, sd::ConstantDescripto
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
+    throw std::runtime_error(e.what());
   }
 }
 
@@ -2858,7 +2833,7 @@ sd::graph::Context *createGraphContext(int nodeId) {
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
+    throw std::runtime_error(e.what());
   }
 }
 sd::graph::RandomGenerator *getGraphContextRandomGenerator(sd::graph::Context *ptr) { return &ptr->randomGenerator(); }
@@ -2892,7 +2867,7 @@ void setGraphContextInputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer 
     error += std::string(" ");
     error += std::to_string(index);
     error += std::string(" ");
-    error += std::string(" was corrupt! This is likely due to deallocation.Please double check the passed in shapebuffer.");
+    error += std::string(" was corrupt! This is likely due to deallocation. Please double check the passed in shapebuffer.");
     error += std::string(" value was: ");
     error  += std::to_string(shapeInfoCast[0]);
     throw std::runtime_error(error.c_str());
@@ -2939,11 +2914,18 @@ sd::graph::RandomGenerator *createRandomGenerator(sd::LongType rootSeed, sd::Lon
   return new sd::graph::RandomGenerator(rootSeed, nodeSeed);
 }
 
-sd::LongType getRandomGeneratorRootState(sd::graph::RandomGenerator *ptr) { return ptr->rootState(); }
+sd::LongType getRandomGeneratorRootState(sd::graph::RandomGenerator *ptr) {
+  if(ptr == nullptr)
+    throw std::runtime_error("Unable to get the root state from a null pointer. Please ensure this is created.");
+  return ptr->rootState();
+}
 
 sd::LongType getRandomGeneratorNodeState(sd::graph::RandomGenerator *ptr) { return ptr->nodeState(); }
 
 void setRandomGeneratorStates(sd::graph::RandomGenerator *ptr, sd::LongType rootSeed, sd::LongType nodeSeed) {
+  if(ptr == nullptr)
+    throw std::runtime_error("Unable to get the root state from a null pointer. Please ensure this is created.");
+
   ptr->setStates(rootSeed, nodeSeed);
 }
 
@@ -3114,9 +3096,17 @@ sd::Pointer lcBlasHandle(OpaqueLaunchContext *lc) { return nullptr; }
 
 sd::Pointer lcSolverHandle(OpaqueLaunchContext *lc) { return nullptr; }
 
-int lastErrorCode() { return sd::LaunchContext::defaultContext()->errorReference()->errorCode(); }
+int lastErrorCode() {
+  if( sd::LaunchContext::defaultContext()->errorReference() != nullptr)
+    return sd::LaunchContext::defaultContext()->errorReference()->errorCode();
+  return 0;
+}
 
-const char *lastErrorMessage() { return sd::LaunchContext::defaultContext()->errorReference()->errorMessage(); }
+const char *lastErrorMessage() {
+  if( sd::LaunchContext::defaultContext()->errorReference() != nullptr)
+    return sd::LaunchContext::defaultContext()->errorReference()->errorMessage();
+  return "";
+}
 
 void ctxShapeFunctionOverride(OpaqueContext *ptr, bool reallyOverride) {
   ptr->setShapeFunctionOverride(reallyOverride);
@@ -3232,11 +3222,13 @@ OpaqueDataBuffer *dbAllocateDataBuffer(sd::LongType elements, int dataType, bool
 OpaqueDataBuffer *allocateDataBuffer(sd::LongType elements, int dataType, bool allocateBoth) {
   try {
     auto dtype = DataTypeUtils::fromInt(dataType);
-    return new sd::InteropDataBuffer(elements * DataTypeUtils::sizeOf(dtype), dtype, allocateBoth);
+    sd::LongType totalElementSize = elements * DataTypeUtils::sizeOf(dtype);
+    sd::LongType  size = DataTypeUtils::sizeOf(dtype);
+    return new sd::InteropDataBuffer(totalElementSize, dtype, allocateBoth);
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
+    throw std::runtime_error(e.what());
   }
 }
 
@@ -3269,9 +3261,12 @@ void dbSetPrimaryBuffer(OpaqueDataBuffer *dataBuffer, sd::Pointer primaryBuffer,
 
 void dbSetSpecialBuffer(OpaqueDataBuffer *dataBuffer, sd::Pointer specialBuffer, sd::LongType numBytes) {
   dataBuffer->setSpecial(specialBuffer, numBytes);
+
 }
 
-void dbAllocatePrimaryBuffer(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->allocatePrimary(); }
+void dbAllocatePrimaryBuffer(OpaqueDataBuffer *dataBuffer) {
+  dataBuffer->dataBuffer()->allocatePrimary();
+}
 
 void dbAllocateSpecialBuffer(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->allocateSpecial(); }
 

@@ -744,9 +744,7 @@ void NativeOpExecutioner::execReduceFloatScalar(sd::LaunchContext* lc, int opNum
                                            dZShapeInfo, hZShapeInfo, nullptr, 0, reductionPointer, nullptr),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execReduceFloatScalar failed", res);
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -774,9 +772,7 @@ void NativeOpExecutioner::execReduceBoolScalar(sd::LaunchContext* lc, int opNum,
                                            dZShapeInfo, hZShapeInfo, nullptr, 0, reductionPointer, nullptr),
                         SD_COMMON_TYPES, SD_BOOL_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execReduceBoolScalar failed", res);
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -805,9 +801,6 @@ void NativeOpExecutioner::execReduceSameScalar(sd::LaunchContext* lc, int opNum,
                                            dZShapeInfo, hZShapeInfo, nullptr, 0, reductionPointer, nullptr),
                         SD_COMMON_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execReduceSameScalar failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -836,9 +829,7 @@ void NativeOpExecutioner::execReduceLongScalar(sd::LaunchContext* lc, int opNum,
                                            dZShapeInfo, hZShapeInfo, nullptr, 0, reductionPointer, nullptr),
                         SD_COMMON_TYPES, SD_LONG_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execReduceLongScalar failed", res);
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -868,9 +859,7 @@ void NativeOpExecutioner::execTransformSame(sd::LaunchContext* lc, int opNum, vo
                                                  dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
                         SD_COMMON_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execTransformSame failed", res);
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -900,9 +889,6 @@ void NativeOpExecutioner::execTransformBool(sd::LaunchContext* lc, int opNum, vo
                                                  dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
                         SD_COMMON_TYPES, SD_BOOL_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execTransformBool failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -934,9 +920,6 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext* lc, int opNum, voi
                           SD_COMMON_TYPES, SD_COMMON_TYPES);
   }
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execTransformAny failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -968,9 +951,6 @@ void NativeOpExecutioner::execTransformStrict(sd::LaunchContext* lc, int opNum, 
                                                  dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
                         SD_FLOAT_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execTransformStrict failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -999,9 +979,6 @@ void NativeOpExecutioner::execTransformFloat(sd::LaunchContext* lc, int opNum, v
                                                  dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execTransformFloat failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1028,9 +1005,6 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext* lc, int opNum, voi
                                hZShapeInfo, nullptr, nullptr, biasCorrected, reductionPointer),
       SD_COMMON_TYPES, SD_FLOAT_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execSummaryStats A failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1058,9 +1032,7 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext* lc, int opNum, voi
                                                  tadOffsets, biasCorrected, reductionPointer),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execSummaryStats B failed", res);
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1094,9 +1066,6 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext* lc, int opNum, void con
                                      dZShapeInfo, allocationPointer, reductionPointer, nullptr),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execReduce3 failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1137,9 +1106,6 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext* lc, int opNum, void con
              dimensionLength, 1, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets),
       SD_COMMON_TYPES, SD_FLOAT_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execReduce3 B failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1175,9 +1141,6 @@ void NativeOpExecutioner::execReduce3Scalar(sd::LaunchContext* lc, int opNum, vo
                                      dZShapeInfo, allocationPointer, reductionPointer, nullptr),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execReduce3Scalar failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1208,9 +1171,7 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext* lc, int opNum, void 
       ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalar, extraParams),
       SD_COMMON_TYPES, SD_BOOL_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execScalarBool failed", res);
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1241,9 +1202,6 @@ void NativeOpExecutioner::execScalarBool(
                                   dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
       SD_COMMON_TYPES, SD_BOOL_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execScalarBool B failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1275,9 +1233,7 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext* lc, int opNum, void c
       ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalar, extraParams),
       SD_INTEGER_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execScalarInt failed", res);
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1309,9 +1265,7 @@ void NativeOpExecutioner::execScalarInt(
                                   dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
       SD_INTEGER_TYPES);
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execScalarInt B failed", res);
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1342,9 +1296,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext* lc, int opNum, void cons
                                SD_COMMON_TYPES);
 #endif
 
-  // TODO: remove after the release
-  auto res = cudaStreamSynchronize(*stream);
-  if (res != 0) throw cuda_exception::build("execScalar failed", res);
+
 }
 
 ////////////////////////////////////////////////////////////////////////

@@ -277,7 +277,6 @@ public class NDArrayTestsFortran extends BaseNd4jTestWithBackends {
     public void testNd4jSortScalar(Nd4jBackend backend) {
         INDArray linspace = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape(1, -1);
         INDArray sorted = Nd4j.sort(linspace, 1, false);
-//        System.out.println(sorted);
     }
 
     @ParameterizedTest

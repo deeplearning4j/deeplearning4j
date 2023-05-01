@@ -620,12 +620,13 @@ std::vector<sd::LongType> ShapeUtils::pullShapeFromShapeInfo(const sd::LongType*
 }
 
 std::string ShapeUtils::shapeAsString(const NDArray* array) {
+  if(array->rankOf() == 0 && !array->isEmpty())
+    return "[0]";
+
   std::string result;
 
   result.append("[");
-  sd_printf("ShapeUtils::shapeAsString: Trying to get rank\n",0);
   for (int e = 0; e < array->rankOf(); e++) {
-    sd_printf("ShapeUtils::shapeAsString: In rank %d\n",e);
     result += flatbuffers::NumToString(array->sizeAt(e));
     if (e < array->rankOf() - 1) result.append(", ");
   }

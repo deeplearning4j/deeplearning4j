@@ -1935,6 +1935,8 @@ public class TestMiscOpValidation extends BaseOpValidation {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testFlatten(Nd4jBackend backend) {
 
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
         SameDiff sameDiff = SameDiff.create();
 
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1, 27, 1).reshape(3,3,3);
@@ -2041,7 +2043,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
                 0.0,0.0,0.6931472,1.7917595,3.1780539,4.787492,6.5792513,8.525162,10.604603,12.801827,15.104413,17.502308
         }).reshape(3,4);
 
-        SDVariable output = new Lgamma(sameDiff, sdInput).outputVariable();
+        SDVariable output = sameDiff.math().lgamma(sdInput);
 
         SDVariable loss = sameDiff.standardDeviation(sdInput, true);
         sameDiff.addLossVariable(loss);

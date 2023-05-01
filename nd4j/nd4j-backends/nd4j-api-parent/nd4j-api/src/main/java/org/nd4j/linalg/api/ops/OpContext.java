@@ -35,64 +35,7 @@ public interface OpContext extends AutoCloseable {
      */
     long id();
 
-    /**
-     * Returns true if the op context
-     * currently contains a valid data type arguments pointer
-     * @return
-     */
 
-    boolean hasCachedDArgs();
-    /**
-     * Returns true if the op context
-     * currently contains a valid double arguments pointer
-     * @return
-     */
-
-    boolean hasCachedTArgs();
-    /**
-     * Returns true if the op context
-     * currently contains a valid boolean arguments pointer
-     * @return
-     */
-
-    boolean hasCachedBArgs();
-    /**
-     * Returns true if the op context
-     * currently contains a valid int arguments pointer
-     * @return
-     */
-
-    boolean hasCachedIArgs();
-
-    /**
-     * This method sets an tArgument at an index
-     * @param index the index to set
-     * @param value the value to set
-     */
-    void setDArgAt(int index,DataType value);
-
-
-    /**
-     * This method sets an bArgument at an index
-     * @param index the index to set
-     * @param value the value to set
-     */
-    void setBArgAt(int index,boolean value);
-
-
-    /**
-     * This method sets an tArgument at an index
-     * @param index the index to set
-     * @param value the value to set
-     */
-    void setTArgAt(int index,double value);
-
-    /**
-     * This method sets an iArgument at an index
-     * @param index the index to set
-     * @param value the value to set
-     */
-    void setIArgAt(int index,long value);
     /**
      * This method sets integer arguments required for operation
      *
@@ -168,7 +111,8 @@ public interface OpContext extends AutoCloseable {
 
     /**
      * This method sets root-level seed for rng
-     * @param seed
+     * @param rootState
+     * @param nodeState
      */
     void setRngStates(long rootState, long nodeState);
 

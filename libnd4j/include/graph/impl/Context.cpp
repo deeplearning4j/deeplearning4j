@@ -186,7 +186,10 @@ Variable *Context::getVariable(int idx) {
   return v;
 }
 
-Variable *Context::variable(int idx) { return getVariable(idx); }
+Variable *Context::variable(int idx) {
+  sd_printf("Using variable(idx to access variable %d\n",idx);
+  return getVariable(idx);
+}
 
 Variable *Context::variable(std::initializer_list<int> p) {
   if (p.size() != 2) throw std::runtime_error("Variable address should have size of 2");
@@ -301,6 +304,7 @@ NDArray *Context::array(int idx) {
   if (!_fastpath_in.empty() && _fastpath_in.size() > idx) {
     return _fastpath_in[idx];
   }
+  sd_printf("Attempting to use normal variable rather than fast path in\n",0);
   // if no luck for fastpath - return whatever is available
   return getVariable(idx)->getNDArray();
 }
@@ -375,7 +379,6 @@ void Context::setOutputArray(int index, void *buffer, const void *shapeInfo, voi
                              const void *specialShapeInfo) {
   if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);
 
-  sd_printf("Setting output array %d\n",index);
 
   InteropDataBuffer *output1 = reinterpret_cast<InteropDataBuffer *>(buffer);
   auto newBuff = output1->primary();
@@ -418,23 +421,16 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
 }
 
 void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo, void const *specialShapeInfo) {
-  sd_printf("Calling setOutputArray %d\n",index);
-  if(vdatabuffer == nullptr)
-    throw std::runtime_error("Input data buffer is null!");
   auto dataBuffer = reinterpret_cast<InteropDataBuffer *>(vdatabuffer);
-  sd_printf("Obtained data buffer\n",0);
   if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);
 
   auto newShapeInfoCast = reinterpret_cast<const InteropDataBuffer *>(shapeInfo);
   auto newShapeInfoCast2 = reinterpret_cast<sd::LongType *>(newShapeInfoCast->primary());
   NDArray *array;
-  sd_printf("Setting output array %d\n",index);
 
   if (dataBuffer != nullptr && !shape::isEmpty(newShapeInfoCast2)) {
-    sd_printf("About to create array %d\n",index);
     array = new NDArray(dataBuffer->dataBuffer(), newShapeInfoCast2, sd::LaunchContext::defaultContext(),
                         dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(newShapeInfoCast2)));
-    sd_printf("Created array %d\n",index);
 
 
   } else {
@@ -507,11 +503,13 @@ bool Context::isInference() { return _execMode == samediff::ExecutionMode::MODE_
 
 void Context::setDArguments(sd::DataType *arguments, int numberOfArguments) {
   _dArgs.clear();
+  _dArgs.reserve(numberOfArguments);
   for (int e = 0; e < numberOfArguments; e++) _dArgs.emplace_back(arguments[e]);
 }
 
 void Context::setDArguments(const std::vector<sd::DataType> &dArgs) {
   _dArgs.clear();
+  _dArgs.reserve(dArgs.size());
   for (auto d : dArgs) _dArgs.emplace_back(d);
 }
 

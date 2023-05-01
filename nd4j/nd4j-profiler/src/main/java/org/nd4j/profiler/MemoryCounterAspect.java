@@ -36,7 +36,6 @@ import java.util.Set;
  */
 @Aspect
 public class MemoryCounterAspect {
-    private static Set<Long> deallocatedAddresses = new LinkedHashSet<>();
 
 
     /**
@@ -48,13 +47,16 @@ public class MemoryCounterAspect {
      */
     @Around("execution(org.bytedeco..*.new(..))")
     public Object allocateMemory(ProceedingJoinPoint joinPoint) throws Throwable {
-        if (joinPoint != null && joinPoint.getSignature() != null && joinPoint.getTarget() instanceof Pointer) {
-            String className = joinPoint.getSignature().getDeclaringTypeName();
-            long currMemory = Pointer.physicalBytes();
-            Object ret = joinPoint.proceed();
-            long after = Pointer.physicalBytes();
-            MemoryCounter.increment(className, after - currMemory);
-            return ret;
+        try {
+            if (joinPoint != null && joinPoint.getSignature() != null && joinPoint.getTarget() instanceof Pointer) {
+                String className = joinPoint.getSignature().getDeclaringTypeName();
+                long currMemory = Pointer.physicalBytes();
+                Object ret = joinPoint.proceed();
+                long after = Pointer.physicalBytes();
+                MemoryCounter.increment(className, after - currMemory);
+                return ret;
+            }
+        }catch (Exception e) {
         }
 
         return joinPoint.proceed();
@@ -69,20 +71,17 @@ public class MemoryCounterAspect {
      */
     @Around("execution(* org.bytedeco..*.*deallocate*(..))")
     public Object deallocate(ProceedingJoinPoint joinPoint) throws Throwable {
-        if (joinPoint != null && joinPoint.getSignature() != null && joinPoint.getTarget() instanceof Pointer) {
-            String className = joinPoint.getSignature().getDeclaringTypeName();
-            long currMemory = Pointer.physicalBytes();
-            Object ret = joinPoint.proceed();
-            long after = Pointer.physicalBytes();
-            Pointer pointer = (Pointer) joinPoint.getTarget();
-            if(deallocatedAddresses.contains(pointer.address())) {
-                throw new IllegalStateException("Double deallocation of pointer: " + pointer.getClass().getName());
+        try {
+            if (joinPoint != null && joinPoint.getSignature() != null && joinPoint.getTarget() instanceof Pointer) {
+                String className = joinPoint.getSignature().getDeclaringTypeName();
+                long currMemory = Pointer.physicalBytes();
+                Object ret = joinPoint.proceed();
+                long after = Pointer.physicalBytes();
+                MemoryCounter.decrement(className, currMemory - after);
+                return ret;
             }
+        }catch (Exception e) {
 
-            deallocatedAddresses.add(pointer.address());
-            MemoryCounter.decrement(className, currMemory - after);
-            System.out.println("Deallocating : " + joinPoint.getTarget().getClass().getName());
-            return ret;
         }
 
         return joinPoint.proceed();
@@ -104,12 +103,6 @@ public class MemoryCounterAspect {
             long currMemory = Pointer.physicalBytes();
             Object ret = joinPoint.proceed();
             long after = Pointer.physicalBytes();
-            Pointer pointer = (Pointer) joinPoint.getTarget();
-            if(deallocatedAddresses.contains(freeHost)) {
-                throw new IllegalStateException("Double free host of pointer: " + pointer.getClass().getName());
-            }
-
-            deallocatedAddresses.add(pointer.address());
             MemoryCounter.decrement(className, currMemory - after);
             System.out.println("Deallocating : " + joinPoint.getTarget().getClass().getName());
             return ret;

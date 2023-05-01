@@ -1402,6 +1402,42 @@ public class SDMath extends SDOps {
   }
 
   /**
+   * Pairwise division operation, out = x / y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable divNoNan(SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("divNoNan", "x", x);
+    SDValidation.validateNumerical("divNoNan", "y", y);
+    return new org.nd4j.linalg.api.ops.custom.DivideNoNan(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Pairwise division operation, out = x / y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable divNoNan(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("divNoNan", "x", x);
+    SDValidation.validateNumerical("divNoNan", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.custom.DivideNoNan(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Entropy reduction: -sum(x * log(x))<br>
    *
    * @param in Input variable (NUMERIC type)
@@ -2535,6 +2571,30 @@ public class SDMath extends SDOps {
     SDValidation.validateNumerical("lastIndex", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex(sd,in, keepDims, condition, dimensions).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Calculate the absolute value of gamma(x).<br>
+   *
+   * @param input Input to calculate lgamma for (NUMERIC type)
+   * @return output the absolute value of gamma x elemnt wise. (NUMERIC type)
+   */
+  public SDVariable lgamma(SDVariable input) {
+    SDValidation.validateNumerical("lgamma", "input", input);
+    return new org.nd4j.linalg.api.ops.custom.Lgamma(sd,input).outputVariable();
+  }
+
+  /**
+   * Calculate the absolute value of gamma(x).<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input to calculate lgamma for (NUMERIC type)
+   * @return output the absolute value of gamma x elemnt wise. (NUMERIC type)
+   */
+  public SDVariable lgamma(String name, SDVariable input) {
+    SDValidation.validateNumerical("lgamma", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.custom.Lgamma(sd,input).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

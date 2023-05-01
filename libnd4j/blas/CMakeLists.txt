@@ -170,10 +170,49 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"  AND NOT ${CMAKE_SYSTEM_NAME} 
     endif()
 
     if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
+        # See: https://github.com/bombela/backward-cpp
+
+        # Introduce variables:
+        # * CMAKE_INSTALL_LIBDIR
+        # * CMAKE_INSTALL_BINDIR
+        # * CMAKE_INSTALL_INCLUDEDIR
+        include(GNUInstallDirs)
+
+        #find_package(Dwarf REQUIRED)
+        include(BackwardConfig.cmake)
+
+        # check if compiler is nvcc or nvcc_wrapper
+        set(COMPILER_IS_NVCC false)
+        get_filename_component(COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME)
+        if (COMPILER_NAME MATCHES "^nvcc")
+            set(COMPILER_IS_NVCC true)
+        endif()
+
+        if (DEFINED ENV{OMPI_CXX} OR DEFINED ENV{MPICH_CXX})
+            if ( ($ENV{OMPI_CXX} MATCHES "nvcc") OR ($ENV{MPICH_CXX} MATCHES "nvcc") )
+                set(COMPILER_IS_NVCC true)
+            endif()
+        endif()
+
+        # set CXX standard
+        set(CMAKE_CXX_STANDARD_REQUIRED True)
+        set(CMAKE_CXX_STANDARD 11)
+        if (${COMPILER_IS_NVCC})
+            # GNU CXX extensions are not supported by nvcc
+            set(CMAKE_CXX_EXTENSIONS OFF)
+        endif()
+
+
+
+        ###############################################################################
+        # BACKWARD OBJECT
+        ###############################################################################
+
+
         # Set C++ compiler and flags
         set(CMAKE_CXX_STANDARD 17)
         set(CMAKE_CXX_STANDARD_REQUIRED ON)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Bsymbolic -rdynamic -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Bsymbolic  -lbfd  -MT -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
         add_compile_definitions(SD_GCC_FUNCTRACE)
     endif()
 endif()
@@ -235,6 +274,14 @@ if(SD_CUDA)
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
             #enable gnu extensions
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-std=gnu++11")
+            # functrace works for cuda as well as long as the underlying compiler is gcc
+            if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
+                # Set C++ compiler and flags
+                set(CMAKE_CXX_STANDARD 17)
+                set(CMAKE_CXX_STANDARD_REQUIRED ON)
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Bsymbolic -rdynamic -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
+                add_compile_definitions(SD_GCC_FUNCTRACE)
+            endif()
         endif()
 
         if(WIN32)
@@ -328,12 +375,32 @@ if(SD_CUDA)
             file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES false ../include/ops/declarable/platform/cudnn/*.cu)
         endif()
 
-        add_library(samediff_obj OBJECT ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES} ${HELPERS_CPP}
-                ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${CALLSTACK_SRC}
-                ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
-                ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES}
-                ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
-                )
+
+        if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
+            include_directories(${CMAKE_CURRENT_SOURCE_DIR}/backward-cpp)
+            file(GLOB_RECURSE SOURCES ${BACKWARDS_SOURCES} backward-cpp/*.cpp)
+            # TODO: come back for backward
+            add_library(samediff_obj OBJECT  PUBLIC Backward::Backward ${BACKWARD_ENABLE}  ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES} ${HELPERS_CPP}
+                    ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${CALLSTACK_SRC}
+                    ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
+                    ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES}
+                    ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
+                    )
+
+
+            add_backward(samediff_obj)
+        else()
+            add_library(samediff_obj OBJECT  ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES} ${HELPERS_CPP}
+                    ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${CALLSTACK_SRC}
+                    ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
+                    ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES}
+                    ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
+                    )
+
+        endif()
+
+
+
         target_include_directories(samediff_obj PUBLIC ${EXTERNAL_INCLUDE_DIRS})
 
         if (WIN32)

@@ -704,7 +704,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             val xb = ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
             val yb = ((BaseCpuDataBuffer) y.data()).getOpaqueDataBuffer();
             val zb = ((BaseCpuDataBuffer) z.data()).getOpaqueDataBuffer();
-
+            ((BaseCpuDataBuffer) x.data()).actualizePointerAndIndexer();
+            ((BaseCpuDataBuffer) z.data()).actualizePointerAndIndexer();
             switch (op.getOpType()) {
                 case TRANSFORM_ANY:
                 case TRANSFORM_FLOAT:
@@ -745,7 +746,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             val xb = ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
             val zb = ((BaseCpuDataBuffer) z.data()).getOpaqueDataBuffer();
-
+            ((BaseCpuDataBuffer) x.data()).actualizePointerAndIndexer();
+            ((BaseCpuDataBuffer) z.data()).actualizePointerAndIndexer();
             switch (op.getOpType()) {
                 case TRANSFORM_FLOAT: {
                     val xtraz = getPointerForExtraArgs(op, z.dataType());
@@ -1325,31 +1327,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      * @param op Operation to execute
      */
     @Override
-    public INDArray[] exec(@NonNull CustomOp op) {
+    public  INDArray[] exec(@NonNull CustomOp op) {
         boolean shapeOverride = op.initializeOutputs(null);
         val name = op.opName();
         try (val context = buildContext()) {
             long start = profilingConfigurableHookIn(op,context);
-            // check if input & output needs update
-            for (val in:op.inputArguments()) {
-                if (!in.isEmpty())
-                    ((BaseCpuDataBuffer) in.data()).actualizePointerAndIndexer();
-
-            }
-
             initOpContext(op, shapeOverride, context);
 
             val result = exec(op, context);
             val states = context.getRngStates();
 
-
-
-            for (val out:op.outputArguments()) {
-                if (!out.isEmpty())
-                    ((BaseCpuDataBuffer) out.data()).actualizePointerAndIndexer();
-                ((BaseCpuDataBuffer) out.shapeInfoDataBuffer()).actualizePointerAndIndexer();
-
-            }
 
             // pulling states back
             Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
@@ -1704,8 +1691,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             if (context.getOutputArrays().isEmpty())
                 return new INDArray[0];
             else
-                return op.isInplaceCall() ? context.getInputArrays().toArray(new INDArray[context.getInputArrays().size()])
-                        :context.getOutputArrays().toArray(new INDArray[context.getOutputArrays().size()]);
+                return context.getOutputArrays().toArray(new INDArray[context.getOutputArrays().size()]);
         } catch (Exception e) {
             val sb = new StringBuilder();
             sb.append("Inputs: [(");
@@ -1809,8 +1795,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val result = new LongBuffer(loop.getConstantShapeBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
 
-       // shapePointer.deallocate();
-   //     stridePointer.deallocate();
         loop.deleteConstantShapeBuffer(dbf);
 
         return result;

@@ -35,7 +35,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.layers.HelperUtils;
 import org.deeplearning4j.nn.layers.LayerHelper;
-import org.deeplearning4j.nn.layers.mkldnn.MKLDNNConvHelper;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
@@ -65,19 +64,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     protected ConvolutionMode convolutionMode;
     protected transient INDArray dummyBias;     //Used only when: hasBias == false AND helpers are used
     protected transient INDArray dummyBiasGrad; //As above
-    public final static String CUDA_CNN_HELPER_CLASS_NAME = "org.deeplearning4j.cuda.convolution.CudnnConvolutionHelper";
     public ConvolutionLayer(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);
-        initializeHelper();
         convolutionMode = ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf().getLayer()).getConvolutionMode();
     }
 
-    void initializeHelper() {
-        helper = HelperUtils.createHelper(CUDA_CNN_HELPER_CLASS_NAME,
-                MKLDNNConvHelper.class.getName(),
-                ConvolutionHelper.class, layerConf().getLayerName(), dataType
-        );
-    }
 
     @Override
     public Type type() {
@@ -151,9 +142,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NHWC)
                 helperDelta = delta.permute(0,2,3,1); //NCHW to NHWC
 
-            if(!hasBias() && !(helper instanceof MKLDNNConvHelper)){
-                //MKL-DNN supports no bias, CuDNN doesn't
-                if(dummyBiasGrad == null){
+            if(!hasBias()) {
+                if(dummyBiasGrad == null) {
                     try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                         dummyBiasGrad = Nd4j.create(1, layerConf().getNOut());
                     }
@@ -175,16 +165,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                     throw e;
                 }
 
-                if(layerConf().isCudnnAllowFallback()){
-                    helperCountFail++;
-                    if(helper instanceof MKLDNNConvHelper){
-                        log.warn("MKL-DNN execution failed - falling back on built-in implementation",e);
-                    } else {
-                        log.warn("CuDNN execution failed - falling back on built-in implementation",e);
-                    }
-                } else {
-                    throw new RuntimeException("Error during ConvolutionLayer MKL/CuDNN helper backprop - isCudnnAllowFallback() is set to false", e);
-                }
+
             }
 
             if (ret != null) {
@@ -419,16 +400,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                     throw e;
                 }
 
-                if(layerConf().isCudnnAllowFallback()) {
-                    helperCountFail++;
-                    if(helper instanceof MKLDNNConvHelper) {
-                        log.warn("MKL-DNN execution failed - falling back on built-in implementation",e);
-                    } else {
-                        log.warn("CuDNN execution failed - falling back on built-in implementation",e);
-                    }
-                } else {
-                    throw new RuntimeException("Error during ConvolutionLayer MKL/CuDNN helper forward pass - isCudnnAllowFallback() is set to false", e);
-                }
             }
             if (ret != null) {
                 return new Pair<>(ret, null);
@@ -530,16 +501,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                     throw e;
                 }
 
-                if (layerConf().isCudnnAllowFallback()) {
-                    helperCountFail++;
-                    if (helper instanceof MKLDNNConvHelper) {
-                        log.warn("MKL-DNN execution failed - falling back on built-in implementation", e);
-                    } else {
-                        log.warn("CuDNN execution failed - falling back on built-in implementation", e);
-                    }
-                } else {
-                    throw new RuntimeException("Error during ConvolutionLayer MKL/CuDNN helper forward pass - isCudnnAllowFallback() is set to false", e);
-                }
             }
 
             if (ret != null) {

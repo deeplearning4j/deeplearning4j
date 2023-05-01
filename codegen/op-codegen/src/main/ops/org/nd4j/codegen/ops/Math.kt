@@ -458,6 +458,18 @@ fun Math() =  Namespace("Math") {
         }
     }
 
+    Op("divNoNan", transformArithmetic){
+        javaPackage = "org.nd4j.linalg.api.ops.custom"
+        javaOpClass = "DivideNoNan"
+        Doc(Language.ANY, DocScope.ALL){
+            """ 
+                Pairwise division operation, out = x / y
+            """.trimIndent()
+        }
+        useMixin(broadcastingDoc)
+    }
+
+
     Op("div", transformArithmetic){
         javaOpClass = "DivOp"
         Doc(Language.ANY, DocScope.ALL){
@@ -995,6 +1007,18 @@ fun Math() =  Namespace("Math") {
             """.trimIndent()
         }
     }
+
+    Op("lgamma") {
+        javaPackage = "org.nd4j.linalg.api.ops.custom"
+        Input(NUMERIC, "input") { description = "Input to calculate lgamma for" }
+        Output(NUMERIC, "output"){ description = "the absolute value of gamma x elemnt wise." }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Calculate the absolute value of gamma(x).
+            """.trimIndent()
+        }
+    }
+
 
     Op("neg", transformSame) {
         javaOpClass = "Negative"

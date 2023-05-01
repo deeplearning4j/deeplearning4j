@@ -40,7 +40,6 @@
         <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/linalg/cpu/nativecpu/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
         <!-- Java 9 module name does not allow native-->
         <module.name>nd4j.cpu</module.name>
-        <libnd4j.functrace>OFF</libnd4j.functrace>
         <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
 
     </properties>
@@ -263,8 +262,7 @@
             <activation>
                 <activeByDefault>true</activeByDefault>
                 <property>
-                    <name>libnd4j.functrace</name>
-                    <value>OFF</value>
+                    <name>!libnd4j.calltrace</name>
                 </property>
 
             </activation>
@@ -421,7 +419,7 @@
             <activation>
                 <activeByDefault>false</activeByDefault>
                 <property>
-                    <name>libnd4j.functrace</name>
+                    <name>libnd4j.calltrace</name>
                     <value>ON</value>
                 </property>
 
@@ -468,8 +466,8 @@
                                 <!-- This might look out of place here. We need this to configure the preset to include the correct
                                 pre processor definition: SD_GCC_FUNCTRACE. -->
                                 <property>
-                                    <name>libnd4j.functrace</name>
-                                    <value>${libnd4j.functrace}</value>
+                                    <name>libnd4j.calltrace</name>
+                                    <value>${libnd4j.calltrace}</value>
                                 </property>
                                 <property>
                                     <name>platform.root</name>
@@ -536,19 +534,23 @@
                             <compilerOptions>
                                 <compilerOption>${javacpp.compiler.options}</compilerOption>
                                 <!-- This is the main function. Tells gcc to instrument every function with an enter and exit function.-->
-                                <compilerOption>-finstrument-functions</compilerOption>
                                 <!-- Adds debug information in to the generated .so file. Needed for symbol decoding.  -->
                                 <compilerOption>-rdynamic</compilerOption>
                                 <!-- Need these 2 libraries including bin utils for handling address decoding-->
                                 <compilerOption>-ldl</compilerOption>
-                                <compilerOption>-lbfd</compilerOption>
                                 <compilerOption>-O0</compilerOption>
                                 <!-- Only used for this function. We use inline static file handles only available in c++ 17-->
                                 <compilerOption>-std=c++17</compilerOption>
                                 <!-- Need to pass this to gcc in order to enable the right functions to appear in cmake.  -->
                                 <compilerOption>-DSD_GCC_FUNCTRACE=ON</compilerOption>
-
-
+                                <compilerOption>-lunwind</compilerOption>
+                                <compilerOption>-lbfd</compilerOption>
+                                <compilerOption>-ldw</compilerOption>
+                                <compilerOption>-Bsymbolic</compilerOption>
+                                <compilerOption>-fno-omit-frame-pointer</compilerOption>
+                                <compilerOption>-fno-optimize-sibling-calls</compilerOption>
+                                <compilerOption>-g</compilerOption>
+                                    <compilerOption>-fsanitize=address</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>

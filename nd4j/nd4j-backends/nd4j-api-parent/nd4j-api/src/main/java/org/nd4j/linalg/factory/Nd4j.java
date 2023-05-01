@@ -33,7 +33,6 @@ import org.nd4j.linalg.profiler.data.eventlogger.EventType;
 import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
 import org.nd4j.linalg.profiler.data.eventlogger.ObjectAllocationType;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
 import lombok.val;
@@ -1678,7 +1677,8 @@ public class Nd4j {
      * See {@link #createTypedBuffer(float[], DataType)}
      */
     public static DataBuffer createTypedBuffer(long[] data, DataType dataType) {
-        DataBuffer buffer = getDataBuffer(data.length, dataType);
+       //TODO: byte thing
+        DataBuffer buffer = dataType() == DataType.INT8 ? getDataBuffer(data.length * DataType.INT8.width(),dataType) : getDataBuffer(data.length * DataType.INT8.width(),dataType);
         buffer.setData(data);
         return buffer;
     }
@@ -2128,22 +2128,22 @@ public class Nd4j {
     /**
      * Generate a linearly spaced vector
      *
-     * @param lower upper bound
-     * @param num   number of items in returned vector
-     * @param step  the step (incompatible with <b>upper</b>)
+     * @param lower  lower bound
+     * @param finish upper bound
+     * @param num    number of items in returned vector
      * @return the linearly spaced vector
      */
-    public static INDArray linspace(@NonNull DataType dtype, long lower, long num, long step) {
+    public static INDArray linspace(@NonNull DataType dtype, long lower, long finish, long num) {
         // for now we'll temporarily keep original impl
-        if(num == 1) {
+        if(finish == 1) {
             return Nd4j.scalar(dtype, lower);
         }
 
         if (dtype.isIntType()) {
-            long upper = lower + num * step;
-            return linspaceWithCustomOpByRange( lower, upper, num, step, dtype);
+            long upper = lower + finish * num;
+            return linspaceWithCustomOpByRange( lower, upper, finish, num, dtype);
         } else if (dtype.isFPType()) {
-            return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace((double)step, (double) lower, (long) num, dtype))[0];
+            return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace((double) num, (double) lower, (long) finish, dtype))[0];
         }
         else {
             throw new IllegalStateException("Illegal data type for linspace: " + dtype.toString());
@@ -4469,6 +4469,8 @@ public class Nd4j {
      * @param shape to check
      */
     public static void checkShapeValues(long... shape) {
+        if(shape == null)
+            return;
         for (long e: shape) {
             if (e < 0)
                 throw new ND4JIllegalStateException("Invalid shape: Requested INDArray shape " + Arrays.toString(shape)
@@ -6797,7 +6799,7 @@ public class Nd4j {
      *
      * @param op the operation to execute
      */
-    public static INDArray[] exec(CustomOp op){
+    public static INDArray[] exec(CustomOp op) {
         return getExecutioner().exec(op);
     }
 
@@ -6806,7 +6808,7 @@ public class Nd4j {
      *
      * @param op the operation to execute
      */
-    public static INDArray[] exec(CustomOp op, OpContext context){
+    public static INDArray[] exec(CustomOp op, OpContext context) {
         return getExecutioner().exec(op, context);
     }
 

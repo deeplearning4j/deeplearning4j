@@ -76,7 +76,6 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
                 .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                 .build();
 
-        Nd4j.getProfiler().start();
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
             Nd4j.create(DataType.DOUBLE,500);
             Nd4j.create(DataType.DOUBLE,500);

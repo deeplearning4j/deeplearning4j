@@ -141,17 +141,16 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, -1, 1, false, 0, 0) {
   const sd::LongType N = input->lengthOf() / gradO->lengthOf();
   const sd::LongType NminusOne = biasCorrected ? N - 1 : N;
 
-  sd_debug("Pre mean calculation %d\n", 0);
   auto mean = input->reduceAlongDimension(reduce::Mean, dimensions, true);
-  sd_debug("Post mean calculation %d\n", 0);
 
-  sd_debug("Pre variance calculation %d\n", 0);
   NDArray variance(mean.shapeInfo(), true,
                    block.launchContext());  // create empty array with shape matching shape of mean array
   input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, variance, biasCorrected, dimensions);
-  sd_debug("Post variance calculation %d\n", 0);
 
-  gradI->assign((*input - mean) / (variance * NminusOne));  // automatic broadcasting happens here
+  sd::ops::divide_no_nan divideNoNan;
+  auto inputMinusMean  = (*input - mean);
+  auto varianceTimesNMinusOne = variance * NminusOne;
+  divideNoNan.execute({&inputMinusMean,&varianceTimesNMinusOne},{gradI});
 
   if (!keepDims) {
     auto gradOShapeKeepDims =

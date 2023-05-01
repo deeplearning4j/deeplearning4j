@@ -40,18 +40,18 @@
 
 
     <scm>
-        <connection>scm:git://github.com:eclipse/deeplearning4j.git</connection>
-        <developerConnection>scm:git:git@github.com:eclipse/deeplearning4j.git
+        <connection>scm:git://github.com:deeplearning4j/deeplearning4j.git</connection>
+        <developerConnection>scm:git:git@github.com:deeplearning4j/deeplearning4j.git
         </developerConnection>
-        <url>git@github.com:eclipse/deeplearning4j.git</url>
+        <url>git@github.com:deeplearning4j/deeplearning4j.git</url>
         <tag>HEAD</tag>
     </scm>
 
     <modules>
         <module>deeplearning4j-core</module>
-        <module>deeplearning4j-scaleout</module>
         <module>deeplearning4j-ui-parent</module>
         <module>deeplearning4j-graph</module>
+        <module>deeplearning4j-scaleout</module>
         <module>deeplearning4j-nlp-parent</module>
         <module>deeplearning4j-nn</module>
         <module>deeplearning4j-modelimport</module>

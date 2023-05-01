@@ -226,12 +226,12 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
             String path = f.getAbsolutePath();
             int lastDot = path.lastIndexOf('.');
             int lastSlash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
-            String dtype = path.substring(lastSlash+1, lastDot);
+            String dtype = path.substring(lastSlash + 1, lastDot);
 
             DataType dt = DataType.fromNumpy(dtype);
 
             INDArray arr = Nd4j.arange(12).castTo(dt).reshape(3,4);
-            INDArray arr2 = Nd4j.linspace(DataType.FLOAT, 0, 3, 10);
+            INDArray arr2 = Nd4j.createFromArray(new float[]{0.00f,10.0f,20.0f});
 
             Map<String,INDArray> m = Nd4j.createFromNpzFile(f);
             assertEquals(2, m.size());

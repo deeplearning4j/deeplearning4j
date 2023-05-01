@@ -37,14 +37,14 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
   const Y* y = reinterpret_cast<Y*>(indices.buffer());
   X* z = reinterpret_cast<X*>(output.buffer());
 
-  const int xRank = input.rankOf();
-  const int yRank = indices.rankOf();
-  const int zRank = output.rankOf();
-  const int maxRank = sd::math::sd_max<int>(yRank, sd::math::sd_max<int>(xRank, zRank));
+  const sd::LongType xRank = input.rankOf();
+  const sd::LongType yRank = indices.rankOf();
+  const sd::LongType zRank = output.rankOf();
+  const sd::LongType maxRank = sd::math::sd_max<sd::LongType>(yRank, sd::math::sd_max<sd::LongType>(xRank, zRank));
 
   const sd::LongType zLen = output.lengthOf();
 
-  const sd::Unsigned yLastDim = indices.sizeAt(-1);
+  const sd::LongType yLastDim = indices.sizeAt(-1);
 
   const int diff = zRank - xRank;
   const bool bEqual = yLastDim == xRank;
@@ -63,11 +63,11 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
       zCoords[yRank - 1] = temp;
 
       if (bEqual)
-        memcpy(xCoords, zCoords, zRank * sizeof(int));
+        memcpy(xCoords, zCoords, zRank * sizeof(sd::LongType));
       else if (diff >= 0)
-        memcpy(xCoords, zCoords + diff, xRank * sizeof(int));
+        memcpy(xCoords, zCoords + diff, xRank * sizeof(sd::LongType));
       else
-        memcpy(xCoords - diff, zCoords, zRank * sizeof(int));
+        memcpy(xCoords - diff, zCoords, zRank * sizeof(sd::LongType));
 
       for (sd::Unsigned j = 0; j < yLastDim; ++j)
         xCoords[j] = y[yOffset + j * indices.stridesOf()[yRank - 1]];  // last stride

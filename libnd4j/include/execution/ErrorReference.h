@@ -30,7 +30,7 @@ namespace sd {
 class SD_LIB_EXPORT ErrorReference {
  private:
   int _errorCode = 0;
-  std::string _errorMessage;
+  std::string *_errorMessage;
 
  public:
   ErrorReference() = default;

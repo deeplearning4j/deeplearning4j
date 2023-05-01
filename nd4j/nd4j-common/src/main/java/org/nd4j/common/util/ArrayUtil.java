@@ -30,6 +30,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -2136,7 +2137,19 @@ public class ArrayUtil {
         return bytes;
     }
 
-
+    /**
+     * Note this byte array conversion is a simple cast and not a true
+     * cast. Use {@link #toByteArray(longArray[])} for a true cast.
+     * @param longArray
+     * @return
+     */
+    public static byte[] toByteArraySimple(long[] longArray) {
+        byte[] bytes = new byte[longArray.length];
+        for (int i = 0; i < longArray.length; i++) {
+           bytes[i] = (byte) longArray[i];
+        }
+        return bytes;
+    }
     /**
      *
      * @param longArray
@@ -2151,6 +2164,19 @@ public class ArrayUtil {
         return bytes;
     }
 
+
+    /**
+     *
+     * @param byteArray
+     * @return
+     */
+    public static double[] toDoubleArraySimple(byte[] byteArray) {
+        double[] doubles = new double[byteArray.length];
+        for (int i = 0; i < doubles.length; i++) {
+            doubles[i] = (double) byteArray[i];
+        }
+        return doubles;
+    }
     /**
      *
      * @param byteArray
@@ -2212,6 +2238,21 @@ public class ArrayUtil {
         return doubles;
     }
 
+
+    /**
+     *
+     * @param byteArray
+     * @return
+     */
+    public static float[] toFloatArraySimple(byte[] byteArray) {
+        float[] doubles = new float[byteArray.length];
+        for (int i = 0; i < doubles.length; i++) {
+            doubles[i] = byteArray[i];
+        }
+        return doubles;
+    }
+
+
     /**
      *
      * @param intArray
@@ -2224,6 +2265,20 @@ public class ArrayUtil {
             ByteBuffer.wrap(bytes, i * times, times).putInt(intArray[i]);
         }
         return bytes;
+    }
+
+
+    /**
+     *
+     * @param byteArray
+     * @return
+     */
+    public static int[] toIntArraySimple(byte[] byteArray) {
+        int[] ints = new int[byteArray.length];
+        for (int i = 0; i < ints.length; i++) {
+            ints[i] =   byteArray[i];
+        }
+        return ints;
     }
 
     /**
@@ -2327,6 +2382,60 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static BigInteger[] toBigInteger(byte[] input) {
+        BigInteger[] ret = new BigInteger[input.length];
+        for (int i = 0; i < input.length; i++) {
+            ret[i] = BigInteger.valueOf(input[i]);
+        }
+        return ret;
+    }
+    public static BigInteger[] toBigInteger(short[] input) {
+        BigInteger[] ret = new BigInteger[input.length];
+        for (int i = 0; i < input.length; i++) {
+            ret[i] = BigInteger.valueOf(input[i]);
+        }
+        return ret;
+    }
+
+    public static BigInteger[] toBigInteger(long[] input) {
+        BigInteger[] ret = new BigInteger[input.length];
+        for (int i = 0; i < input.length; i++) {
+            ret[i] = BigInteger.valueOf(input[i]);
+        }
+        return ret;
+    }
+    public static BigInteger[] toBigInteger(boolean[] input) {
+        BigInteger[] ret = new BigInteger[input.length];
+        for (int i = 0; i < input.length; i++) {
+            ret[i] = BigInteger.valueOf(BigInteger.valueOf(input[i] ? 1 : 0).longValue());
+        }
+        return ret;
+    }
+
+
+    public static BigInteger[] toBigInteger(float[] input) {
+        BigInteger[] ret = new BigInteger[input.length];
+        for (int i = 0; i < input.length; i++) {
+            ret[i] = BigInteger.valueOf((long) input[i]);
+        }
+        return ret;
+    }
+
+    public static BigInteger[] toBigInteger(double[] input) {
+        BigInteger[] ret = new BigInteger[input.length];
+        for (int i = 0; i < input.length; i++) {
+            ret[i] = BigInteger.valueOf((long) input[i]);
+        }
+        return ret;
+    }
+
+    public static BigInteger[] toBigInteger(int[] input) {
+        BigInteger[] ret = new BigInteger[input.length];
+        for (int i = 0; i < input.length; i++) {
+            ret[i] = BigInteger.valueOf(input[i]);
+        }
+        return ret;
+    }
 
 
     /**
@@ -2451,6 +2560,8 @@ public class ArrayUtil {
      * @return the strides for a matrix of n dimensions
      */
     public static long[] calcStrides(long[] shape, int startValue) {
+        if(shape == null)
+            return null;
         if (shape.length == 2 && (shape[0] == 1 || shape[1] == 1)) {
             long[] ret = new long[2];
             Arrays.fill(ret, startValue);

@@ -967,23 +967,35 @@ bool NDArray::isC() const {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isS() const {
+  if(this->_shapeInfo == nullptr)
+    throw std::runtime_error("NDArray::isS: shapeInfo is nullptr !");
+  auto xType = ArrayOptions::dataType(this->_shapeInfo);
   return (dataType() == DataType::UTF8 || dataType() == DataType::UTF16 || dataType() == DataType::UTF32);
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isR() const {
+  if(this->_shapeInfo == nullptr)
+    throw std::runtime_error("NDArray::isR: shapeInfo is nullptr !");
   auto xType = ArrayOptions::dataType(this->_shapeInfo);
   return xType == FLOAT32 || xType == HALF || xType == DOUBLE || xType == FLOAT8 || xType == BFLOAT16;
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isZ() const {
-  // TODO: decide if we really want to exclude Bool here
+  if(this->_shapeInfo == nullptr)
+    throw std::runtime_error("NDArray::isZ: shapeInfo is nullptr !");
+  auto xType = ArrayOptions::dataType(this->_shapeInfo);
   return !isC() && !isR() && !isB() && !isS();
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::isB() const { return ArrayOptions::dataType(this->_shapeInfo) == BOOL; }
+bool NDArray::isB() const {
+  if(this->_shapeInfo == nullptr)
+    throw std::runtime_error("NDArray::isB: shapeInfo is nullptr !");
+  auto xType = ArrayOptions::dataType(this->_shapeInfo);
+  return ArrayOptions::dataType(this->_shapeInfo) == BOOL;
+}
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -1034,15 +1046,17 @@ std::string NDArray::asString(sd::LongType limit) {
   os << "[";
   if (limit < 1 || limit > this->lengthOf()) limit = this->lengthOf();
   for (sd::LongType e = 0; e < limit; e++) {
-    if (this->isR())
+    if (this->isR()) {
       os << toStringValue(this->e<float>(e));
-    else if (this->isZ())
-      os << toStringValue(this->e<sd::LongType>(e));
-    else if (this->isB())
+    }
+    else if (this->isZ()) {
+      auto inputValue = this->e<sd::LongType>(e);
+      os << toStringValue(inputValue);
+    } else if (this->isB()) {
       os << toStringValue(this->e<bool>(e));
-    else if (this->isS())  // todo add utf16 and utf32
+    } else if (this->isS()) {  // todo add utf16 and utf32
       os << this->e<std::string>(e);
-    if (e < limit - 1) os << ", ";
+    } if (e < limit - 1) os << ", ";
   }
   os << "]";
   return os.str();
@@ -1993,6 +2007,8 @@ void NDArray::tilei(const std::vector<sd::LongType> &reps) { *this = this->tile(
 
 //////////////////////////////////////////////////////////////////////////
 sd::LongType NDArray::sizeAt(const int dim) const {
+  if(_shapeInfo == nullptr)
+    throw std::runtime_error("NDArray::sizeAt: shapeInfo is nullptr !");
   if (dim >= this->rankOf() || dim < -this->rankOf())
     throw std::runtime_error("NDArray::sizeAt: bad size index requested");
 
@@ -2131,9 +2147,6 @@ const std::string *SD_LIB_EXPORT NDArray::bufferAsT() const {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 const T *NDArray::bufferAsT() const {
-  // FIXME: do we REALLY want sync here?
-  // syncToHost();
-
   return reinterpret_cast<const T *>(buffer());
 }
 
@@ -4531,9 +4544,7 @@ template <typename T>
 void NDArray::p(const sd::LongType i, const T value) {
   if (i >= lengthOf()) throw std::invalid_argument("NDArray::p(i, value): input index is out of array length !");
 
-  sd_printf("NDArray::p(const sd::LongType i, const T value) About to get offset %d\n",i);
   auto rp = getOffset(i);
-  sd_printf("NDArray::p(const sd::LongType i, const T value) Obtained offset  %d\n",i);
   const void *pV = reinterpret_cast<const void *>(const_cast<T *>(&value));
   if(pV == nullptr)
     throw std::runtime_error("NDArray::p(i, value): input value is nullptr !");
@@ -5193,9 +5204,7 @@ void NDArray::setShapeInfo(ShapeDescriptor *descriptor) {
     throw std::runtime_error("NDArray:setShapeInfo Passed in descriptor can't be null!");
   }
 
-  sd_printf("About to create a shape buffer\n",0);
   auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(const_cast<ShapeDescriptor *>(descriptor));
-  sd_printf("Created shape buffer\n",0);
 
   _shapeInfo = shapeBuffer->primary();
 #ifdef __CUDABLAS__

@@ -183,7 +183,7 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
         //whether to include the SD_GCC_FUNCTRACE definition in the build. Not needed if we're not enabling the profiler.
         boolean funcTrace = System.getProperty("libnd4j.functrace","OFF").equalsIgnoreCase("ON");
         infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_INLINE", "CUBLASWINAPI",
-                "SD_HOST", "SD_DEVICE", "SD_KERNEL", "SD_HOST_DEVICE", "SD_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
+                        "SD_HOST", "SD_DEVICE", "SD_KERNEL", "SD_HOST_DEVICE", "SD_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
                 .put(new Info("NativeOps.h", "build_info.h").objectify())
                 .put(new Info("OpaqueTadPack").pointerTypes("org.nd4j.nativeblas.OpaqueTadPack"))
                 .put(new Info("OpaqueResultWrapper").pointerTypes("org.nd4j.nativeblas.OpaqueResultWrapper"))
@@ -209,7 +209,7 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                 .put(new Info("sd::Status").cast().valueTypes("int").pointerTypes("IntPointer", "IntBuffer",
                         "int[]"))
                 .put(new Info("sd::Unsigned").cast()
-                .valueTypes("int").pointerTypes("IntPointer", "IntBuffer", "int[]"))
+                        .valueTypes("int").pointerTypes("IntPointer", "IntBuffer", "int[]"))
                 .put(new Info("float16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer",
                         "short[]"))
                 .put(new Info("bfloat16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer",
@@ -218,8 +218,19 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
         infoMap.put(new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN", "__NEC__" ).define(false))
                 .put(funcTrace ? new Info("__JAVACPP_HACK__", "SD_ALL_OPS","__CUDABLAS__","SD_CUDA").define(true) :
                         new Info("__JAVACPP_HACK__", "SD_ALL_OPS","__CUDABLAS__","SD_CUDA","SD_GCC_FUNCTRACE").define(true))
-                .put(new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
-                        "sd::graph::FlatResult", "sd::graph::FlatVariable", "sd::NDArray::subarray", "std::shared_ptr", "sd::PointerWrapper", "sd::PointerDeallocator").skip())
+                .put(funcTrace ? new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
+                        "sd::graph::FlatResult",
+                        "sd::graph::FlatVariable", "sd::NDArray::subarray", "std::shared_ptr", "sd::PointerWrapper",
+                        "sd::PointerDeallocator").skip()
+                        : new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
+                        "sd::graph::FlatResult",
+                        "instrumentFile",
+                        "setInstrumentOut",
+                        "closeInstrumentOut",
+                        "__cyg_profile_func_exit",
+                        "__cyg_profile_func_enter",
+                        "sd::graph::FlatVariable", "sd::NDArray::subarray", "std::shared_ptr", "sd::PointerWrapper",
+                        "sd::PointerDeallocator").skip())
                 .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
                         .pointerTypes("@Cast({\"char*\", \"std::string*\"}) BytePointer"))
                 .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())

@@ -142,21 +142,7 @@ int GraphUtils::runPreprocessor(char const* input, char const* output) {
     }
 #endif
 
-    char const* cxx = cmd.c_str();  //;getenv("CXX");
-                                    //    if (cxx == nullptr) {
-    //        sd_printf("Cannot retrieve mandatory environment variable 'CXX'. Please set up the variable and try
-    //        again.", ""); exit(3);
-    //    }
-    // char* pathEnv = getenv("PATH");
-    // std::string pathStr("PATH=./;");
-    // pathStr += pathEnv;
-
-    // sd_printf("%s\n", pathStr.c_str());
-    //    char const* env[] = {// "HOME=/tmp",
-    //                          pathStr.c_str(),
-    //                          (char *)0 };
-
-    // to retrieve c++ version (hardcoded 6): c++ -v 2>&1 | tail -1 | awk '{v = int($3); print v;}'
+    char const* cxx = cmd.c_str();
 
     std::vector<char*> params;      //(9);
     std::vector<std::string> args;  //(9);
@@ -208,7 +194,6 @@ int GraphUtils::runPreprocessor(char const* input, char const* output) {
     }
     status = err;
     sd_printf("Header file %s was generated.\n", output);
-    //    sd_printf("Running build script\n%s\n", cmdline.c_str());
   } else {
     // parent
     char buffer[1024];

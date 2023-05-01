@@ -116,6 +116,7 @@ sd::NDArray *sd::ops::DeclarableOp::getZ(Context &ctx, int inputId) {
     std::pair<int, int> pair(ctx.nodeId(), inputId);
 
     if (ctx.isInplace()) {
+      sd_printf("DeclarableOp::getZ(Context &ctx, int inputId) Before ctx.variable in getZ() \n", inputId);
       z = ctx.variable(inputId)->getNDArray();
 
       // hypothetically it's possible to have no variable. chances are low, but who knows. let's just create it for now
@@ -266,25 +267,25 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
 
     auto outSha = this->calculateOutputShape(&inSha, ctx);
     if (sd::Environment::getInstance().isDebugAndVerbose()) {
-        sd_printf("Node_%i: %s\n", ctx.nodeId(), this->getOpDescriptor()->getOpName()->c_str());
-        sd_printf("Input shapes:\n",0);
-        for (int e = 0; e < inSha.size(); e++) {
-          if (inSha.at(e) != nullptr) {
-            sd_printf("Shape_%i: ", e);
-            shape::printShapeInfoLinear(inSha.at(e));
-          } else {
-            sd_printf("Shape_%i: nullptr\n", e);
-          }
+      sd_printf("Node_%i: %s\n", ctx.nodeId(), this->getOpDescriptor()->getOpName()->c_str());
+      sd_printf("Input shapes:\n",0);
+      for (int e = 0; e < inSha.size(); e++) {
+        if (inSha.at(e) != nullptr) {
+          sd_printf("Shape_%i: ", e);
+          shape::printShapeInfoLinear(inSha.at(e));
+        } else {
+          sd_printf("Shape_%i: nullptr\n", e);
         }
-        sd_printf("Output shapes:\n",0);
-        for (int e = 0; e < outSha->size(); e++) {
-          if (outSha->at(e) != nullptr) {
-            sd_printf("Shape_%i: ", e);
-            shape::printShapeInfoLinear(outSha->at(e));
-          } else {
-            sd_printf("Shape_%i: nullptr\n", e);
-          }
+      }
+      sd_printf("Output shapes:\n",0);
+      for (int e = 0; e < outSha->size(); e++) {
+        if (outSha->at(e) != nullptr) {
+          sd_printf("Shape_%i: ", e);
+          shape::printShapeInfoLinear(outSha->at(e));
+        } else {
+          sd_printf("Shape_%i: nullptr\n", e);
         }
+      }
     }
 
 
@@ -448,6 +449,7 @@ void sd::ops::DeclarableOp::DeclarableOp::traceExecIfNeeded(Context &block) {
   if(OpRegistrator::getInstance().traceOps()) {
     std::vector<const LongType *> *inputShapeBuffers = new std::vector<const LongType *>();
     for(int i = 0; i < block.width(); i++) {
+      sd_printf("raceExecIfNeeded(Context &block) \n", 0);
       inputShapeBuffers->push_back(block.variable(i)->getNDArray()->shapeInfo());
     }
     std::vector<const LongType *> *outputShapeBuffers = new std::vector<const LongType *>();
@@ -520,7 +522,7 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
           sd_printf("Op [%s] failed check for input [%i], DataType: [%s] Expected data types[%s]\n", _descriptor->getOpName()->data(), cnt,
                     ctype.c_str(),allTypes.c_str());
         } else {
-          auto typeAsString = DataTypeUtils::asString(inputTypes[0]);
+          auto typeAsString = DataTypeUtils::asString(inputTypes2[0]);
           sd_printf("Op [%s] failed check for input [%i], DataType: [%s] Expected data type[%s]\n", _descriptor->getOpName()->data(), cnt,
                     ctype.c_str(),typeAsString.c_str());
         }
@@ -612,7 +614,7 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
           if (_descriptor->isSameMode()) {
             if (index >= block.width()) {
               if (block.width() == 0) continue;
-
+              sd_printf("Before variable validate data types\n",0);
               auto iv = block.variable(0);
 
               if (iv->getNDArray()->dataType() != cType) {
@@ -622,6 +624,8 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
                 return sd::Status::BAD_ARGUMENTS;
               }
             } else {
+              sd_printf("Before variable validate data types 2\n",0);
+
               // for same mode, output type must be the same as input type
               auto iv = block.variable(index);
 
@@ -808,7 +812,6 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       auto array = block->isFastPath() ?  block->fastpath_in()[e]
                                        : vs->getVariable(block->nodeId(), e)->getNDArray();
 
-      sd_printf("Declarable op execute: before shapeutils shape as string inputs\n",0);
       auto shape = ShapeUtils::shapeAsString(array);
       auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(32);
       auto type = DataTypeUtils::asString(array->dataType());
@@ -819,24 +822,32 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 
     for (int e = 0; e < numOutputs; e++) {
       // if given output index doesn't exist - we're done
+      sd_printf("Declarable op execute: processing output %d\n",e);
 
       if (!block->isFastPath()) {
         if (!vs->hasVariable(block->nodeId(), e)) break;
       } else {
         // we have to check either in or out stack, depending on isInplace()
         if (block->isInplace()) {
-          if (block->fastpath_in().size() <= e) break;
+          if (block->fastpath_out().size() <= e) break;
         } else {
           if (block->fastpath_out().size() <= e) break;
         }
       }
-      sd_printf("Declarable op execute: before shapeutils shape as string outputs\n",0);
 
-      auto array = block->isFastPath() ? block->isInplace() ? block->fastpath_in()[e] : block->fastpath_out()[e]
+      auto array = block->isFastPath() ?  block->fastpath_out()[e]
                                        : vs->getVariable(block->nodeId(), e)->getNDArray();
 
+      if(array == nullptr) {
+        throw std::runtime_error("DeclarableOp::execute: array is nullptr");
+      }
+
       auto shape = ShapeUtils::shapeAsString(array);
-      auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(32);
+      bool isEmpty = array->isEmpty();
+      bool isScalar = array->isScalar();
+      int lengthOf = array->lengthOf();
+      sd::LongType len = sd::math::sd_min<LongType>(32, array->isEmpty() || array->isScalar() ? 1 : array->lengthOf());
+      auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(len);
       auto type = DataTypeUtils::asString(array->dataType());
 
       sd_printf("node_%i:%i result shape: %s; dtype: %s; first values %s\n", block->nodeId(), e, shape.c_str(),
@@ -851,7 +862,6 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 }
 
 void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array, bool remove) {
-  sd_debug("Pushing variable\n", 0);
   if (block.isFastPath()) {
     if (remove && block.fastpath_out()[outputIdx] != nullptr) {
       // delete reference/call destructor if remove is true
@@ -1019,6 +1029,7 @@ sd::Status sd::ops::DeclarableOp::validateNonEmptyInput(Context &block) {
 
 sd::Status sd::ops::DeclarableOp::validateOrdersMatch(Context &block) {
   if (block.width() == 0) return sd::Status::OK;
+  sd_printf("Before validateOrdersMatch\n",0);
 
   NDArray *a0 = block.variable(0)->getNDArray();
   for (auto p : *block.inputs()) {

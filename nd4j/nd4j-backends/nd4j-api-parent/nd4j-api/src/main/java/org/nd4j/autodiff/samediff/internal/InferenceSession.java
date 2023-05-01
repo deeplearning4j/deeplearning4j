@@ -1360,7 +1360,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         boolean isLoop = !frameIter.getFrame().equals(OUTER_FRAME) && frameIter.getIteration() > 0;
 
         OpContext oc = opContexts.get(opName);
-        if(oc == null){
+        if(oc == null) {
             oc = Nd4j.getExecutioner().buildContext();
             opContexts.put(opName, oc);
         }

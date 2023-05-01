@@ -87,20 +87,20 @@ template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTy
 SD_LIB_EXPORT NDArray operator/(const T &scalar, NDArray &&arr);
 
 template <typename T1, typename T2,
-          typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
-                                             std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
+    typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
+                                       std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
 SD_LIB_EXPORT NDArray operator+(T1 &&arr1, T2 &&arr2);
 template <typename T1, typename T2,
-          typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
-                                             std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
+    typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
+                                       std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
 SD_LIB_EXPORT NDArray operator-(T1 &&arr1, T2 &&arr2);
 template <typename T1, typename T2,
-          typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
-                                             std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
+    typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
+                                       std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
 SD_LIB_EXPORT NDArray operator*(T1 &&arr1, T2 &&arr2);
 template <typename T1, typename T2,
-          typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
-                                             std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
+    typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
+                                       std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
 SD_LIB_EXPORT NDArray operator/(T1 &&arr1, T2 &&arr2);
 
 SD_LIB_EXPORT NDArray mmul(const NDArray &, const NDArray &);
@@ -1740,7 +1740,13 @@ bool NDArray::isCommonVector(LongType &posOfNonUnityDim) const {
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::isScalar() const { return 0 != shape::isScalar(this->_shapeInfo); }
+bool NDArray::isScalar() const {
+  if(this->isEmpty())
+    return false;
+  if(this->_shapeInfo == nullptr)
+    throw std::runtime_error("isScalar method: shapeInfo is nullptr!");
+  return 0 != shape::isScalar(this->_shapeInfo);
+}
 
 //////////////////////////////////////////////////////////////////////////
 sd::LongType SD_INLINE NDArray::memoryFootprint() {
@@ -1951,32 +1957,48 @@ std::shared_ptr<DataBuffer> NDArray::dataBuffer() { return _buffer; }
 
 ////////////////////////////////////////////////////////////////////////
 const void *NDArray::buffer() const {
+  if (_buffer == nullptr) throw std::runtime_error("NDArray::buffer(): buffer is nullptr !");
+  if (_buffer->primary() == nullptr) {
+    if (_shapeInfo != nullptr) {
+      std::string errorMessage;
+      errorMessage += "NDArray::buffer(): primary() is null! ";
+      errorMessage += "ShapeInfo: [";
+      for (int i = 0; i < shape::shapeInfoLength(rankOf()); ++i) {
+        errorMessage += std::to_string(_shapeInfo[i]) + ", ";
+      }
+      errorMessage += "]";
+      throw std::runtime_error(errorMessage);
+    } else {
+      throw std::runtime_error("NDArray::buffer(): primary() is null!");
+    }
+  }
+
   return _buffer->primary() != nullptr ? static_cast<int8_t *>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
+
 }
+//////////////////////////////////////////////////////////////////////////
+  void *NDArray::buffer() {
+    return _buffer->primary() != nullptr ? static_cast<int8_t *>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
+  }
 
 //////////////////////////////////////////////////////////////////////////
-void *NDArray::buffer() {
-  return _buffer->primary() != nullptr ? static_cast<int8_t *>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-const sd::LongType *NDArray::shapeInfo() const { return _shapeInfo; }
+  const sd::LongType *NDArray::shapeInfo() const { return _shapeInfo; }
 
 ////////////////////////////////////////////////////////////////////////
-const sd::LongType *NDArray::specialShapeInfo() const {
-  if (_shapeInfoD == nullptr) return _shapeInfo;
-  // FIXME: this should be fixed once CUDA backend added
-  return _shapeInfoD;
-}
+  const sd::LongType *NDArray::specialShapeInfo() const {
+    if (_shapeInfoD == nullptr) return _shapeInfo;
+    // FIXME: this should be fixed once CUDA backend added
+    return _shapeInfoD;
+  }
 
 ////////////////////////////////////////////////////////////////////////
-sd::LongType NDArray::bufferOffset() const { return _offset; }
+  sd::LongType NDArray::bufferOffset() const { return _offset; }
 
 ////////////////////////////////////////////////////////////////////////
-bool NDArray::hasPaddedBuffer() const { return ArrayOptions::hasPaddedBuffer(_shapeInfo); }
+  bool NDArray::hasPaddedBuffer() const { return ArrayOptions::hasPaddedBuffer(_shapeInfo); }
 
 #if defined(__CUDACC__)  //&& defined(BUILD_TESTS)
-// for CUDA we need stil stuff inline
+  // for CUDA we need stil stuff inline
 #include <array/NDArrayLambda.hXX>
 #endif
 

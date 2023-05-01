@@ -28,12 +28,22 @@ int ErrorReference::errorCode() { return _errorCode; }
 const char* ErrorReference::errorMessage() {
   // since we're fetching error message - error code will be assumed consumed & nullified
   _errorCode = 0;
-  return _errorMessage.c_str();
+  if(_errorMessage != nullptr)
+    return _errorMessage->c_str();
+  return "";
 }
 
 void ErrorReference::setErrorCode(int errorCode) { _errorCode = errorCode; }
 
-void ErrorReference::setErrorMessage(std::string message) { _errorMessage = message; }
+void ErrorReference::setErrorMessage(std::string message) {
+  if(_errorMessage != nullptr)
+    delete _errorMessage;
+  _errorMessage = new std::string(message);
+}
 
-void ErrorReference::setErrorMessage(const char* message) { _errorMessage = std::string(message); }
+void ErrorReference::setErrorMessage(const char* message) {
+  if(_errorMessage != nullptr)
+    delete _errorMessage;
+  _errorMessage = new std::string(message);
+}
 }  // namespace sd

@@ -22,6 +22,7 @@ package org.nd4j.evaluation.classification;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.ToString;
 import lombok.val;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
@@ -50,6 +51,7 @@ import java.util.List;
 
 @Getter
 @EqualsAndHashCode
+@ToString
 public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration> {
 
     public static final int DEFAULT_RELIABILITY_DIAG_NUM_BINS = 10;

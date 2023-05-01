@@ -122,7 +122,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCumprod(Nd4jBackend backend) {
         NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3, 3);
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 9.0, 9).reshape(3, 3);
         INDArray y = base.cumprod(x, false, false, 0);
         INDArray y_exp = Nd4j.createFromArray(new double[][]{{1.0, 2.0, 3.0}, {4.0, 10.0, 18.0}, {28.0, 80.0, 162.0}});
         assertEquals(y_exp, y);
@@ -137,7 +137,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCumsum(Nd4jBackend backend) {
         NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3, 3);
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 9.0, 9).reshape(3, 3);
         INDArray y = base.cumsum(x, false, false, 0);
         INDArray y_exp = Nd4j.createFromArray(new double[][]{{1.0, 2.0, 3.0}, {5.0, 7.0, 9.0}, {12.0, 15.0, 18.0}});
         assertEquals(y_exp, y);
@@ -151,7 +151,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDot(Nd4jBackend backend) {
         NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 3);
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 3.0, 3);
         INDArray y = base.dot(x, x, 0);
         INDArray y_exp = Nd4j.scalar(14.0);
         assertEquals(y_exp, y);
@@ -627,7 +627,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().enableVerboseMode(true);
         Nd4j.getExecutioner().enableDebugMode(true);
         NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3, 3);
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 9.0, 9).reshape(3, 3);
         INDArray shape = Nd4j.createFromArray(new long[] {3, 3});
         INDArray y = base.reshape(x, shape);
         INDArray y_exp = Nd4j.createFromArray(new double[][]{{1.0, 2.0, 3.0}, { 4.0, 5.0, 6.0}, { 7.0, 8.0, 9.0} } );
@@ -638,7 +638,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverse(Nd4jBackend backend) {
         NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 6).reshape(2, 3);
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 6.0, 6).reshape(2, 3);
         INDArray y = base.reverse(x, 0);
         INDArray y_exp = Nd4j.createFromArray(new double[][]{{ 4.0, 5.0, 6.0},{1.0, 2.0, 3.0} } );
         assertEquals(y_exp, y);
@@ -648,7 +648,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReverseSequence(Nd4jBackend backend) {
         NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3,3);
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 9.0, 9).reshape(3,3);
         INDArray seq_kengths = Nd4j.createFromArray(2,3,1);
         INDArray y = base.reverseSequence(x, seq_kengths);
 
@@ -664,7 +664,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarFloorMod(Nd4jBackend backend) {
         NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3, 3);
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 9.0, 9).reshape(3, 3);
         INDArray y = base.scalarFloorMod(x, 2.0);
         INDArray y_exp = Nd4j.createFromArray(new double[][]{{ 1.0, 0.0, 1.0},{0.0, 1.0, 0.0}, { 1.0, 0.0, 1.0} } );
         assertEquals(y_exp, y);
@@ -674,7 +674,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarMax(Nd4jBackend backend) {
         NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3, 3);
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 9.0, 9).reshape(3, 3);
         INDArray y = base.scalarMax(x, 5.0);
         INDArray y_exp = Nd4j.createFromArray(new double[][]{{ 5.0, 5.0, 5.0},{5.0, 5.0, 6.0}, { 7.0, 8.0, 9.0} } );
         assertEquals(y_exp, y);
@@ -685,7 +685,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarMin(Nd4jBackend backend) {
         NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3, 3);
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 9.0, 9).reshape(3, 3);
         INDArray y = base.scalarMin(x, 5.0);
         INDArray y_exp = Nd4j.createFromArray(new double[][]{{ 1.0, 2.0, 3.0},{4.0, 5.0, 5.0}, { 5.0, 5.0, 5.0} } );
         assertEquals(y_exp, y);
@@ -902,7 +902,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSlice(Nd4jBackend backend) {
         NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 6).reshape(2, 3);
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 6.0, 6).reshape(2, 3);
         INDArray y = base.slice(x, new int[]{0,1}, 2,1);
         INDArray y_exp = Nd4j.create(new double[][]{{2.0}, {5.0}});
         assertEquals(y_exp, y);
@@ -912,7 +912,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSquaredNorm(Nd4jBackend backend) {
         NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3, 3);
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 9.0, 9).reshape(3, 3);
         INDArray y = base.squaredNorm(x, 0);
         INDArray y_exp = Nd4j.createFromArray(66.0, 93.0, 126.0);
         assertEquals(y_exp, y);
@@ -945,11 +945,11 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStandardDeviation(Nd4jBackend backend) {
         NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 4);
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 4.0, 4);
         INDArray y = base.standardDeviation(x, false, 0);
         assertEquals(Nd4j.scalar(1.118034), y);
 
-        x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3,3);
+        x = Nd4j.linspace(DataType.DOUBLE, 1.0, 9.0, 9).reshape(3,3);
         y = base.standardDeviation(x, false, true, 0);
         INDArray y_exp = Nd4j.createFromArray(new double[][]{{2.4494898, 2.4494898, 2.4494898}});
         assertEquals(y_exp, y);
@@ -959,7 +959,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testStridedSlice(Nd4jBackend backend) {
         NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3,3);
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 9.0, 9).reshape(3,3);
         INDArray y = base.stridedSlice(x, new long[]{0,1}, new long[] {3,3}, 2,1);
 
         INDArray y_exp = Nd4j.createFromArray(new double[][]{{2.0, 3.0}, {8.0, 9.0}});
@@ -970,7 +970,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSum(Nd4jBackend backend) {
         NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3,3);
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 9.0, 9).reshape(3,3);
         INDArray y = base.sum(x, 0);
         INDArray y_exp = Nd4j.createFromArray(12.0, 15.0, 18.0);
         assertEquals(y_exp, y);
@@ -1002,7 +1002,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTile(Nd4jBackend backend) {
         NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 4).reshape(2,2);
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 4.0, 4).reshape(2,2);
         INDArray repeat = Nd4j.createFromArray(2, 3);
         INDArray y = base.tile(x, repeat); // the sample from the code docs.
 
@@ -1017,7 +1017,7 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTranspose(Nd4jBackend backend) {
         NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3,3);
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 9.0, 9).reshape(3,3);
         INDArray y = base.transpose(x);
         INDArray y_exp = Nd4j.createFromArray(new double[][]{{1.0, 4.0, 7.0}, {2.0, 5.0, 8.0}, {3.0, 6.0, 9.0}});
         assertEquals(y_exp, y);
@@ -1093,11 +1093,11 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariance(Nd4jBackend backend) {
         NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 4);
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 4.0, 4);
         INDArray y = base.variance(x, false, 0);
         assertEquals(Nd4j.scalar(1.250), y);
 
-        x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3,3);
+        x = Nd4j.linspace(DataType.DOUBLE, 1.0, 9.0, 9).reshape(3,3);
         y = base.variance(x, false, true, 0);
         INDArray y_exp = Nd4j.createFromArray(new double[][]{{6.0, 6.0, 6.0}});
         assertEquals(y_exp, y);

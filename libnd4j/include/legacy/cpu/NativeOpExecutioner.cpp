@@ -1191,9 +1191,7 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
   if (opNum == sd::transform::Assign && shape::order(hXShapeInfo) == shape::order(hZShapeInfo) &&
       shape::order(hXShapeInfo) == 'c' && xType == zType && shape::elementWiseStride(hXShapeInfo) == 1 &&
       shape::elementWiseStride(hZShapeInfo) == 1) {
-    sd_printf("Executing assign\n",0);
     memcpy(hZ, hX, shape::length(hXShapeInfo) * sd::DataTypeUtils::sizeOfElement(xType));
-    sd_printf("After Executing assign\n",0);
 
   } else {
     auto func = PRAGMA_THREADS_DO {

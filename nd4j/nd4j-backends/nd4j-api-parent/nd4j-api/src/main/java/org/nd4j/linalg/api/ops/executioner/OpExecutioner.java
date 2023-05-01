@@ -292,56 +292,6 @@ public interface OpExecutioner {
      */
     void commit();
 
-    /**
-     * This method encodes array as thresholds, updating input array at the same time
-     *
-     * @param input
-     * @return encoded array is returned
-     */
-    INDArray thresholdEncode(INDArray input, double threshold);
-
-
-    /**
-     * This method encodes array as thresholds, updating input array at the same time
-     *
-     * @param input
-     * @return encoded array is returned
-     */
-    INDArray thresholdEncode(INDArray input, double threshold, Integer boundary);
-
-    /**
-     * This method decodes thresholds array, and puts it into target array
-     *
-     * @param encoded
-     * @param target
-     * @return target is returned
-     */
-    INDArray thresholdDecode(INDArray encoded, INDArray target);
-
-    /**
-     * This method returns number of elements affected by encoder
-     * @param indArray
-     * @param target
-     * @param threshold
-     * @return
-     */
-    long bitmapEncode(INDArray indArray, INDArray target, double threshold);
-
-    /**
-     *
-     * @param indArray
-     * @param threshold
-     * @return
-     */
-    INDArray bitmapEncode(INDArray indArray, double threshold);
-
-    /**
-     *
-     * @param encoded
-     * @param target
-     * @return
-     */
-    INDArray bitmapDecode(INDArray encoded, INDArray target);
 
     /**
      * This method returns names of all custom operations available in current backend, and their number of input/output arguments

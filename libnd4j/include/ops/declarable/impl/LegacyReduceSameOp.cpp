@@ -132,6 +132,7 @@ sd::Status LegacyReduceSameOp::validateAndExecute(Context& block) {
   if(OpRegistrator::getInstance().traceOps()) {
     std::vector<const sd::LongType *> *inputShapeBuffers = new std::vector<const sd::LongType *>();
     for(int i = 0; i < block.width(); i++) {
+      sd_printf("Before legacy reduce same op validate and execute\n",0);
       inputShapeBuffers->push_back(block.variable(i)->getNDArray()->shapeInfo());
     }
     std::vector<const sd::LongType *> *outputShapeBuffers = new std::vector<const sd::LongType *>();

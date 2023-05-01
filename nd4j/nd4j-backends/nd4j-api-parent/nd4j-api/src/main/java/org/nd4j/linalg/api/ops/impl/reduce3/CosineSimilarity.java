@@ -109,7 +109,7 @@ public class CosineSimilarity extends BaseReduce3Op {
     }
 
     public static List<SDVariable> doDiff(SameDiff sameDiff, SDVariable x, SDVariable y,
-                                          SDVariable gradOut, boolean keepDims, long... dimensions){
+                                          SDVariable gradOut, boolean keepDims, long... dimensions) {
         SDVariable a = sameDiff.sum(x.mul(y),true, dimensions);
         SDVariable l2x = sameDiff.norm2(x, true, dimensions);
         SDVariable l2y = sameDiff.norm2(y, true, dimensions);

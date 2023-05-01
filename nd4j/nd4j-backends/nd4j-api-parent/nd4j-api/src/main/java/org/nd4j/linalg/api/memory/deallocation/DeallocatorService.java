@@ -223,6 +223,9 @@ public class DeallocatorService {
             Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
             boolean canRun = true;
             while (canRun) {
+                while(blockDeallocator.get()) {
+                    Thread.sleep(1000);
+                }
                 // if periodicGc is enabled, only first thread will call for it
                 if (threadIdx == 0 && Nd4j.getMemoryManager().getAutoGcWindow() > 0) {
                     val reference = (DeallocatableReference) queue.poll();
@@ -242,9 +245,6 @@ public class DeallocatorService {
                                 referenceTypes.remove(reference.getId());
                             }
 
-                            /*
-                            TODO: figure out reference deallocate race condition
-                             */
                             reference.deallocate();
 
                             if(referenceMap.containsKey(reference.getId()))

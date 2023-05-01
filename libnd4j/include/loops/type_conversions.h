@@ -109,19 +109,6 @@ template <typename T>
 SD_HOST void encoderKernelP1Generic(dim3 &launchDims, cudaStream_t *stream, const void *dx, sd::LongType N, void *dz,
                                     float threshold);
 
-template <typename T>
-SD_HOST void encoderKernelP3Generic(dim3 &launchDims, cudaStream_t *stream, void *dx, int *offsets, sd::LongType N,
-                                    void *dz);
-
-template <typename T>
-SD_HOST void decoderKernelGeneric(dim3 &launchDims, cudaStream_t *stream, const void *dx, sd::LongType N, void *dz);
-
-template <typename T>
-SD_HOST void cudaEncodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, void *vdx, sd::LongType N, int *dz,
-                                     int *scalar, int *reductionBuffer, float threshold);
-
-template <typename T>
-SD_HOST void cudaDecodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, const void *dx, sd::LongType N, void *vdz);
 
 SD_KERNEL void uniformAdd(int *g_data, int *uniforms, int n, int blockOffset, int baseIndex);
 

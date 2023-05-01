@@ -51,11 +51,6 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
     }
 
 
-    @Override
-    void initializeHelper(){
-        //No op - no separable conv implementation in cudnn
-    }
-
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {

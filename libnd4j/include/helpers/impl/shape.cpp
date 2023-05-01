@@ -1408,7 +1408,6 @@ namespace shape {
                throw std::runtime_error("Input shape buffer is corrupt. First rank is < 0 or greater than the max rank of 32.");
         }
 
-        sd_printf("Attempting to print rank for a  shape buffer\n",0);
         int rank = shape::rank(shapeInfo);
         if(rank == 0)
             return;

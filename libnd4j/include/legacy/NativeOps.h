@@ -52,26 +52,35 @@ typedef sd::ops::OpExecTrace ExecTrace;
 
 
 
-
 #if defined(SD_GCC_FUNCTRACE)
 
 //we need to tell -finstrument-functions not to include the logger otherwise it will recursively
 // stack overflow and segfault.
 extern "C" {
+
+
+#include <stdio.h>
+#include <execinfo.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+
+
+
 //note this is a c++ 17 feature
 static FILE* instrumentFile = nullptr;
 
 
 
 
-extern "C" {
+
 //this is to ensure symbol is loaded and exported from this library instead when using LD_PRELOAD.
 
-__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_enter (void *this_fn,
-                                                                                    void *call_site);
-__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_exit  (void *this_fn,
-                                                                                   void *call_site);
+__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_enter (void *this_fn,void *call_site);
+__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_exit  (void *this_fn,void *call_site);
 }
+
 
 //sets the file to be written to.
 SD_LIB_EXPORT void setInstrumentOut(char * instrumentOutPath);
@@ -1001,7 +1010,7 @@ SD_LIB_EXPORT void reSeedBuffer(sd::Pointer* extraPointers, long seed, sd::Point
  * @param ptrRandom
  */
 SD_LIB_EXPORT void destroyRandom(sd::Pointer ptrRandom);
-}
+
 
 /**
  *

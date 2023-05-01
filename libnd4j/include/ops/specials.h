@@ -69,9 +69,6 @@ class SD_LIB_EXPORT SpecialMethods {
   static void sortTadGeneric(void *x, const sd::LongType *xShapeInfo, sd::LongType  *dimension, LongType dimensionLength,
                              const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, bool descending);
 
-  static void decodeBitmapGeneric(const void *dx, sd::LongType N, void *dz, const sd::LongType *zShapeInfo);
-  static sd::LongType encodeBitmapGeneric(void *dx, const sd::LongType *zShapeInfo, sd::LongType N, sd::LongType  *dz,
-                                          float threshold);
 };
 
 template <typename X, typename Y>
