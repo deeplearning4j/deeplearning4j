@@ -87,7 +87,7 @@
         <excludedTests>large-resources,downloads,long-running-test</excludedTests>
         <jemalloc.path>/usr/local/lib/libjemalloc.so.2</jemalloc.path>
         <jemalloc.mallocconf></jemalloc.mallocconf>
-        <preload></preload>
+        <preload>/usr/lib64/libasan.so.8</preload>
     </properties>
 
     <dependencyManagement>

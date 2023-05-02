@@ -27,6 +27,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.bagofwords.vectorizer.BagOfWordsVectorizer;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
@@ -72,12 +73,12 @@ public class BagOfWordsVectorizerTest extends BaseDL4JTest {
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);
         List<String> labels = Arrays.asList("label1", "label2");
         TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
+        VocabCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
         BagOfWordsVectorizer vectorizer = new BagOfWordsVectorizer.Builder().setMinWordFrequency(1)
+                .setVocab(cache)
                 .setStopWords(new ArrayList<>()).setTokenizerFactory(tokenizerFactory).setIterator(iter)
                 .allowParallelTokenization(false)
-                //                .labels(labels)
-                //                .cleanup(true)
                 .build();
 
         vectorizer.fit();

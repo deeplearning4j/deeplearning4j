@@ -165,7 +165,7 @@ void SD_HOST ReduceBoolFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
   if (sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
     const auto startingVal = OpType::startingValue(x);
     const auto zLen = shape::length(zShapeInfo);
-
+    if(z != nullptr)
     for (sd::LongType i = 0; i < zLen; i++) z[i] = startingVal;
     return;
   }

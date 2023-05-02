@@ -26,6 +26,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelledDocument;
 import org.deeplearning4j.text.documentiterator.LabelsSource;
@@ -81,12 +82,12 @@ public class TfidfVectorizerTest extends BaseDL4JTest {
 
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);
         TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
+        AbstractCache<VocabWord> cacheTarget = new AbstractCache.Builder<VocabWord>().build();
 
         TfidfVectorizer vectorizer = new TfidfVectorizer.Builder().setMinWordFrequency(1)
-                .setStopWords(new ArrayList<String>()).setTokenizerFactory(tokenizerFactory).setIterator(iter)
+                .setStopWords(new ArrayList<>()).setTokenizerFactory(tokenizerFactory).setIterator(iter)
                 .allowParallelTokenization(false)
-                //                .labels(labels)
-                //                .cleanup(true)
+                .setVocab(cacheTarget)
                 .build();
 
         vectorizer.fit();
@@ -123,9 +124,6 @@ public class TfidfVectorizerTest extends BaseDL4JTest {
 
 
         DataSet dataSet = vectorizer.vectorize("This is 3 file.", "label3");
-        //assertEquals(0.0, dataSet.getLabels().getDouble(0), 0.1);
-        //assertEquals(0.0, dataSet.getLabels().getDouble(1), 0.1);
-        //assertEquals(1.0, dataSet.getLabels().getDouble(2), 0.1);
         int cnt = 0;
         for (int i = 0; i < 3; i++) {
             if (dataSet.getLabels().getDouble(i) > 0.1)
@@ -206,10 +204,11 @@ public class TfidfVectorizerTest extends BaseDL4JTest {
             collection.add("Third string");
             collection.add("");
             collection.add("Fifth string");
-//        collection.add("caboom");
+            VocabCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
             val vectorizer = new TfidfVectorizer.Builder()
                     .allowParallelTokenization(false)
+                    .setVocab(cache)
                     .setIterator(new CollectionSentenceIterator(collection))
                     .setTokenizerFactory(new ExplodingTokenizerFactory(8, -1))
                     .build();
@@ -236,9 +235,11 @@ public class TfidfVectorizerTest extends BaseDL4JTest {
             collection.add("Fifth string");
             collection.add("Long long long string");
             collection.add("Sixth string");
+            VocabCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
             val vectorizer = new TfidfVectorizer.Builder()
                     .allowParallelTokenization(false)
+                    .setVocab(cache)
                     .setIterator(new CollectionSentenceIterator(collection))
                     .setTokenizerFactory(new ExplodingTokenizerFactory(-1, 4))
                     .build();

@@ -746,8 +746,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             val xb = ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
             val zb = ((BaseCpuDataBuffer) z.data()).getOpaqueDataBuffer();
-            ((BaseCpuDataBuffer) x.data()).actualizePointerAndIndexer();
-            ((BaseCpuDataBuffer) z.data()).actualizePointerAndIndexer();
+
             switch (op.getOpType()) {
                 case TRANSFORM_FLOAT: {
                     val xtraz = getPointerForExtraArgs(op, z.dataType());

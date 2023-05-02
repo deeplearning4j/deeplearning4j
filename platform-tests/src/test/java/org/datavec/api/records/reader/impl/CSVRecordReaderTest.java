@@ -281,7 +281,7 @@ class CSVRecordReaderTest extends BaseND4JTest {
         final List<Writable> lineList = Arrays.<Writable>asList(new Text(Integer.toString(numLines - 1)), new Text("one"), new Text("two"), new Text("three"));
         String header = ",one,two,three";
         List<String> lines = new ArrayList<>();
-        for (int i = 0; i < numLines; i++) lines.add(Integer.toString(i) + header);
+        for (int i = 0; i < numLines; i++) lines.add(i + header);
         File tempFile = File.createTempFile("csvSkipLines", ".csv");
         FileUtils.writeLines(tempFile, lines);
         CSVRecordReader rr = new CSVRecordReader(numLines - 1, ',');

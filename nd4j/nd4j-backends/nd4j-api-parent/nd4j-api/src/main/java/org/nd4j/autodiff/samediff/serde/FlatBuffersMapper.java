@@ -933,11 +933,12 @@ public class FlatBuffersMapper {
         Type t = node.opType();
         if (t == Type.REDUCE_FLOAT || t == Type.REDUCE_SAME || t == Type.REDUCE_BOOL
                 || t == Type.REDUCE_LONG || t == Type.INDEXREDUCE || t == Type.REDUCE3 || t == Type.VARIANCE || t == Type.SUMMARYSTATS) {
-            dims = new int[node.getDimensions().length];
+            dims =  node.getDimensions() == null ? null :  new int[node.getDimensions().length];
             //here we save longs as ints for compatibility
-            for(int i = 0; i < dims.length; i++) {
-                dims[i] = (int) node.getDimensions()[i];
-            }
+            if(dims != null)
+                for(int i = 0; i < dims.length; i++) {
+                    dims[i] = (int) node.getDimensions()[i];
+                }
             if (dims == null)
                 dims = new int[0];
         } else {

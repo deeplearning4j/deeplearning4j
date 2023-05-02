@@ -308,7 +308,9 @@ public class VocabConstructorTest extends BaseDL4JTest {
 
 
         SentenceTransformer transformer =
-                        new SentenceTransformer.Builder().iterator(underlyingIterator).tokenizerFactory(t).build();
+                        new SentenceTransformer.Builder()
+                                .vocabCache(cacheSource)
+                                .iterator(underlyingIterator).tokenizerFactory(t).build();
 
         AbstractSequenceIterator<VocabWord> sequenceIterator =
                         new AbstractSequenceIterator.Builder<>(transformer).build();

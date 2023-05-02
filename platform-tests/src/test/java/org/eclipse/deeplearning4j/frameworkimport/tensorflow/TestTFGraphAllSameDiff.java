@@ -52,7 +52,8 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
      * all tests will trigger an assumeFalse(..) that indicates
      * the status of the test failing. No tests will run.
      */
-    public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList();
+    public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
+    );
 
     public static final String[] IGNORE_REGEXES = new String[]{
             //crashes JVM
@@ -162,7 +163,6 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
         } else if(!EXECUTE_ONLY_MODELS.contains(modelName)) {
             log.info("Not executing " + modelName);
             assumeFalse(true);
-            //OpValidationSuite.ignoreFailing();
         }
 
 

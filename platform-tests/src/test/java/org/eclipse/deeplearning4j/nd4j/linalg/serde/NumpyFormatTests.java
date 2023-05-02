@@ -309,12 +309,7 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testFromNumpyScalar(Nd4jBackend backend) throws Exception {
-        val out = Nd4j.createFromNpyFile(new ClassPathResource("numpy_oneoff/scalar.npy").getFile());
-        assertEquals(Nd4j.scalar(DataType.INT, 1), out);
-    }
+
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

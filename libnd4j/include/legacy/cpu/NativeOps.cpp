@@ -650,12 +650,15 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *d
                       const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo, OpaqueDataBuffer *dbDimension,
                       const sd::LongType *hDimensionShape, const sd::LongType *dDimensionShape) {
   try {
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
-    auto dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
+    auto dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
     const auto zLen = shape::length(hZShapeInfo);
 
-    std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
+    std::vector<sd::LongType> dimensions;
+    for(sd::LongType i = 0; i < dimensionLength; i++) {
+      dimensions.push_back(dimension[i]);
+    }
 
     const sd::LongType *zShapeInfoH = hZShapeInfo;
     const sd::LongType *zShapeInfoD = dZShapeInfo;
@@ -685,10 +688,13 @@ void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
                      const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo, OpaqueDataBuffer *dbDimension,
                      const sd::LongType *hDimensionShape, const sd::LongType *dDimensionShape) {
   try {
-    auto dimension = reinterpret_cast<int *>(dbDimension->primary());
-    auto dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
+    auto dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
-    std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
+    std::vector<sd::LongType> dimensions;
+    for(sd::LongType i = 0; i < dimensionLength; i++) {
+      dimensions.push_back(dimension[i]);
+    }
 
     const auto zLen = shape::length(hZShapeInfo);
 
@@ -722,8 +728,12 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
   try {
     auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
+    sd_printf("dimension length is %d\n",dimensionLength);
+    std::vector<sd::LongType> dimensions;
+    for(sd::LongType i = 0; i < dimensionLength; i++) {
+      dimensions.push_back(dimension[i]);
+    }
 
-    std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
 
     const auto zLen = shape::length(hZShapeInfo);
 
@@ -758,7 +768,10 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
     auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
-    std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
+    std::vector<sd::LongType> dimensions;
+    for(sd::LongType i = 0; i < dimensionLength; i++) {
+      dimensions.push_back(dimension[i]);
+    }
 
     const auto zLen = shape::length(hZShapeInfo);
 

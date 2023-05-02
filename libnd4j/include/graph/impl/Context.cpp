@@ -304,7 +304,6 @@ NDArray *Context::array(int idx) {
   if (!_fastpath_in.empty() && _fastpath_in.size() > idx) {
     return _fastpath_in[idx];
   }
-  sd_printf("Attempting to use normal variable rather than fast path in\n",0);
   // if no luck for fastpath - return whatever is available
   return getVariable(idx)->getNDArray();
 }

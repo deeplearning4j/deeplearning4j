@@ -278,7 +278,7 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
     public void testMaxPoolBackprop(){
         Nd4j.getRandom().setSeed(12345);
 
-        for( int i=0; i<5; i++ ) {
+        for( int i = 0; i < 5; i++) {
 
             int[] inputShape = {1, 1, 4, 3};
 

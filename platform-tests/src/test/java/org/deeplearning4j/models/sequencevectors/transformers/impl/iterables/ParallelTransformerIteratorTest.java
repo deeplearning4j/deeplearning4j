@@ -110,7 +110,9 @@ public class ParallelTransformerIteratorTest extends BaseDL4JTest {
         log.info("Single-threaded time: {} ms", time2 - time1);
         iterator.reset();
 
-        transformer = new SentenceTransformer.Builder().iterator(iterator).allowMultithreading(true)
+        transformer = new SentenceTransformer.Builder()
+                .vocabCache(cache)
+                .iterator(iterator).allowMultithreading(true)
                 .tokenizerFactory(factory).build();
 
         iter = transformer.iterator();
@@ -134,7 +136,9 @@ public class ParallelTransformerIteratorTest extends BaseDL4JTest {
         LabelAwareIterator lai = new BasicLabelAwareIterator.Builder(new MutipleEpochsSentenceIterator(
                 new BasicLineIterator(Resources.asFile("big/raw_sentences.txt")), 25)).build();
 
-        transformer = new SentenceTransformer.Builder().iterator(lai).allowMultithreading(false)
+        transformer = new SentenceTransformer.Builder().iterator(lai)
+                .vocabCache(cache)
+                .allowMultithreading(false)
                 .tokenizerFactory(factory).build();
 
         iter = transformer.iterator();

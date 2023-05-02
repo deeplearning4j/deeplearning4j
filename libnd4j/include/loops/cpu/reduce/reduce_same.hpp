@@ -170,7 +170,7 @@ template <typename X>
 template <typename OpType>
 void SD_HOST ReduceSameFunction<X>::exec(sd::memory::Workspace *workspace, const void *vx,
                                          const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                         const sd::LongType *zShapeInfo, const long long int *dims) {
+                                         const sd::LongType *zShapeInfo, const sd::LongType *dims) {
   const X *x = reinterpret_cast<const X *>(vx);
   X *z = reinterpret_cast<X *>(vz);
   X *extraParams = reinterpret_cast<X *>(vextraParams);
@@ -182,6 +182,7 @@ void SD_HOST ReduceSameFunction<X>::exec(sd::memory::Workspace *workspace, const
     const auto startingVal = OpType::startingValue(x);
     const auto zLen = shape::length(zShapeInfo);
 
+if(z != nullptr)
     for (sd::LongType i = 0; i < zLen; i++) z[i] = startingVal;
     return;
   }

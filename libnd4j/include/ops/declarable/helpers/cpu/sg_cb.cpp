@@ -423,16 +423,29 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
   } else {
     // regular mode provides 0 guarantees for reproducibility
     auto numTargets = targets.lengthOf();
-    PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
     for(int iteration = 0; iteration < iterations; iteration++) {
+      if(!vinfVector.isEmpty()) {
+        vinfVector.printIndexedBuffer("Inference vector before iteration");
+      }
+      sd_printf("Doing iteration %d\n",iteration);
       for (auto t = 0; t < numTargets; t++) {
+        sd_printf("Target: %d\n",t);
+        if(!vinfVector.isEmpty()) {
+          vinfVector.printIndexedBuffer("Inference vector before iteration");
+        }
         doSkipGramLoop_(s0, s1, s1n, vinfVector, targets, negStarters, indices, codes, lr, nextRandom, nsRounds,
                         vocabSize, vectorLength, expLength, negLength, expTable, negTable, hsRounds, t);
 
+        if(!vinfVector.isEmpty()) {
+          vinfVector.printIndexedBuffer("Inference vector after iteration");
+        }
         lr.p<double>(t,((lr.e<double>(t) - static_cast<double>(minLearningRate)) / (static_cast<double>(iterations - iteration))) + static_cast<double>(minLearningRate));
 
       }
-
+      sd_printf("After iteration %d\n",iteration);
+      if(!vinfVector.isEmpty()) {
+        vinfVector.printIndexedBuffer("Inference vector after iteration");
+      }
 
     }
 
@@ -564,7 +577,6 @@ void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable, 
   } else {
     // regular mode provides 0 guarantees for reproducibility
     auto numTargets = targets.lengthOf();
-    PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
     for(int iteration = 0; iteration < iterations; iteration++) {
       for (auto t = 0; t < numTargets; t++) {
         doCbowLoop_(s0, s1, s1n, negStarters, indices, codes, lr, nextRandom, nLabels, nsRounds, vocabSize,
@@ -749,6 +761,7 @@ void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable,
             (int)expTable.lengthOf(), (int)negTable.lengthOf(),minLearningRate,iterations),
         SD_FLOAT_TYPES);
   } else if (ngStarter.isVector() || target.isVector()) {
+    sd_printf("SkipGram: batch mode exec\n",0);
     // batch mode
     BUILD_SINGLE_SELECTOR(xType, skipgramBatchExec_,
                           (syn0, syn1, syn1Neg, expTable, negTable, inferenceVector, target, ngStarter,

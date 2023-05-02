@@ -1170,40 +1170,21 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
                                            void *dZ, const sd::LongType *dZShapeInfo, void *extraParams,
                                            const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                                            bool allowParallelism) {
-  if(hX == nullptr)
-    throw std::runtime_error("NativeOpExecutioner::execTransformAny requires X array to be present");
-  if(hXShapeInfo == nullptr)
-        throw std::runtime_error("NativeOpExecutioner::execTransformAny requires X shapeInfo to be present");
-  if(hZShapeInfo == nullptr)
-    throw std::runtime_error("NativeOpExecutioner::execTransformAny requires Z array to be present");
-
-  if(hXShapeInfo[0] > SD_MAX_RANK || hXShapeInfo[0] < 0)
-        throw std::runtime_error("NativeOpExecutioner::execTransformAny requires X rank to be in range of 0 to SD_MAX_RANK");
-  if(hZShapeInfo[0] > SD_MAX_RANK || hZShapeInfo[0] < 0)
-        throw std::runtime_error("NativeOpExecutioner::execTransformAny requires Z rank to be in range of 0 to SD_MAX_RANK");
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
 
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo)) return;
+  if (shape::isEmpty(hXShapeInfo) || shape::length(hXShapeInfo) == 0) return;
+  auto func = PRAGMA_THREADS_DO {
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
+                          ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
+                          SD_COMMON_TYPES_ALL, SD_COMMON_TYPES);
+  };
 
-  if (opNum == sd::transform::Assign && shape::order(hXShapeInfo) == shape::order(hZShapeInfo) &&
-      shape::order(hXShapeInfo) == 'c' && xType == zType && shape::elementWiseStride(hXShapeInfo) == 1 &&
-      shape::elementWiseStride(hZShapeInfo) == 1) {
-    memcpy(hZ, hX, shape::length(hXShapeInfo) * sd::DataTypeUtils::sizeOfElement(xType));
-
-  } else {
-    auto func = PRAGMA_THREADS_DO {
-      BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
-                            ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
-                            SD_COMMON_TYPES_ALL, SD_COMMON_TYPES);
-    };
-
-    samediff::Threads::parallel_do(
-        func, sd::math::sd_max<int>(1, sd::math::sd_min<int>(shape::length(hZShapeInfo) / 1024,
-                                                             sd::Environment::getInstance().maxMasterThreads())));
-  }
+  samediff::Threads::parallel_do(
+      func, sd::math::sd_max<sd::LongType>(1, sd::math::sd_min<sd::LongType>(shape::length(hZShapeInfo) / 1024,
+                                                                             sd::Environment::getInstance().maxMasterThreads())));
 }
 
 ////////////////////////////////////////////////////////////////////////
