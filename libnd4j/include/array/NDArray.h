@@ -1958,21 +1958,6 @@ std::shared_ptr<DataBuffer> NDArray::dataBuffer() { return _buffer; }
 ////////////////////////////////////////////////////////////////////////
 const void *NDArray::buffer() const {
   if (_buffer == nullptr) throw std::runtime_error("NDArray::buffer(): buffer is nullptr !");
-  if (_buffer->primary() == nullptr) {
-    if (_shapeInfo != nullptr) {
-      std::string errorMessage;
-      errorMessage += "NDArray::buffer(): primary() is null! ";
-      errorMessage += "ShapeInfo: [";
-      for (int i = 0; i < shape::shapeInfoLength(rankOf()); ++i) {
-        errorMessage += std::to_string(_shapeInfo[i]) + ", ";
-      }
-      errorMessage += "]";
-      throw std::runtime_error(errorMessage);
-    } else {
-      throw std::runtime_error("NDArray::buffer(): primary() is null!");
-    }
-  }
-
   return _buffer->primary() != nullptr ? static_cast<int8_t *>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
 
 }
